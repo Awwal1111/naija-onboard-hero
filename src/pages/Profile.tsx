@@ -31,7 +31,7 @@ const Profile = () => {
   const bottomNavItems = [
     { icon: Home, label: 'Feed', path: '/feed' },
     { icon: MessageCircle, label: 'Chat', path: '/chat' },
-    { icon: Users, label: 'Experts', path: '/experts' },
+    { icon: Users, label: 'Expert', path: '/experts' },
     { icon: DollarSign, label: 'Earn', path: '/earn' },
     { icon: User, label: 'Profile', path: '/profile', active: true }
   ]

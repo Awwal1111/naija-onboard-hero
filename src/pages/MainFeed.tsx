@@ -18,13 +18,15 @@ const MainFeed = () => {
     { icon: MessageCircle, label: 'Chat', count: 3, path: '/chat' },
     { icon: Users, label: 'Experts', count: null, path: '/experts' },
     { icon: DollarSign, label: 'Earn', count: null, path: '/earn' },
-    { icon: Briefcase, label: 'Jobs', count: 12, path: '/jobs' }
+    { icon: Briefcase, label: 'Jobs', count: 12, path: '/jobs' },
+    { icon: Users, label: 'Market', count: null, path: '/market' },
+    { icon: Briefcase, label: 'Course', count: null, path: '/course' }
   ]
 
   const bottomNavItems = [
     { icon: Home, label: 'Feed', path: '/feed', active: true },
     { icon: MessageCircle, label: 'Chat', path: '/chat' },
-    { icon: Users, label: 'Experts', path: '/experts' },
+    { icon: Users, label: 'Expert', path: '/experts' },
     { icon: DollarSign, label: 'Earn', path: '/earn' },
     { icon: User, label: 'Profile', path: '/profile' }
   ]

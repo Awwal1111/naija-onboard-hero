@@ -4,6 +4,7 @@ import { Logo } from '@/components/ui/logo'
 import { BrandButton } from '@/components/ui/brand-button'
 import { BrandInput } from '@/components/ui/brand-input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useProfile } from '@/hooks/useProfile'
 import { useToast } from '@/hooks/use-toast'
 
 // Types for API responses
@@ -20,6 +21,7 @@ interface LGA {
 const Onboarding = () => {
   const navigate = useNavigate()
   const { toast } = useToast()
+  const { profile, updateProfile } = useProfile()
   const [states, setStates] = useState<State[]>([])
   const [lgas, setLgas] = useState<LGA[]>([])
   const [selectedState, setSelectedState] = useState('')
@@ -27,6 +29,9 @@ const Onboarding = () => {
   const [area, setArea] = useState('')
   const [purpose, setPurpose] = useState('To Browse')
   const [loading, setLoading] = useState(false)
+  const [formData, setFormData] = useState({
+    full_name: profile?.full_name || ''
+  })
 
   // Fetch states on component mount
   useEffect(() => {
@@ -239,6 +244,9 @@ const Onboarding = () => {
     
     setLoading(true)
     
+    const selectedStateName = states.find(s => s.id === selectedState)?.name
+    const selectedLGAName = lgas.find(l => l.name === selectedLGA)?.name
+    
     // Handle onboarding completion
     console.log('Onboarding data:', {
       state: selectedState,
@@ -252,7 +260,17 @@ const Onboarding = () => {
         title: "Welcome to NaijaLancers!",
         description: "Your profile has been set up successfully.",
       })
-      navigate('/feed')
+      
+      // Update the user's profile with onboarding data
+      updateProfile({
+        full_name: formData.full_name || profile?.full_name,
+        state_name: selectedStateName,
+        lga_name: selectedLGAName,
+        area: area.trim(),
+        state_id: selectedState
+      }).then(() => {
+        navigate('/feed')
+      })
     }, 1000)
   }
 
@@ -279,7 +297,15 @@ const Onboarding = () => {
             <h1 className="text-3xl font-bold text-text-primary">Tell us about yourself</h1>
           </div>
 
-          <div className="space-y-8">
+          <div className="space-y-6">
+            <BrandInput
+              label="Full Name"
+              value={formData.full_name}
+              onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
+              placeholder="Enter your full name"
+              required
+            />
+            
             {/* Location Section */}
             <div className="space-y-4">
               <div className="space-y-2">
@@ -370,9 +396,9 @@ const Onboarding = () => {
               onClick={handleNext}
               className="w-full" 
               size="lg"
-              disabled={!selectedState || !selectedLGA || !area.trim() || loading}
+              disabled={!formData.full_name.trim() || !selectedState || !selectedLGA || !area.trim() || loading}
             >
-              {loading ? 'Setting up...' : 'Next'}
+              {loading ? 'Setting up...' : 'Complete Setup'}
             </BrandButton>
           </div>
         </div>

@@ -11,6 +11,39 @@ export const useAuth = () => {
   const navigate = useNavigate()
   const { toast } = useToast()
 
+  const checkProfileAndRedirect = async (user: any) => {
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name, state_name, lga_name')
+        .eq('user_id', user.id)
+        .single()
+
+      // Check if user has completed onboarding (has name, state, lga)
+      if (profile && profile.full_name && profile.state_name && profile.lga_name) {
+        navigate('/feed')
+        toast({
+          title: "Welcome back!",
+          description: "You have successfully logged in.",
+        })
+      } else {
+        // New user or incomplete profile - go to onboarding
+        navigate('/onboarding')
+        toast({
+          title: "Welcome to NaijaLancers!",
+          description: "Please complete your profile setup.",
+        })
+      }
+    } catch (error) {
+      // Profile doesn't exist or error - go to onboarding
+      navigate('/onboarding')
+      toast({
+        title: "Welcome to NaijaLancers!",
+        description: "Please complete your profile setup.",
+      })
+    }
+  }
+
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -20,11 +53,8 @@ export const useAuth = () => {
         setLoading(false)
 
         if (event === 'SIGNED_IN' && session?.user) {
-          navigate('/')
-          toast({
-            title: "Welcome back!",
-            description: "You have successfully logged in.",
-          })
+          // Check if user has completed onboarding
+          checkProfileAndRedirect(session.user)
         }
       }
     )

@@ -11,6 +11,8 @@ import MainFeed from "./pages/MainFeed";
 import Profile from "./pages/Profile";
 import ExpertApplication from "./pages/ExpertApplication";
 import PostJob from "./pages/PostJob";
+import Experts from "./pages/Experts";
+import Jobs from "./pages/Jobs";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +32,9 @@ const App = () => (
           <Route path="/profile" element={<Profile />} />
           <Route path="/expert-application" element={<ExpertApplication />} />
           <Route path="/post-job" element={<PostJob />} />
+          <Route path="/experts" element={<Experts />} />
+          <Route path="/jobs" element={<Jobs />} />
+          <Route path="/earn" element={<Jobs />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -20,7 +20,7 @@ All colors MUST be HSL.
     --popover-foreground: 0 0% 20%;
 
     /* NaijaLancers Brand Colors */
-    --primary: 145 53% 40%; /* Nigerian Green #2CA950 */
+    --primary: 120 100% 25%; /* Nigeria Green #008000 */
     --primary-foreground: 0 0% 100%;
 
     --secondary: 0 0% 96%;
@@ -37,11 +37,11 @@ All colors MUST be HSL.
 
     --border: 0 0% 90%;
     --input: 0 0% 96%; /* Light grey for input backgrounds */
-    --ring: 145 53% 40%;
+    --ring: 120 100% 25%;
 
     /* Custom NaijaLancers tokens */
-    --brand-green: 145 53% 40%;
-    --brand-green-hover: 145 53% 35%;
+    --brand-green: 120 100% 25%;
+    --brand-green-hover: 120 100% 20%;
     --text-primary: 0 0% 20%;
     --text-secondary: 0 0% 45%;
     --surface-light: 0 0% 96%;
