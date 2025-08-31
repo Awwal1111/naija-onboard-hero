@@ -109,8 +109,8 @@ const Experts = () => {
   const filteredExperts = experts.filter(expert => {
     const matchesSearch = expert.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          expert.skill_category.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesState = !stateFilter || expert.location_state === stateFilter
-    const matchesSkill = !skillFilter || expert.skill_category === skillFilter
+    const matchesState = !stateFilter || stateFilter === 'all' || expert.location_state === stateFilter
+    const matchesSkill = !skillFilter || skillFilter === 'all' || expert.skill_category === skillFilter
     
     return matchesSearch && matchesState && matchesSkill
   })
@@ -156,7 +156,7 @@ const Experts = () => {
                   <SelectValue placeholder="Filter by state" />
                 </SelectTrigger>
                 <SelectContent className="bg-background border border-border z-50 max-h-60 overflow-y-auto">
-                  <SelectItem value="" className="hover:bg-accent">All States</SelectItem>
+                  <SelectItem value="all" className="hover:bg-accent">All States</SelectItem>
                   {nigerianStates.map((state) => (
                     <SelectItem key={state} value={state} className="hover:bg-accent">
                       {state}
@@ -172,7 +172,7 @@ const Experts = () => {
                   <SelectValue placeholder="Filter by skill" />
                 </SelectTrigger>
                 <SelectContent className="bg-background border border-border z-50 max-h-60 overflow-y-auto">
-                  <SelectItem value="" className="hover:bg-accent">All Skills</SelectItem>
+                  <SelectItem value="all" className="hover:bg-accent">All Skills</SelectItem>
                   {skillCategories.map((skill) => (
                     <SelectItem key={skill} value={skill} className="hover:bg-accent">
                       {skill}

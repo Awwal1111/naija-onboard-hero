@@ -114,7 +114,7 @@ const Jobs = () => {
       const matchesSearch = job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                            job.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
                            job.category.toLowerCase().includes(searchQuery.toLowerCase())
-      const matchesCategory = !categoryFilter || job.category === categoryFilter
+      const matchesCategory = !categoryFilter || categoryFilter === 'all' || job.category === categoryFilter
       
       return matchesSearch && matchesCategory
     })
@@ -182,7 +182,7 @@ const Jobs = () => {
                   <SelectValue placeholder="Filter by category" />
                 </SelectTrigger>
                 <SelectContent className="bg-background border border-border z-50 max-h-60 overflow-y-auto">
-                  <SelectItem value="" className="hover:bg-accent">All Categories</SelectItem>
+                  <SelectItem value="all" className="hover:bg-accent">All Categories</SelectItem>
                   {jobCategories.map((category) => (
                     <SelectItem key={category} value={category} className="hover:bg-accent">
                       {category}
