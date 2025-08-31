@@ -1,45 +1,114 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Logo } from '@/components/ui/logo'
 import { BrandButton } from '@/components/ui/brand-button'
+import { BrandInput } from '@/components/ui/brand-input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useToast } from '@/hooks/use-toast'
 
-// Nigerian states and their LGAs (sample data)
-const nigerianStates = {
-  "Lagos": ["Agege", "Ajeromi-Ifelodun", "Alimosho", "Amuwo-Odofin", "Apapa", "Badagry"],
-  "Abuja": ["Abaji", "Bwari", "Gwagwalada", "Kuje", "Kwali", "Municipal Area Council"],
-  "Rivers": ["Abua/Odual", "Ahoada East", "Ahoada West", "Akuku-Toru", "Andoni", "Asari-Toru"],
-  "Kano": ["Ajingi", "Albasu", "Bagwai", "Bebeji", "Bichi", "Bunkure"]
+// Types for API responses
+interface State {
+  id: string
+  name: string
+}
+
+interface LGA {
+  id: string
+  name: string
 }
 
 const Onboarding = () => {
   const navigate = useNavigate()
+  const { toast } = useToast()
+  const [states, setStates] = useState<State[]>([])
+  const [lgas, setLgas] = useState<LGA[]>([])
   const [selectedState, setSelectedState] = useState('')
   const [selectedLGA, setSelectedLGA] = useState('')
+  const [area, setArea] = useState('')
   const [purpose, setPurpose] = useState('To Browse')
+  const [loading, setLoading] = useState(false)
+
+  // Fetch states on component mount
+  useEffect(() => {
+    fetchStates()
+  }, [])
+
+  // Fetch LGAs when state changes
+  useEffect(() => {
+    if (selectedState) {
+      fetchLGAs(selectedState)
+      setSelectedLGA('') // Reset LGA when state changes
+    }
+  }, [selectedState])
+
+  const fetchStates = async () => {
+    try {
+      const response = await fetch('https://nigeria-api.com/api/v1/states')
+      if (response.ok) {
+        const data = await response.json()
+        setStates(data.data || [])
+      }
+    } catch (error) {
+      console.error('Error fetching states:', error)
+      toast({
+        title: "Error",
+        description: "Failed to load states. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const fetchLGAs = async (stateId: string) => {
+    try {
+      const response = await fetch(`https://nigeria-api.com/api/v1/states/${stateId}/lgas`)
+      if (response.ok) {
+        const data = await response.json()
+        setLgas(data.data || [])
+      }
+    } catch (error) {
+      console.error('Error fetching LGAs:', error)
+      toast({
+        title: "Error", 
+        description: "Failed to load LGAs. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
 
   const handleNext = () => {
-    if (!selectedState || !selectedLGA) {
-      alert('Please select both state and LGA')
+    if (!selectedState || !selectedLGA || !area.trim()) {
+      toast({
+        title: "Incomplete Information",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      })
       return
     }
+    
+    setLoading(true)
     
     // Handle onboarding completion
     console.log('Onboarding data:', {
       state: selectedState,
       lga: selectedLGA,
+      area: area.trim(),
       purpose
     })
     
-    // Navigate to main app/dashboard
-    alert('Onboarding completed! Welcome to NaijaLancers!')
+    setTimeout(() => {
+      toast({
+        title: "Welcome to NaijaLancers!",
+        description: "Your profile has been set up successfully.",
+      })
+      navigate('/feed')
+    }, 1000)
   }
 
   const purposes = [
-    { value: 'To Earn', label: 'To Earn', description: 'For freelancers' },
     { value: 'To Browse', label: 'To Browse', description: 'For clients looking to hire' },
-    { value: 'To be an Expert', label: 'To be an Expert', description: 'For seasoned professionals' },
-    { value: 'To Look for Jobs', label: 'To Look for Jobs', description: 'For job seekers' }
+    { value: 'To Earn', label: 'To Earn', description: 'For freelancers' },
+    { value: 'To Hire', label: 'To Hire', description: 'For businesses looking to recruit' },
+    { value: 'To Learn', label: 'To Learn', description: 'For skill development' }
   ]
 
   return (
@@ -68,9 +137,9 @@ const Onboarding = () => {
                     <SelectValue placeholder="Select your state" />
                   </SelectTrigger>
                   <SelectContent className="bg-background border border-border z-50">
-                    {Object.keys(nigerianStates).map((state) => (
-                      <SelectItem key={state} value={state} className="hover:bg-accent">
-                        {state}
+                    {states.map((state) => (
+                      <SelectItem key={state.id} value={state.id} className="hover:bg-accent">
+                        {state.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -88,13 +157,23 @@ const Onboarding = () => {
                     <SelectValue placeholder="Select your LGA" />
                   </SelectTrigger>
                   <SelectContent className="bg-background border border-border z-50">
-                    {selectedState && nigerianStates[selectedState as keyof typeof nigerianStates]?.map((lga) => (
-                      <SelectItem key={lga} value={lga} className="hover:bg-accent">
-                        {lga}
+                    {lgas.map((lga) => (
+                      <SelectItem key={lga.id} value={lga.name} className="hover:bg-accent">
+                        {lga.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="space-y-2">
+                <BrandInput
+                  label="Area"
+                  value={area}
+                  onChange={(e) => setArea(e.target.value)}
+                  placeholder="Enter your specific area/location"
+                  required
+                />
               </div>
             </div>
 
@@ -139,9 +218,9 @@ const Onboarding = () => {
               onClick={handleNext}
               className="w-full" 
               size="lg"
-              disabled={!selectedState || !selectedLGA}
+              disabled={!selectedState || !selectedLGA || !area.trim() || loading}
             >
-              Next
+              {loading ? 'Setting up...' : 'Next'}
             </BrandButton>
           </div>
         </div>
