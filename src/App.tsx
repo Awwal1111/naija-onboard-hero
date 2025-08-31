@@ -13,6 +13,8 @@ import ExpertApplication from "./pages/ExpertApplication";
 import PostJob from "./pages/PostJob";
 import Experts from "./pages/Experts";
 import Jobs from "./pages/Jobs";
+import Chat from "./pages/Chat";
+import ChatList from "./pages/ChatList";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,6 +37,8 @@ const App = () => (
           <Route path="/experts" element={<Experts />} />
           <Route path="/jobs" element={<Jobs />} />
           <Route path="/earn" element={<Jobs />} />
+          <Route path="/chat" element={<ChatList />} />
+          <Route path="/chat/:userId" element={<Chat />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

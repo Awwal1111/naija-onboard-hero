@@ -271,7 +271,11 @@ const Jobs = () => {
 
                     {/* Action Buttons */}
                     <div className="flex gap-3">
-                      <BrandButton size="sm" className="flex-1">
+                      <BrandButton 
+                        size="sm" 
+                        className="flex-1"
+                        onClick={() => navigate(`/chat/${job.user_id}`)}
+                      >
                         Apply Now
                       </BrandButton>
                       <BrandButton variant="outline" size="sm" className="flex-1">

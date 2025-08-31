@@ -239,7 +239,11 @@ const Experts = () => {
 
                     {/* Action Buttons */}
                     <div className="flex gap-3">
-                      <BrandButton size="sm" className="flex-1">
+                      <BrandButton 
+                        size="sm" 
+                        className="flex-1"
+                        onClick={() => navigate(`/chat/${expert.user_id}`)}
+                      >
                         <MessageCircle className="h-4 w-4 mr-2" />
                         Chat
                       </BrandButton>
