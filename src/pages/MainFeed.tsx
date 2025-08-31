@@ -1,27 +1,23 @@
-import React from 'react'
-import { Search, MessageCircle, Users, DollarSign, Briefcase, User, Home, Plus } from 'lucide-react'
+import React, { useState } from 'react'
+import { Search, Plus, Home, MessageCircle, Users, DollarSign, User, Image, FileText, Briefcase } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
+import { Logo } from '@/components/ui/logo'
 import { BrandInput } from '@/components/ui/brand-input'
 import { BrandButton } from '@/components/ui/brand-button'
-import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '@/hooks/useAuth'
+import { useProfile } from '@/hooks/useProfile'
+import { useFeed } from '@/hooks/useFeed'
+import StoriesSection from '@/components/StoriesSection'
+import PostCard from '@/components/PostCard'
+import CreatePostDialog from '@/components/CreatePostDialog'
 
 const MainFeed = () => {
   const navigate = useNavigate()
-  
-  const stories = [
-    { id: 1, author: 'John D.', content: 'Just completed a web design project!', avatar: '/api/placeholder/40/40' },
-    { id: 2, author: 'Sarah M.', content: 'Looking for React developers', avatar: '/api/placeholder/40/40' },
-    { id: 3, author: 'Ahmed K.', content: 'New to freelancing, excited to start!', avatar: '/api/placeholder/40/40' },
-    { id: 4, author: 'Fatima A.', content: 'Successfully delivered my first project', avatar: '/api/placeholder/40/40' }
-  ]
-
-  const navItems = [
-    { icon: MessageCircle, label: 'Chat', count: 3, path: '/chat' },
-    { icon: Users, label: 'Experts', count: null, path: '/experts' },
-    { icon: DollarSign, label: 'Earn', count: null, path: '/earn' },
-    { icon: Briefcase, label: 'Jobs', count: 12, path: '/jobs' },
-    { icon: Users, label: 'Market', count: null, path: '/market' },
-    { icon: Briefcase, label: 'Course', count: null, path: '/course' }
-  ]
+  const { user } = useAuth()
+  const { profile } = useProfile()
+  const { posts, stories, loading, createPost, toggleLike, addComment, viewStory } = useFeed()
+  const [searchQuery, setSearchQuery] = useState('')
+  const [showCreatePost, setShowCreatePost] = useState(false)
 
   const bottomNavItems = [
     { icon: Home, label: 'Feed', path: '/feed', active: true },
@@ -31,93 +27,147 @@ const MainFeed = () => {
     { icon: User, label: 'Profile', path: '/profile' }
   ]
 
+  const filteredPosts = posts.filter(post => 
+    post.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    post.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    post.profiles?.full_name?.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  const handleCreateStory = () => {
+    // For now, just show a placeholder
+    console.log('Create story clicked')
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center pb-20">
+        <div className="text-center">
+          <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-text-secondary">Loading feed...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-background pb-20">
-      {/* Modern Header */}
+      {/* Header */}
       <header className="bg-background border-b border-border px-6 py-4 sticky top-0 z-10">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-primary">NaijaLancers</h1>
-          <BrandButton 
-            size="sm" 
-            onClick={() => navigate('/post-job')}
-            className="flex items-center gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            Post Job
-          </BrandButton>
+        <div className="flex items-center justify-between mb-4">
+          <Logo />
+          <h1 className="text-xl font-bold text-primary">NaijaLancers Feed</h1>
+          <div className="w-8" />
+        </div>
+        
+        {/* Search Bar */}
+        <div className="relative">
+          <Search className="absolute left-3 top-3 h-4 w-4 text-text-secondary" />
+          <BrandInput
+            placeholder="Search experts, jobs, or people..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
         </div>
       </header>
 
-      <div className="px-6 py-4">
-        {/* Modern Search Bar */}
-        <div className="relative mb-6">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-text-secondary" />
-          <BrandInput
-            placeholder="Search experts, jobs, or tasks..."
-            className="pl-10 rounded-full border-2 border-border focus:border-primary"
-          />
-        </div>
+      {/* Stories Section */}
+      <StoriesSection 
+        stories={stories}
+        onCreateStory={handleCreateStory}
+        onViewStory={viewStory}
+        currentUserId={user?.id}
+      />
 
-        {/* Stories/Updates Section - Modern Horizontal Scroll */}
-        <div className="mb-6">
-          <h2 className="text-lg font-semibold text-text-primary mb-4">Latest Updates</h2>
-          <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
-            {stories.map((story) => (
-              <div
-                key={story.id}
-                className="min-w-[300px] bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 rounded-2xl p-5 hover:shadow-lg transition-all duration-200"
-              >
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-semibold">
-                    {story.author.charAt(0)}
-                  </div>
-                  <div>
-                    <div className="font-semibold text-text-primary text-sm">{story.author}</div>
-                    <div className="text-xs text-text-secondary">2 hours ago</div>
-                  </div>
-                </div>
-                <p className="text-sm text-text-primary leading-relaxed">{story.content}</p>
-              </div>
-            ))}
+      {/* Post Creation Bar */}
+      <div className="px-6 py-4 border-b border-border">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-bold">
+            {profile?.full_name?.charAt(0) || 'U'}
           </div>
+          <button
+            onClick={() => setShowCreatePost(true)}
+            className="flex-1 text-left px-4 py-3 bg-muted rounded-full text-text-secondary hover:bg-accent transition-colors"
+          >
+            Share your thoughts or post a job...
+          </button>
         </div>
-
-        <div className="space-y-3">
-          <h2 className="text-lg font-semibold text-text-primary mb-4">Quick Actions</h2>
-          {navItems.map((item) => (
-            <div
-              key={item.label}
-              onClick={() => navigate(item.path)}
-              className="flex items-center justify-between p-5 bg-card border border-border rounded-2xl hover:bg-primary/5 hover:border-primary/30 cursor-pointer transition-all duration-200 group"
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                  <item.icon className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                  <span className="font-semibold text-text-primary">{item.label}</span>
-                  <div className="text-sm text-text-secondary">
-                    {item.label === 'Chat' && 'Connect with professionals'}
-                    {item.label === 'Experts' && 'Find verified professionals'}
-                    {item.label === 'Earn' && 'Start earning today'}
-                    {item.label === 'Jobs' && 'Explore opportunities'}
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                {item.count && (
-                  <span className="bg-primary text-primary-foreground text-sm px-3 py-1 rounded-full font-medium">
-                    {item.count}
-                  </span>
-                )}
-                <div className="text-text-secondary">→</div>
-              </div>
-            </div>
-          ))}
+        
+        {/* Quick Action Buttons */}
+        <div className="flex justify-around mt-4 pt-4 border-t border-border">
+          <button
+            onClick={() => setShowCreatePost(true)}
+            className="flex items-center gap-2 px-4 py-2 text-text-secondary hover:text-primary hover:bg-primary/10 rounded-xl transition-colors"
+          >
+            <Image className="h-5 w-5" />
+            <span className="font-medium">Photo/Video</span>
+          </button>
+          
+          <button
+            onClick={() => setShowCreatePost(true)}
+            className="flex items-center gap-2 px-4 py-2 text-text-secondary hover:text-primary hover:bg-primary/10 rounded-xl transition-colors"
+          >
+            <FileText className="h-5 w-5" />
+            <span className="font-medium">Document</span>
+          </button>
+          
+          <button
+            onClick={() => navigate('/post-job')}
+            className="flex items-center gap-2 px-4 py-2 text-text-secondary hover:text-primary hover:bg-primary/10 rounded-xl transition-colors"
+          >
+            <Briefcase className="h-5 w-5" />
+            <span className="font-medium">Offer/Job</span>
+          </button>
         </div>
       </div>
 
-      {/* Modern Bottom Navigation */}
+      {/* Main Feed Content */}
+      <div className="px-6 py-4">
+        {filteredPosts.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+              <FileText className="h-8 w-8 text-text-secondary" />
+            </div>
+            <h3 className="text-lg font-semibold text-text-primary mb-2">
+              {searchQuery ? 'No matching posts' : 'Welcome to your feed!'}
+            </h3>
+            <p className="text-text-secondary mb-4">
+              {searchQuery 
+                ? 'Try adjusting your search terms'
+                : 'Start by creating your first post or following other users'
+              }
+            </p>
+            {!searchQuery && (
+              <BrandButton onClick={() => setShowCreatePost(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create Your First Post
+              </BrandButton>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {filteredPosts.map((post) => (
+              <PostCard
+                key={post.id}
+                post={post}
+                onLike={toggleLike}
+                onComment={addComment}
+                currentUserId={user?.id}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Create Post Dialog */}
+      <CreatePostDialog
+        isOpen={showCreatePost}
+        onClose={() => setShowCreatePost(false)}
+        onCreatePost={createPost}
+        userProfile={profile}
+      />
+
+      {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border px-4 py-2">
         <div className="flex justify-around items-center">
           {bottomNavItems.map((item) => (
