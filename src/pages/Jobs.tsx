@@ -28,7 +28,7 @@ const Jobs = () => {
   const [jobs, setJobs] = useState<Job[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const [categoryFilter, setCategoryFilter] = useState('')
+  const [categoryFilter, setCategoryFilter] = useState('all')
   const [sortBy, setSortBy] = useState('newest')
 
   const bottomNavItems = [

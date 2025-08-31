@@ -31,8 +31,8 @@ const Experts = () => {
   const [experts, setExperts] = useState<Expert[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const [stateFilter, setStateFilter] = useState('')
-  const [skillFilter, setSkillFilter] = useState('')
+  const [stateFilter, setStateFilter] = useState('all')
+  const [skillFilter, setSkillFilter] = useState('all')
 
   const bottomNavItems = [
     { icon: Home, label: 'Feed', path: '/feed' },
