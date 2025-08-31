@@ -14,7 +14,198 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      expert_applications: {
+        Row: {
+          admin_feedback: string | null
+          email: string
+          full_name: string
+          id: string
+          location_area: string
+          location_lga: string
+          location_state: string
+          phone_number: string
+          portfolio_link: string | null
+          reviewed_at: string | null
+          skill_category: string
+          status: string | null
+          submitted_at: string
+          user_id: string
+          work_samples_urls: string[] | null
+          years_experience: number
+        }
+        Insert: {
+          admin_feedback?: string | null
+          email: string
+          full_name: string
+          id?: string
+          location_area: string
+          location_lga: string
+          location_state: string
+          phone_number: string
+          portfolio_link?: string | null
+          reviewed_at?: string | null
+          skill_category: string
+          status?: string | null
+          submitted_at?: string
+          user_id: string
+          work_samples_urls?: string[] | null
+          years_experience: number
+        }
+        Update: {
+          admin_feedback?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          location_area?: string
+          location_lga?: string
+          location_state?: string
+          phone_number?: string
+          portfolio_link?: string | null
+          reviewed_at?: string | null
+          skill_category?: string
+          status?: string | null
+          submitted_at?: string
+          user_id?: string
+          work_samples_urls?: string[] | null
+          years_experience?: number
+        }
+        Relationships: []
+      }
+      jobs_services: {
+        Row: {
+          applications_count: number | null
+          category: string
+          created_at: string
+          description: string
+          id: string
+          photo_urls: string[] | null
+          price: number
+          status: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          applications_count?: number | null
+          category: string
+          created_at?: string
+          description: string
+          id?: string
+          photo_urls?: string[] | null
+          price: number
+          status?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          applications_count?: number | null
+          category?: string
+          created_at?: string
+          description?: string
+          id?: string
+          photo_urls?: string[] | null
+          price?: number
+          status?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          area: string | null
+          bio: string | null
+          connections_count: number | null
+          created_at: string
+          expert_verified_at: string | null
+          full_name: string | null
+          id: string
+          is_expert: boolean | null
+          lga_name: string | null
+          phone_number: string | null
+          profession: string | null
+          profile_picture_url: string | null
+          state_id: string | null
+          state_name: string | null
+          updated_at: string
+          user_id: string
+          wallet_balance: number | null
+        }
+        Insert: {
+          area?: string | null
+          bio?: string | null
+          connections_count?: number | null
+          created_at?: string
+          expert_verified_at?: string | null
+          full_name?: string | null
+          id?: string
+          is_expert?: boolean | null
+          lga_name?: string | null
+          phone_number?: string | null
+          profession?: string | null
+          profile_picture_url?: string | null
+          state_id?: string | null
+          state_name?: string | null
+          updated_at?: string
+          user_id: string
+          wallet_balance?: number | null
+        }
+        Update: {
+          area?: string | null
+          bio?: string | null
+          connections_count?: number | null
+          created_at?: string
+          expert_verified_at?: string | null
+          full_name?: string | null
+          id?: string
+          is_expert?: boolean | null
+          lga_name?: string | null
+          phone_number?: string | null
+          profession?: string | null
+          profile_picture_url?: string | null
+          state_id?: string | null
+          state_name?: string | null
+          updated_at?: string
+          user_id?: string
+          wallet_balance?: number | null
+        }
+        Relationships: []
+      }
+      wallet_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          id: string
+          reference_id: string | null
+          status: string | null
+          transaction_type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          reference_id?: string | null
+          status?: string | null
+          transaction_type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          reference_id?: string | null
+          status?: string | null
+          transaction_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
