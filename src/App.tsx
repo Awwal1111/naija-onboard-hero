@@ -8,6 +8,9 @@ import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
 import Onboarding from "./pages/Onboarding";
 import MainFeed from "./pages/MainFeed";
+import Profile from "./pages/Profile";
+import ExpertApplication from "./pages/ExpertApplication";
+import PostJob from "./pages/PostJob";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +27,9 @@ const App = () => (
           <Route path="/signup" element={<SignUp />} />
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/feed" element={<MainFeed />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/expert-application" element={<ExpertApplication />} />
+          <Route path="/post-job" element={<PostJob />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

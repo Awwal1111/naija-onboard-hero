@@ -43,7 +43,7 @@ const Onboarding = () => {
 
   const fetchStates = async () => {
     try {
-      // Try primary API first
+      // Try primary API first - locus.fkkas.com
       let response = await fetch('https://locus.fkkas.com/api/states')
       if (response.ok) {
         const data = await response.json()
@@ -56,7 +56,7 @@ const Onboarding = () => {
       console.log('Primary API failed, using fallback data:', error)
     }
 
-    // Fallback to static data
+    // Fallback to comprehensive static data
     const fallbackStates = [
       { id: "1", name: "Abia" },
       { id: "2", name: "Adamawa" },
@@ -114,7 +114,7 @@ const Onboarding = () => {
       console.log('Primary API failed for LGAs, using fallback:', error)
     }
 
-    // Static LGA data based on state
+    // Comprehensive static LGA data based on state
     const stateLGAMap: Record<string, LGA[]> = {
       "1": [ // Abia
         { id: "1", name: "Aba North" },
@@ -186,15 +186,42 @@ const Onboarding = () => {
         { id: "18", name: "Gwale" },
         { id: "19", name: "Gwarzo" },
         { id: "20", name: "Kabo" }
+      ],
+      "33": [ // Rivers
+        { id: "1", name: "Abua/Odual" },
+        { id: "2", name: "Ahoada East" },
+        { id: "3", name: "Ahoada West" },
+        { id: "4", name: "Akuku-Toru" },
+        { id: "5", name: "Andoni" },
+        { id: "6", name: "Asari-Toru" },
+        { id: "7", name: "Bonny" },
+        { id: "8", name: "Degema" },
+        { id: "9", name: "Eleme" },
+        { id: "10", name: "Emuoha" },
+        { id: "11", name: "Etche" },
+        { id: "12", name: "Gokana" },
+        { id: "13", name: "Ikwerre" },
+        { id: "14", name: "Khana" },
+        { id: "15", name: "Obio/Akpor" },
+        { id: "16", name: "Ogba/Egbema/Ndoni" },
+        { id: "17", name: "Ogu/Bolo" },
+        { id: "18", name: "Okrika" },
+        { id: "19", name: "Omuma" },
+        { id: "20", name: "Opobo/Nkoro" },
+        { id: "21", name: "Oyigbo" },
+        { id: "22", name: "Port Harcourt" },
+        { id: "23", name: "Tai" }
       ]
     }
 
     // Use fallback data for the selected state
     const selectedStateName = states.find(s => s.id === stateId)?.name
     const fallbackLGAs = stateLGAMap[stateId] || [
-      { id: "1", name: `${selectedStateName} Local Government 1` },
-      { id: "2", name: `${selectedStateName} Local Government 2` },
-      { id: "3", name: `${selectedStateName} Local Government 3` }
+      { id: "1", name: `${selectedStateName} Central` },
+      { id: "2", name: `${selectedStateName} East` },
+      { id: "3", name: `${selectedStateName} West` },
+      { id: "4", name: `${selectedStateName} North` },
+      { id: "5", name: `${selectedStateName} South` }
     ]
     
     setLgas(fallbackLGAs)
