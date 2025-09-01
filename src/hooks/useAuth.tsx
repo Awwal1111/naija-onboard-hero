@@ -135,6 +135,49 @@ export const useAuth = () => {
     return { error }
   }
 
+  const resetPassword = async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    })
+
+    if (error) {
+      toast({
+        title: "Password reset failed",
+        description: error.message,
+        variant: "destructive",
+      })
+    } else {
+      toast({
+        title: "Password reset email sent",
+        description: "Check your email for the password reset link.",
+      })
+    }
+
+    return { error }
+  }
+
+  const updatePassword = async (password: string) => {
+    const { error } = await supabase.auth.updateUser({
+      password: password
+    })
+
+    if (error) {
+      toast({
+        title: "Password update failed",
+        description: error.message,
+        variant: "destructive",
+      })
+    } else {
+      toast({
+        title: "Password updated",
+        description: "Your password has been successfully updated.",
+      })
+      navigate('/feed')
+    }
+
+    return { error }
+  }
+
   const signOut = async () => {
     const { error } = await supabase.auth.signOut()
     
@@ -163,5 +206,7 @@ export const useAuth = () => {
     signIn,
     signInWithGoogle,
     signOut,
+    resetPassword,
+    updatePassword,
   }
 }

@@ -110,9 +110,9 @@ export const useChat = (otherUserId: string) => {
   useEffect(() => {
     if (!chat) return
 
-    // Subscribe to new messages
+    // Subscribe to new messages with a unique channel name
     const channel = supabase
-      .channel('messages')
+      .channel(`messages-${chat.id}`)
       .on(
         'postgres_changes',
         {
@@ -122,13 +122,23 @@ export const useChat = (otherUserId: string) => {
           filter: `chat_id=eq.${chat.id}`
         },
         (payload) => {
+          console.log('New message received:', payload)
           const newMessage = payload.new as Message
-          setMessages(prev => [...prev, newMessage])
+          setMessages(prev => {
+            // Avoid duplicates
+            if (prev.some(msg => msg.id === newMessage.id)) {
+              return prev
+            }
+            return [...prev, newMessage]
+          })
         }
       )
-      .subscribe()
+      .subscribe((status) => {
+        console.log('Realtime subscription status:', status)
+      })
 
     return () => {
+      console.log('Unsubscribing from messages channel')
       supabase.removeChannel(channel)
     }
   }, [chat])
