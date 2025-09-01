@@ -19,6 +19,7 @@ export interface Profile {
   area: string | null
   is_expert: boolean
   expert_verified_at: string | null
+  referral_code: string | null
   created_at: string
   updated_at: string
 }

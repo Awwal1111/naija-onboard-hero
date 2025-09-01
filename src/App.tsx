@@ -15,6 +15,10 @@ import Experts from "./pages/Experts";
 import Jobs from "./pages/Jobs";
 import Chat from "./pages/Chat";
 import ChatList from "./pages/ChatList";
+import { TapEarn } from "./pages/TapEarn";
+import { Surveys } from "./pages/Surveys";
+import { GuessNumberGame } from "./pages/GuessNumberGame";
+import { Referrals } from "./pages/Referrals";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,6 +40,10 @@ const App = () => (
           <Route path="/post-job" element={<PostJob />} />
           <Route path="/experts" element={<Experts />} />
           <Route path="/jobs" element={<Jobs />} />
+          <Route path="/tap-earn" element={<TapEarn />} />
+          <Route path="/surveys" element={<Surveys />} />
+          <Route path="/games/guess-number" element={<GuessNumberGame />} />
+          <Route path="/referrals" element={<Referrals />} />
           <Route path="/earn" element={<Jobs />} />
           <Route path="/chat" element={<ChatList />} />
           <Route path="/chat/:userId" element={<Chat />} />

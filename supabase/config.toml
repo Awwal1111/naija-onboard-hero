@@ -1,1 +1,7 @@
 project_id = "jxybqmquymxkvxxpiuhv"
+
+[functions.bitlabs-offers]
+verify_jwt = true
+
+[functions.bitlabs-callbacks]
+verify_jwt = false
