@@ -132,7 +132,7 @@ const Profile = () => {
                     <Edit className="mr-2 h-4 w-4" />
                     Edit Profile
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/wallet')}>
+                  <DropdownMenuItem onClick={() => navigate('/earn')}>
                     <Wallet className="mr-2 h-4 w-4" />
                     Wallet & Transactions
                   </DropdownMenuItem>

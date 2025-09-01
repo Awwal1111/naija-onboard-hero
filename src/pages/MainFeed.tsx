@@ -11,13 +11,16 @@ import ProfessionalStoriesSection from '@/components/ProfessionalStoriesSection'
 import EnhancedPostCard from '@/components/EnhancedPostCard'
 import CreatePostDialog from '@/components/CreatePostDialog'
 
+import CreateStoryDialog from '@/components/CreateStoryDialog'
+
 const MainFeed = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { profile } = useProfile()
-  const { posts, stories, loading, createPost, toggleLike, addComment, viewStory } = useFeed()
+  const { posts, stories, loading, createPost, createStory, toggleLike, addComment, viewStory } = useFeed()
   const [searchQuery, setSearchQuery] = useState('')
   const [showCreatePost, setShowCreatePost] = useState(false)
+  const [showCreateStory, setShowCreateStory] = useState(false)
   const [feedType, setFeedType] = useState<'for-you' | 'following'>('for-you')
 
   const bottomNavItems = [
@@ -35,8 +38,7 @@ const MainFeed = () => {
   )
 
   const handleCreateStory = () => {
-    // For now, just show a placeholder
-    console.log('Create story clicked')
+    setShowCreateStory(true)
   }
 
   if (loading) {
@@ -178,8 +180,9 @@ const MainFeed = () => {
                 onLike={toggleLike}
                 onComment={addComment}
                 onConnect={(userId) => {
-                  // Implement connect functionality
-                  console.log('Connect to user:', userId)
+                  // TODO: Implement connection request functionality
+                  console.log('Sending connection request to user:', userId)
+                  // This could create a connection request in the database
                 }}
                 currentUserId={user?.id}
               />
@@ -194,6 +197,13 @@ const MainFeed = () => {
         onClose={() => setShowCreatePost(false)}
         onCreatePost={createPost}
         userProfile={profile}
+      />
+
+      {/* Create Story Dialog */}
+      <CreateStoryDialog
+        isOpen={showCreateStory}
+        onClose={() => setShowCreateStory(false)}
+        onCreateStory={createStory}
       />
 
       {/* Bottom Navigation */}
