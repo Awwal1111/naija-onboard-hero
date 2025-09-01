@@ -95,6 +95,36 @@ export type Database = {
         }
         Relationships: []
       }
+      game_sessions: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          game_type: string
+          id: string
+          points_earned: number | null
+          session_data: Json | null
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          game_type: string
+          id?: string
+          points_earned?: number | null
+          session_data?: Json | null
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          game_type?: string
+          id?: string
+          points_earned?: number | null
+          session_data?: Json | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       jobs_services: {
         Row: {
           applications_count: number | null
@@ -301,6 +331,7 @@ export type Database = {
           phone_number: string | null
           profession: string | null
           profile_picture_url: string | null
+          referral_code: string | null
           state_id: string | null
           state_name: string | null
           updated_at: string
@@ -320,6 +351,7 @@ export type Database = {
           phone_number?: string | null
           profession?: string | null
           profile_picture_url?: string | null
+          referral_code?: string | null
           state_id?: string | null
           state_name?: string | null
           updated_at?: string
@@ -339,6 +371,7 @@ export type Database = {
           phone_number?: string | null
           profession?: string | null
           profile_picture_url?: string | null
+          referral_code?: string | null
           state_id?: string | null
           state_name?: string | null
           updated_at?: string
@@ -346,6 +379,51 @@ export type Database = {
           wallet_balance?: number | null
         }
         Relationships: []
+      }
+      referrals: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          id: string
+          points_earned: number | null
+          referee_id: string
+          referrer_id: string
+          status: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          points_earned?: number | null
+          referee_id: string
+          referrer_id: string
+          status?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          points_earned?: number | null
+          referee_id?: string
+          referrer_id?: string
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referrals_referee_id_fkey"
+            columns: ["referee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "referrals_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       stories: {
         Row: {
@@ -409,6 +487,42 @@ export type Database = {
           },
         ]
       }
+      survey_completions: {
+        Row: {
+          bitlabs_user_id: string
+          callback_data: Json | null
+          completed_at: string | null
+          created_at: string
+          id: string
+          offer_id: string
+          points_earned: number | null
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          bitlabs_user_id: string
+          callback_data?: Json | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          offer_id: string
+          points_earned?: number | null
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          bitlabs_user_id?: string
+          callback_data?: Json | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          offer_id?: string
+          points_earned?: number | null
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       wallet_transactions: {
         Row: {
           amount: number
@@ -447,7 +561,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_referral_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
