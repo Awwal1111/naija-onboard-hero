@@ -164,7 +164,7 @@ const Profile = () => {
           </div>
         </div>
 
-        {/* Action Buttons */}
+        {/* Professional Action Buttons */}
         <div className="space-y-4 mb-8">
           <BrandButton 
             className="w-full flex items-center justify-center gap-2" 
@@ -172,24 +172,40 @@ const Profile = () => {
             onClick={() => navigate('/expert-application')}
           >
             <Plus className="h-4 w-4" />
-            Apply for Expert
+            {profile?.is_expert ? 'Expert Dashboard' : 'Apply for Expert'}
           </BrandButton>
           
+          {/* Professional Skills Section */}
           <div className="bg-card border border-border rounded-2xl p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-text-primary">Wallet Balance</h3>
-              <Wallet className="h-5 w-5 text-primary" />
+            <h3 className="text-lg font-semibold text-text-primary mb-4">Skills & Services</h3>
+            <div className="flex flex-wrap gap-2 mb-4">
+              {/* Placeholder for skills */}
+              <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
+                Add Skills
+              </span>
             </div>
-            <div className="text-3xl font-bold text-primary mb-4">
-              ₦{(profile?.wallet_balance || 0).toLocaleString()}
+            <div className="text-sm text-text-secondary">
+              Showcase your expertise to attract more clients
             </div>
-            <div className="flex gap-3">
-              <BrandButton variant="outline" size="sm" className="flex-1">
-                Deposit
-              </BrandButton>
-              <BrandButton variant="outline" size="sm" className="flex-1">
-                Withdraw
-              </BrandButton>
+          </div>
+          
+          {/* Portfolio Section */}
+          <div className="bg-card border border-border rounded-2xl p-6">
+            <h3 className="text-lg font-semibold text-text-primary mb-4">Portfolio</h3>
+            <div className="grid grid-cols-3 gap-2 mb-4">
+              {/* Placeholder for portfolio images */}
+              <div className="aspect-square bg-muted rounded-lg flex items-center justify-center">
+                <Plus className="h-6 w-6 text-text-secondary" />
+              </div>
+              <div className="aspect-square bg-muted rounded-lg flex items-center justify-center">
+                <Plus className="h-6 w-6 text-text-secondary" />
+              </div>
+              <div className="aspect-square bg-muted rounded-lg flex items-center justify-center">
+                <Plus className="h-6 w-6 text-text-secondary" />
+              </div>
+            </div>
+            <div className="text-sm text-text-secondary">
+              Show your best work to potential clients
             </div>
           </div>
         </div>

@@ -139,31 +139,111 @@ async function handleRewardCallback(supabase: any, data: any) {
 }
 
 async function handleReconciliationCallback(supabase: any, data: any) {
-  console.log('Reconciliation callback:', data)
-  // Handle reconciliation logic here
+  const { uid: user_id, oid: offer_id, reward, type, reconciliation_type } = data
+  
+  try {
+    // Handle reconciliation based on type
+    if (reconciliation_type === 'chargeback') {
+      // Deduct points from user's balance
+      const nairaAmount = Math.round(reward * 4)
+      
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          wallet_balance: supabase.raw(`GREATEST(0, wallet_balance - ${nairaAmount})`)
+        })
+        .eq('user_id', user_id)
+
+      if (error) {
+        console.error('Error processing chargeback:', error)
+      } else {
+        console.log(`Chargeback processed for user ${user_id}: ₦${nairaAmount}`)
+      }
+    }
+  } catch (error) {
+    console.error('Error processing reconciliation callback:', error)
+  }
 }
 
 async function handleOfferRewardCallback(supabase: any, data: any) {
-  console.log('Offer reward callback:', data)
   // Handle offer-specific reward logic
+  console.log('Offer reward callback:', data)
+  await handleRewardCallback(supabase, data)
 }
 
 async function handleOfferReconciliationCallback(supabase: any, data: any) {
+  // Handle offer reconciliation logic  
   console.log('Offer reconciliation callback:', data)
-  // Handle offer reconciliation logic
+  await handleReconciliationCallback(supabase, data)
 }
 
 async function handleUserBanCallback(supabase: any, data: any) {
-  console.log('User ban callback:', data)
-  // Handle user ban logic
+  const { uid: user_id, ban_type, ban_reason } = data
+  
+  try {
+    // Update user profile or create a ban record
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        // Add a banned status field if needed
+        // banned: true,
+        // ban_reason: ban_reason
+      })
+      .eq('user_id', user_id)
+
+    console.log(`User ${user_id} banned: ${ban_type} - ${ban_reason}`)
+  } catch (error) {
+    console.error('Error processing user ban:', error)
+  }
 }
 
 async function handleMagicReceiptsCallback(supabase: any, data: any) {
-  console.log('Magic receipts callback:', data)
   // Handle magic receipts/cashback logic
+  console.log('Magic receipts callback:', data)
+  
+  const { uid: user_id, receipt_data, cashback_amount } = data
+  
+  if (cashback_amount && cashback_amount > 0) {
+    const nairaAmount = Math.round(cashback_amount * 4)
+    
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          wallet_balance: supabase.raw(`wallet_balance + ${nairaAmount}`)
+        })
+        .eq('user_id', user_id)
+
+      if (!error) {
+        console.log(`Cashback credited to user ${user_id}: ₦${nairaAmount}`)
+      }
+    } catch (error) {
+      console.error('Error processing cashback:', error)
+    }
+  }
 }
 
 async function handleUnrewardedScreenoutCallback(supabase: any, data: any) {
   console.log('Unrewarded screenout callback:', data)
-  // Handle unrewarded screenout logic
+  // Handle unrewarded screenout logic - maybe give small compensation
+  
+  const { uid: user_id, oid: offer_id } = data
+  
+  try {
+    // Give small compensation for screenout (e.g., 1 naira)
+    const compensationAmount = 1
+    
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        wallet_balance: supabase.raw(`wallet_balance + ${compensationAmount}`)
+      })
+      .eq('user_id', user_id)
+
+    if (!error) {
+      console.log(`Screenout compensation given to user ${user_id}: ₦${compensationAmount}`)
+    }
+  } catch (error) {
+    console.error('Error processing screenout compensation:', error)
+  }
 }

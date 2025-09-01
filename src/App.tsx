@@ -16,6 +16,8 @@ import Jobs from "./pages/Jobs";
 import Chat from "./pages/Chat";
 import ChatList from "./pages/ChatList";
 import { TapEarn } from "./pages/TapEarn";
+import { Earn } from "./pages/Earn";
+import { SocialMediaTasks } from "./pages/SocialMediaTasks";
 import { Surveys } from "./pages/Surveys";
 import { GuessNumberGame } from "./pages/GuessNumberGame";
 import { Referrals } from "./pages/Referrals";
@@ -44,7 +46,8 @@ const App = () => (
           <Route path="/surveys" element={<Surveys />} />
           <Route path="/games/guess-number" element={<GuessNumberGame />} />
           <Route path="/referrals" element={<Referrals />} />
-          <Route path="/earn" element={<Jobs />} />
+          <Route path="/earn" element={<Earn />} />
+          <Route path="/earn/social-tasks" element={<SocialMediaTasks />} />
           <Route path="/chat" element={<ChatList />} />
           <Route path="/chat/:userId" element={<Chat />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

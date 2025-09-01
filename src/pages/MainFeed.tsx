@@ -7,8 +7,8 @@ import { BrandButton } from '@/components/ui/brand-button'
 import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
 import { useFeed } from '@/hooks/useFeed'
-import StoriesSection from '@/components/StoriesSection'
-import PostCard from '@/components/PostCard'
+import ProfessionalStoriesSection from '@/components/ProfessionalStoriesSection'
+import EnhancedPostCard from '@/components/EnhancedPostCard'
 import CreatePostDialog from '@/components/CreatePostDialog'
 
 const MainFeed = () => {
@@ -18,6 +18,7 @@ const MainFeed = () => {
   const { posts, stories, loading, createPost, toggleLike, addComment, viewStory } = useFeed()
   const [searchQuery, setSearchQuery] = useState('')
   const [showCreatePost, setShowCreatePost] = useState(false)
+  const [feedType, setFeedType] = useState<'for-you' | 'following'>('for-you')
 
   const bottomNavItems = [
     { icon: Home, label: 'Feed', path: '/feed', active: true },
@@ -59,6 +60,30 @@ const MainFeed = () => {
           <div className="w-8" />
         </div>
         
+        {/* Feed Toggle */}
+        <div className="flex bg-muted p-1 rounded-full mb-4">
+          <button
+            onClick={() => setFeedType('for-you')}
+            className={`flex-1 py-2 px-4 rounded-full text-sm font-medium transition-colors ${
+              feedType === 'for-you' 
+                ? 'bg-primary text-white' 
+                : 'text-text-secondary hover:text-primary'
+            }`}
+          >
+            For You
+          </button>
+          <button
+            onClick={() => setFeedType('following')}
+            className={`flex-1 py-2 px-4 rounded-full text-sm font-medium transition-colors ${
+              feedType === 'following' 
+                ? 'bg-primary text-white' 
+                : 'text-text-secondary hover:text-primary'
+            }`}
+          >
+            Following
+          </button>
+        </div>
+
         {/* Search Bar */}
         <div className="relative">
           <Search className="absolute left-3 top-3 h-4 w-4 text-text-secondary" />
@@ -71,8 +96,8 @@ const MainFeed = () => {
         </div>
       </header>
 
-      {/* Stories Section */}
-      <StoriesSection 
+      {/* Professional Highlights Section */}
+      <ProfessionalStoriesSection 
         stories={stories}
         onCreateStory={handleCreateStory}
         onViewStory={viewStory}
@@ -147,11 +172,15 @@ const MainFeed = () => {
         ) : (
           <div className="space-y-4">
             {filteredPosts.map((post) => (
-              <PostCard
+              <EnhancedPostCard
                 key={post.id}
                 post={post}
                 onLike={toggleLike}
                 onComment={addComment}
+                onConnect={(userId) => {
+                  // Implement connect functionality
+                  console.log('Connect to user:', userId)
+                }}
                 currentUserId={user?.id}
               />
             ))}
