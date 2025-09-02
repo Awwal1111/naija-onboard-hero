@@ -1,9 +1,47 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import jwt from 'https://esm.sh/jsonwebtoken@9.0.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+// Rate limiting store (in production, use Redis or similar)  
+const rateLimitStore = new Map<string, { count: number; resetTime: number }>()
+
+const checkRateLimit = (userId: string, limit: number = 100, windowMs: number = 60000): boolean => {
+  const now = Date.now()
+  const key = userId
+  const record = rateLimitStore.get(key)
+  
+  if (!record || now > record.resetTime) {
+    rateLimitStore.set(key, { count: 1, resetTime: now + windowMs })
+    return true
+  }
+  
+  if (record.count >= limit) {
+    return false
+  }
+  
+  record.count++
+  return true
+}
+
+const validateJWT = (token: string): { valid: boolean; userId?: string } => {
+  try {
+    const jwtSecret = Deno.env.get('SUPABASE_JWT_SECRET') ?? Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    if (!jwtSecret) {
+      console.error('JWT secret not found')
+      return { valid: false }
+    }
+
+    const decoded = jwt.verify(token, jwtSecret) as any
+    return { valid: true, userId: decoded.sub }
+  } catch (error) {
+    console.error('JWT validation failed:', error)
+    return { valid: false }
+  }
 }
 
 interface BitLabsOffer {
@@ -23,22 +61,50 @@ serve(async (req) => {
   }
 
   try {
+    // Validate JWT token first
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Authorization header required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const token = authHeader.replace('Bearer ', '')
+    const jwtValidation = validateJWT(token)
+    
+    if (!jwtValidation.valid) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid authentication token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const requestUserId = jwtValidation.userId!
+
+    // Check rate limiting
+    if (!checkRateLimit(requestUserId, 50, 300000)) { // 50 requests per 5 minutes
+      return new Response(
+        JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '', // Use service role key for server operations
     )
 
-    // Get the authorization header from the request
-    const authHeader = req.headers.get('Authorization')!
-    const token = authHeader.replace('Bearer ', '')
-    
-    // Set the auth token for this request
-    supabaseClient.auth.setSession({
-      access_token: token,
-      refresh_token: ''
-    })
+    const requestBody = await req.json()
+    const { user_id } = requestBody
 
-    const { user_id } = await req.json()
+    // Verify that the authenticated user matches the requested user_id
+    if (user_id !== requestUserId) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized: User ID mismatch' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
 
     if (!user_id) {
       return new Response(

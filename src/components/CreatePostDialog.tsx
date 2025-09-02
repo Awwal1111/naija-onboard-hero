@@ -2,8 +2,10 @@ import React, { useState } from 'react'
 import { Image, FileText, Briefcase, X } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { BrandButton } from '@/components/ui/brand-button'
-import { BrandInput } from '@/components/ui/brand-input'
+import { SecureInput } from '@/components/ui/secure-input'
+import { SecureTextarea } from '@/components/ui/secure-textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { sanitizeText } from '@/lib/security'
 
 interface CreatePostDialogProps {
   isOpen: boolean
@@ -37,10 +39,15 @@ const CreatePostDialog: React.FC<CreatePostDialogProps> = ({
     if (!content.trim()) return
 
     setSubmitting(true)
+    
+    // Sanitize inputs before submission
+    const sanitizedContent = sanitizeText(content.trim())
+    const sanitizedTitle = title ? sanitizeText(title.trim()) : undefined
+
     const result = await onCreatePost(
-      content.trim(), 
+      sanitizedContent, 
       contentType, 
-      title.trim() || undefined
+      sanitizedTitle
     )
     
     if (result.success) {
@@ -131,10 +138,12 @@ const CreatePostDialog: React.FC<CreatePostDialogProps> = ({
               <label className="text-sm font-medium text-text-primary mb-2 block">
                 {contentType === 'job' ? 'Job Title' : 'Media Title'}
               </label>
-              <BrandInput
+              <SecureInput
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder={contentType === 'job' ? 'e.g., Looking for a Web Developer' : 'e.g., Behind the scenes'}
+                validation="text"
+                maxLength={100}
               />
             </div>
           )}
@@ -144,7 +153,7 @@ const CreatePostDialog: React.FC<CreatePostDialogProps> = ({
             <label className="text-sm font-medium text-text-primary mb-2 block">
               {contentType === 'job' ? 'Job Description' : 'What\'s on your mind?'}
             </label>
-            <textarea
+            <SecureTextarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder={
@@ -152,7 +161,9 @@ const CreatePostDialog: React.FC<CreatePostDialogProps> = ({
                   ? 'Describe the job requirements, budget, timeline...' 
                   : 'Share your thoughts, updates, or announcements...'
               }
-              className="flex min-h-[120px] w-full rounded-lg border border-border bg-input px-3 py-2 text-sm text-text-primary placeholder:text-text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
+              maxLength={contentType === 'job' ? 2000 : 1000}
+              contentModeration={true}
+              rows={contentType === 'job' ? 6 : 4}
               required
             />
           </div>

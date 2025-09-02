@@ -467,6 +467,33 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limits: {
+        Row: {
+          action: string
+          count: number
+          created_at: string
+          id: string
+          user_id: string
+          window_start: string
+        }
+        Insert: {
+          action: string
+          count?: number
+          created_at?: string
+          id?: string
+          user_id: string
+          window_start?: string
+        }
+        Update: {
+          action?: string
+          count?: number
+          created_at?: string
+          id?: string
+          user_id?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       referrals: {
         Row: {
           completed_at: string | null
@@ -504,24 +531,10 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
           {
-            foreignKeyName: "referrals_referee_id_fkey"
-            columns: ["referee_id"]
-            isOneToOne: false
-            referencedRelation: "public_profiles"
-            referencedColumns: ["user_id"]
-          },
-          {
             foreignKeyName: "referrals_referrer_id_fkey"
             columns: ["referrer_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "referrals_referrer_id_fkey"
-            columns: ["referrer_id"]
-            isOneToOne: false
-            referencedRelation: "public_profiles"
             referencedColumns: ["user_id"]
           },
         ]
@@ -659,50 +672,53 @@ export type Database = {
       }
     }
     Views: {
-      public_profiles: {
-        Row: {
-          bio: string | null
-          connections_count: number | null
-          created_at: string | null
-          expert_verified_at: string | null
-          full_name: string | null
-          id: string | null
-          is_expert: boolean | null
-          profession: string | null
-          profile_picture_url: string | null
-          user_id: string | null
-        }
-        Insert: {
-          bio?: string | null
-          connections_count?: never
-          created_at?: string | null
-          expert_verified_at?: string | null
-          full_name?: string | null
-          id?: string | null
-          is_expert?: boolean | null
-          profession?: string | null
-          profile_picture_url?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          bio?: string | null
-          connections_count?: never
-          created_at?: string | null
-          expert_verified_at?: string | null
-          full_name?: string | null
-          id?: string | null
-          is_expert?: boolean | null
-          profession?: string | null
-          profile_picture_url?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
+      check_rate_limit: {
+        Args: {
+          action_name: string
+          max_requests?: number
+          window_minutes?: number
+        }
+        Returns: boolean
+      }
       generate_referral_code: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_connected_profile_info: {
+        Args: { target_user_id: string }
+        Returns: {
+          area: string
+          bio: string
+          connections_count: number
+          created_at: string
+          expert_verified_at: string
+          full_name: string
+          id: string
+          is_expert: boolean
+          lga_name: string
+          phone_number: string
+          profession: string
+          profile_picture_url: string
+          state_name: string
+          user_id: string
+        }[]
+      }
+      get_public_profile_info: {
+        Args: { target_user_id: string }
+        Returns: {
+          bio: string
+          created_at: string
+          expert_verified_at: string
+          full_name: string
+          id: string
+          is_expert: boolean
+          profession: string
+          profile_picture_url: string
+          user_id: string
+        }[]
       }
       users_are_connected: {
         Args: { user1: string; user2: string }

@@ -2,10 +2,11 @@ import React, { useState } from 'react'
 import { Heart, MessageCircle, Share, Eye, MoreVertical, UserPlus, Briefcase, Clock, DollarSign } from 'lucide-react'
 import { Post } from '@/hooks/useFeed'
 import { BrandButton } from '@/components/ui/brand-button'
-import { BrandInput } from '@/components/ui/brand-input'
+import { SecureTextarea } from '@/components/ui/secure-textarea'
 import { Badge } from '@/components/ui/badge'
 import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
+import { sanitizeText } from '@/lib/security'
 
 interface EnhancedPostCardProps {
   post: Post
@@ -89,8 +90,11 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
     e.preventDefault()
     if (!commentText.trim()) return
 
+    const sanitizedComment = sanitizeText(commentText.trim())
+    if (!sanitizedComment.trim()) return
+
     setSubmitting(true)
-    const result = await onComment(post.id, commentText.trim())
+    const result = await onComment(post.id, sanitizedComment)
     
     if (result.success) {
       setCommentText('')
@@ -347,19 +351,21 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
             <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0">
               {currentUserId?.charAt(0) || 'U'}
             </div>
-            <div className="flex-1 flex gap-2">
-              <BrandInput
+            <div className="flex-1 space-y-2">
+              <SecureTextarea
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
                 placeholder="Write a comment..."
-                className="flex-1"
+                maxLength={500}
+                contentModeration={true}
+                rows={2}
               />
               <BrandButton 
                 type="submit" 
                 size="sm"
                 disabled={!commentText.trim() || submitting}
               >
-                Post
+                {submitting ? 'Posting...' : 'Post Comment'}
               </BrandButton>
             </div>
           </form>
