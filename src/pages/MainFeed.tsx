@@ -203,7 +203,10 @@ const MainFeed = () => {
       <CreateStoryDialog
         isOpen={showCreateStory}
         onClose={() => setShowCreateStory(false)}
-        onCreateStory={createStory}
+        onStoryCreated={() => {
+          setShowCreateStory(false)
+          // Refresh stories if needed
+        }}
       />
 
       {/* Bottom Navigation */}

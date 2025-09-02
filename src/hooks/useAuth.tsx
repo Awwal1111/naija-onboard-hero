@@ -15,32 +15,30 @@ export const useAuth = () => {
     try {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('full_name, state_name, lga_name')
+        .select('*')
         .eq('user_id', user.id)
         .single()
 
-      // Check if user has completed onboarding (has name, state, lga)
-      if (profile && profile.full_name && profile.state_name && profile.lga_name) {
-        navigate('/feed')
-        toast({
-          title: "Welcome back!",
-          description: "You have successfully logged in.",
-        })
+      // Don't redirect if user is already on a main app page
+      const currentPath = window.location.pathname
+      const mainAppPaths = ['/feed', '/profile', '/chat', '/earn', '/experts', '/jobs']
+      
+      if (profile && profile.full_name) {
+        if (!mainAppPaths.some(path => currentPath.startsWith(path))) {
+          navigate('/feed')
+        }
       } else {
-        // New user or incomplete profile - go to onboarding
-        navigate('/onboarding')
-        toast({
-          title: "Welcome to NaijaLancers!",
-          description: "Please complete your profile setup.",
-        })
+        // Only redirect to onboarding if not already there
+        if (currentPath !== '/onboarding') {
+          navigate('/onboarding')
+        }
       }
     } catch (error) {
-      // Profile doesn't exist or error - go to onboarding
-      navigate('/onboarding')
-      toast({
-        title: "Welcome to NaijaLancers!",
-        description: "Please complete your profile setup.",
-      })
+      console.error('Error checking profile:', error)
+      const currentPath = window.location.pathname
+      if (currentPath !== '/onboarding') {
+        navigate('/onboarding')
+      }
     }
   }
 
@@ -53,17 +51,27 @@ export const useAuth = () => {
         setLoading(false)
 
         if (event === 'SIGNED_IN' && session?.user) {
-          // Check if user has completed onboarding
+          setSession(session)
+          setUser(session.user)
           checkProfileAndRedirect(session.user)
+        } else if (event === 'SIGNED_OUT') {
+          setSession(null)
+          setUser(null)
+          navigate('/login')
         }
       }
     )
 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      setLoading(false)
+      if (session?.user) {
+        setSession(session)
+        setUser(session.user)
+        setLoading(false)
+        // Don't auto-redirect on initial load to prevent welcome message spam
+      } else {
+        setLoading(false)
+      }
     })
 
     return () => subscription.unsubscribe()

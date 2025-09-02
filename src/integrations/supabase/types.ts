@@ -38,6 +38,33 @@ export type Database = {
         }
         Relationships: []
       }
+      connection_requests: {
+        Row: {
+          created_at: string
+          id: string
+          requested_id: string
+          requester_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          requested_id: string
+          requester_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          requested_id?: string
+          requester_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       expert_applications: {
         Row: {
           admin_feedback: string | null
