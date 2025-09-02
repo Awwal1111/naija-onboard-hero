@@ -5,6 +5,7 @@ import { Logo } from '@/components/ui/logo'
 import { BrandButton } from '@/components/ui/brand-button'
 import { useProfile } from '@/hooks/useProfile'
 import { useAuth } from '@/hooks/useAuth'
+import { useFileUpload } from '@/hooks/useFileUpload'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,6 +21,7 @@ const Profile = () => {
   const { profile, loading, updateProfile } = useProfile()
   const { signOut } = useAuth()
   const { toast } = useToast()
+  const { uploadFile, uploadProgress } = useFileUpload()
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [editForm, setEditForm] = useState({
     full_name: '',
@@ -78,6 +80,31 @@ const Profile = () => {
     }
   }
 
+  const handleProfilePictureUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    try {
+      const fileExt = file.name.split('.').pop()
+      const fileName = `avatar.${fileExt}`
+      
+      const { url, error } = await uploadFile(file, 'profiles', fileName, { upsert: true })
+      
+      if (error || !url) {
+        throw new Error(error || 'Upload failed')
+      }
+
+      // Update profile with new picture URL
+      await updateProfile({ profile_picture_url: url })
+    } catch (error: any) {
+      toast({
+        title: "Upload Failed",
+        description: error.message || "Failed to upload profile picture",
+        variant: "destructive"
+      })
+    }
+  }
+
   const handleLogout = async () => {
     await signOut()
   }
@@ -108,12 +135,26 @@ const Profile = () => {
         {/* User Section */}
         <div className="flex items-start gap-4 mb-8">
           <div className="relative">
-            <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center text-white text-2xl font-bold">
-              {profile?.full_name?.charAt(0) || 'U'}
+            <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center text-white text-2xl font-bold overflow-hidden">
+              {profile?.profile_picture_url ? (
+                <img 
+                  src={profile.profile_picture_url} 
+                  alt={profile.full_name || 'Profile'}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                profile?.full_name?.charAt(0) || 'U'
+              )}
             </div>
-            <button className="absolute -bottom-2 -right-2 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white">
+            <label className="absolute -bottom-2 -right-2 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white cursor-pointer hover:bg-primary/90 transition-colors">
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleProfilePictureUpload}
+              />
               <Camera className="h-4 w-4" />
-            </button>
+            </label>
           </div>
           
           <div className="flex-1">
