@@ -11,6 +11,9 @@ export const useAuth = () => {
   const navigate = useNavigate()
   const { toast } = useToast()
 
+  const authPaths = ['/login', '/signup', '/forgot-password', '/reset-password']
+  const mainAppPaths = ['/feed', '/profile', '/chat', '/earn', '/experts', '/jobs']
+
   const checkProfileAndRedirect = async (user: any) => {
     try {
       const { data: profile } = await supabase
@@ -21,8 +24,6 @@ export const useAuth = () => {
 
       // Don't redirect if user is already on a main app page
       const currentPath = window.location.pathname
-      const mainAppPaths = ['/feed', '/profile', '/chat', '/earn', '/experts', '/jobs']
-      const authPaths = ['/login', '/signup', '/forgot-password', '/reset-password']
       
       if (profile && profile.full_name) {
         // User has completed profile setup
@@ -43,7 +44,6 @@ export const useAuth = () => {
       console.error('Error checking profile:', error)
       // Only redirect on actual errors, not missing profiles
       const currentPath = window.location.pathname
-      const authPaths = ['/login', '/signup', '/forgot-password', '/reset-password']
       if (currentPath !== '/onboarding' && 
           !authPaths.includes(currentPath) && 
           currentPath !== '/') {
@@ -71,7 +71,6 @@ export const useAuth = () => {
           setSession(null)
           setUser(null)
           const currentPath = window.location.pathname
-          const authPaths = ['/login', '/signup', '/', '/forgot-password', '/reset-password']
           if (!authPaths.includes(currentPath)) {
             navigate('/login')
           }
