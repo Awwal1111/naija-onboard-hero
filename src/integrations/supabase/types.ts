@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_logs: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          ip_address: unknown | null
+          metadata: Json | null
+          record_id: string | null
+          table_name: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          metadata?: Json | null
+          record_id?: string | null
+          table_name: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          metadata?: Json | null
+          record_id?: string | null
+          table_name?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       chats: {
         Row: {
           created_at: string
@@ -62,6 +98,30 @@ export type Database = {
           requester_id?: string
           status?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      connections: {
+        Row: {
+          created_at: string
+          id: string
+          status: string
+          user1_id: string
+          user2_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          status?: string
+          user1_id: string
+          user2_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          status?: string
+          user1_id?: string
+          user2_id?: string
         }
         Relationships: []
       }
@@ -444,10 +504,24 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
           {
+            foreignKeyName: "referrals_referee_id_fkey"
+            columns: ["referee_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "referrals_referrer_id_fkey"
             columns: ["referrer_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "referrals_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
             referencedColumns: ["user_id"]
           },
         ]
@@ -585,12 +659,54 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_profiles: {
+        Row: {
+          bio: string | null
+          connections_count: number | null
+          created_at: string | null
+          expert_verified_at: string | null
+          full_name: string | null
+          id: string | null
+          is_expert: boolean | null
+          profession: string | null
+          profile_picture_url: string | null
+          user_id: string | null
+        }
+        Insert: {
+          bio?: string | null
+          connections_count?: never
+          created_at?: string | null
+          expert_verified_at?: string | null
+          full_name?: string | null
+          id?: string | null
+          is_expert?: boolean | null
+          profession?: string | null
+          profile_picture_url?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          bio?: string | null
+          connections_count?: never
+          created_at?: string | null
+          expert_verified_at?: string | null
+          full_name?: string | null
+          id?: string | null
+          is_expert?: boolean | null
+          profession?: string | null
+          profile_picture_url?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       generate_referral_code: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      users_are_connected: {
+        Args: { user1: string; user2: string }
+        Returns: boolean
       }
     }
     Enums: {
