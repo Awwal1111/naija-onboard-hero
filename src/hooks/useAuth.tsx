@@ -17,32 +17,43 @@ export const useAuth = () => {
         .from('profiles')
         .select('*')
         .eq('user_id', user.id)
-        .single()
+        .maybeSingle()
 
       // Don't redirect if user is already on a main app page
       const currentPath = window.location.pathname
       const mainAppPaths = ['/feed', '/profile', '/chat', '/earn', '/experts', '/jobs']
+      const authPaths = ['/login', '/signup', '/forgot-password', '/reset-password']
       
       if (profile && profile.full_name) {
-        if (!mainAppPaths.some(path => currentPath.startsWith(path))) {
+        // User has completed profile setup
+        if (!mainAppPaths.some(path => currentPath.startsWith(path)) && 
+            !authPaths.includes(currentPath) && 
+            currentPath !== '/') {
           navigate('/feed')
         }
       } else {
-        // Only redirect to onboarding if not already there
-        if (currentPath !== '/onboarding') {
+        // User needs onboarding
+        if (currentPath !== '/onboarding' && 
+            !authPaths.includes(currentPath) && 
+            currentPath !== '/') {
           navigate('/onboarding')
         }
       }
     } catch (error) {
       console.error('Error checking profile:', error)
+      // Only redirect on actual errors, not missing profiles
       const currentPath = window.location.pathname
-      if (currentPath !== '/onboarding') {
+      if (currentPath !== '/onboarding' && 
+          !authPaths.includes(currentPath) && 
+          currentPath !== '/') {
         navigate('/onboarding')
       }
     }
   }
 
   useEffect(() => {
+    let isInitialLoad = true
+    
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
@@ -51,13 +62,17 @@ export const useAuth = () => {
         setLoading(false)
 
         if (event === 'SIGNED_IN' && session?.user) {
-          setSession(session)
-          setUser(session.user)
-          checkProfileAndRedirect(session.user)
+          // Always redirect on sign in events (not initial load)
+          if (!isInitialLoad) {
+            setTimeout(() => checkProfileAndRedirect(session.user), 100)
+          }
         } else if (event === 'SIGNED_OUT') {
           setSession(null)
           setUser(null)
-          navigate('/login')
+          const currentPath = window.location.pathname
+          if (!['/login', '/signup', '/', '/forgot-password', '/reset-password'].includes(currentPath)) {
+            navigate('/login')
+          }
         }
       }
     )
@@ -68,14 +83,21 @@ export const useAuth = () => {
         setSession(session)
         setUser(session.user)
         setLoading(false)
-        // Don't auto-redirect on initial load to prevent welcome message spam
+        
+        // Check if we need to redirect on initial load
+        const currentPath = window.location.pathname
+        if (currentPath === '/' || currentPath === '/login' || currentPath === '/signup') {
+          setTimeout(() => checkProfileAndRedirect(session.user), 100)
+        }
       } else {
         setLoading(false)
       }
+      
+      isInitialLoad = false
     })
 
     return () => subscription.unsubscribe()
-  }, [navigate, toast])
+  }, [navigate])
 
   const signUp = async (email: string, password: string, fullName?: string) => {
     const redirectUrl = `${window.location.origin}/`

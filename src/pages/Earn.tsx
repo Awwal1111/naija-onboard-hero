@@ -34,10 +34,11 @@ export const Earn = () => {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    if (!user) {
+    // Only redirect if we're not loading and there's definitely no user
+    if (!loading && !user) {
       navigate('/login')
     }
-  }, [user, navigate])
+  }, [user, navigate, loading])
 
   const bottomNavItems = [
     { icon: Home, label: 'Feed', path: '/feed' },
