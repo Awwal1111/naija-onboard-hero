@@ -4,6 +4,8 @@ import { Post } from '@/hooks/useFeed'
 import { BrandButton } from '@/components/ui/brand-button'
 import { BrandInput } from '@/components/ui/brand-input'
 import { Badge } from '@/components/ui/badge'
+import { supabase } from '@/integrations/supabase/client'
+import { useToast } from '@/hooks/use-toast'
 
 interface EnhancedPostCardProps {
   post: Post
@@ -25,6 +27,8 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
   const [showComments, setShowComments] = useState(false)
   const [commentText, setCommentText] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [connectingTo, setConnectingTo] = useState<string | null>(null)
+  const { toast } = useToast()
 
   const formatTimeAgo = (date: string) => {
     const now = new Date()
@@ -40,6 +44,46 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
 
   const isJobPost = post.content_type === 'job'
   const isOwnPost = post.user_id === currentUserId
+
+  const handleConnect = async () => {
+    if (!currentUserId || isConnected || connectingTo) return
+    
+    setConnectingTo(post.user_id)
+    
+    try {
+      const { error } = await supabase
+        .from('connection_requests')
+        .insert({
+          requester_id: currentUserId,
+          requested_id: post.user_id
+        })
+
+      if (error) {
+        toast({
+          title: "Connection failed",
+          description: error.message,
+          variant: "destructive",
+        })
+      } else {
+        toast({
+          title: "Connection request sent!",
+          description: `Your connection request has been sent to ${post.profiles?.full_name}.`,
+        })
+        if (onConnect) {
+          onConnect(post.user_id)
+        }
+      }
+    } catch (error) {
+      console.error('Connection error:', error)
+      toast({
+        title: "Connection failed",
+        description: "Failed to send connection request. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setConnectingTo(null)
+    }
+  }
 
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -269,16 +313,21 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
         {/* Connect Button - Only show for other users */}
         {!isOwnPost && onConnect && (
           <button
-            onClick={() => onConnect(post.user_id)}
-            disabled={isConnected}
+            onClick={handleConnect}
+            disabled={isConnected || connectingTo === post.user_id}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all flex-1 justify-center ${
               isConnected
                 ? 'text-green-600 bg-green-50 dark:bg-green-950/30 cursor-not-allowed'
+                : connectingTo === post.user_id
+                ? 'text-gray-500 bg-gray-100 dark:bg-gray-900/30 cursor-not-allowed'
                 : 'text-primary hover:bg-primary/10'
             }`}
           >
             <UserPlus className="h-5 w-5" />
-            <span className="font-medium">{isConnected ? 'Connected' : 'Connect'}</span>
+            <span className="font-medium">
+              {isConnected ? 'Connected' : 
+               connectingTo === post.user_id ? 'Connecting...' : 'Connect'}
+            </span>
           </button>
         )}
         

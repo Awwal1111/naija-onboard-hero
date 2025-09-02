@@ -43,6 +43,7 @@ export const useAuth = () => {
       console.error('Error checking profile:', error)
       // Only redirect on actual errors, not missing profiles
       const currentPath = window.location.pathname
+      const authPaths = ['/login', '/signup', '/forgot-password', '/reset-password']
       if (currentPath !== '/onboarding' && 
           !authPaths.includes(currentPath) && 
           currentPath !== '/') {
@@ -70,7 +71,8 @@ export const useAuth = () => {
           setSession(null)
           setUser(null)
           const currentPath = window.location.pathname
-          if (!['/login', '/signup', '/', '/forgot-password', '/reset-password'].includes(currentPath)) {
+          const authPaths = ['/login', '/signup', '/', '/forgot-password', '/reset-password']
+          if (!authPaths.includes(currentPath)) {
             navigate('/login')
           }
         }
