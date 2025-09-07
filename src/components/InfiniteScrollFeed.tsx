@@ -1,14 +1,15 @@
 import React, { useEffect, useRef } from 'react'
 import { Loader2 } from 'lucide-react'
 import EnhancedPostCard from './EnhancedPostCard'
-import { Post } from '@/hooks/useOptimizedFeed'
+import { EnhancedPost } from '@/hooks/useEnhancedFeed'
 
 interface InfiniteScrollFeedProps {
-  posts: Post[]
+  posts: EnhancedPost[]
   hasNextPage?: boolean
   isFetchingNextPage?: boolean
   fetchNextPage: () => void
-  onLike: (postId: string) => void
+  onReact: (postId: string, reactionType: string) => void
+  onRemoveReaction: (postId: string) => void
   onComment: (postId: string, content: string) => Promise<{ success?: boolean; error?: string }>
   currentUserId?: string
 }
@@ -18,7 +19,8 @@ const InfiniteScrollFeed: React.FC<InfiniteScrollFeedProps> = ({
   hasNextPage,
   isFetchingNextPage,
   fetchNextPage,
-  onLike,
+  onReact,
+  onRemoveReaction,
   onComment,
   currentUserId
 }) => {
@@ -51,7 +53,8 @@ const InfiniteScrollFeed: React.FC<InfiniteScrollFeedProps> = ({
         <EnhancedPostCard
           key={post.id}
           post={post}
-          onLike={onLike}
+          onReact={onReact}
+          onRemoveReaction={onRemoveReaction}
           onComment={onComment}
           onConnect={(userId) => {
             console.log('Sending connection request to user:', userId)

@@ -307,6 +307,119 @@ export type Database = {
           },
         ]
       }
+      job_post_applications: {
+        Row: {
+          applicant_id: string
+          availability_date: string | null
+          cover_letter: string | null
+          created_at: string
+          expected_salary: number | null
+          id: string
+          job_post_id: string
+          portfolio_urls: string[] | null
+          resume_url: string | null
+          status: string | null
+        }
+        Insert: {
+          applicant_id: string
+          availability_date?: string | null
+          cover_letter?: string | null
+          created_at?: string
+          expected_salary?: number | null
+          id?: string
+          job_post_id: string
+          portfolio_urls?: string[] | null
+          resume_url?: string | null
+          status?: string | null
+        }
+        Update: {
+          applicant_id?: string
+          availability_date?: string | null
+          cover_letter?: string | null
+          created_at?: string
+          expected_salary?: number | null
+          id?: string
+          job_post_id?: string
+          portfolio_urls?: string[] | null
+          resume_url?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_post_applications_job_post_id_fkey"
+            columns: ["job_post_id"]
+            isOneToOne: false
+            referencedRelation: "job_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_posts: {
+        Row: {
+          application_deadline: string | null
+          applications_count: number | null
+          budget_max: number | null
+          budget_min: number | null
+          company_name: string | null
+          created_at: string
+          currency: string | null
+          description: string
+          experience_level: string | null
+          featured: boolean | null
+          id: string
+          job_type: string | null
+          location: string | null
+          required_skills: string[] | null
+          status: string | null
+          title: string
+          updated_at: string
+          user_id: string
+          views_count: number | null
+        }
+        Insert: {
+          application_deadline?: string | null
+          applications_count?: number | null
+          budget_max?: number | null
+          budget_min?: number | null
+          company_name?: string | null
+          created_at?: string
+          currency?: string | null
+          description: string
+          experience_level?: string | null
+          featured?: boolean | null
+          id?: string
+          job_type?: string | null
+          location?: string | null
+          required_skills?: string[] | null
+          status?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+          views_count?: number | null
+        }
+        Update: {
+          application_deadline?: string | null
+          applications_count?: number | null
+          budget_max?: number | null
+          budget_min?: number | null
+          company_name?: string | null
+          created_at?: string
+          currency?: string | null
+          description?: string
+          experience_level?: string | null
+          featured?: boolean | null
+          id?: string
+          job_type?: string | null
+          location?: string | null
+          required_skills?: string[] | null
+          status?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+          views_count?: number | null
+        }
+        Relationships: []
+      }
       jobs: {
         Row: {
           budget_max: number | null
@@ -466,7 +579,9 @@ export type Database = {
         Row: {
           content: string
           created_at: string
+          highlighted: boolean | null
           id: string
+          parent_comment_id: string | null
           post_id: string
           updated_at: string
           user_id: string
@@ -474,7 +589,9 @@ export type Database = {
         Insert: {
           content: string
           created_at?: string
+          highlighted?: boolean | null
           id?: string
+          parent_comment_id?: string | null
           post_id: string
           updated_at?: string
           user_id: string
@@ -482,12 +599,21 @@ export type Database = {
         Update: {
           content?: string
           created_at?: string
+          highlighted?: boolean | null
           id?: string
+          parent_comment_id?: string | null
           post_id?: string
           updated_at?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "post_comments_parent_comment_id_fkey"
+            columns: ["parent_comment_id"]
+            isOneToOne: false
+            referencedRelation: "post_comments"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "post_comments_post_id_fkey"
             columns: ["post_id"]
@@ -526,6 +652,38 @@ export type Database = {
           },
         ]
       }
+      post_reactions: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          reaction_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          reaction_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          reaction_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_reactions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       posts: {
         Row: {
           comments_count: number
@@ -542,6 +700,7 @@ export type Database = {
           updated_at: string
           user_id: string
           views_count: number
+          visibility: string | null
         }
         Insert: {
           comments_count?: number
@@ -558,6 +717,7 @@ export type Database = {
           updated_at?: string
           user_id: string
           views_count?: number
+          visibility?: string | null
         }
         Update: {
           comments_count?: number
@@ -574,6 +734,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
           views_count?: number
+          visibility?: string | null
         }
         Relationships: []
       }

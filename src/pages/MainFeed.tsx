@@ -6,10 +6,10 @@ import { BrandInput } from '@/components/ui/brand-input'
 import { BrandButton } from '@/components/ui/brand-button'
 import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
-import { useOptimizedFeed } from '@/hooks/useOptimizedFeed'
+import { useEnhancedFeed } from '@/hooks/useEnhancedFeed'
 import ProfessionalStoriesSection from '@/components/ProfessionalStoriesSection'
 import InfiniteScrollFeed from '@/components/InfiniteScrollFeed'
-import CreatePostDialog from '@/components/CreatePostDialog'
+import EnhancedCreatePostDialog from '@/components/EnhancedCreatePostDialog'
 import CreateStoryDialog from '@/components/CreateStoryDialog'
 
 const MainFeed = () => {
@@ -18,19 +18,14 @@ const MainFeed = () => {
   const { profile } = useProfile()
   const { 
     posts, 
-    stories, 
     loading, 
-    hasNextPage, 
-    isFetchingNextPage, 
-    fetchNextPage,
     searchQuery,
     setSearchQuery,
     createPost, 
-    createStory, 
-    toggleLike, 
-    addComment, 
-    viewStory 
-  } = useOptimizedFeed()
+    addReaction,
+    removeReaction,
+    addComment
+  } = useEnhancedFeed()
   const [showCreatePost, setShowCreatePost] = useState(false)
   const [showCreateStory, setShowCreateStory] = useState(false)
   const [feedType, setFeedType] = useState<'for-you' | 'following'>('for-you')
@@ -105,14 +100,15 @@ const MainFeed = () => {
         </div>
       </header>
 
-        {stories && (
+        {/* Temporarily comment out stories until we update them */}
+        {/*stories && (
           <ProfessionalStoriesSection 
             stories={stories}
             onCreateStory={handleCreateStory}
             onViewStory={viewStory}
             currentUserId={user?.id}
           />
-        )}
+        )*/}
 
       {/* Post Creation Bar */}
       <div className="px-6 py-4 border-b border-border">
@@ -182,10 +178,11 @@ const MainFeed = () => {
         ) : (
           <InfiniteScrollFeed
             posts={posts}
-            hasNextPage={hasNextPage}
-            isFetchingNextPage={isFetchingNextPage}
-            fetchNextPage={fetchNextPage}
-            onLike={toggleLike}
+            hasNextPage={false}
+            isFetchingNextPage={false}
+            fetchNextPage={() => {}}
+            onReact={addReaction}
+            onRemoveReaction={removeReaction}
             onComment={addComment}
             currentUserId={user?.id}
           />
@@ -193,22 +190,24 @@ const MainFeed = () => {
       </div>
 
       {/* Create Post Dialog */}
-      <CreatePostDialog
+      <EnhancedCreatePostDialog
         isOpen={showCreatePost}
         onClose={() => setShowCreatePost(false)}
-        onCreatePost={createPost}
+        onCreatePost={(content, contentType, visibility, title, mediaUrls) => 
+          createPost(content, contentType, visibility, title, mediaUrls)
+        }
         userProfile={profile}
       />
 
-      {/* Create Story Dialog */}
-      <CreateStoryDialog
+      {/* Temporarily comment out story dialog until we update stories */}
+      {/*<CreateStoryDialog
         isOpen={showCreateStory}
         onClose={() => setShowCreateStory(false)}
         onStoryCreated={() => {
           setShowCreateStory(false)
           // Refresh stories if needed
         }}
-      />
+      />*/}
 
       {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border px-4 py-2">
