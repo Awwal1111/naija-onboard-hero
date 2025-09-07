@@ -272,6 +272,86 @@ export type Database = {
         }
         Relationships: []
       }
+      job_applications: {
+        Row: {
+          applicant_id: string
+          cover_letter: string | null
+          created_at: string
+          id: string
+          job_id: string
+          status: string
+        }
+        Insert: {
+          applicant_id: string
+          cover_letter?: string | null
+          created_at?: string
+          id?: string
+          job_id: string
+          status?: string
+        }
+        Update: {
+          applicant_id?: string
+          cover_letter?: string | null
+          created_at?: string
+          id?: string
+          job_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_applications_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      jobs: {
+        Row: {
+          budget_max: number | null
+          budget_min: number | null
+          created_at: string
+          description: string
+          id: string
+          job_type: string | null
+          location: string | null
+          required_skills: string[] | null
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          budget_max?: number | null
+          budget_min?: number | null
+          created_at?: string
+          description: string
+          id?: string
+          job_type?: string | null
+          location?: string | null
+          required_skills?: string[] | null
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          budget_max?: number | null
+          budget_min?: number | null
+          created_at?: string
+          description?: string
+          id?: string
+          job_type?: string | null
+          location?: string | null
+          required_skills?: string[] | null
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       jobs_services: {
         Row: {
           applications_count: number | null
@@ -348,6 +428,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      portfolio_items: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          media_url: string | null
+          project_url: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          media_url?: string | null
+          project_url?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          media_url?: string | null
+          project_url?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       post_comments: {
         Row: {
@@ -476,6 +589,7 @@ export type Database = {
           id: string
           is_expert: boolean | null
           lga_name: string | null
+          open_to_work: boolean | null
           phone_number: string | null
           profession: string | null
           profile_picture_url: string | null
@@ -498,6 +612,7 @@ export type Database = {
           id?: string
           is_expert?: boolean | null
           lga_name?: string | null
+          open_to_work?: boolean | null
           phone_number?: string | null
           profession?: string | null
           profile_picture_url?: string | null
@@ -520,6 +635,7 @@ export type Database = {
           id?: string
           is_expert?: boolean | null
           lga_name?: string | null
+          open_to_work?: boolean | null
           phone_number?: string | null
           profession?: string | null
           profile_picture_url?: string | null
@@ -653,6 +769,56 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
         ]
+      }
+      skill_endorsements: {
+        Row: {
+          created_at: string
+          endorser_id: string
+          id: string
+          skill_id: string
+        }
+        Insert: {
+          created_at?: string
+          endorser_id: string
+          id?: string
+          skill_id: string
+        }
+        Update: {
+          created_at?: string
+          endorser_id?: string
+          id?: string
+          skill_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_endorsements_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "skills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      skills: {
+        Row: {
+          created_at: string
+          id: string
+          skill_name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          skill_name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          skill_name?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       social_tasks: {
         Row: {
