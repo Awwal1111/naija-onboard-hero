@@ -41,48 +41,17 @@ const SignUp = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    console.log('Form data before validation:', formData)
-    
-    // Basic validation - just check if fields exist
-    if (!formData.email.trim()) {
-      toast({
-        title: "Validation Error", 
-        description: "Email is required",
-        variant: "destructive",
-      })
-      return
-    }
-    
-    if (!formData.password) {
-      toast({
-        title: "Validation Error",
-        description: "Password is required", 
-        variant: "destructive",
-      })
-      return
-    }
-    
-    // Validate password strength before submission
-    if (passwordValidation && !passwordValidation.isValid) {
-      toast({
-        title: "Validation Error",
-        description: "Please fix password requirements",
-        variant: "destructive",
-      })
-      return
-    }
+    console.log('Form submission - current form data:', formData)
     
     setIsLoading(true)
-    console.log('Calling signUp with:', {
-      email: formData.email.trim(),
-      hasPassword: !!formData.password,
-      fullName: formData.fullName.trim() || 'User'
-    })
     
-    // Use a default name if none provided, or use the provided name
-    const nameToUse = formData.fullName.trim() || 'User'
+    // Simple signup call - let Supabase handle validation
+    const { error } = await signUp(
+      formData.email || '', 
+      formData.password || '', 
+      formData.fullName || 'User'
+    )
     
-    const { error } = await signUp(formData.email.trim(), formData.password, nameToUse)
     setIsLoading(false)
     
     if (!error) {
