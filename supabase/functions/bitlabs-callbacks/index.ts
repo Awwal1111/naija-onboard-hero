@@ -99,8 +99,8 @@ async function handleRewardCallback(supabase: any, data: any) {
   }
 
   try {
-    // Convert USD cents to Naira (approximate conversion)
-    const nairaReward = Math.round(reward * 4) // Assuming 1 USD = 400 NGN
+    // Convert USD to Naira (BitLabs sends reward in USD)
+    const nairaReward = Math.round(parseFloat(reward) * 400) // Assuming 1 USD = 400 NGN
     
     // Update survey completion
     const { error: updateError } = await supabase
@@ -145,7 +145,7 @@ async function handleReconciliationCallback(supabase: any, data: any) {
     // Handle reconciliation based on type
     if (reconciliation_type === 'chargeback') {
       // Deduct points from user's balance
-      const nairaAmount = Math.round(reward * 4)
+      const nairaAmount = Math.round(parseFloat(reward) * 400)
       
       const { error } = await supabase
         .from('profiles')

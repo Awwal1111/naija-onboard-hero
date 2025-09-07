@@ -157,10 +157,11 @@ serve(async (req) => {
     }
 
     try {
-      // Make request to BitLabs API
-      const bitLabsResponse = await fetch(`https://api.bitlabs.ai/v1/surveys/list?uid=${user_id}`, {
+      // Make request to BitLabs API v2
+      const bitLabsResponse = await fetch(`https://api.bitlabs.ai/v2/client/surveys`, {
         headers: {
           'X-Api-Token': appToken,
+          'X-User-Id': user_id,
           'Content-Type': 'application/json'
         }
       })
@@ -170,16 +171,36 @@ serve(async (req) => {
       }
 
       const bitLabsData = await bitLabsResponse.json()
+      console.log('BitLabs API response:', bitLabsData)
+      
+      // Check for restriction reasons
+      if (bitLabsData.data?.restriction_reason) {
+        const reason = bitLabsData.data.restriction_reason
+        console.log('BitLabs restriction:', reason)
+        
+        if (reason.not_verified) {
+          throw new Error('Publisher account not verified')
+        }
+        if (reason.using_vpn) {
+          throw new Error('VPN detected - surveys not available')
+        }
+        if (reason.banned) {
+          throw new Error('User is banned from surveys')
+        }
+        if (reason.unsupported_country) {
+          throw new Error('Surveys not available in your country')
+        }
+      }
       
       // Transform BitLabs data to our format
-      const offers: BitLabsOffer[] = (bitLabsData.surveys || []).map((survey: any) => ({
+      const offers: BitLabsOffer[] = (bitLabsData.data?.surveys || []).map((survey: any) => ({
         id: survey.id,
-        name: survey.name || 'Survey',
-        description: survey.description || 'Complete this survey for rewards',
-        reward: Math.round(survey.reward * 400), // Convert USD cents to Naira (approx rate)
-        duration: survey.time || 5,
-        category: survey.category || 'General',
-        url: survey.url || '#'
+        name: survey.category?.name || 'Survey',
+        description: `Complete this ${survey.category?.name || 'survey'} and earn rewards`,
+        reward: Math.round(parseFloat(survey.cpi) * 400), // Convert USD to Naira (approx rate)
+        duration: Math.round(survey.loi || 5),
+        category: survey.category?.name || 'General',
+        url: survey.click_url
       }))
 
       return new Response(
