@@ -158,7 +158,7 @@ export const Referrals = () => {
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={() => navigate('/tap-earn')}
+            onClick={() => navigate('/earn')}
             className="p-2"
           >
             <ArrowLeft className="h-5 w-5" />

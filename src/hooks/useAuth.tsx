@@ -53,12 +53,8 @@ export const useAuth = () => {
         return
       }
       
-      // For existing sessions: go to main feed
-      if (profile.full_name && profile.state_name && profile.lga_name) {
-        navigate('/feed')
-      } else {
-        navigate('/onboarding')
-      }
+      // For login and existing sessions: go to main feed
+      navigate('/feed')
     } catch (error) {
       console.error('Error checking profile:', error)
       // On error, redirect to onboarding as fallback
@@ -264,8 +260,8 @@ export const useAuth = () => {
         title: "Welcome back!",
         description: "You've been signed in successfully.",
       })
-      // Login always redirects to main feed - no profile check needed
-      navigate('/feed')
+      // Login redirects to main feed - no profile check needed
+      // The auth state change will handle the redirect
     }
 
     return { error }

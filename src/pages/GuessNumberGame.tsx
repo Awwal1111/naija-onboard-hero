@@ -152,7 +152,7 @@ export const GuessNumberGame = () => {
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={() => navigate('/tap-earn')}
+            onClick={() => navigate('/earn')}
             className="p-2"
           >
             <ArrowLeft className="h-5 w-5" />
@@ -268,10 +268,10 @@ export const GuessNumberGame = () => {
                 </Button>
                 <Button 
                   variant="outline" 
-                  onClick={() => navigate('/tap-earn')} 
+                  onClick={() => navigate('/earn')} 
                   className="w-full"
                 >
-                  Back to Tap Earn
+                  Back to Earn Hub
                 </Button>
               </div>
             </CardContent>
@@ -295,10 +295,10 @@ export const GuessNumberGame = () => {
                 </Button>
                 <Button 
                   variant="outline" 
-                  onClick={() => navigate('/tap-earn')} 
+                  onClick={() => navigate('/earn')} 
                   className="w-full"
                 >
-                  Back to Tap Earn
+                  Back to Earn Hub
                 </Button>
               </div>
             </CardContent>

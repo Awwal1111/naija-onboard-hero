@@ -18,7 +18,6 @@ import Experts from "./pages/Experts";
 import Jobs from "./pages/Jobs";
 import Chat from "./pages/Chat";
 import ChatList from "./pages/ChatList";
-import { TapEarn } from "./pages/TapEarn";
 import { Earn } from "./pages/Earn";
 import { SocialMediaTasks } from "./pages/SocialMediaTasks";
 import { Surveys } from "./pages/Surveys";
@@ -47,7 +46,6 @@ const App = () => (
           <Route path="/post-job" element={<ProtectedRoute><PostJob /></ProtectedRoute>} />
           <Route path="/experts" element={<ProtectedRoute><Experts /></ProtectedRoute>} />
           <Route path="/jobs" element={<ProtectedRoute><Jobs /></ProtectedRoute>} />
-          <Route path="/tap-earn" element={<ProtectedRoute><TapEarn /></ProtectedRoute>} />
           <Route path="/surveys" element={<ProtectedRoute><Surveys /></ProtectedRoute>} />
           <Route path="/games/guess-number" element={<ProtectedRoute><GuessNumberGame /></ProtectedRoute>} />
           <Route path="/referrals" element={<ProtectedRoute><Referrals /></ProtectedRoute>} />

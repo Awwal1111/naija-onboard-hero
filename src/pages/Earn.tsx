@@ -22,7 +22,10 @@ import {
   Users,
   DollarSign,
   User,
-  TrendingUp
+  TrendingUp,
+  ChevronRight,
+  Trophy,
+  Target
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -132,8 +135,8 @@ export const Earn = () => {
                 <div className="bg-primary/10 p-3 rounded-lg mb-3 mx-auto w-fit">
                   <FileText className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="font-semibold text-sm">Surveys</h3>
-                <p className="text-xs text-muted-foreground mt-1">Answer & earn</p>
+                <h3 className="font-semibold text-sm">Surveys (BitLabs)</h3>
+                <p className="text-xs text-muted-foreground mt-1">Complete surveys for rewards</p>
                 <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs mt-2">
                   Up to ₦500
                 </Badge>
@@ -147,8 +150,8 @@ export const Earn = () => {
                 <div className="bg-primary/10 p-3 rounded-lg mb-3 mx-auto w-fit">
                   <GamepadIcon className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="font-semibold text-sm">Games</h3>
-                <p className="text-xs text-muted-foreground mt-1">Play & win</p>
+                <h3 className="font-semibold text-sm">Simple Games</h3>
+                <p className="text-xs text-muted-foreground mt-1">Play & win rewards</p>
                 <Badge variant="secondary" className="bg-blue-100 text-blue-800 text-xs mt-2">
                   ₦10 per win
                 </Badge>
@@ -170,6 +173,45 @@ export const Earn = () => {
               </CardContent>
             </Card>
           </div>
+
+          {/* Detailed Games Section */}
+          <Card className="border-accent/20 mb-6">
+            <CardHeader className="pb-3">
+              <div className="flex items-center space-x-3">
+                <div className="bg-primary/10 p-2 rounded-lg">
+                  <GamepadIcon className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg">Simple Games</CardTitle>
+                  <CardDescription>Play games and earn points</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0 space-y-3">
+              <Button 
+                variant="outline" 
+                className="w-full justify-between"
+                onClick={() => handleGameClick('guess-number')}
+              >
+                <div className="flex items-center space-x-2">
+                  <Target className="h-4 w-4" />
+                  <span>Guess the Number 🎯</span>
+                </div>
+                <span className="text-sm text-primary">₦10</span>
+              </Button>
+              <Button 
+                variant="outline" 
+                className="w-full justify-between opacity-50 cursor-not-allowed"
+                disabled
+              >
+                <div className="flex items-center space-x-2">
+                  <Trophy className="h-4 w-4" />
+                  <span>Motorbike Game 🏍️</span>
+                </div>
+                <span className="text-sm text-muted-foreground">Coming Soon</span>
+              </Button>
+            </CardContent>
+          </Card>
 
           {/* Social Media Tasks - New Feature */}
           <Card className="border-primary/30 bg-gradient-to-r from-primary/5 to-purple/5 cursor-pointer mb-6" 
@@ -217,7 +259,7 @@ export const Earn = () => {
                 </div>
                 <div className="text-center p-3 bg-primary/5 rounded-lg">
                   <p className="text-xl font-bold text-primary">0</p>
-                  <p className="text-xs text-muted-foreground">Referrals</p>
+                  <p className="text-xs text-muted-foreground">Games Won</p>
                 </div>
               </div>
               <Separator />
