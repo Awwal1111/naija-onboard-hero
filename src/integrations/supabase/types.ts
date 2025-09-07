@@ -1560,6 +1560,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      increment_wallet_balance: {
+        Args: { amount_to_add: number; target_user_id: string }
+        Returns: undefined
+      }
       is_admin_user: {
         Args: Record<PropertyKey, never>
         Returns: boolean

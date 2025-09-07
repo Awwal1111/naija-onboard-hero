@@ -179,6 +179,7 @@ const AdminExpertApplications = () => {
               Expert Applications ({applications.filter(app => app.status === 'pending').length} pending)
             </TabsTrigger>
             <TabsTrigger value="referrals">Referral Tasks</TabsTrigger>
+            <TabsTrigger value="stats">Daily Sign-in Stats</TabsTrigger>
           </TabsList>
 
           <TabsContent value="applications" className="space-y-6">
@@ -333,6 +334,10 @@ const AdminExpertApplications = () => {
 
           <TabsContent value="referrals">
             <AdminReferralTasks />
+          </TabsContent>
+
+          <TabsContent value="stats">
+            <AdminDailySigninStats />
           </TabsContent>
         </Tabs>
       </div>

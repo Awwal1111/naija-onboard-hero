@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { WalletCard } from '@/components/WalletCard'
+import { DailySigninCard } from '@/components/DailySigninCard'
 import { TransactionHistory } from '@/components/TransactionHistory'
 import { ReferralTaskCard } from '@/components/ReferralTaskCard'
 import { useReferralTasks } from '@/hooks/useReferralTasks'
@@ -95,6 +96,11 @@ export const Earn = () => {
 
           {/* Wallet Card with integrated functionality */}
           <WalletCard />
+
+          {/* Daily Sign-In Bonus */}
+          <div className="mt-6">
+            <DailySigninCard />
+          </div>
         </div>
 
         {/* Main Content Layout - Main Column + Sidebar */}

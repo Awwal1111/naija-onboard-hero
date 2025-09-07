@@ -69,15 +69,28 @@ export const useDailySignin = () => {
         throw signinError
       }
 
-      // Update user's wallet balance using RPC call
-      const { error: walletError } = await supabase.rpc('increment_wallet_balance', {
-        user_id: user.id,
-        amount: rewardAmount
-      })
+      // Update user's wallet balance using direct update
+      const { data: currentProfile, error: fetchError } = await supabase
+        .from('profiles')
+        .select('wallet_balance')
+        .eq('user_id', user.id)
+        .single()
+
+      if (fetchError) {
+        console.error('Error fetching current balance:', fetchError)
+        toast.error('Sign-in recorded but there was an error updating your wallet')
+        return
+      }
+
+      const newBalance = (currentProfile.wallet_balance || 0) + rewardAmount
+
+      const { error: walletError } = await supabase
+        .from('profiles')
+        .update({ wallet_balance: newBalance })
+        .eq('user_id', user.id)
 
       if (walletError) {
         console.error('Error updating wallet balance:', walletError)
-        // Even if wallet update fails, the signin is recorded
         toast.error('Sign-in recorded but there was an error updating your wallet')
       } else {
         toast.success(`You've earned ₦${rewardAmount} for today's sign-in!`)
