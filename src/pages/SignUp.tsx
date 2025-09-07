@@ -25,6 +25,7 @@ const SignUp = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
+    console.log('Input changed:', { name, value, currentFormData: formData })
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -42,16 +43,7 @@ const SignUp = () => {
     
     console.log('Form data before validation:', formData)
     
-    // Validate form fields
-    if (!formData.fullName.trim()) {
-      toast({
-        title: "Validation Error",
-        description: "Full name is required",
-        variant: "destructive",
-      })
-      return
-    }
-    
+    // Basic validation - just check if fields exist
     if (!formData.email.trim()) {
       toast({
         title: "Validation Error", 
@@ -84,10 +76,13 @@ const SignUp = () => {
     console.log('Calling signUp with:', {
       email: formData.email.trim(),
       hasPassword: !!formData.password,
-      fullName: formData.fullName.trim()
+      fullName: formData.fullName.trim() || 'User'
     })
     
-    const { error } = await signUp(formData.email.trim(), formData.password, formData.fullName.trim())
+    // Use a default name if none provided, or use the provided name
+    const nameToUse = formData.fullName.trim() || 'User'
+    
+    const { error } = await signUp(formData.email.trim(), formData.password, nameToUse)
     setIsLoading(false)
     
     if (!error) {
