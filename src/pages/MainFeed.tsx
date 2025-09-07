@@ -6,19 +6,31 @@ import { BrandInput } from '@/components/ui/brand-input'
 import { BrandButton } from '@/components/ui/brand-button'
 import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
-import { useFeed } from '@/hooks/useFeed'
+import { useOptimizedFeed } from '@/hooks/useOptimizedFeed'
 import ProfessionalStoriesSection from '@/components/ProfessionalStoriesSection'
-import EnhancedPostCard from '@/components/EnhancedPostCard'
+import InfiniteScrollFeed from '@/components/InfiniteScrollFeed'
 import CreatePostDialog from '@/components/CreatePostDialog'
-
 import CreateStoryDialog from '@/components/CreateStoryDialog'
 
 const MainFeed = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { profile } = useProfile()
-  const { posts, stories, loading, createPost, createStory, toggleLike, addComment, viewStory } = useFeed()
-  const [searchQuery, setSearchQuery] = useState('')
+  const { 
+    posts, 
+    stories, 
+    loading, 
+    hasNextPage, 
+    isFetchingNextPage, 
+    fetchNextPage,
+    searchQuery,
+    setSearchQuery,
+    createPost, 
+    createStory, 
+    toggleLike, 
+    addComment, 
+    viewStory 
+  } = useOptimizedFeed()
   const [showCreatePost, setShowCreatePost] = useState(false)
   const [showCreateStory, setShowCreateStory] = useState(false)
   const [feedType, setFeedType] = useState<'for-you' | 'following'>('for-you')
@@ -31,11 +43,6 @@ const MainFeed = () => {
     { icon: User, label: 'Profile', path: '/profile' }
   ]
 
-  const filteredPosts = posts.filter(post => 
-    post.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    post.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    post.profiles?.full_name?.toLowerCase().includes(searchQuery.toLowerCase())
-  )
 
   const handleCreateStory = () => {
     setShowCreateStory(true)
@@ -98,13 +105,14 @@ const MainFeed = () => {
         </div>
       </header>
 
-      {/* Professional Highlights Section */}
-      <ProfessionalStoriesSection 
-        stories={stories}
-        onCreateStory={handleCreateStory}
-        onViewStory={viewStory}
-        currentUserId={user?.id}
-      />
+        {stories && (
+          <ProfessionalStoriesSection 
+            stories={stories}
+            onCreateStory={handleCreateStory}
+            onViewStory={viewStory}
+            currentUserId={user?.id}
+          />
+        )}
 
       {/* Post Creation Bar */}
       <div className="px-6 py-4 border-b border-border">
@@ -150,7 +158,7 @@ const MainFeed = () => {
 
       {/* Main Feed Content */}
       <div className="px-6 py-4">
-        {filteredPosts.length === 0 ? (
+        {posts.length === 0 && !loading ? (
           <div className="text-center py-12">
             <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
               <FileText className="h-8 w-8 text-text-secondary" />
@@ -172,22 +180,15 @@ const MainFeed = () => {
             )}
           </div>
         ) : (
-          <div className="space-y-4">
-            {filteredPosts.map((post) => (
-              <EnhancedPostCard
-                key={post.id}
-                post={post}
-                onLike={toggleLike}
-                onComment={addComment}
-                onConnect={(userId) => {
-                  // TODO: Implement connection request functionality
-                  console.log('Sending connection request to user:', userId)
-                  // This could create a connection request in the database
-                }}
-                currentUserId={user?.id}
-              />
-            ))}
-          </div>
+          <InfiniteScrollFeed
+            posts={posts}
+            hasNextPage={hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            fetchNextPage={fetchNextPage}
+            onLike={toggleLike}
+            onComment={addComment}
+            currentUserId={user?.id}
+          />
         )}
       </div>
 
