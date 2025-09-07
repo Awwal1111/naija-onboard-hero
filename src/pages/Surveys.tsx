@@ -164,6 +164,17 @@ export const Surveys = () => {
     )
   }
 
+  if (!user || !profile) {
+    return (
+      <div className="min-h-screen bg-gradient-subtle p-4 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading profile...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gradient-subtle p-4">
       <div className="max-w-md mx-auto space-y-6">
@@ -195,7 +206,7 @@ export const Surveys = () => {
             <div>
               <p className="text-sm text-muted-foreground">Current Balance</p>
               <p className="text-2xl font-bold text-primary">
-                ₦{profile.wallet_balance?.toFixed(2) || '0.00'}
+                ₦{profile?.wallet_balance?.toFixed(2) || '0.00'}
               </p>
             </div>
             <Coins className="h-8 w-8 text-primary" />
