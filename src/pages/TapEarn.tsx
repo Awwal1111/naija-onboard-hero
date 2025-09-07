@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
@@ -20,15 +20,9 @@ import { toast } from 'sonner'
 
 export const TapEarn = () => {
   const navigate = useNavigate()
-  const { user } = useAuth()
-  const { profile } = useProfile()
+  const { user, loading: authLoading } = useAuth()
+  const { profile, loading: profileLoading } = useProfile()
   const [loading, setLoading] = useState(false)
-
-  useEffect(() => {
-    if (!user) {
-      navigate('/login')
-    }
-  }, [user, navigate])
 
   const handleSurveyClick = () => {
     navigate('/surveys')
@@ -42,10 +36,15 @@ export const TapEarn = () => {
     navigate('/referrals')
   }
 
-  if (!user || !profile) {
-    return <div className="min-h-screen bg-gradient-subtle p-4 flex items-center justify-center">
-      <div className="text-center">Loading...</div>
-    </div>
+  if (authLoading || profileLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-subtle p-4 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    )
   }
 
   return (

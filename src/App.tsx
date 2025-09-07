@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Welcome from "./pages/Welcome";
 import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
@@ -39,21 +40,21 @@ const App = () => (
           <Route path="/signup" element={<SignUp />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/onboarding" element={<Onboarding />} />
-          <Route path="/feed" element={<MainFeed />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/expert-application" element={<ExpertApplication />} />
-          <Route path="/post-job" element={<PostJob />} />
-          <Route path="/experts" element={<Experts />} />
-          <Route path="/jobs" element={<Jobs />} />
-          <Route path="/tap-earn" element={<TapEarn />} />
-          <Route path="/surveys" element={<Surveys />} />
-          <Route path="/games/guess-number" element={<GuessNumberGame />} />
-          <Route path="/referrals" element={<Referrals />} />
-          <Route path="/earn" element={<Earn />} />
-          <Route path="/earn/social-tasks" element={<SocialMediaTasks />} />
-          <Route path="/chat" element={<ChatList />} />
-          <Route path="/chat/:userId" element={<Chat />} />
+          <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+          <Route path="/feed" element={<ProtectedRoute><MainFeed /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+          <Route path="/expert-application" element={<ProtectedRoute><ExpertApplication /></ProtectedRoute>} />
+          <Route path="/post-job" element={<ProtectedRoute><PostJob /></ProtectedRoute>} />
+          <Route path="/experts" element={<ProtectedRoute><Experts /></ProtectedRoute>} />
+          <Route path="/jobs" element={<ProtectedRoute><Jobs /></ProtectedRoute>} />
+          <Route path="/tap-earn" element={<ProtectedRoute><TapEarn /></ProtectedRoute>} />
+          <Route path="/surveys" element={<ProtectedRoute><Surveys /></ProtectedRoute>} />
+          <Route path="/games/guess-number" element={<ProtectedRoute><GuessNumberGame /></ProtectedRoute>} />
+          <Route path="/referrals" element={<ProtectedRoute><Referrals /></ProtectedRoute>} />
+          <Route path="/earn" element={<ProtectedRoute><Earn /></ProtectedRoute>} />
+          <Route path="/earn/social-tasks" element={<ProtectedRoute><SocialMediaTasks /></ProtectedRoute>} />
+          <Route path="/chat" element={<ProtectedRoute><ChatList /></ProtectedRoute>} />
+          <Route path="/chat/:userId" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

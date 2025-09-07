@@ -22,31 +22,30 @@ export const useAuth = () => {
         .eq('user_id', user.id)
         .maybeSingle()
 
-      // Don't redirect if user is already on a main app page
       const currentPath = window.location.pathname
       
+      // Don't redirect if user is already on a main app page or auth page
+      if (mainAppPaths.some(path => currentPath.startsWith(path)) || 
+          authPaths.includes(currentPath)) {
+        return
+      }
+      
       if (profile && profile.full_name) {
-        // User has completed profile setup
-        if (!mainAppPaths.some(path => currentPath.startsWith(path)) && 
-            !authPaths.includes(currentPath) && 
-            currentPath !== '/') {
-          navigate('/feed')
-        }
+        // User has completed profile setup - redirect to main app
+        navigate('/earn')
       } else {
         // User needs onboarding
-        if (currentPath !== '/onboarding' && 
-            !authPaths.includes(currentPath) && 
-            currentPath !== '/') {
+        if (currentPath !== '/onboarding') {
           navigate('/onboarding')
         }
       }
     } catch (error) {
       console.error('Error checking profile:', error)
-      // Only redirect on actual errors, not missing profiles
+      // On error, only redirect if we're not already in a safe location
       const currentPath = window.location.pathname
-      if (currentPath !== '/onboarding' && 
+      if (!mainAppPaths.some(path => currentPath.startsWith(path)) && 
           !authPaths.includes(currentPath) && 
-          currentPath !== '/') {
+          currentPath !== '/onboarding') {
         navigate('/onboarding')
       }
     }

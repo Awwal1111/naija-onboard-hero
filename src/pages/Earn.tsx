@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
@@ -32,13 +32,6 @@ export const Earn = () => {
   const { user, loading: authLoading } = useAuth()
   const { profile, loading: profileLoading } = useProfile()
 
-  useEffect(() => {
-    // Only redirect if auth is not loading and there's definitely no user
-    if (!authLoading && !user) {
-      navigate('/login')
-    }
-  }, [user, navigate, authLoading])
-
   const bottomNavItems = [
     { icon: Home, label: 'Feed', path: '/feed' },
     { icon: MessageCircle, label: 'Chat', path: '/chat' },
@@ -63,10 +56,13 @@ export const Earn = () => {
     navigate('/earn/social-tasks')
   }
 
-  if (authLoading || profileLoading || !user || !profile) {
+  if (authLoading || profileLoading) {
     return (
       <div className="min-h-screen bg-gradient-subtle p-4 flex items-center justify-center pb-20">
-        <div className="text-center">Loading...</div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
       </div>
     )
   }
