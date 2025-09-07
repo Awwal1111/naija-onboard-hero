@@ -92,6 +92,41 @@ export type Database = {
         }
         Relationships: []
       }
+      commissions: {
+        Row: {
+          created_at: string
+          expert_cut: number
+          id: string
+          platform_cut: number
+          released_at: string | null
+          transaction_id: string
+        }
+        Insert: {
+          created_at?: string
+          expert_cut: number
+          id?: string
+          platform_cut: number
+          released_at?: string | null
+          transaction_id: string
+        }
+        Update: {
+          created_at?: string
+          expert_cut?: number
+          id?: string
+          platform_cut?: number
+          released_at?: string | null
+          transaction_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commissions_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       connection_requests: {
         Row: {
           created_at: string
@@ -142,6 +177,50 @@ export type Database = {
           user2_id?: string
         }
         Relationships: []
+      }
+      escrow_payments: {
+        Row: {
+          amount: number
+          client_id: string
+          created_at: string
+          expert_id: string
+          id: string
+          job_id: string
+          refunded_at: string | null
+          released_at: string | null
+          status: string
+        }
+        Insert: {
+          amount: number
+          client_id: string
+          created_at?: string
+          expert_id: string
+          id?: string
+          job_id: string
+          refunded_at?: string | null
+          released_at?: string | null
+          status?: string
+        }
+        Update: {
+          amount?: number
+          client_id?: string
+          created_at?: string
+          expert_id?: string
+          id?: string
+          job_id?: string
+          refunded_at?: string | null
+          released_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "escrow_payments_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       expert_applications: {
         Row: {
@@ -542,6 +621,42 @@ export type Database = {
           },
         ]
       }
+      payouts: {
+        Row: {
+          amount: number
+          bank_details: Json | null
+          created_at: string
+          id: string
+          method: string
+          paystack_transfer_ref: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          bank_details?: Json | null
+          created_at?: string
+          id?: string
+          method: string
+          paystack_transfer_ref?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          bank_details?: Json | null
+          created_at?: string
+          id?: string
+          method?: string
+          paystack_transfer_ref?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       portfolio_items: {
         Row: {
           created_at: string
@@ -870,6 +985,77 @@ export type Database = {
         }
         Relationships: []
       }
+      referral_submissions: {
+        Row: {
+          admin_comment: string | null
+          created_at: string
+          id: string
+          proof_url: string | null
+          status: string
+          task_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_comment?: string | null
+          created_at?: string
+          id?: string
+          proof_url?: string | null
+          status?: string
+          task_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_comment?: string | null
+          created_at?: string
+          id?: string
+          proof_url?: string | null
+          status?: string
+          task_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_submissions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "referral_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referral_tasks: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          reward: number
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          reward: number
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          reward?: number
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       referrals: {
         Row: {
           campaign_id: string | null
@@ -1120,6 +1306,39 @@ export type Database = {
           },
         ]
       }
+      subscriptions: {
+        Row: {
+          expires_at: string | null
+          id: string
+          paystack_ref: string | null
+          plan: string
+          price: number
+          started_at: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          expires_at?: string | null
+          id?: string
+          paystack_ref?: string | null
+          plan: string
+          price: number
+          started_at?: string
+          status: string
+          user_id: string
+        }
+        Update: {
+          expires_at?: string | null
+          id?: string
+          paystack_ref?: string | null
+          plan?: string
+          price?: number
+          started_at?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       survey_completions: {
         Row: {
           bitlabs_user_id: string
@@ -1173,6 +1392,45 @@ export type Database = {
           done?: boolean | null
           id?: never
           title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          id: string
+          metadata: Json | null
+          reference: string | null
+          status: string
+          type: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string
+          id?: string
+          metadata?: Json | null
+          reference?: string | null
+          status?: string
+          type?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          metadata?: Json | null
+          reference?: string | null
+          status?: string
+          type?: string | null
+          updated_at?: string
           user_id?: string
         }
         Relationships: []

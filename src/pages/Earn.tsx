@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { WalletCard } from '@/components/WalletCard'
 import { TransactionHistory } from '@/components/TransactionHistory'
+import { ReferralTaskCard } from '@/components/ReferralTaskCard'
+import { useReferralTasks } from '@/hooks/useReferralTasks'
 import { 
   Coins,
   FileText, 
@@ -54,7 +56,7 @@ export const Earn = () => {
   }
 
   const handleReferralClick = () => {
-    navigate('/referrals')
+    navigate('/earn/referral-tasks')
   }
 
   const handleSocialMediaTasksClick = () => {

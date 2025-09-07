@@ -5,8 +5,11 @@ import { Logo } from '@/components/ui/logo'
 import { BrandButton } from '@/components/ui/brand-button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
+import { AdminReferralTasks } from '@/components/AdminReferralTasks'
 import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/useAuth'
@@ -165,17 +168,27 @@ const AdminExpertApplications = () => {
 
       <div className="px-6 py-6">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-text-primary mb-2">Expert Applications</h1>
-          <p className="text-text-secondary">Review and manage expert applications</p>
+          <h1 className="text-2xl font-bold text-text-primary mb-2">Admin Dashboard</h1>
+          <p className="text-text-secondary">Manage expert applications and referral tasks</p>
         </div>
 
-        {applications.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-text-secondary">No applications found</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {applications.map((application) => (
+        <Tabs defaultValue="applications" className="w-full">
+          <TabsList>
+            <TabsTrigger value="applications">
+              Expert Applications ({applications.filter(app => app.status === 'pending').length} pending)
+            </TabsTrigger>
+            <TabsTrigger value="referrals">Referral Tasks</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="applications" className="space-y-6">
+
+            {applications.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-text-secondary">No applications found</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {applications.map((application) => (
               <Card key={application.id} className="bg-card border border-border">
                 <CardHeader>
                   <div className="flex items-center justify-between">
@@ -312,9 +325,15 @@ const AdminExpertApplications = () => {
                   </div>
                 </CardContent>
               </Card>
-            ))}
-          </div>
-        )}
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="referrals">
+            <AdminReferralTasks />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   )
