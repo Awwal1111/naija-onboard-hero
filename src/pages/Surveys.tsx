@@ -94,23 +94,43 @@ export const Surveys = () => {
     if (!user) return
 
     try {
-      // Track survey start
-      const { error } = await supabase
+      // Check if user already started this survey
+      const { data: existingCompletion } = await supabase
         .from('survey_completions')
-        .insert([{
-          user_id: user.id,
-          bitlabs_user_id: user.id,
-          offer_id: offer.id,
-          status: 'pending'
-        }])
+        .select('id, status')
+        .eq('user_id', user.id)
+        .eq('offer_id', offer.id)
+        .maybeSingle()
 
-      if (error && error.code !== '23505') { // Ignore duplicate key error
-        throw error
+      if (existingCompletion && existingCompletion.status === 'completed') {
+        toast.error('You have already completed this survey')
+        return
+      }
+
+      // Track survey start if not already tracked
+      if (!existingCompletion) {
+        const { error } = await supabase
+          .from('survey_completions')
+          .insert([{
+            user_id: user.id,
+            bitlabs_user_id: user.id,
+            offer_id: offer.id,
+            status: 'pending'
+          }])
+
+        if (error) {
+          console.error('Error tracking survey start:', error)
+          // Don't block survey access if tracking fails
+        }
       }
 
       // Open survey in new tab (would be BitLabs URL in production)
-      window.open(offer.url, '_blank')
-      toast.success('Survey opened! Complete it to earn rewards.')
+      if (offer.url && offer.url !== '#') {
+        window.open(offer.url, '_blank')
+        toast.success('Survey opened! Complete it to earn rewards.')
+      } else {
+        toast.error('Survey link not available')
+      }
       
     } catch (error) {
       console.error('Error starting survey:', error)

@@ -123,17 +123,39 @@ export const useProfile = () => {
   }
 
   const updateProfile = async (updates: Partial<Profile>) => {
-    if (!user || !profile) return
+    if (!user) return { success: false, error: 'User not authenticated' }
 
     try {
-      const { data, error } = await supabase
+      setLoading(true)
+      
+      // First check if profile exists
+      const { data: existingProfile } = await supabase
         .from('profiles')
-        .update(updates)
+        .select('id')
         .eq('user_id', user.id)
-        .select()
-        .single()
+        .maybeSingle()
 
+      let result
+      if (existingProfile) {
+        // Update existing profile
+        result = await supabase
+          .from('profiles')
+          .update(updates)
+          .eq('user_id', user.id)
+          .select()
+          .single()
+      } else {
+        // Insert new profile if it doesn't exist
+        result = await supabase
+          .from('profiles')
+          .insert([{ user_id: user.id, ...updates }])
+          .select()
+          .single()
+      }
+
+      const { data, error } = result
       if (error) throw error
+
       setProfile(data)
       
       toast({
@@ -142,14 +164,16 @@ export const useProfile = () => {
       })
       
       return { success: true, data }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating profile:', error)
       toast({
         title: "Error",
-        description: "Failed to update profile",
+        description: error.message || "Failed to update profile",
         variant: "destructive",
       })
-      return { success: false, error }
+      return { success: false, error: error.message }
+    } finally {
+      setLoading(false)
     }
   }
 

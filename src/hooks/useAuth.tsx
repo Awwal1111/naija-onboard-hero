@@ -101,7 +101,10 @@ export const useAuth = () => {
   }, [navigate])
 
   const signUp = async (email: string, password: string, fullName?: string) => {
-    const redirectUrl = `${window.location.origin}/`
+    // Use production URL for OAuth redirects in deployed environment
+    const redirectUrl = window.location.hostname === 'localhost' 
+      ? `${window.location.origin}/`
+      : `${window.location.protocol}//${window.location.host}/`
     
     const { error } = await supabase.auth.signUp({
       email,
@@ -148,10 +151,15 @@ export const useAuth = () => {
   }
 
   const signInWithGoogle = async () => {
+    // Use production URL for OAuth redirects in deployed environment
+    const redirectUrl = window.location.hostname === 'localhost' 
+      ? `${window.location.origin}/`
+      : `${window.location.protocol}//${window.location.host}/`
+    
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/`
+        redirectTo: redirectUrl
       }
     })
 
@@ -167,8 +175,13 @@ export const useAuth = () => {
   }
 
   const resetPassword = async (email: string) => {
+    // Use production URL for password reset redirects in deployed environment  
+    const redirectUrl = window.location.hostname === 'localhost'
+      ? `${window.location.origin}/reset-password`
+      : `${window.location.protocol}//${window.location.host}/reset-password`
+    
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
+      redirectTo: redirectUrl,
     })
 
     if (error) {
