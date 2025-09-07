@@ -4,10 +4,12 @@ import { Logo } from '@/components/ui/logo'
 import { BrandButton } from '@/components/ui/brand-button'
 import { SecureInput } from '@/components/ui/secure-input'
 import { useAuth } from '@/hooks/useAuth'
+import { useToast } from '@/hooks/use-toast'
 import { validatePasswordStrength } from '@/lib/security'
 
 const SignUp = () => {
   const navigate = useNavigate()
+  const { toast } = useToast()
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -38,13 +40,54 @@ const SignUp = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
+    console.log('Form data before validation:', formData)
+    
+    // Validate form fields
+    if (!formData.fullName.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Full name is required",
+        variant: "destructive",
+      })
+      return
+    }
+    
+    if (!formData.email.trim()) {
+      toast({
+        title: "Validation Error", 
+        description: "Email is required",
+        variant: "destructive",
+      })
+      return
+    }
+    
+    if (!formData.password) {
+      toast({
+        title: "Validation Error",
+        description: "Password is required", 
+        variant: "destructive",
+      })
+      return
+    }
+    
     // Validate password strength before submission
     if (passwordValidation && !passwordValidation.isValid) {
-      return // Don't submit if password is invalid
+      toast({
+        title: "Validation Error",
+        description: "Please fix password requirements",
+        variant: "destructive",
+      })
+      return
     }
     
     setIsLoading(true)
-    const { error } = await signUp(formData.email, formData.password, formData.fullName)
+    console.log('Calling signUp with:', {
+      email: formData.email.trim(),
+      hasPassword: !!formData.password,
+      fullName: formData.fullName.trim()
+    })
+    
+    const { error } = await signUp(formData.email.trim(), formData.password, formData.fullName.trim())
     setIsLoading(false)
     
     if (!error) {

@@ -100,36 +100,72 @@ export const useAuth = () => {
   }, [navigate])
 
   const signUp = async (email: string, password: string, fullName?: string) => {
+    // Validate inputs before sending to Supabase
+    if (!email || !email.trim()) {
+      const error = { message: "Email is required" }
+      toast({
+        title: "Sign up failed",
+        description: "Email is required",
+        variant: "destructive",
+      })
+      return { error }
+    }
+
+    if (!password || password.length < 6) {
+      const error = { message: "Password must be at least 6 characters" }
+      toast({
+        title: "Sign up failed",
+        description: "Password must be at least 6 characters",
+        variant: "destructive",
+      })
+      return { error }
+    }
+
+    console.log('Attempting signup with:', { email: email.trim(), hasPassword: !!password, fullName })
+    
     // Use production URL for OAuth redirects in deployed environment
     const redirectUrl = window.location.hostname === 'localhost' 
       ? `${window.location.origin}/`
       : `${window.location.protocol}//${window.location.host}/`
     
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          full_name: fullName
+    try {
+      const { error, data } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: {
+            full_name: fullName || ''
+          }
         }
-      }
-    })
+      })
 
-    if (error) {
+      console.log('Signup result:', { error, data })
+
+      if (error) {
+        toast({
+          title: "Sign up failed",
+          description: error.message,
+          variant: "destructive",
+        })
+      } else {
+        toast({
+          title: "Check your email",
+          description: "We've sent you a confirmation link.",
+        })
+      }
+
+      return { error }
+    } catch (err: any) {
+      console.error('Signup error:', err)
+      const error = { message: err.message || "An unexpected error occurred" }
       toast({
         title: "Sign up failed",
         description: error.message,
         variant: "destructive",
       })
-    } else {
-      toast({
-        title: "Check your email",
-        description: "We've sent you a confirmation link.",
-      })
+      return { error }
     }
-
-    return { error }
   }
 
   const signIn = async (email: string, password: string) => {
