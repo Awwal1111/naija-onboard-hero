@@ -14,7 +14,7 @@ export const useAuth = () => {
   const authPaths = ['/login', '/signup', '/forgot-password', '/reset-password']
   const mainAppPaths = ['/feed', '/profile', '/chat', '/earn', '/experts', '/jobs']
 
-  const checkProfileAndRedirect = async (user: any) => {
+  const checkProfileAndRedirect = async (user: any, isSignup: boolean = false) => {
     try {
       const { data: profile } = await supabase
         .from('profiles')
@@ -24,30 +24,45 @@ export const useAuth = () => {
 
       const currentPath = window.location.pathname
       
-      // Don't redirect if user is already on a main app page or auth page
-      if (mainAppPaths.some(path => currentPath.startsWith(path)) || 
-          authPaths.includes(currentPath)) {
+      // Create profile if it doesn't exist (especially during signup)
+      if (!profile) {
+        await supabase
+          .from('profiles')
+          .insert([
+            {
+              user_id: user.id,
+              full_name: user.user_metadata?.full_name || '',
+              phone_number: user.user_metadata?.phone_number || '',
+            }
+          ])
+        
+        // New user needs onboarding
+        navigate('/onboarding')
         return
       }
       
-      if (profile && profile.full_name) {
-        // User has completed profile setup - redirect to main app
-        navigate('/earn')
-      } else {
-        // User needs onboarding
-        if (currentPath !== '/onboarding') {
+      // After signup: check if profile is complete
+      if (isSignup) {
+        if (profile.full_name && profile.state_name && profile.lga_name) {
+          // Profile is complete, go to main feed
+          navigate('/feed')
+        } else {
+          // Profile needs completion, go to onboarding
           navigate('/onboarding')
         }
+        return
+      }
+      
+      // For existing sessions: go to main feed
+      if (profile.full_name && profile.state_name && profile.lga_name) {
+        navigate('/feed')
+      } else {
+        navigate('/onboarding')
       }
     } catch (error) {
       console.error('Error checking profile:', error)
-      // On error, only redirect if we're not already in a safe location
-      const currentPath = window.location.pathname
-      if (!mainAppPaths.some(path => currentPath.startsWith(path)) && 
-          !authPaths.includes(currentPath) && 
-          currentPath !== '/onboarding') {
-        navigate('/onboarding')
-      }
+      // On error, redirect to onboarding as fallback
+      navigate('/onboarding')
     }
   }
 
@@ -62,7 +77,7 @@ export const useAuth = () => {
         setLoading(false)
 
         if (event === 'SIGNED_IN' && session?.user) {
-          // Always redirect on sign in events (not initial load)
+          // Redirect on sign in events (not initial load)
           if (!isInitialLoad) {
             setTimeout(() => checkProfileAndRedirect(session.user), 100)
           }
@@ -70,7 +85,7 @@ export const useAuth = () => {
           setSession(null)
           setUser(null)
           const currentPath = window.location.pathname
-          if (!authPaths.includes(currentPath)) {
+          if (!authPaths.includes(currentPath) && currentPath !== '/') {
             navigate('/login')
           }
         }
@@ -84,13 +99,18 @@ export const useAuth = () => {
         setUser(session.user)
         setLoading(false)
         
-        // Check if we need to redirect on initial load
+        // Redirect authenticated users away from welcome/auth pages
         const currentPath = window.location.pathname
-        if (currentPath === '/' || currentPath === '/login' || currentPath === '/signup') {
+        if (currentPath === '/' || authPaths.includes(currentPath)) {
           setTimeout(() => checkProfileAndRedirect(session.user), 100)
         }
       } else {
         setLoading(false)
+        // Redirect unauthenticated users to welcome page if on protected routes
+        const currentPath = window.location.pathname
+        if (mainAppPaths.some(path => currentPath.startsWith(path)) || currentPath === '/onboarding') {
+          navigate('/')
+        }
       }
       
       isInitialLoad = false
@@ -165,6 +185,8 @@ export const useAuth = () => {
             title: "Account created",
             description: "Welcome! Your account has been created successfully.",
           })
+          // Handle redirect for successful signup
+          setTimeout(() => checkProfileAndRedirect(signInResult.data.user, true), 100)
         }
         return { error: signInResult.error }
       }
@@ -173,6 +195,11 @@ export const useAuth = () => {
         title: "Account created",
         description: "Welcome! Your account has been created successfully.",
       })
+
+      // Handle redirect for successful signup with session
+      if (data.user) {
+        setTimeout(() => checkProfileAndRedirect(data.user, true), 100)
+      }
 
       return { error: null }
     } catch (err: any) {
@@ -237,6 +264,8 @@ export const useAuth = () => {
         title: "Welcome back!",
         description: "You've been signed in successfully.",
       })
+      // Login always redirects to main feed - no profile check needed
+      navigate('/feed')
     }
 
     return { error }
