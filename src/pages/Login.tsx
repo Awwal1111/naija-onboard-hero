@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Logo } from '@/components/ui/logo'
 import { BrandButton } from '@/components/ui/brand-button'
-import { SecureInput } from '@/components/ui/secure-input'
+
 import { useAuth } from '@/hooks/useAuth'
 
 const Login = () => {
@@ -51,27 +51,33 @@ const Login = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            <SecureInput
-              label="Email Address"
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleInputChange}
-              placeholder="Enter your email"
-              validation="email"
-              required
-            />
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium mb-2">Email Address</label>
+              <input
+                id="email"
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                placeholder="Enter your email"
+                className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                required
+              />
+            </div>
 
-            <SecureInput
-              label="Password"
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleInputChange}
-              placeholder="Enter your password"
-              validation="none"
-              required
-            />
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium mb-2">Password</label>
+              <input
+                id="password"
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleInputChange}
+                placeholder="Enter your password"
+                className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                required
+              />
+            </div>
 
             <div className="text-left">
               <Link to="/forgot-password" className="text-primary hover:text-brand-green-hover font-medium">
