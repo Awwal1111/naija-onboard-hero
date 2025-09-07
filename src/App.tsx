@@ -13,6 +13,7 @@ import Onboarding from "./pages/Onboarding";
 import MainFeed from "./pages/MainFeed";
 import Profile from "./pages/Profile";
 import ExpertApplication from "./pages/ExpertApplication";
+import AdminExpertApplications from "./pages/AdminExpertApplications";
 import PostJob from "./pages/PostJob";
 import Experts from "./pages/Experts";
 import Jobs from "./pages/Jobs";
@@ -23,6 +24,8 @@ import { SocialMediaTasks } from "./pages/SocialMediaTasks";
 import { Surveys } from "./pages/Surveys";
 import { GuessNumberGame } from "./pages/GuessNumberGame";
 import { Referrals } from "./pages/Referrals";
+import PaymentSuccess from "./pages/PaymentSuccess";
+import PaymentFailed from "./pages/PaymentFailed";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -43,6 +46,7 @@ const App = () => (
           <Route path="/feed" element={<ProtectedRoute><MainFeed /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/expert-application" element={<ProtectedRoute><ExpertApplication /></ProtectedRoute>} />
+          <Route path="/admin/expert-applications" element={<ProtectedRoute><AdminExpertApplications /></ProtectedRoute>} />
           <Route path="/post-job" element={<ProtectedRoute><PostJob /></ProtectedRoute>} />
           <Route path="/experts" element={<ProtectedRoute><Experts /></ProtectedRoute>} />
           <Route path="/jobs" element={<ProtectedRoute><Jobs /></ProtectedRoute>} />
@@ -53,6 +57,8 @@ const App = () => (
           <Route path="/earn/social-tasks" element={<ProtectedRoute><SocialMediaTasks /></ProtectedRoute>} />
           <Route path="/chat" element={<ProtectedRoute><ChatList /></ProtectedRoute>} />
           <Route path="/chat/:userId" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+          <Route path="/payment-success" element={<PaymentSuccess />} />
+          <Route path="/payment-failed" element={<PaymentFailed />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

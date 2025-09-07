@@ -5,3 +5,12 @@ verify_jwt = true
 
 [functions.bitlabs-callbacks]
 verify_jwt = false
+
+[functions.send-expert-notification]
+verify_jwt = true
+
+[functions.paystack-webhook]
+verify_jwt = false
+
+[functions.paystack-callback]
+verify_jwt = false
