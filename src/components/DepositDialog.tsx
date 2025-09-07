@@ -32,7 +32,7 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
     }
   }
 
-  const quickAmounts = [500, 1000, 2000, 5000, 10000]
+  const quickAmounts = [500, 1000]
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -60,7 +60,7 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
 
           <div>
             <p className="text-sm font-medium text-text-primary mb-2">Quick amounts</p>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {quickAmounts.map((quickAmount) => (
                 <button
                   key={quickAmount}

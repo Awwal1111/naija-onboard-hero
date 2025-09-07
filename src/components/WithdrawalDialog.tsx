@@ -37,7 +37,7 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
 
   const handleWithdraw = async () => {
     const withdrawAmount = parseFloat(amount)
-    if (!withdrawAmount || withdrawAmount < 500 || withdrawAmount > currentBalance) return
+    if (!withdrawAmount || withdrawAmount < 3000 || withdrawAmount > currentBalance) return
     if (!accountNumber || !accountName || !bankCode) return
 
     setLoading(true)
@@ -77,7 +77,7 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
               ₦{currentBalance.toLocaleString()}
             </p>
             <p className="text-xs text-text-secondary mt-1">
-              Minimum withdrawal: ₦500
+              Minimum withdrawal: ₦3,000
             </p>
           </div>
 
@@ -90,7 +90,7 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="Enter amount"
-              min="500"
+              min="3000"
               max={currentBalance.toString()}
             />
           </div>
@@ -156,7 +156,7 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
               onClick={handleWithdraw}
               disabled={
                 !amount || 
-                parseFloat(amount) < 500 || 
+                parseFloat(amount) < 3000 || 
                 parseFloat(amount) > currentBalance ||
                 !accountNumber || 
                 !accountName || 

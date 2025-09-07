@@ -63,7 +63,7 @@ export const WalletCard = () => {
                 variant="outline"
                 size="sm"
                 onClick={() => setShowWithdrawal(true)}
-                disabled={balance < 500}
+                disabled={balance < 3000}
                 className="flex-1 bg-white/10 border-white/20 text-white hover:bg-white/20 disabled:opacity-50"
               >
                 <Minus className="h-4 w-4 mr-2" />
@@ -71,9 +71,9 @@ export const WalletCard = () => {
               </BrandButton>
             </div>
             
-            {balance < 500 && (
+            {balance < 3000 && (
               <p className="text-xs text-white/70">
-                Minimum withdrawal: ₦500
+                Minimum withdrawal: ₦3,000
               </p>
             )}
           </div>
