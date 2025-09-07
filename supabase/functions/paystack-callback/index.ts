@@ -65,17 +65,40 @@ serve(async (req) => {
     if (transaction.status === 'success' && transaction.metadata?.user_id) {
       const amount = transaction.amount / 100; // Convert from kobo to naira
 
-      // Update wallet balance
-      const { error: walletError } = await supabaseClient
+      // Update wallets table
+      const { data: wallet, error: walletFetchError } = await supabaseClient
+        .from('wallets')
+        .select('balance')
+        .eq('user_id', transaction.metadata.user_id)
+        .single();
+
+      if (walletFetchError) {
+        // Create wallet if it doesn't exist
+        await supabaseClient
+          .from('wallets')
+          .insert({
+            user_id: transaction.metadata.user_id,
+            balance: amount,
+            last_update: new Date().toISOString()
+          });
+      } else {
+        // Update existing wallet
+        await supabaseClient
+          .from('wallets')
+          .update({
+            balance: wallet.balance + amount,
+            last_update: new Date().toISOString()
+          })
+          .eq('user_id', transaction.metadata.user_id);
+      }
+
+      // Also update profiles table for backward compatibility
+      await supabaseClient
         .from('profiles')
         .update({
           wallet_balance: supabaseClient.raw(`wallet_balance + ${amount}`)
         })
         .eq('user_id', transaction.metadata.user_id);
-
-      if (walletError) {
-        console.error("Error updating wallet:", walletError);
-      }
 
       // Create wallet transaction record
       await supabaseClient

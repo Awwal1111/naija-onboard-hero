@@ -6,6 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import { WalletCard } from '@/components/WalletCard'
+import { TransactionHistory } from '@/components/TransactionHistory'
 import { 
   Coins,
   FileText, 
@@ -89,29 +91,8 @@ export const Earn = () => {
             </div>
           </div>
 
-          {/* Balance Summary Card */}
-          <Card className="bg-gradient-to-r from-primary to-primary-glow text-white border-0">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <p className="text-white/80 text-sm">Total Balance</p>
-                  <p className="text-4xl font-bold">₦{profile?.wallet_balance?.toFixed(2) || '0.00'}</p>
-                </div>
-                <Coins className="h-12 w-12 text-white/80" />
-              </div>
-              
-              <div className="flex gap-3">
-                <Button variant="secondary" size="default" className="flex-1 bg-white/20 text-white hover:bg-white/30 border-white/20">
-                  <ArrowDownLeft className="h-4 w-4 mr-2" />
-                  Deposit
-                </Button>
-                <Button variant="secondary" size="default" className="flex-1 bg-white/20 text-white hover:bg-white/30 border-white/20">
-                  <ArrowUpRight className="h-4 w-4 mr-2" />
-                  Withdraw
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Wallet Card with integrated functionality */}
+          <WalletCard />
         </div>
 
         {/* Main Content Layout - Main Column + Sidebar */}
@@ -187,6 +168,9 @@ export const Earn = () => {
                 </Card>
               </div>
             </div>
+
+            {/* Transaction History */}
+            <TransactionHistory />
 
             {/* Recent Transactions Section */}
             <Card className="border-accent/20">
