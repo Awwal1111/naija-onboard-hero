@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Camera, Wallet, MoreVertical, Edit, Share, Settings, LogOut, Plus, ArrowLeft, Home, MessageCircle, Users, DollarSign, User } from 'lucide-react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Logo } from '@/components/ui/logo'
 import { BrandButton } from '@/components/ui/brand-button'
 import { useProfile } from '@/hooks/useProfile'
@@ -18,6 +18,7 @@ import { useToast } from '@/hooks/use-toast'
 
 const Profile = () => {
   const navigate = useNavigate()
+  const { userId } = useParams() // Get userId from URL params
   const { profile, loading, updateProfile } = useProfile()
   const { signOut } = useAuth()
   const { toast } = useToast()
@@ -29,6 +30,13 @@ const Profile = () => {
     profession: '',
     phone_number: ''
   })
+
+  // Check if this is viewing someone else's profile
+  const isOwnProfile = !userId
+  
+  // Use different logic for viewing others' profiles
+  // For now, we'll use the existing profile hook which gets the current user's profile
+  // In a real implementation, you'd want a separate hook or function to get other users' profiles
 
   const bottomNavItems = [
     { icon: Home, label: 'Feed', path: '/feed' },
@@ -115,6 +123,28 @@ const Profile = () => {
         <div className="text-center">
           <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
           <p className="text-text-secondary">Loading profile...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // If viewing someone else's profile, show a simple message for now
+  if (!isOwnProfile) {
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="bg-background border-b border-border px-6 py-4 flex items-center">
+          <button onClick={() => navigate(-1)} className="mr-4">
+            <ArrowLeft className="h-6 w-6 text-text-secondary" />
+          </button>
+          <Logo />
+        </header>
+        <div className="px-6 py-8 text-center">
+          <h1 className="text-2xl font-bold text-text-primary mb-4">User Profile</h1>
+          <p className="text-text-secondary mb-6">Profile viewing is coming soon!</p>
+          <BrandButton onClick={() => navigate(`/chat/${userId}`)}>
+            <MessageCircle className="h-4 w-4 mr-2" />
+            Start Chat
+          </BrandButton>
         </div>
       </div>
     )

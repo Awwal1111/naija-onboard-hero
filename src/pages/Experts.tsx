@@ -277,7 +277,12 @@ const Experts = () => {
                         <MessageCircle className="h-4 w-4 mr-2" />
                         Chat
                       </BrandButton>
-                      <BrandButton variant="outline" size="sm" className="flex-1">
+                      <BrandButton 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex-1"
+                        onClick={() => navigate(`/profile/${expert.user_id}`)}
+                      >
                         View Profile
                       </BrandButton>
                     </div>
