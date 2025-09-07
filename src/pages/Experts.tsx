@@ -87,7 +87,6 @@ const Experts = () => {
 
   const fetchExperts = async () => {
     try {
-      console.log('Fetching experts...')
       const { data, error } = await supabase
         .from('expert_applications')
         .select(`
@@ -104,10 +103,8 @@ const Experts = () => {
         .eq('status', 'approved')
         .order('submitted_at', { ascending: false })
 
-      console.log('Expert applications query result:', { data, error })
       if (error) throw error
       setExperts((data as any) || [])
-      console.log('Set experts:', (data as any) || [])
     } catch (error) {
       console.error('Error fetching experts:', error)
       toast({
