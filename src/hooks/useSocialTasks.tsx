@@ -18,10 +18,7 @@ export const useSocialTasks = () => {
     try {
       const { data, error } = await supabase
         .from('social_tasks' as any)
-        .select(`
-          *,
-          profiles!social_tasks_task_giver_id_fkey(full_name)
-        `)
+        .select('*')
         .eq('status', 'active')
         .order('created_at', { ascending: false })
 
@@ -29,10 +26,12 @@ export const useSocialTasks = () => {
       setTasks((data as any) || [])
     } catch (error) {
       console.error('Error fetching social tasks:', error)
+      // Set empty array instead of crashing
+      setTasks([])
       toast({
-        title: "Error",
-        description: "Failed to load social media tasks",
-        variant: "destructive",
+        title: "Info",
+        description: "Social media tasks are not available right now",
+        variant: "default",
       })
     } finally {
       setLoading(false)

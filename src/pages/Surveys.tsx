@@ -31,7 +31,7 @@ interface BitLabsOffer {
 export const Surveys = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { profile } = useProfile()
+  const { profile, loading: profileLoading } = useProfile()
   const [offers, setOffers] = useState<BitLabsOffer[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -153,7 +153,7 @@ export const Surveys = () => {
     }
   }
 
-  if (loading && !user) {
+  if (loading || profileLoading) {
     return (
       <div className="min-h-screen bg-gradient-subtle p-4 flex items-center justify-center">
         <div className="text-center">
