@@ -29,16 +29,15 @@ import { toast } from 'sonner'
 
 export const Earn = () => {
   const navigate = useNavigate()
-  const { user } = useAuth()
-  const { profile } = useProfile()
-  const [loading, setLoading] = useState(false)
+  const { user, loading: authLoading } = useAuth()
+  const { profile, loading: profileLoading } = useProfile()
 
   useEffect(() => {
-    // Only redirect if we're not loading and there's definitely no user
-    if (!loading && !user) {
+    // Only redirect if auth is not loading and there's definitely no user
+    if (!authLoading && !user) {
       navigate('/login')
     }
-  }, [user, navigate, loading])
+  }, [user, navigate, authLoading])
 
   const bottomNavItems = [
     { icon: Home, label: 'Feed', path: '/feed' },
@@ -64,7 +63,7 @@ export const Earn = () => {
     navigate('/earn/social-tasks')
   }
 
-  if (!user || !profile) {
+  if (authLoading || profileLoading || !user || !profile) {
     return (
       <div className="min-h-screen bg-gradient-subtle p-4 flex items-center justify-center pb-20">
         <div className="text-center">Loading...</div>
