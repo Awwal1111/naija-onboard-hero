@@ -56,7 +56,7 @@ export const Earn = () => {
     navigate('/earn/social-tasks')
   }
 
-  if (authLoading || profileLoading) {
+  if (authLoading || profileLoading || !profile) {
     return (
       <div className="min-h-screen bg-gradient-subtle p-4 flex items-center justify-center pb-20">
         <div className="text-center">
@@ -86,7 +86,7 @@ export const Earn = () => {
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <p className="text-white/80 text-sm">Total Balance</p>
-                  <p className="text-3xl font-bold">₦{profile.wallet_balance?.toFixed(2) || '0.00'}</p>
+                  <p className="text-3xl font-bold">₦{profile?.wallet_balance?.toFixed(2) || '0.00'}</p>
                 </div>
                 <Coins className="h-8 w-8 text-white/80" />
               </div>
@@ -223,7 +223,7 @@ export const Earn = () => {
               <Separator />
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">
-                  Referral Code: <span className="font-mono font-bold text-primary">{profile.referral_code}</span>
+                  Referral Code: <span className="font-mono font-bold text-primary">{profile?.referral_code || 'Loading...'}</span>
                 </p>
               </div>
             </CardContent>
