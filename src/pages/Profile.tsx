@@ -185,6 +185,10 @@ const Profile = () => {
                     <Settings className="mr-2 h-4 w-4" />
                     App Settings
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/admin/expert-applications')}>
+                    <Users className="mr-2 h-4 w-4" />
+                    Admin Dashboard
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleLogout} className="text-destructive">
                     <LogOut className="mr-2 h-4 w-4" />
                     Log Out
