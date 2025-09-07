@@ -82,81 +82,50 @@ const SignUp = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            <SecureInput
-              label="Full Name"
-              type="text"
-              name="fullName"
-              value={formData.fullName}
-              onChange={handleInputChange}
-              placeholder="Enter your full name"
-              validation="text"
-              required
-            />
+            <div>
+              <label htmlFor="fullName" className="block text-sm font-medium mb-2">Full Name</label>
+              <input
+                id="fullName"
+                type="text"
+                name="fullName"
+                value={formData.fullName}
+                onChange={handleInputChange}
+                placeholder="Enter your full name"
+                className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
 
-            <SecureInput
-              label="Email Address"
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleInputChange}
-              placeholder="Enter your email"
-              validation="email"
-              required
-            />
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium mb-2">Email Address</label>
+              <input
+                id="email"
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                placeholder="Enter your email"
+                className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
 
-            <div className="space-y-2">
-              <SecureInput
-                label="Password"
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium mb-2">Password</label>
+              <input
+                id="password"
                 type="password"
                 name="password"
                 value={formData.password}
                 onChange={handleInputChange}
-                placeholder="Create a strong password"
-                validation="none"
-                showValidation={false}
-                required
+                placeholder="Create a password"
+                className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
               />
-              
-              {/* Password strength indicator */}
-              {passwordValidation && formData.password && (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                      <div 
-                        className={`h-full transition-all duration-300 ${
-                          passwordValidation.strength === 'weak' ? 'w-1/3 bg-destructive' :
-                          passwordValidation.strength === 'medium' ? 'w-2/3 bg-warning' :
-                          'w-full bg-primary'
-                        }`}
-                      />
-                    </div>
-                    <span className={`text-xs font-medium ${
-                      passwordValidation.strength === 'weak' ? 'text-destructive' :
-                      passwordValidation.strength === 'medium' ? 'text-warning' :
-                      'text-primary'
-                    }`}>
-                      {passwordValidation.strength.toUpperCase()}
-                    </span>
-                  </div>
-                  
-                  {!passwordValidation.isValid && (
-                    <div className="space-y-1">
-                      {passwordValidation.errors.map((error, index) => (
-                        <p key={index} className="text-xs text-destructive">
-                          • {error}
-                        </p>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
 
             <BrandButton 
               type="submit" 
               className="w-full" 
               size="lg" 
-              disabled={isLoading || (passwordValidation && !passwordValidation.isValid)}
+              disabled={isLoading}
             >
               {isLoading ? 'Creating Account...' : 'Sign Up'}
             </BrandButton>
