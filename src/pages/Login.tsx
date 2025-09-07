@@ -23,6 +23,7 @@ const Login = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log('Login form submitted with:', { email: formData.email, hasPassword: !!formData.password })
     setIsLoading(true)
     await signIn(formData.email, formData.password)
     setIsLoading(false)

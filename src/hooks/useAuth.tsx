@@ -188,16 +188,54 @@ export const useAuth = () => {
   }
 
   const signIn = async (email: string, password: string) => {
+    console.log('Attempting sign in with:', { email: email?.trim(), hasPassword: !!password })
+    
+    if (!email || !email.trim()) {
+      const error = { message: "Email is required" }
+      toast({
+        title: "Login failed",
+        description: "Please enter your email address",
+        variant: "destructive",
+      })
+      return { error }
+    }
+
+    if (!password) {
+      const error = { message: "Password is required" }
+      toast({
+        title: "Login failed", 
+        description: "Please enter your password",
+        variant: "destructive",
+      })
+      return { error }
+    }
+
     const { error } = await supabase.auth.signInWithPassword({
-      email,
+      email: email.trim(),
       password,
     })
 
+    console.log('Sign in result:', { error })
+
     if (error) {
+      let errorMessage = error.message
+      
+      // Handle specific error cases with user-friendly messages
+      if (error.message.includes('Invalid login credentials')) {
+        errorMessage = "The email or password you entered is incorrect. Please check and try again."
+      } else if (error.message.includes('Email not confirmed')) {
+        errorMessage = "Please check your email and click the confirmation link before signing in."
+      }
+      
       toast({
         title: "Login failed",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
+      })
+    } else {
+      toast({
+        title: "Welcome back!",
+        description: "You've been signed in successfully.",
       })
     }
 
