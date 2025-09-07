@@ -87,29 +87,40 @@ const Experts = () => {
 
   const fetchExperts = async () => {
     try {
-      const { data, error } = await supabase
+      console.log('Fetching experts...')
+      // Fetch expert applications first
+      const { data: expertApps, error: appsError } = await supabase
         .from('expert_applications')
-        .select(`
-          *,
-          profiles (
-            full_name,
-            bio,
-            profession,
-            profile_picture_url,
-            average_rating,
-            rating_count
-          )
-        `)
+        .select('*')
         .eq('status', 'approved')
         .order('submitted_at', { ascending: false })
+      
+      console.log('Expert applications:', expertApps, appsError)
+      if (appsError) throw appsError
 
-      if (error) throw error
-      setExperts((data as any) || [])
+      // Fetch corresponding profiles
+      const userIds = expertApps?.map(app => app.user_id) || []
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, bio, profession, profile_picture_url, average_rating, rating_count')
+        .in('user_id', userIds)
+      
+      console.log('Profiles:', profiles, profilesError)
+      if (profilesError) console.warn('Profile fetch error:', profilesError)
+
+      // Combine the data
+      const expertsWithProfiles = expertApps?.map(app => ({
+        ...app,
+        profiles: profiles?.find(p => p.user_id === app.user_id) || null
+      })) || []
+      
+      console.log('Combined experts:', expertsWithProfiles)
+      setExperts(expertsWithProfiles)
     } catch (error) {
       console.error('Error fetching experts:', error)
       toast({
         title: "Error",
-        description: "Failed to load experts directory",
+        description: `Failed to load experts directory: ${error.message}`,
         variant: "destructive"
       })
     } finally {
