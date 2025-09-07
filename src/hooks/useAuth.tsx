@@ -123,17 +123,12 @@ export const useAuth = () => {
 
     console.log('Attempting signup with:', { email: email.trim(), hasPassword: !!password, fullName })
     
-    // Use production URL for OAuth redirects in deployed environment
-    const redirectUrl = window.location.hostname === 'localhost' 
-      ? `${window.location.origin}/`
-      : `${window.location.protocol}//${window.location.host}/`
-    
     try {
+      // First attempt to sign up without email confirmation
       const { error, data } = await supabase.auth.signUp({
         email: email.trim(),
         password,
         options: {
-          emailRedirectTo: redirectUrl,
           data: {
             full_name: fullName || ''
           }
@@ -148,14 +143,38 @@ export const useAuth = () => {
           description: error.message,
           variant: "destructive",
         })
-      } else {
-        toast({
-          title: "Check your email",
-          description: "We've sent you a confirmation link.",
-        })
+        return { error }
       }
 
-      return { error }
+      // If signup successful but no session (email confirmation required),
+      // try to sign in immediately
+      if (data.user && !data.session) {
+        console.log('No session from signup, attempting immediate sign in...')
+        const signInResult = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password,
+        })
+        
+        if (signInResult.error) {
+          toast({
+            title: "Account created",
+            description: "Please check your email to confirm your account, then try logging in.",
+          })
+        } else {
+          toast({
+            title: "Account created",
+            description: "Welcome! Your account has been created successfully.",
+          })
+        }
+        return { error: signInResult.error }
+      }
+
+      toast({
+        title: "Account created",
+        description: "Welcome! Your account has been created successfully.",
+      })
+
+      return { error: null }
     } catch (err: any) {
       console.error('Signup error:', err)
       const error = { message: err.message || "An unexpected error occurred" }
