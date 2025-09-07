@@ -28,11 +28,12 @@ export const GuessNumberGame = () => {
   const [hint, setHint] = useState('')
   const [sessionId, setSessionId] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!user) {
-      navigate('/login')
-    }
-  }, [user, navigate])
+  // Remove manual redirect - ProtectedRoute handles this
+  // useEffect(() => {
+  //   if (!user) {
+  //     navigate('/login')
+  //   }
+  // }, [user, navigate])
 
   const startGame = () => {
     const number = Math.floor(Math.random() * 100) + 1

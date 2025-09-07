@@ -7,8 +7,9 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute = ({ children, redirectTo = '/login' }: ProtectedRouteProps) => {
-  const { user, loading } = useAuth()
+  const { user, loading, session } = useAuth()
 
+  // Show loading while auth is being determined
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-subtle flex items-center justify-center">
@@ -20,7 +21,8 @@ export const ProtectedRoute = ({ children, redirectTo = '/login' }: ProtectedRou
     )
   }
 
-  if (!user) {
+  // Only redirect if we're sure there's no valid session
+  if (!user && !session) {
     return <Navigate to={redirectTo} replace />
   }
 

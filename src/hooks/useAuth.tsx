@@ -81,7 +81,8 @@ export const useAuth = () => {
           setSession(null)
           setUser(null)
           const currentPath = window.location.pathname
-          if (!authPaths.includes(currentPath) && currentPath !== '/') {
+          // Only redirect to login if on protected routes, not if on auth pages
+          if (!authPaths.includes(currentPath) && currentPath !== '/' && currentPath !== '/onboarding') {
             navigate('/login')
           }
         }

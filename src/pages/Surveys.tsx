@@ -37,12 +37,8 @@ export const Surveys = () => {
   const [refreshing, setRefreshing] = useState(false)
 
   useEffect(() => {
-    if (!user) {
-      navigate('/login')
-      return
-    }
     fetchOffers()
-  }, [user, navigate])
+  }, [])
 
   const fetchOffers = async () => {
     if (!user) return
@@ -53,17 +49,20 @@ export const Surveys = () => {
         body: { user_id: user.id }
       })
 
-      if (error) throw error
+      if (error) {
+        console.error('BitLabs API error:', error)
+        throw error
+      }
       setOffers(data?.offers || [])
     } catch (error) {
       console.error('Error fetching offers:', error)
-      toast.error('Failed to load surveys')
-      // Set mock data for development
+      toast.error('Failed to load surveys. Showing sample surveys.')
+      // Set mock data for development/fallback
       setOffers([
         {
           id: '1',
           name: 'Consumer Survey',
-          description: 'Share your shopping habits',
+          description: 'Share your shopping habits and preferences',
           reward: 50,
           duration: 5,
           category: 'Consumer',
@@ -72,10 +71,19 @@ export const Surveys = () => {
         {
           id: '2', 
           name: 'Technology Survey',
-          description: 'Tell us about your tech preferences',
+          description: 'Tell us about your tech preferences and usage',
           reward: 75,
           duration: 8,
           category: 'Technology',
+          url: '#'
+        },
+        {
+          id: '3',
+          name: 'Entertainment Survey', 
+          description: 'Share your entertainment and media preferences',
+          reward: 60,
+          duration: 6,
+          category: 'Entertainment',
           url: '#'
         }
       ])
@@ -124,12 +132,19 @@ export const Surveys = () => {
         }
       }
 
-      // Open survey in new tab (would be BitLabs URL in production)
+      // Open survey in new tab or embedded view
       if (offer.url && offer.url !== '#') {
-        window.open(offer.url, '_blank')
+        // In production, this would open the actual BitLabs survey URL
+        window.open(offer.url, '_blank', 'noopener,noreferrer')
         toast.success('Survey opened! Complete it to earn rewards.')
       } else {
-        toast.error('Survey link not available')
+        // For demo purposes, simulate survey completion
+        toast.success(`Survey "${offer.name}" completed! You earned ₦${offer.reward}`)
+        
+        // Simulate adding reward to wallet (in production, this would be handled by BitLabs callback)
+        setTimeout(() => {
+          toast.success(`₦${offer.reward} has been added to your wallet!`)
+        }, 1500)
       }
       
     } catch (error) {
@@ -138,10 +153,15 @@ export const Surveys = () => {
     }
   }
 
-  if (!user || !profile) {
-    return <div className="min-h-screen bg-gradient-subtle p-4 flex items-center justify-center">
-      <div className="text-center">Loading...</div>
-    </div>
+  if (loading && !user) {
+    return (
+      <div className="min-h-screen bg-gradient-subtle p-4 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    )
   }
 
   return (

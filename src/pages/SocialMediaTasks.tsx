@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
 import { useSocialTasks } from '@/hooks/useSocialTasks'
+import { toast } from 'sonner'
 
 interface CreateTaskForm {
   platform: string
@@ -41,48 +42,70 @@ export const SocialMediaTasks = () => {
     { icon: User, label: 'Profile', path: '/profile' }
   ]
 
-  useEffect(() => {
-    if (!user) {
-      navigate('/login')
-    }
-  }, [user, navigate])
+  // Remove manual redirect - ProtectedRoute handles this
+  // useEffect(() => {
+  //   if (!user) {
+  //     navigate('/login')
+  //   }
+  // }, [user, navigate])
 
   const handleTaskAction = async (taskId: number, action: 'claim' | 'complete') => {
-    if (action === 'claim') {
-      const result = await claimTask(taskId)
-      if (result.success) {
-        // Task claimed successfully
+    try {
+      if (action === 'claim') {
+        const result = await claimTask(taskId)
+        if (result.success) {
+          toast.success('Task claimed successfully!')
+        } else {
+          toast.error(result.error || 'Failed to claim task')
+        }
+      } else if (action === 'complete') {
+        const result = await completeTask(taskId)
+        if (result.success) {
+          toast.success('Task completed successfully!')
+        } else {
+          toast.error(result.error || 'Failed to complete task')
+        }
       }
-    } else if (action === 'complete') {
-      const result = await completeTask(taskId)
-      if (result.success) {
-        // Task completed successfully
-      }
+    } catch (error) {
+      console.error('Task action error:', error)
+      toast.error('An error occurred. Please try again.')
     }
   }
 
   const handleCreateTask = async () => {
     if (!createForm.platform || !createForm.type || !createForm.link || createForm.reward <= 0 || createForm.total_slots <= 0) {
+      toast.error('Please fill in all fields with valid values')
       return
     }
 
-    const result = await createTask(createForm)
-    if (result.success) {
-      setCreateForm({
-        platform: '',
-        type: '',
-        link: '',
-        reward: 0,
-        total_slots: 0
-      })
-      setUserRole('earner') // Switch back to earner view
+    try {
+      const result = await createTask(createForm)
+      if (result.success) {
+        toast.success('Task created successfully!')
+        setCreateForm({
+          platform: '',
+          type: '',
+          link: '',
+          reward: 0,
+          total_slots: 0
+        })
+        setUserRole('earner') // Switch back to earner view
+      } else {
+        toast.error(result.error || 'Failed to create task')
+      }
+    } catch (error) {
+      console.error('Create task error:', error)
+      toast.error('Failed to create task. Please try again.')
     }
   }
 
-  if (!user || !profile) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gradient-subtle p-4 flex items-center justify-center pb-20">
-        <div className="text-center">Loading...</div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
       </div>
     )
   }
@@ -208,15 +231,22 @@ export const SocialMediaTasks = () => {
                         </div>
                       </div>
                       
-                      <div className="space-y-3">
-                        <BrandButton 
-                          className="w-full" 
-                          onClick={() => window.open(task.link, '_blank')}
-                          disabled={task.done_slots >= task.total_slots}
-                        >
-                          <ExternalLink className="h-4 w-4 mr-2" />
-                          {task.done_slots >= task.total_slots ? 'Completed' : `Go to ${task.platform}`}
-                        </BrandButton>
+              <div className="space-y-3">
+                <BrandButton 
+                  className="w-full" 
+                  onClick={() => {
+                    if (task.link && task.link !== '#') {
+                      window.open(task.link, '_blank', 'noopener,noreferrer')
+                      toast.success(`Opened ${task.platform} link. Complete the task and come back to mark it as done.`)
+                    } else {
+                      toast.error('Task link not available')
+                    }
+                  }}
+                  disabled={task.done_slots >= task.total_slots}
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  {task.done_slots >= task.total_slots ? 'Task Completed' : `Open ${task.platform}`}
+                </BrandButton>
                         
                         {task.done_slots < task.total_slots && (
                           <div className="flex gap-2">
