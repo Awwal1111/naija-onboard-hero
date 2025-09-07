@@ -4,8 +4,12 @@ import { Link, useNavigate } from 'react-router-dom'
 import { BrandInput } from '@/components/ui/brand-input'
 import { BrandButton } from '@/components/ui/brand-button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { StarRating } from '@/components/ui/star-rating'
+import { RatingDialog } from '@/components/ui/rating-dialog'
+import { useExpertRatings } from '@/hooks/useExpertRatings'
 import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
+import { useAuth } from '@/hooks/useAuth'
 
 interface Expert {
   id: string
@@ -22,17 +26,22 @@ interface Expert {
     bio: string
     profession: string
     profile_picture_url: string
+    average_rating: number
+    rating_count: number
   } | null
 }
 
 const Experts = () => {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const { toast } = useToast()
   const [experts, setExperts] = useState<Expert[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [stateFilter, setStateFilter] = useState('all')
   const [skillFilter, setSkillFilter] = useState('all')
+  const [selectedExpert, setSelectedExpert] = useState<string | null>(null)
+  const { submitRating } = useExpertRatings(selectedExpert || undefined)
 
   const bottomNavItems = [
     { icon: Home, label: 'Feed', path: '/feed' },
@@ -86,7 +95,9 @@ const Experts = () => {
             full_name,
             bio,
             profession,
-            profile_picture_url
+            profile_picture_url,
+            average_rating,
+            rating_count
           )
         `)
         .eq('status', 'approved')
@@ -104,6 +115,16 @@ const Experts = () => {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleRatingSubmit = async (expertUserId: string, rating: number, comment?: string) => {
+    setSelectedExpert(expertUserId)
+    const result = await submitRating(rating, comment)
+    if (result.success) {
+      // Refresh the experts list to show updated ratings
+      fetchExperts()
+    }
+    setSelectedExpert(null)
   }
 
   const filteredExperts = experts.filter(expert => {
@@ -219,9 +240,18 @@ const Experts = () => {
                     </p>
                     
                     {/* Rating */}
-                    <div className="flex items-center gap-1 mb-2">
-                      <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                      <span className="text-sm text-text-secondary">No reviews yet</span>
+                    <div className="flex items-center gap-2 mb-2">
+                      <StarRating
+                        rating={expert.profiles?.average_rating || 0}
+                        readonly
+                        size="sm"
+                      />
+                      <span className="text-sm text-text-secondary">
+                        {expert.profiles?.rating_count 
+                          ? `${expert.profiles.rating_count} review${expert.profiles.rating_count !== 1 ? 's' : ''}`
+                          : 'No reviews yet'
+                        }
+                      </span>
                     </div>
                     
                     {/* Location */}
@@ -238,7 +268,7 @@ const Experts = () => {
                     </p>
 
                     {/* Action Buttons */}
-                    <div className="flex gap-3">
+                    <div className="flex gap-2 mb-2">
                       <BrandButton 
                         size="sm" 
                         className="flex-1"
@@ -251,6 +281,19 @@ const Experts = () => {
                         View Profile
                       </BrandButton>
                     </div>
+
+                    {/* Rating Button */}
+                    {user && user.id !== expert.user_id && (
+                      <RatingDialog
+                        onSubmit={(rating, comment) => handleRatingSubmit(expert.user_id, rating, comment)}
+                        trigger={
+                          <BrandButton variant="outline" size="sm" className="w-full">
+                            <Star className="h-4 w-4 mr-2" />
+                            Rate Expert
+                          </BrandButton>
+                        }
+                      />
+                    )}
                   </div>
                 </div>
               </div>

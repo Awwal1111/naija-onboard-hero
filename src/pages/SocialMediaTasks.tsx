@@ -1,32 +1,37 @@
 import React, { useState, useEffect } from 'react'
-import { ArrowLeft, Plus, Users, UserCheck, Home, MessageCircle, DollarSign, User, Star } from 'lucide-react'
+import { ArrowLeft, Plus, Users, UserCheck, Home, MessageCircle, DollarSign, User, Star, ExternalLink } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { BrandButton } from '@/components/ui/brand-button'
+import { BrandInput } from '@/components/ui/brand-input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
+import { useSocialTasks } from '@/hooks/useSocialTasks'
 
-interface SocialTask {
-  id: string
+interface CreateTaskForm {
   platform: string
-  taskType: string
-  reward: number
-  slotsTotal: number
-  slotsCompleted: number
+  type: string
   link: string
-  description: string
-  createdBy: string
+  reward: number
+  total_slots: number
 }
 
 export const SocialMediaTasks = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { profile } = useProfile()
+  const { tasks, loading, claimTask, completeTask, createTask } = useSocialTasks()
   const [userRole, setUserRole] = useState<'earner' | 'tasker' | null>(null)
-  const [tasks, setTasks] = useState<SocialTask[]>([])
-  const [loading, setLoading] = useState(true)
+  const [createForm, setCreateForm] = useState<CreateTaskForm>({
+    platform: '',
+    type: '',
+    link: '',
+    reward: 0,
+    total_slots: 0
+  })
 
   const bottomNavItems = [
     { icon: Home, label: 'Feed', path: '/feed' },
@@ -40,48 +45,37 @@ export const SocialMediaTasks = () => {
     if (!user) {
       navigate('/login')
     }
-    // Load tasks from database
-    loadTasks()
   }, [user, navigate])
 
-  const loadTasks = async () => {
-    // Placeholder for loading tasks from database
-    setTasks([
-      {
-        id: '1',
-        platform: 'Instagram',
-        taskType: 'Follow',
-        reward: 30,
-        slotsTotal: 100,
-        slotsCompleted: 25,
-        link: 'https://instagram.com/example',
-        description: 'Follow our business page for latest updates',
-        createdBy: 'BusinessOwner123'
-      },
-      {
-        id: '2',
-        platform: 'YouTube',
-        taskType: 'Subscribe',
-        reward: 50,
-        slotsTotal: 50,
-        slotsCompleted: 10,
-        link: 'https://youtube.com/channel/example',
-        description: 'Subscribe to our channel for tech tutorials',
-        createdBy: 'TechGuru'
+  const handleTaskAction = async (taskId: number, action: 'claim' | 'complete') => {
+    if (action === 'claim') {
+      const result = await claimTask(taskId)
+      if (result.success) {
+        // Task claimed successfully
       }
-    ])
-    setLoading(false)
+    } else if (action === 'complete') {
+      const result = await completeTask(taskId)
+      if (result.success) {
+        // Task completed successfully
+      }
+    }
   }
 
-  const handleTaskCompletion = async (taskId: string) => {
-    // Send email notification to admin
-    const task = tasks.find(t => t.id === taskId)
-    if (task) {
-      // Implement email notification logic here
-      console.log(`Task ${taskId} completed by ${user?.email}`)
-      
-      // For now, just show a message
-      alert('Task marked as completed! Admin will verify and credit your account.')
+  const handleCreateTask = async () => {
+    if (!createForm.platform || !createForm.type || !createForm.link || createForm.reward <= 0 || createForm.total_slots <= 0) {
+      return
+    }
+
+    const result = await createTask(createForm)
+    if (result.success) {
+      setCreateForm({
+        platform: '',
+        type: '',
+        link: '',
+        reward: 0,
+        total_slots: 0
+      })
+      setUserRole('earner') // Switch back to earner view
     }
   }
 
@@ -174,58 +168,78 @@ export const SocialMediaTasks = () => {
           {/* Task Feed */}
           <div className="p-6">
             <div className="space-y-4">
-              {tasks.map((task) => (
-                <Card key={task.id} className="border-accent/20">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <Badge variant="outline" className="text-xs">
-                        {task.platform}
-                      </Badge>
-                      <div className="text-right">
-                        <p className="text-lg font-bold text-green-600">₦{task.reward}</p>
-                        <p className="text-xs text-muted-foreground">per task</p>
+              {loading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+                  <p className="text-muted-foreground">Loading tasks...</p>
+                </div>
+              ) : tasks.length === 0 ? (
+                <div className="text-center py-8">
+                  <Star className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No tasks available right now</p>
+                </div>
+              ) : (
+                tasks.map((task) => (
+                  <Card key={task.id} className="border-accent/20">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <Badge variant="outline" className="text-xs">
+                          {task.platform}
+                        </Badge>
+                        <div className="text-right">
+                          <p className="text-lg font-bold text-green-600">₦{task.reward}</p>
+                          <p className="text-xs text-muted-foreground">per task</p>
+                        </div>
                       </div>
-                    </div>
-                    <CardTitle className="text-base flex items-center gap-2">
-                      {task.taskType} Task
-                      <Badge variant="secondary" className="text-xs">
-                        {task.slotsTotal - task.slotsCompleted} left
-                      </Badge>
-                    </CardTitle>
-                    <CardDescription>{task.description}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="text-sm text-muted-foreground">
-                        Progress: {task.slotsCompleted}/{task.slotsTotal}
+                      <CardTitle className="text-base flex items-center gap-2">
+                        {task.type} Task
+                        <Badge variant="secondary" className="text-xs">
+                          {task.total_slots - task.done_slots} left
+                        </Badge>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="text-sm text-muted-foreground">
+                          Progress: {task.done_slots}/{task.total_slots}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          Task #{task.id}
+                        </div>
                       </div>
-                      <div className="text-sm text-muted-foreground">
-                        by @{task.createdBy}
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-3">
-                      <BrandButton 
-                        className="w-full" 
-                        onClick={() => window.open(task.link, '_blank')}
-                        disabled={task.slotsCompleted >= task.slotsTotal}
-                      >
-                        {task.slotsCompleted >= task.slotsTotal ? 'Completed' : `Go to ${task.platform}`}
-                      </BrandButton>
                       
-                      {task.slotsCompleted < task.slotsTotal && (
-                        <Button 
-                          variant="outline" 
+                      <div className="space-y-3">
+                        <BrandButton 
                           className="w-full" 
-                          onClick={() => handleTaskCompletion(task.id)}
+                          onClick={() => window.open(task.link, '_blank')}
+                          disabled={task.done_slots >= task.total_slots}
                         >
-                          I've Done This Task
-                        </Button>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          {task.done_slots >= task.total_slots ? 'Completed' : `Go to ${task.platform}`}
+                        </BrandButton>
+                        
+                        {task.done_slots < task.total_slots && (
+                          <div className="flex gap-2">
+                            <Button 
+                              variant="outline" 
+                              className="flex-1" 
+                              onClick={() => handleTaskAction(task.id, 'claim')}
+                            >
+                              Claim Task
+                            </Button>
+                            <Button 
+                              className="flex-1" 
+                              onClick={() => handleTaskAction(task.id, 'complete')}
+                            >
+                              Mark Complete
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
             </div>
           </div>
         </div>
@@ -271,22 +285,80 @@ export const SocialMediaTasks = () => {
         <div className="p-6">
           <Card>
             <CardHeader>
-              <CardTitle>Task Creator</CardTitle>
-              <CardDescription>This feature is coming soon! You'll be able to create social media tasks for others to complete.</CardDescription>
+              <CardTitle>Create New Task</CardTitle>
+              <CardDescription>Create social media tasks for others to complete and help grow your online presence.</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="text-center py-8">
-                <Star className="h-12 w-12 mx-auto text-primary mb-4" />
-                <p className="text-sm text-muted-foreground mb-4">
-                  Task creation will include:
-                </p>
-                <ul className="text-sm text-muted-foreground space-y-2 text-left max-w-xs mx-auto">
-                  <li>• Choose platform (Instagram, YouTube, TikTok, etc.)</li>
-                  <li>• Set task type (Follow, Like, Subscribe, etc.)</li>
-                  <li>• Define reward amount</li>
-                  <li>• Track completion progress</li>
-                </ul>
+            <CardContent className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">Platform</label>
+                <Select value={createForm.platform} onValueChange={(value) => setCreateForm({...createForm, platform: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select platform" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Instagram">Instagram</SelectItem>
+                    <SelectItem value="YouTube">YouTube</SelectItem>
+                    <SelectItem value="TikTok">TikTok</SelectItem>
+                    <SelectItem value="Facebook">Facebook</SelectItem>
+                    <SelectItem value="Twitter">Twitter</SelectItem>
+                    <SelectItem value="LinkedIn">LinkedIn</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
+
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">Task Type</label>
+                <Select value={createForm.type} onValueChange={(value) => setCreateForm({...createForm, type: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select task type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Follow">Follow</SelectItem>
+                    <SelectItem value="Like">Like</SelectItem>
+                    <SelectItem value="Subscribe">Subscribe</SelectItem>
+                    <SelectItem value="Share">Share</SelectItem>
+                    <SelectItem value="Comment">Comment</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">Link</label>
+                <BrandInput
+                  placeholder="https://instagram.com/yourpage"
+                  value={createForm.link}
+                  onChange={(e) => setCreateForm({...createForm, link: e.target.value})}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-2 block">Reward (₦)</label>
+                  <BrandInput
+                    type="number"
+                    placeholder="50"
+                    value={createForm.reward || ''}
+                    onChange={(e) => setCreateForm({...createForm, reward: Number(e.target.value)})}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-2 block">Total Slots</label>
+                  <BrandInput
+                    type="number"
+                    placeholder="100"
+                    value={createForm.total_slots || ''}
+                    onChange={(e) => setCreateForm({...createForm, total_slots: Number(e.target.value)})}
+                  />
+                </div>
+              </div>
+
+              <BrandButton 
+                className="w-full" 
+                onClick={handleCreateTask}
+                disabled={!createForm.platform || !createForm.type || !createForm.link || createForm.reward <= 0 || createForm.total_slots <= 0}
+              >
+                Create Task (₦{(createForm.reward * createForm.total_slots) || 0} total)
+              </BrandButton>
             </CardContent>
           </Card>
         </div>

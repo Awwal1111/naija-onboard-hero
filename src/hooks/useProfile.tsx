@@ -20,8 +20,32 @@ export interface Profile {
   is_expert: boolean
   expert_verified_at: string | null
   referral_code: string | null
+  average_rating?: number
+  rating_count?: number
   created_at: string
   updated_at: string
+}
+
+export interface ExpertRating {
+  id: string
+  expert_id: string
+  user_id: string
+  rating: number
+  comment: string | null
+  created_at: string
+}
+
+export interface SocialTask {
+  id: number
+  task_giver_id: string
+  platform: string
+  type: string
+  link: string
+  reward: number
+  total_slots: number
+  done_slots: number
+  status: 'open' | 'active' | 'completed' | 'paused'
+  created_at: string
 }
 
 export const useProfile = () => {
