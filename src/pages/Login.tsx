@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Logo } from '@/components/ui/logo'
 import { BrandButton } from '@/components/ui/brand-button'
-import { BrandInput } from '@/components/ui/brand-input'
+import { SecureInput } from '@/components/ui/secure-input'
 import { useAuth } from '@/hooks/useAuth'
 
 const Login = () => {
@@ -51,23 +51,25 @@ const Login = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            <BrandInput
+            <SecureInput
               label="Email Address"
               type="email"
               name="email"
               value={formData.email}
               onChange={handleInputChange}
               placeholder="Enter your email"
+              validation="email"
               required
             />
 
-            <BrandInput
+            <SecureInput
               label="Password"
               type="password"
               name="password"
               value={formData.password}
               onChange={handleInputChange}
               placeholder="Enter your password"
+              validation="none"
               required
             />
 

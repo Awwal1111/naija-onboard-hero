@@ -3,7 +3,7 @@ import { ArrowLeft, Upload, X } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Logo } from '@/components/ui/logo'
 import { BrandButton } from '@/components/ui/brand-button'
-import { BrandInput } from '@/components/ui/brand-input'
+import { SecureInput } from '@/components/ui/secure-input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/integrations/supabase/client'
@@ -289,29 +289,32 @@ const ExpertApplication = () => {
           <div className="space-y-4">
             <h2 className="text-lg font-semibold text-text-primary">Personal Information</h2>
             
-            <BrandInput
+            <SecureInput
               label="Full Name *"
               value={formData.full_name}
               onChange={(e) => handleInputChange('full_name', e.target.value)}
               placeholder="Enter your full name"
+              validation="text"
               required
             />
 
-            <BrandInput
+            <SecureInput
               label="Phone Number *"
               type="tel"
               value={formData.phone_number}
               onChange={(e) => handleInputChange('phone_number', e.target.value)}
               placeholder="Enter your phone number"
+              validation="phone"
               required
             />
 
-            <BrandInput
+            <SecureInput
               label="Email Address *"
               type="email"
               value={formData.email}
               onChange={(e) => handleInputChange('email', e.target.value)}
               placeholder="Enter your email address"
+              validation="email"
               required
               disabled
             />
@@ -337,22 +340,24 @@ const ExpertApplication = () => {
               </Select>
             </div>
 
-            <BrandInput
+            <SecureInput
               label="Years of Experience *"
               type="number"
               value={formData.years_experience}
               onChange={(e) => handleInputChange('years_experience', e.target.value)}
               placeholder="Enter years of experience"
               min="0"
+              validation="none"
               required
             />
 
-            <BrandInput
+            <SecureInput
               label="Portfolio Link"
               type="url"
               value={formData.portfolio_link}
               onChange={(e) => handleInputChange('portfolio_link', e.target.value)}
               placeholder="https://your-portfolio.com"
+              validation="none"
             />
           </div>
 
@@ -396,11 +401,12 @@ const ExpertApplication = () => {
               </Select>
             </div>
 
-            <BrandInput
+            <SecureInput
               label="Area/Location *"
               value={formData.location_area}
               onChange={(e) => handleInputChange('location_area', e.target.value)}
               placeholder="Enter your specific area/location"
+              validation="text"
               required
             />
           </div>

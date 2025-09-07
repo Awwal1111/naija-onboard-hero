@@ -951,6 +951,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      is_admin_user: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       users_are_connected: {
         Args: { user1: string; user2: string }
         Returns: boolean

@@ -8,10 +8,11 @@ interface SecureInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   validation?: 'email' | 'phone' | 'text' | 'none'
   sanitize?: boolean
   showValidation?: boolean
+  label?: string
 }
 
 export const SecureInput = forwardRef<HTMLInputElement, SecureInputProps>(
-  ({ validation = 'text', sanitize = true, showValidation = true, onChange, ...props }, ref) => {
+  ({ validation = 'text', sanitize = true, showValidation = true, label, onChange, ...props }, ref) => {
     const [validationError, setValidationError] = useState<string>('')
     const [value, setValue] = useState(props.value || '')
 
@@ -62,6 +63,11 @@ export const SecureInput = forwardRef<HTMLInputElement, SecureInputProps>(
 
     return (
       <div className="space-y-2">
+        {label && (
+          <label className="text-sm font-medium text-text-primary">
+            {label}
+          </label>
+        )}
         <Input
           {...props}
           ref={ref}

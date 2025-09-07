@@ -2,8 +2,9 @@ import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Logo } from '@/components/ui/logo'
 import { BrandButton } from '@/components/ui/brand-button'
-import { BrandInput } from '@/components/ui/brand-input'
+import { SecureInput } from '@/components/ui/secure-input'
 import { useAuth } from '@/hooks/useAuth'
+import { validatePasswordStrength } from '@/lib/security'
 
 const SignUp = () => {
   const navigate = useNavigate()
@@ -13,6 +14,11 @@ const SignUp = () => {
     password: ''
   })
   const [isLoading, setIsLoading] = useState(false)
+  const [passwordValidation, setPasswordValidation] = useState<{
+    isValid: boolean;
+    errors: string[];
+    strength: 'weak' | 'medium' | 'strong';
+  } | null>(null)
   const { signUp, signInWithGoogle } = useAuth()
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -21,10 +27,22 @@ const SignUp = () => {
       ...prev,
       [name]: value
     }))
+    
+    // Validate password strength in real-time
+    if (name === 'password') {
+      const validation = validatePasswordStrength(value)
+      setPasswordValidation(validation)
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Validate password strength before submission
+    if (passwordValidation && !passwordValidation.isValid) {
+      return // Don't submit if password is invalid
+    }
+    
     setIsLoading(true)
     const { error } = await signUp(formData.email, formData.password, formData.fullName)
     setIsLoading(false)
@@ -57,37 +75,82 @@ const SignUp = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            <BrandInput
+            <SecureInput
               label="Full Name"
               type="text"
               name="fullName"
               value={formData.fullName}
               onChange={handleInputChange}
               placeholder="Enter your full name"
+              validation="text"
               required
             />
 
-            <BrandInput
+            <SecureInput
               label="Email Address"
               type="email"
               name="email"
               value={formData.email}
               onChange={handleInputChange}
               placeholder="Enter your email"
+              validation="email"
               required
             />
 
-            <BrandInput
-              label="Password"
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleInputChange}
-              placeholder="Create a password"
-              required
-            />
+            <div className="space-y-2">
+              <SecureInput
+                label="Password"
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleInputChange}
+                placeholder="Create a strong password"
+                validation="none"
+                showValidation={false}
+                required
+              />
+              
+              {/* Password strength indicator */}
+              {passwordValidation && formData.password && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full transition-all duration-300 ${
+                          passwordValidation.strength === 'weak' ? 'w-1/3 bg-destructive' :
+                          passwordValidation.strength === 'medium' ? 'w-2/3 bg-warning' :
+                          'w-full bg-primary'
+                        }`}
+                      />
+                    </div>
+                    <span className={`text-xs font-medium ${
+                      passwordValidation.strength === 'weak' ? 'text-destructive' :
+                      passwordValidation.strength === 'medium' ? 'text-warning' :
+                      'text-primary'
+                    }`}>
+                      {passwordValidation.strength.toUpperCase()}
+                    </span>
+                  </div>
+                  
+                  {!passwordValidation.isValid && (
+                    <div className="space-y-1">
+                      {passwordValidation.errors.map((error, index) => (
+                        <p key={index} className="text-xs text-destructive">
+                          • {error}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
-            <BrandButton type="submit" className="w-full" size="lg" disabled={isLoading}>
+            <BrandButton 
+              type="submit" 
+              className="w-full" 
+              size="lg" 
+              disabled={isLoading || (passwordValidation && !passwordValidation.isValid)}
+            >
               {isLoading ? 'Creating Account...' : 'Sign Up'}
             </BrandButton>
           </form>
