@@ -28,10 +28,10 @@ interface Referral {
   status: string
   created_at: string
   completed_at: string | null
-  profiles: {
+  referee: {
     full_name: string | null
     profile_picture_url: string | null
-  }
+  } | null
 }
 
 export const Referrals = () => {
@@ -58,7 +58,7 @@ export const Referrals = () => {
         .from('referrals')
         .select(`
           *,
-          profiles!referrals_referee_id_fkey (
+          referee:profiles!referrals_referee_id_fkey (
             full_name,
             profile_picture_url
           )
@@ -283,7 +283,7 @@ export const Referrals = () => {
                         </div>
                         <div>
                           <p className="font-medium text-sm">
-                            {referral.profiles?.full_name || 'Anonymous User'}
+                            {referral.referee?.full_name || 'Anonymous User'}
                           </p>
                           <p className="text-xs text-muted-foreground">
                             {new Date(referral.created_at).toLocaleDateString()}
