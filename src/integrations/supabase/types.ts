@@ -178,6 +178,30 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_signins: {
+        Row: {
+          created_at: string
+          id: string
+          reward_amount: number
+          signin_date: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          reward_amount?: number
+          signin_date?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          reward_amount?: number
+          signin_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       escrow_payments: {
         Row: {
           amount: number
