@@ -87,7 +87,6 @@ const Experts = () => {
 
   const fetchExperts = async () => {
     try {
-      console.log('Fetching experts...')
       // Fetch expert applications first
       const { data: expertApps, error: appsError } = await supabase
         .from('expert_applications')
@@ -95,7 +94,6 @@ const Experts = () => {
         .eq('status', 'approved')
         .order('submitted_at', { ascending: false })
       
-      console.log('Expert applications:', expertApps, appsError)
       if (appsError) throw appsError
 
       // Fetch corresponding profiles
@@ -105,7 +103,6 @@ const Experts = () => {
         .select('user_id, full_name, bio, profession, profile_picture_url, average_rating, rating_count')
         .in('user_id', userIds)
       
-      console.log('Profiles:', profiles, profilesError)
       if (profilesError) console.warn('Profile fetch error:', profilesError)
 
       // Combine the data
@@ -114,7 +111,6 @@ const Experts = () => {
         profiles: profiles?.find(p => p.user_id === app.user_id) || null
       })) || []
       
-      console.log('Combined experts:', expertsWithProfiles)
       setExperts(expertsWithProfiles)
     } catch (error) {
       console.error('Error fetching experts:', error)
@@ -292,7 +288,7 @@ const Experts = () => {
                         variant="outline" 
                         size="sm" 
                         className="flex-1"
-                        onClick={() => navigate(`/profile/${expert.user_id}`)}
+                        onClick={() => navigate(`/expert/${expert.user_id}`)}
                       >
                         View Profile
                       </BrandButton>
