@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_wallet: {
+        Row: {
+          balance: number
+          id: number
+          updated_at: string
+        }
+        Insert: {
+          balance?: number
+          id?: never
+          updated_at?: string
+        }
+        Update: {
+          balance?: number
+          id?: never
+          updated_at?: string
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: string
@@ -181,6 +199,48 @@ export type Database = {
           years_experience?: number
         }
         Relationships: []
+      }
+      expert_ratings: {
+        Row: {
+          comment: string | null
+          created_at: string
+          expert_id: string
+          id: string
+          rating: number
+          user_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          expert_id: string
+          id?: string
+          rating: number
+          user_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          expert_id?: string
+          id?: string
+          rating?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expert_ratings_expert_id_fkey"
+            columns: ["expert_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expert_ratings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       game_sessions: {
         Row: {
@@ -407,6 +467,7 @@ export type Database = {
       profiles: {
         Row: {
           area: string | null
+          average_rating: number | null
           bio: string | null
           connections_count: number | null
           created_at: string
@@ -418,6 +479,7 @@ export type Database = {
           phone_number: string | null
           profession: string | null
           profile_picture_url: string | null
+          rating_count: number | null
           referral_code: string | null
           state_id: string | null
           state_name: string | null
@@ -427,6 +489,7 @@ export type Database = {
         }
         Insert: {
           area?: string | null
+          average_rating?: number | null
           bio?: string | null
           connections_count?: number | null
           created_at?: string
@@ -438,6 +501,7 @@ export type Database = {
           phone_number?: string | null
           profession?: string | null
           profile_picture_url?: string | null
+          rating_count?: number | null
           referral_code?: string | null
           state_id?: string | null
           state_name?: string | null
@@ -447,6 +511,7 @@ export type Database = {
         }
         Update: {
           area?: string | null
+          average_rating?: number | null
           bio?: string | null
           connections_count?: number | null
           created_at?: string
@@ -458,6 +523,7 @@ export type Database = {
           phone_number?: string | null
           profession?: string | null
           profile_picture_url?: string | null
+          rating_count?: number | null
           referral_code?: string | null
           state_id?: string | null
           state_name?: string | null
@@ -494,35 +560,84 @@ export type Database = {
         }
         Relationships: []
       }
+      referral_campaigns: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          provider_name: string
+          referral_link: string
+          reward_amount: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          provider_name: string
+          referral_link: string
+          reward_amount: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          provider_name?: string
+          referral_link?: string
+          reward_amount?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       referrals: {
         Row: {
+          campaign_id: string | null
           completed_at: string | null
           created_at: string
           id: string
           points_earned: number | null
+          proof_url: string | null
           referee_id: string
           referrer_id: string
+          reward_earned: number | null
           status: string | null
         }
         Insert: {
+          campaign_id?: string | null
           completed_at?: string | null
           created_at?: string
           id?: string
           points_earned?: number | null
+          proof_url?: string | null
           referee_id: string
           referrer_id: string
+          reward_earned?: number | null
           status?: string | null
         }
         Update: {
+          campaign_id?: string | null
           completed_at?: string | null
           created_at?: string
           id?: string
           points_earned?: number | null
+          proof_url?: string | null
           referee_id?: string
           referrer_id?: string
+          reward_earned?: number | null
           status?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_referrals_campaign"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "referral_campaigns"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "referrals_referee_id_fkey"
             columns: ["referee_id"]
@@ -536,6 +651,83 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      social_tasks: {
+        Row: {
+          created_at: string
+          done_slots: number
+          id: number
+          link: string
+          platform: string
+          reward: number
+          status: string
+          task_giver_id: string
+          total_slots: number
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          done_slots?: number
+          id?: number
+          link: string
+          platform: string
+          reward: number
+          status?: string
+          task_giver_id: string
+          total_slots: number
+          type: string
+        }
+        Update: {
+          created_at?: string
+          done_slots?: number
+          id?: number
+          link?: string
+          platform?: string
+          reward?: number
+          status?: string
+          task_giver_id?: string
+          total_slots?: number
+          type?: string
+        }
+        Relationships: []
+      }
+      social_tasks_progress: {
+        Row: {
+          created_at: string
+          earner_id: string
+          id: number
+          screenshot_url: string | null
+          status: string
+          task_id: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          earner_id: string
+          id?: never
+          screenshot_url?: string | null
+          status?: string
+          task_id: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          earner_id?: string
+          id?: never
+          screenshot_url?: string | null
+          status?: string
+          task_id?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_tasks_progress_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "social_tasks"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -637,6 +829,27 @@ export type Database = {
         }
         Relationships: []
       }
+      todos: {
+        Row: {
+          done: boolean | null
+          id: number
+          title: string
+          user_id: string
+        }
+        Insert: {
+          done?: boolean | null
+          id?: never
+          title: string
+          user_id: string
+        }
+        Update: {
+          done?: boolean | null
+          id?: never
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       wallet_transactions: {
         Row: {
           amount: number
@@ -666,6 +879,24 @@ export type Database = {
           reference_id?: string | null
           status?: string | null
           transaction_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      wallets: {
+        Row: {
+          balance: number
+          last_update: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          last_update?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          last_update?: string
           user_id?: string
         }
         Relationships: []
