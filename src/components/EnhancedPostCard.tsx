@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { MessageCircle, Share, Eye, MoreVertical, UserPlus, Briefcase, Clock, DollarSign, Users } from 'lucide-react'
+import { MessageCircle, Share, Eye, MoreVertical, UserPlus, Briefcase, Clock, DollarSign, Users, Award, Calendar, Vote, Hash, MapPin, ExternalLink } from 'lucide-react'
 import { EnhancedPost } from '@/hooks/useEnhancedFeed'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -50,7 +50,70 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
   }
 
   const isJobPost = post.content_type === 'job'
+  const isAchievement = post.content_type === 'achievement'
+  const isEvent = post.content_type === 'event'
+  const isPoll = post.content_type === 'poll'
   const isOwnPost = post.user_id === currentUserId
+
+  const getPostTypeInfo = () => {
+    switch (post.content_type) {
+      case 'job':
+        return { 
+          icon: Briefcase, 
+          label: 'HIRING - JOB POST', 
+          color: 'bg-primary text-primary-foreground',
+          borderColor: 'border-primary/30 shadow-sm shadow-primary/10'
+        }
+      case 'achievement':
+        return { 
+          icon: Award, 
+          label: 'ACHIEVEMENT', 
+          color: 'bg-yellow-500 text-white',
+          borderColor: 'border-yellow-500/30 shadow-sm shadow-yellow-500/10'
+        }
+      case 'event':
+        return { 
+          icon: Calendar, 
+          label: 'EVENT', 
+          color: 'bg-green-500 text-white',
+          borderColor: 'border-green-500/30 shadow-sm shadow-green-500/10'
+        }
+      case 'poll':
+        return { 
+          icon: Vote, 
+          label: 'POLL', 
+          color: 'bg-purple-500 text-white',
+          borderColor: 'border-purple-500/30 shadow-sm shadow-purple-500/10'
+        }
+      default:
+        return null
+    }
+  }
+
+  const postTypeInfo = getPostTypeInfo()
+
+  // Extract hashtags from content
+  const extractHashtags = (text: string) => {
+    const hashtagRegex = /#[a-zA-Z0-9_]+/g
+    return text.match(hashtagRegex) || []
+  }
+
+  const renderContentWithHashtags = (text: string) => {
+    const hashtagRegex = /#[a-zA-Z0-9_]+/g
+    const parts = text.split(hashtagRegex)
+    const hashtags = text.match(hashtagRegex) || []
+    
+    return parts.map((part, index) => (
+      <React.Fragment key={index}>
+        {part}
+        {hashtags[index] && (
+          <span className="text-primary font-medium cursor-pointer hover:text-primary/80">
+            {hashtags[index]}
+          </span>
+        )}
+      </React.Fragment>
+    ))
+  }
 
   const handleConnect = async () => {
     if (!currentUserId || isConnected || connectingTo) return
@@ -150,9 +213,7 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
   }
 
   return (
-    <Card className={`mb-4 overflow-hidden ${
-      isJobPost ? 'border-primary/30 shadow-sm shadow-primary/10' : ''
-    }`}>
+    <Card className={`mb-4 overflow-hidden ${postTypeInfo?.borderColor || ''}`}>
       <CardContent className="p-6">
         {/* Privacy indicator */}
         {post.visibility !== 'public' && (
@@ -164,12 +225,12 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
           </div>
         )}
 
-        {/* Job Badge */}
-        {isJobPost && (
+        {/* Post Type Badge */}
+        {postTypeInfo && (
           <div className="mb-4">
-            <Badge className="bg-primary text-primary-foreground">
-              <Briefcase className="h-4 w-4 mr-2" />
-              HIRING - JOB POST
+            <Badge className={postTypeInfo.color}>
+              <postTypeInfo.icon className="h-4 w-4 mr-2" />
+              {postTypeInfo.label}
             </Badge>
           </div>
         )}
@@ -213,8 +274,91 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
             </h4>
           )}
           <p className="text-text-primary whitespace-pre-wrap">
-            {post.content}
+            {renderContentWithHashtags(post.content)}
           </p>
+          
+          {/* Event details */}
+          {isEvent && post.metadata?.event && (
+            <div className="mt-3 p-3 bg-muted rounded-xl space-y-2">
+              {post.metadata.event.date && (
+                <div className="flex items-center gap-2 text-sm">
+                  <Calendar className="h-4 w-4 text-primary" />
+                  <span>{new Date(post.metadata.event.date).toLocaleDateString()}</span>
+                </div>
+              )}
+              {post.metadata.event.location && (
+                <div className="flex items-center gap-2 text-sm">
+                  <MapPin className="h-4 w-4 text-primary" />
+                  <span>{post.metadata.event.location}</span>
+                </div>
+              )}
+              {post.metadata.event.link && (
+                <div className="flex items-center gap-2 text-sm">
+                  <ExternalLink className="h-4 w-4 text-primary" />
+                  <a href={post.metadata.event.link} target="_blank" rel="noopener noreferrer" 
+                     className="text-primary hover:text-primary/80">
+                    Event Link
+                  </a>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Job details */}
+          {isJobPost && post.metadata?.job && (
+            <div className="mt-3 p-3 bg-muted rounded-xl space-y-2">
+              {post.metadata.job.budget && (
+                <div className="flex items-center gap-2 text-sm">
+                  <DollarSign className="h-4 w-4 text-primary" />
+                  <span>{post.metadata.job.budget}</span>
+                </div>
+              )}
+              {post.metadata.job.location && (
+                <div className="flex items-center gap-2 text-sm">
+                  <MapPin className="h-4 w-4 text-primary" />
+                  <span>{post.metadata.job.location}</span>
+                </div>
+              )}
+              {post.metadata.job.deadline && (
+                <div className="flex items-center gap-2 text-sm">
+                  <Clock className="h-4 w-4 text-primary" />
+                  <span>Apply by {new Date(post.metadata.job.deadline).toLocaleDateString()}</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Poll options */}
+          {isPoll && post.metadata?.poll && (
+            <div className="mt-3 space-y-2">
+              {post.metadata.poll.options?.map((option: any, index: number) => (
+                <button
+                  key={index}
+                  className="w-full p-3 text-left bg-muted hover:bg-accent rounded-xl transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <span>{option.text}</span>
+                    <span className="text-sm text-text-secondary">{option.votes || 0} votes</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Achievement details */}
+          {isAchievement && post.metadata?.achievement && (
+            <div className="mt-3 p-3 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-950/30 dark:to-orange-950/30 rounded-xl border border-yellow-200 dark:border-yellow-800">
+              <div className="flex items-center gap-2 text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                <Award className="h-4 w-4" />
+                <span>{post.metadata.achievement.type || 'Achievement Unlocked!'}</span>
+              </div>
+              {post.metadata.achievement.description && (
+                <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+                  {post.metadata.achievement.description}
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Media */}

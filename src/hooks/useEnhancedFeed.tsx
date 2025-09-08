@@ -19,6 +19,29 @@ export interface EnhancedPost {
   content_type: string
   visibility: 'public' | 'connections' | 'private'
   media_urls?: string[]
+  metadata?: {
+    job?: {
+      budget?: string
+      location?: string
+      deadline?: string
+      skills?: string[]
+    }
+    event?: {
+      date?: string
+      location?: string
+      link?: string
+    }
+    poll?: {
+      options?: Array<{
+        text: string
+        votes?: number
+      }>
+    }
+    achievement?: {
+      type?: string
+      description?: string
+    }
+  }
   created_at: string
   updated_at: string
   views_count: number
@@ -102,6 +125,7 @@ export const useEnhancedFeed = () => {
             reactions_summary: reactionsSummary,
             user_reaction: userReaction,
             visibility: (post.visibility || 'public') as 'public' | 'connections' | 'private',
+            metadata: post.metadata as EnhancedPost['metadata'],
             profiles: Array.isArray(post.profiles) ? post.profiles[0] : post.profiles
           }
         })
@@ -353,11 +377,23 @@ export const useEnhancedFeed = () => {
     if (!searchQuery) return true
     
     const searchLower = searchQuery.toLowerCase()
+    
+    // Extract hashtags for searching
+    const contentHashtags = post.content.match(/#[a-zA-Z0-9_]+/g) || []
+    const hashtagsText = contentHashtags.join(' ')
+    
     return (
       post.content.toLowerCase().includes(searchLower) ||
       post.title?.toLowerCase().includes(searchLower) ||
       post.profiles?.full_name?.toLowerCase().includes(searchLower) ||
-      post.profiles?.profession?.toLowerCase().includes(searchLower)
+      post.profiles?.profession?.toLowerCase().includes(searchLower) ||
+      post.content_type.toLowerCase().includes(searchLower) ||
+      hashtagsText.toLowerCase().includes(searchLower) ||
+      // Search in metadata
+      (post.metadata?.job?.location?.toLowerCase().includes(searchLower)) ||
+      (post.metadata?.job?.skills?.some(skill => skill.toLowerCase().includes(searchLower))) ||
+      (post.metadata?.event?.location?.toLowerCase().includes(searchLower)) ||
+      (post.metadata?.achievement?.type?.toLowerCase().includes(searchLower))
     )
   })
 
