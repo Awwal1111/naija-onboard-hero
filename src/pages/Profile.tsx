@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Camera, Wallet, MoreVertical, Edit, Share, Settings, LogOut, Plus, ArrowLeft, Home, MessageCircle, Users, DollarSign, User } from 'lucide-react'
+import { Camera, Wallet, MoreVertical, Edit, Share, Settings, LogOut, Plus, ArrowLeft, Home, MessageCircle, Users, DollarSign, User, Phone, Mail, FileText, Shield, Award, Star, MapPin, Calendar, Clock, TrendingUp } from 'lucide-react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Logo } from '@/components/ui/logo'
 import { BrandButton } from '@/components/ui/brand-button'
@@ -14,6 +14,10 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { BrandInput } from '@/components/ui/brand-input'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { useToast } from '@/hooks/use-toast'
 
 const Profile = () => {
@@ -117,6 +121,17 @@ const Profile = () => {
     await signOut()
   }
 
+  const handleContactPhone = () => {
+    const phoneNumber = "08167140857"
+    const whatsappUrl = `https://wa.me/234${phoneNumber.slice(1)}` // Convert to international format
+    window.open(whatsappUrl, '_blank')
+  }
+
+  const handleContactEmail = () => {
+    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=support@naijalancers.com&su=Contact%20NaijaLancers&body=Hello%20NaijaLancers%20Team,%0D%0A%0D%0A`
+    window.open(gmailUrl, '_blank')
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -162,139 +177,262 @@ const Profile = () => {
       </header>
 
       <div className="px-6 py-6">
-        {/* User Section */}
-        <div className="flex items-start gap-4 mb-8">
-          <div className="relative">
-            <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center text-white text-2xl font-bold overflow-hidden">
-              {profile?.profile_picture_url ? (
-                <img 
-                  src={profile.profile_picture_url} 
-                  alt={profile.full_name || 'Profile'}
-                  className="w-full h-full object-cover"
+        {/* Enhanced User Section with Stats */}
+        <div className="bg-card border border-border rounded-2xl p-6 mb-6">
+          <div className="flex items-start gap-4 mb-6">
+            <div className="relative">
+              <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center text-white text-2xl font-bold overflow-hidden">
+                {profile?.profile_picture_url ? (
+                  <img 
+                    src={profile.profile_picture_url} 
+                    alt={profile.full_name || 'Profile'}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  profile?.full_name?.charAt(0) || 'U'
+                )}
+              </div>
+              <label className="absolute -bottom-2 -right-2 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white cursor-pointer hover:bg-primary/90 transition-colors">
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleProfilePictureUpload}
                 />
-              ) : (
-                profile?.full_name?.charAt(0) || 'U'
-              )}
-            </div>
-            <label className="absolute -bottom-2 -right-2 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white cursor-pointer hover:bg-primary/90 transition-colors">
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleProfilePictureUpload}
-              />
-              <Camera className="h-4 w-4" />
-            </label>
-          </div>
-          
-          <div className="flex-1">
-            <div className="flex items-center justify-between mb-2">
-              <h1 className="text-xl font-bold text-text-primary">
-                {profile?.full_name || 'Add your name'}
-              </h1>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className="p-2 hover:bg-accent rounded-full">
-                    <MoreVertical className="h-5 w-5 text-text-secondary" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuItem onClick={handleEditProfile}>
-                    <Edit className="mr-2 h-4 w-4" />
-                    Edit Profile
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/earn')}>
-                    <Wallet className="mr-2 h-4 w-4" />
-                    Wallet & Transactions
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleShare}>
-                    <Share className="mr-2 h-4 w-4" />
-                    Share Profile
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/settings')}>
-                    <Settings className="mr-2 h-4 w-4" />
-                    App Settings
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/admin/expert-applications')}>
-                    <Users className="mr-2 h-4 w-4" />
-                    Admin Dashboard
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleLogout} className="text-destructive">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Log Out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                <Camera className="h-4 w-4" />
+              </label>
             </div>
             
-            <p className="text-text-secondary text-sm mb-2">
-              {profile?.profession || 'Add your profession'}
-            </p>
-            <p className="text-text-secondary text-xs mb-3">
-              {profile?.bio || 'Tell us about yourself'}
-            </p>
-            <div className="text-sm text-text-primary">
-              <span className="font-semibold">{profile?.connections_count || 0}</span> connections
+            <div className="flex-1">
+              <div className="flex items-center justify-between mb-2">
+                <h1 className="text-xl font-bold text-text-primary">
+                  {profile?.full_name || 'Add your name'}
+                </h1>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="p-2 hover:bg-accent rounded-full">
+                      <MoreVertical className="h-5 w-5 text-text-secondary" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuItem onClick={handleEditProfile}>
+                      <Edit className="mr-2 h-4 w-4" />
+                      Edit Profile
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/earn')}>
+                      <Wallet className="mr-2 h-4 w-4" />
+                      Wallet & Transactions
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleShare}>
+                      <Share className="mr-2 h-4 w-4" />
+                      Share Profile
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/settings')}>
+                      <Settings className="mr-2 h-4 w-4" />
+                      App Settings
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/terms-conditions')}>
+                      <FileText className="mr-2 h-4 w-4" />
+                      Terms & Conditions
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleContactPhone}>
+                      <Phone className="mr-2 h-4 w-4" />
+                      Contact Us (WhatsApp)
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleContactEmail}>
+                      <Mail className="mr-2 h-4 w-4" />
+                      Contact Us (Email)
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/admin/expert-applications')}>
+                      <Users className="mr-2 h-4 w-4" />
+                      Admin Dashboard
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Log Out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              
+              <div className="flex items-center gap-2 mb-2">
+                <p className="text-text-secondary text-sm">
+                  {profile?.profession || 'Add your profession'}
+                </p>
+                {profile?.is_expert && (
+                  <Badge className="bg-primary/10 text-primary border-primary/20">
+                    <Award className="h-3 w-3 mr-1" />
+                    Expert
+                  </Badge>
+                )}
+              </div>
+              
+              <p className="text-text-secondary text-xs mb-3">
+                {profile?.bio || 'Tell us about yourself'}
+              </p>
+              
+              {/* Location */}
+              {(profile?.state_name || profile?.lga_name) && (
+                <div className="flex items-center gap-1 mb-2 text-xs text-text-secondary">
+                  <MapPin className="h-3 w-3" />
+                  <span>{profile.lga_name}{profile.state_name && `, ${profile.state_name}`}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Stats Row */}
+          <div className="grid grid-cols-4 gap-4 pt-4 border-t border-border">
+            <div className="text-center">
+              <div className="text-lg font-bold text-primary">{profile?.connections_count || 0}</div>
+              <div className="text-xs text-text-secondary">Connections</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold text-primary">
+                {profile?.average_rating ? profile.average_rating.toFixed(1) : '0.0'}
+              </div>
+              <div className="text-xs text-text-secondary flex items-center justify-center gap-1">
+                <Star className="h-3 w-3 fill-current" />
+                Rating
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold text-primary">₦{profile?.wallet_balance?.toFixed(0) || '0'}</div>
+              <div className="text-xs text-text-secondary">Balance</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold text-primary">24</div>
+              <div className="text-xs text-text-secondary">Posts</div>
             </div>
           </div>
         </div>
 
-        {/* Professional Action Buttons */}
-        <div className="space-y-4 mb-8">
-          <BrandButton 
-            className="w-full flex items-center justify-center gap-2" 
-            size="lg"
-            onClick={() => navigate('/expert-application')}
-          >
-            <Plus className="h-4 w-4" />
-            {profile?.is_expert ? 'Expert Dashboard' : 'Apply for Expert'}
-          </BrandButton>
+        {/* Enhanced Tabs Section */}
+        <Tabs defaultValue="overview" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="skills">Skills</TabsTrigger>
+            <TabsTrigger value="portfolio">Portfolio</TabsTrigger>
+            <TabsTrigger value="reviews">Reviews</TabsTrigger>
+          </TabsList>
           
-          {/* Professional Skills Section */}
-          <div className="bg-card border border-border rounded-2xl p-6">
-            <h3 className="text-lg font-semibold text-text-primary mb-4">Skills & Services</h3>
-            <div className="flex flex-wrap gap-2 mb-4">
-              {/* Placeholder for skills */}
-              <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
-                Add Skills
-              </span>
+          <TabsContent value="overview" className="space-y-4 mt-6">
+            {/* Professional Action Buttons */}
+            <div className="grid grid-cols-2 gap-3 mb-6">
+              <BrandButton 
+                className="flex items-center justify-center gap-2" 
+                size="lg"
+                onClick={() => navigate('/expert-application')}
+              >
+                <Award className="h-4 w-4" />
+                {profile?.is_expert ? 'Expert Dashboard' : 'Apply Expert'}
+              </BrandButton>
+              
+              <BrandButton 
+                variant="outline"
+                className="flex items-center justify-center gap-2" 
+                size="lg"
+                onClick={() => navigate('/post-job')}
+              >
+                <Plus className="h-4 w-4" />
+                Post Job
+              </BrandButton>
             </div>
-            <div className="text-sm text-text-secondary">
-              Showcase your expertise to attract more clients
-            </div>
-          </div>
-          
-          {/* Portfolio Section */}
-          <div className="bg-card border border-border rounded-2xl p-6">
-            <h3 className="text-lg font-semibold text-text-primary mb-4">Portfolio</h3>
-            <div className="grid grid-cols-3 gap-2 mb-4">
-              {/* Placeholder for portfolio images */}
-              <div className="aspect-square bg-muted rounded-lg flex items-center justify-center">
-                <Plus className="h-6 w-6 text-text-secondary" />
-              </div>
-              <div className="aspect-square bg-muted rounded-lg flex items-center justify-center">
-                <Plus className="h-6 w-6 text-text-secondary" />
-              </div>
-              <div className="aspect-square bg-muted rounded-lg flex items-center justify-center">
-                <Plus className="h-6 w-6 text-text-secondary" />
-              </div>
-            </div>
-            <div className="text-sm text-text-secondary">
-              Show your best work to potential clients
-            </div>
-          </div>
-        </div>
 
-        {/* Job/Service Button */}
-        <BrandButton 
-          className="w-full flex items-center justify-center gap-2" 
-          size="lg"
-          variant="outline"
-          onClick={() => navigate('/post-job')}
-        >
-          <Plus className="h-4 w-4" />
-          Post Job/Service
-        </BrandButton>
+            {/* Recent Activity */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5" />
+                  Recent Activity
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center gap-3 p-3 bg-muted rounded-xl">
+                  <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                    <MessageCircle className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm text-text-primary">Joined NaijaLancers</p>
+                    <p className="text-xs text-text-secondary">
+                      {new Date(profile?.created_at || Date.now()).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-center py-6 text-text-secondary text-sm">
+                  More activity will appear here as you use the platform
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="skills" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Skills & Expertise</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {/* Placeholder for skills */}
+                  <Badge variant="outline" className="cursor-pointer hover:bg-primary hover:text-white">
+                    Web Development
+                  </Badge>
+                  <Badge variant="outline" className="cursor-pointer hover:bg-primary hover:text-white">
+                    UI/UX Design
+                  </Badge>
+                  <Badge variant="outline" className="cursor-pointer hover:bg-primary hover:text-white">
+                    <Plus className="h-3 w-3 mr-1" />
+                    Add Skills
+                  </Badge>
+                </div>
+                <div className="text-sm text-text-secondary">
+                  Showcase your expertise to attract more clients
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="portfolio" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Portfolio</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+                  {/* Placeholder for portfolio images */}
+                  {[...Array(6)].map((_, i) => (
+                    <div key={i} className="aspect-square bg-muted rounded-xl flex items-center justify-center hover:bg-accent transition-colors cursor-pointer">
+                      <Plus className="h-8 w-8 text-text-secondary" />
+                    </div>
+                  ))}
+                </div>
+                <div className="text-sm text-text-secondary text-center">
+                  Show your best work to potential clients
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="reviews" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Star className="h-5 w-5" />
+                  Client Reviews
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8">
+                  <Star className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="font-semibold text-text-primary mb-2">No reviews yet</h3>
+                  <p className="text-text-secondary text-sm">
+                    Complete your first job to receive reviews from clients
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Edit Profile Dialog */}
