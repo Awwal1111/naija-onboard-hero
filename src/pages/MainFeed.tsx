@@ -16,6 +16,7 @@ import InfiniteScrollFeed from '@/components/InfiniteScrollFeed'
 import EnhancedCreatePostDialog from '@/components/EnhancedCreatePostDialog'
 import CreateStoryDialog from '@/components/CreateStoryDialog'
 import TrendingSection from '@/components/TrendingSection'
+import ContextualAIHelp from '@/components/ContextualAIHelp'
 
 const MainFeed = () => {
   const navigate = useNavigate()
@@ -37,6 +38,21 @@ const MainFeed = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [sortBy, setSortBy] = useState<'recent' | 'trending' | 'popular'>('recent')
   const [showFilters, setShowFilters] = useState(false)
+  const [aiAssistantOpen, setAiAssistantOpen] = useState(false)
+
+  const feedSuggestions = [
+    "How do I create an engaging post?",
+    "What type of content gets more likes?",
+    "How can I use hashtags effectively?",
+    "How do I connect with other professionals?",
+    "What are the best practices for job posts?"
+  ]
+
+  const handleAskAI = (question: string) => {
+    // This would trigger the main AI assistant with the specific question
+    setAiAssistantOpen(true)
+    console.log('AI Help requested:', question)
+  }
 
   const bottomNavItems = [
     { icon: Home, label: 'Feed', path: '/feed', active: true },
@@ -352,6 +368,13 @@ const MainFeed = () => {
           createPost(content, contentType, visibility, title, mediaUrls)
         }
         userProfile={profile}
+      />
+
+      {/* Contextual AI Help */}
+      <ContextualAIHelp
+        context="Need help with the feed? I can guide you through creating posts, finding content, and connecting with professionals."
+        suggestions={feedSuggestions}
+        onAskAI={handleAskAI}
       />
 
       {/* Bottom Navigation */}

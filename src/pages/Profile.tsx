@@ -243,7 +243,7 @@ const Profile = () => {
                       <Mail className="mr-2 h-4 w-4" />
                       Contact Us (Email)
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate('/admin/expert-applications')}>
+                    <DropdownMenuItem onClick={() => navigate('/admin/dashboard')}>
                       <Users className="mr-2 h-4 w-4" />
                       Admin Dashboard
                     </DropdownMenuItem>
