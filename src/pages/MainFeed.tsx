@@ -16,7 +16,7 @@ import InfiniteScrollFeed from '@/components/InfiniteScrollFeed'
 import EnhancedCreatePostDialog from '@/components/EnhancedCreatePostDialog'
 import CreateStoryDialog from '@/components/CreateStoryDialog'
 import TrendingSection from '@/components/TrendingSection'
-import ContextualAIHelp from '@/components/ContextualAIHelp'
+import ResponsiveLayout, { ResponsiveGrid, ResponsiveCard } from '@/components/ResponsiveLayout'
 
 const MainFeed = () => {
   const navigate = useNavigate()
@@ -118,15 +118,15 @@ const MainFeed = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <ResponsiveLayout className="pb-20">
       <div className="flex">
         {/* Main Content */}
         <div className="flex-1 max-w-4xl mx-auto">
           {/* Header */}
-          <header className="bg-background border-b border-border px-6 py-4 sticky top-0 z-10">
+          <header className="bg-background border-b border-border px-3 sm:px-6 py-4 sticky top-0 z-10">
             <div className="flex items-center justify-between mb-4">
               <Logo />
-              <h1 className="text-xl font-bold text-primary">NaijaLancers Feed</h1>
+              <h1 className="text-lg sm:text-xl font-bold text-primary hidden xs:block">NaijaLancers Feed</h1>
               <div className="w-8" />
             </div>
             
@@ -236,21 +236,21 @@ const MainFeed = () => {
           </header>
 
           {/* Post Creation Bar */}
-          <div className="px-6 py-4 border-b border-border">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-bold">
+          <div className="px-3 sm:px-6 py-4 border-b border-border">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary rounded-full flex items-center justify-center text-white font-bold text-sm">
                 {profile?.full_name?.charAt(0) || 'U'}
               </div>
               <button
                 onClick={() => setShowCreatePost(true)}
-                className="flex-1 text-left px-4 py-3 bg-muted rounded-full text-text-secondary hover:bg-accent transition-colors"
+                className="flex-1 text-left px-3 sm:px-4 py-2 sm:py-3 bg-muted rounded-full text-text-secondary hover:bg-accent transition-colors text-sm"
               >
-                Share your thoughts or post a job...
+                Share your thoughts...
               </button>
             </div>
             
-            {/* Quick Action Buttons */}
-            <div className="flex justify-around mt-4 pt-4 border-t border-border">
+            {/* Quick Action Buttons - Hidden on mobile to save space */}
+            <div className="hidden sm:flex justify-around mt-4 pt-4 border-t border-border">
               <button
                 onClick={() => setShowCreatePost(true)}
                 className="flex items-center gap-2 px-4 py-2 text-text-secondary hover:text-primary hover:bg-primary/10 rounded-xl transition-colors"
@@ -297,7 +297,7 @@ const MainFeed = () => {
           </div>
 
           {/* Main Feed Content */}
-          <div className="px-6 py-4">
+          <div className="px-3 sm:px-6 py-4">
             {filteredAndSortedPosts.length === 0 && !loading ? (
               <div className="text-center py-12">
                 <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
@@ -349,8 +349,8 @@ const MainFeed = () => {
           </div>
         </div>
 
-        {/* Trending Sidebar */}
-        <div className="hidden lg:block lg:w-80 lg:ml-6">
+        {/* Trending Sidebar - Hidden on smaller screens */}
+        <div className="hidden xl:block xl:w-80 xl:ml-6">
           <div className="sticky top-24 px-6">
             <TrendingSection 
               onHashtagClick={setSearchQuery}
@@ -370,33 +370,26 @@ const MainFeed = () => {
         userProfile={profile}
       />
 
-      {/* Contextual AI Help */}
-      <ContextualAIHelp
-        context="Need help with the feed? I can guide you through creating posts, finding content, and connecting with professionals."
-        suggestions={feedSuggestions}
-        onAskAI={handleAskAI}
-      />
-
-      {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border px-4 py-2">
-        <div className="flex justify-around items-center">
+      {/* Bottom Navigation - Responsive design */}
+      <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border px-2 sm:px-4 py-2">
+        <div className="flex justify-around items-center max-w-md mx-auto">
           {bottomNavItems.map((item) => (
             <Link 
               key={item.label} 
               to={item.path}
-              className={`flex flex-col items-center gap-1 py-2 px-3 rounded-xl transition-colors ${
+              className={`flex flex-col items-center gap-1 py-2 px-2 sm:px-3 rounded-xl transition-colors min-w-0 ${
                 item.active 
                   ? 'text-primary bg-primary/10' 
                   : 'text-text-secondary hover:text-primary hover:bg-primary/5'
               }`}
             >
-              <item.icon className="h-5 w-5" />
-              <span className="text-xs font-medium">{item.label}</span>
+              <item.icon className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+              <span className="text-xs font-medium truncate">{item.label}</span>
             </Link>
           ))}
         </div>
       </div>
-    </div>
+    </ResponsiveLayout>
   )
 }
 

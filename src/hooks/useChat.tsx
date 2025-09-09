@@ -3,13 +3,18 @@ import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/use-toast'
 
-interface Message {
+interface BaseMessage {
   id: string
   chat_id: string
   sender_id: string
   content: string
   created_at: string
   read_at: string | null
+}
+
+interface Message extends BaseMessage {
+  media_url?: string | null
+  media_type?: string | null
 }
 
 interface Chat {
@@ -143,7 +148,7 @@ export const useChat = (otherUserId: string) => {
     }
   }, [chat])
 
-  const sendMessage = async (content: string) => {
+  const sendMessage = async (content: string, mediaUrl?: string | null, mediaType?: string | null) => {
     if (!chat || !user) return
 
     try {
@@ -152,7 +157,9 @@ export const useChat = (otherUserId: string) => {
         .insert({
           chat_id: chat.id,
           sender_id: user.id,
-          content
+          content,
+          media_url: mediaUrl,
+          media_type: mediaType
         })
 
       if (error) throw error

@@ -616,6 +616,8 @@ export type Database = {
           content: string
           created_at: string
           id: string
+          media_type: string | null
+          media_url: string | null
           read_at: string | null
           sender_id: string
         }
@@ -624,6 +626,8 @@ export type Database = {
           content: string
           created_at?: string
           id?: string
+          media_type?: string | null
+          media_url?: string | null
           read_at?: string | null
           sender_id: string
         }
@@ -632,6 +636,8 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          media_type?: string | null
+          media_url?: string | null
           read_at?: string | null
           sender_id?: string
         }
@@ -875,7 +881,15 @@ export type Database = {
           views_count?: number
           visibility?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "posts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       profiles: {
         Row: {

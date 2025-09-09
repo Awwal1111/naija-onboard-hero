@@ -28,6 +28,7 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
   const location = useLocation()
   
   const [isOpen, setIsOpen] = useState(false)
+  const [hasInteracted, setHasInteracted] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)
   const [message, setMessage] = useState('')
   const [messages, setMessages] = useState<Message[]>([])
@@ -52,8 +53,8 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
   }, [messages])
 
   useEffect(() => {
-    // Add welcome message based on current page context
-    if (isOpen && messages.length === 0) {
+    // Add welcome message based on current page context - only when user opens it
+    if (isOpen && messages.length === 0 && hasInteracted) {
       const pageContext = getPageContext()
       const welcomeMessage: Message = {
         id: Date.now().toString(),
@@ -63,7 +64,7 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
       }
       setMessages([welcomeMessage])
     }
-  }, [isOpen, location.pathname])
+  }, [isOpen, location.pathname, hasInteracted])
 
   const getPageContext = () => {
     const path = location.pathname
@@ -145,7 +146,7 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: 'assistant',
-        content: data.response || data.error || 'I apologize, but I encountered an issue processing your request.',
+        content: data.response || 'I apologize, but I encountered an issue processing your request. Please try asking in a different way!',
         timestamp: new Date()
       }
 
@@ -200,7 +201,10 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
     return (
       <div className="fixed bottom-6 right-6 z-50">
         <Button
-          onClick={() => setIsOpen(true)}
+          onClick={() => {
+            setIsOpen(true)
+            setHasInteracted(true)
+          }}
           className="w-14 h-14 rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl transition-all duration-300 group"
         >
           <Bot className="h-6 w-6 text-white group-hover:scale-110 transition-transform" />

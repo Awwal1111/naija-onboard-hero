@@ -18,7 +18,7 @@ import AdminExpertApplications from "./pages/AdminExpertApplications";
 import PostJob from "./pages/PostJob";
 import Experts from "./pages/Experts";
 import Jobs from "./pages/Jobs";
-import Chat from "./pages/Chat";
+import EnhancedChat from '@/components/EnhancedChat'
 import ChatList from "./pages/ChatList";
 import { Earn } from "./pages/Earn";
 import { SocialMediaTasks } from "./pages/SocialMediaTasks";
@@ -65,7 +65,7 @@ const App = () => (
           <Route path="/earn/social-tasks" element={<ProtectedRoute><SocialMediaTasks /></ProtectedRoute>} />
           <Route path="/earn/referral-tasks" element={<ProtectedRoute><ReferralTasks /></ProtectedRoute>} />
           <Route path="/chat" element={<ProtectedRoute><ChatList /></ProtectedRoute>} />
-          <Route path="/chat/:userId" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+          <Route path="/chat/:userId" element={<ProtectedRoute><EnhancedChat /></ProtectedRoute>} />
           <Route path="/terms-conditions" element={<ProtectedRoute><TermsConditions /></ProtectedRoute>} />
           <Route path="/payment-success" element={<PaymentSuccess />} />
           <Route path="/payment-failed" element={<PaymentFailed />} />
