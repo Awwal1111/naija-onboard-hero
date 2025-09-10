@@ -231,22 +231,6 @@ const Profile = () => {
                       <Settings className="mr-2 h-4 w-4" />
                       App Settings
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate('/terms-conditions')}>
-                      <FileText className="mr-2 h-4 w-4" />
-                      Terms & Conditions
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleContactPhone}>
-                      <Phone className="mr-2 h-4 w-4" />
-                      Contact Us (WhatsApp)
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleContactEmail}>
-                      <Mail className="mr-2 h-4 w-4" />
-                      Contact Us (Email)
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate('/admin/dashboard')}>
-                      <Users className="mr-2 h-4 w-4" />
-                      Admin Dashboard
-                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={handleLogout} className="text-destructive">
                       <LogOut className="mr-2 h-4 w-4" />
                       Log Out
@@ -322,10 +306,10 @@ const Profile = () => {
               <BrandButton 
                 className="flex items-center justify-center gap-2" 
                 size="lg"
-                onClick={() => navigate('/expert-application')}
+                onClick={() => navigate(profile?.is_expert ? '/admin/dashboard' : '/expert-application')}
               >
                 <Award className="h-4 w-4" />
-                {profile?.is_expert ? 'Expert Dashboard' : 'Apply Expert'}
+                {profile?.is_expert ? 'Admin Dashboard' : 'Apply Expert'}
               </BrandButton>
               
               <BrandButton 

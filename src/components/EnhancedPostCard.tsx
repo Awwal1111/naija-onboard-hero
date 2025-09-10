@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { MessageCircle, Share, Eye, MoreVertical, UserPlus, Briefcase, Clock, DollarSign, Users, Award, Calendar, Vote, Hash, MapPin, ExternalLink } from 'lucide-react'
+import { MessageCircle, Share, Eye, MoreVertical, UserPlus, Briefcase, Clock, DollarSign, Users, Award, Calendar, Vote, Hash, MapPin, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react'
 import { EnhancedPost } from '@/hooks/useEnhancedFeed'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -115,6 +115,48 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
     ))
   }
 
+  // Post content component with read more/less functionality
+  const PostContent = ({ content, renderContentWithHashtags }: { content: string, renderContentWithHashtags: (text: string) => React.ReactNode }) => {
+    const [isExpanded, setIsExpanded] = useState(false)
+    const maxLength = 200
+    const shouldTruncate = content.length > maxLength
+    
+    if (!shouldTruncate) {
+      return (
+        <p className="text-text-primary whitespace-pre-wrap leading-relaxed">
+          {renderContentWithHashtags(content)}
+        </p>
+      )
+    }
+    
+    const truncatedContent = content.substring(0, maxLength) + '...'
+    
+    return (
+      <div className="space-y-2">
+        <p className="text-text-primary whitespace-pre-wrap leading-relaxed">
+          {renderContentWithHashtags(isExpanded ? content : truncatedContent)}
+        </p>
+        
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="flex items-center gap-1 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+        >
+          {isExpanded ? (
+            <>
+              <span>Show Less</span>
+              <ChevronUp className="h-4 w-4" />
+            </>
+          ) : (
+            <>
+              <span>Read More</span>
+              <ChevronDown className="h-4 w-4" />
+            </>
+          )}
+        </button>
+      </div>
+    )
+  }
+
   const handleConnect = async () => {
     if (!currentUserId || isConnected || connectingTo) return
     
@@ -213,7 +255,7 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
   }
 
   return (
-    <Card className={`mb-4 overflow-hidden ${postTypeInfo?.borderColor || ''}`}>
+    <Card className={`mb-4 overflow-hidden ${postTypeInfo?.borderColor || ''} transition-all duration-300 hover:shadow-lg`}>
       <CardContent className="p-6">
         {/* Privacy indicator */}
         {post.visibility !== 'public' && (
@@ -273,9 +315,7 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
               {post.title}
             </h4>
           )}
-          <p className="text-text-primary whitespace-pre-wrap">
-            {renderContentWithHashtags(post.content)}
-          </p>
+          <PostContent content={post.content} renderContentWithHashtags={renderContentWithHashtags} />
           
           {/* Event details */}
           {isEvent && post.metadata?.event && (
@@ -477,20 +517,21 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
                   {currentUserId?.charAt(0) || 'U'}
                 </AvatarFallback>
               </Avatar>
-              <div className="flex-1 space-y-2">
+              <div className="flex-1">
                 <Textarea
+                  placeholder="Write a comment..."
                   value={commentText}
                   onChange={(e) => setCommentText(e.target.value)}
-                  placeholder="Write a comment..."
                   rows={2}
-                  className="resize-none"
+                  className="resize-none mb-2"
                 />
                 <Button 
                   type="submit" 
-                  size="sm"
+                  size="sm" 
                   disabled={!commentText.trim() || submitting}
+                  className="ml-auto block"
                 >
-                  {submitting ? 'Posting...' : 'Post Comment'}
+                  {submitting ? 'Posting...' : 'Comment'}
                 </Button>
               </div>
             </form>

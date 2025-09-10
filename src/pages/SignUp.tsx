@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Logo } from '@/components/ui/logo'
 import { BrandButton } from '@/components/ui/brand-button'
 import { SecureInput } from '@/components/ui/secure-input'
@@ -13,7 +14,8 @@ const SignUp = () => {
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
-    password: ''
+    password: '',
+    acceptedTerms: false
   })
   const [isLoading, setIsLoading] = useState(false)
   const [passwordValidation, setPasswordValidation] = useState<{
@@ -40,6 +42,15 @@ const SignUp = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    if (!formData.acceptedTerms) {
+      toast({
+        title: "Terms Required",
+        description: "Please accept the Terms & Conditions to continue",
+        variant: "destructive"
+      })
+      return
+    }
     
     console.log('Form submission - current form data:', formData)
     
@@ -121,11 +132,31 @@ const SignUp = () => {
               />
             </div>
 
+            {/* Terms & Conditions Checkbox */}
+            <div className="flex items-start gap-3">
+              <Checkbox 
+                id="terms"
+                checked={formData.acceptedTerms}
+                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, acceptedTerms: !!checked }))}
+                className="mt-1"
+              />
+              <label htmlFor="terms" className="text-sm text-text-secondary leading-relaxed">
+                I agree to the{' '}
+                <Link to="/terms-conditions" className="text-primary hover:text-primary/80 underline">
+                  Terms & Conditions
+                </Link>
+                {' '}and{' '}
+                <Link to="/privacy-policy" className="text-primary hover:text-primary/80 underline">
+                  Privacy Policy
+                </Link>
+              </label>
+            </div>
+
             <BrandButton 
               type="submit" 
               className="w-full" 
               size="lg" 
-              disabled={isLoading}
+              disabled={isLoading || !formData.acceptedTerms}
             >
               {isLoading ? 'Creating Account...' : 'Sign Up'}
             </BrandButton>

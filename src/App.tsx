@@ -30,6 +30,8 @@ import PaymentFailed from "./pages/PaymentFailed";
 import { ReferralTasks } from "./pages/ReferralTasks";
 import ExpertProfile from "./pages/ExpertProfile";
 import TermsConditions from "./pages/TermsConditions";
+import Settings from "./pages/Settings";
+import ActivityLog from "./pages/ActivityLog";
 import EnhancedAdminDashboard from "./pages/EnhancedAdminDashboard";
 import NotFound from "./pages/NotFound";
 
@@ -67,6 +69,8 @@ const App = () => (
           <Route path="/chat" element={<ProtectedRoute><ChatList /></ProtectedRoute>} />
           <Route path="/chat/:userId" element={<ProtectedRoute><EnhancedChat /></ProtectedRoute>} />
           <Route path="/terms-conditions" element={<ProtectedRoute><TermsConditions /></ProtectedRoute>} />
+          <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+          <Route path="/activity-log" element={<ProtectedRoute><ActivityLog /></ProtectedRoute>} />
           <Route path="/payment-success" element={<PaymentSuccess />} />
           <Route path="/payment-failed" element={<PaymentFailed />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

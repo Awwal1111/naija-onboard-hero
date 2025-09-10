@@ -1,22 +1,20 @@
 import React, { useState } from 'react'
-import { Search, Plus, Home, MessageCircle, Users, DollarSign, User, Image, FileText, Briefcase, Filter, TrendingUp, Hash, Award, Calendar, Vote, Settings } from 'lucide-react'
+import { Plus, Search, Filter, TrendingUp, Home, MessageCircle, Users, DollarSign, User, Image, FileText, Briefcase, Award, Calendar, Vote, Hash } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Logo } from '@/components/ui/logo'
 import { BrandInput } from '@/components/ui/brand-input'
 import { BrandButton } from '@/components/ui/brand-button'
 import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
 import { useEnhancedFeed } from '@/hooks/useEnhancedFeed'
-import ProfessionalStoriesSection from '@/components/ProfessionalStoriesSection'
 import InfiniteScrollFeed from '@/components/InfiniteScrollFeed'
 import EnhancedCreatePostDialog from '@/components/EnhancedCreatePostDialog'
-import CreateStoryDialog from '@/components/CreateStoryDialog'
 import TrendingSection from '@/components/TrendingSection'
-import ResponsiveLayout, { ResponsiveGrid, ResponsiveCard } from '@/components/ResponsiveLayout'
+import ResponsiveLayout from '@/components/ResponsiveLayout'
+import NotificationBell from '@/components/NotificationBell'
 
 const MainFeed = () => {
   const navigate = useNavigate()
@@ -126,8 +124,7 @@ const MainFeed = () => {
           <header className="bg-background border-b border-border px-3 sm:px-6 py-4 sticky top-0 z-10">
             <div className="flex items-center justify-between mb-4">
               <Logo />
-              <h1 className="text-lg sm:text-xl font-bold text-primary hidden xs:block">NaijaLancers Feed</h1>
-              <div className="w-8" />
+              <NotificationBell />
             </div>
             
             {/* Feed Toggle */}
