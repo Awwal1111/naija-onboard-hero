@@ -137,7 +137,7 @@ const MainFeed = () => {
                     : 'text-text-secondary hover:text-primary'
                 }`}
               >
-                For You
+                Recommended
               </button>
               <button
                 onClick={() => setFeedType('following')}
@@ -147,7 +147,7 @@ const MainFeed = () => {
                     : 'text-text-secondary hover:text-primary'
                 }`}
               >
-                Following
+                Suggestions
               </button>
             </div>
 

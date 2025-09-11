@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { MessageCircle, Share, Eye, MoreVertical, UserPlus, Briefcase, Clock, DollarSign, Users, Award, Calendar, Vote, Hash, MapPin, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react'
 import { EnhancedPost } from '@/hooks/useEnhancedFeed'
 import { Button } from '@/components/ui/button'
@@ -8,8 +8,12 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import ReactionPicker from './ReactionPicker'
+import CommentsSection from './CommentsSection'
+import MediaGallery from './MediaGallery'
 import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
+import { usePostViews } from '@/hooks/usePostViews'
+import { useConnections } from '@/hooks/useConnections'
 import { sanitizeText } from '@/lib/security'
 
 interface EnhancedPostCardProps {
@@ -35,7 +39,30 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
   const [commentText, setCommentText] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [connectingTo, setConnectingTo] = useState<string | null>(null)
+  const [hasViewed, setHasViewed] = useState(false)
   const { toast } = useToast()
+  const { trackPostView } = usePostViews()
+  const { checkConnection } = useConnections()
+  const [userConnected, setUserConnected] = useState(isConnected)
+
+  // Track post view when component mounts
+  useEffect(() => {
+    if (!hasViewed && currentUserId && post.id) {
+      trackPostView(post.id)
+      setHasViewed(true)
+    }
+  }, [post.id, currentUserId, hasViewed, trackPostView])
+
+  // Check connection status
+  useEffect(() => {
+    const checkUserConnection = async () => {
+      if (currentUserId && post.user_id && currentUserId !== post.user_id) {
+        const connected = await checkConnection(post.user_id)
+        setUserConnected(connected)
+      }
+    }
+    checkUserConnection()
+  }, [currentUserId, post.user_id, checkConnection])
 
   const formatTimeAgo = (date: string) => {
     const now = new Date()
@@ -403,16 +430,7 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
 
         {/* Media */}
         {post.media_urls && post.media_urls.length > 0 && (
-          <div className="mb-4 grid grid-cols-2 gap-2">
-            {post.media_urls.map((url, index) => (
-              <img 
-                key={index}
-                src={url} 
-                alt={`Post media ${index + 1}`}
-                className="w-full h-48 object-cover rounded-xl"
-              />
-            ))}
-          </div>
+          <MediaGallery media={post.media_urls} />
         )}
 
         {/* Engagement Stats */}
@@ -482,9 +500,9 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
           {!isOwnPost && onConnect && (
             <button
               onClick={handleConnect}
-              disabled={isConnected || connectingTo === post.user_id}
+              disabled={userConnected || connectingTo === post.user_id}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all flex-1 justify-center ${
-                isConnected
+                userConnected
                   ? 'text-green-600 bg-green-50 dark:bg-green-950/30 cursor-not-allowed'
                   : connectingTo === post.user_id
                   ? 'text-gray-500 bg-gray-100 dark:bg-gray-900/30 cursor-not-allowed'
@@ -493,7 +511,7 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
             >
               <UserPlus className="h-5 w-5" />
               <span className="font-medium">
-                {isConnected ? 'Connected' : 
+                {userConnected ? 'Connected' : 
                  connectingTo === post.user_id ? 'Connecting...' : 'Connect'}
               </span>
             </button>
@@ -509,34 +527,11 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
         </div>
 
         {/* Comment Section */}
-        {showComments && (
-          <div className="border-t border-border pt-4">
-            <form onSubmit={handleSubmitComment} className="flex gap-3 mb-4">
-              <Avatar className="h-8 w-8">
-                <AvatarFallback className="text-sm">
-                  {currentUserId?.charAt(0) || 'U'}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1">
-                <Textarea
-                  placeholder="Write a comment..."
-                  value={commentText}
-                  onChange={(e) => setCommentText(e.target.value)}
-                  rows={2}
-                  className="resize-none mb-2"
-                />
-                <Button 
-                  type="submit" 
-                  size="sm" 
-                  disabled={!commentText.trim() || submitting}
-                  className="ml-auto block"
-                >
-                  {submitting ? 'Posting...' : 'Comment'}
-                </Button>
-              </div>
-            </form>
-          </div>
-        )}
+        <CommentsSection 
+          postId={post.id} 
+          isOpen={showComments} 
+          onClose={() => setShowComments(false)} 
+        />
       </CardContent>
     </Card>
   )
