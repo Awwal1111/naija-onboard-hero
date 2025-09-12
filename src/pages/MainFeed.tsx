@@ -15,6 +15,7 @@ import EnhancedCreatePostDialog from '@/components/EnhancedCreatePostDialog'
 import TrendingSection from '@/components/TrendingSection'
 import ResponsiveLayout from '@/components/ResponsiveLayout'
 import NotificationBell from '@/components/NotificationBell'
+import SuggestionsTab from '@/components/SuggestionsTab'
 
 const MainFeed = () => {
   const navigate = useNavigate()
@@ -295,52 +296,58 @@ const MainFeed = () => {
 
           {/* Main Feed Content */}
           <div className="px-3 sm:px-6 py-4">
-            {filteredAndSortedPosts.length === 0 && !loading ? (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                  <FileText className="h-8 w-8 text-text-secondary" />
-                </div>
-                <h3 className="text-lg font-semibold text-text-primary mb-2">
-                  {searchQuery ? 'No matching posts' : 'Welcome to your feed!'}
-                </h3>
-                <p className="text-text-secondary mb-4">
-                  {searchQuery 
-                    ? 'Try adjusting your search terms'
-                    : 'Start by creating your first post or following other users'
-                  }
-                </p>
-                {!searchQuery && (
-                  <BrandButton onClick={() => setShowCreatePost(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create Your First Post
-                  </BrandButton>
-                )}
-              </div>
+            {feedType === 'following' ? (
+              <SuggestionsTab />
             ) : (
               <>
-                {/* Feed Stats */}
-                <div className="mb-4 flex items-center justify-between text-sm text-text-secondary">
-                  <span>{filteredAndSortedPosts.length} posts</span>
-                  <div className="flex items-center gap-2">
-                    <span>Sorted by {sortBy}</span>
-                    {selectedCategory !== 'all' && (
-                      <Badge variant="outline" className="text-xs">
-                        {postCategories.find(c => c.id === selectedCategory)?.label}
-                      </Badge>
+                {filteredAndSortedPosts.length === 0 && !loading ? (
+                  <div className="text-center py-12">
+                    <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                      <FileText className="h-8 w-8 text-text-secondary" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-text-primary mb-2">
+                      {searchQuery ? 'No matching posts' : 'Welcome to your feed!'}
+                    </h3>
+                    <p className="text-text-secondary mb-4">
+                      {searchQuery 
+                        ? 'Try adjusting your search terms'
+                        : 'Start by creating your first post or following other users'
+                      }
+                    </p>
+                    {!searchQuery && (
+                      <BrandButton onClick={() => setShowCreatePost(true)}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Create Your First Post
+                      </BrandButton>
                     )}
                   </div>
-                </div>
-                
-                <InfiniteScrollFeed
-                  posts={filteredAndSortedPosts}
-                  hasNextPage={false}
-                  isFetchingNextPage={false}
-                  fetchNextPage={() => {}}
-                  onReact={addReaction}
-                  onRemoveReaction={removeReaction}
-                  onComment={addComment}
-                  currentUserId={user?.id}
-                />
+                ) : (
+                  <>
+                    {/* Feed Stats */}
+                    <div className="mb-4 flex items-center justify-between text-sm text-text-secondary">
+                      <span>{filteredAndSortedPosts.length} posts</span>
+                      <div className="flex items-center gap-2">
+                        <span>Sorted by {sortBy}</span>
+                        {selectedCategory !== 'all' && (
+                          <Badge variant="outline" className="text-xs">
+                            {postCategories.find(c => c.id === selectedCategory)?.label}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <InfiniteScrollFeed
+                      posts={filteredAndSortedPosts}
+                      hasNextPage={false}
+                      isFetchingNextPage={false}
+                      fetchNextPage={() => {}}
+                      onReact={addReaction}
+                      onRemoveReaction={removeReaction}
+                      onComment={addComment}
+                      currentUserId={user?.id}
+                    />
+                  </>
+                )}
               </>
             )}
           </div>

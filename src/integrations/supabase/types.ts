@@ -651,6 +651,39 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          metadata: Json | null
+          read_at: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          metadata?: Json | null
+          read_at?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          metadata?: Json | null
+          read_at?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       payouts: {
         Row: {
           amount: number
@@ -829,6 +862,35 @@ export type Database = {
           },
         ]
       }
+      post_views: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_views_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       posts: {
         Row: {
           comments_count: number
@@ -890,6 +952,30 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
         ]
+      }
+      profile_views: {
+        Row: {
+          created_at: string
+          id: string
+          profile_user_id: string
+          viewed_at: string
+          viewer_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          profile_user_id: string
+          viewed_at?: string
+          viewer_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          profile_user_id?: string
+          viewed_at?: string
+          viewer_id?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
