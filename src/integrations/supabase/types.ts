@@ -1376,6 +1376,7 @@ export type Database = {
           id: string
           media_type: string
           media_url: string
+          privacy_setting: string | null
           user_id: string
           views_count: number
         }
@@ -1386,6 +1387,7 @@ export type Database = {
           id?: string
           media_type?: string
           media_url: string
+          privacy_setting?: string | null
           user_id: string
           views_count?: number
         }
@@ -1396,6 +1398,7 @@ export type Database = {
           id?: string
           media_type?: string
           media_url?: string
+          privacy_setting?: string | null
           user_id?: string
           views_count?: number
         }
@@ -1559,6 +1562,30 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          granted_at: string
+          granted_by: string | null
+          id: string
+          role: Database["public"]["Enums"]["user_role"]
+          user_id: string
+        }
+        Insert: {
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          user_id: string
+        }
+        Update: {
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       wallet_transactions: {
         Row: {
           amount: number
@@ -1660,6 +1687,13 @@ export type Database = {
           user_id: string
         }[]
       }
+      has_user_role: {
+        Args: {
+          check_role: Database["public"]["Enums"]["user_role"]
+          user_id: string
+        }
+        Returns: boolean
+      }
       increment_wallet_balance: {
         Args: { amount_to_add: number; target_user_id: string }
         Returns: undefined
@@ -1674,7 +1708,7 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      user_role: "user" | "admin" | "moderator" | "expert"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1801,6 +1835,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      user_role: ["user", "admin", "moderator", "expert"],
+    },
   },
 } as const

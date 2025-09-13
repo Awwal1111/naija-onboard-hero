@@ -5,12 +5,14 @@ import { EnhancedPost } from '@/hooks/useEnhancedFeed'
 
 interface InfiniteScrollFeedProps {
   posts: EnhancedPost[]
-  hasNextPage?: boolean
-  isFetchingNextPage?: boolean
+  hasNextPage: boolean
+  isFetchingNextPage: boolean
   fetchNextPage: () => void
   onReact: (postId: string, reactionType: string) => void
   onRemoveReaction: (postId: string) => void
   onComment: (postId: string, content: string) => Promise<{ success?: boolean; error?: string }>
+  onJobApply?: (jobPost: EnhancedPost) => void
+  onProfileClick?: (userId: string) => void
   currentUserId?: string
 }
 
@@ -22,6 +24,8 @@ const InfiniteScrollFeed: React.FC<InfiniteScrollFeedProps> = ({
   onReact,
   onRemoveReaction,
   onComment,
+  onJobApply,
+  onProfileClick,
   currentUserId
 }) => {
   const loadingRef = useRef<HTMLDivElement>(null)
@@ -56,9 +60,8 @@ const InfiniteScrollFeed: React.FC<InfiniteScrollFeedProps> = ({
           onReact={onReact}
           onRemoveReaction={onRemoveReaction}
           onComment={onComment}
-          onConnect={(userId) => {
-            console.log('Sending connection request to user:', userId)
-          }}
+          onJobApply={onJobApply}
+          onProfileClick={onProfileClick}
           currentUserId={currentUserId}
         />
       ))}

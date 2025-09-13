@@ -16,6 +16,9 @@ import TrendingSection from '@/components/TrendingSection'
 import ResponsiveLayout from '@/components/ResponsiveLayout'
 import NotificationBell from '@/components/NotificationBell'
 import SuggestionsTab from '@/components/SuggestionsTab'
+import StoriesCarousel from '@/components/StoriesCarousel'
+import JobApplicationDialog from '@/components/JobApplicationDialog'
+import ProfilePreview from '@/components/ProfilePreview'
 
 const MainFeed = () => {
   const navigate = useNavigate()
@@ -38,6 +41,8 @@ const MainFeed = () => {
   const [sortBy, setSortBy] = useState<'recent' | 'trending' | 'popular'>('recent')
   const [showFilters, setShowFilters] = useState(false)
   const [aiAssistantOpen, setAiAssistantOpen] = useState(false)
+  const [jobApplicationDialog, setJobApplicationDialog] = useState<{ isOpen: boolean; jobPost: any | null }>({ isOpen: false, jobPost: null })
+  const [profilePreview, setProfilePreview] = useState<{ isOpen: boolean; userId: string | null }>({ isOpen: false, userId: null })
 
   const feedSuggestions = [
     "How do I create an engaging post?",
@@ -103,6 +108,14 @@ const MainFeed = () => {
 
   const handleCreateStory = () => {
     setShowCreateStory(true)
+  }
+
+  const handleJobApply = (jobPost: any) => {
+    setJobApplicationDialog({ isOpen: true, jobPost })
+  }
+
+  const handleProfileClick = (userId: string) => {
+    setProfilePreview({ isOpen: true, userId })
   }
 
   if (loading) {
@@ -233,6 +246,11 @@ const MainFeed = () => {
             </div>
           </header>
 
+          {/* Stories Section */}
+          <div className="border-b border-border">
+            <StoriesCarousel onCreateStory={handleCreateStory} />
+          </div>
+
           {/* Post Creation Bar */}
           <div className="px-3 sm:px-6 py-4 border-b border-border">
             <div className="flex items-center gap-2 sm:gap-3">
@@ -345,6 +363,8 @@ const MainFeed = () => {
                       onRemoveReaction={removeReaction}
                       onComment={addComment}
                       currentUserId={user?.id}
+                      onJobApply={handleJobApply}
+                      onProfileClick={handleProfileClick}
                     />
                   </>
                 )}
@@ -372,6 +392,20 @@ const MainFeed = () => {
           createPost(content, contentType, visibility, title, mediaUrls)
         }
         userProfile={profile}
+      />
+
+      {/* Job Application Dialog */}
+      <JobApplicationDialog
+        isOpen={jobApplicationDialog.isOpen}
+        onClose={() => setJobApplicationDialog({ isOpen: false, jobPost: null })}
+        jobPost={jobApplicationDialog.jobPost}
+      />
+
+      {/* Profile Preview Dialog */}
+      <ProfilePreview
+        isOpen={profilePreview.isOpen}
+        onClose={() => setProfilePreview({ isOpen: false, userId: null })}
+        profileId={profilePreview.userId || ''}
       />
 
       {/* Bottom Navigation - Responsive design */}

@@ -1,19 +1,16 @@
 import React, { useState, useEffect } from 'react'
-import { MessageCircle, Share, Eye, MoreVertical, UserPlus, Briefcase, Clock, DollarSign, Users, Award, Calendar, Vote, Hash, MapPin, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react'
+import { MessageCircle, Share, Eye, MoreVertical, Briefcase, Clock, DollarSign, Users, Award, Calendar, Vote, Hash, MapPin, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react'
 import { EnhancedPost } from '@/hooks/useEnhancedFeed'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Card, CardContent } from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
 import ReactionPicker from './ReactionPicker'
 import CommentsSection from './CommentsSection'
 import MediaGallery from './MediaGallery'
-import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { usePostViews } from '@/hooks/usePostViews'
-import { useConnections } from '@/hooks/useConnections'
 import { sanitizeText } from '@/lib/security'
 
 interface EnhancedPostCardProps {
@@ -21,9 +18,9 @@ interface EnhancedPostCardProps {
   onReact: (postId: string, reactionType: string) => void
   onRemoveReaction: (postId: string) => void
   onComment: (postId: string, content: string) => Promise<{ success?: boolean; error?: string }>
-  onConnect?: (userId: string) => void
+  onJobApply?: (jobPost: EnhancedPost) => void
+  onProfileClick?: (userId: string) => void
   currentUserId?: string
-  isConnected?: boolean
 }
 
 const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({ 
@@ -31,19 +28,16 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
   onReact,
   onRemoveReaction,
   onComment, 
-  onConnect, 
-  currentUserId,
-  isConnected = false
+  onJobApply,
+  onProfileClick,
+  currentUserId
 }) => {
   const [showComments, setShowComments] = useState(false)
   const [commentText, setCommentText] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [connectingTo, setConnectingTo] = useState<string | null>(null)
   const [hasViewed, setHasViewed] = useState(false)
   const { toast } = useToast()
   const { trackPostView } = usePostViews()
-  const { checkConnection } = useConnections()
-  const [userConnected, setUserConnected] = useState(isConnected)
 
   // Track post view when component mounts
   useEffect(() => {
@@ -52,17 +46,6 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
       setHasViewed(true)
     }
   }, [post.id, currentUserId, hasViewed, trackPostView])
-
-  // Check connection status
-  useEffect(() => {
-    const checkUserConnection = async () => {
-      if (currentUserId && post.user_id && currentUserId !== post.user_id) {
-        const connected = await checkConnection(post.user_id)
-        setUserConnected(connected)
-      }
-    }
-    checkUserConnection()
-  }, [currentUserId, post.user_id, checkConnection])
 
   const formatTimeAgo = (date: string) => {
     const now = new Date()
@@ -119,12 +102,6 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
 
   const postTypeInfo = getPostTypeInfo()
 
-  // Extract hashtags from content
-  const extractHashtags = (text: string) => {
-    const hashtagRegex = /#[a-zA-Z0-9_]+/g
-    return text.match(hashtagRegex) || []
-  }
-
   const renderContentWithHashtags = (text: string) => {
     const hashtagRegex = /#[a-zA-Z0-9_]+/g
     const parts = text.split(hashtagRegex)
@@ -142,7 +119,6 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
     ))
   }
 
-  // Post content component with read more/less functionality
   const PostContent = ({ content, renderContentWithHashtags }: { content: string, renderContentWithHashtags: (text: string) => React.ReactNode }) => {
     const [isExpanded, setIsExpanded] = useState(false)
     const maxLength = 200
@@ -182,46 +158,6 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
         </button>
       </div>
     )
-  }
-
-  const handleConnect = async () => {
-    if (!currentUserId || isConnected || connectingTo) return
-    
-    setConnectingTo(post.user_id)
-    
-    try {
-      const { error } = await supabase
-        .from('connection_requests')
-        .insert({
-          requester_id: currentUserId,
-          requested_id: post.user_id
-        })
-
-      if (error) {
-        toast({
-          title: "Connection failed",
-          description: error.message,
-          variant: "destructive",
-        })
-      } else {
-        toast({
-          title: "Connection request sent!",
-          description: `Your connection request has been sent to ${post.profiles?.full_name}.`,
-        })
-        if (onConnect) {
-          onConnect(post.user_id)
-        }
-      }
-    } catch (error) {
-      console.error('Connection error:', error)
-      toast({
-        title: "Connection failed",
-        description: "Failed to send connection request. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setConnectingTo(null)
-    }
   }
 
   const handleReaction = (reactionType: string) => {
@@ -306,18 +242,23 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
 
         {/* Post Header */}
         <div className="flex items-start gap-4 mb-4">
-          <Avatar className="h-12 w-12">
-            <AvatarImage src={post.profiles?.profile_picture_url} />
-            <AvatarFallback>
-              {post.profiles?.full_name?.charAt(0) || 'U'}
-            </AvatarFallback>
-          </Avatar>
+          <button onClick={() => onProfileClick?.(post.user_id)}>
+            <Avatar className="h-12 w-12 hover:ring-2 hover:ring-primary/50 transition-all">
+              <AvatarImage src={post.profiles?.profile_picture_url} />
+              <AvatarFallback>
+                {post.profiles?.full_name?.charAt(0) || 'U'}
+              </AvatarFallback>
+            </Avatar>
+          </button>
           
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between mb-1">
-              <h3 className="font-semibold text-text-primary truncate">
+              <button 
+                onClick={() => onProfileClick?.(post.user_id)}
+                className="font-semibold text-text-primary truncate hover:text-primary transition-colors"
+              >
                 {post.profiles?.full_name || 'Anonymous User'}
-              </h3>
+              </button>
               <button className="p-1 hover:bg-accent rounded-full">
                 <MoreVertical className="h-4 w-4 text-text-secondary" />
               </button>
@@ -343,89 +284,6 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
             </h4>
           )}
           <PostContent content={post.content} renderContentWithHashtags={renderContentWithHashtags} />
-          
-          {/* Event details */}
-          {isEvent && post.metadata?.event && (
-            <div className="mt-3 p-3 bg-muted rounded-xl space-y-2">
-              {post.metadata.event.date && (
-                <div className="flex items-center gap-2 text-sm">
-                  <Calendar className="h-4 w-4 text-primary" />
-                  <span>{new Date(post.metadata.event.date).toLocaleDateString()}</span>
-                </div>
-              )}
-              {post.metadata.event.location && (
-                <div className="flex items-center gap-2 text-sm">
-                  <MapPin className="h-4 w-4 text-primary" />
-                  <span>{post.metadata.event.location}</span>
-                </div>
-              )}
-              {post.metadata.event.link && (
-                <div className="flex items-center gap-2 text-sm">
-                  <ExternalLink className="h-4 w-4 text-primary" />
-                  <a href={post.metadata.event.link} target="_blank" rel="noopener noreferrer" 
-                     className="text-primary hover:text-primary/80">
-                    Event Link
-                  </a>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Job details */}
-          {isJobPost && post.metadata?.job && (
-            <div className="mt-3 p-3 bg-muted rounded-xl space-y-2">
-              {post.metadata.job.budget && (
-                <div className="flex items-center gap-2 text-sm">
-                  <DollarSign className="h-4 w-4 text-primary" />
-                  <span>{post.metadata.job.budget}</span>
-                </div>
-              )}
-              {post.metadata.job.location && (
-                <div className="flex items-center gap-2 text-sm">
-                  <MapPin className="h-4 w-4 text-primary" />
-                  <span>{post.metadata.job.location}</span>
-                </div>
-              )}
-              {post.metadata.job.deadline && (
-                <div className="flex items-center gap-2 text-sm">
-                  <Clock className="h-4 w-4 text-primary" />
-                  <span>Apply by {new Date(post.metadata.job.deadline).toLocaleDateString()}</span>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Poll options */}
-          {isPoll && post.metadata?.poll && (
-            <div className="mt-3 space-y-2">
-              {post.metadata.poll.options?.map((option: any, index: number) => (
-                <button
-                  key={index}
-                  className="w-full p-3 text-left bg-muted hover:bg-accent rounded-xl transition-colors"
-                >
-                  <div className="flex items-center justify-between">
-                    <span>{option.text}</span>
-                    <span className="text-sm text-text-secondary">{option.votes || 0} votes</span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Achievement details */}
-          {isAchievement && post.metadata?.achievement && (
-            <div className="mt-3 p-3 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-950/30 dark:to-orange-950/30 rounded-xl border border-yellow-200 dark:border-yellow-800">
-              <div className="flex items-center gap-2 text-sm font-medium text-yellow-800 dark:text-yellow-200">
-                <Award className="h-4 w-4" />
-                <span>{post.metadata.achievement.type || 'Achievement Unlocked!'}</span>
-              </div>
-              {post.metadata.achievement.description && (
-                <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
-                  {post.metadata.achievement.description}
-                </p>
-              )}
-            </div>
-          )}
         </div>
 
         {/* Media */}
@@ -484,46 +342,41 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
         <div className="flex items-center gap-2 mb-4">
           <ReactionPicker 
             onReact={handleReaction}
-            currentReaction={post.user_reaction}
-            className="flex-1"
+            userReaction={post.user_reaction}
           />
           
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => setShowComments(!showComments)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-text-secondary hover:text-primary hover:bg-primary/10 transition-all flex-1 justify-center"
+            className="text-text-secondary hover:text-primary hover:bg-primary/10"
           >
-            <MessageCircle className="h-5 w-5" />
-            <span className="font-medium">Comment</span>
-          </button>
-
-          {/* Connect Button - Only show for other users */}
-          {!isOwnPost && onConnect && (
-            <button
-              onClick={handleConnect}
-              disabled={userConnected || connectingTo === post.user_id}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all flex-1 justify-center ${
-                userConnected
-                  ? 'text-green-600 bg-green-50 dark:bg-green-950/30 cursor-not-allowed'
-                  : connectingTo === post.user_id
-                  ? 'text-gray-500 bg-gray-100 dark:bg-gray-900/30 cursor-not-allowed'
-                  : 'text-primary hover:bg-primary/10'
-              }`}
-            >
-              <UserPlus className="h-5 w-5" />
-              <span className="font-medium">
-                {userConnected ? 'Connected' : 
-                 connectingTo === post.user_id ? 'Connecting...' : 'Connect'}
-              </span>
-            </button>
-          )}
+            <MessageCircle className="h-4 w-4 mr-2" />
+            Comment
+          </Button>
           
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={handleShare}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-text-secondary hover:text-primary hover:bg-primary/10 transition-all flex-1 justify-center"
+            className="text-text-secondary hover:text-primary hover:bg-primary/10"
           >
-            <Share className="h-5 w-5" />
-            <span className="font-medium">Share</span>
-          </button>
+            <Share className="h-4 w-4 mr-2" />
+            Share
+          </Button>
+
+          {/* Enhanced Apply Button for Job Posts */}
+          {isJobPost && !isOwnPost && onJobApply && (
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => onJobApply(post)}
+              className="ml-auto bg-brand-green hover:bg-brand-green-hover text-white font-medium"
+            >
+              <Briefcase className="h-4 w-4 mr-2" />
+              Apply Now
+            </Button>
+          )}
         </div>
 
         {/* Comment Section */}
