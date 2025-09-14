@@ -17,9 +17,9 @@ interface Story {
   created_at: string
   expires_at: string
   profiles?: {
-    full_name: string | null
-    profile_picture_url?: string | null
-  } | null
+    full_name: string
+    profile_picture_url?: string
+  }
   is_viewed?: boolean
 }
 
@@ -67,12 +67,16 @@ const StoriesCarousel: React.FC<StoriesCarouselProps> = ({ onCreateStory }) => {
       // Process stories and mark viewed ones
       const processedStories = (storiesData || []).map(story => ({
         ...story,
-        is_viewed: viewedStoryIds.has(story.id) || story.user_id === user.id
+        is_viewed: viewedStoryIds.has(story.id) || story.user_id === user.id,
+        profiles: story.profiles && !Array.isArray(story.profiles) ? {
+          full_name: story.profiles.full_name || 'Anonymous',
+          profile_picture_url: story.profiles.profile_picture_url
+        } : { full_name: 'Anonymous' }
       }))
 
       setStories(processedStories)
 
-      // Get current user's stories
+      // Get current user's stories  
       const myStories = processedStories.filter(story => story.user_id === user.id)
       setUserStories(myStories)
 

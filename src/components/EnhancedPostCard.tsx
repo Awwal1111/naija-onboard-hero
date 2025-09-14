@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from 'react'
-import { MessageCircle, Share, Eye, MoreVertical, Briefcase, Clock, DollarSign, Users, Award, Calendar, Vote, Hash, MapPin, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react'
+import { MessageCircle, Share, Eye, MoreVertical, Briefcase, Clock, DollarSign, Users, Award, Calendar, Vote, Hash, MapPin, ExternalLink, ChevronDown, ChevronUp, Bookmark, Flag, Link, Edit, Trash2 } from 'lucide-react'
 import { EnhancedPost } from '@/hooks/useEnhancedFeed'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Card, CardContent } from '@/components/ui/card'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import ReactionPicker from './ReactionPicker'
 import CommentsSection from './CommentsSection'
 import MediaGallery from './MediaGallery'
 import { useToast } from '@/hooks/use-toast'
 import { usePostViews } from '@/hooks/usePostViews'
 import { sanitizeText } from '@/lib/security'
+import PostOptionsMenu from './PostOptionsMenu'
 
 interface EnhancedPostCardProps {
   post: EnhancedPost
@@ -294,13 +296,6 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
         {/* Engagement Stats */}
         <div className="flex items-center justify-between py-3 border-t border-b border-border mb-4">
           <div className="flex items-center gap-4 text-sm">
-            <button className="text-text-secondary hover:text-primary transition-colors hover:bg-primary/10 px-2 py-1 rounded-lg">
-              <div className="flex items-center gap-1">
-                <Eye className="h-4 w-4" />
-                <span>{post.views_count || 0} views</span>
-              </div>
-            </button>
-            
             {getTotalReactions() > 0 && (
               <button className="text-text-secondary hover:text-primary transition-colors hover:bg-primary/10 px-2 py-1 rounded-lg font-medium">
                 <div className="flex items-center gap-1">
@@ -342,7 +337,7 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
         <div className="flex items-center gap-2 mb-4">
           <ReactionPicker 
             onReact={handleReaction}
-            userReaction={post.user_reaction}
+            currentReaction={post.user_reaction}
           />
           
           <Button
@@ -351,8 +346,7 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
             onClick={() => setShowComments(!showComments)}
             className="text-text-secondary hover:text-primary hover:bg-primary/10"
           >
-            <MessageCircle className="h-4 w-4 mr-2" />
-            Comment
+            <span className="text-lg">💬</span>
           </Button>
           
           <Button
@@ -361,9 +355,19 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
             onClick={handleShare}
             className="text-text-secondary hover:text-primary hover:bg-primary/10"
           >
-            <Share className="h-4 w-4 mr-2" />
-            Share
+            <span className="text-lg">↗️</span>
           </Button>
+          
+          {/* Three-dot menu */}
+          <PostOptionsMenu
+            isOwnPost={isOwnPost}
+            postId={post.id}
+            onEdit={() => {}}
+            onDelete={() => {}}
+            onSave={() => {}}
+            onReport={() => {}}
+            onCopyLink={() => handleShare()}
+          />
 
           {/* Enhanced Apply Button for Job Posts */}
           {isJobPost && !isOwnPost && onJobApply && (
