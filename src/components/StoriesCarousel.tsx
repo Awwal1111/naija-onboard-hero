@@ -48,8 +48,16 @@ const StoriesCarousel: React.FC<StoriesCarouselProps> = ({ onCreateStory }) => {
       const { data: storiesData, error: storiesError } = await supabase
         .from('stories')
         .select(`
-          *,
-          profiles(full_name, profile_picture_url)
+          id,
+          user_id,
+          media_url,
+          media_type,
+          content,
+          views_count,
+          created_at,
+          expires_at,
+          privacy_setting,
+          profiles!stories_user_id_fkey(full_name, profile_picture_url)
         `)
         .gt('expires_at', new Date().toISOString())
         .order('created_at', { ascending: false })
@@ -68,10 +76,9 @@ const StoriesCarousel: React.FC<StoriesCarouselProps> = ({ onCreateStory }) => {
       const processedStories = (storiesData || []).map(story => ({
         ...story,
         is_viewed: viewedStoryIds.has(story.id) || story.user_id === user.id,
-        profiles: story.profiles && !Array.isArray(story.profiles) ? {
-          full_name: story.profiles.full_name || 'Anonymous',
-          profile_picture_url: story.profiles.profile_picture_url
-        } : { full_name: 'Anonymous' }
+        profiles: Array.isArray(story.profiles) && story.profiles.length > 0 
+          ? story.profiles[0] 
+          : { full_name: 'Anonymous' }
       }))
 
       setStories(processedStories)
