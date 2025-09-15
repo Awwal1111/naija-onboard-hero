@@ -56,8 +56,7 @@ const StoriesCarousel: React.FC<StoriesCarouselProps> = ({ onCreateStory }) => {
           views_count,
           created_at,
           expires_at,
-          privacy_setting,
-          profiles!stories_user_id_fkey(full_name, profile_picture_url)
+          profiles(full_name, profile_picture_url)
         `)
         .gt('expires_at', new Date().toISOString())
         .order('created_at', { ascending: false })
