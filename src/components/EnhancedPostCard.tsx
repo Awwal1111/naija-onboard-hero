@@ -334,29 +334,31 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-2 mb-4">
-          <ReactionPicker 
-            onReact={handleReaction}
-            currentReaction={post.user_reaction}
-          />
-          
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowComments(!showComments)}
-            className="text-text-secondary hover:text-primary hover:bg-primary/10"
-          >
-            <span className="text-lg">💬</span>
-          </Button>
-          
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleShare}
-            className="text-text-secondary hover:text-primary hover:bg-primary/10"
-          >
-            <span className="text-lg">↗️</span>
-          </Button>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <ReactionPicker 
+              onReact={handleReaction}
+              currentReaction={post.user_reaction}
+            />
+            
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowComments(!showComments)}
+              className="text-text-secondary hover:text-primary hover:bg-primary/10"
+            >
+              <MessageCircle className="h-4 w-4" />
+            </Button>
+            
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleShare}
+              className="text-text-secondary hover:text-primary hover:bg-primary/10"
+            >
+              <Share className="h-4 w-4" />
+            </Button>
+          </div>
           
           {/* Three-dot menu */}
           <PostOptionsMenu
@@ -368,19 +370,6 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
             onReport={() => {}}
             onCopyLink={() => handleShare()}
           />
-
-          {/* Enhanced Apply Button for Job Posts */}
-          {isJobPost && !isOwnPost && onJobApply && (
-            <Button
-              variant="default"
-              size="sm"
-              onClick={() => onJobApply(post)}
-              className="ml-auto bg-brand-green hover:bg-brand-green-hover text-white font-medium"
-            >
-              <Briefcase className="h-4 w-4 mr-2" />
-              Apply Now
-            </Button>
-          )}
         </div>
 
         {/* Comment Section */}
