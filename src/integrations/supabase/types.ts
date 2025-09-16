@@ -168,15 +168,7 @@ export type Database = {
           released_at?: string | null
           transaction_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "commissions_transaction_id_fkey"
-            columns: ["transaction_id"]
-            isOneToOne: false
-            referencedRelation: "transactions"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       connection_requests: {
         Row: {
@@ -1299,6 +1291,93 @@ export type Database = {
           },
         ]
       }
+      predictor_bets: {
+        Row: {
+          created_at: string
+          id: string
+          question_id: string
+          selected_option: number
+          stake_amount: number
+          status: string | null
+          user_id: string
+          winnings: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          question_id: string
+          selected_option: number
+          stake_amount: number
+          status?: string | null
+          user_id: string
+          winnings?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          question_id?: string
+          selected_option?: number
+          stake_amount?: number
+          status?: string | null
+          user_id?: string
+          winnings?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "predictor_bets_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "predictor_questions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "predictor_bets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      predictor_questions: {
+        Row: {
+          correct_option: number | null
+          created_at: string
+          description: string | null
+          id: string
+          options: Json
+          resolved_at: string | null
+          stake_amount: number
+          status: string | null
+          title: string
+          total_pool: number | null
+        }
+        Insert: {
+          correct_option?: number | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          options: Json
+          resolved_at?: string | null
+          stake_amount?: number
+          status?: string | null
+          title: string
+          total_pool?: number | null
+        }
+        Update: {
+          correct_option?: number | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          options?: Json
+          resolved_at?: string | null
+          stake_amount?: number
+          status?: string | null
+          title?: string
+          total_pool?: number | null
+        }
+        Relationships: []
+      }
       profile_views: {
         Row: {
           created_at: string
@@ -1327,9 +1406,12 @@ export type Database = {
         Row: {
           area: string | null
           average_rating: number | null
+          balance_non_withdrawable: number | null
+          balance_withdrawable: number | null
           bio: string | null
           connections_count: number | null
           created_at: string
+          email_confirmed: boolean | null
           expert_verified_at: string | null
           full_name: string | null
           id: string
@@ -1343,6 +1425,7 @@ export type Database = {
           referral_code: string | null
           state_id: string | null
           state_name: string | null
+          transaction_pin: string | null
           updated_at: string
           user_id: string
           wallet_balance: number | null
@@ -1350,9 +1433,12 @@ export type Database = {
         Insert: {
           area?: string | null
           average_rating?: number | null
+          balance_non_withdrawable?: number | null
+          balance_withdrawable?: number | null
           bio?: string | null
           connections_count?: number | null
           created_at?: string
+          email_confirmed?: boolean | null
           expert_verified_at?: string | null
           full_name?: string | null
           id?: string
@@ -1366,6 +1452,7 @@ export type Database = {
           referral_code?: string | null
           state_id?: string | null
           state_name?: string | null
+          transaction_pin?: string | null
           updated_at?: string
           user_id: string
           wallet_balance?: number | null
@@ -1373,9 +1460,12 @@ export type Database = {
         Update: {
           area?: string | null
           average_rating?: number | null
+          balance_non_withdrawable?: number | null
+          balance_withdrawable?: number | null
           bio?: string | null
           connections_count?: number | null
           created_at?: string
+          email_confirmed?: boolean | null
           expert_verified_at?: string | null
           full_name?: string | null
           id?: string
@@ -1389,6 +1479,7 @@ export type Database = {
           referral_code?: string | null
           state_id?: string | null
           state_name?: string | null
+          transaction_pin?: string | null
           updated_at?: string
           user_id?: string
           wallet_balance?: number | null
@@ -1872,39 +1963,87 @@ export type Database = {
       transactions: {
         Row: {
           amount: number
+          balance_type: string
           created_at: string
-          currency: string
+          description: string | null
           id: string
           metadata: Json | null
-          reference: string | null
-          status: string
-          type: string | null
-          updated_at: string
+          recipient_id: string | null
+          status: string | null
+          transaction_type: string
           user_id: string
         }
         Insert: {
           amount: number
+          balance_type: string
           created_at?: string
-          currency?: string
+          description?: string | null
           id?: string
           metadata?: Json | null
-          reference?: string | null
-          status?: string
-          type?: string | null
-          updated_at?: string
+          recipient_id?: string | null
+          status?: string | null
+          transaction_type: string
           user_id: string
         }
         Update: {
           amount?: number
+          balance_type?: string
           created_at?: string
-          currency?: string
+          description?: string | null
           id?: string
           metadata?: Json | null
-          reference?: string | null
-          status?: string
-          type?: string | null
-          updated_at?: string
+          recipient_id?: string | null
+          status?: string | null
+          transaction_type?: string
           user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "transactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      trivia_questions: {
+        Row: {
+          category: string | null
+          correct_answer: number
+          created_at: string
+          difficulty: string | null
+          id: string
+          is_active: boolean | null
+          options: Json
+          question: string
+        }
+        Insert: {
+          category?: string | null
+          correct_answer: number
+          created_at?: string
+          difficulty?: string | null
+          id?: string
+          is_active?: boolean | null
+          options: Json
+          question: string
+        }
+        Update: {
+          category?: string | null
+          correct_answer?: number
+          created_at?: string
+          difficulty?: string | null
+          id?: string
+          is_active?: boolean | null
+          options?: Json
+          question?: string
         }
         Relationships: []
       }
@@ -2085,6 +2224,15 @@ export type Database = {
       is_admin_user: {
         Args: Record<PropertyKey, never>
         Returns: boolean
+      }
+      transfer_funds: {
+        Args: {
+          amount: number
+          pin_hash: string
+          recipient_email: string
+          sender_id: string
+        }
+        Returns: Json
       }
       users_are_connected: {
         Args: { user1: string; user2: string }

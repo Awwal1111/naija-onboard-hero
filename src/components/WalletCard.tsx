@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { Plus, Minus, Eye, EyeOff } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { BrandButton } from '@/components/ui/brand-button'
-import { useWallet } from '@/hooks/useWallet'
+import { useWallet, WalletBalance } from '@/hooks/useWallet'
 import { DepositDialog } from './DepositDialog'
 import { WithdrawalDialog } from './WithdrawalDialog'
 
@@ -13,6 +13,10 @@ export const WalletCard = () => {
   const [showWithdrawal, setShowWithdrawal] = useState(false)
 
   const formatBalance = (amount: number) => {
+    return `NC ${amount.toLocaleString()}`
+  }
+
+  const formatNaira = (amount: number) => {
     return new Intl.NumberFormat('en-NG', {
       style: 'currency',
       currency: 'NGN'
@@ -24,7 +28,7 @@ export const WalletCard = () => {
       <Card className="bg-gradient-to-br from-primary to-primary-glow border-none text-white">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg font-medium text-white/90">Wallet Balance</CardTitle>
+            <CardTitle className="text-lg font-medium text-white/90">Naijacoin Wallet</CardTitle>
             <button
               onClick={() => setShowBalance(!showBalance)}
               className="p-1 hover:bg-white/10 rounded"
@@ -43,7 +47,7 @@ export const WalletCard = () => {
               {loading ? (
                 <div className="animate-pulse bg-white/20 h-8 w-32 rounded"></div>
               ) : showBalance ? (
-                formatBalance(balance)
+                formatBalance(balance.total)
               ) : (
                 '****'
               )}
@@ -57,13 +61,13 @@ export const WalletCard = () => {
                 className="flex-1 bg-white/10 border-white/20 text-white hover:bg-white/20"
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Deposit
+                Buy NC
               </BrandButton>
               <BrandButton
                 variant="outline"
                 size="sm"
                 onClick={() => setShowWithdrawal(true)}
-                disabled={balance < 3000}
+                disabled={balance.withdrawable < 3000}
                 className="flex-1 bg-white/10 border-white/20 text-white hover:bg-white/20 disabled:opacity-50"
               >
                 <Minus className="h-4 w-4 mr-2" />
@@ -71,9 +75,9 @@ export const WalletCard = () => {
               </BrandButton>
             </div>
             
-            {balance < 3000 && (
+            {balance.withdrawable < 3000 && (
               <p className="text-xs text-white/70">
-                Minimum withdrawal: ₦3,000
+                Minimum withdrawal: NC 3,000
               </p>
             )}
           </div>
@@ -87,7 +91,7 @@ export const WalletCard = () => {
       <WithdrawalDialog 
         open={showWithdrawal} 
         onOpenChange={setShowWithdrawal}
-        currentBalance={balance}
+        currentBalance={balance.withdrawable}
       />
     </>
   )
