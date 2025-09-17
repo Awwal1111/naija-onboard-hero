@@ -20,7 +20,7 @@ import Experts from "./pages/Experts";
 import Jobs from "./pages/Jobs";
 import EnhancedChat from '@/components/EnhancedChat'
 import ChatPage from "./pages/ChatPage";
-import { Earn } from "./pages/Earn";
+import EnhancedEarn from "./pages/EnhancedEarn";
 import { SocialMediaTasks } from "./pages/SocialMediaTasks";
 import { Surveys } from "./pages/Surveys";
 import { GuessNumberGame } from "./pages/GuessNumberGame";
@@ -63,7 +63,7 @@ const App = () => (
           <Route path="/surveys" element={<ProtectedRoute><Surveys /></ProtectedRoute>} />
           <Route path="/games/guess-number" element={<ProtectedRoute><GuessNumberGame /></ProtectedRoute>} />
           <Route path="/referrals" element={<ProtectedRoute><Referrals /></ProtectedRoute>} />
-          <Route path="/earn" element={<ProtectedRoute><Earn /></ProtectedRoute>} />
+          <Route path="/earn" element={<ProtectedRoute><EnhancedEarn /></ProtectedRoute>} />
           <Route path="/earn/social-tasks" element={<ProtectedRoute><SocialMediaTasks /></ProtectedRoute>} />
           <Route path="/earn/referral-tasks" element={<ProtectedRoute><ReferralTasks /></ProtectedRoute>} />
           <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
