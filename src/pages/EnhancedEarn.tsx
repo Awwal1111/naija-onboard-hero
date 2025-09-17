@@ -6,7 +6,7 @@ import { Coins, RotateCcw, Target, Brain, Calendar, HelpCircle, Trophy, Zap } fr
 import { useWallet } from '@/hooks/useWallet'
 import NaijaLanceWalletCard from '@/components/NaijaLanceWalletCard'
 import SpinWheelGame from '@/components/SpinWheelGame'
-import { DailySigninCard } from '@/components/DailySigninCard'
+import DailySigninCard from '@/components/DailySigninCard'
 
 const EnhancedEarn = () => {
   const { balance, loading } = useWallet()

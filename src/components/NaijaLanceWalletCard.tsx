@@ -1,121 +1,111 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Wallet, ArrowUpRight, ArrowDownLeft, TrendingUp, Send, Download, Plus, Eye, EyeOff } from 'lucide-react'
+import { Wallet, ArrowUpRight, ArrowDownLeft, TrendingUp, Send, Download } from 'lucide-react'
 import { WalletBalance } from '@/hooks/useWallet'
-import { TransferDialog } from '@/components/TransferDialog'
-import { DepositDialog } from '@/components/DepositDialog'
 
 interface NaijaLanceWalletCardProps {
   balance: WalletBalance
   showBreakdown?: boolean
+  onTransfer?: () => void
+  onWithdraw?: () => void
   className?: string
 }
 
 const NaijaLanceWalletCard: React.FC<NaijaLanceWalletCardProps> = ({ 
   balance, 
   showBreakdown = true, 
+  onTransfer,
+  onWithdraw,
   className = '' 
 }) => {
-  const [showTransfer, setShowTransfer] = useState(false)
-  const [showDeposit, setShowDeposit] = useState(false)
-  const [showBalances, setShowBalances] = useState(true)
-
   const formatCurrency = (amount: number) => {
     return `NC ${amount.toLocaleString()}`
   }
 
   return (
-    <>
-      <Card className={`bg-gradient-to-br from-primary/10 to-secondary/10 border-primary/20 ${className}`}>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Wallet className="h-5 w-5 text-primary" />
-              NaijaLance Wallet
-            </CardTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowBalances(!showBalances)}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              {showBalances ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-            </Button>
-          </div>
-        </CardHeader>
-        
-        <CardContent className="space-y-4">
-          {/* Total Balance */}
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground mb-1">Total Balance</p>
-            <p className="text-3xl font-bold text-primary">
-              {showBalances ? formatCurrency(balance.total) : 'NC ****'}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              {showBalances ? `₦${balance.total.toLocaleString()}` : '₦ ****'}
-            </p>
-          </div>
+    <Card className={`bg-gradient-to-br from-primary via-primary to-brand-green text-white ${className}`}>
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-white">
+          <Wallet className="h-5 w-5" />
+          Naijacoin Wallet
+        </CardTitle>
+      </CardHeader>
+      
+      <CardContent className="space-y-4">
+        {/* Total Balance */}
+        <div className="text-center">
+          <p className="text-sm text-white/80 mb-1">Total Balance</p>
+          <p className="text-3xl font-bold text-white">
+            {formatCurrency(balance.total)}
+          </p>
+          <p className="text-sm text-white/70">
+            ₦{balance.total.toLocaleString()}
+          </p>
+        </div>
 
-          {/* Balance Breakdown */}
-          {showBreakdown && (
-            <div className="grid grid-cols-2 gap-3">
-              <div className="p-3 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
-                <div className="flex items-center justify-center gap-1 mb-1">
-                  <ArrowUpRight className="h-4 w-4 text-green-600 dark:text-green-400" />
-                  <span className="text-xs text-green-600 dark:text-green-400 font-medium">Withdrawable</span>
-                </div>
-                <p className="text-lg font-semibold text-green-700 dark:text-green-300 text-center">
-                  {showBalances ? formatCurrency(balance.withdrawable) : 'NC ****'}
-                </p>
+        {/* Balance Breakdown */}
+        {showBreakdown && (
+          <div className="grid grid-cols-2 gap-3 pt-4 border-t border-white/20">
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-1 mb-1">
+                <ArrowUpRight className="h-4 w-4 text-green-300" />
+                <span className="text-sm text-white/80">Withdrawable</span>
               </div>
-              
-              <div className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800">
-                <div className="flex items-center justify-center gap-1 mb-1">
-                  <TrendingUp className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                  <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">Bonus Balance</span>
-                </div>
-                <p className="text-lg font-semibold text-amber-700 dark:text-amber-300 text-center">
-                  {showBalances ? formatCurrency(balance.non_withdrawable) : 'NC ****'}
-                </p>
-              </div>
+              <p className="font-semibold text-white">
+                {formatCurrency(balance.withdrawable)}
+              </p>
+              <p className="text-xs text-white/60">
+                Can withdraw & transfer
+              </p>
             </div>
-          )}
-
-          {/* Quick Actions */}
-          <div className="flex gap-2">
-            <Button
-              onClick={() => setShowDeposit(true)}
-              className="flex-1 gap-2"
-              variant="default"
-            >
-              <Plus className="h-4 w-4" />
-              Buy NC
-            </Button>
             
-            <Button
-              onClick={() => setShowTransfer(true)}
-              className="flex-1 gap-2"
-              variant="outline"
-            >
-              <Send className="h-4 w-4" />
-              Send
-            </Button>
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-1 mb-1">
+                <TrendingUp className="h-4 w-4 text-blue-300" />
+                <span className="text-sm text-white/80">Bonus</span>
+              </div>
+              <p className="font-semibold text-white">
+                {formatCurrency(balance.non_withdrawable)}
+              </p>
+              <p className="text-xs text-white/60">
+                From daily sign-in
+              </p>
+            </div>
           </div>
+        )}
 
-          {/* Exchange Rate Info */}
-          <div className="text-center">
-            <Badge variant="secondary" className="text-xs">
-              1 NC = ₦1 • Instant transactions
-            </Badge>
-          </div>
-        </CardContent>
-      </Card>
+        {/* Quick Actions */}
+        <div className="flex gap-2 pt-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={onTransfer}
+            className="bg-white/20 text-white hover:bg-white/30 flex-1 border-0"
+          >
+            <Send className="h-4 w-4 mr-1" />
+            Send
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={onWithdraw}
+            disabled={balance.withdrawable < 3000}
+            className="bg-white/20 text-white hover:bg-white/30 flex-1 border-0 disabled:opacity-50"
+          >
+            <Download className="h-4 w-4 mr-1" />
+            Withdraw
+          </Button>
+        </div>
 
-      <TransferDialog open={showTransfer} onOpenChange={setShowTransfer} />
-      <DepositDialog open={showDeposit} onOpenChange={setShowDeposit} />
-    </>
+        {balance.withdrawable < 3000 && (
+          <p className="text-center text-xs text-white/70 mt-2">
+            Minimum withdrawal: NC 3,000
+          </p>
+        )}
+      </CardContent>
+    </Card>
   )
 }
 
