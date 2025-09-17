@@ -3,19 +3,13 @@ import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from './useAuth'
 import { useToast } from './use-toast'
 
-export interface WalletBalance {
-  withdrawable: number
-  non_withdrawable: number
-  total: number
-}
-
 export interface WalletTransaction {
   id: string
   user_id: string
   amount: number
   transaction_type: string
   description: string
-  balance_type: string
+  reference_id: string | null
   status: string
   created_at: string
 }
@@ -23,14 +17,14 @@ export interface WalletTransaction {
 export interface Transaction {
   id: string
   user_id: string
-  transaction_type: string
   amount: number
-  balance_type: string
-  recipient_id?: string
-  description?: string
+  type: string
+  currency: string
   status: string
-  metadata?: any
+  reference: string | null
+  metadata: any
   created_at: string
+  updated_at: string
 }
 
 export interface EscrowPayment {
@@ -48,11 +42,7 @@ export interface EscrowPayment {
 export const useWallet = () => {
   const { user } = useAuth()
   const { toast } = useToast()
-  const [balance, setBalance] = useState<WalletBalance>({
-    withdrawable: 0,
-    non_withdrawable: 0,
-    total: 0
-  })
+  const [balance, setBalance] = useState<number>(0)
   const [loading, setLoading] = useState(true)
   const [transactions, setTransactions] = useState<WalletTransaction[]>([])
   const [escrowPayments, setEscrowPayments] = useState<EscrowPayment[]>([])
@@ -70,21 +60,32 @@ export const useWallet = () => {
     if (!user) return
 
     try {
-      // Get balance from profiles table (new structure)
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('balance_withdrawable, balance_non_withdrawable')
+      // Check if wallet exists, create if not
+      let { data: wallet } = await supabase
+        .from('wallets')
+        .select('*')
         .eq('user_id', user.id)
         .single()
 
-      if (error) throw error
+      if (!wallet) {
+        const { data: newWallet, error: createError } = await supabase
+          .from('wallets')
+          .insert({ user_id: user.id, balance: 0 })
+          .select()
+          .single()
 
-      const walletBalance = {
-        withdrawable: Number(profile?.balance_withdrawable || 0),
-        non_withdrawable: Number(profile?.balance_non_withdrawable || 0),
-        total: Number(profile?.balance_withdrawable || 0) + Number(profile?.balance_non_withdrawable || 0)
+        if (createError) throw createError
+        wallet = newWallet
       }
 
+      // Also sync with profiles table
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('wallet_balance')
+        .eq('user_id', user.id)
+        .single()
+
+      const walletBalance = wallet?.balance || profile?.wallet_balance || 0
       setBalance(walletBalance)
     } catch (error) {
       console.error('Error initializing wallet:', error)
@@ -97,11 +98,10 @@ export const useWallet = () => {
     if (!user) return
 
     try {
-      // Fetch from new transactions table
       const { data, error } = await supabase
-        .from('transactions')
+        .from('wallet_transactions')
         .select('*')
-        .or(`user_id.eq.${user.id},recipient_id.eq.${user.id}`)
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(20)
 
@@ -133,11 +133,14 @@ export const useWallet = () => {
         {
           event: '*',
           schema: 'public',
-          table: 'profiles',
+          table: 'wallets',
           filter: `user_id=eq.${user.id}`
         },
-        () => {
-          initializeWallet()
+        (payload) => {
+          console.log('Wallet updated:', payload)
+          if (payload.new) {
+            setBalance((payload.new as any).balance)
+          }
         }
       )
       .on(
@@ -145,10 +148,23 @@ export const useWallet = () => {
         {
           event: '*',
           schema: 'public',
-          table: 'transactions',
+          table: 'wallet_transactions',
           filter: `user_id=eq.${user.id}`
         },
         () => {
+          fetchTransactions()
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'transactions'
+        },
+        () => {
+          // Refresh data when transactions change
+          initializeWallet()
           fetchTransactions()
         }
       )
@@ -157,116 +173,6 @@ export const useWallet = () => {
     return () => {
       supabase.removeChannel(channel)
     }
-  }
-
-  // Play spin wheel
-  const playSpinWheel = async () => {
-    const cost = 10
-    
-    // Check available balance (prefer non-withdrawable first)
-    let deductFrom: 'withdrawable' | 'non_withdrawable' = 'non_withdrawable'
-    let availableBalance = balance.non_withdrawable
-    
-    if (availableBalance < cost) {
-      deductFrom = 'withdrawable'
-      availableBalance = balance.withdrawable
-    }
-    
-    if (availableBalance < cost) {
-      toast({
-        title: "Insufficient Balance",
-        description: `You need NC ${cost} to play Spin Wheel`,
-        variant: "destructive",
-      })
-      return null
-    }
-
-    // Determine winnings (70% = 0, 20% = 5, 9% = 10, 1% = 100)
-    const random = Math.random()
-    let winnings = 0
-    
-    if (random > 0.99) {
-      winnings = 100 // 1%
-    } else if (random > 0.91) {
-      winnings = 10 // 9%
-    } else if (random > 0.70) {
-      winnings = 5 // 20%
-    }
-    // else 0 (70%)
-
-    try {
-      // Deduct cost from appropriate balance
-      const columnName = deductFrom === 'withdrawable' ? 'balance_withdrawable' : 'balance_non_withdrawable'
-      const currentBalance = balance[deductFrom]
-      const newBalance = currentBalance - cost
-
-      await supabase
-        .from('profiles')
-        .update({ [columnName]: newBalance })
-        .eq('user_id', user.id)
-
-      // Log cost transaction
-      await supabase
-        .from('transactions')
-        .insert({
-          user_id: user.id,
-          transaction_type: 'game_loss',
-          amount: -cost,
-          balance_type: deductFrom,
-          description: 'Spin Wheel entry fee',
-          status: 'completed'
-        })
-
-      // Add winnings if any
-      if (winnings > 0) {
-        const newWithdrawableBalance = balance.withdrawable + winnings
-        
-        await supabase
-          .from('profiles')
-          .update({ balance_withdrawable: newWithdrawableBalance })
-          .eq('user_id', user.id)
-
-        await supabase
-          .from('transactions')
-          .insert({
-            user_id: user.id,
-            transaction_type: 'game_win',
-            amount: winnings,
-            balance_type: 'withdrawable',
-            description: `Spin Wheel winnings`,
-            status: 'completed'
-          })
-
-        toast({
-          title: "Congratulations!",
-          description: `You won NC ${winnings}!`,
-        })
-      } else {
-        toast({
-          title: "Better luck next time!",
-          description: "No winnings this time",
-        })
-      }
-
-      // Refresh balance
-      await initializeWallet()
-      await fetchTransactions()
-
-      return winnings
-    } catch (error) {
-      console.error('Error playing spin wheel:', error)
-      toast({
-        title: "Game Error",
-        description: "Please try again later",
-        variant: "destructive",
-      })
-      return null
-    }
-  }
-
-  // Format currency display
-  const formatCurrency = (amount: number) => {
-    return `NC ${amount.toLocaleString()}`
   }
 
   const initiateDeposit = async (amount: number) => {
@@ -319,10 +225,10 @@ export const useWallet = () => {
       return { success: false }
     }
 
-    if (amount > balance.withdrawable) {
+    if (amount > balance) {
       toast({
         title: "Insufficient Funds",
-        description: "You don't have enough withdrawable balance",
+        description: "You don't have enough balance for this withdrawal",
         variant: "destructive"
       })
       return { success: false }
@@ -448,8 +354,6 @@ export const useWallet = () => {
     createEscrowPayment,
     releaseEscrow,
     refundEscrow,
-    playSpinWheel,
-    formatCurrency,
     refreshWallet: initializeWallet,
     refreshTransactions: fetchTransactions,
     refreshEscrow: fetchEscrowPayments

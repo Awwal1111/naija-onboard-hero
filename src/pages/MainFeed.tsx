@@ -62,7 +62,7 @@ const MainFeed = () => {
     { icon: Home, label: 'Feed', path: '/feed', active: true },
     { icon: MessageCircle, label: 'Chat', path: '/chat' },
     { icon: Users, label: 'Expert', path: '/experts' },
-    { icon: DollarSign, label: 'Earn', path: '/earn', className: 'text-brand-green' },
+    { icon: DollarSign, label: 'Earn', path: '/earn' },
     { icon: User, label: 'Profile', path: '/profile' }
   ]
 
@@ -418,7 +418,7 @@ const MainFeed = () => {
               className={`flex flex-col items-center gap-1 py-2 px-2 sm:px-3 rounded-xl transition-colors min-w-0 ${
                 item.active 
                   ? 'text-primary bg-primary/10' 
-                  : item.className || 'text-text-secondary hover:text-primary hover:bg-primary/5'
+                  : 'text-text-secondary hover:text-primary hover:bg-primary/5'
               }`}
             >
               <item.icon className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
