@@ -107,17 +107,15 @@ export const TransactionHistory = () => {
                     </div>
                   </div>
                 </div>
-                <div className="text-right">
+                 <div className="text-right">
                   <p className={`font-medium text-sm ${
                     transaction.transaction_type === 'credit' ? 'text-green-600' : 'text-red-600'
                   }`}>
-                    {transaction.transaction_type === 'credit' ? '+' : '-'}{formatAmount(transaction.amount)}
+                    {transaction.transaction_type === 'credit' ? '+' : '-'}NC {transaction.amount.toLocaleString()}
                   </p>
-                  {transaction.reference_id && (
-                    <p className="text-xs text-text-secondary">
-                      Ref: {transaction.reference_id.slice(-8)}
-                    </p>
-                  )}
+                  <p className="text-xs text-text-secondary">
+                    {transaction.balance_type} balance
+                  </p>
                 </div>
               </div>
             ))}
