@@ -62,6 +62,7 @@ const MainFeed = () => {
     { icon: Home, label: 'Feed', path: '/feed', active: true },
     { icon: MessageCircle, label: 'Chat', path: '/chat' },
     { icon: Users, label: 'Expert', path: '/experts' },
+    { icon: Briefcase, label: 'Jobs', path: '/jobs' },
     { icon: DollarSign, label: 'Earn', path: '/earn', className: 'text-brand-green' },
     { icon: User, label: 'Profile', path: '/profile' }
   ]
