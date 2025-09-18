@@ -51,7 +51,6 @@ export const Earn = () => {
     { icon: Home, label: 'Feed', path: '/feed' },
     { icon: MessageCircle, label: 'Chat', path: '/chat' },
     { icon: Users, label: 'Expert', path: '/experts' },
-    { icon: Briefcase, label: 'Jobs', path: '/jobs' },
     { icon: DollarSign, label: 'Earn', path: '/earn', active: true },
     { icon: User, label: 'Profile', path: '/profile' }
   ]
