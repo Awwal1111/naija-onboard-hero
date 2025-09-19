@@ -51,6 +51,7 @@ export const Earn = () => {
     { icon: Home, label: 'Feed', path: '/feed' },
     { icon: MessageCircle, label: 'Chat', path: '/chat' },
     { icon: Users, label: 'Expert', path: '/experts' },
+    { icon: Briefcase, label: 'Gig', path: '/jobs' },
     { icon: DollarSign, label: 'Earn', path: '/earn', active: true },
     { icon: User, label: 'Profile', path: '/profile' }
   ]
@@ -122,7 +123,7 @@ export const Earn = () => {
               </h2>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Freelance Jobs - Larger Card */}
+                {/* Freelance Gigs - Larger Card */}
                 <Card className="border-blue-200 bg-blue-50/50 hover:border-blue-400 transition-colors cursor-pointer col-span-full md:col-span-1" 
                       onClick={() => navigate('/jobs')}>
                   <CardContent className="p-6">
@@ -131,7 +132,7 @@ export const Earn = () => {
                         <Briefcase className="h-8 w-8 text-blue-600" />
                       </div>
                       <div>
-                        <h3 className="text-lg font-semibold text-blue-900">Freelance Jobs</h3>
+                        <h3 className="text-lg font-semibold text-blue-900">Freelance Gigs</h3>
                         <p className="text-sm text-blue-700">Find & complete professional gigs</p>
                       </div>
                     </div>
@@ -156,7 +157,7 @@ export const Earn = () => {
                       </div>
                     </div>
                     <div className="flex justify-between items-center">
-                      <Badge className="bg-green-100 text-green-800 border-green-200">Up to ₦500</Badge>
+                      <Badge className="bg-green-100 text-green-800 border-green-200">Up to NC 500</Badge>
                       <ChevronRight className="h-5 w-5 text-green-600" />
                     </div>
                   </CardContent>
@@ -176,7 +177,7 @@ export const Earn = () => {
                       </div>
                     </div>
                     <div className="flex justify-between items-center">
-                      <Badge className="bg-purple-100 text-purple-800 border-purple-200">₦100 per referral</Badge>
+                      <Badge className="bg-purple-100 text-purple-800 border-purple-200">NC 100 per referral</Badge>
                       <ChevronRight className="h-5 w-5 text-purple-600" />
                     </div>
                   </CardContent>
@@ -284,7 +285,7 @@ export const Earn = () => {
                 <p className="text-sm text-muted-foreground mb-3">
                   Complete social media tasks for brands and influencers.
                 </p>
-                <Badge className="bg-primary/10 text-primary">₦20-100 per task</Badge>
+                <Badge className="bg-primary/10 text-primary">NC 20-100 per task</Badge>
               </CardContent>
             </Card>
 

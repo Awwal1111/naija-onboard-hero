@@ -197,6 +197,33 @@ export type Database = {
         }
         Relationships: []
       }
+      connection_suggestions: {
+        Row: {
+          created_at: string | null
+          id: string
+          score: number | null
+          suggested_user_id: string
+          suggestion_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          score?: number | null
+          suggested_user_id: string
+          suggestion_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          score?: number | null
+          suggested_user_id?: string
+          suggestion_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       connections: {
         Row: {
           created_at: string
@@ -387,6 +414,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      expert_suggestions: {
+        Row: {
+          created_at: string | null
+          expert_id: string
+          id: string
+          score: number | null
+          suggestion_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          expert_id: string
+          id?: string
+          score?: number | null
+          suggestion_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          expert_id?: string
+          id?: string
+          score?: number | null
+          suggestion_type?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       game_sessions: {
         Row: {
@@ -668,6 +722,33 @@ export type Database = {
           },
         ]
       }
+      group_suggestions: {
+        Row: {
+          created_at: string | null
+          group_id: string
+          id: string
+          score: number | null
+          suggestion_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          group_id: string
+          id?: string
+          score?: number | null
+          suggestion_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          group_id?: string
+          id?: string
+          score?: number | null
+          suggestion_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       groups: {
         Row: {
           area: string
@@ -858,6 +939,30 @@ export type Database = {
           updated_at?: string
           user_id?: string
           views_count?: number | null
+        }
+        Relationships: []
+      }
+      job_suggestions: {
+        Row: {
+          created_at: string | null
+          expert_id: string
+          id: string
+          job_id: string
+          score: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          expert_id: string
+          id?: string
+          job_id: string
+          score?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          expert_id?: string
+          id?: string
+          job_id?: string
+          score?: number | null
         }
         Relationships: []
       }
@@ -1678,6 +1783,41 @@ export type Database = {
           },
         ]
       }
+      safepay_actions: {
+        Row: {
+          action_by: string
+          action_type: string
+          created_at: string | null
+          escrow_id: string
+          id: number
+          payload: Json | null
+        }
+        Insert: {
+          action_by: string
+          action_type: string
+          created_at?: string | null
+          escrow_id: string
+          id?: never
+          payload?: Json | null
+        }
+        Update: {
+          action_by?: string
+          action_type?: string
+          created_at?: string | null
+          escrow_id?: string
+          id?: never
+          payload?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "safepay_actions_escrow_id_fkey"
+            columns: ["escrow_id"]
+            isOneToOne: false
+            referencedRelation: "escrow_payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       skill_endorsements: {
         Row: {
           created_at: string
@@ -2165,6 +2305,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_safepay: {
+        Args: { p_acceptor: string; p_escrow_id: string }
+        Returns: undefined
+      }
       check_rate_limit: {
         Args: {
           action_name: string
@@ -2224,6 +2368,14 @@ export type Database = {
       is_admin_user: {
         Args: Record<PropertyKey, never>
         Returns: boolean
+      }
+      refund_safepay: {
+        Args: { p_escrow_id: string; p_requester: string }
+        Returns: undefined
+      }
+      release_safepay: {
+        Args: { p_escrow_id: string; p_releaser: string }
+        Returns: undefined
       }
       transfer_funds: {
         Args: {

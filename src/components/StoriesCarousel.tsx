@@ -44,7 +44,7 @@ const StoriesCarousel: React.FC<StoriesCarouselProps> = ({ onCreateStory }) => {
     if (!user) return
 
     try {
-      // Fetch active stories with profiles
+      // Fetch active stories with profiles - using LEFT JOIN to avoid foreign key issues
       const { data: storiesData, error: storiesError } = await supabase
         .from('stories')
         .select(`
@@ -55,11 +55,24 @@ const StoriesCarousel: React.FC<StoriesCarouselProps> = ({ onCreateStory }) => {
           content,
           views_count,
           created_at,
-          expires_at,
-          profiles(full_name, profile_picture_url)
+          expires_at
         `)
         .gt('expires_at', new Date().toISOString())
         .order('created_at', { ascending: false })
+
+      if (storiesError) throw storiesError
+
+      // Fetch profile data separately to avoid foreign key issues
+      const userIds = storiesData?.map(story => story.user_id) || []
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, profile_picture_url')
+        .in('user_id', userIds)
+
+      // Create a map for quick profile lookup
+      const profilesMap = new Map(
+        profilesData?.map(profile => [profile.user_id, profile]) || []
+      )
 
       if (storiesError) throw storiesError
 
@@ -75,9 +88,7 @@ const StoriesCarousel: React.FC<StoriesCarouselProps> = ({ onCreateStory }) => {
       const processedStories = (storiesData || []).map(story => ({
         ...story,
         is_viewed: viewedStoryIds.has(story.id) || story.user_id === user.id,
-        profiles: Array.isArray(story.profiles) && story.profiles.length > 0 
-          ? story.profiles[0] 
-          : { full_name: 'Anonymous' }
+        profiles: profilesMap.get(story.user_id) || { full_name: 'Anonymous' }
       }))
 
       setStories(processedStories)
