@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { ArrowLeft, Plus, Users, UserCheck, Home, MessageCircle, DollarSign, User, Star, ExternalLink } from 'lucide-react'
+import { ArrowLeft, Plus, Users, UserCheck, Home, MessageCircle, DollarSign, User, Star, ExternalLink, Briefcase } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -38,6 +38,7 @@ export const SocialMediaTasks = () => {
     { icon: Home, label: 'Feed', path: '/feed' },
     { icon: MessageCircle, label: 'Chat', path: '/chat' },
     { icon: Users, label: 'Expert', path: '/experts' },
+    { icon: Briefcase, label: 'Gig', path: '/jobs' },
     { icon: DollarSign, label: 'Earn', path: '/earn', active: true },
     { icon: User, label: 'Profile', path: '/profile' }
   ]

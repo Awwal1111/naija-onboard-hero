@@ -92,7 +92,7 @@ const NigerianTrivia: React.FC = () => {
   const [gameState, setGameState] = useState<'menu' | 'playing' | 'finished'>('menu')
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [selectedAnswers, setSelectedAnswers] = useState<number[]>([])
-  const [timeLeft, setTimeLeft] = useState(30)
+  const [timeLeft, setTimeLeft] = useState(15)
   const [score, setScore] = useState(0)
   const [gameQuestions, setGameQuestions] = useState<TriviaQuestion[]>([])
   const [showAnswer, setShowAnswer] = useState(false)
@@ -153,7 +153,7 @@ const NigerianTrivia: React.FC = () => {
       setGameState('playing')
       setCurrentQuestionIndex(0)
       setSelectedAnswers([])
-      setTimeLeft(30)
+      setTimeLeft(15)
       setScore(0)
       setShowAnswer(false)
 
@@ -190,7 +190,7 @@ const NigerianTrivia: React.FC = () => {
     setTimeout(() => {
       if (currentQuestionIndex < gameQuestions.length - 1) {
         setCurrentQuestionIndex(currentQuestionIndex + 1)
-        setTimeLeft(30)
+        setTimeLeft(15)
         setShowAnswer(false)
       } else {
         finishGame(isCorrect ? score + 1 : score)
@@ -205,7 +205,7 @@ const NigerianTrivia: React.FC = () => {
     setTimeout(() => {
       if (currentQuestionIndex < gameQuestions.length - 1) {
         setCurrentQuestionIndex(currentQuestionIndex + 1)
-        setTimeLeft(30)
+        setTimeLeft(15)
         setShowAnswer(false)
       } else {
         finishGame(score)
@@ -216,12 +216,9 @@ const NigerianTrivia: React.FC = () => {
   const finishGame = async (finalScore: number) => {
     setGameState('finished')
     
-    // Calculate winnings based on score
+    // Only give reward for perfect score (all 5 correct)
     let winnings = 0
-    if (finalScore === 5) winnings = 100 // Perfect score
-    else if (finalScore === 4) winnings = 60
-    else if (finalScore === 3) winnings = 30
-    else if (finalScore >= 2) winnings = 10
+    if (finalScore === 5) winnings = 50 // Perfect score only
 
     try {
       if (winnings > 0 && user) {
@@ -239,12 +236,12 @@ const NigerianTrivia: React.FC = () => {
 
         toast({
           title: "Congratulations!",
-          description: `You won NC ${winnings} with ${finalScore}/${QUESTIONS_PER_GAME} correct answers!`,
+          description: `Perfect score! You won NC ${winnings}!`,
         })
       } else {
         toast({
           title: "Better luck next time!",
-          description: `You got ${finalScore}/${QUESTIONS_PER_GAME} correct. Try again!`,
+          description: `You got ${finalScore}/${QUESTIONS_PER_GAME} correct. Get all 5 correct to win NC 50!`,
         })
       }
     } catch (error) {
@@ -275,7 +272,7 @@ const NigerianTrivia: React.FC = () => {
           <div className="space-y-2">
             <p className="text-green-800">Test your knowledge of Nigeria!</p>
             <p className="text-sm text-green-700">
-              Answer {QUESTIONS_PER_GAME} questions in 30 seconds each
+              Answer {QUESTIONS_PER_GAME} questions in 15 seconds each
             </p>
           </div>
           
@@ -283,21 +280,16 @@ const NigerianTrivia: React.FC = () => {
             <h4 className="font-semibold text-green-900 mb-2">Prizes:</h4>
             <div className="space-y-1 text-sm text-green-800">
               <div className="flex justify-between">
-                <span>5/5 correct:</span>
-                <Badge className="bg-green-200 text-green-800">NC 100</Badge>
+                <span>5/5 correct (Perfect!):</span>
+                <Badge className="bg-green-200 text-green-800">NC 50</Badge>
               </div>
               <div className="flex justify-between">
-                <span>4/5 correct:</span>
-                <Badge className="bg-green-200 text-green-800">NC 60</Badge>
+                <span>Less than 5 correct:</span>
+                <Badge className="bg-gray-200 text-gray-600">No Reward</Badge>
               </div>
-              <div className="flex justify-between">
-                <span>3/5 correct:</span>
-                <Badge className="bg-green-200 text-green-800">NC 30</Badge>
-              </div>
-              <div className="flex justify-between">
-                <span>2/5 correct:</span>
-                <Badge className="bg-green-200 text-green-800">NC 10</Badge>
-              </div>
+              <p className="text-xs text-green-600 mt-2 font-medium">
+                ⚡ Get ALL questions right to win!
+              </p>
             </div>
           </div>
 
@@ -344,7 +336,7 @@ const NigerianTrivia: React.FC = () => {
               </Badge>
             </div>
           </div>
-          <Progress value={(timeLeft / 30) * 100} className="h-2" />
+          <Progress value={(timeLeft / 15) * 100} className="h-2" />
         </CardHeader>
         
         <CardContent className="space-y-4">
@@ -400,7 +392,7 @@ const NigerianTrivia: React.FC = () => {
   }
 
   if (gameState === 'finished') {
-    const winnings = score === 5 ? 100 : score === 4 ? 60 : score === 3 ? 30 : score >= 2 ? 10 : 0
+    const winnings = score === 5 ? 50 : 0
     
     return (
       <Card className="border-green-200 bg-green-50/50">
@@ -428,7 +420,7 @@ const NigerianTrivia: React.FC = () => {
               </div>
             ) : (
               <p className="text-green-700">
-                Need at least 2 correct answers to win. Try again!
+                Need all 5 correct answers to win NC 50. Try again!
               </p>
             )}
           </div>

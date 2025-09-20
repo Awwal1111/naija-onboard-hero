@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Search, Filter, Star, MapPin, MessageCircle, User as UserIcon, Home, Users, DollarSign } from 'lucide-react'
+import { Search, Filter, Star, MapPin, MessageCircle, User as UserIcon, Home, Users, DollarSign, Briefcase } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { BrandInput } from '@/components/ui/brand-input'
 import { BrandButton } from '@/components/ui/brand-button'
@@ -47,6 +47,7 @@ const Experts = () => {
     { icon: Home, label: 'Feed', path: '/feed' },
     { icon: MessageCircle, label: 'Chat', path: '/chat' },
     { icon: Users, label: 'Expert', path: '/experts', active: true },
+    { icon: Briefcase, label: 'Gig', path: '/jobs' },
     { icon: DollarSign, label: 'Earn', path: '/earn' },
     { icon: UserIcon, label: 'Profile', path: '/profile' }
   ]
