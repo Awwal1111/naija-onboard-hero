@@ -283,7 +283,7 @@ const Profile = () => {
               </div>
             </div>
             <div className="text-center">
-              <div className="text-lg font-bold text-primary">₦{profile?.wallet_balance?.toFixed(0) || '0'}</div>
+              <div className="text-lg font-bold text-primary">NC {profile?.wallet_balance?.toFixed(0) || '0'}</div>
               <div className="text-xs text-text-secondary">Balance</div>
             </div>
             <div className="text-center">

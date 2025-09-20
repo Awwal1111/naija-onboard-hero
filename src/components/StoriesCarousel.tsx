@@ -60,7 +60,12 @@ const StoriesCarousel: React.FC<StoriesCarouselProps> = ({ onCreateStory }) => {
         .gt('expires_at', new Date().toISOString())
         .order('created_at', { ascending: false })
 
-      if (storiesError) throw storiesError
+      if (storiesError) {
+        console.error('Error fetching stories:', storiesError)
+        setStories([])
+        setLoading(false)
+        return
+      }
 
       // Fetch profile data separately to avoid foreign key issues
       const userIds = storiesData?.map(story => story.user_id) || []
@@ -74,8 +79,6 @@ const StoriesCarousel: React.FC<StoriesCarouselProps> = ({ onCreateStory }) => {
         profilesData?.map(profile => [profile.user_id, profile]) || []
       )
 
-      if (storiesError) throw storiesError
-
       // Check which stories the user has viewed using existing story_views table
       const { data: viewedStories } = await supabase
         .from('story_views')
@@ -84,7 +87,7 @@ const StoriesCarousel: React.FC<StoriesCarouselProps> = ({ onCreateStory }) => {
 
       const viewedStoryIds = new Set(viewedStories?.map(v => v.story_id) || [])
 
-      // Process stories and mark viewed ones
+      // Process stories with profile data
       const processedStories = (storiesData || []).map(story => ({
         ...story,
         is_viewed: viewedStoryIds.has(story.id) || story.user_id === user.id,
@@ -129,13 +132,36 @@ const StoriesCarousel: React.FC<StoriesCarouselProps> = ({ onCreateStory }) => {
     setViewingStory(story)
     setCurrentStoryIndex(index)
     
-    // Mark as viewed if not own story
+    // Mark as viewed if it's not the user's own story
     if (story.user_id !== user?.id) {
       await markStoryAsViewed(story.id)
-      // Update local state
+      
+      // Update local state to reflect viewed status
       setStories(prev => prev.map(s => 
         s.id === story.id ? { ...s, is_viewed: true } : s
       ))
+    }
+  }
+
+  const nextStory = () => {
+    if (currentStoryIndex < stories.length - 1) {
+      const nextIndex = currentStoryIndex + 1
+      const nextStory = stories[nextIndex]
+      setCurrentStoryIndex(nextIndex)
+      setViewingStory(nextStory)
+      if (nextStory.user_id !== user?.id) {
+        markStoryAsViewed(nextStory.id)
+      }
+    } else {
+      setViewingStory(null)
+    }
+  }
+
+  const previousStory = () => {
+    if (currentStoryIndex > 0) {
+      const prevIndex = currentStoryIndex - 1
+      setCurrentStoryIndex(prevIndex)
+      setViewingStory(stories[prevIndex])
     }
   }
 
@@ -143,37 +169,14 @@ const StoriesCarousel: React.FC<StoriesCarouselProps> = ({ onCreateStory }) => {
     setViewingStory(null)
   }
 
-  const navigateStory = (direction: 'next' | 'prev') => {
-    const userStoriesGroup = stories.filter(s => s.user_id === viewingStory?.user_id)
-    const currentIndex = userStoriesGroup.findIndex(s => s.id === viewingStory?.id)
-    
-    if (direction === 'next' && currentIndex < userStoriesGroup.length - 1) {
-      const nextStory = userStoriesGroup[currentIndex + 1]
-      handleStoryClick(nextStory, currentIndex + 1)
-    } else if (direction === 'prev' && currentIndex > 0) {
-      const prevStory = userStoriesGroup[currentIndex - 1]
-      handleStoryClick(prevStory, currentIndex - 1)
+  // Group stories by user
+  const groupedStories = stories.reduce((acc, story) => {
+    if (!acc[story.user_id]) {
+      acc[story.user_id] = []
     }
-  }
-
-  // Group stories by user for display
-  const groupedStories = stories.reduce((groups: { [key: string]: Story[] }, story) => {
-    if (!groups[story.user_id]) {
-      groups[story.user_id] = []
-    }
-    groups[story.user_id].push(story)
-    return groups
-  }, {})
-
-  const formatTimeAgo = (date: string) => {
-    const now = new Date()
-    const storyTime = new Date(date)
-    const diffInHours = Math.floor((now.getTime() - storyTime.getTime()) / (1000 * 60 * 60))
-    
-    if (diffInHours < 1) return 'now'
-    if (diffInHours < 24) return `${diffInHours}h`
-    return `${Math.floor(diffInHours / 24)}d`
-  }
+    acc[story.user_id].push(story)
+    return acc
+  }, {} as Record<string, Story[]>)
 
   if (loading) {
     return (
@@ -217,123 +220,126 @@ const StoriesCarousel: React.FC<StoriesCarouselProps> = ({ onCreateStory }) => {
             >
               <div className={`relative w-16 h-16 rounded-full p-0.5 group-hover:scale-105 transition-transform ${
                 hasUnviewedStories 
-                  ? 'bg-gradient-to-tr from-purple-500 via-pink-500 to-orange-500' 
-                  : 'bg-border'
+                  ? 'bg-gradient-to-r from-pink-500 to-purple-500' 
+                  : 'bg-gray-300'
               }`}>
                 <Avatar className="w-full h-full border-2 border-background">
-                  <AvatarImage src={latestStory.profiles?.profile_picture_url || undefined} />
-                  <AvatarFallback className="bg-muted text-text-secondary">
+                  <AvatarImage src={latestStory.profiles?.profile_picture_url} />
+                  <AvatarFallback className="text-xs">
                     {latestStory.profiles?.full_name?.charAt(0) || 'U'}
                   </AvatarFallback>
                 </Avatar>
-                
-                {/* Story count badge */}
                 {userStories.length > 1 && (
                   <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center text-xs text-white font-bold">
                     {userStories.length}
                   </div>
                 )}
-
-                {/* Play icon overlay */}
-                <div className="absolute inset-0 bg-black/20 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Play className="h-4 w-4 text-white fill-current" />
-                </div>
               </div>
-              
-              <div className="text-center max-w-16">
-                <p className="text-xs text-text-primary font-medium truncate">
-                  {latestStory.profiles?.full_name || 'User'}
-                </p>
-                <p className="text-xs text-text-secondary">
-                  {formatTimeAgo(latestStory.created_at)}
-                </p>
-              </div>
+              <span className="text-xs text-text-secondary font-medium max-w-16 truncate">
+                {latestStory.profiles?.full_name || 'Anonymous'}
+              </span>
             </button>
           )
         })}
       </div>
 
       {/* Story Viewer Dialog */}
-      <Dialog open={!!viewingStory} onOpenChange={closeStoryViewer}>
-        <DialogContent className="max-w-sm p-0 bg-black border-none overflow-hidden">
+      <Dialog open={!!viewingStory} onOpenChange={() => setViewingStory(null)}>
+        <DialogContent className="max-w-md w-full h-[600px] p-0 overflow-hidden">
           {viewingStory && (
-            <div className="relative h-screen max-h-[80vh] bg-black text-white">
-              {/* Header */}
-              <div className="absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-black/60 to-transparent p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="w-8 h-8">
-                      <AvatarImage src={viewingStory.profiles?.profile_picture_url || undefined} />
-                      <AvatarFallback className="bg-muted text-text-secondary text-xs">
-                        {viewingStory.profiles?.full_name?.charAt(0) || 'U'}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="text-sm font-medium">{viewingStory.profiles?.full_name}</p>
-                      <p className="text-xs text-white/70">{formatTimeAgo(viewingStory.created_at)}</p>
-                    </div>
-                  </div>
-                  
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={closeStoryViewer}
-                    className="text-white hover:bg-white/20 h-8 w-8 p-0"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
+            <div className="relative w-full h-full bg-black">
+              {/* Story Progress Bars */}
+              <div className="absolute top-4 left-4 right-4 z-10 flex gap-1">
+                {Object.entries(groupedStories).map(([userId, userStories]) => {
+                  if (userId === viewingStory.user_id) {
+                    return userStories.map((_, index) => (
+                      <div
+                        key={index}
+                        className={`flex-1 h-1 rounded-full ${
+                          index === currentStoryIndex ? 'bg-white' : 'bg-white/30'
+                        }`}
+                      />
+                    ))
+                  }
+                  return null
+                })}
+              </div>
 
-                {/* Progress bar */}
-                <div className="mt-3 h-1 bg-white/30 rounded-full overflow-hidden">
-                  <div className="h-full bg-white rounded-full w-full animate-pulse" />
+              {/* Story Header */}
+              <div className="absolute top-8 left-4 right-4 z-10 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Avatar className="w-8 h-8">
+                    <AvatarImage src={viewingStory.profiles?.profile_picture_url} />
+                    <AvatarFallback className="text-xs">
+                      {viewingStory.profiles?.full_name?.charAt(0) || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-white text-sm font-medium">
+                    {viewingStory.profiles?.full_name || 'Anonymous'}
+                  </span>
+                  <span className="text-white/70 text-xs">
+                    {new Date(viewingStory.created_at).toLocaleTimeString()}
+                  </span>
                 </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={closeStoryViewer}
+                  className="text-white hover:bg-white/20"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
 
               {/* Story Content */}
-              <div className="relative h-full flex items-center justify-center">
-                {viewingStory.media_type.startsWith('image') ? (
-                  <img 
-                    src={viewingStory.media_url} 
-                    alt="Story"
+              <div className="w-full h-full flex items-center justify-center">
+                {viewingStory.media_type?.startsWith('image') ? (
+                  <img
+                    src={viewingStory.media_url}
+                    alt="Story content"
+                    className="max-w-full max-h-full object-contain"
+                  />
+                ) : viewingStory.media_type?.startsWith('video') ? (
+                  <video
+                    src={viewingStory.media_url}
+                    controls
+                    autoPlay
                     className="max-w-full max-h-full object-contain"
                   />
                 ) : (
-                  <video 
-                    src={viewingStory.media_url} 
-                    autoPlay 
-                    muted 
-                    className="max-w-full max-h-full object-contain"
-                  />
+                  <div className="text-white text-center p-8">
+                    <p>{viewingStory.content}</p>
+                  </div>
                 )}
-                
-                {/* Navigation areas */}
-                <div 
-                  className="absolute left-0 top-0 w-1/3 h-full cursor-pointer"
-                  onClick={() => navigateStory('prev')}
+              </div>
+
+              {/* Navigation Areas */}
+              <div className="absolute inset-0 flex">
+                <button
+                  onClick={previousStory}
+                  className="flex-1 h-full bg-transparent"
+                  disabled={currentStoryIndex === 0}
                 />
-                <div 
-                  className="absolute right-0 top-0 w-1/3 h-full cursor-pointer"
-                  onClick={() => navigateStory('next')}
+                <button
+                  onClick={nextStory}
+                  className="flex-1 h-full bg-transparent"
                 />
               </div>
 
-              {/* Story text content */}
+              {/* Story Text Content */}
               {viewingStory.content && (
-                <div className="absolute bottom-4 left-4 right-4 z-10">
-                  <p className="text-white text-center bg-black/50 rounded-lg p-3">
+                <div className="absolute bottom-8 left-4 right-4 z-10">
+                  <p className="text-white text-sm text-center bg-black/50 p-3 rounded-lg">
                     {viewingStory.content}
                   </p>
                 </div>
               )}
 
-              {/* View count for own stories */}
-              {viewingStory.user_id === user?.id && (
-                <div className="absolute bottom-16 left-4 flex items-center gap-1 text-white/70">
-                  <Eye className="h-4 w-4" />
-                  <span className="text-xs">{viewingStory.views_count} views</span>
-                </div>
-              )}
+              {/* View Count */}
+              <div className="absolute bottom-4 left-4 z-10 flex items-center gap-1 text-white/70">
+                <Eye className="h-4 w-4" />
+                <span className="text-xs">{viewingStory.views_count}</span>
+              </div>
             </div>
           )}
         </DialogContent>

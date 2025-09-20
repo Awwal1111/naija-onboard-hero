@@ -12,12 +12,41 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
+import { useAuth } from '@/hooks/useAuth'
 
 const EnhancedAdminDashboard = () => {
   const navigate = useNavigate()
   const { toast } = useToast()
+  const { user } = useAuth()
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+
+  // Check if user is admin
+  useEffect(() => {
+    const checkAdminAccess = async () => {
+      if (!user) {
+        navigate('/login')
+        return
+      }
+
+      // Check if user has admin access using the is_admin_user function
+      const { data, error } = await supabase.rpc('is_admin_user')
+      
+      if (error || !data) {
+        toast({
+          title: "Access Denied",
+          description: "You don't have permission to access the admin dashboard",
+          variant: "destructive"
+        })
+        navigate('/profile')
+        return
+      }
+      
+      setLoading(false)
+    }
+
+    checkAdminAccess()
+  }, [user, navigate, toast])
   
   // Dashboard Data
   const [dashboardStats, setDashboardStats] = useState({

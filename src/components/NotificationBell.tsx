@@ -229,10 +229,16 @@ const NotificationBell = () => {
     ))
     setUnreadCount(prev => Math.max(0, prev - 1))
     
-    // Navigate to action URL
+    // Navigate to action URL if available
     if (notification.actionUrl) {
-      navigate(notification.actionUrl)
-      setIsOpen(false)
+      try {
+        navigate(notification.actionUrl)
+        setIsOpen(false)
+      } catch (error) {
+        console.error('Navigation error:', error)
+        // If navigation fails, just close the notification
+        setIsOpen(false)
+      }
     }
   }
 
