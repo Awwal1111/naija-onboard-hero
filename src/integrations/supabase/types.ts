@@ -119,6 +119,27 @@ export type Database = {
         }
         Relationships: []
       }
+      blocked_users: {
+        Row: {
+          blocked_id: string | null
+          blocker_id: string | null
+          created_at: string | null
+          id: string
+        }
+        Insert: {
+          blocked_id?: string | null
+          blocker_id?: string | null
+          created_at?: string | null
+          id?: string
+        }
+        Update: {
+          blocked_id?: string | null
+          blocker_id?: string | null
+          created_at?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
       chats: {
         Row: {
           created_at: string
@@ -271,6 +292,41 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      disputed_chat_snapshots: {
+        Row: {
+          created_at: string
+          id: string
+          message_text: string
+          safepay_id: string | null
+          sender_id: string | null
+          snapshot_created_at: string | null
+        }
+        Insert: {
+          created_at: string
+          id?: string
+          message_text: string
+          safepay_id?: string | null
+          sender_id?: string | null
+          snapshot_created_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message_text?: string
+          safepay_id?: string | null
+          sender_id?: string | null
+          snapshot_created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "disputed_chat_snapshots_safepay_id_fkey"
+            columns: ["safepay_id"]
+            isOneToOne: false
+            referencedRelation: "safepay_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       escrow_payments: {
         Row: {
@@ -1818,6 +1874,42 @@ export type Database = {
           },
         ]
       }
+      safepay_transactions: {
+        Row: {
+          amount: number
+          buyer_id: string | null
+          cancellation_requester_id: string | null
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          seller_id: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          buyer_id?: string | null
+          cancellation_requester_id?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          seller_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          buyer_id?: string | null
+          cancellation_requester_id?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          seller_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       skill_endorsements: {
         Row: {
           created_at: string
@@ -2249,6 +2341,30 @@ export type Database = {
           },
         ]
       }
+      user_wallets: {
+        Row: {
+          balance: number | null
+          created_at: string | null
+          escrow_hold: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          balance?: number | null
+          created_at?: string | null
+          escrow_hold?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          balance?: number | null
+          created_at?: string | null
+          escrow_hold?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       wallet_transactions: {
         Row: {
           amount: number
@@ -2256,6 +2372,7 @@ export type Database = {
           description: string | null
           id: string
           reference_id: string | null
+          safepay_id: string | null
           status: string | null
           transaction_type: string
           user_id: string
@@ -2266,6 +2383,7 @@ export type Database = {
           description?: string | null
           id?: string
           reference_id?: string | null
+          safepay_id?: string | null
           status?: string | null
           transaction_type: string
           user_id: string
@@ -2276,11 +2394,20 @@ export type Database = {
           description?: string | null
           id?: string
           reference_id?: string | null
+          safepay_id?: string | null
           status?: string | null
           transaction_type?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "wallet_transactions_safepay_id_fkey"
+            columns: ["safepay_id"]
+            isOneToOne: false
+            referencedRelation: "safepay_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       wallets: {
         Row: {
@@ -2306,7 +2433,13 @@ export type Database = {
     }
     Functions: {
       accept_safepay: {
-        Args: { p_acceptor: string; p_escrow_id: string }
+        Args:
+          | { p_acceptor: string; p_escrow_id: string }
+          | { p_safepay_id: string }
+        Returns: undefined
+      }
+      cancel_safepay: {
+        Args: { p_safepay_id: string }
         Returns: undefined
       }
       check_rate_limit: {
@@ -2374,7 +2507,9 @@ export type Database = {
         Returns: undefined
       }
       release_safepay: {
-        Args: { p_escrow_id: string; p_releaser: string }
+        Args:
+          | { p_escrow_id: string; p_releaser: string }
+          | { p_safepay_id: string }
         Returns: undefined
       }
       transfer_funds: {
