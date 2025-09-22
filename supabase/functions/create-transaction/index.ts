@@ -50,18 +50,14 @@ serve(async (req) => {
     );
 
     const { data: transaction, error: transactionError } = await supabaseService
-      .from('transactions')
+      .from('wallet_transactions')
       .insert({
         user_id: user.id,
-        type,
+        transaction_type: type,
         amount,
-        currency,
         status: 'pending',
-        reference,
-        metadata: {
-          ...metadata,
-          user_email: user.email
-        }
+        reference_id: reference,
+        description: `${type} - ${amount} ${currency}`
       })
       .select()
       .single();
