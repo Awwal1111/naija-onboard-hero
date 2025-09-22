@@ -10,18 +10,25 @@ const WalletInitializer: React.FC = () => {
 
     const initializeWallet = async () => {
       try {
-        // Create wallet if it doesn't exist
-        await supabase
+        // Check if wallet already exists
+        const { data: existingWallet } = await supabase
           .from('user_wallets')
-          .insert({
-            user_id: user.id,
-            balance: 0,
-            escrow_hold: 0
-          })
-          .select()
-          .maybeSingle()
+          .select('user_id')
+          .eq('user_id', user.id)
+          .single()
+
+        if (!existingWallet) {
+          // Create wallet if it doesn't exist
+          await supabase
+            .from('user_wallets')
+            .insert({
+              user_id: user.id,
+              balance: 0,
+              escrow_hold: 0
+            })
+        }
       } catch (error) {
-        // Ignore duplicate key errors
+        // Ignore duplicate key errors and other RLS errors
         console.log('Wallet initialization:', error)
       }
     }
