@@ -117,7 +117,29 @@ export const useSafePay = (otherUserId: string) => {
 
     setLoading(true)
     try {
-      // First ensure user has a wallet
+      // Check current wallet balance first
+      const { data: currentWallet, error: walletError } = await supabase
+        .from('user_wallets')
+        .select('balance, escrow_hold')
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+      let availableBalance = 0
+      if (currentWallet) {
+        availableBalance = currentWallet.balance - currentWallet.escrow_hold
+      }
+
+      // Check if user has sufficient balance
+      if (availableBalance < amount) {
+        toast({
+          title: "Insufficient Balance",
+          description: `You need ${amount} NC but only have ${availableBalance} NC available. Please top up your wallet first.`,
+          variant: "destructive"
+        })
+        return
+      }
+
+      // Ensure user has a wallet record
       await supabase
         .from('user_wallets')
         .insert({

@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { ArrowLeft, Paperclip, Smile, Send, UserX, UserCheck } from 'lucide-react'
+import { ArrowLeft, Paperclip, Smile, Send, UserX, UserCheck, Circle } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useChat } from '@/hooks/useChat'
 import { useBlockUser } from '@/hooks/useBlockUser'
+import { useUserPresence } from '@/hooks/useUserPresence'
 import { BrandButton } from '@/components/ui/brand-button'
 import { BrandInput } from '@/components/ui/brand-input'
 import SafePayDialog from '@/components/SafePayDialog'
+import BlockConfirmationDialog from '@/components/BlockConfirmationDialog'
 
 const Chat = () => {
   const navigate = useNavigate()
@@ -14,7 +16,9 @@ const Chat = () => {
   const { user } = useAuth()
   const { messages, sendMessage, otherUser, loading } = useChat(userId!)
   const { isBlocked, isBlockedBy, canSendMessage, blockUser, unblockUser, loading: blockLoading } = useBlockUser(userId!)
+  const { getOnlineStatus } = useUserPresence()
   const [newMessage, setNewMessage] = useState('')
+  const [showBlockDialog, setShowBlockDialog] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
@@ -30,6 +34,31 @@ const Chat = () => {
     if (newMessage.trim() && userId && canSendMessage) {
       await sendMessage(newMessage.trim())
       setNewMessage('')
+    }
+  }
+
+  const handleBlockUser = () => {
+    setShowBlockDialog(true)
+  }
+
+  const confirmBlock = async () => {
+    await blockUser()
+    setShowBlockDialog(false)
+  }
+
+  const getStatusColor = (status: 'online' | 'offline' | 'recently_active') => {
+    switch (status) {
+      case 'online': return 'text-green-500'
+      case 'recently_active': return 'text-yellow-500'
+      default: return 'text-gray-400'
+    }
+  }
+
+  const getStatusText = (status: 'online' | 'offline' | 'recently_active') => {
+    switch (status) {
+      case 'online': return 'Online'
+      case 'recently_active': return 'Active recently'
+      default: return 'Offline'
     }
   }
 
@@ -59,7 +88,14 @@ const Chat = () => {
           <h1 className="font-semibold text-text-primary">
             {otherUser?.full_name || 'Loading...'}
           </h1>
-          <p className="text-sm text-primary">Online</p>
+          {userId && (
+            <div className="flex items-center gap-1">
+              <Circle className={`h-2 w-2 fill-current ${getStatusColor(getOnlineStatus(userId))}`} />
+              <p className={`text-sm ${getStatusColor(getOnlineStatus(userId))}`}>
+                {getStatusText(getOnlineStatus(userId))}
+              </p>
+            </div>
+          )}
         </div>
       </header>
 
@@ -74,7 +110,7 @@ const Chat = () => {
           <BrandButton
             variant="outline"
             size="sm"
-            onClick={isBlocked ? unblockUser : blockUser}
+            onClick={isBlocked ? unblockUser : handleBlockUser}
             disabled={blockLoading}
             className="flex items-center gap-2"
           >
@@ -184,6 +220,15 @@ const Chat = () => {
           </div>
         )}
       </div>
+
+      {/* Block Confirmation Dialog */}
+      <BlockConfirmationDialog
+        open={showBlockDialog}
+        onOpenChange={setShowBlockDialog}
+        userName={otherUser?.full_name || 'User'}
+        onConfirm={confirmBlock}
+        loading={blockLoading}
+      />
     </div>
   )
 }
