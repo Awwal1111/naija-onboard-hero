@@ -2171,6 +2171,24 @@ export type Database = {
         }
         Relationships: []
       }
+      system_settings: {
+        Row: {
+          key: string
+          updated_at: string | null
+          value: string
+        }
+        Insert: {
+          key: string
+          updated_at?: string | null
+          value: string
+        }
+        Update: {
+          key?: string
+          updated_at?: string | null
+          value?: string
+        }
+        Relationships: []
+      }
       todos: {
         Row: {
           done: boolean | null
@@ -2195,38 +2213,53 @@ export type Database = {
       transactions: {
         Row: {
           amount: number
+          amount_nc: number | null
+          amount_ngn: number | null
           balance_type: string
           created_at: string
           description: string | null
+          fee_nc: number | null
           id: string
           metadata: Json | null
+          payment_method: string | null
           recipient_id: string | null
+          reference: string | null
           status: string | null
-          transaction_type: string
+          type: string
           user_id: string
         }
         Insert: {
           amount: number
+          amount_nc?: number | null
+          amount_ngn?: number | null
           balance_type: string
           created_at?: string
           description?: string | null
+          fee_nc?: number | null
           id?: string
           metadata?: Json | null
+          payment_method?: string | null
           recipient_id?: string | null
+          reference?: string | null
           status?: string | null
-          transaction_type: string
+          type: string
           user_id: string
         }
         Update: {
           amount?: number
+          amount_nc?: number | null
+          amount_ngn?: number | null
           balance_type?: string
           created_at?: string
           description?: string | null
+          fee_nc?: number | null
           id?: string
           metadata?: Json | null
+          payment_method?: string | null
           recipient_id?: string | null
+          reference?: string | null
           status?: string | null
-          transaction_type?: string
+          type?: string
           user_id?: string
         }
         Relationships: [
@@ -2413,16 +2446,19 @@ export type Database = {
         Row: {
           balance: number
           last_update: string
+          pending_balance: number | null
           user_id: string
         }
         Insert: {
           balance?: number
           last_update?: string
+          pending_balance?: number | null
           user_id: string
         }
         Update: {
           balance?: number
           last_update?: string
+          pending_balance?: number | null
           user_id?: string
         }
         Relationships: []
@@ -2437,6 +2473,10 @@ export type Database = {
           | { p_acceptor: string; p_escrow_id: string }
           | { p_safepay_id: string }
         Returns: undefined
+      }
+      calculate_nc_amount: {
+        Args: { amount_ngn: number; payment_method?: string }
+        Returns: number
       }
       cancel_safepay: {
         Args: { p_safepay_id: string }
@@ -2486,6 +2526,10 @@ export type Database = {
           profile_picture_url: string
           user_id: string
         }[]
+      }
+      get_system_setting: {
+        Args: { setting_key: string }
+        Returns: string
       }
       has_user_role: {
         Args: {
