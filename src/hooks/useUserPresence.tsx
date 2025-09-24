@@ -10,28 +10,12 @@ interface UserPresence {
 
 export const useUserPresence = () => {
   const { user } = useAuth()
-  const [presenceData, setPresenceData] = useState<Record<string, UserPresence>>({})
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     if (!user) return
 
-    // Update own presence when user is active
-    const updatePresence = async () => {
-      await supabase
-        .from('user_presence')
-        .upsert({
-          user_id: user.id,
-          is_online: true,
-          last_seen: new Date().toISOString()
-        })
-    }
-
-    // Update presence immediately and then every 30 seconds
-    updatePresence()
-    const presenceInterval = setInterval(updatePresence, 30000)
-
-    // Set up realtime subscription for presence updates
+    // Set up realtime subscription for presence updates using channel presence
     const channel = supabase
       .channel('user-presence')
       .on('presence', { event: 'sync' }, () => {
@@ -64,48 +48,29 @@ export const useUserPresence = () => {
     // Handle page visibility changes
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        // User is going offline
-        supabase
-          .from('user_presence')
-          .update({
-            is_online: false,
-            last_seen: new Date().toISOString()
-          })
-          .eq('user_id', user.id)
+        // User is going offline - just untrack presence
+        channel.untrack()
       } else {
-        // User is back online
-        updatePresence()
+        // User is back online - track again
+        channel.track({
+          user_id: user.id,
+          online_at: new Date().toISOString(),
+        })
       }
     }
 
     // Handle beforeunload to set offline status
     const handleBeforeUnload = () => {
-      supabase
-        .from('user_presence')
-        .update({
-          is_online: false,
-          last_seen: new Date().toISOString()
-        })
-        .eq('user_id', user.id)
+      channel.untrack()
     }
 
     document.addEventListener('visibilitychange', handleVisibilityChange)
     window.addEventListener('beforeunload', handleBeforeUnload)
 
     return () => {
-      clearInterval(presenceInterval)
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       window.removeEventListener('beforeunload', handleBeforeUnload)
       supabase.removeChannel(channel)
-      
-      // Set offline on cleanup
-      supabase
-        .from('user_presence')
-        .update({
-          is_online: false,
-          last_seen: new Date().toISOString()
-        })
-        .eq('user_id', user.id)
     }
   }, [user])
 
@@ -113,31 +78,12 @@ export const useUserPresence = () => {
     return onlineUsers.has(userId)
   }
 
-  const getUserLastSeen = (userId: string): string | null => {
-    const presence = presenceData[userId]
-    return presence?.last_seen || null
-  }
-
-  const getOnlineStatus = (userId: string): 'online' | 'offline' | 'recently_active' => {
-    if (isUserOnline(userId)) return 'online'
-    
-    const lastSeen = getUserLastSeen(userId)
-    if (!lastSeen) return 'offline'
-    
-    const lastSeenTime = new Date(lastSeen).getTime()
-    const now = Date.now()
-    const fiveMinutes = 5 * 60 * 1000
-    
-    if (now - lastSeenTime < fiveMinutes) {
-      return 'recently_active'
-    }
-    
-    return 'offline'
+  const getOnlineStatus = (userId: string): 'online' | 'offline' => {
+    return isUserOnline(userId) ? 'online' : 'offline'
   }
 
   return {
     isUserOnline,
-    getUserLastSeen,
     getOnlineStatus,
     onlineUsers: Array.from(onlineUsers)
   }

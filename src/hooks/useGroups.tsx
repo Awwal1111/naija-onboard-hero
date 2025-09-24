@@ -121,7 +121,9 @@ export const useGroups = () => {
           console.log('Group member change detected:', payload)
           
           // Refetch user groups when membership changes
-          if (payload.new?.user_id === user.id || payload.old?.user_id === user.id) {
+          const newPayload = payload.new as any
+          const oldPayload = payload.old as any
+          if (newPayload?.user_id === user.id || oldPayload?.user_id === user.id) {
             fetchMyGroups()
           }
         }

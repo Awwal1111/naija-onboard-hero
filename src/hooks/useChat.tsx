@@ -42,9 +42,16 @@ export const useChat = (otherUserId: string) => {
   useEffect(() => {
     if (!user || !otherUserId) return
 
-    const initializeChat = async () => {
+  const initializeChat = async () => {
       try {
         console.log('Initializing chat for user:', user.id, 'with:', otherUserId)
+        
+        // Validate otherUserId is a proper UUID
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+        if (!uuidRegex.test(otherUserId)) {
+          console.error('Invalid UUID format for otherUserId:', otherUserId)
+          throw new Error('Invalid user ID format')
+        }
         
         // Fetch other user's profile
         const { data: profile, error: profileError } = await supabase

@@ -135,14 +135,15 @@ const NigerianTrivia: React.FC = () => {
     try {
       // Deduct entry fee
       await supabase
-        .from('transactions')
+        .from('wallet_transactions')
         .insert({
           user_id: user.id,
-          transaction_type: 'game_loss',
-          amount: -ENTRY_FEE,
+          type: 'game_loss',
+          amount: ENTRY_FEE,
+          amount_nc: ENTRY_FEE,
           balance_type: 'non_withdrawable',
-          description: 'Nigerian Trivia entry fee',
-          status: 'completed'
+          status: 'completed',
+          description: 'Nigerian Trivia entry fee'
         })
 
       // Shuffle questions and select random ones
@@ -224,14 +225,15 @@ const NigerianTrivia: React.FC = () => {
       if (winnings > 0 && user) {
         // Add winnings to withdrawable balance
         await supabase
-          .from('transactions')
+          .from('wallet_transactions')
           .insert({
             user_id: user.id,
-            transaction_type: 'game_win',
+            type: 'game_win',
             amount: winnings,
+            amount_nc: winnings,
             balance_type: 'withdrawable',
-            description: `Nigerian Trivia winnings (${finalScore}/${QUESTIONS_PER_GAME})`,
-            status: 'completed'
+            status: 'completed',
+            description: `Nigerian Trivia winnings (${finalScore}/${QUESTIONS_PER_GAME})`
           })
 
         toast({
