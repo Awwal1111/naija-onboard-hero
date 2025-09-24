@@ -106,13 +106,56 @@ export const useSocialTasks = () => {
     if (!user) return { success: false, error: 'Not authenticated' }
 
     try {
+      // Calculate the fee based on total slots (4,000 NC per 100 units)
+      const totalSlots = taskData.total_slots || 0
+      const feeAmount = Math.ceil(totalSlots / 100) * 4000 // 4,000 NC per 100 slots
+      
+      // Check if user has sufficient balance
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('wallet_balance')
+        .eq('user_id', user.id)
+        .single()
+
+      if (!profile || profile.wallet_balance < feeAmount) {
+        toast({
+          title: "Insufficient Balance",
+          description: `You need NC ${feeAmount} to create this task (NC 4,000 per 100 slots)`,
+          variant: "destructive",
+        })
+        return { success: false, error: 'Insufficient balance' }
+      }
+
+      // Deduct the fee from user's balance
+      const { error: deductError } = await supabase
+        .from('profiles')
+        .update({ wallet_balance: profile.wallet_balance - feeAmount })
+        .eq('user_id', user.id)
+
+      if (deductError) throw deductError
+
+      // Record the transaction
+      await supabase
+        .from('wallet_transactions')
+        .insert({
+          user_id: user.id,
+          transaction_type: 'task_creation_fee',
+          amount: feeAmount,
+          amount_nc: feeAmount,
+          status: 'completed',
+          description: `Social media task creation fee (${totalSlots} slots)`
+        })
+
+      // Create the task
       const { data, error } = await supabase
         .from('social_tasks' as any)
         .insert({
           ...taskData,
           task_giver_id: user.id,
           status: 'active',
-          done_slots: 0
+          done_slots: 0,
+          reward_amount: (taskData as any).reward_amount || 0, // Ensure reward is in NC
+          fee_paid: feeAmount
         })
         .select()
         .single()
@@ -120,8 +163,8 @@ export const useSocialTasks = () => {
       if (error) throw error
 
       toast({
-        title: "Success",
-        description: "Social media task created successfully!",
+        title: "Task Created Successfully!",
+        description: `Fee of NC ${feeAmount} deducted. Task is now live.`,
       })
 
       fetchTasks() // Refresh the list

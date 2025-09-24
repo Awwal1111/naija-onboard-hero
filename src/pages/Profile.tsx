@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Camera, Wallet, MoreVertical, Edit, Share, Settings, LogOut, Plus, ArrowLeft, Home, MessageCircle, Users, DollarSign, User, Phone, Mail, FileText, Shield, Award, Star, MapPin, Calendar, Clock, TrendingUp } from 'lucide-react'
+import { Camera, Wallet, MoreVertical, Edit, Share, Settings, LogOut, Plus, ArrowLeft, Home, MessageCircle, Users, DollarSign, User, Phone, Mail, FileText, Shield, Award, Star, MapPin, Calendar, Clock, TrendingUp, Briefcase } from 'lucide-react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Logo } from '@/components/ui/logo'
 import { BrandButton } from '@/components/ui/brand-button'
@@ -19,6 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { useToast } from '@/hooks/use-toast'
+import PortfolioSection from '@/components/PortfolioSection'
 
 const Profile = () => {
   const navigate = useNavigate()
@@ -46,6 +47,7 @@ const Profile = () => {
     { icon: Home, label: 'Feed', path: '/feed' },
     { icon: MessageCircle, label: 'Chat', path: '/chat' },
     { icon: Users, label: 'Expert', path: '/experts' },
+    { icon: Briefcase, label: 'Gig', path: '/jobs' },
     { icon: DollarSign, label: 'Earn', path: '/earn' },
     { icon: User, label: 'Profile', path: '/profile', active: true }
   ]
@@ -128,7 +130,7 @@ const Profile = () => {
   }
 
   const handleContactEmail = () => {
-    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=support@naijalancers.com&su=Contact%20NaijaLancers&body=Hello%20NaijaLancers%20Team,%0D%0A%0D%0A`
+    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=support@naijalancers.name.ng&su=Contact%20NaijaLancers&body=Hello%20NaijaLancers%20Team,%0D%0A%0D%0A`
     window.open(gmailUrl, '_blank')
   }
 
@@ -231,22 +233,6 @@ const Profile = () => {
                       <Settings className="mr-2 h-4 w-4" />
                       App Settings
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate('/terms-conditions')}>
-                      <FileText className="mr-2 h-4 w-4" />
-                      Terms & Conditions
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleContactPhone}>
-                      <Phone className="mr-2 h-4 w-4" />
-                      Contact Us (WhatsApp)
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleContactEmail}>
-                      <Mail className="mr-2 h-4 w-4" />
-                      Contact Us (Email)
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate('/admin/dashboard')}>
-                      <Users className="mr-2 h-4 w-4" />
-                      Admin Dashboard
-                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={handleLogout} className="text-destructive">
                       <LogOut className="mr-2 h-4 w-4" />
                       Log Out
@@ -297,7 +283,7 @@ const Profile = () => {
               </div>
             </div>
             <div className="text-center">
-              <div className="text-lg font-bold text-primary">₦{profile?.wallet_balance?.toFixed(0) || '0'}</div>
+              <div className="text-lg font-bold text-primary">NC {profile?.wallet_balance?.toFixed(0) || '0'}</div>
               <div className="text-xs text-text-secondary">Balance</div>
             </div>
             <div className="text-center">
@@ -322,10 +308,10 @@ const Profile = () => {
               <BrandButton 
                 className="flex items-center justify-center gap-2" 
                 size="lg"
-                onClick={() => navigate('/expert-application')}
+                onClick={() => navigate(profile?.is_expert ? '/admin/dashboard' : '/expert-application')}
               >
                 <Award className="h-4 w-4" />
-                {profile?.is_expert ? 'Expert Dashboard' : 'Apply Expert'}
+                {profile?.is_expert ? 'Admin Dashboard' : 'Apply Expert'}
               </BrandButton>
               
               <BrandButton 
@@ -393,24 +379,7 @@ const Profile = () => {
           </TabsContent>
 
           <TabsContent value="portfolio" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Portfolio</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
-                  {/* Placeholder for portfolio images */}
-                  {[...Array(6)].map((_, i) => (
-                    <div key={i} className="aspect-square bg-muted rounded-xl flex items-center justify-center hover:bg-accent transition-colors cursor-pointer">
-                      <Plus className="h-8 w-8 text-text-secondary" />
-                    </div>
-                  ))}
-                </div>
-                <div className="text-sm text-text-secondary text-center">
-                  Show your best work to potential clients
-                </div>
-              </CardContent>
-            </Card>
+            <PortfolioSection />
           </TabsContent>
 
           <TabsContent value="reviews" className="mt-6">

@@ -1,7 +1,9 @@
-import React, { useState } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { BrandButton } from '@/components/ui/brand-button'
-import { BrandInput } from '@/components/ui/brand-input'
+import { useState } from 'react'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { CreditCard, Wallet } from 'lucide-react'
 import { useWallet } from '@/hooks/useWallet'
 
 interface DepositDialogProps {
@@ -11,20 +13,26 @@ interface DepositDialogProps {
 
 export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
   const { initiateDeposit } = useWallet()
-  const [amount, setAmount] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const handleDeposit = async () => {
-    const depositAmount = parseFloat(amount)
-    if (!depositAmount || depositAmount < 100) return
+  const depositAmounts = [
+    { nc: 500, naira: 500 },
+    { nc: 1000, naira: 1000 },
+    { nc: 1500, naira: 1500 },
+    { nc: 3000, naira: 3000 },
+    { nc: 5000, naira: 5000 },
+    { nc: 10000, naira: 10000 },
+    { nc: 15000, naira: 15000 },
+    { nc: 20000, naira: 20000 },
+    { nc: 50000, naira: 50000 },
+    { nc: 100000, naira: 100000 }
+  ]
 
+  const handleDeposit = async (amount: number) => {
     setLoading(true)
     try {
-      const result = await initiateDeposit(depositAmount)
-      if (result.success) {
-        onOpenChange(false)
-        setAmount('')
-      }
+      await initiateDeposit(amount)
+      onOpenChange(false)
     } catch (error) {
       console.error('Deposit error:', error)
     } finally {
@@ -32,69 +40,47 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
     }
   }
 
-  const quickAmounts = [500, 1000]
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Deposit Funds</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <Wallet className="h-5 w-5 text-primary" />
+            Buy Naijacoin
+          </DialogTitle>
+          <DialogDescription>
+            Select an amount to purchase Naijacoin using Paystack (1 NC = ₦1)
+          </DialogDescription>
         </DialogHeader>
-        
+
         <div className="space-y-4">
-          <div>
-            <label className="text-sm font-medium text-text-primary mb-2 block">
-              Amount (NGN)
-            </label>
-            <BrandInput
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="Enter amount"
-              min="100"
-            />
-            <p className="text-xs text-text-secondary mt-1">
-              Minimum deposit: ₦100
-            </p>
+          <div className="grid grid-cols-2 gap-3">
+            {depositAmounts.map(({ nc, naira }) => (
+              <Card key={nc} className="cursor-pointer hover:shadow-md transition-shadow">
+                <CardContent className="p-4">
+                  <Button
+                    variant="ghost"
+                    className="w-full h-auto p-0 flex flex-col gap-2"
+                    onClick={() => handleDeposit(naira)}
+                    disabled={loading}
+                  >
+                    <div className="flex items-center gap-1">
+                      <CreditCard className="h-4 w-4 text-primary" />
+                      <span className="font-semibold text-lg">NC {nc.toLocaleString()}</span>
+                    </div>
+                    <Badge variant="secondary" className="text-xs">
+                      ₦{naira.toLocaleString()}
+                    </Badge>
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
           </div>
 
-          <div>
-            <p className="text-sm font-medium text-text-primary mb-2">Quick amounts</p>
-            <div className="grid grid-cols-2 gap-2">
-              {quickAmounts.map((quickAmount) => (
-                <button
-                  key={quickAmount}
-                  onClick={() => setAmount(quickAmount.toString())}
-                  className="py-2 px-3 text-sm border border-border rounded-lg hover:bg-accent transition-colors"
-                >
-                  ₦{quickAmount.toLocaleString()}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="bg-accent/50 rounded-lg p-3">
-            <h4 className="font-medium text-sm mb-1">Payment Methods</h4>
-            <p className="text-xs text-text-secondary">
-              • Bank Transfer • Card Payment • USSD
-            </p>
-          </div>
-
-          <div className="flex gap-2">
-            <BrandButton
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              className="flex-1"
-            >
-              Cancel
-            </BrandButton>
-            <BrandButton
-              onClick={handleDeposit}
-              disabled={!amount || parseFloat(amount) < 100 || loading}
-              className="flex-1"
-            >
-              {loading ? 'Processing...' : 'Continue to Payment'}
-            </BrandButton>
+          <div className="text-center text-sm text-muted-foreground border-t pt-4">
+            <p>• Payments are processed securely by Paystack</p>
+            <p>• Naijacoins are added instantly after payment</p>
+            <p>• All transactions are recorded in your history</p>
           </div>
         </div>
       </DialogContent>

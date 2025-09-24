@@ -1,22 +1,24 @@
 import React, { useState } from 'react'
-import { Search, Plus, Home, MessageCircle, Users, DollarSign, User, Image, FileText, Briefcase, Filter, TrendingUp, Hash, Award, Calendar, Vote, Settings } from 'lucide-react'
+import { Plus, Search, Filter, TrendingUp, Home, MessageCircle, Users, DollarSign, User, Image, FileText, Briefcase, Award, Calendar, Vote, Hash } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Logo } from '@/components/ui/logo'
 import { BrandInput } from '@/components/ui/brand-input'
 import { BrandButton } from '@/components/ui/brand-button'
 import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
 import { useEnhancedFeed } from '@/hooks/useEnhancedFeed'
-import ProfessionalStoriesSection from '@/components/ProfessionalStoriesSection'
 import InfiniteScrollFeed from '@/components/InfiniteScrollFeed'
 import EnhancedCreatePostDialog from '@/components/EnhancedCreatePostDialog'
-import CreateStoryDialog from '@/components/CreateStoryDialog'
 import TrendingSection from '@/components/TrendingSection'
-import ContextualAIHelp from '@/components/ContextualAIHelp'
+import ResponsiveLayout from '@/components/ResponsiveLayout'
+import NotificationBell from '@/components/NotificationBell'
+import SuggestionsTab from '@/components/SuggestionsTab'
+import StoriesCarousel from '@/components/StoriesCarousel'
+import JobApplicationDialog from '@/components/JobApplicationDialog'
+import ProfilePreview from '@/components/ProfilePreview'
 
 const MainFeed = () => {
   const navigate = useNavigate()
@@ -39,6 +41,8 @@ const MainFeed = () => {
   const [sortBy, setSortBy] = useState<'recent' | 'trending' | 'popular'>('recent')
   const [showFilters, setShowFilters] = useState(false)
   const [aiAssistantOpen, setAiAssistantOpen] = useState(false)
+  const [jobApplicationDialog, setJobApplicationDialog] = useState<{ isOpen: boolean; jobPost: any | null }>({ isOpen: false, jobPost: null })
+  const [profilePreview, setProfilePreview] = useState<{ isOpen: boolean; userId: string | null }>({ isOpen: false, userId: null })
 
   const feedSuggestions = [
     "How do I create an engaging post?",
@@ -58,7 +62,8 @@ const MainFeed = () => {
     { icon: Home, label: 'Feed', path: '/feed', active: true },
     { icon: MessageCircle, label: 'Chat', path: '/chat' },
     { icon: Users, label: 'Expert', path: '/experts' },
-    { icon: DollarSign, label: 'Earn', path: '/earn' },
+    { icon: Briefcase, label: 'Gig', path: '/jobs' },
+    { icon: DollarSign, label: 'Earn', path: '/earn', className: 'text-brand-green' },
     { icon: User, label: 'Profile', path: '/profile' }
   ]
 
@@ -106,6 +111,14 @@ const MainFeed = () => {
     setShowCreateStory(true)
   }
 
+  const handleJobApply = (jobPost: any) => {
+    setJobApplicationDialog({ isOpen: true, jobPost })
+  }
+
+  const handleProfileClick = (userId: string) => {
+    setProfilePreview({ isOpen: true, userId })
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center pb-20">
@@ -118,16 +131,15 @@ const MainFeed = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <ResponsiveLayout className="pb-20">
       <div className="flex">
         {/* Main Content */}
         <div className="flex-1 max-w-4xl mx-auto">
           {/* Header */}
-          <header className="bg-background border-b border-border px-6 py-4 sticky top-0 z-10">
+          <header className="bg-background border-b border-border px-3 sm:px-6 py-4 sticky top-0 z-10">
             <div className="flex items-center justify-between mb-4">
               <Logo />
-              <h1 className="text-xl font-bold text-primary">NaijaLancers Feed</h1>
-              <div className="w-8" />
+              <NotificationBell />
             </div>
             
             {/* Feed Toggle */}
@@ -140,7 +152,7 @@ const MainFeed = () => {
                     : 'text-text-secondary hover:text-primary'
                 }`}
               >
-                For You
+                Recommended
               </button>
               <button
                 onClick={() => setFeedType('following')}
@@ -150,7 +162,7 @@ const MainFeed = () => {
                     : 'text-text-secondary hover:text-primary'
                 }`}
               >
-                Following
+                Suggestions
               </button>
             </div>
 
@@ -235,22 +247,27 @@ const MainFeed = () => {
             </div>
           </header>
 
+          {/* Stories Section */}
+          <div className="border-b border-border">
+            <StoriesCarousel onCreateStory={handleCreateStory} />
+          </div>
+
           {/* Post Creation Bar */}
-          <div className="px-6 py-4 border-b border-border">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-bold">
+          <div className="px-3 sm:px-6 py-4 border-b border-border">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary rounded-full flex items-center justify-center text-white font-bold text-sm">
                 {profile?.full_name?.charAt(0) || 'U'}
               </div>
               <button
                 onClick={() => setShowCreatePost(true)}
-                className="flex-1 text-left px-4 py-3 bg-muted rounded-full text-text-secondary hover:bg-accent transition-colors"
+                className="flex-1 text-left px-3 sm:px-4 py-2 sm:py-3 bg-muted rounded-full text-text-secondary hover:bg-accent transition-colors text-sm"
               >
-                Share your thoughts or post a job...
+                Share your thoughts...
               </button>
             </div>
             
-            {/* Quick Action Buttons */}
-            <div className="flex justify-around mt-4 pt-4 border-t border-border">
+            {/* Quick Action Buttons - Hidden on mobile to save space */}
+            <div className="hidden sm:flex justify-around mt-4 pt-4 border-t border-border">
               <button
                 onClick={() => setShowCreatePost(true)}
                 className="flex items-center gap-2 px-4 py-2 text-text-secondary hover:text-primary hover:bg-primary/10 rounded-xl transition-colors"
@@ -297,60 +314,68 @@ const MainFeed = () => {
           </div>
 
           {/* Main Feed Content */}
-          <div className="px-6 py-4">
-            {filteredAndSortedPosts.length === 0 && !loading ? (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                  <FileText className="h-8 w-8 text-text-secondary" />
-                </div>
-                <h3 className="text-lg font-semibold text-text-primary mb-2">
-                  {searchQuery ? 'No matching posts' : 'Welcome to your feed!'}
-                </h3>
-                <p className="text-text-secondary mb-4">
-                  {searchQuery 
-                    ? 'Try adjusting your search terms'
-                    : 'Start by creating your first post or following other users'
-                  }
-                </p>
-                {!searchQuery && (
-                  <BrandButton onClick={() => setShowCreatePost(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create Your First Post
-                  </BrandButton>
-                )}
-              </div>
+          <div className="px-3 sm:px-6 py-4">
+            {feedType === 'following' ? (
+              <SuggestionsTab />
             ) : (
               <>
-                {/* Feed Stats */}
-                <div className="mb-4 flex items-center justify-between text-sm text-text-secondary">
-                  <span>{filteredAndSortedPosts.length} posts</span>
-                  <div className="flex items-center gap-2">
-                    <span>Sorted by {sortBy}</span>
-                    {selectedCategory !== 'all' && (
-                      <Badge variant="outline" className="text-xs">
-                        {postCategories.find(c => c.id === selectedCategory)?.label}
-                      </Badge>
+                {filteredAndSortedPosts.length === 0 && !loading ? (
+                  <div className="text-center py-12">
+                    <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                      <FileText className="h-8 w-8 text-text-secondary" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-text-primary mb-2">
+                      {searchQuery ? 'No matching posts' : 'Welcome to your feed!'}
+                    </h3>
+                    <p className="text-text-secondary mb-4">
+                      {searchQuery 
+                        ? 'Try adjusting your search terms'
+                        : 'Start by creating your first post or following other users'
+                      }
+                    </p>
+                    {!searchQuery && (
+                      <BrandButton onClick={() => setShowCreatePost(true)}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Create Your First Post
+                      </BrandButton>
                     )}
                   </div>
-                </div>
-                
-                <InfiniteScrollFeed
-                  posts={filteredAndSortedPosts}
-                  hasNextPage={false}
-                  isFetchingNextPage={false}
-                  fetchNextPage={() => {}}
-                  onReact={addReaction}
-                  onRemoveReaction={removeReaction}
-                  onComment={addComment}
-                  currentUserId={user?.id}
-                />
+                ) : (
+                  <>
+                    {/* Feed Stats */}
+                    <div className="mb-4 flex items-center justify-between text-sm text-text-secondary">
+                      <span>{filteredAndSortedPosts.length} posts</span>
+                      <div className="flex items-center gap-2">
+                        <span>Sorted by {sortBy}</span>
+                        {selectedCategory !== 'all' && (
+                          <Badge variant="outline" className="text-xs">
+                            {postCategories.find(c => c.id === selectedCategory)?.label}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <InfiniteScrollFeed
+                      posts={filteredAndSortedPosts}
+                      hasNextPage={false}
+                      isFetchingNextPage={false}
+                      fetchNextPage={() => {}}
+                      onReact={addReaction}
+                      onRemoveReaction={removeReaction}
+                      onComment={addComment}
+                      currentUserId={user?.id}
+                      onJobApply={handleJobApply}
+                      onProfileClick={handleProfileClick}
+                    />
+                  </>
+                )}
               </>
             )}
           </div>
         </div>
 
-        {/* Trending Sidebar */}
-        <div className="hidden lg:block lg:w-80 lg:ml-6">
+        {/* Trending Sidebar - Hidden on smaller screens */}
+        <div className="hidden xl:block xl:w-80 xl:ml-6">
           <div className="sticky top-24 px-6">
             <TrendingSection 
               onHashtagClick={setSearchQuery}
@@ -370,33 +395,40 @@ const MainFeed = () => {
         userProfile={profile}
       />
 
-      {/* Contextual AI Help */}
-      <ContextualAIHelp
-        context="Need help with the feed? I can guide you through creating posts, finding content, and connecting with professionals."
-        suggestions={feedSuggestions}
-        onAskAI={handleAskAI}
+      {/* Job Application Dialog */}
+      <JobApplicationDialog
+        isOpen={jobApplicationDialog.isOpen}
+        onClose={() => setJobApplicationDialog({ isOpen: false, jobPost: null })}
+        jobPost={jobApplicationDialog.jobPost}
       />
 
-      {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border px-4 py-2">
-        <div className="flex justify-around items-center">
+      {/* Profile Preview Dialog */}
+      <ProfilePreview
+        isOpen={profilePreview.isOpen}
+        onClose={() => setProfilePreview({ isOpen: false, userId: null })}
+        profileId={profilePreview.userId || ''}
+      />
+
+      {/* Bottom Navigation - Responsive design */}
+      <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border px-2 sm:px-4 py-2">
+        <div className="flex justify-around items-center max-w-md mx-auto">
           {bottomNavItems.map((item) => (
             <Link 
               key={item.label} 
               to={item.path}
-              className={`flex flex-col items-center gap-1 py-2 px-3 rounded-xl transition-colors ${
+              className={`flex flex-col items-center gap-1 py-2 px-2 sm:px-3 rounded-xl transition-colors min-w-0 ${
                 item.active 
                   ? 'text-primary bg-primary/10' 
-                  : 'text-text-secondary hover:text-primary hover:bg-primary/5'
+                  : item.className || 'text-text-secondary hover:text-primary hover:bg-primary/5'
               }`}
             >
-              <item.icon className="h-5 w-5" />
-              <span className="text-xs font-medium">{item.label}</span>
+              <item.icon className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+              <span className="text-xs font-medium truncate">{item.label}</span>
             </Link>
           ))}
         </div>
       </div>
-    </div>
+    </ResponsiveLayout>
   )
 }
 
