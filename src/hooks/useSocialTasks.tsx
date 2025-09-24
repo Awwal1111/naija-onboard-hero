@@ -139,9 +139,10 @@ export const useSocialTasks = () => {
         .from('wallet_transactions')
         .insert({
           user_id: user.id,
-          transaction_type: 'task_creation_fee',
+          type: 'task_creation_fee',
           amount: feeAmount,
           amount_nc: feeAmount,
+          balance_type: 'non_withdrawable',
           status: 'completed',
           description: `Social media task creation fee (${totalSlots} slots)`
         })

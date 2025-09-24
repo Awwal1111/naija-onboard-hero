@@ -15,21 +15,6 @@ export const useUserPresence = () => {
   useEffect(() => {
     if (!user) return
 
-    // Update own presence when user is active
-    const updatePresence = async () => {
-      await supabase
-        .from('user_presence')
-        .upsert({
-          user_id: user.id,
-          is_online: true,
-          last_seen: new Date().toISOString()
-        })
-    }
-
-    // Update presence immediately and then every 30 seconds
-    updatePresence()
-    const presenceInterval = setInterval(updatePresence, 30000)
-
     // Set up realtime subscription for presence updates using channel presence
     const channel = supabase
       .channel('user-presence')
@@ -63,48 +48,29 @@ export const useUserPresence = () => {
     // Handle page visibility changes
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        // User is going offline
-        supabase
-          .from('user_presence')
-          .update({
-            is_online: false,
-            last_seen: new Date().toISOString()
-          })
-          .eq('user_id', user.id)
+        // User is going offline - just untrack presence
+        channel.untrack()
       } else {
-        // User is back online
-        updatePresence()
+        // User is back online - track again
+        channel.track({
+          user_id: user.id,
+          online_at: new Date().toISOString(),
+        })
       }
     }
 
     // Handle beforeunload to set offline status
     const handleBeforeUnload = () => {
-      supabase
-        .from('user_presence')
-        .update({
-          is_online: false,
-          last_seen: new Date().toISOString()
-        })
-        .eq('user_id', user.id)
+      channel.untrack()
     }
 
     document.addEventListener('visibilitychange', handleVisibilityChange)
     window.addEventListener('beforeunload', handleBeforeUnload)
 
     return () => {
-      clearInterval(presenceInterval)
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       window.removeEventListener('beforeunload', handleBeforeUnload)
       supabase.removeChannel(channel)
-      
-      // Set offline on cleanup
-      supabase
-        .from('user_presence')
-        .update({
-          is_online: false,
-          last_seen: new Date().toISOString()
-        })
-        .eq('user_id', user.id)
     }
   }, [user])
 

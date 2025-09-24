@@ -15,10 +15,8 @@ export interface WalletTransaction {
   amount: number
   transaction_type: string
   description: string
+  balance_type: string
   status: string
-  amount_nc?: number
-  amount_ngn?: number
-  metadata?: any
   created_at: string
 }
 
@@ -99,7 +97,7 @@ export const useWallet = () => {
     if (!user) return
 
     try {
-      // Fetch from wallet transactions table  
+      // Fetch from wallet transactions table
       const { data, error } = await supabase
         .from('wallet_transactions')
         .select('*')
@@ -212,9 +210,10 @@ export const useWallet = () => {
         .from('wallet_transactions')
         .insert({
           user_id: user.id,
-          transaction_type: 'game_loss',
+          type: 'game_loss',
           amount: cost,
           amount_nc: cost,
+          balance_type: deductFrom,
           status: 'completed',
           description: 'Spin Wheel entry fee'
         })
@@ -232,9 +231,10 @@ export const useWallet = () => {
           .from('wallet_transactions')
           .insert({
             user_id: user.id,
-            transaction_type: 'game_win',
+            type: 'game_win',
             amount: winnings,
             amount_nc: winnings,
+            balance_type: 'withdrawable',
             status: 'completed',
             description: 'Spin Wheel winnings'
           })
