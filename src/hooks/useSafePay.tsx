@@ -61,14 +61,43 @@ export const useSafePay = (otherUserId: string) => {
     if (!user) return
 
     try {
-      const { data, error } = await supabase
+      // Try user_wallets first, then fallback to profiles table
+      let { data: walletData, error: walletError } = await supabase
         .from('user_wallets')
         .select('*')
         .eq('user_id', user.id)
         .maybeSingle()
 
-      if (error && error.code !== 'PGRST116') throw error
-      setWallet(data)
+      if (walletError && walletError.code !== 'PGRST116') throw walletError
+
+      // If no wallet found, check profiles table for legacy balance
+      if (!walletData) {
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('wallet_balance')
+          .eq('user_id', user.id)
+          .single()
+
+        if (profileError) throw profileError
+
+        // Create a user_wallets entry if it doesn't exist
+        if (profileData) {
+          const { data: newWallet, error: createError } = await supabase
+            .from('user_wallets')
+            .insert({
+              user_id: user.id,
+              balance: profileData.wallet_balance || 0,
+              escrow_hold: 0
+            })
+            .select()
+            .single()
+
+          if (createError) throw createError
+          walletData = newWallet
+        }
+      }
+
+      setWallet(walletData)
     } catch (error) {
       console.error('Error fetching wallet:', error)
     }
@@ -117,7 +146,42 @@ export const useSafePay = (otherUserId: string) => {
 
     setLoading(true)
     try {
-      // First ensure user has a wallet
+      // Check current wallet balance first - try user_wallets then profiles
+      let { data: currentWallet, error: walletError } = await supabase
+        .from('user_wallets')
+        .select('balance, escrow_hold')
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+      let availableBalance = 0
+      
+      if (walletError && walletError.code !== 'PGRST116') throw walletError
+
+      if (currentWallet) {
+        availableBalance = currentWallet.balance - currentWallet.escrow_hold
+      } else {
+        // Fallback to profiles table for legacy balance
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('wallet_balance')
+          .eq('user_id', user.id)
+          .single()
+
+        if (profileError) throw profileError
+        availableBalance = profileData?.wallet_balance || 0
+      }
+
+      // Check if user has sufficient balance
+      if (availableBalance < amount) {
+        toast({
+          title: "Insufficient Balance",
+          description: `You need ${amount} NC but only have ${availableBalance} NC available. Please top up your wallet first.`,
+          variant: "destructive"
+        })
+        return
+      }
+
+      // Ensure user has a wallet record
       await supabase
         .from('user_wallets')
         .insert({

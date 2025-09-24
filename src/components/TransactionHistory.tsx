@@ -114,7 +114,7 @@ export const TransactionHistory = () => {
                     {transaction.transaction_type === 'credit' ? '+' : '-'}NC {transaction.amount.toLocaleString()}
                   </p>
                   <p className="text-xs text-text-secondary">
-                    {transaction.balance_type} balance
+                    {transaction.transaction_type} transaction
                   </p>
                 </div>
               </div>

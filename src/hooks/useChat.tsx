@@ -42,30 +42,52 @@ export const useChat = (otherUserId: string) => {
   useEffect(() => {
     if (!user || !otherUserId) return
 
-    const initializeChat = async () => {
+  const initializeChat = async () => {
       try {
+        console.log('Initializing chat for user:', user.id, 'with:', otherUserId)
+        
+        // Validate otherUserId is a proper UUID
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+        if (!uuidRegex.test(otherUserId)) {
+          console.error('Invalid UUID format for otherUserId:', otherUserId)
+          throw new Error('Invalid user ID format')
+        }
+        
         // Fetch other user's profile
-        const { data: profile } = await supabase
+        const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('user_id, full_name, profession')
           .eq('user_id', otherUserId)
           .single()
 
+        if (profileError) {
+          console.error('Profile fetch error:', profileError)
+          throw profileError
+        }
+
         if (profile) {
           setOtherUser(profile)
+          console.log('Other user profile loaded:', profile)
         }
 
         // Find or create chat
-        const { data: existingChat } = await supabase
+        const { data: existingChat, error: chatError } = await supabase
           .from('chats')
           .select('*')
           .or(`and(user1_id.eq.${user.id},user2_id.eq.${otherUserId}),and(user1_id.eq.${otherUserId},user2_id.eq.${user.id})`)
-          .single()
+          .maybeSingle()
+
+        if (chatError) {
+          console.error('Chat fetch error:', chatError)
+          throw chatError
+        }
 
         if (existingChat) {
+          console.log('Found existing chat:', existingChat.id)
           setChat(existingChat)
           await fetchMessages(existingChat.id)
         } else {
+          console.log('Creating new chat')
           // Create new chat
           const { data: newChat, error } = await supabase
             .from('chats')
@@ -76,8 +98,12 @@ export const useChat = (otherUserId: string) => {
             .select()
             .single()
 
-          if (error) throw error
+          if (error) {
+            console.error('Chat creation error:', error)
+            throw error
+          }
 
+          console.log('New chat created:', newChat.id)
           setChat(newChat)
           setMessages([])
         }
@@ -85,7 +111,7 @@ export const useChat = (otherUserId: string) => {
         console.error('Error initializing chat:', error)
         toast({
           title: "Error",
-          description: "Failed to load chat",
+          description: error.message || "Failed to load chat",
           variant: "destructive"
         })
       } finally {
@@ -93,6 +119,7 @@ export const useChat = (otherUserId: string) => {
       }
     }
 
+    setLoading(true)
     initializeChat()
   }, [user, otherUserId, toast])
 
