@@ -6,15 +6,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { WalletCard } from '@/components/WalletCard'
 import { DailySigninCard } from '@/components/DailySigninCard'
 import { TransactionHistory } from '@/components/TransactionHistory'
 import { ReferralTaskCard } from '@/components/ReferralTaskCard'
 import { useReferralTasks } from '@/hooks/useReferralTasks'
-import SpinWheelGame from '@/components/SpinWheelGame'
-import NaijaPredictor from '@/components/NaijaPredictor'
-import NigerianTrivia from '@/components/NigerianTrivia'
 import { 
   Coins,
   FileText, 
@@ -34,9 +30,7 @@ import {
   TrendingUp,
   ChevronRight,
   Trophy,
-  Target,
-  RotateCcw,
-  Brain
+  Target
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -45,13 +39,11 @@ export const Earn = () => {
   const navigate = useNavigate()
   const { user, loading: authLoading } = useAuth()
   const { profile, loading: profileLoading } = useProfile()
-  const [selectedGame, setSelectedGame] = useState<string | null>(null)
 
   const bottomNavItems = [
     { icon: Home, label: 'Feed', path: '/feed' },
     { icon: MessageCircle, label: 'Chat', path: '/chat' },
     { icon: Users, label: 'Expert', path: '/experts' },
-    { icon: Briefcase, label: 'Gig', path: '/jobs' },
     { icon: DollarSign, label: 'Earn', path: '/earn', active: true },
     { icon: User, label: 'Profile', path: '/profile' }
   ]
@@ -123,7 +115,7 @@ export const Earn = () => {
               </h2>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Freelance Gigs - Larger Card */}
+                {/* Freelance Jobs - Larger Card */}
                 <Card className="border-blue-200 bg-blue-50/50 hover:border-blue-400 transition-colors cursor-pointer col-span-full md:col-span-1" 
                       onClick={() => navigate('/jobs')}>
                   <CardContent className="p-6">
@@ -132,7 +124,7 @@ export const Earn = () => {
                         <Briefcase className="h-8 w-8 text-blue-600" />
                       </div>
                       <div>
-                        <h3 className="text-lg font-semibold text-blue-900">Freelance Gigs</h3>
+                        <h3 className="text-lg font-semibold text-blue-900">Freelance Jobs</h3>
                         <p className="text-sm text-blue-700">Find & complete professional gigs</p>
                       </div>
                     </div>
@@ -157,7 +149,7 @@ export const Earn = () => {
                       </div>
                     </div>
                     <div className="flex justify-between items-center">
-                      <Badge className="bg-green-100 text-green-800 border-green-200">Up to NC 500</Badge>
+                      <Badge className="bg-green-100 text-green-800 border-green-200">Up to ₦500</Badge>
                       <ChevronRight className="h-5 w-5 text-green-600" />
                     </div>
                   </CardContent>
@@ -177,7 +169,7 @@ export const Earn = () => {
                       </div>
                     </div>
                     <div className="flex justify-between items-center">
-                      <Badge className="bg-purple-100 text-purple-800 border-purple-200">NC 100 per referral</Badge>
+                      <Badge className="bg-purple-100 text-purple-800 border-purple-200">₦100 per referral</Badge>
                       <ChevronRight className="h-5 w-5 text-purple-600" />
                     </div>
                   </CardContent>
@@ -220,7 +212,7 @@ export const Earn = () => {
                     <GamepadIcon className="h-6 w-6 text-orange-600" />
                   </div>
                   <div>
-                    <CardTitle className="text-lg text-orange-900">Games</CardTitle>
+                    <CardTitle className="text-lg text-orange-900">Simple Games</CardTitle>
                     <CardDescription className="text-orange-700">Play & win rewards</CardDescription>
                   </div>
                 </div>
@@ -229,35 +221,24 @@ export const Earn = () => {
                 <Button 
                   variant="outline" 
                   className="w-full justify-between border-orange-200 hover:bg-orange-100"
-                  onClick={() => setSelectedGame('spin-wheel')}
+                  onClick={() => handleGameClick('guess-number')}
                 >
                   <div className="flex items-center space-x-2">
-                    <RotateCcw className="h-4 w-4 text-orange-600" />
-                    <span>Spin Wheel</span>
+                    <Target className="h-4 w-4 text-orange-600" />
+                    <span>Guess the Number 🎯</span>
                   </div>
-                  <Badge className="bg-orange-100 text-orange-800">Play Now</Badge>
+                  <Badge className="bg-orange-100 text-orange-800">₦10</Badge>
                 </Button>
                 <Button 
                   variant="outline" 
-                  className="w-full justify-between border-orange-200 hover:bg-orange-100"
-                  onClick={() => setSelectedGame('naija-predictor')}
+                  className="w-full justify-between opacity-50 cursor-not-allowed"
+                  disabled
                 >
                   <div className="flex items-center space-x-2">
-                    <TrendingUp className="h-4 w-4 text-orange-600" />
-                    <span>Naija Predictor</span>
+                    <Trophy className="h-4 w-4" />
+                    <span>Motorbike Game 🏍️</span>
                   </div>
-                  <Badge className="bg-orange-100 text-orange-800">Play Now</Badge>
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-between border-orange-200 hover:bg-orange-100"
-                  onClick={() => setSelectedGame('nigerian-trivia')}
-                >
-                  <div className="flex items-center space-x-2">
-                    <Brain className="h-4 w-4 text-orange-600" />
-                    <span>Nigerian Trivia</span>
-                  </div>
-                  <Badge className="bg-orange-100 text-orange-800">Play Now</Badge>
+                  <span className="text-sm text-muted-foreground">Coming Soon</span>
                 </Button>
               </CardContent>
             </Card>
@@ -285,7 +266,7 @@ export const Earn = () => {
                 <p className="text-sm text-muted-foreground mb-3">
                   Complete social media tasks for brands and influencers.
                 </p>
-                <Badge className="bg-primary/10 text-primary">NC 20-100 per task</Badge>
+                <Badge className="bg-primary/10 text-primary">₦20-100 per task</Badge>
               </CardContent>
             </Card>
 
@@ -322,24 +303,6 @@ export const Earn = () => {
           </div>
         </div>
       </div>
-
-      {/* Game Modal */}
-      <Dialog open={!!selectedGame} onOpenChange={() => setSelectedGame(null)}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {selectedGame === 'spin-wheel' && 'Spin Wheel'}
-              {selectedGame === 'naija-predictor' && 'Naija Predictor'}
-              {selectedGame === 'nigerian-trivia' && 'Nigerian Trivia'}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="mt-4">
-            {selectedGame === 'spin-wheel' && <SpinWheelGame />}
-            {selectedGame === 'naija-predictor' && <NaijaPredictor />}
-            {selectedGame === 'nigerian-trivia' && <NigerianTrivia />}
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border px-4 py-2">

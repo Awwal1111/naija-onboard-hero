@@ -52,6 +52,9 @@ const ReactionPicker: React.FC<ReactionPickerProps> = ({
         ) : (
           <ThumbsUp className="h-5 w-5" />
         )}
+        <span className="font-medium">
+          {currentConfig?.label || 'React'}
+        </span>
       </button>
 
       {/* Reaction picker popup */}

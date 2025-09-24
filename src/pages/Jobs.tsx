@@ -45,7 +45,7 @@ const Jobs = () => {
             <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
               <ArrowLeft className="h-4 w-4" />
             </Button>
-          <h1 className="text-2xl font-bold text-text-primary">Gigs</h1>
+            <h1 className="text-2xl font-bold text-text-primary">Jobs</h1>
             <div className="ml-auto">
               <div className="w-32 h-10 bg-background-secondary rounded animate-pulse"></div>
             </div>
@@ -74,15 +74,15 @@ const Jobs = () => {
           <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <h1 className="text-2xl font-bold text-text-primary">Gigs</h1>
+          <h1 className="text-2xl font-bold text-text-primary">Jobs</h1>
           
           <div className="ml-auto">
             <JobPostingDialog
               trigger={
-                      <Button className="gap-2">
-                        <Briefcase className="h-4 w-4" />
-                        Post Gig
-                      </Button>
+                <Button className="gap-2">
+                  <Briefcase className="h-4 w-4" />
+                  Post Job
+                </Button>
               }
             />
           </div>
@@ -92,8 +92,8 @@ const Jobs = () => {
           <Card>
             <CardContent className="p-12 text-center">
               <Briefcase className="h-12 w-12 text-text-secondary mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-text-primary mb-2">No Gigs Available</h3>
-              <p className="text-text-secondary mb-4">Be the first to post a gig opportunity!</p>
+              <h3 className="text-lg font-semibold text-text-primary mb-2">No Jobs Available</h3>
+              <p className="text-text-secondary mb-4">Be the first to post a job opportunity!</p>
             </CardContent>
           </Card>
         ) : (
@@ -186,8 +186,8 @@ const Jobs = () => {
                 </CardHeader>
                 
                 <CardContent>
-                  <p className="text-text-primary mb-4 whitespace-pre-wrap break-words overflow-hidden">
-                    {job.description.length > 200 ? job.description.substring(0, 200) + '...' : job.description}
+                  <p className="text-text-primary mb-4 whitespace-pre-wrap">
+                    {job.description}
                   </p>
                   
                   {job.required_skills && job.required_skills.length > 0 && (

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Search, MessageCircle, Home, Users, DollarSign, User as UserIcon, Briefcase } from 'lucide-react'
+import { Search, MessageCircle, Home, Users, DollarSign, User as UserIcon } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/integrations/supabase/client'
@@ -36,7 +36,6 @@ const ChatList = () => {
     { icon: Home, label: 'Feed', path: '/feed' },
     { icon: MessageCircle, label: 'Chat', path: '/chat', active: true },
     { icon: Users, label: 'Expert', path: '/experts' },
-    { icon: Briefcase, label: 'Gig', path: '/jobs' },
     { icon: DollarSign, label: 'Earn', path: '/earn' },
     { icon: UserIcon, label: 'Profile', path: '/profile' }
   ]

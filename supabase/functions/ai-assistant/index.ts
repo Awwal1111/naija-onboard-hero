@@ -64,12 +64,12 @@ GUIDELINES:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5-mini-2025-08-07', // ✅ Fast, efficient model for real-time responses
+        model: 'gpt-5-2025-08-07',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: message }
         ],
-        max_completion_tokens: 200, // ✅ Shorter responses for better UX
+        max_completion_tokens: 500,
         presence_penalty: 0.1,
         frequency_penalty: 0.1
       }),

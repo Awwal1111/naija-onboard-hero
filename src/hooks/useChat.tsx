@@ -3,18 +3,13 @@ import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/use-toast'
 
-interface BaseMessage {
+interface Message {
   id: string
   chat_id: string
   sender_id: string
   content: string
   created_at: string
   read_at: string | null
-}
-
-interface Message extends BaseMessage {
-  media_url?: string | null
-  media_type?: string | null
 }
 
 interface Chat {
@@ -42,52 +37,30 @@ export const useChat = (otherUserId: string) => {
   useEffect(() => {
     if (!user || !otherUserId) return
 
-  const initializeChat = async () => {
+    const initializeChat = async () => {
       try {
-        console.log('Initializing chat for user:', user.id, 'with:', otherUserId)
-        
-        // Validate otherUserId is a proper UUID
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-        if (!uuidRegex.test(otherUserId)) {
-          console.error('Invalid UUID format for otherUserId:', otherUserId)
-          throw new Error('Invalid user ID format')
-        }
-        
         // Fetch other user's profile
-        const { data: profile, error: profileError } = await supabase
+        const { data: profile } = await supabase
           .from('profiles')
           .select('user_id, full_name, profession')
           .eq('user_id', otherUserId)
           .single()
 
-        if (profileError) {
-          console.error('Profile fetch error:', profileError)
-          throw profileError
-        }
-
         if (profile) {
           setOtherUser(profile)
-          console.log('Other user profile loaded:', profile)
         }
 
         // Find or create chat
-        const { data: existingChat, error: chatError } = await supabase
+        const { data: existingChat } = await supabase
           .from('chats')
           .select('*')
           .or(`and(user1_id.eq.${user.id},user2_id.eq.${otherUserId}),and(user1_id.eq.${otherUserId},user2_id.eq.${user.id})`)
-          .maybeSingle()
-
-        if (chatError) {
-          console.error('Chat fetch error:', chatError)
-          throw chatError
-        }
+          .single()
 
         if (existingChat) {
-          console.log('Found existing chat:', existingChat.id)
           setChat(existingChat)
           await fetchMessages(existingChat.id)
         } else {
-          console.log('Creating new chat')
           // Create new chat
           const { data: newChat, error } = await supabase
             .from('chats')
@@ -98,12 +71,8 @@ export const useChat = (otherUserId: string) => {
             .select()
             .single()
 
-          if (error) {
-            console.error('Chat creation error:', error)
-            throw error
-          }
+          if (error) throw error
 
-          console.log('New chat created:', newChat.id)
           setChat(newChat)
           setMessages([])
         }
@@ -111,7 +80,7 @@ export const useChat = (otherUserId: string) => {
         console.error('Error initializing chat:', error)
         toast({
           title: "Error",
-          description: error.message || "Failed to load chat",
+          description: "Failed to load chat",
           variant: "destructive"
         })
       } finally {
@@ -119,7 +88,6 @@ export const useChat = (otherUserId: string) => {
       }
     }
 
-    setLoading(true)
     initializeChat()
   }, [user, otherUserId, toast])
 
@@ -175,36 +143,16 @@ export const useChat = (otherUserId: string) => {
     }
   }, [chat])
 
-  const sendMessage = async (content: string, mediaUrl?: string | null, mediaType?: string | null) => {
+  const sendMessage = async (content: string) => {
     if (!chat || !user) return
 
-    // Check if user is blocked before sending message
     try {
-      const { data: blocked, error: blockError } = await supabase
-        .from('blocked_users')
-        .select('*')
-        .or(`and(blocker_id.eq.${chat.user1_id},blocked_id.eq.${chat.user2_id}),and(blocker_id.eq.${chat.user2_id},blocked_id.eq.${chat.user1_id})`)
-        .maybeSingle()
-
-      if (blockError && blockError.code !== 'PGRST116') throw blockError
-
-      if (blocked) {
-        toast({
-          title: "Message Blocked",
-          description: "Cannot send message - user is blocked",
-          variant: "destructive"
-        })
-        return
-      }
-
       const { error } = await supabase
         .from('messages')
         .insert({
           chat_id: chat.id,
           sender_id: user.id,
-          content,
-          media_url: mediaUrl,
-          media_type: mediaType
+          content
         })
 
       if (error) throw error
