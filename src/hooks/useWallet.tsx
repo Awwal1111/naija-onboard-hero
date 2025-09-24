@@ -15,10 +15,8 @@ export interface WalletTransaction {
   amount: number
   transaction_type: string
   description: string
+  balance_type: string
   status: string
-  amount_nc?: number
-  amount_ngn?: number
-  metadata?: any
   created_at: string
 }
 
@@ -99,11 +97,11 @@ export const useWallet = () => {
     if (!user) return
 
     try {
-      // Fetch from wallet transactions table  
+      // Fetch from new transactions table
       const { data, error } = await supabase
-        .from('wallet_transactions')
+        .from('transactions')
         .select('*')
-        .eq('user_id', user.id)
+        .or(`user_id.eq.${user.id},recipient_id.eq.${user.id}`)
         .order('created_at', { ascending: false })
         .limit(20)
 
@@ -209,14 +207,14 @@ export const useWallet = () => {
 
       // Log cost transaction
       await supabase
-        .from('wallet_transactions')
+        .from('transactions')
         .insert({
           user_id: user.id,
           transaction_type: 'game_loss',
-          amount: cost,
-          amount_nc: cost,
-          status: 'completed',
-          description: 'Spin Wheel entry fee'
+          amount: -cost,
+          balance_type: deductFrom,
+          description: 'Spin Wheel entry fee',
+          status: 'completed'
         })
 
       // Add winnings if any
@@ -229,14 +227,14 @@ export const useWallet = () => {
           .eq('user_id', user.id)
 
         await supabase
-          .from('wallet_transactions')
+          .from('transactions')
           .insert({
             user_id: user.id,
             transaction_type: 'game_win',
             amount: winnings,
-            amount_nc: winnings,
-            status: 'completed',
-            description: 'Spin Wheel winnings'
+            balance_type: 'withdrawable',
+            description: `Spin Wheel winnings`,
+            status: 'completed'
           })
 
         toast({

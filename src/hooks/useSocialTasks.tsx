@@ -136,14 +136,14 @@ export const useSocialTasks = () => {
 
       // Record the transaction
       await supabase
-        .from('wallet_transactions')
+        .from('transactions')
         .insert({
           user_id: user.id,
           transaction_type: 'task_creation_fee',
-          amount: feeAmount,
-          amount_nc: feeAmount,
-          status: 'completed',
-          description: `Social media task creation fee (${totalSlots} slots)`
+          amount: -feeAmount,
+          balance_type: 'non_withdrawable',
+          description: `Social media task creation fee (${totalSlots} slots)`,
+          status: 'completed'
         })
 
       // Create the task

@@ -164,6 +164,33 @@ export type Database = {
         }
         Relationships: []
       }
+      commissions: {
+        Row: {
+          created_at: string
+          expert_cut: number
+          id: string
+          platform_cut: number
+          released_at: string | null
+          transaction_id: string
+        }
+        Insert: {
+          created_at?: string
+          expert_cut: number
+          id?: string
+          platform_cut: number
+          released_at?: string | null
+          transaction_id: string
+        }
+        Update: {
+          created_at?: string
+          expert_cut?: number
+          id?: string
+          platform_cut?: number
+          released_at?: string | null
+          transaction_id?: string
+        }
+        Relationships: []
+      }
       connection_requests: {
         Row: {
           created_at: string
@@ -1156,6 +1183,42 @@ export type Database = {
         }
         Relationships: []
       }
+      payouts: {
+        Row: {
+          amount: number
+          bank_details: Json | null
+          created_at: string
+          id: string
+          method: string
+          paystack_transfer_ref: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          bank_details?: Json | null
+          created_at?: string
+          id?: string
+          method: string
+          paystack_transfer_ref?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          bank_details?: Json | null
+          created_at?: string
+          id?: string
+          method?: string
+          paystack_transfer_ref?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       portfolio_items: {
         Row: {
           created_at: string
@@ -2039,6 +2102,39 @@ export type Database = {
           },
         ]
       }
+      subscriptions: {
+        Row: {
+          expires_at: string | null
+          id: string
+          paystack_ref: string | null
+          plan: string
+          price: number
+          started_at: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          expires_at?: string | null
+          id?: string
+          paystack_ref?: string | null
+          plan: string
+          price: number
+          started_at?: string
+          status: string
+          user_id: string
+        }
+        Update: {
+          expires_at?: string | null
+          id?: string
+          paystack_ref?: string | null
+          plan?: string
+          price?: number
+          started_at?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       survey_completions: {
         Row: {
           bitlabs_user_id: string
@@ -2216,27 +2312,6 @@ export type Database = {
         }
         Relationships: []
       }
-      user_presence: {
-        Row: {
-          is_online: boolean
-          last_seen: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          is_online?: boolean
-          last_seen?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          is_online?: boolean
-          last_seen?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       user_roles: {
         Row: {
           granted_at: string
@@ -2326,56 +2401,35 @@ export type Database = {
       wallet_transactions: {
         Row: {
           amount: number
-          amount_nc: number | null
-          amount_ngn: number | null
           created_at: string
           description: string | null
-          fee_nc: number | null
           id: string
-          metadata: Json | null
-          payment_method: string | null
           reference_id: string | null
           safepay_id: string | null
           status: string | null
           transaction_type: string
-          type: string | null
-          updated_at: string | null
           user_id: string
         }
         Insert: {
           amount: number
-          amount_nc?: number | null
-          amount_ngn?: number | null
           created_at?: string
           description?: string | null
-          fee_nc?: number | null
           id?: string
-          metadata?: Json | null
-          payment_method?: string | null
           reference_id?: string | null
           safepay_id?: string | null
           status?: string | null
           transaction_type: string
-          type?: string | null
-          updated_at?: string | null
           user_id: string
         }
         Update: {
           amount?: number
-          amount_nc?: number | null
-          amount_ngn?: number | null
           created_at?: string
           description?: string | null
-          fee_nc?: number | null
           id?: string
-          metadata?: Json | null
-          payment_method?: string | null
           reference_id?: string | null
           safepay_id?: string | null
           status?: string | null
           transaction_type?: string
-          type?: string | null
-          updated_at?: string | null
           user_id?: string
         }
         Relationships: [
