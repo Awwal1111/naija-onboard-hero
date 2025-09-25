@@ -15,9 +15,10 @@ export interface WalletTransaction {
   amount: number
   transaction_type: string
   description: string
-  balance_type: string
   status: string
   created_at: string
+  reference_id?: string
+  safepay_id?: string
 }
 
 export interface Transaction {
@@ -210,10 +211,8 @@ export const useWallet = () => {
         .from('wallet_transactions')
         .insert({
           user_id: user.id,
-          type: 'game_loss',
+          transaction_type: 'game_loss',
           amount: cost,
-          amount_nc: cost,
-          balance_type: deductFrom,
           status: 'completed',
           description: 'Spin Wheel entry fee'
         })
@@ -231,10 +230,8 @@ export const useWallet = () => {
           .from('wallet_transactions')
           .insert({
             user_id: user.id,
-            type: 'game_win',
+            transaction_type: 'game_win',
             amount: winnings,
-            amount_nc: winnings,
-            balance_type: 'withdrawable',
             status: 'completed',
             description: 'Spin Wheel winnings'
           })

@@ -138,10 +138,8 @@ const NigerianTrivia: React.FC = () => {
         .from('wallet_transactions')
         .insert({
           user_id: user.id,
-          type: 'game_loss',
+          transaction_type: 'game_loss',
           amount: ENTRY_FEE,
-          amount_nc: ENTRY_FEE,
-          balance_type: 'non_withdrawable',
           status: 'completed',
           description: 'Nigerian Trivia entry fee'
         })
@@ -228,10 +226,8 @@ const NigerianTrivia: React.FC = () => {
           .from('wallet_transactions')
           .insert({
             user_id: user.id,
-            type: 'game_win',
+            transaction_type: 'game_win',
             amount: winnings,
-            amount_nc: winnings,
-            balance_type: 'withdrawable',
             status: 'completed',
             description: `Nigerian Trivia winnings (${finalScore}/${QUESTIONS_PER_GAME})`
           })

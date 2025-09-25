@@ -162,10 +162,13 @@ const SuggestionsTab: React.FC = () => {
   }
 
   const handleConnect = async (userId: string) => {
-    await sendConnectionRequest(userId)
-    // Remove from suggestions after connecting
-    setPeopleYouMayKnow(prev => prev.filter(p => p.user_id !== userId))
-    setNearbyFriends(prev => prev.filter(p => p.user_id !== userId))
+    const result = await sendConnectionRequest(userId)
+    if (result.success) {
+      // Remove user from suggestions after successful connection request
+      setPeopleYouMayKnow(prev => prev.filter(p => p.user_id !== userId))
+      setExpertSuggestions(prev => prev.filter(p => p.user_id !== userId))
+      setNearbyFriends(prev => prev.filter(p => p.user_id !== userId))
+    }
   }
 
   const UserCard: React.FC<{ user: SuggestedUser; showConnect?: boolean }> = ({ 

@@ -21,6 +21,8 @@ import Experts from "./pages/Experts";
 import Jobs from "./pages/Jobs";
 import Chat from './pages/Chat'
 import ChatPage from "./pages/ChatPage";
+import GroupChat from "./pages/GroupChat";
+import Connections from "./pages/Connections";
 import { Earn } from "./pages/Earn";
 import { SocialMediaTasks } from "./pages/SocialMediaTasks";
 import { Surveys } from "./pages/Surveys";
@@ -70,6 +72,8 @@ const App = () => (
           <Route path="/earn/referral-tasks" element={<ProtectedRoute><ReferralTasks /></ProtectedRoute>} />
           <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
           <Route path="/chat/:userId" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+          <Route path="/groups/:groupId" element={<ProtectedRoute><GroupChat /></ProtectedRoute>} />
+          <Route path="/connections" element={<ProtectedRoute><Connections /></ProtectedRoute>} />
           <Route path="/terms-conditions" element={<ProtectedRoute><TermsConditions /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
           <Route path="/activity-log" element={<ProtectedRoute><ActivityLog /></ProtectedRoute>} />

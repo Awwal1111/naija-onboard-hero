@@ -172,6 +172,17 @@ export const useConnections = () => {
 
       if (error) throw error
 
+      // Create notification for the target user
+      await supabase
+        .from('notifications')
+        .insert({
+          user_id: targetUserId,
+          type: 'connection_request',
+          title: 'New Connection Request',
+          message: 'Someone wants to connect with you!',
+          metadata: { requester_id: user.id }
+        })
+
       toast({
         title: "Connection Request Sent",
         description: "Your connection request has been sent successfully.",
@@ -222,6 +233,17 @@ export const useConnections = () => {
           .eq('id', requestId)
 
         if (updateError) throw updateError
+
+        // Create notification for the requester
+        await supabase
+          .from('notifications')
+          .insert({
+            user_id: request.requester_id,
+            type: 'connection_accepted',
+            title: 'Connection Accepted!',
+            message: 'Your connection request has been accepted.',
+            metadata: { connection_id: connectionError ? null : request.requested_id }
+          })
 
         toast({
           title: "Connection Accepted",
