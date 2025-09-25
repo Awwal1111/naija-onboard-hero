@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/integrations/supabase/client'
+import { useNavigate } from 'react-router-dom'
 
 interface ProfileInfo {
   id: string
@@ -39,6 +40,7 @@ const ProfilePreview: React.FC<ProfilePreviewProps> = ({
 }) => {
   const { user } = useAuth()
   const { toast } = useToast()
+  const navigate = useNavigate()
   const [profile, setProfile] = useState<ProfileInfo | null>(null)
   const [loading, setLoading] = useState(true)
   const [connecting, setConnecting] = useState(false)
@@ -136,7 +138,7 @@ const ProfilePreview: React.FC<ProfilePreviewProps> = ({
 
   const handleMessage = () => {
     // Navigate to chat with this user
-    window.location.href = `/chat?user=${profileId}`
+    navigate(`/chat/${profileId}`)
   }
 
   const handleViewFullProfile = () => {

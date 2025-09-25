@@ -14,6 +14,7 @@ interface ChatPreview {
   user2_id: string
   updated_at: string
   other_user: {
+    user_id: string
     full_name: string
     profile_picture_url?: string
   }
@@ -57,7 +58,7 @@ const MessagesTab: React.FC = () => {
           
           const { data: profile } = await supabase
             .from('profiles')
-            .select('full_name, profile_picture_url')
+            .select('user_id, full_name, profile_picture_url')
             .eq('user_id', otherUserId)
             .single()
 
@@ -72,7 +73,7 @@ const MessagesTab: React.FC = () => {
 
           return {
             ...chat,
-            other_user: profile || { full_name: 'Unknown User' },
+            other_user: profile || { user_id: otherUserId, full_name: 'Unknown User' },
             last_message: lastMessage?.content
           }
         })
@@ -152,7 +153,7 @@ const MessagesTab: React.FC = () => {
             <Card key={chat.id} className="hover:shadow-md transition-shadow cursor-pointer">
               <CardContent 
                 className="p-4"
-                onClick={() => navigate(`/chat/${chat.other_user.full_name.replace(/\s+/g, '-').toLowerCase()}`)}
+                onClick={() => navigate(`/chat/${chat.other_user.user_id}`)}
               >
                 <div className="flex items-center gap-3">
                   <Avatar className="h-12 w-12">
