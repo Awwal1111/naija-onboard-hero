@@ -48,7 +48,7 @@ export const useDailySignin = () => {
     try {
       setClaiming(true)
       const today = new Date().toISOString().split('T')[0]
-      const rewardAmount = 5.00
+    const rewardAmount = 5.00
 
       // Start a transaction to ensure atomicity
       const { error: signinError } = await supabase
@@ -93,7 +93,7 @@ export const useDailySignin = () => {
         console.error('Error updating wallet balance:', walletError)
         toast.error('Sign-in recorded but there was an error updating your wallet')
       } else {
-        toast.success(`You've earned ₦${rewardAmount} for today's sign-in!`)
+        toast.success(`You've earned ${rewardAmount} NC for today's sign-in!`)
       }
 
       setHasSignedInToday(true)

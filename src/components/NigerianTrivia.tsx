@@ -435,3 +435,5 @@ const NigerianTrivia: React.FC = () => {
 }
 
 export default NigerianTrivia
+
+export default NigerianTrivia

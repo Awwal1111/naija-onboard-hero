@@ -62,7 +62,7 @@ export const ReferralTaskCard = ({ task, hasSubmitted, submissionStatus, onSubmi
     if (hasSubmitted) {
       return submissionStatus === 'rejected' ? 'Resubmit' : 'Submitted'
     }
-    return `Do this and earn ₦${task.reward.toLocaleString()}`
+    return `Do this and earn ${task.reward.toLocaleString()} NC`
   }
 
   return (
@@ -72,7 +72,7 @@ export const ReferralTaskCard = ({ task, hasSubmitted, submissionStatus, onSubmi
           <div>
             <CardTitle className="text-lg">{task.title}</CardTitle>
             <CardDescription className="mt-1">
-              Reward: ₦{task.reward.toLocaleString()}
+              Reward: {task.reward.toLocaleString()} NC
             </CardDescription>
           </div>
           {getStatusBadge()}

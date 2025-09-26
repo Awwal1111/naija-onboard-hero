@@ -132,7 +132,7 @@ export const Referrals = () => {
         return
       }
 
-      toast.success('Referral code applied! You and your referrer will earn rewards when you reach ₦1000.')
+      toast.success('Referral code applied! You and your referrer will earn rewards when you reach 1000 NC.')
       setReferralCode('')
     } catch (error) {
       console.error('Error applying referral code:', error)
@@ -186,7 +186,7 @@ export const Referrals = () => {
           <Card className="border-accent/20">
             <CardContent className="p-3 text-center">
               <Coins className="h-6 w-6 text-green-500 mx-auto mb-1" />
-              <p className="text-lg font-bold text-green-500">₦{totalEarned}</p>
+              <p className="text-lg font-bold text-green-500">{totalEarned} NC</p>
               <p className="text-xs text-muted-foreground">Earned</p>
             </CardContent>
           </Card>
@@ -200,7 +200,7 @@ export const Referrals = () => {
               <span>Your Referral Code</span>
             </CardTitle>
             <CardDescription>
-              Share this code with friends to earn ₦100 when they reach ₦1000
+              Share this code with friends to earn 100 NC when they reach 1000 NC
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -295,7 +295,7 @@ export const Referrals = () => {
                           <>
                             <Badge variant="secondary" className="bg-green-100 text-green-800">
                               <CheckCircle className="h-3 w-3 mr-1" />
-                              ₦{referral.points_earned}
+                              {referral.points_earned} NC
                             </Badge>
                           </>
                         ) : (
@@ -336,7 +336,7 @@ export const Referrals = () => {
               <div className="bg-primary/10 rounded-full p-1 mt-0.5">
                 <span className="text-xs text-primary font-bold">3</span>
               </div>
-              <p>When they earn ₦1000, you both get ₦100!</p>
+              <p>When they earn 1000 NC, you both get 100 NC!</p>
             </div>
           </CardContent>
         </Card>
