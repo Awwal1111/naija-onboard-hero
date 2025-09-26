@@ -111,7 +111,7 @@ export const TransactionHistory = () => {
                   <p className={`font-medium text-sm ${
                     transaction.transaction_type === 'credit' ? 'text-green-600' : 'text-red-600'
                   }`}>
-                    {transaction.transaction_type === 'credit' ? '+' : '-'}NC {transaction.amount.toLocaleString()}
+                    {transaction.transaction_type === 'credit' ? '+' : '-'}{Math.abs(transaction.amount).toLocaleString()} NC
                   </p>
                    <p className="text-xs text-text-secondary">
                      {transaction.transaction_type} transaction
