@@ -36,12 +36,22 @@ export const GuessNumberGame = () => {
   // }, [user, navigate])
 
   const startGame = () => {
+    // Deduct 10 NC first
+    if (!user || !profile || (profile.wallet_balance || 0) < 10) {
+      toast.error('Insufficient balance. You need 10 NC to play.')
+      return
+    }
+
     const number = Math.floor(Math.random() * 100) + 1
     setTargetNumber(number)
     setGameState('playing')
     setAttempts(0)
     setHint('')
     setUserGuess('')
+    
+    // Deduct 10 NC from wallet
+    const newBalance = (profile.wallet_balance || 0) - 10
+    updateProfile({ wallet_balance: newBalance })
     
     // Create game session
     createGameSession()
@@ -94,7 +104,7 @@ export const GuessNumberGame = () => {
         // Update wallet balance
         const newBalance = (profile?.wallet_balance || 0) + pointsEarned
         await updateProfile({ wallet_balance: newBalance })
-        toast.success(`Congratulations! You earned ₦${pointsEarned}`)
+        toast.success(`Congratulations! You earned ${pointsEarned} NC`)
       }
     } catch (error) {
       console.error('Error ending game session:', error)
@@ -168,7 +178,7 @@ export const GuessNumberGame = () => {
             <div>
               <p className="text-sm text-muted-foreground">Current Balance</p>
               <p className="text-2xl font-bold text-primary">
-                ₦{profile.wallet_balance?.toFixed(2) || '0.00'}
+                {profile.wallet_balance?.toFixed(2) || '0.00'} NC
               </p>
             </div>
             <Coins className="h-8 w-8 text-primary" />
@@ -186,10 +196,11 @@ export const GuessNumberGame = () => {
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="space-y-2 text-sm text-muted-foreground">
+                <p>• Cost: 10 NC to play</p>
                 <p>• Guess a number between 1 and 100</p>
                 <p>• You have {maxAttempts} attempts</p>
                 <p>• Get hints after each wrong guess</p>
-                <p>• Win ₦10 if you guess correctly!</p>
+                <p>• Win 10 NC if you guess correctly!</p>
               </div>
               <Button 
                 onClick={startGame} 
@@ -259,7 +270,7 @@ export const GuessNumberGame = () => {
                 <h2 className="text-2xl font-bold text-green-800">Congratulations! 🎉</h2>
                 <p className="text-green-700">You guessed it in {attempts} attempts!</p>
                 <p className="text-lg font-semibold text-green-800 mt-2">
-                  You earned ₦10!
+                  You earned 10 NC!
                 </p>
               </div>
               <div className="space-y-2">
