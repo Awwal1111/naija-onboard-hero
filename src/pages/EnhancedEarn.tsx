@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Coins, RotateCcw, Target, Brain, Calendar, HelpCircle, Trophy, Zap } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
 import { useWallet } from '@/hooks/useWallet'
 import NaijaLanceWalletCard from '@/components/NaijaLanceWalletCard'
 import SpinWheelGame from '@/components/SpinWheelGame'
@@ -11,7 +10,6 @@ import { DailySigninCard } from '@/components/DailySigninCard'
 
 const EnhancedEarn = () => {
   const { balance, loading } = useWallet()
-  const navigate = useNavigate()
 
   const games = [
     {
@@ -22,28 +20,7 @@ const EnhancedEarn = () => {
       icon: RotateCcw,
       color: 'bg-gradient-to-br from-purple-500 to-pink-500',
       maxWin: 'NC 100',
-      component: SpinWheelGame,
-      path: '/earn/spin-wheel'
-    },
-    {
-      id: 'guess-number',
-      title: 'Guess Number',
-      description: 'Guess the number and win!',
-      cost: 'NC 10', 
-      icon: Target,
-      color: 'bg-gradient-to-br from-orange-500 to-red-500',
-      maxWin: 'NC 10',
-      path: '/earn/guess-number'
-    },
-    {
-      id: 'trivia',
-      title: 'Nigerian Trivia',
-      description: '5 questions, win NC 50',
-      cost: 'NC 20',
-      icon: Brain,
-      color: 'bg-gradient-to-br from-green-500 to-emerald-500',
-      maxWin: 'NC 50',
-      path: '/earn/trivia'
+      component: SpinWheelGame
     },
     {
       id: 'predictor',
@@ -53,6 +30,16 @@ const EnhancedEarn = () => {
       icon: Target,
       color: 'bg-gradient-to-br from-blue-500 to-cyan-500',
       maxWin: 'Varies',
+      disabled: true
+    },
+    {
+      id: 'trivia',
+      title: 'Nigerian Trivia',
+      description: '5 questions, win NC 50',
+      cost: 'NC 10',
+      icon: Brain,
+      color: 'bg-gradient-to-br from-green-500 to-emerald-500',
+      maxWin: 'NC 50',
       disabled: true
     }
   ]
@@ -139,14 +126,7 @@ const EnhancedEarn = () => {
                   <Button
                     className="w-full"
                     disabled={game.disabled}
-                    onClick={() => {
-                      if (game.disabled) return
-                      if (game.path) {
-                        navigate(game.path)
-                      } else {
-                        setSelectedGame(game.id)
-                      }
-                    }}
+                    onClick={() => !game.disabled && setSelectedGame(game.id)}
                   >
                     {game.disabled ? 'Coming Soon' : 'Play Now'}
                   </Button>
@@ -165,7 +145,7 @@ const EnhancedEarn = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {earningMethods.map((method, index) => (
-              <Card key={index} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate(method.path)}>
+              <Card key={index} className="hover:shadow-lg transition-shadow cursor-pointer">
                 <CardContent className="p-6">
                   <div className="flex items-center gap-4">
                     <div className="p-3 bg-primary/10 rounded-lg">
