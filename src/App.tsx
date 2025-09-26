@@ -23,7 +23,7 @@ import Chat from './pages/Chat'
 import ChatPage from "./pages/ChatPage";
 import GroupChat from "./pages/GroupChat";
 import Connections from "./pages/Connections";
-import EnhancedEarn from "./pages/EnhancedEarn";
+import { Earn } from "./pages/Earn";
 import { SocialMediaTasks } from "./pages/SocialMediaTasks";
 import { Surveys } from "./pages/Surveys";
 import { GuessNumberGame } from "./pages/GuessNumberGame";
@@ -37,7 +37,6 @@ import Settings from "./pages/Settings";
 import ActivityLog from "./pages/ActivityLog";
 import EnhancedAdminDashboard from "./pages/EnhancedAdminDashboard";
 import NotFound from "./pages/NotFound";
-import NigerianTrivia from "./components/NigerianTrivia";
 
 const queryClient = new QueryClient();
 
@@ -68,12 +67,9 @@ const App = () => (
           <Route path="/surveys" element={<ProtectedRoute><Surveys /></ProtectedRoute>} />
           <Route path="/games/guess-number" element={<ProtectedRoute><GuessNumberGame /></ProtectedRoute>} />
           <Route path="/referrals" element={<ProtectedRoute><Referrals /></ProtectedRoute>} />
-          <Route path="/earn" element={<ProtectedRoute><EnhancedEarn /></ProtectedRoute>} />
+          <Route path="/earn" element={<ProtectedRoute><Earn /></ProtectedRoute>} />
           <Route path="/earn/social-tasks" element={<ProtectedRoute><SocialMediaTasks /></ProtectedRoute>} />
           <Route path="/earn/referral-tasks" element={<ProtectedRoute><ReferralTasks /></ProtectedRoute>} />
-          <Route path="/earn/guess-number" element={<ProtectedRoute><GuessNumberGame /></ProtectedRoute>} />
-          <Route path="/earn/trivia" element={<ProtectedRoute><NigerianTrivia /></ProtectedRoute>} />
-          <Route path="/earn/spin-wheel" element={<ProtectedRoute><GuessNumberGame /></ProtectedRoute>} />
           <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
           <Route path="/chat/:userId" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
           <Route path="/groups/:groupId" element={<ProtectedRoute><GroupChat /></ProtectedRoute>} />

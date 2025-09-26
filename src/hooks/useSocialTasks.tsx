@@ -120,7 +120,7 @@ export const useSocialTasks = () => {
       if (!profile || profile.wallet_balance < feeAmount) {
         toast({
           title: "Insufficient Balance",
-          description: `You need ${feeAmount} NC to create this task (4,000 NC per 100 slots)`,
+          description: `You need NC ${feeAmount} to create this task (NC 4,000 per 100 slots)`,
           variant: "destructive",
         })
         return { success: false, error: 'Insufficient balance' }
@@ -163,7 +163,7 @@ export const useSocialTasks = () => {
 
       toast({
         title: "Task Created Successfully!",
-        description: `Fee of ${feeAmount} NC deducted. Task is now live.`,
+        description: `Fee of NC ${feeAmount} deducted. Task is now live.`,
       })
 
       fetchTasks() // Refresh the list

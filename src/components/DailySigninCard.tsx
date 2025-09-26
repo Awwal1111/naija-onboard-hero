@@ -34,11 +34,11 @@ export const DailySigninCard = () => {
             <CardTitle className="text-base">Daily Sign-In Bonus</CardTitle>
           </div>
           <Badge variant="secondary" className="bg-green-100 text-green-800">
-            5 NC
+            ₦5
           </Badge>
         </div>
         <CardDescription>
-          Sign in daily to earn 5 NC bonus - claim once per day!
+          Sign in daily to earn ₦5 bonus - claim once per day!
         </CardDescription>
       </CardHeader>
       <CardContent className="pt-0">
@@ -67,7 +67,7 @@ export const DailySigninCard = () => {
             ) : (
               <>
                 <Gift className="h-4 w-4 mr-2" />
-                Claim 5 NC Daily Bonus
+                Claim ₦5 Daily Bonus
               </>
             )}
           </Button>

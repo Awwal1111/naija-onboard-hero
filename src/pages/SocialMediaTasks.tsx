@@ -10,7 +10,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
 import { useSocialTasks } from '@/hooks/useSocialTasks'
-import { SocialTaskCompletionDialog } from '@/components/SocialTaskCompletionDialog'
 import { toast } from 'sonner'
 
 interface CreateTaskForm {
@@ -34,8 +33,6 @@ export const SocialMediaTasks = () => {
     reward: 0,
     total_slots: 0
   })
-  const [completionDialogOpen, setCompletionDialogOpen] = useState(false)
-  const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null)
 
   const bottomNavItems = [
     { icon: Home, label: 'Feed', path: '/feed' },
@@ -63,8 +60,12 @@ export const SocialMediaTasks = () => {
           toast.error(result.error || 'Failed to claim task')
         }
       } else if (action === 'complete') {
-        setSelectedTaskId(taskId)
-        setCompletionDialogOpen(true)
+        const result = await completeTask(taskId)
+        if (result.success) {
+          toast.success('Task completed successfully!')
+        } else {
+          toast.error(result.error || 'Failed to complete task')
+        }
       }
     } catch (error) {
       console.error('Task action error:', error)
@@ -142,7 +143,7 @@ export const SocialMediaTasks = () => {
                 </CardHeader>
                 <CardContent>
                   <ul className="text-sm text-muted-foreground space-y-2">
-                    <li>• Follow, like, subscribe to earn 20-100 NC</li>
+                    <li>• Follow, like, subscribe to earn ₦20-100</li>
                     <li>• Complete tasks at your own pace</li>
                     <li>• Withdraw earnings to your bank</li>
                   </ul>
@@ -210,7 +211,7 @@ export const SocialMediaTasks = () => {
                           {task.platform}
                         </Badge>
                         <div className="text-right">
-                          <p className="text-lg font-bold text-green-600">{task.reward} NC</p>
+                          <p className="text-lg font-bold text-green-600">₦{task.reward}</p>
                           <p className="text-xs text-muted-foreground">per task</p>
                         </div>
                       </div>
@@ -261,7 +262,7 @@ export const SocialMediaTasks = () => {
                               className="flex-1" 
                               onClick={() => handleTaskAction(task.id, 'complete')}
                             >
-                              Submit Proof
+                              Mark Complete
                             </Button>
                           </div>
                         )}
@@ -291,18 +292,8 @@ export const SocialMediaTasks = () => {
                 <span className="text-xs font-medium">{item.label}</span>
               </Link>
             ))}
+          </div>
         </div>
-
-        {/* Completion Dialog */}
-        {selectedTaskId && (
-          <SocialTaskCompletionDialog
-            open={completionDialogOpen}
-            onOpenChange={setCompletionDialogOpen}
-            taskId={selectedTaskId}
-            onSubmit={completeTask}
-          />
-        )}
-      </div>
       </div>
     )
   }
@@ -372,15 +363,15 @@ export const SocialMediaTasks = () => {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium text-foreground mb-2 block">Reward (NC)</label>
-                <BrandInput
-                  type="number"
-                  placeholder="50"
-                  value={createForm.reward || ''}
-                  onChange={(e) => setCreateForm({...createForm, reward: Number(e.target.value)})}
-                />
-              </div>
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-2 block">Reward (₦)</label>
+                  <BrandInput
+                    type="number"
+                    placeholder="50"
+                    value={createForm.reward || ''}
+                    onChange={(e) => setCreateForm({...createForm, reward: Number(e.target.value)})}
+                  />
+                </div>
                 <div>
                   <label className="text-sm font-medium text-foreground mb-2 block">Total Slots</label>
                   <BrandInput
@@ -397,22 +388,12 @@ export const SocialMediaTasks = () => {
                 onClick={handleCreateTask}
                 disabled={!createForm.platform || !createForm.type || !createForm.link || createForm.reward <= 0 || createForm.total_slots <= 0}
               >
-                Create Task ({(createForm.reward * createForm.total_slots) || 0} NC total)
+                Create Task (₦{(createForm.reward * createForm.total_slots) || 0} total)
               </BrandButton>
             </CardContent>
           </Card>
         </div>
       </div>
-
-      {/* Completion Dialog */}
-      {selectedTaskId && (
-        <SocialTaskCompletionDialog
-          open={completionDialogOpen}
-          onOpenChange={setCompletionDialogOpen}
-          taskId={selectedTaskId}
-          onSubmit={completeTask}
-        />
-      )}
     </div>
   )
 }
