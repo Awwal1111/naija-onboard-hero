@@ -33,6 +33,7 @@ import PaymentFailed from "./pages/PaymentFailed";
 import { ReferralTasks } from "./pages/ReferralTasks";
 import ExpertProfile from "./pages/ExpertProfile";
 import TermsConditions from "./pages/TermsConditions";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Settings from "./pages/Settings";
 import ActivityLog from "./pages/ActivityLog";
 import EnhancedAdminDashboard from "./pages/EnhancedAdminDashboard";
@@ -79,7 +80,9 @@ const App = () => (
           <Route path="/chat/:userId" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
           <Route path="/groups/:groupId" element={<ProtectedRoute><GroupChat /></ProtectedRoute>} />
           <Route path="/connections" element={<ProtectedRoute><Connections /></ProtectedRoute>} />
-          <Route path="/terms-conditions" element={<ProtectedRoute><TermsConditions /></ProtectedRoute>} />
+          <Route path="/terms-conditions" element={<TermsConditions />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/main-feed" element={<ProtectedRoute><MainFeed /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
           <Route path="/activity-log" element={<ProtectedRoute><ActivityLog /></ProtectedRoute>} />
           <Route path="/payment-success" element={<PaymentSuccess />} />

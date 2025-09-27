@@ -22,8 +22,6 @@ export const useAuth = () => {
         .eq('user_id', user.id)
         .maybeSingle()
 
-      const currentPath = window.location.pathname
-      
       // Create profile if it doesn't exist (especially during signup)
       if (!profile) {
         await supabase
@@ -37,24 +35,38 @@ export const useAuth = () => {
           ])
         
         // New user needs onboarding
+        console.log('New user created - redirecting to onboarding')
         navigate('/onboarding')
         return
       }
       
-      // After signup: check if profile is complete
+      // Check if onboarding is completed
+      const isOnboardingComplete = profile.full_name && profile.state_name && profile.lga_name
+      
+      // For new signups
       if (isSignup) {
-        if (profile.full_name && profile.state_name && profile.lga_name) {
+        if (isOnboardingComplete) {
           // Profile is complete, go to main feed
-          navigate('/feed')
+          console.log('Signup with complete profile - redirecting to main feed')
+          navigate('/main-feed')
         } else {
           // Profile needs completion, go to onboarding
+          console.log('Signup with incomplete profile - redirecting to onboarding')
           navigate('/onboarding')
         }
         return
       }
       
-      // For login and existing sessions: go to main feed
-      navigate('/feed')
+      // For login and existing sessions
+      if (isOnboardingComplete) {
+        // Existing user with complete onboarding - redirect to main feed
+        console.log('Existing user login - redirecting to main feed')
+        navigate('/main-feed')
+      } else {
+        // Existing user with incomplete onboarding - redirect to onboarding
+        console.log('Existing user with incomplete onboarding - redirecting to onboarding')
+        navigate('/onboarding')
+      }
     } catch (error) {
       console.error('Error checking profile:', error)
       // On error, redirect to onboarding as fallback
