@@ -70,11 +70,11 @@ export const useSafePay = (otherUserId: string) => {
 
       if (walletError && walletError.code !== 'PGRST116') throw walletError
 
-      // If no wallet found, check profiles table for legacy balance
+      // If no wallet found, check profiles table for balance
       if (!walletData) {
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select('wallet_balance')
+          .select('wallet_balance, balance_withdrawable, balance_non_withdrawable')
           .eq('user_id', user.id)
           .single()
 
@@ -160,7 +160,7 @@ export const useSafePay = (otherUserId: string) => {
       if (currentWallet) {
         availableBalance = currentWallet.balance - currentWallet.escrow_hold
       } else {
-        // Fallback to profiles table for legacy balance
+        // Fallback to profiles table for balance
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('wallet_balance')

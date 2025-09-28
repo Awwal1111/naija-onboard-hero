@@ -71,10 +71,10 @@ export const useWallet = () => {
     if (!user) return
 
     try {
-      // Get balance from profiles table (new structure)
+      // Get balance from profiles table (correct structure)
       const { data: profile, error } = await supabase
         .from('profiles')
-        .select('balance_withdrawable, balance_non_withdrawable')
+        .select('wallet_balance, balance_withdrawable, balance_non_withdrawable')
         .eq('user_id', user.id)
         .single()
 
@@ -83,7 +83,7 @@ export const useWallet = () => {
       const walletBalance = {
         withdrawable: Number(profile?.balance_withdrawable || 0),
         non_withdrawable: Number(profile?.balance_non_withdrawable || 0),
-        total: Number(profile?.balance_withdrawable || 0) + Number(profile?.balance_non_withdrawable || 0)
+        total: Number(profile?.wallet_balance || 0) // Use wallet_balance as total
       }
 
       setBalance(walletBalance)
@@ -196,14 +196,18 @@ export const useWallet = () => {
     // else 0 (70%)
 
     try {
-      // Deduct cost from appropriate balance
+      // Deduct cost from appropriate balance and update total
       const columnName = deductFrom === 'withdrawable' ? 'balance_withdrawable' : 'balance_non_withdrawable'
       const currentBalance = balance[deductFrom]
       const newBalance = currentBalance - cost
+      const newTotal = balance.total - cost
 
       await supabase
         .from('profiles')
-        .update({ [columnName]: newBalance })
+        .update({ 
+          [columnName]: newBalance,
+          wallet_balance: newTotal
+        })
         .eq('user_id', user.id)
 
       // Log cost transaction
@@ -220,10 +224,14 @@ export const useWallet = () => {
       // Add winnings if any
       if (winnings > 0) {
         const newWithdrawableBalance = balance.withdrawable + winnings
+        const newTotal = balance.total - cost + winnings // Total after deducting cost and adding winnings
         
         await supabase
           .from('profiles')
-          .update({ balance_withdrawable: newWithdrawableBalance })
+          .update({ 
+            balance_withdrawable: newWithdrawableBalance,
+            wallet_balance: newTotal
+          })
           .eq('user_id', user.id)
 
         await supabase

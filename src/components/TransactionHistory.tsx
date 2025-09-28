@@ -43,10 +43,7 @@ export const TransactionHistory = () => {
   }
 
   const formatAmount = (amount: number) => {
-    return new Intl.NumberFormat('en-NG', {
-      style: 'currency',
-      currency: 'NGN'
-    }).format(Math.abs(amount))
+    return `NC ${Math.abs(amount).toLocaleString()}`
   }
 
   if (loading) {
