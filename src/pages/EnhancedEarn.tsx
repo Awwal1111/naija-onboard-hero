@@ -1,13 +1,14 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Coins, RotateCcw, Target, Brain, Calendar, HelpCircle, Trophy, Zap } from 'lucide-react'
+import { Coins, RotateCcw, Target, Brain, Calendar, Trophy, Zap, FileText, User, History, TrendingUp, Users } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useWallet } from '@/hooks/useWallet'
 import NaijaLanceWalletCard from '@/components/NaijaLanceWalletCard'
-import SpinWheelGame from '@/components/SpinWheelGame'
 import { DailySigninCard } from '@/components/DailySigninCard'
+import { TransactionHistory } from '@/components/TransactionHistory'
+import NaijaPredictor from '@/components/NaijaPredictor'
 
 const EnhancedEarn = () => {
   const { balance, loading } = useWallet()
@@ -22,7 +23,6 @@ const EnhancedEarn = () => {
       icon: RotateCcw,
       color: 'bg-gradient-to-br from-purple-500 to-pink-500',
       maxWin: 'NC 100',
-      component: SpinWheelGame,
       path: '/earn/spin-wheel'
     },
     {
@@ -50,10 +50,10 @@ const EnhancedEarn = () => {
       title: 'Naija Predictor',
       description: 'Bet on real-world outcomes',
       cost: 'NC 20',
-      icon: Target,
+      icon: TrendingUp,
       color: 'bg-gradient-to-br from-blue-500 to-cyan-500',
       maxWin: 'Varies',
-      disabled: true
+      path: '/earn/predictor'
     }
   ]
 
@@ -66,21 +66,35 @@ const EnhancedEarn = () => {
       path: '/earn/social-tasks'
     },
     {
+      title: 'Referral Tasks',
+      description: 'Complete referral tasks for rewards',
+      icon: Users,
+      reward: 'Varies by task',
+      path: '/earn/referral-tasks'
+    },
+    {
       title: 'Referral Program', 
       description: 'Invite friends and earn',
       icon: Trophy,
       reward: 'NC 100 per referral',
       path: '/referrals'
+    },
+    {
+      title: 'Surveys',
+      description: 'Complete surveys from BitLabs',
+      icon: FileText,
+      reward: 'Up to NC 1000',
+      path: '/surveys'
+    },
+    {
+      title: 'Gigs & Services',
+      description: 'Offer your professional services',
+      icon: User,
+      reward: 'Set your own price',
+      path: '/jobs'
     }
   ]
 
-  const [selectedGame, setSelectedGame] = useState<string | null>(null)
-
-  const GameModal = ({ game }: { game: any }) => {
-    if (!game.component) return null
-    const GameComponent = game.component
-    return <GameComponent />
-  }
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -104,24 +118,15 @@ const EnhancedEarn = () => {
             Games
           </h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {games.map((game) => (
-              <Card key={game.id} className={`relative overflow-hidden ${game.disabled ? 'opacity-60' : 'hover:shadow-lg transition-shadow cursor-pointer'}`}>
+              <Card key={game.id} className="relative overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
                 <div className={`absolute inset-0 ${game.color} opacity-10`} />
                 <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                      <game.icon className="h-5 w-5" />
-                      {game.title}
-                    </CardTitle>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="p-1 h-8 w-8"
-                    >
-                      <HelpCircle className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <game.icon className="h-5 w-5 text-primary" />
+                    {game.title}
+                  </CardTitle>
                 </CardHeader>
                 
                 <CardContent className="space-y-3">
@@ -137,18 +142,10 @@ const EnhancedEarn = () => {
                   </div>
 
                   <Button
-                    className="w-full"
-                    disabled={game.disabled}
-                    onClick={() => {
-                      if (game.disabled) return
-                      if (game.path) {
-                        navigate(game.path)
-                      } else {
-                        setSelectedGame(game.id)
-                      }
-                    }}
+                    className="w-full bg-primary hover:bg-primary/90"
+                    onClick={() => navigate(game.path)}
                   >
-                    {game.disabled ? 'Coming Soon' : 'Play Now'}
+                    Play Now
                   </Button>
                 </CardContent>
               </Card>
@@ -185,28 +182,23 @@ const EnhancedEarn = () => {
           </div>
         </div>
 
-        {/* Game Modal */}
-        {selectedGame && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-background rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-4 border-b flex justify-between items-center">
-                <h3 className="font-semibold">
-                  {games.find(g => g.id === selectedGame)?.title}
-                </h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSelectedGame(null)}
-                >
-                  ×
-                </Button>
-              </div>
-              <div className="p-4">
-                <GameModal game={games.find(g => g.id === selectedGame)} />
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Naija Predictor Section */}
+        <div>
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-primary" />
+            Naija Predictor
+          </h2>
+          <NaijaPredictor />
+        </div>
+
+        {/* Transaction History */}
+        <div>
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <History className="h-5 w-5 text-primary" />
+            Recent Transactions
+          </h2>
+          <TransactionHistory />
+        </div>
       </div>
     </div>
   )

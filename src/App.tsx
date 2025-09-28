@@ -40,6 +40,7 @@ import EnhancedAdminDashboard from "./pages/EnhancedAdminDashboard";
 import NotFound from "./pages/NotFound";
 import NigerianTrivia from "./components/NigerianTrivia";
 import SpinWheelGame from "./components/SpinWheelGame";
+import NaijaPredictor from "./components/NaijaPredictor";
 
 const queryClient = new QueryClient();
 
@@ -76,6 +77,7 @@ const App = () => (
           <Route path="/earn/guess-number" element={<ProtectedRoute><GuessNumberGame /></ProtectedRoute>} />
           <Route path="/earn/trivia" element={<ProtectedRoute><NigerianTrivia /></ProtectedRoute>} />
           <Route path="/earn/spin-wheel" element={<ProtectedRoute><SpinWheelGame /></ProtectedRoute>} />
+          <Route path="/earn/predictor" element={<ProtectedRoute><NaijaPredictor /></ProtectedRoute>} />
           <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
           <Route path="/chat/:userId" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
           <Route path="/groups/:groupId" element={<ProtectedRoute><GroupChat /></ProtectedRoute>} />
