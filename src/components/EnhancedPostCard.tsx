@@ -41,6 +41,44 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
   const { toast } = useToast()
   const { trackPostView } = usePostViews()
 
+  // Handler functions for post menu actions
+  const handleEditPost = () => {
+    toast({
+      title: "Edit Post",
+      description: "Edit functionality will be available soon",
+    })
+  }
+
+  const handleDeletePost = () => {
+    toast({
+      title: "Delete Post", 
+      description: "Delete functionality will be available soon",
+    })
+  }
+
+  const handleSavePost = () => {
+    toast({
+      title: "Post Saved",
+      description: "Post has been saved to your collection",
+    })
+  }
+
+  const handleReportPost = () => {
+    toast({
+      title: "Post Reported",
+      description: "Thank you for reporting. We'll review this content.",
+    })
+  }
+
+  const handleCopyLink = () => {
+    const postUrl = `${window.location.origin}/post/${post.id}`
+    navigator.clipboard.writeText(postUrl)
+    toast({
+      title: "Link Copied",
+      description: "Post link copied to clipboard",
+    })
+  }
+
   // Track post view when component mounts
   useEffect(() => {
     if (!hasViewed && currentUserId && post.id) {
@@ -261,9 +299,15 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
               >
                 {post.profiles?.full_name || 'Anonymous User'}
               </button>
-              <button className="p-1 hover:bg-accent rounded-full">
-                <MoreVertical className="h-4 w-4 text-text-secondary" />
-              </button>
+              <PostOptionsMenu
+                isOwnPost={isOwnPost}
+                postId={post.id}
+                onEdit={handleEditPost}
+                onDelete={handleDeletePost}
+                onSave={handleSavePost}
+                onReport={handleReportPost}
+                onCopyLink={handleCopyLink}
+              />
             </div>
             
             <div className="flex items-center gap-2 text-sm">
@@ -347,7 +391,8 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
               onClick={() => setShowComments(!showComments)}
               className="text-text-secondary hover:text-primary hover:bg-primary/10"
             >
-              <MessageCircle className="h-4 w-4" />
+              <MessageCircle className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Comment</span>
             </Button>
             
             <Button
@@ -356,20 +401,15 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
               onClick={handleShare}
               className="text-text-secondary hover:text-primary hover:bg-primary/10"
             >
-              <Share className="h-4 w-4" />
+              <Share className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Share</span>
             </Button>
           </div>
           
-          {/* Three-dot menu */}
-          <PostOptionsMenu
-            isOwnPost={isOwnPost}
-            postId={post.id}
-            onEdit={handleEditPost}
-            onDelete={handleDeletePost}
-            onSave={handleSavePost}
-            onReport={handleReportPost}
-            onCopyLink={handleCopyLink}
-          />
+          <div className="flex items-center gap-2 text-sm text-text-secondary">
+            <Eye className="h-4 w-4" />
+            <span>{post.views_count || 0}</span>
+          </div>
         </div>
 
         {/* Comment Section */}
@@ -381,44 +421,6 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
       </CardContent>
     </Card>
   )
-
-  // Handler functions for post menu actions
-  function handleEditPost() {
-    toast({
-      title: "Edit Post",
-      description: "Edit functionality will be available soon",
-    })
-  }
-
-  function handleDeletePost() {
-    toast({
-      title: "Delete Post",
-      description: "Delete functionality will be available soon",
-    })
-  }
-
-  function handleSavePost() {
-    toast({
-      title: "Post Saved",
-      description: "Post has been saved to your collection",
-    })
-  }
-
-  function handleReportPost() {
-    toast({
-      title: "Post Reported",
-      description: "Thank you for reporting. We'll review this content.",
-    })
-  }
-
-  function handleCopyLink() {
-    const postUrl = `${window.location.origin}/post/${post.id}`
-    navigator.clipboard.writeText(postUrl)
-    toast({
-      title: "Link Copied",
-      description: "Post link copied to clipboard",
-    })
-  }
 }
 
 export default EnhancedPostCard

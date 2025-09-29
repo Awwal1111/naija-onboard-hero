@@ -52,29 +52,32 @@ const InfiniteScrollFeed: React.FC<InfiniteScrollFeedProps> = ({
   }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
   return (
-    <div className="space-y-4">
-      {posts.map((post) => (
-        <EnhancedPostCard
-          key={post.id}
-          post={post}
-          onReact={onReact}
-          onRemoveReaction={onRemoveReaction}
-          onComment={onComment}
-          onJobApply={onJobApply}
-          onProfileClick={onProfileClick}
-          currentUserId={currentUserId}
-        />
+    <div className="space-y-6">
+      {posts.map((post, index) => (
+        <div key={post.id} className={`${index === 0 ? 'animate-fade-in' : ''}`}>
+          <EnhancedPostCard
+            post={post}
+            onReact={onReact}
+            onRemoveReaction={onRemoveReaction}
+            onComment={onComment}
+            onJobApply={onJobApply}
+            onProfileClick={onProfileClick}
+            currentUserId={currentUserId}
+          />
+        </div>
       ))}
       
       {hasNextPage && (
-        <div ref={loadingRef} className="flex justify-center py-4">
+        <div ref={loadingRef} className="flex justify-center py-8">
           {isFetchingNextPage ? (
-            <div className="flex items-center gap-2 text-text-secondary">
+            <div className="flex items-center gap-2 text-text-secondary bg-muted/50 rounded-full px-4 py-2">
               <Loader2 className="h-4 w-4 animate-spin" />
               <span>Loading more posts...</span>
             </div>
           ) : (
-            <div className="text-text-secondary text-sm">Scroll for more posts</div>
+            <div className="text-text-secondary text-sm bg-muted/30 rounded-full px-3 py-1">
+              Scroll for more posts
+            </div>
           )}
         </div>
       )}

@@ -136,7 +136,7 @@ const MainFeed = () => {
         {/* Main Content */}
         <div className="flex-1 max-w-4xl mx-auto">
           {/* Header */}
-          <header className="bg-background border-b border-border px-3 sm:px-6 py-4 sticky top-0 z-10">
+          <header className="bg-background/95 backdrop-blur-sm border-b border-border px-4 sm:px-6 py-4 sticky top-0 z-10">
             <div className="flex items-center justify-between mb-4">
               <Logo />
               <NotificationBell />
@@ -167,19 +167,19 @@ const MainFeed = () => {
             </div>
 
             {/* Search Bar */}
-            <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-text-secondary" />
+            <div className="relative mb-4">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-text-secondary" />
               <BrandInput
                 placeholder="Search posts, experts, jobs, or hashtags..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-12"
+                className="pl-10 pr-12 h-12"
               />
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowFilters(!showFilters)}
-                className="absolute right-2 top-2 p-1 h-6 w-6"
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 h-8 w-8"
               >
                 <Filter className="h-4 w-4" />
               </Button>
@@ -253,14 +253,14 @@ const MainFeed = () => {
           </div>
 
           {/* Post Creation Bar */}
-          <div className="px-3 sm:px-6 py-4 border-b border-border">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary rounded-full flex items-center justify-center text-white font-bold text-sm">
+          <div className="px-4 sm:px-6 py-6 border-b border-border bg-card">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                 {profile?.full_name?.charAt(0) || 'U'}
               </div>
               <button
                 onClick={() => setShowCreatePost(true)}
-                className="flex-1 text-left px-3 sm:px-4 py-2 sm:py-3 bg-muted rounded-full text-text-secondary hover:bg-accent transition-colors text-sm"
+                className="flex-1 text-left px-4 py-3 bg-muted rounded-full text-text-secondary hover:bg-accent transition-colors text-sm border border-transparent hover:border-border"
               >
                 Share your thoughts...
               </button>
@@ -314,28 +314,28 @@ const MainFeed = () => {
           </div>
 
           {/* Main Feed Content */}
-          <div className="px-3 sm:px-6 py-4">
+          <div className="px-4 sm:px-6 py-6">
             {feedType === 'following' ? (
               <SuggestionsTab />
             ) : (
               <>
                 {filteredAndSortedPosts.length === 0 && !loading ? (
-                  <div className="text-center py-12">
-                    <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                      <FileText className="h-8 w-8 text-text-secondary" />
+                  <div className="text-center py-16">
+                    <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-6">
+                      <FileText className="h-10 w-10 text-text-secondary" />
                     </div>
-                    <h3 className="text-lg font-semibold text-text-primary mb-2">
+                    <h3 className="text-xl font-semibold text-text-primary mb-3">
                       {searchQuery ? 'No matching posts' : 'Welcome to your feed!'}
                     </h3>
-                    <p className="text-text-secondary mb-4">
+                    <p className="text-text-secondary mb-6 max-w-md mx-auto">
                       {searchQuery 
-                        ? 'Try adjusting your search terms'
-                        : 'Start by creating your first post or following other users'
+                        ? 'Try adjusting your search terms or browse different categories'
+                        : 'Start by creating your first post or connecting with other professionals'
                       }
                     </p>
                     {!searchQuery && (
-                      <BrandButton onClick={() => setShowCreatePost(true)}>
-                        <Plus className="h-4 w-4 mr-2" />
+                      <BrandButton onClick={() => setShowCreatePost(true)} size="lg">
+                        <Plus className="h-5 w-5 mr-2" />
                         Create Your First Post
                       </BrandButton>
                     )}
@@ -343,9 +343,12 @@ const MainFeed = () => {
                 ) : (
                   <>
                     {/* Feed Stats */}
-                    <div className="mb-4 flex items-center justify-between text-sm text-text-secondary">
-                      <span>{filteredAndSortedPosts.length} posts</span>
+                    <div className="mb-6 flex items-center justify-between text-sm bg-muted/50 rounded-xl p-4">
                       <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-primary rounded-full"></div>
+                        <span className="font-medium text-text-primary">{filteredAndSortedPosts.length} posts</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-text-secondary">
                         <span>Sorted by {sortBy}</span>
                         {selectedCategory !== 'all' && (
                           <Badge variant="outline" className="text-xs">
