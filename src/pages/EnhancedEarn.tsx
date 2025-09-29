@@ -1,18 +1,20 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Coins, RotateCcw, Target, Brain, Calendar, Trophy, Zap, FileText, User, History, TrendingUp, Users } from 'lucide-react'
+import { Coins, RotateCcw, Target, Brain, Calendar, Trophy, Zap, FileText, User, History, TrendingUp, Users, ArrowUpRight } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useWallet } from '@/hooks/useWallet'
 import NaijaLanceWalletCard from '@/components/NaijaLanceWalletCard'
 import { DailySigninCard } from '@/components/DailySigninCard'
 import { TransactionHistory } from '@/components/TransactionHistory'
 import NaijaPredictor from '@/components/NaijaPredictor'
+import { WithdrawalDialog } from '@/components/WithdrawalDialog'
 
 const EnhancedEarn = () => {
   const { balance, loading } = useWallet()
   const navigate = useNavigate()
+  const [showWithdrawDialog, setShowWithdrawDialog] = useState(false)
 
   const games = [
     {
@@ -105,8 +107,28 @@ const EnhancedEarn = () => {
           <p className="text-text-secondary">Play games, complete tasks, and earn Naijacoins</p>
         </div>
 
-        {/* Wallet Summary */}
-        <NaijaLanceWalletCard balance={balance} />
+        {/* Wallet Summary with Withdraw Button */}
+        <div className="mb-6">
+          <NaijaLanceWalletCard balance={balance} />
+          <div className="mt-4 flex gap-3">
+            <Button
+              variant="outline" 
+              className="flex-1"
+              onClick={() => setShowWithdrawDialog(true)}
+            >
+              <ArrowUpRight className="h-4 w-4 mr-2" />
+              Withdraw
+            </Button>
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => navigate('/activity-log')}
+            >
+              <History className="h-4 w-4 mr-2" />
+              History
+            </Button>
+          </div>
+        </div>
 
         {/* Daily Sign-In */}
         <DailySigninCard />
@@ -200,6 +222,13 @@ const EnhancedEarn = () => {
           <TransactionHistory />
         </div>
       </div>
+
+      {/* Withdrawal Dialog */}
+      <WithdrawalDialog 
+        open={showWithdrawDialog}
+        onOpenChange={setShowWithdrawDialog}
+        currentBalance={balance.withdrawable}
+      />
     </div>
   )
 }
