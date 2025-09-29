@@ -128,7 +128,7 @@ const EnhancedAdminDashboard = () => {
         { id: 1, type: 'user_signup', description: 'New user registration', time: '2 minutes ago', severity: 'info' },
         { id: 2, type: 'expert_approved', description: 'Expert application approved', time: '15 minutes ago', severity: 'success' },
         { id: 3, type: 'post_reported', description: 'Post flagged for review', time: '1 hour ago', severity: 'warning' },
-        { id: 4, type: 'payment_processed', description: 'Payment of ₦5,000 processed', time: '2 hours ago', severity: 'success' }
+        { id: 4, type: 'payment_processed', description: 'Payment of NC 5,000 processed', time: '2 hours ago', severity: 'success' }
       ])
 
     } catch (error) {
@@ -298,7 +298,7 @@ const EnhancedAdminDashboard = () => {
                   <DollarSign className="h-6 w-6 text-yellow-500" />
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-text-primary">₦{dashboardStats.totalRevenue.toLocaleString()}</div>
+                  <div className="text-2xl font-bold text-text-primary">NC {dashboardStats.totalRevenue.toLocaleString()}</div>
                   <div className="text-xs text-text-secondary">Total Revenue</div>
                 </div>
               </div>

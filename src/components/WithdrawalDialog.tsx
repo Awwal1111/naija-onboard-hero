@@ -74,16 +74,16 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
           <div className="bg-accent/50 rounded-lg p-3">
             <p className="text-sm">
               <span className="font-medium">Available Balance:</span>{' '}
-              ₦{currentBalance.toLocaleString()}
+              NC {currentBalance.toLocaleString()}
             </p>
             <p className="text-xs text-text-secondary mt-1">
-              Minimum withdrawal: ₦3,000
+              Minimum withdrawal: NC 3,000
             </p>
           </div>
 
           <div>
             <label className="text-sm font-medium text-text-primary mb-2 block">
-              Amount (NGN)
+              Amount (NC)
             </label>
             <BrandInput
               type="number"
