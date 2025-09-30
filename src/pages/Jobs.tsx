@@ -149,38 +149,14 @@ const Jobs = () => {
                     </div>
                     
                     {user?.id !== job.user_id && (
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button size="sm">Apply Now</Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Apply for {job.title}</DialogTitle>
-                          </DialogHeader>
-                          <div className="space-y-4">
-                            <div>
-                              <Label htmlFor="cover-letter">Cover Letter (Optional)</Label>
-                              <Textarea
-                                id="cover-letter"
-                                value={coverLetter}
-                                onChange={(e) => setCoverLetter(e.target.value)}
-                                placeholder="Tell the employer why you're perfect for this job..."
-                                rows={5}
-                              />
-                            </div>
-                            
-                            <div className="flex gap-2">
-                              <Button 
-                                onClick={() => handleApply(job.id)}
-                                disabled={applying}
-                                className="flex-1"
-                              >
-                                {applying ? 'Applying...' : 'Submit Application'}
-                              </Button>
-                            </div>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
+                      <Button 
+                        size="sm"
+                        onClick={() => {
+                          navigate(`/chat/${job.user_id}`)
+                        }}
+                      >
+                        Chat Me Now
+                      </Button>
                     )}
                   </div>
                 </CardHeader>

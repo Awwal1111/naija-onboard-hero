@@ -5,6 +5,7 @@ import { BrandInput } from '@/components/ui/brand-input'
 import { Shield, Clock, CheckCircle, AlertTriangle } from 'lucide-react'
 import { useSafePay } from '@/hooks/useSafePay'
 import { useAuth } from '@/hooks/useAuth'
+import { useWallet } from '@/hooks/useWallet'
 
 interface SafePayDialogProps {
   otherUserId: string
@@ -13,7 +14,8 @@ interface SafePayDialogProps {
 
 const SafePayDialog: React.FC<SafePayDialogProps> = ({ otherUserId, otherUserName }) => {
   const { user } = useAuth()
-  const { activeTransaction, wallet, loading, proposeSafePay, acceptSafePay, completeSafePay, releaseFunds, cancelSafePay } = useSafePay(otherUserId)
+  const { activeTransaction, loading, proposeSafePay, acceptSafePay, completeSafePay, releaseFunds, cancelSafePay } = useSafePay(otherUserId)
+  const { balance } = useWallet()
   const [amount, setAmount] = useState('')
   const [open, setOpen] = useState(false)
 
@@ -51,11 +53,9 @@ const SafePayDialog: React.FC<SafePayDialogProps> = ({ otherUserId, otherUserNam
             </BrandButton>
           </div>
           
-          {wallet && (
-            <p className="text-sm text-text-secondary text-center">
-              Your balance: {wallet.balance} NC
-            </p>
-          )}
+          <p className="text-sm text-text-secondary text-center">
+            Your balance: NC {balance.total.toLocaleString()}
+          </p>
         </div>
       )
     }

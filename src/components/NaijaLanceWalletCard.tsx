@@ -58,31 +58,6 @@ const NaijaLanceWalletCard: React.FC<NaijaLanceWalletCardProps> = ({
             </p>
           </div>
 
-          {/* Balance Breakdown */}
-          {showBreakdown && (
-            <div className="grid grid-cols-2 gap-3">
-              <div className="p-3 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
-                <div className="flex items-center justify-center gap-1 mb-1">
-                  <ArrowUpRight className="h-4 w-4 text-green-600 dark:text-green-400" />
-                  <span className="text-xs text-green-600 dark:text-green-400 font-medium">Withdrawable</span>
-                </div>
-                <p className="text-lg font-semibold text-green-700 dark:text-green-300 text-center">
-                  {showBalances ? formatCurrency(balance.withdrawable) : 'NC ****'}
-                </p>
-              </div>
-              
-              <div className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800">
-                <div className="flex items-center justify-center gap-1 mb-1">
-                  <TrendingUp className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                  <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">Bonus Balance</span>
-                </div>
-                <p className="text-lg font-semibold text-amber-700 dark:text-amber-300 text-center">
-                  {showBalances ? formatCurrency(balance.non_withdrawable) : 'NC ****'}
-                </p>
-              </div>
-            </div>
-          )}
-
           {/* Quick Actions */}
           <div className="flex gap-2">
             <Button
