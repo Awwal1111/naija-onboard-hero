@@ -151,14 +151,14 @@ export const Referrals = () => {
   const totalEarned = referrals.reduce((sum, r) => sum + r.points_earned, 0)
 
   return (
-    <div className="min-h-screen bg-gradient-subtle p-4">
+    <div className="min-h-screen bg-gradient-subtle p-4 pb-24">
       <div className="max-w-md mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between pt-8">
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={() => navigate('/earn')}
+            onClick={() => navigate(-1)}
             className="p-2"
           >
             <ArrowLeft className="h-5 w-5" />

@@ -269,10 +269,13 @@ const Profile = () => {
 
           {/* Stats Row */}
           <div className="grid grid-cols-4 gap-4 pt-4 border-t border-border">
-            <div className="text-center">
+            <button 
+              onClick={() => navigate('/connections')}
+              className="text-center hover:bg-accent/50 rounded-lg p-2 transition-colors"
+            >
               <div className="text-lg font-bold text-primary">{profile?.connections_count || 0}</div>
               <div className="text-xs text-text-secondary">Connections</div>
-            </div>
+            </button>
             <div className="text-center">
               <div className="text-lg font-bold text-primary">
                 {profile?.average_rating ? profile.average_rating.toFixed(1) : '0.0'}

@@ -16,26 +16,19 @@ export const useAuth = () => {
 
   const checkProfileAndRedirect = async (user: any, isSignup: boolean = false) => {
     try {
+      // Wait a bit for the database trigger to create the profile
+      await new Promise(resolve => setTimeout(resolve, 500))
+      
       const { data: profile } = await supabase
         .from('profiles')
         .select('*')
         .eq('user_id', user.id)
         .maybeSingle()
 
-      // Create profile if it doesn't exist (especially during signup)
+      // If no profile exists after waiting, redirect to onboarding
+      // (the trigger should have created it)
       if (!profile) {
-        await supabase
-          .from('profiles')
-          .insert([
-            {
-              user_id: user.id,
-              full_name: user.user_metadata?.full_name || '',
-              phone_number: user.user_metadata?.phone_number || '',
-            }
-          ])
-        
-        // New user needs onboarding
-        console.log('New user created - redirecting to onboarding')
+        console.log('Profile not found - redirecting to onboarding')
         navigate('/onboarding')
         return
       }

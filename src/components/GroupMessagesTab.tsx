@@ -36,7 +36,7 @@ const GroupMessagesTab: React.FC = () => {
   const [myGroups, setMyGroups] = useState<Group[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const [activeFilter, setActiveFilter] = useState<'all' | 'joined'>('joined')
+  const [activeFilter, setActiveFilter] = useState<'all' | 'joined'>('all')
 
   useEffect(() => {
     if (user) {

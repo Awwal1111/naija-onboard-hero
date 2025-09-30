@@ -146,30 +146,16 @@ export const useSafePay = (otherUserId: string) => {
 
     setLoading(true)
     try {
-      // Check current wallet balance first - try user_wallets then profiles
-      let { data: currentWallet, error: walletError } = await supabase
-        .from('user_wallets')
-        .select('balance, escrow_hold')
+      // Always use profiles.wallet_balance as source of truth
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('wallet_balance')
         .eq('user_id', user.id)
-        .maybeSingle()
+        .single()
 
-      let availableBalance = 0
-      
-      if (walletError && walletError.code !== 'PGRST116') throw walletError
+      if (profileError) throw profileError
 
-      if (currentWallet) {
-        availableBalance = currentWallet.balance - currentWallet.escrow_hold
-      } else {
-        // Fallback to profiles table for balance
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('wallet_balance')
-          .eq('user_id', user.id)
-          .single()
-
-        if (profileError) throw profileError
-        availableBalance = profileData?.wallet_balance || 0
-      }
+      const availableBalance = profileData?.wallet_balance || 0
 
       // Check if user has sufficient balance
       if (availableBalance < amount) {
