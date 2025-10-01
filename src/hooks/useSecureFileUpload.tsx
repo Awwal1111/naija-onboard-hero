@@ -31,9 +31,18 @@ export const useSecureFileUpload = () => {
     path?: string,
     fileType: 'image' | 'document' = 'image'
   ): Promise<{ url: string | null; error: string | null }> => {
-    if (!user) {
+    // Check auth without triggering logout
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.user) {
+      toast({
+        title: "Authentication required",
+        description: "Please login to upload files",
+        variant: "destructive"
+      })
       return { url: null, error: 'User not authenticated' }
     }
+
+    const currentUser = session.user
 
     // Check rate limit first
     try {
@@ -83,7 +92,7 @@ export const useSecureFileUpload = () => {
       const fileExtension = file.name.split('.').pop()
       const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
       
-      const filePath = path || `${user.id}/${timestamp}_${random}_${sanitizedFileName}`
+      const filePath = path || `${currentUser.id}/${timestamp}_${random}_${sanitizedFileName}`
 
       // Create a new file with sanitized name if needed
       let fileToUpload = file
@@ -97,7 +106,7 @@ export const useSecureFileUpload = () => {
           cacheControl: '3600',
           upsert: false,
           metadata: {
-            uploadedBy: user.id,
+            uploadedBy: currentUser.id,
             originalName: file.name,
             uploadedAt: new Date().toISOString(),
             fileType: fileType

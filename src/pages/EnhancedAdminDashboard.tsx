@@ -13,6 +13,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/useAuth'
+import { AdminSocialTasksSection } from '@/components/AdminSocialTasksSection'
+import { AdminReferralTasksSection } from '@/components/AdminReferralTasksSection'
 
 const EnhancedAdminDashboard = () => {
   const navigate = useNavigate()
@@ -575,21 +577,39 @@ const EnhancedAdminDashboard = () => {
           </TabsContent>
 
           {/* Applications Tab */}
-          <TabsContent value="applications">
-            <Card>
-              <CardContent className="pt-6">
-                <div className="text-center py-8">
-                  <Briefcase className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="font-semibold text-text-primary mb-2">Expert Applications</h3>
-                  <p className="text-text-secondary text-sm mb-4">
-                    Manage expert applications in the dedicated section
-                  </p>
-                  <Button onClick={() => navigate('/admin/expert-applications')}>
-                    Go to Applications
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+          <TabsContent value="applications" className="space-y-6">
+            <Tabs defaultValue="expert" className="w-full">
+              <TabsList>
+                <TabsTrigger value="expert">Expert Applications</TabsTrigger>
+                <TabsTrigger value="social">Social Media Tasks</TabsTrigger>
+                <TabsTrigger value="referral">Referral Tasks</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="expert">
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-center py-8">
+                      <Briefcase className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <h3 className="font-semibold text-text-primary mb-2">Expert Applications</h3>
+                      <p className="text-text-secondary text-sm mb-4">
+                        Manage expert applications in the dedicated section
+                      </p>
+                      <Button onClick={() => navigate('/admin/expert-applications')}>
+                        Go to Applications
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="social">
+                <AdminSocialTasksSection />
+              </TabsContent>
+
+              <TabsContent value="referral">
+                <AdminReferralTasksSection />
+              </TabsContent>
+            </Tabs>
           </TabsContent>
 
           {/* Analytics Tab */}

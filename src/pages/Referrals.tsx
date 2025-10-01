@@ -43,12 +43,10 @@ export const Referrals = () => {
   const [referralCode, setReferralCode] = useState('')
 
   useEffect(() => {
-    if (!user) {
-      navigate('/login')
-      return
+    if (user) {
+      fetchReferrals()
     }
-    fetchReferrals()
-  }, [user, navigate])
+  }, [user])
 
   const fetchReferrals = async () => {
     if (!user) return
