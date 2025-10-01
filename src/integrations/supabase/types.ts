@@ -2356,67 +2356,38 @@ export type Database = {
       wallet_transactions: {
         Row: {
           amount: number
-          amount_nc: number | null
-          amount_ngn: number | null
           created_at: string
-          description: string | null
-          fee_nc: number | null
+          currency: string
           id: string
+          kind: string
           metadata: Json | null
-          payment_method: string | null
-          reference_id: string | null
-          safepay_id: string | null
-          status: string | null
-          transaction_type: string
-          type: string | null
-          updated_at: string | null
+          reference: string | null
+          status: string
           user_id: string
         }
         Insert: {
           amount: number
-          amount_nc?: number | null
-          amount_ngn?: number | null
           created_at?: string
-          description?: string | null
-          fee_nc?: number | null
+          currency?: string
           id?: string
+          kind: string
           metadata?: Json | null
-          payment_method?: string | null
-          reference_id?: string | null
-          safepay_id?: string | null
-          status?: string | null
-          transaction_type: string
-          type?: string | null
-          updated_at?: string | null
+          reference?: string | null
+          status?: string
           user_id: string
         }
         Update: {
           amount?: number
-          amount_nc?: number | null
-          amount_ngn?: number | null
           created_at?: string
-          description?: string | null
-          fee_nc?: number | null
+          currency?: string
           id?: string
+          kind?: string
           metadata?: Json | null
-          payment_method?: string | null
-          reference_id?: string | null
-          safepay_id?: string | null
-          status?: string | null
-          transaction_type?: string
-          type?: string | null
-          updated_at?: string | null
+          reference?: string | null
+          status?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "wallet_transactions_safepay_id_fkey"
-            columns: ["safepay_id"]
-            isOneToOne: false
-            referencedRelation: "safepay_transactions"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       wallets: {
         Row: {
