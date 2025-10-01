@@ -289,7 +289,7 @@ const Settings = () => {
               Privacy & Security
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="font-medium text-text-primary">Profile Visibility</h4>
@@ -320,6 +320,19 @@ const Settings = () => {
                   </SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            <Separator />
+
+            <div>
+              <h4 className="font-medium text-text-primary mb-3">Transaction PIN</h4>
+              <p className="text-sm text-text-secondary mb-4">
+                Set a 4-digit PIN to secure your money transfers
+              </p>
+              <Button variant="outline" onClick={() => navigate('/settings/pin')}>
+                <Lock className="h-4 w-4 mr-2" />
+                {(profile as any)?.transaction_pin ? 'Change PIN' : 'Set Up PIN'}
+              </Button>
             </div>
           </CardContent>
         </Card>

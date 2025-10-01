@@ -77,10 +77,11 @@ export const AdminReferralTasksSection = () => {
       // Create transaction record
       await supabase.from('wallet_transactions').insert({
         user_id: userId,
-        transaction_type: 'referral_task_reward',
         amount: reward,
+        kind: 'referral_task_reward',
         status: 'completed',
-        description: `Referral task reward: ${reward} NC`
+        reference: `Referral task reward`,
+        metadata: { task_id: submissionId }
       })
 
       toast.success(`Approved! ${reward} NC credited to user`)

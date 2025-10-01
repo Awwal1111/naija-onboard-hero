@@ -91,11 +91,11 @@ export const TransactionHistory = () => {
               <div key={transaction.id} className="flex items-center justify-between p-3 hover:bg-accent/50 rounded-lg transition-colors">
                 <div className="flex items-center space-x-3">
                   <div className="flex items-center space-x-1">
-                    {getTransactionIcon(transaction.transaction_type)}
+                     {getTransactionIcon(transaction.kind)}
                     {getStatusIcon(transaction.status)}
                   </div>
                   <div>
-                    <p className="font-medium text-sm">{transaction.description}</p>
+                    <p className="font-medium text-sm">{transaction.reference}</p>
                     <div className="flex items-center space-x-2 mt-1">
                       <p className="text-xs text-text-secondary">
                         {new Date(transaction.created_at).toLocaleDateString()}
@@ -106,12 +106,12 @@ export const TransactionHistory = () => {
                 </div>
                  <div className="text-right">
                   <p className={`font-medium text-sm ${
-                    transaction.transaction_type === 'credit' ? 'text-green-600' : 'text-red-600'
+                    transaction.kind === 'credit' || transaction.kind.includes('win') || transaction.kind.includes('received') ? 'text-green-600' : 'text-red-600'
                   }`}>
-                    {transaction.transaction_type === 'credit' ? '+' : '-'}{Math.abs(transaction.amount).toLocaleString()} NC
+                    {(transaction.kind === 'credit' || transaction.kind.includes('win') || transaction.kind.includes('received')) ? '+' : '-'}{Math.abs(transaction.amount).toLocaleString()} NC
                   </p>
                    <p className="text-xs text-text-secondary">
-                     {transaction.transaction_type} transaction
+                     {transaction.kind}
                    </p>
                 </div>
               </div>

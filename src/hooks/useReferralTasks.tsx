@@ -289,8 +289,8 @@ export const useAdminReferralTasks = () => {
           .insert({
             user_id: submission.user_id,
             amount: reward,
-            transaction_type: 'credit',
-            description: `Referral task reward: ${submission.task?.title}`,
+            kind: 'credit',
+            reference: `Referral task reward: ${submission.task?.title}`,
             status: 'completed'
           })
 

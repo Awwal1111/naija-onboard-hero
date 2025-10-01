@@ -138,11 +138,11 @@ const NigerianTrivia: React.FC = () => {
         .from('wallet_transactions')
         .insert({
           user_id: user.id,
-          transaction_type: 'game_loss',
+          kind: 'game_loss',
           amount: ENTRY_FEE,
           status: 'completed',
-          description: 'Nigerian Trivia entry fee'
-        })
+          reference: 'Nigerian Trivia entry fee'
+        } as any)
 
       // Shuffle questions and select random ones
       const shuffled = [...triviaQuestions].sort(() => Math.random() - 0.5)
@@ -226,11 +226,11 @@ const NigerianTrivia: React.FC = () => {
           .from('wallet_transactions')
           .insert({
             user_id: user.id,
-            transaction_type: 'game_win',
+            kind: 'game_win',
             amount: winnings,
             status: 'completed',
-            description: `Nigerian Trivia winnings (${finalScore}/${QUESTIONS_PER_GAME})`
-          })
+            reference: `Nigerian Trivia winnings (${finalScore}/${QUESTIONS_PER_GAME})`
+          } as any)
 
         toast({
           title: "Congratulations!",

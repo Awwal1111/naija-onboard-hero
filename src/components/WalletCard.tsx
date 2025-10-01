@@ -1,16 +1,18 @@
 import React, { useState } from 'react'
-import { Plus, Minus, Eye, EyeOff } from 'lucide-react'
+import { Plus, Minus, Eye, EyeOff, Send } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { BrandButton } from '@/components/ui/brand-button'
 import { useWallet, WalletBalance } from '@/hooks/useWallet'
 import { DepositDialog } from './DepositDialog'
 import { WithdrawalDialog } from './WithdrawalDialog'
+import { TransferDialog } from './TransferDialog'
 
 export const WalletCard = () => {
   const { balance, loading } = useWallet()
   const [showBalance, setShowBalance] = useState(true)
   const [showDeposit, setShowDeposit] = useState(false)
   const [showWithdrawal, setShowWithdrawal] = useState(false)
+  const [showTransfer, setShowTransfer] = useState(false)
 
   const formatBalance = (amount: number) => {
     return `NC ${amount.toLocaleString()}`
@@ -53,24 +55,33 @@ export const WalletCard = () => {
               )}
             </div>
             
-            <div className="flex gap-2">
+            <div className="grid grid-cols-3 gap-2">
               <BrandButton
                 variant="outline"
                 size="sm"
                 onClick={() => setShowDeposit(true)}
-                className="flex-1 bg-white/10 border-white/20 text-white hover:bg-white/20"
+                className="bg-white/10 border-white/20 text-white hover:bg-white/20"
               >
-                <Plus className="h-4 w-4 mr-2" />
-                Buy NC
+                <Plus className="h-4 w-4 mr-1" />
+                Buy
+              </BrandButton>
+              <BrandButton
+                variant="outline"
+                size="sm"
+                onClick={() => setShowTransfer(true)}
+                className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+              >
+                <Send className="h-4 w-4 mr-1" />
+                Send
               </BrandButton>
               <BrandButton
                 variant="outline"
                 size="sm"
                 onClick={() => setShowWithdrawal(true)}
                 disabled={balance.withdrawable < 3000}
-                className="flex-1 bg-white/10 border-white/20 text-white hover:bg-white/20 disabled:opacity-50"
+                className="bg-white/10 border-white/20 text-white hover:bg-white/20 disabled:opacity-50"
               >
-                <Minus className="h-4 w-4 mr-2" />
+                <Minus className="h-4 w-4 mr-1" />
                 Withdraw
               </BrandButton>
             </div>
@@ -87,6 +98,10 @@ export const WalletCard = () => {
       <DepositDialog 
         open={showDeposit} 
         onOpenChange={setShowDeposit} 
+      />
+      <TransferDialog 
+        open={showTransfer} 
+        onOpenChange={setShowTransfer}
       />
       <WithdrawalDialog 
         open={showWithdrawal} 

@@ -78,10 +78,11 @@ export const AdminSocialTasksSection = () => {
       // Create transaction record
       await supabase.from('wallet_transactions').insert({
         user_id: earnerId,
-        transaction_type: 'social_task_reward',
         amount: reward,
+        kind: 'social_task_reward',
         status: 'completed',
-        description: `Social media task reward: ${reward} NC`
+        reference: `Social media task reward`,
+        metadata: { task_id: submissionId }
       })
 
       toast.success(`Approved! ${reward} NC credited to user`)

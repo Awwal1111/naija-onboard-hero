@@ -13,11 +13,12 @@ export interface WalletTransaction {
   id: string
   user_id: string
   amount: number
-  transaction_type: string
-  description: string
+  kind: string // Changed from transaction_type
+  reference: string // Changed from description
   status: string
   created_at: string
-  reference_id?: string
+  currency?: string
+  metadata?: any
   safepay_id?: string
 }
 
@@ -215,10 +216,10 @@ export const useWallet = () => {
         .from('wallet_transactions')
         .insert({
           user_id: user.id,
-          transaction_type: 'game_loss',
+          kind: 'game_loss',
           amount: cost,
           status: 'completed',
-          description: 'Spin Wheel entry fee'
+          reference: 'Spin Wheel entry fee'
         })
 
       // Add winnings if any
@@ -238,10 +239,10 @@ export const useWallet = () => {
           .from('wallet_transactions')
           .insert({
             user_id: user.id,
-            transaction_type: 'game_win',
+            kind: 'game_win',
             amount: winnings,
             status: 'completed',
-            description: 'Spin Wheel winnings'
+            reference: 'Spin Wheel winnings'
           })
 
         toast({
