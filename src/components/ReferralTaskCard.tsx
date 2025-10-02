@@ -12,12 +12,13 @@ interface ReferralTaskCardProps {
   task: ReferralTask
   hasSubmitted: boolean
   submissionStatus?: string
-  onSubmit: (taskId: string, proofUrl: string) => Promise<{ success: boolean; error?: string }>
+  onSubmit: (taskId: string, proofUrl?: string, textExplanation?: string) => Promise<{ success: boolean; error?: string }>
 }
 
 export const ReferralTaskCard = ({ task, hasSubmitted, submissionStatus, onSubmit }: ReferralTaskCardProps) => {
   const [open, setOpen] = useState(false)
   const [proof, setProof] = useState('')
+  const [textExplanation, setTextExplanation] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const { uploadFile, uploadProgress } = useSecureFileUpload()
 
@@ -32,13 +33,16 @@ export const ReferralTaskCard = ({ task, hasSubmitted, submissionStatus, onSubmi
   }
 
   const handleSubmit = async () => {
-    if (!proof) return
+    if (!proof && !textExplanation.trim()) {
+      return
+    }
 
     setSubmitting(true)
-    const result = await onSubmit(task.id, proof)
+    const result = await onSubmit(task.id, proof, textExplanation)
     if (result.success) {
       setOpen(false)
       setProof('')
+      setTextExplanation('')
     }
     setSubmitting(false)
   }
@@ -99,12 +103,12 @@ export const ReferralTaskCard = ({ task, hasSubmitted, submissionStatus, onSubmi
             <DialogHeader>
               <DialogTitle>Submit Proof</DialogTitle>
               <DialogDescription>
-                Upload a screenshot as proof that you completed this referral task.
+                Upload a screenshot OR provide a text explanation of how you completed this task.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="proof">Upload Screenshot Proof</Label>
+                <Label htmlFor="proof">Upload Screenshot Proof (Optional)</Label>
                 <input
                   id="proof"
                   type="file"
@@ -121,10 +125,31 @@ export const ReferralTaskCard = ({ task, hasSubmitted, submissionStatus, onSubmi
                 {proof && <p className="text-sm text-green-600 mt-1">✅ Screenshot uploaded</p>}
               </div>
 
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">Or</span>
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="textExplanation">Text Explanation (Optional)</Label>
+                <Textarea
+                  id="textExplanation"
+                  value={textExplanation}
+                  onChange={(e) => setTextExplanation(e.target.value)}
+                  placeholder="Describe how you completed the referral task..."
+                  rows={4}
+                  className="mt-2"
+                />
+              </div>
+
               <div className="flex gap-2">
                 <Button
                   onClick={handleSubmit}
-                  disabled={!proof || submitting || uploadProgress.isUploading}
+                  disabled={(!proof && !textExplanation.trim()) || submitting || uploadProgress.isUploading}
                   className="flex-1"
                 >
                   {submitting ? 'Submitting...' : 'Submit Task'}

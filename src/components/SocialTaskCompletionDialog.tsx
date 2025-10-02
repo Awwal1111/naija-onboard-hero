@@ -10,11 +10,12 @@ interface SocialTaskCompletionDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   taskId: number
-  onSubmit: (taskId: number, screenshotUrl?: string) => Promise<{ success: boolean; error?: string }>
+  onSubmit: (taskId: number, screenshotUrl?: string, textExplanation?: string) => Promise<{ success: boolean; error?: string }>
 }
 
 export const SocialTaskCompletionDialog = ({ open, onOpenChange, taskId, onSubmit }: SocialTaskCompletionDialogProps) => {
   const [proof, setProof] = useState('')
+  const [textExplanation, setTextExplanation] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const { uploadFile, uploadProgress } = useSecureFileUpload()
 
@@ -29,11 +30,17 @@ export const SocialTaskCompletionDialog = ({ open, onOpenChange, taskId, onSubmi
   }
 
   const handleSubmit = async () => {
+    if (!proof && !textExplanation.trim()) {
+      toast.error('Please provide either a screenshot or text explanation')
+      return
+    }
+
     setSubmitting(true)
-    const result = await onSubmit(taskId, proof)
+    const result = await onSubmit(taskId, proof, textExplanation)
     if (result.success) {
       onOpenChange(false)
       setProof('')
+      setTextExplanation('')
       toast.success('Task submitted successfully! Wait for admin approval.')
     }
     setSubmitting(false)
@@ -45,14 +52,12 @@ export const SocialTaskCompletionDialog = ({ open, onOpenChange, taskId, onSubmi
         <DialogHeader>
           <DialogTitle>Complete Social Media Task</DialogTitle>
           <DialogDescription>
-            Upload a screenshot as proof that you completed this task. 
-            <br />
-            <strong>For proof submission, email: support@naijalancers.name.ng</strong>
+            Provide proof by uploading a screenshot OR writing a brief explanation.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div>
-            <Label htmlFor="proof">Upload Screenshot Proof</Label>
+            <Label htmlFor="proof">Upload Screenshot Proof (Optional)</Label>
             <input
               id="proof"
               type="file"
@@ -69,11 +74,35 @@ export const SocialTaskCompletionDialog = ({ open, onOpenChange, taskId, onSubmi
             {proof && <p className="text-sm text-green-600 mt-1">✅ Screenshot uploaded</p>}
           </div>
 
-          <div className="bg-blue-50 p-3 rounded-lg">
-            <p className="text-sm text-blue-800">
-              📧 <strong>Email for proof submission:</strong> support@naijalancers.name.ng
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">Or</span>
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="textExplanation">Text Explanation (Optional)</Label>
+            <Textarea
+              id="textExplanation"
+              value={textExplanation}
+              onChange={(e) => setTextExplanation(e.target.value)}
+              placeholder="Describe how you completed the task..."
+              rows={4}
+              className="mt-2"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Provide a brief explanation of how you completed the task
             </p>
-            <p className="text-xs text-blue-600 mt-1">
+          </div>
+
+          <div className="bg-blue-50 dark:bg-blue-950 p-3 rounded-lg">
+            <p className="text-sm text-blue-800 dark:text-blue-200">
+              📧 <strong>Alternative:</strong> support@naijalancers.name.ng
+            </p>
+            <p className="text-xs text-blue-600 dark:text-blue-300 mt-1">
               Status will show "Wait for approval" until admin reviews your submission.
             </p>
           </div>
@@ -81,7 +110,7 @@ export const SocialTaskCompletionDialog = ({ open, onOpenChange, taskId, onSubmi
           <div className="flex gap-2">
             <Button
               onClick={handleSubmit}
-              disabled={!proof || submitting || uploadProgress.isUploading}
+              disabled={(!proof && !textExplanation.trim()) || submitting || uploadProgress.isUploading}
               className="flex-1"
             >
               {submitting ? 'Submitting...' : 'Submit Task'}

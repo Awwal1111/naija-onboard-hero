@@ -82,7 +82,7 @@ export const useReferralTasks = () => {
     }
   }
 
-  const submitTask = async (taskId: string, proofUrl: string) => {
+  const submitTask = async (taskId: string, proofUrl?: string, textExplanation?: string) => {
     if (!user) return { success: false, error: 'Not authenticated' }
 
     try {
@@ -92,6 +92,7 @@ export const useReferralTasks = () => {
           user_id: user.id,
           task_id: taskId,
           proof_url: proofUrl,
+          text_explanation: textExplanation,
           status: 'pending'
         })
 

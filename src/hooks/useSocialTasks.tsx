@@ -70,7 +70,7 @@ export const useSocialTasks = () => {
     }
   }
 
-  const completeTask = async (taskId: number, screenshotUrl?: string) => {
+  const completeTask = async (taskId: number, screenshotUrl?: string, textExplanation?: string) => {
     if (!user) return { success: false, error: 'Not authenticated' }
 
     try {
@@ -78,7 +78,8 @@ export const useSocialTasks = () => {
         .from('social_tasks_progress' as any)
         .update({
           status: 'completed',
-          screenshot_url: screenshotUrl
+          screenshot_url: screenshotUrl,
+          text_explanation: textExplanation
         })
         .eq('task_id', taskId)
         .eq('earner_id', user.id)

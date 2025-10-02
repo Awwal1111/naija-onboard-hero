@@ -51,6 +51,13 @@ const EnhancedEarn = () => {
       icon: User,
       reward: 'Set your own price',
       path: '/jobs'
+    },
+    {
+      title: 'Read Articles',
+      description: 'Read articles and write notes',
+      icon: FileText,
+      reward: 'Up to NC 200',
+      path: '/earn/articles'
     }
   ]
 
