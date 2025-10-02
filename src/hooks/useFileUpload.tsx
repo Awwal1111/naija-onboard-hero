@@ -25,6 +25,19 @@ export const useFileUpload = () => {
     setUploadProgress({ progress: 0, isUploading: true, error: null })
 
     try {
+      // Check authentication first
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user) {
+        const error = 'Please log in to upload files'
+        setUploadProgress({ progress: 0, isUploading: false, error })
+        toast({
+          title: "Authentication Required",
+          description: error,
+          variant: "destructive"
+        })
+        return { url: null, error }
+      }
+
       // Validate file size (50MB limit for most buckets, 100MB for stories/training)
       const maxSize = bucket === 'stories' || bucket === 'training-files' ? 100 * 1024 * 1024 : 50 * 1024 * 1024
       if (file.size > maxSize) {
@@ -33,11 +46,10 @@ export const useFileUpload = () => {
         return { url: null, error }
       }
 
-      // Create file path
+      // Create file path with user ID
       const fileExt = file.name.split('.').pop()
       const fileName = path || `${Date.now()}.${fileExt}`
-      const userId = (await supabase.auth.getUser()).data.user?.id
-      const filePath = `${userId}/${fileName}`
+      const filePath = `${session.user.id}/${fileName}`
 
       // Upload file
       const { data, error } = await supabase.storage
@@ -49,6 +61,11 @@ export const useFileUpload = () => {
 
       if (error) {
         setUploadProgress({ progress: 0, isUploading: false, error: error.message })
+        toast({
+          title: "Upload Failed",
+          description: error.message,
+          variant: "destructive"
+        })
         return { url: null, error: error.message }
       }
 

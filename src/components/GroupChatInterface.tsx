@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Send, Plus, Image, Paperclip, Smile, Users, Pin } from 'lucide-react'
+import { ArrowLeft, Send, Plus, Image, Paperclip, Smile, Users, Pin, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -9,6 +9,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/use-toast'
+import { useFileUpload } from '@/hooks/useFileUpload'
 
 interface GroupMessage {
   id: string
@@ -49,12 +50,23 @@ const GroupChatInterface: React.FC = () => {
   const [newMessage, setNewMessage] = useState('')
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const { uploadFile, uploadProgress } = useFileUpload()
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (groupId && user) {
       fetchGroup()
       fetchMessages()
       subscribeToMessages()
+    }
+    
+    // Cleanup preview URL on unmount
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl)
+      }
     }
   }, [groupId, user])
 
@@ -160,18 +172,67 @@ const GroupChatInterface: React.FC = () => {
     return () => supabase.removeChannel(channel)
   }
 
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    const maxSize = 20 * 1024 * 1024 // 20MB
+    if (file.size > maxSize) {
+      toast({
+        title: "File too large",
+        description: "File size must be less than 20MB",
+        variant: "destructive"
+      })
+      return
+    }
+
+    setSelectedFile(file)
+    setPreviewUrl(URL.createObjectURL(file))
+  }
+
+  const removeFile = () => {
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl)
+    }
+    setSelectedFile(null)
+    setPreviewUrl(null)
+  }
+
   const sendMessage = async () => {
-    if (!newMessage.trim() || !groupId || !user || sending) return
+    if ((!newMessage.trim() && !selectedFile) || !groupId || !user || sending) return
 
     setSending(true)
     try {
+      let mediaUrl = null
+      let mediaType = null
+
+      // Upload file if selected
+      if (selectedFile) {
+        const uploadResult = await uploadFile(selectedFile, 'group-uploads', `${groupId}/${Date.now()}-${selectedFile.name}`)
+        
+        if (uploadResult.error) {
+          toast({
+            title: "Upload failed",
+            description: uploadResult.error,
+            variant: "destructive"
+          })
+          setSending(false)
+          return
+        }
+        
+        mediaUrl = uploadResult.url
+        mediaType = selectedFile.type
+      }
+
       const { error } = await supabase
         .from('group_messages')
         .insert({
           group_id: groupId,
           sender_id: user.id,
-          content: newMessage.trim(),
-          message_type: 'text'
+          content: newMessage.trim() || (selectedFile ? '📎 Attachment' : ''),
+          message_type: selectedFile ? 'media' : 'text',
+          media_url: mediaUrl,
+          media_type: mediaType
         })
 
       if (error) throw error
@@ -192,6 +253,7 @@ const GroupChatInterface: React.FC = () => {
       }
 
       setNewMessage('')
+      removeFile()
     } catch (error) {
       console.error('Error sending message:', error)
       toast({
@@ -337,34 +399,76 @@ const GroupChatInterface: React.FC = () => {
       </div>
 
       {/* Message Input */}
+      {/* File Preview */}
+      {previewUrl && selectedFile && (
+        <div className="px-4 py-2 border-t border-border bg-muted/20">
+          <div className="relative inline-block">
+            {selectedFile.type.startsWith('image/') ? (
+              <img src={previewUrl} alt="Preview" className="max-h-20 max-w-20 rounded border" />
+            ) : (
+              <div className="flex items-center p-2 bg-muted rounded border">
+                <Paperclip className="h-4 w-4 mr-2" />
+                <span className="text-sm truncate max-w-40">{selectedFile.name}</span>
+              </div>
+            )}
+            <button
+              onClick={removeFile}
+              className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full p-1"
+            >
+              <X className="h-2 w-2" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Message Input */}
       <div className="border-t border-border p-4">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*,video/*,.pdf,.doc,.docx"
+          onChange={handleFileSelect}
+          className="hidden"
+        />
+        
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm">
-            <Plus className="h-4 w-4" />
-          </Button>
-          
-          <Button variant="ghost" size="sm">
-            <Image className="h-4 w-4" />
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={sending || uploadProgress.isUploading}
+          >
+            <Paperclip className="h-4 w-4" />
           </Button>
           
           <div className="flex-1">
             <Input
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
-              placeholder="Type a message..."
-              onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-              disabled={sending}
+              placeholder={selectedFile ? "Add a caption..." : "Type a message..."}
+              onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
+              disabled={sending || uploadProgress.isUploading}
             />
           </div>
           
           <Button 
             onClick={sendMessage}
-            disabled={!newMessage.trim() || sending}
+            disabled={(!newMessage.trim() && !selectedFile) || sending || uploadProgress.isUploading}
             size="sm"
           >
-            <Send className="h-4 w-4" />
+            {sending || uploadProgress.isUploading ? (
+              <div className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
           </Button>
         </div>
+        
+        {uploadProgress.isUploading && (
+          <div className="mt-2 text-xs text-text-secondary">
+            Uploading... {Math.round(uploadProgress.progress)}%
+          </div>
+        )}
       </div>
     </div>
   )
