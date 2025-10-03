@@ -19,6 +19,7 @@ import SuggestionsTab from '@/components/SuggestionsTab'
 import StoriesCarousel from '@/components/StoriesCarousel'
 import JobApplicationDialog from '@/components/JobApplicationDialog'
 import ProfilePreview from '@/components/ProfilePreview'
+import TopBannerAd from '@/components/TopBannerAd'
 
 const MainFeed = () => {
   const navigate = useNavigate()
@@ -132,11 +133,14 @@ const MainFeed = () => {
 
   return (
     <ResponsiveLayout className="pb-20">
+      {/* Top Banner Ad */}
+      <TopBannerAd />
+      
       <div className="flex">
         {/* Main Content */}
         <div className="flex-1 max-w-4xl mx-auto">
           {/* Header */}
-          <header className="bg-background/95 backdrop-blur-sm border-b border-border px-4 sm:px-6 py-4 sticky top-0 z-10">
+          <header className="bg-background/95 backdrop-blur-sm border-b border-border px-4 sm:px-6 py-4 sticky top-[60px] z-10">
             <div className="flex items-center justify-between mb-4">
               <Logo />
               <NotificationBell />

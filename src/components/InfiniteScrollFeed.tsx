@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react'
 import { Loader2 } from 'lucide-react'
 import EnhancedPostCard from './EnhancedPostCard'
+import InFeedAd from './InFeedAd'
 import { EnhancedPost } from '@/hooks/useEnhancedFeed'
 
 interface InfiniteScrollFeedProps {
@@ -54,17 +55,24 @@ const InfiniteScrollFeed: React.FC<InfiniteScrollFeedProps> = ({
   return (
     <div className="space-y-6">
       {posts.map((post, index) => (
-        <div key={post.id} className={`${index === 0 ? 'animate-fade-in' : ''}`}>
-          <EnhancedPostCard
-            post={post}
-            onReact={onReact}
-            onRemoveReaction={onRemoveReaction}
-            onComment={onComment}
-            onJobApply={onJobApply}
-            onProfileClick={onProfileClick}
-            currentUserId={currentUserId}
-          />
-        </div>
+        <React.Fragment key={`post-${post.id}-${index}`}>
+          {/* Insert ad every 5 posts */}
+          {index > 0 && index % 5 === 0 && (
+            <InFeedAd index={Math.floor(index / 5)} />
+          )}
+          
+          <div className={`${index === 0 ? 'animate-fade-in' : ''}`}>
+            <EnhancedPostCard
+              post={post}
+              onReact={onReact}
+              onRemoveReaction={onRemoveReaction}
+              onComment={onComment}
+              onJobApply={onJobApply}
+              onProfileClick={onProfileClick}
+              currentUserId={currentUserId}
+            />
+          </div>
+        </React.Fragment>
       ))}
       
       {hasNextPage && (
