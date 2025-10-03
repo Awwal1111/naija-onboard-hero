@@ -97,7 +97,50 @@ const Jobs = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-4">
+          <>
+            {/* Search and Filter Bar */}
+            <Card className="mb-6">
+              <CardContent className="p-4">
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="flex-1">
+                    <input
+                      type="text"
+                      placeholder="Search gigs by title, description..."
+                      className="w-full px-4 py-2 rounded-lg border border-border bg-background text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+                      onChange={(e) => {
+                        // Filter implementation would go here
+                        console.log('Search:', e.target.value)
+                      }}
+                    />
+                  </div>
+                  <select 
+                    className="px-4 py-2 rounded-lg border border-border bg-background text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+                    onChange={(e) => {
+                      console.log('Filter by state:', e.target.value)
+                    }}
+                  >
+                    <option value="">All States</option>
+                    <option value="Lagos">Lagos</option>
+                    <option value="Abuja">Abuja</option>
+                    <option value="Rivers">Rivers</option>
+                  </select>
+                  <select 
+                    className="px-4 py-2 rounded-lg border border-border bg-background text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+                    onChange={(e) => {
+                      console.log('Filter by type:', e.target.value)
+                    }}
+                  >
+                    <option value="">All Types</option>
+                    <option value="full-time">Full Time</option>
+                    <option value="part-time">Part Time</option>
+                    <option value="contract">Contract</option>
+                    <option value="freelance">Freelance</option>
+                  </select>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="space-y-4">
             {jobs.map((job) => (
               <Card key={job.id} className="hover:shadow-md transition-shadow">
                 <CardHeader>
@@ -181,7 +224,8 @@ const Jobs = () => {
                 </CardContent>
               </Card>
             ))}
-          </div>
+            </div>
+          </>
         )}
       </div>
     </div>

@@ -13,6 +13,7 @@ interface SocialTaskSubmission {
   earner_id: string
   status: string
   screenshot_url: string | null
+  text_explanation: string | null
   created_at: string
   updated_at: string
   earner: {
@@ -157,12 +158,20 @@ export const AdminSocialTasksSection = () => {
 
               {submission.screenshot_url && (
                 <div className="mb-4">
+                  <p className="text-xs text-muted-foreground mb-2">Screenshot Proof:</p>
                   <img
                     src={submission.screenshot_url}
                     alt="Task proof"
                     className="w-full max-h-48 object-cover rounded-lg cursor-pointer"
                     onClick={() => setSelectedImage(submission.screenshot_url)}
                   />
+                </div>
+              )}
+
+              {submission.text_explanation && (
+                <div className="mb-4 p-3 bg-muted rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-1">Text Explanation:</p>
+                  <p className="text-sm text-text-primary whitespace-pre-wrap">{submission.text_explanation}</p>
                 </div>
               )}
 

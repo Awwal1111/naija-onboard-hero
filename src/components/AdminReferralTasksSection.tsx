@@ -12,6 +12,7 @@ interface ReferralTaskSubmission {
   user_id: string
   task_id: string
   proof_url: string | null
+  text_explanation: string | null
   status: string
   created_at: string
   user: {
@@ -159,12 +160,20 @@ export const AdminReferralTasksSection = () => {
 
               {submission.proof_url && (
                 <div className="mb-4">
+                  <p className="text-xs text-muted-foreground mb-2">Screenshot Proof:</p>
                   <img
                     src={submission.proof_url}
                     alt="Task proof"
                     className="w-full max-h-48 object-cover rounded-lg cursor-pointer"
                     onClick={() => setSelectedImage(submission.proof_url)}
                   />
+                </div>
+              )}
+
+              {submission.text_explanation && (
+                <div className="mb-4 p-3 bg-muted rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-1">Text Explanation:</p>
+                  <p className="text-sm text-text-primary whitespace-pre-wrap">{submission.text_explanation}</p>
                 </div>
               )}
 

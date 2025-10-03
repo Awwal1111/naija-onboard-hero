@@ -73,6 +73,7 @@ export const useAuth = () => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log('Auth state change:', event, session?.user?.id)
         setSession(session)
         setUser(session?.user ?? null)
         setLoading(false)
@@ -83,6 +84,7 @@ export const useAuth = () => {
             setTimeout(() => checkProfileAndRedirect(session.user), 100)
           }
         } else if (event === 'SIGNED_OUT') {
+          // Only handle explicit signouts, not token refreshes
           setSession(null)
           setUser(null)
           const currentPath = window.location.pathname
@@ -90,6 +92,11 @@ export const useAuth = () => {
           if (!authPaths.includes(currentPath) && currentPath !== '/' && currentPath !== '/onboarding') {
             navigate('/login')
           }
+        } else if (event === 'TOKEN_REFRESHED') {
+          // Token was refreshed successfully, update session but don't redirect
+          console.log('Token refreshed successfully')
+          setSession(session)
+          setUser(session?.user ?? null)
         }
       }
     )

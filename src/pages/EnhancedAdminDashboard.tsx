@@ -15,6 +15,8 @@ import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/useAuth'
 import { AdminSocialTasksSection } from '@/components/AdminSocialTasksSection'
 import { AdminReferralTasksSection } from '@/components/AdminReferralTasksSection'
+import { AdminArticlesSection } from '@/components/AdminArticlesSection'
+import { AdminWalletManagement } from '@/components/AdminWalletManagement'
 
 const EnhancedAdminDashboard = () => {
   const navigate = useNavigate()
@@ -341,11 +343,12 @@ const EnhancedAdminDashboard = () => {
 
         {/* Main Tabs */}
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="mb-6">
+          <TabsList className="mb-6 flex-wrap">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="users">User Management</TabsTrigger>
             <TabsTrigger value="content">Content Moderation</TabsTrigger>
             <TabsTrigger value="applications">Expert Applications</TabsTrigger>
+            <TabsTrigger value="wallet">Wallet Management</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="system">System Activity</TabsTrigger>
           </TabsList>
@@ -583,6 +586,7 @@ const EnhancedAdminDashboard = () => {
                 <TabsTrigger value="expert">Expert Applications</TabsTrigger>
                 <TabsTrigger value="social">Social Media Tasks</TabsTrigger>
                 <TabsTrigger value="referral">Referral Tasks</TabsTrigger>
+                <TabsTrigger value="articles">Articles</TabsTrigger>
               </TabsList>
 
               <TabsContent value="expert">
@@ -609,7 +613,16 @@ const EnhancedAdminDashboard = () => {
               <TabsContent value="referral">
                 <AdminReferralTasksSection />
               </TabsContent>
+
+              <TabsContent value="articles">
+                <AdminArticlesSection />
+              </TabsContent>
             </Tabs>
+          </TabsContent>
+
+          {/* Wallet Management Tab */}
+          <TabsContent value="wallet" className="space-y-6">
+            <AdminWalletManagement />
           </TabsContent>
 
           {/* Analytics Tab */}

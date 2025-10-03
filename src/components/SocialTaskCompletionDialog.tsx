@@ -23,7 +23,7 @@ export const SocialTaskCompletionDialog = ({ open, onOpenChange, taskId, onSubmi
     const file = event.target.files?.[0]
     if (!file) return
 
-    const result = await uploadFile(file, 'chat-uploads')
+    const result = await uploadFile(file, 'social-media-tasks')
     if (result.url) {
       setProof(result.url)
     }
