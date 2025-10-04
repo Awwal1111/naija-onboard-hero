@@ -8,9 +8,12 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { BrandInput } from '@/components/ui/brand-input'
 import { useJobs } from '@/hooks/useJobs'
 import { useAuth } from '@/hooks/useAuth'
 import JobPostingDialog from '@/components/JobPostingDialog'
+import TopBannerAd from '@/components/TopBannerAd'
 
 const Jobs = () => {
   const navigate = useNavigate()
@@ -19,6 +22,9 @@ const Jobs = () => {
   const [selectedJob, setSelectedJob] = useState<string | null>(null)
   const [coverLetter, setCoverLetter] = useState('')
   const [applying, setApplying] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [stateFilter, setStateFilter] = useState('all')
+  const [categoryFilter, setCategoryFilter] = useState('all')
 
   const handleApply = async (jobId: string) => {
     setApplying(true)
@@ -36,6 +42,29 @@ const Jobs = () => {
     if (min) return `From ₦${min.toLocaleString()}`
     if (max) return `Up to ₦${max.toLocaleString()}`
   }
+
+  const nigerianStates = [
+    'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno',
+    'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'Abuja', 'Gombe', 'Imo',
+    'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi', 'Kwara', 'Lagos', 'Nasarawa',
+    'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau', 'Rivers', 'Sokoto', 'Taraba',
+    'Yobe', 'Zamfara'
+  ]
+
+  const jobCategories = [
+    'Web Development', 'Mobile Development', 'Design', 'Writing', 'Marketing',
+    'Data Analysis', 'Virtual Assistant', 'Customer Service', 'Other'
+  ]
+
+  const filteredJobs = jobs.filter(job => {
+    const matchesSearch = job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         job.description.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesState = !stateFilter || stateFilter === 'all' || job.location?.includes(stateFilter)
+    const matchesCategory = !categoryFilter || categoryFilter === 'all' || 
+                           job.required_skills?.some(skill => skill.toLowerCase().includes(categoryFilter.toLowerCase()))
+    
+    return matchesSearch && matchesState && matchesCategory
+  })
 
   if (loading) {
     return (
@@ -69,6 +98,9 @@ const Jobs = () => {
 
   return (
     <div className="min-h-screen bg-gradient-subtle p-4">
+      {/* Top Ad Banner */}
+      <TopBannerAd />
+      
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center gap-4 mb-6">
           <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
@@ -88,7 +120,52 @@ const Jobs = () => {
           </div>
         </div>
 
-        {jobs.length === 0 ? (
+        {/* Search and Filters */}
+        <div className="space-y-4 mb-6">
+          <div className="relative">
+            <BrandInput
+              placeholder="Search gigs..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <Select value={stateFilter} onValueChange={setStateFilter}>
+                <SelectTrigger className="w-full h-10 bg-input">
+                  <SelectValue placeholder="Filter by state" />
+                </SelectTrigger>
+                <SelectContent className="bg-background border border-border z-50 max-h-60 overflow-y-auto">
+                  <SelectItem value="all">All States</SelectItem>
+                  {nigerianStates.map((state) => (
+                    <SelectItem key={state} value={state}>
+                      {state}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="flex-1">
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="w-full h-10 bg-input">
+                  <SelectValue placeholder="Filter by category" />
+                </SelectTrigger>
+                <SelectContent className="bg-background border border-border z-50 max-h-60 overflow-y-auto">
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {jobCategories.map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+
+        {filteredJobs.length === 0 ? (
           <Card>
             <CardContent className="p-12 text-center">
               <Briefcase className="h-12 w-12 text-text-secondary mx-auto mb-4" />
@@ -98,50 +175,8 @@ const Jobs = () => {
           </Card>
         ) : (
           <>
-            {/* Search and Filter Bar */}
-            <Card className="mb-6">
-              <CardContent className="p-4">
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <div className="flex-1">
-                    <input
-                      type="text"
-                      placeholder="Search gigs by title, description..."
-                      className="w-full px-4 py-2 rounded-lg border border-border bg-background text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
-                      onChange={(e) => {
-                        // Filter implementation would go here
-                        console.log('Search:', e.target.value)
-                      }}
-                    />
-                  </div>
-                  <select 
-                    className="px-4 py-2 rounded-lg border border-border bg-background text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
-                    onChange={(e) => {
-                      console.log('Filter by state:', e.target.value)
-                    }}
-                  >
-                    <option value="">All States</option>
-                    <option value="Lagos">Lagos</option>
-                    <option value="Abuja">Abuja</option>
-                    <option value="Rivers">Rivers</option>
-                  </select>
-                  <select 
-                    className="px-4 py-2 rounded-lg border border-border bg-background text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
-                    onChange={(e) => {
-                      console.log('Filter by type:', e.target.value)
-                    }}
-                  >
-                    <option value="">All Types</option>
-                    <option value="full-time">Full Time</option>
-                    <option value="part-time">Part Time</option>
-                    <option value="contract">Contract</option>
-                    <option value="freelance">Freelance</option>
-                  </select>
-                </div>
-              </CardContent>
-            </Card>
-
             <div className="space-y-4">
-            {jobs.map((job) => (
+              {filteredJobs.map((job) => (
               <Card key={job.id} className="hover:shadow-md transition-shadow">
                 <CardHeader>
                   <div className="flex items-start justify-between">

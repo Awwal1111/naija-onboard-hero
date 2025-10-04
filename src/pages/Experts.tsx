@@ -10,6 +10,7 @@ import { useExpertRatings } from '@/hooks/useExpertRatings'
 import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/useAuth'
+import TopBannerAd from '@/components/TopBannerAd'
 
 interface Expert {
   id: string
@@ -157,6 +158,9 @@ const Experts = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
+      {/* Top Ad Banner */}
+      <TopBannerAd />
+      
       {/* Header */}
       <header className="bg-background border-b border-border px-6 py-4 sticky top-0 z-10">
         <div className="flex items-center justify-between">

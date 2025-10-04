@@ -29,36 +29,60 @@ const Onboarding = () => {
   const [area, setArea] = useState('')
   const [purpose, setPurpose] = useState('To Browse')
   const [loading, setLoading] = useState(false)
+  const [loadingStates, setLoadingStates] = useState(true)
+  const [loadingLGAs, setLoadingLGAs] = useState(false)
   const [formData, setFormData] = useState({
     full_name: profile?.full_name || ''
   })
 
-  // Fetch states on component mount
+  // Fetch states on component mount with cache
   useEffect(() => {
-    fetchStates()
+    const cachedStates = sessionStorage.getItem('nigeria_states')
+    if (cachedStates) {
+      setStates(JSON.parse(cachedStates))
+      setLoadingStates(false)
+    } else {
+      fetchStates()
+    }
   }, [])
 
-  // Fetch LGAs when state changes
+  // Fetch LGAs when state changes with cache
   useEffect(() => {
     if (selectedState) {
-      fetchLGAs(selectedState)
+      const cacheKey = `nigeria_lgas_${selectedState}`
+      const cachedLGAs = sessionStorage.getItem(cacheKey)
+      if (cachedLGAs) {
+        setLgas(JSON.parse(cachedLGAs))
+      } else {
+        fetchLGAs(selectedState)
+      }
       setSelectedLGA('') // Reset LGA when state changes
     }
   }, [selectedState])
 
   const fetchStates = async () => {
+    setLoadingStates(true)
     try {
-      // Try primary API first - locus.fkkas.com
-      let response = await fetch('https://locus.fkkas.com/api/states')
+      // Try primary API with timeout
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 3000) // 3 second timeout
+      
+      const response = await fetch('https://locus.fkkas.com/api/states', {
+        signal: controller.signal
+      })
+      clearTimeout(timeoutId)
+      
       if (response.ok) {
         const data = await response.json()
         if (data.data && Array.isArray(data.data)) {
           setStates(data.data)
+          sessionStorage.setItem('nigeria_states', JSON.stringify(data.data))
+          setLoadingStates(false)
           return
         }
       }
     } catch (error) {
-      console.log('Primary API failed, using fallback data:', error)
+      console.log('API failed or timeout, using fallback data:', error)
     }
 
     // Fallback to comprehensive static data
@@ -102,21 +126,35 @@ const Onboarding = () => {
       { id: "37", name: "Zamfara" }
     ]
     setStates(fallbackStates)
+    sessionStorage.setItem('nigeria_states', JSON.stringify(fallbackStates))
+    setLoadingStates(false)
   }
 
   const fetchLGAs = async (stateId: string) => {
+    setLoadingLGAs(true)
+    const cacheKey = `nigeria_lgas_${stateId}`
+    
     try {
-      // Try API first  
-      let response = await fetch(`https://locus.fkkas.com/api/regions/${stateId}`)
+      // Try API with timeout
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 3000) // 3 second timeout
+      
+      const response = await fetch(`https://locus.fkkas.com/api/regions/${stateId}`, {
+        signal: controller.signal
+      })
+      clearTimeout(timeoutId)
+      
       if (response.ok) {
         const data = await response.json()
         if (data.data && Array.isArray(data.data)) {
           setLgas(data.data)
+          sessionStorage.setItem(cacheKey, JSON.stringify(data.data))
+          setLoadingLGAs(false)
           return
         }
       }
     } catch (error) {
-      console.log('Primary API failed for LGAs, using fallback:', error)
+      console.log('API failed or timeout for LGAs, using fallback:', error)
     }
 
     // Comprehensive static LGA data based on state
@@ -230,6 +268,8 @@ const Onboarding = () => {
     ]
     
     setLgas(fallbackLGAs)
+    sessionStorage.setItem(cacheKey, JSON.stringify(fallbackLGAs))
+    setLoadingLGAs(false)
   }
 
   const handleNext = () => {

@@ -20,6 +20,7 @@ import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { useToast } from '@/hooks/use-toast'
 import PortfolioSection from '@/components/PortfolioSection'
+import TopBannerAd from '@/components/TopBannerAd'
 
 const Profile = () => {
   const navigate = useNavigate()
@@ -169,6 +170,9 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
+      {/* Top Ad Banner */}
+      <TopBannerAd />
+      
       {/* Header */}
       <header className="bg-background border-b border-border px-6 py-4 flex items-center justify-between">
         <button onClick={() => navigate('/feed')} className="flex items-center gap-2">

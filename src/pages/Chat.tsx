@@ -9,6 +9,7 @@ import { BrandButton } from '@/components/ui/brand-button'
 import { BrandInput } from '@/components/ui/brand-input'
 import SafePayDialog from '@/components/SafePayDialog'
 import BlockConfirmationDialog from '@/components/BlockConfirmationDialog'
+import TopBannerAd from '@/components/TopBannerAd'
 
 const Chat = () => {
   const navigate = useNavigate()
@@ -75,6 +76,9 @@ const Chat = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      {/* Top Ad Banner */}
+      <TopBannerAd />
+      
       {/* Header */}
       <header className="bg-background border-b border-border px-4 py-3 flex items-center gap-3">
         <button 

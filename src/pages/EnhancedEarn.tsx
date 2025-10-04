@@ -8,8 +8,8 @@ import { useWallet } from '@/hooks/useWallet'
 import NaijaLanceWalletCard from '@/components/NaijaLanceWalletCard'
 import { DailySigninCard } from '@/components/DailySigninCard'
 import { TransactionHistory } from '@/components/TransactionHistory'
-
 import { WithdrawalDialog } from '@/components/WithdrawalDialog'
+import TopBannerAd from '@/components/TopBannerAd'
 
 const EnhancedEarn = () => {
   const { balance, loading } = useWallet()
@@ -64,6 +64,9 @@ const EnhancedEarn = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
+      {/* Top Ad Banner */}
+      <TopBannerAd />
+      
       <div className="container mx-auto max-w-4xl p-4 space-y-6">
         {/* Header */}
         <div className="text-center py-6">

@@ -56,9 +56,9 @@ const InfiniteScrollFeed: React.FC<InfiniteScrollFeedProps> = ({
     <div className="space-y-6">
       {posts.map((post, index) => (
         <React.Fragment key={`post-${post.id}-${index}`}>
-          {/* Insert ad every 5 posts */}
-          {index > 0 && index % 5 === 0 && (
-            <InFeedAd index={Math.floor(index / 5)} />
+          {/* Insert ad at positions 3, 5, and every 7 posts after that */}
+          {(index === 2 || index === 4 || (index > 4 && (index - 4) % 7 === 0)) && (
+            <InFeedAd index={index} />
           )}
           
           <div className={`${index === 0 ? 'animate-fade-in' : ''}`}>
