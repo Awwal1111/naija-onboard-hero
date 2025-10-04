@@ -125,15 +125,21 @@ export const useFeed = () => {
 
   const fetchStories = async () => {
     try {
+      const now = new Date().toISOString()
       const { data: storiesData, error } = await supabase
         .from('stories')
         .select('*')
-        .gt('expires_at', new Date().toISOString())
+        .gt('expires_at', now)
         .order('created_at', { ascending: false })
+        .limit(50)
 
-      if (error) throw error
+      if (error) {
+        console.error('Error fetching stories:', error)
+        setStories([])
+        return
+      }
 
-      if (!storiesData) {
+      if (!storiesData || storiesData.length === 0) {
         setStories([])
         return
       }
@@ -240,19 +246,37 @@ export const useFeed = () => {
   }
 
   const createStory = async (mediaUrl: string, mediaType: string, content?: string) => {
-    if (!user) return { error: 'User not authenticated' }
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to create a story",
+        variant: "destructive"
+      })
+      return { error: 'User not authenticated' }
+    }
 
     try {
+      // Calculate expiry time (24 hours from now)
+      const expiresAt = new Date()
+      expiresAt.setHours(expiresAt.getHours() + 24)
+
       const { error } = await supabase
         .from('stories')
         .insert({
           user_id: user.id,
           media_url: mediaUrl,
           media_type: mediaType,
-          content
+          content: content || '',
+          expires_at: expiresAt.toISOString()
         })
 
-      if (error) throw error
+      if (error) {
+        console.error('Story creation error:', error)
+        throw error
+      }
+
+      // Refresh stories immediately
+      await fetchStories()
 
       toast({
         title: "Story created",
@@ -261,9 +285,10 @@ export const useFeed = () => {
 
       return { success: true }
     } catch (error: any) {
+      console.error('Error creating story:', error)
       toast({
         title: "Error",
-        description: error.message || "Failed to create story",
+        description: error.message || "Failed to create story. Please try again.",
         variant: "destructive"
       })
       return { error: error.message }

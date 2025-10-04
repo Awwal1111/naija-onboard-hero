@@ -341,6 +341,8 @@ export const useConnections = () => {
     refetch: () => {
       fetchConnectionRequests()
       fetchConnections()
-    }
+    },
+    fetchConnectionRequests,
+    fetchConnections
   }
 }

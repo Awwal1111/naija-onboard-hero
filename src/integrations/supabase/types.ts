@@ -1944,6 +1944,7 @@ export type Database = {
           screenshot_url: string | null
           status: string
           task_id: number
+          text_explanation: string | null
           updated_at: string
         }
         Insert: {
@@ -1953,6 +1954,7 @@ export type Database = {
           screenshot_url?: string | null
           status?: string
           task_id: number
+          text_explanation?: string | null
           updated_at?: string
         }
         Update: {
@@ -1962,6 +1964,7 @@ export type Database = {
           screenshot_url?: string | null
           status?: string
           task_id?: number
+          text_explanation?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -2491,6 +2494,10 @@ export type Database = {
       }
       is_admin_user: {
         Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_group_member: {
+        Args: { p_group_id: string; p_user_id: string }
         Returns: boolean
       }
       refund_safepay: {

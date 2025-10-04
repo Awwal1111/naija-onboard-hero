@@ -1,11 +1,12 @@
-import React, { useState } from 'react'
-import { Camera, Wallet, MoreVertical, Edit, Share, Settings, LogOut, Plus, ArrowLeft, Home, MessageCircle, Users, DollarSign, User, Phone, Mail, FileText, Shield, Award, Star, MapPin, Calendar, Clock, TrendingUp, Briefcase } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { Camera, Wallet, MoreVertical, Edit, Share, Settings, LogOut, Plus, ArrowLeft, Home, MessageCircle, Users, DollarSign, User, Phone, Mail, FileText, Shield, Award, Star, MapPin, Calendar, Clock, TrendingUp, Briefcase, UserPlus } from 'lucide-react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Logo } from '@/components/ui/logo'
 import { BrandButton } from '@/components/ui/brand-button'
 import { useProfile } from '@/hooks/useProfile'
 import { useAuth } from '@/hooks/useAuth'
 import { useFileUpload } from '@/hooks/useFileUpload'
+import { useConnections } from '@/hooks/useConnections'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +19,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 import PortfolioSection from '@/components/PortfolioSection'
 import TopBannerAd from '@/components/TopBannerAd'
@@ -29,6 +31,7 @@ const Profile = () => {
   const { signOut } = useAuth()
   const { toast } = useToast()
   const { uploadFile, uploadProgress } = useFileUpload()
+  const { connectionRequests, respondToConnectionRequest, fetchConnectionRequests } = useConnections()
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [editForm, setEditForm] = useState({
     full_name: '',
@@ -36,6 +39,11 @@ const Profile = () => {
     profession: '',
     phone_number: ''
   })
+
+  // Fetch connection requests on mount
+  useEffect(() => {
+    fetchConnectionRequests()
+  }, [])
 
   // Check if this is viewing someone else's profile
   const isOwnProfile = !userId
@@ -310,6 +318,63 @@ const Profile = () => {
           </TabsList>
           
           <TabsContent value="overview" className="space-y-4 mt-6">
+            {/* Connection Requests Section */}
+            {connectionRequests.filter(req => req.requested_id === profile?.user_id && req.status === 'pending').length > 0 && (
+              <Card className="mb-4">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <UserPlus className="h-5 w-5" />
+                    Connection Requests
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {connectionRequests
+                    .filter(req => req.requested_id === profile?.user_id && req.status === 'pending')
+                    .map(request => (
+                      <div key={request.id} className="flex items-center justify-between p-3 bg-muted rounded-xl">
+                        <div className="flex items-center gap-3">
+                          <Avatar>
+                            <AvatarImage src={request.requester_profile?.profile_picture_url} />
+                            <AvatarFallback>
+                              {request.requester_profile?.full_name?.charAt(0) || 'U'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="text-sm font-medium text-text-primary">
+                              {request.requester_profile?.full_name || 'User'}
+                            </p>
+                            <p className="text-xs text-text-secondary">
+                              {request.requester_profile?.profession || 'Professional'}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            onClick={async () => {
+                              await respondToConnectionRequest(request.id, true)
+                              fetchConnectionRequests()
+                            }}
+                          >
+                            Accept
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={async () => {
+                              await respondToConnectionRequest(request.id, false)
+                              fetchConnectionRequests()
+                            }}
+                          >
+                            Reject
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                </CardContent>
+              </Card>
+            )}
+
             {/* Professional Action Buttons */}
             <div className="grid grid-cols-2 gap-3 mb-6">
               <BrandButton 

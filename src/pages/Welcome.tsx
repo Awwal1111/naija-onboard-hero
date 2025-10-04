@@ -77,6 +77,30 @@ const Welcome = () => {
         </div>
       </section>
 
+      {/* Promotional Video Section */}
+      <section className="py-16 bg-gradient-to-br from-primary/5 to-secondary/5">
+        <div className="container mx-auto px-6">
+          <div className="max-w-5xl mx-auto">
+            <h2 className="text-3xl font-bold text-center text-text-primary mb-8">See NaijaLancers in Action</h2>
+            <div className="relative" style={{ height: 0, paddingBottom: 'calc(56.25%)', position: 'relative', width: '100%' }}>
+              <iframe 
+                allow="autoplay; gyroscope;" 
+                allowFullScreen 
+                height="100%" 
+                referrerPolicy="strict-origin" 
+                src="https://www.kapwing.com/e/68dff106a333077a113394bb" 
+                style={{ border: 0, height: '100%', left: 0, overflow: 'hidden', position: 'absolute', top: 0, width: '100%' }} 
+                title="NaijaLancers Platform Overview" 
+                width="100%"
+              />
+            </div>
+            <p className="text-center text-sm text-text-secondary mt-4">
+              Discover how NaijaLancers connects talented professionals with exciting opportunities
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* Vision Section */}
       <section className="py-16 bg-background">
         <div className="container mx-auto px-6">
