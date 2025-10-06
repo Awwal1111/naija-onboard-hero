@@ -6,6 +6,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { useConnections } from '@/hooks/useConnections'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
+import ProfilePreview from '@/components/ProfilePreview'
 
 interface SuggestedUser {
   user_id: string
@@ -14,12 +15,18 @@ interface SuggestedUser {
   profile_picture_url?: string
 }
 
-const PeopleYouMayKnow: React.FC = () => {
+interface PeopleYouMayKnowProps {
+  onProfileClick?: (userId: string) => void
+}
+
+const PeopleYouMayKnow: React.FC<PeopleYouMayKnowProps> = ({ onProfileClick }) => {
   const { user } = useAuth()
   const { sendConnectionRequest } = useConnections()
   const [suggestions, setSuggestions] = useState<SuggestedUser[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null)
+  const [showProfilePreview, setShowProfilePreview] = useState(false)
 
   useEffect(() => {
     fetchSuggestions()
@@ -84,6 +91,20 @@ const PeopleYouMayKnow: React.FC = () => {
     }
   }
 
+  const handleProfileClick = (userId: string) => {
+    if (onProfileClick) {
+      onProfileClick(userId)
+    } else {
+      setSelectedProfileId(userId)
+      setShowProfilePreview(true)
+    }
+  }
+
+  const handleClosePreview = () => {
+    setShowProfilePreview(false)
+    setSelectedProfileId(null)
+  }
+
   const handleNext = () => {
     if (currentIndex < suggestions.length - 3) {
       setCurrentIndex(currentIndex + 1)
@@ -129,21 +150,26 @@ const PeopleYouMayKnow: React.FC = () => {
 
         <div className="grid grid-cols-3 gap-4">
           {visibleSuggestions.map((person) => (
-            <div key={person.user_id} className="flex flex-col items-center text-center p-3 bg-muted/30 rounded-lg">
-              <Avatar className="h-16 w-16 mb-2">
-                <AvatarImage src={person.profile_picture_url} />
-                <AvatarFallback>
-                  {person.full_name?.charAt(0) || 'U'}
-                </AvatarFallback>
-              </Avatar>
-              <h4 className="font-medium text-sm truncate w-full">
-                {person.full_name}
-              </h4>
-              {person.profession && (
-                <p className="text-xs text-text-secondary truncate w-full">
-                  {person.profession}
-                </p>
-              )}
+            <div key={person.user_id} className="flex flex-col items-center text-center p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors">
+              <div 
+                onClick={() => handleProfileClick(person.user_id)}
+                className="cursor-pointer"
+              >
+                <Avatar className="h-16 w-16 mb-2 hover:ring-2 hover:ring-primary transition-all">
+                  <AvatarImage src={person.profile_picture_url} />
+                  <AvatarFallback>
+                    {person.full_name?.charAt(0) || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+                <h4 className="font-medium text-sm truncate w-full hover:text-primary transition-colors">
+                  {person.full_name}
+                </h4>
+                {person.profession && (
+                  <p className="text-xs text-text-secondary truncate w-full">
+                    {person.profession}
+                  </p>
+                )}
+              </div>
               <Button
                 size="sm"
                 onClick={() => handleConnect(person.user_id)}
@@ -156,6 +182,16 @@ const PeopleYouMayKnow: React.FC = () => {
           ))}
         </div>
       </CardContent>
+      
+      {/* Profile Preview Dialog */}
+      {selectedProfileId && (
+        <ProfilePreview
+          isOpen={showProfilePreview}
+          onClose={handleClosePreview}
+          profileId={selectedProfileId}
+          onConnect={handleConnect}
+        />
+      )}
     </Card>
   )
 }

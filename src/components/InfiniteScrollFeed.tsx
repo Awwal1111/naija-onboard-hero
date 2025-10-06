@@ -57,9 +57,9 @@ const InfiniteScrollFeed: React.FC<InfiniteScrollFeedProps> = ({
     <div className="space-y-6">
       {posts.map((post, index) => (
         <React.Fragment key={`post-${post.id}-${index}`}>
-          {/* Insert "People You May Know" at every 2nd post */}
-          {index > 0 && index % 2 === 0 && (
-            <PeopleYouMayKnow />
+          {/* Insert "People You May Know" only once at the second block (after first post) */}
+          {index === 1 && (
+            <PeopleYouMayKnow onProfileClick={onProfileClick} />
           )}
           
           {/* Insert ad at positions 3, 5, and every 7 posts after that */}
