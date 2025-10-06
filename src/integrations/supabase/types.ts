@@ -1505,7 +1505,7 @@ export type Database = {
           area: string | null
           average_rating: number | null
           balance_non_withdrawable: number | null
-          balance_withdrawable: number | null
+          balance_withdrawable: number
           bio: string | null
           connections_count: number | null
           created_at: string
@@ -1532,7 +1532,7 @@ export type Database = {
           area?: string | null
           average_rating?: number | null
           balance_non_withdrawable?: number | null
-          balance_withdrawable?: number | null
+          balance_withdrawable?: number
           bio?: string | null
           connections_count?: number | null
           created_at?: string
@@ -1559,7 +1559,7 @@ export type Database = {
           area?: string | null
           average_rating?: number | null
           balance_non_withdrawable?: number | null
-          balance_withdrawable?: number | null
+          balance_withdrawable?: number
           bio?: string | null
           connections_count?: number | null
           created_at?: string
@@ -2496,7 +2496,15 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      is_group_lead_check: {
+        Args: { p_group_id: string; p_user_id: string }
+        Returns: boolean
+      }
       is_group_member: {
+        Args: { p_group_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      is_group_member_check: {
         Args: { p_group_id: string; p_user_id: string }
         Returns: boolean
       }
