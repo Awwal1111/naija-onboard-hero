@@ -126,6 +126,13 @@ const SpinWheelGame: React.FC = () => {
             )}
           </div>
 
+          {/* Ad Redemption Placeholder */}
+          <div className="p-4 border-2 border-dashed border-primary/30 rounded-lg bg-primary/5">
+            <p className="text-sm text-center text-muted-foreground">
+              Watch ads to redeem (Coming soon)
+            </p>
+          </div>
+
           {/* Spin Button */}
           <Button
             onClick={handleSpin}

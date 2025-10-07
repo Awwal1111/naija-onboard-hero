@@ -102,7 +102,7 @@ export const GuessNumberGame = () => {
     if (!user || !sessionId) return
 
     try {
-      const pointsEarned = won ? 10 : 0
+      const pointsEarned = won ? 50 : 0
       
       const { error } = await supabase
         .from('game_sessions')
@@ -236,8 +236,16 @@ export const GuessNumberGame = () => {
                 <p>• Guess a number between 1 and 100</p>
                 <p>• You have {maxAttempts} attempts</p>
                 <p>• Get hints after each wrong guess</p>
-                <p>• Win 10 NC if you guess correctly!</p>
+                <p>• Win 50 NC if you guess correctly!</p>
               </div>
+              
+              {/* Ad Redemption Placeholder */}
+              <div className="p-4 border-2 border-dashed border-primary/30 rounded-lg bg-primary/5">
+                <p className="text-sm text-center text-muted-foreground">
+                  Watch ads to redeem (Coming soon)
+                </p>
+              </div>
+              
               <Button 
                 onClick={startGame} 
                 className="w-full"
@@ -306,7 +314,7 @@ export const GuessNumberGame = () => {
                 <h2 className="text-2xl font-bold text-green-800">Congratulations! 🎉</h2>
                 <p className="text-green-700">You guessed it in {attempts} attempts!</p>
                 <p className="text-lg font-semibold text-green-800 mt-2">
-                  You earned 10 NC!
+                  You earned 50 NC!
                 </p>
               </div>
               <div className="space-y-2">

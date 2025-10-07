@@ -351,6 +351,13 @@ const NigerianTrivia: React.FC = () => {
             </div>
           </div>
 
+          {/* Ad Redemption Placeholder */}
+          <div className="p-4 border-2 border-dashed border-green-300 rounded-lg bg-green-50">
+            <p className="text-sm text-center text-green-700">
+              Watch ads to redeem (Coming soon)
+            </p>
+          </div>
+
           <Button
             onClick={startGame}
             disabled={playing || balance.total < ENTRY_FEE}

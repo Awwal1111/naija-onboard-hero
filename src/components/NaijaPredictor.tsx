@@ -195,6 +195,13 @@ const NaijaPredictor: React.FC = () => {
                 <span className="font-semibold text-blue-900">NC {question.total_pool}</span>
               </div>
 
+              {/* Ad Redemption Placeholder */}
+              <div className="p-4 border-2 border-dashed border-blue-300 rounded-lg bg-blue-50">
+                <p className="text-sm text-center text-blue-700">
+                  Watch ads to redeem (Coming soon)
+                </p>
+              </div>
+
               {/* Options */}
               <div className="space-y-3">
                 {question.options.map((option, index) => {
