@@ -43,7 +43,10 @@ export const ReferralTaskCard = ({ task, hasSubmitted, submissionStatus, onSubmi
     }
 
     setSubmitting(true)
+    console.log('Submitting task:', { taskId: task.id, proof, textExplanation })
     const result = await onSubmit(task.id, proof, textExplanation)
+    console.log('Submission result:', result)
+    
     if (result.success) {
       setOpen(false)
       setProof('')
