@@ -232,6 +232,28 @@ export const TransferDialog = ({ open, onOpenChange }: TransferDialogProps) => {
               </CardContent>
             </Card>
 
+            <Card className="border-amber-500/20 bg-amber-500/5">
+              <CardContent className="p-3">
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Total Balance:</span>
+                    <span className="font-medium">NC {balance.total.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Withdrawable:</span>
+                    <span className="font-semibold text-green-600">NC {balance.withdrawable.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Non-Withdrawable:</span>
+                    <span className="text-muted-foreground">NC {balance.non_withdrawable.toLocaleString()}</span>
+                  </div>
+                  <p className="text-xs text-amber-600 mt-2 pt-2 border-t border-amber-500/20">
+                    Only withdrawable balance can be sent
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
             <div className="space-y-2">
               <Label htmlFor="amount">Transfer Amount (NC)</Label>
               <Input
@@ -243,9 +265,10 @@ export const TransferDialog = ({ open, onOpenChange }: TransferDialogProps) => {
                 min="1"
                 max={balance.withdrawable}
               />
-              <p className="text-sm text-muted-foreground">
-                Available: NC {balance.withdrawable.toLocaleString()}
-              </p>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Can send up to:</span>
+                <span className="font-semibold text-green-600">NC {balance.withdrawable.toLocaleString()}</span>
+              </div>
             </div>
 
             <div className="flex gap-2">
