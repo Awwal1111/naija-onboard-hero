@@ -19,70 +19,64 @@ interface TriviaQuestion {
 }
 
 const triviaQuestions: TriviaQuestion[] = [
-  {
-    id: '1',
-    question: 'What is the capital of Nigeria?',
-    options: ['Lagos', 'Abuja', 'Kano', 'Port Harcourt'],
-    correct_answer: 1,
-    difficulty: 'easy',
-    category: 'Geography'
-  },
-  {
-    id: '2',
-    question: 'Which year did Nigeria gain independence?',
-    options: ['1958', '1960', '1962', '1963'],
-    correct_answer: 1,
-    difficulty: 'easy',
-    category: 'History'
-  },
-  {
-    id: '3',
-    question: 'What is the largest ethnic group in Nigeria?',
-    options: ['Yoruba', 'Igbo', 'Hausa-Fulani', 'Edo'],
-    correct_answer: 2,
-    difficulty: 'medium',
-    category: 'Culture'
-  },
-  {
-    id: '4',
-    question: 'Which Nigerian author wrote "Things Fall Apart"?',
-    options: ['Wole Soyinka', 'Chinua Achebe', 'Chimamanda Adichie', 'Ben Okri'],
-    correct_answer: 1,
-    difficulty: 'medium',
-    category: 'Literature'
-  },
-  {
-    id: '5',
-    question: 'What is the currency of Nigeria?',
-    options: ['Naira', 'Cedi', 'Franc', 'Rand'],
-    correct_answer: 0,
-    difficulty: 'easy',
-    category: 'Economy'
-  },
-  {
-    id: '6',
-    question: 'Which river is the longest in Nigeria?',
-    options: ['River Benue', 'River Niger', 'River Kaduna', 'River Cross'],
-    correct_answer: 1,
-    difficulty: 'medium',
-    category: 'Geography'
-  },
-  {
-    id: '7',
-    question: 'Who was Nigeria\'s first President?',
-    options: ['Nnamdi Azikiwe', 'Abubakar Tafawa Balewa', 'Obafemi Awolowo', 'Ahmadu Bello'],
-    correct_answer: 0,
-    difficulty: 'hard',
-    category: 'History'
-  },
-  {
-    id: '8',
-    question: 'Which state is known as the "Centre of Excellence"?',
-    options: ['Lagos', 'Ogun', 'Delta', 'Rivers'],
-    correct_answer: 0,
-    difficulty: 'medium',
-    category: 'Geography'
-  }
+  { id: '1', question: 'What is the capital of Nigeria?', options: ['Lagos', 'Abuja', 'Kano', 'Port Harcourt'], correct_answer: 1, difficulty: 'easy', category: 'Geography' },
+  { id: '2', question: 'Which year did Nigeria gain independence?', options: ['1958', '1960', '1962', '1963'], correct_answer: 1, difficulty: 'easy', category: 'History' },
+  { id: '3', question: 'What is the largest ethnic group in Nigeria?', options: ['Yoruba', 'Igbo', 'Hausa-Fulani', 'Edo'], correct_answer: 2, difficulty: 'medium', category: 'Culture' },
+  { id: '4', question: 'Which Nigerian author wrote "Things Fall Apart"?', options: ['Wole Soyinka', 'Chinua Achebe', 'Chimamanda Adichie', 'Ben Okri'], correct_answer: 1, difficulty: 'medium', category: 'Literature' },
+  { id: '5', question: 'What is the currency of Nigeria?', options: ['Naira', 'Cedi', 'Franc', 'Rand'], correct_answer: 0, difficulty: 'easy', category: 'Economy' },
+  { id: '6', question: 'Which river is the longest in Nigeria?', options: ['River Benue', 'River Niger', 'River Kaduna', 'River Cross'], correct_answer: 1, difficulty: 'medium', category: 'Geography' },
+  { id: '7', question: 'Who was Nigeria\'s first President?', options: ['Nnamdi Azikiwe', 'Abubakar Tafawa Balewa', 'Obafemi Awolowo', 'Ahmadu Bello'], correct_answer: 0, difficulty: 'hard', category: 'History' },
+  { id: '8', question: 'Which state is known as the "Centre of Excellence"?', options: ['Lagos', 'Ogun', 'Delta', 'Rivers'], correct_answer: 0, difficulty: 'medium', category: 'Geography' },
+  { id: '9', question: 'Who won the Nobel Prize in Literature from Nigeria?', options: ['Chinua Achebe', 'Wole Soyinka', 'Chimamanda Adichie', 'Ben Okri'], correct_answer: 1, difficulty: 'medium', category: 'Literature' },
+  { id: '10', question: 'What is Nigeria\'s most populous city?', options: ['Abuja', 'Kano', 'Lagos', 'Ibadan'], correct_answer: 2, difficulty: 'easy', category: 'Geography' },
+  { id: '11', question: 'In which year did Nigeria become a republic?', options: ['1960', '1963', '1979', '1999'], correct_answer: 1, difficulty: 'hard', category: 'History' },
+  { id: '12', question: 'What is the traditional attire of Yoruba men called?', options: ['Agbada', 'Kaftan', 'Jalabiya', 'Dashiki'], correct_answer: 0, difficulty: 'medium', category: 'Culture' },
+  { id: '13', question: 'Which Nigerian musician is known as the "African Giant"?', options: ['Wizkid', 'Davido', 'Burna Boy', 'Tiwa Savage'], correct_answer: 2, difficulty: 'easy', category: 'Entertainment' },
+  { id: '14', question: 'How many states are in Nigeria?', options: ['30', '33', '36', '40'], correct_answer: 2, difficulty: 'easy', category: 'Geography' },
+  { id: '15', question: 'What is Nigeria\'s national motto?', options: ['Unity and Faith', 'Peace and Progress', 'Unity, Peace, Progress', 'Strength in Diversity'], correct_answer: 0, difficulty: 'medium', category: 'Culture' },
+  { id: '16', question: 'Which Nigerian athlete won gold in the long jump at Olympics?', options: ['Mary Onyali', 'Chioma Ajunwa', 'Blessing Okagbare', 'Falilat Ogunkoya'], correct_answer: 1, difficulty: 'hard', category: 'Sports' },
+  { id: '17', question: 'What is the largest city in Northern Nigeria?', options: ['Kaduna', 'Jos', 'Kano', 'Maiduguri'], correct_answer: 2, difficulty: 'medium', category: 'Geography' },
+  { id: '18', question: 'Which Nigerian movie won an Oscar nomination?', options: ['The Figurine', 'October 1', 'Lionheart', 'King of Boys'], correct_answer: 2, difficulty: 'medium', category: 'Entertainment' },
+  { id: '19', question: 'What is the official language of Nigeria?', options: ['Yoruba', 'Hausa', 'Igbo', 'English'], correct_answer: 3, difficulty: 'easy', category: 'Culture' },
+  { id: '20', question: 'Who was Nigeria\'s first female pilot?', options: ['Blessing Liman', 'Chinyere Kalu', 'Funmilayo Ransome-Kuti', 'Margaret Ekpo'], correct_answer: 1, difficulty: 'hard', category: 'History' },
+  { id: '21', question: 'Which Nigerian state produces the most oil?', options: ['Lagos', 'Rivers', 'Delta', 'Akwa Ibom'], correct_answer: 3, difficulty: 'medium', category: 'Economy' },
+  { id: '22', question: 'What is the nickname of the Nigerian national football team?', options: ['Eagles', 'Super Eagles', 'Green Eagles', 'Flying Eagles'], correct_answer: 1, difficulty: 'easy', category: 'Sports' },
+  { id: '23', question: 'Which year did Nigeria host the FIFA U-17 World Cup?', options: ['2007', '2009', '2015', '2019'], correct_answer: 1, difficulty: 'hard', category: 'Sports' },
+  { id: '24', question: 'What is the largest university in Nigeria by land mass?', options: ['UI', 'ABU', 'OAU', 'UNICAL'], correct_answer: 1, difficulty: 'hard', category: 'Education' },
+  { id: '25', question: 'Which Nigerian invented the "World Wide Web of Television"?', options: ['Philip Emeagwali', 'Jelani Aliyu', 'Ayodele Awojobi', 'Ndubuisi Ekekwe'], correct_answer: 0, difficulty: 'hard', category: 'Technology' },
+  { id: '26', question: 'What is the traditional ruler in Yorubaland called?', options: ['Oba', 'Emir', 'Obi', 'Igwe'], correct_answer: 0, difficulty: 'medium', category: 'Culture' },
+  { id: '27', question: 'Which state is the "Food Basket of the Nation"?', options: ['Benue', 'Kaduna', 'Kano', 'Plateau'], correct_answer: 0, difficulty: 'medium', category: 'Geography' },
+  { id: '28', question: 'Who composed Nigeria\'s national anthem?', options: ['Herbert Macaulay', 'Ben Odiase', 'P.O. Aderibigbe', 'Lilian Jean Williams'], correct_answer: 2, difficulty: 'hard', category: 'History' },
+  { id: '29', question: 'What is the largest market in West Africa located in Nigeria?', options: ['Balogun Market', 'Onitsha Market', 'Ariaria Market', 'Kurmi Market'], correct_answer: 1, difficulty: 'medium', category: 'Economy' },
+  { id: '30', question: 'Which Nigerian won the African Cup of Nations Golden Boot in 2013?', options: ['Yakubu Aiyegbeni', 'Victor Moses', 'John Obi Mikel', 'Emmanuel Emenike'], correct_answer: 3, difficulty: 'hard', category: 'Sports' },
+  { id: '31', question: 'What is the second largest city in Nigeria?', options: ['Kano', 'Ibadan', 'Port Harcourt', 'Benin City'], correct_answer: 0, difficulty: 'medium', category: 'Geography' },
+  { id: '32', question: 'Which Nigerian actress is known as "Nollywood Queen"?', options: ['Genevieve Nnaji', 'Omotola Jalade', 'Funke Akindele', 'Rita Dominic'], correct_answer: 0, difficulty: 'easy', category: 'Entertainment' },
+  { id: '33', question: 'What year was Lagos State created?', options: ['1967', '1976', '1987', '1991'], correct_answer: 1, difficulty: 'hard', category: 'History' },
+  { id: '34', question: 'Which Nigerian invented the first African cryptocurrency?', options: ['Chinedu Echeruo', 'Sim Shagaya', 'Tunde Kehinde', 'Kunle Adeyemi'], correct_answer: 0, difficulty: 'hard', category: 'Technology' },
+  { id: '35', question: 'What is the highest mountain in Nigeria?', options: ['Obudu Plateau', 'Chappal Waddi', 'Aso Rock', 'Zuma Rock'], correct_answer: 1, difficulty: 'hard', category: 'Geography' },
+  { id: '36', question: 'Which Nigerian sang "Johnny"?', options: ['Yemi Alade', 'Tiwa Savage', 'Simi', 'Seyi Shay'], correct_answer: 0, difficulty: 'easy', category: 'Entertainment' },
+  { id: '37', question: 'What is the literacy rate in Nigeria approximately?', options: ['50%', '62%', '75%', '80%'], correct_answer: 1, difficulty: 'medium', category: 'Education' },
+  { id: '38', question: 'Which state in Nigeria has the most local governments?', options: ['Kano', 'Lagos', 'Rivers', 'Kaduna'], correct_answer: 0, difficulty: 'hard', category: 'Geography' },
+  { id: '39', question: 'Who is known as the father of Nigerian nationalism?', options: ['Herbert Macaulay', 'Nnamdi Azikiwe', 'Obafemi Awolowo', 'Ahmadu Bello'], correct_answer: 0, difficulty: 'medium', category: 'History' },
+  { id: '40', question: 'What is the popular Nigerian jollof rice spice?', options: ['Curry', 'Thyme', 'Paprika', 'Maggi'], correct_answer: 1, difficulty: 'easy', category: 'Culture' },
+  { id: '41', question: 'Which Nigerian designed the BMW Z4?', options: ['Jelani Aliyu', 'Kunle Adeyemi', 'Ayodele Awojobi', 'Chike Obi'], correct_answer: 0, difficulty: 'medium', category: 'Technology' },
+  { id: '42', question: 'What is Nigeria\'s dialing code?', options: ['+233', '+234', '+235', '+236'], correct_answer: 1, difficulty: 'easy', category: 'General' },
+  { id: '43', question: 'Which Nigerian boxer was a world champion?', options: ['Samuel Peter', 'Bash Ali', 'Dick Tiger', 'Ike Ibeabuchi'], correct_answer: 2, difficulty: 'hard', category: 'Sports' },
+  { id: '44', question: 'What is the largest ethnic group in the Middle Belt?', options: ['Tiv', 'Nupe', 'Idoma', 'Igala'], correct_answer: 0, difficulty: 'hard', category: 'Culture' },
+  { id: '45', question: 'Which year did Nigeria win the FIFA U-17 World Cup first?', options: ['1985', '1987', '1993', '2007'], correct_answer: 0, difficulty: 'hard', category: 'Sports' },
+  { id: '46', question: 'What is the oldest secondary school in Nigeria?', options: ['King\'s College', 'CMS Grammar School', 'Queen\'s College', 'Methodist Boys High School'], correct_answer: 1, difficulty: 'hard', category: 'Education' },
+  { id: '47', question: 'Which Nigerian state has the longest coastline?', options: ['Delta', 'Lagos', 'Rivers', 'Akwa Ibom'], correct_answer: 0, difficulty: 'hard', category: 'Geography' },
+  { id: '48', question: 'Who wrote the novel "Purple Hibiscus"?', options: ['Chimamanda Adichie', 'Buchi Emecheta', 'Sefi Atta', 'Helon Habila'], correct_answer: 0, difficulty: 'medium', category: 'Literature' },
+  { id: '49', question: 'What is the traditional greeting in Igbo?', options: ['Bawo ni', 'Kedu', 'Sannu', 'Migwo'], correct_answer: 1, difficulty: 'easy', category: 'Culture' },
+  { id: '50', question: 'Which Nigerian founded HopStop (acquired by Apple)?', options: ['Chinedu Echeruo', 'Sim Shagaya', 'Jason Njoku', 'Mark Essien'], correct_answer: 0, difficulty: 'hard', category: 'Technology' },
+  { id: '51', question: 'What is the traditional dance of the Yoruba?', options: ['Sharo', 'Bata', 'Ekombi', 'Swange'], correct_answer: 1, difficulty: 'medium', category: 'Culture' },
+  { id: '52', question: 'Which Nigerian state is called "The Sunshine State"?', options: ['Ondo', 'Ekiti', 'Osun', 'Ogun'], correct_answer: 0, difficulty: 'medium', category: 'Geography' },
+  { id: '53', question: 'Who is Nigeria\'s youngest billionaire?', options: ['Njoku Jason', 'Obinwanne Okeke', 'Linda Ikeji', 'Tobi Amusan'], correct_answer: 0, difficulty: 'medium', category: 'Business' },
+  { id: '54', question: 'What is the capital of Cross River State?', options: ['Calabar', 'Uyo', 'Port Harcourt', 'Yenagoa'], correct_answer: 0, difficulty: 'medium', category: 'Geography' },
+  { id: '55', question: 'Which Nigerian rapper is known as "The King of the Street"?', options: ['Olamide', 'Reminisce', 'Phyno', 'Naira Marley'], correct_answer: 0, difficulty: 'easy', category: 'Entertainment' },
+  { id: '56', question: 'What is the largest dam in Nigeria?', options: ['Shiroro Dam', 'Kainji Dam', 'Jebba Dam', 'Oyan Dam'], correct_answer: 1, difficulty: 'hard', category: 'Geography' },
+  { id: '57', question: 'Which state has the Yankari Game Reserve?', options: ['Taraba', 'Bauchi', 'Borno', 'Adamawa'], correct_answer: 1, difficulty: 'hard', category: 'Geography' },
+  { id: '58', question: 'Who is the richest man in Nigeria?', options: ['Mike Adenuga', 'Aliko Dangote', 'Femi Otedola', 'Tony Elumelu'], correct_answer: 1, difficulty: 'easy', category: 'Business' }
 ]
 
 const NigerianTrivia: React.FC = () => {
@@ -133,18 +127,26 @@ const NigerianTrivia: React.FC = () => {
     setPlaying(true)
 
     try {
-      // Deduct entry fee
+      // Deduct entry fee from wallet balance
+      const { error: deductError } = await supabase.rpc('increment_wallet_balance', {
+        target_user_id: user.id,
+        amount_to_add: -ENTRY_FEE
+      })
+
+      if (deductError) throw deductError
+
+      // Log the transaction
       await supabase
         .from('wallet_transactions')
         .insert({
           user_id: user.id,
           kind: 'game_loss',
-          amount: ENTRY_FEE,
+          amount: -ENTRY_FEE,
           status: 'completed',
           reference: 'Nigerian Trivia entry fee'
         } as any)
 
-      // Shuffle questions and select random ones
+      // Shuffle questions and select random ones for unique game experience
       const shuffled = [...triviaQuestions].sort(() => Math.random() - 0.5)
       const selectedQuestions = shuffled.slice(0, QUESTIONS_PER_GAME)
       
@@ -221,7 +223,15 @@ const NigerianTrivia: React.FC = () => {
 
     try {
       if (winnings > 0 && user) {
-        // Add winnings to withdrawable balance
+        // Add winnings to wallet balance
+        const { error: winError } = await supabase.rpc('increment_wallet_balance', {
+          target_user_id: user.id,
+          amount_to_add: winnings
+        })
+
+        if (winError) throw winError
+
+        // Log the transaction
         await supabase
           .from('wallet_transactions')
           .insert({

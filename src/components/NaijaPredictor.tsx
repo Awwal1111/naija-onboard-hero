@@ -93,6 +93,15 @@ const NaijaPredictor: React.FC = () => {
     setBetting(prev => ({ ...prev, [questionId]: true }))
 
     try {
+      // Deduct stake from wallet balance
+      const { error: deductError } = await supabase.rpc('increment_wallet_balance', {
+        target_user_id: user.id,
+        amount_to_add: -stakeAmount
+      })
+
+      if (deductError) throw deductError
+
+      // Place the bet
       const { error } = await supabase
         .from('predictor_bets')
         .insert({
@@ -103,6 +112,17 @@ const NaijaPredictor: React.FC = () => {
         })
 
       if (error) throw error
+
+      // Log the transaction
+      await supabase
+        .from('wallet_transactions')
+        .insert({
+          user_id: user.id,
+          kind: 'game_loss',
+          amount: -stakeAmount,
+          status: 'completed',
+          reference: `Naija Predictor stake`
+        } as any)
 
       toast({
         title: "Bet Placed!",

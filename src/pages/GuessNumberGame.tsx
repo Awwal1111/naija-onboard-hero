@@ -35,26 +35,46 @@ export const GuessNumberGame = () => {
   //   }
   // }, [user, navigate])
 
-  const startGame = () => {
+  const startGame = async () => {
     // Deduct 10 NC first
     if (!user || !profile || (profile.wallet_balance || 0) < 10) {
       toast.error('Insufficient balance. You need 10 NC to play.')
       return
     }
 
-    const number = Math.floor(Math.random() * 100) + 1
-    setTargetNumber(number)
-    setGameState('playing')
-    setAttempts(0)
-    setHint('')
-    setUserGuess('')
-    
-    // Deduct 10 NC from wallet
-    const newBalance = (profile.wallet_balance || 0) - 10
-    updateProfile({ wallet_balance: newBalance })
-    
-    // Create game session
-    createGameSession()
+    try {
+      // Deduct 10 NC from wallet using RPC
+      const { error: deductError } = await supabase.rpc('increment_wallet_balance', {
+        target_user_id: user.id,
+        amount_to_add: -10
+      })
+
+      if (deductError) throw deductError
+
+      // Log the transaction
+      await supabase
+        .from('wallet_transactions')
+        .insert({
+          user_id: user.id,
+          kind: 'game_loss',
+          amount: -10,
+          status: 'completed',
+          reference: 'Guess Number Game entry fee'
+        } as any)
+
+      const number = Math.floor(Math.random() * 100) + 1
+      setTargetNumber(number)
+      setGameState('playing')
+      setAttempts(0)
+      setHint('')
+      setUserGuess('')
+      
+      // Create game session
+      createGameSession()
+    } catch (error) {
+      console.error('Error starting game:', error)
+      toast.error('Failed to start game. Please try again.')
+    }
   }
 
   const createGameSession = async () => {
@@ -101,9 +121,25 @@ export const GuessNumberGame = () => {
       if (error) throw error
 
       if (won) {
-        // Update wallet balance
-        const newBalance = (profile?.wallet_balance || 0) + pointsEarned
-        await updateProfile({ wallet_balance: newBalance })
+        // Update wallet balance using RPC
+        const { error: winError } = await supabase.rpc('increment_wallet_balance', {
+          target_user_id: user.id,
+          amount_to_add: pointsEarned
+        })
+
+        if (winError) throw winError
+
+        // Log the transaction
+        await supabase
+          .from('wallet_transactions')
+          .insert({
+            user_id: user.id,
+            kind: 'game_win',
+            amount: pointsEarned,
+            status: 'completed',
+            reference: 'Guess Number Game winnings'
+          } as any)
+
         toast.success(`Congratulations! You earned ${pointsEarned} NC`)
       }
     } catch (error) {
