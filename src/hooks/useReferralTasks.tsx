@@ -84,33 +84,60 @@ export const useReferralTasks = () => {
   }
 
   const submitTask = async (taskId: string, proofUrl?: string, textExplanation?: string) => {
-    if (!user) return { success: false, error: 'Not authenticated' }
+    console.log('submitTask called', { user: user?.id, taskId, proofUrl, textExplanation })
+    
+    if (!user) {
+      console.error('No user found')
+      toast({
+        title: "Authentication Error",
+        description: "You must be logged in to submit a task",
+        variant: "destructive",
+      })
+      return { success: false, error: 'Not authenticated' }
+    }
+
+    // Validate inputs
+    if (!proofUrl && !textExplanation) {
+      toast({
+        title: "Validation Error",
+        description: "Please provide either a screenshot or text explanation",
+        variant: "destructive",
+      })
+      return { success: false, error: 'No proof provided' }
+    }
 
     try {
-      const { error } = await supabase
+      console.log('Inserting submission to database...')
+      const { data, error } = await supabase
         .from('referral_submissions')
         .insert({
           user_id: user.id,
           task_id: taskId,
-          proof_url: proofUrl,
-          text_explanation: textExplanation,
+          proof_url: proofUrl || null,
+          text_explanation: textExplanation || null,
           status: 'pending'
         })
+        .select()
 
-      if (error) throw error
+      console.log('Insert result:', { data, error })
+
+      if (error) {
+        console.error('Database error:', error)
+        throw error
+      }
 
       toast({
         title: "Success",
         description: "Task submitted successfully! Awaiting admin approval.",
       })
 
-      fetchSubmissions()
+      await fetchSubmissions()
       return { success: true }
     } catch (error: any) {
       console.error('Error submitting task:', error)
       toast({
-        title: "Error",
-        description: error.message || "Failed to submit task",
+        title: "Submission Failed",
+        description: error.message || "Failed to submit task. Please try again.",
         variant: "destructive",
       })
       return { success: false, error: error.message }

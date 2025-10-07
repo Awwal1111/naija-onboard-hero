@@ -38,21 +38,29 @@ export const ReferralTaskCard = ({ task, hasSubmitted, submissionStatus, onSubmi
   }
 
   const handleSubmit = async () => {
+    console.log('handleSubmit called', { proof, textExplanation: textExplanation.trim() })
+    
     if (!proof && !textExplanation.trim()) {
+      console.warn('No proof or explanation provided')
       return
     }
 
     setSubmitting(true)
-    console.log('Submitting task:', { taskId: task.id, proof, textExplanation })
-    const result = await onSubmit(task.id, proof, textExplanation)
-    console.log('Submission result:', result)
-    
-    if (result.success) {
-      setOpen(false)
-      setProof('')
-      setTextExplanation('')
+    try {
+      console.log('Submitting task:', { taskId: task.id, proof, textExplanation })
+      const result = await onSubmit(task.id, proof || undefined, textExplanation || undefined)
+      console.log('Submission result:', result)
+      
+      if (result.success) {
+        setOpen(false)
+        setProof('')
+        setTextExplanation('')
+      }
+    } catch (error) {
+      console.error('Submit error:', error)
+    } finally {
+      setSubmitting(false)
     }
-    setSubmitting(false)
   }
 
   const getStatusBadge = () => {
