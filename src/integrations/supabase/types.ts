@@ -1652,6 +1652,7 @@ export type Database = {
           proof_url: string | null
           status: string
           task_id: string
+          text_explanation: string | null
           updated_at: string
           user_id: string
         }
@@ -1662,6 +1663,7 @@ export type Database = {
           proof_url?: string | null
           status?: string
           task_id: string
+          text_explanation?: string | null
           updated_at?: string
           user_id: string
         }
@@ -1672,6 +1674,7 @@ export type Database = {
           proof_url?: string | null
           status?: string
           task_id?: string
+          text_explanation?: string | null
           updated_at?: string
           user_id?: string
         }
