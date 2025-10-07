@@ -146,22 +146,23 @@ export const useSafePay = (otherUserId: string) => {
 
     setLoading(true)
     try {
-      // Always use profiles.wallet_balance as source of truth
+      // Check withdrawable balance since that's what gets deducted
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('wallet_balance')
+        .select('balance_withdrawable, wallet_balance')
         .eq('user_id', user.id)
         .single()
 
       if (profileError) throw profileError
 
-      const availableBalance = profileData?.wallet_balance || 0
+      const withdrawableBalance = profileData?.balance_withdrawable || 0
+      const totalBalance = profileData?.wallet_balance || 0
 
-      // Check if user has sufficient balance
-      if (availableBalance < amount) {
+      // Check if user has sufficient withdrawable balance
+      if (withdrawableBalance < amount) {
         toast({
-          title: "Insufficient Balance",
-          description: `You need ${amount} NC but only have ${availableBalance} NC available. Please top up your wallet first.`,
+          title: "Insufficient Withdrawable Balance",
+          description: `You need ${amount} NC withdrawable balance but only have ${withdrawableBalance} NC available (Total: ${totalBalance} NC). Only withdrawable balance can be used for SafePay.`,
           variant: "destructive"
         })
         return

@@ -46,16 +46,24 @@ const SafePayDialog: React.FC<SafePayDialogProps> = ({ otherUserId, otherUserNam
             />
             <BrandButton 
               onClick={handlePropose}
-              disabled={!amount || parseInt(amount) <= 0 || loading}
+              disabled={!amount || parseInt(amount) <= 0 || parseInt(amount) > balance.withdrawable || loading}
               className="w-full"
             >
               {loading ? 'Creating...' : 'Propose SafePay'}
             </BrandButton>
           </div>
           
-          <p className="text-sm text-text-secondary text-center">
-            Your balance: NC {balance.total.toLocaleString()}
-          </p>
+          <div className="text-sm text-center space-y-1">
+            <p className="text-text-secondary">
+              Total Balance: NC {balance.total.toLocaleString()}
+            </p>
+            <p className="text-green-600 font-medium">
+              Withdrawable: NC {balance.withdrawable.toLocaleString()}
+            </p>
+            <p className="text-xs text-amber-600">
+              Only withdrawable balance can be used for SafePay
+            </p>
+          </div>
         </div>
       )
     }
