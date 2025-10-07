@@ -8,9 +8,13 @@ interface SafePayTransaction {
   buyer_id: string
   seller_id: string
   amount: number
-  status: 'proposed' | 'active' | 'complete' | 'cancelled' | 'disputed'
-  cancellation_requester_id?: string
-  expires_at?: string
+  status: 'proposed' | 'active' | 'complete' | 'cancelled' | 'disputed' | 'released'
+  cancel_requester_id?: string
+  cancel_approved_by?: string
+  completed_at?: string
+  dispute_reason?: string
+  admin_ruling?: string
+  auto_release_at?: string
   created_at: string
   updated_at: string
 }
@@ -241,27 +245,104 @@ export const useSafePay = (otherUserId: string) => {
 
     setLoading(true)
     try {
-      const { error } = await supabase
-        .from('safepay_transactions')
-        .update({
-          status: 'complete',
-          expires_at: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString()
-        })
-        .eq('id', activeTransaction.id)
-
-      if (error) throw error
+      await supabase.rpc('complete_safepay_work' as any, {
+        p_safepay_id: activeTransaction.id
+      })
 
       toast({
-        title: "Work Completed",
-        description: "Buyer has 5 days to release funds or dispute"
+        title: "Work Marked Complete",
+        description: "Buyer has 5 days to release funds or file a dispute"
       })
 
       await fetchActiveTransaction()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error completing SafePay:', error)
       toast({
         title: "Error",
-        description: "Failed to mark work as complete",
+        description: error.message || "Failed to mark work as complete",
+        variant: "destructive"
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const requestCancel = async () => {
+    if (!activeTransaction || activeTransaction.status !== 'active') return
+
+    setLoading(true)
+    try {
+      await supabase.rpc('request_cancel_safepay' as any, {
+        p_safepay_id: activeTransaction.id
+      })
+
+      toast({
+        title: "Cancel Requested",
+        description: "Waiting for the other party to agree"
+      })
+
+      await fetchActiveTransaction()
+    } catch (error: any) {
+      console.error('Error requesting cancel:', error)
+      toast({
+        title: "Error",
+        description: error.message || "Failed to request cancellation",
+        variant: "destructive"
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const approveCancel = async () => {
+    if (!activeTransaction) return
+
+    setLoading(true)
+    try {
+      await supabase.rpc('approve_cancel_safepay' as any, {
+        p_safepay_id: activeTransaction.id
+      })
+
+      toast({
+        title: "SafePay Cancelled",
+        description: "Funds have been returned to the buyer"
+      })
+
+      await fetchActiveTransaction()
+      await fetchWallet()
+    } catch (error: any) {
+      console.error('Error approving cancel:', error)
+      toast({
+        title: "Error",
+        description: error.message || "Failed to approve cancellation",
+        variant: "destructive"
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fileDispute = async (reason: string) => {
+    if (!activeTransaction || activeTransaction.status !== 'complete') return
+
+    setLoading(true)
+    try {
+      await supabase.rpc('file_dispute_safepay' as any, {
+        p_safepay_id: activeTransaction.id,
+        p_reason: reason
+      })
+
+      toast({
+        title: "Dispute Filed",
+        description: "An admin will review the case and make a ruling"
+      })
+
+      await fetchActiveTransaction()
+    } catch (error: any) {
+      console.error('Error filing dispute:', error)
+      toast({
+        title: "Error",
+        description: error.message || "Failed to file dispute",
         variant: "destructive"
       })
     } finally {
@@ -333,6 +414,9 @@ export const useSafePay = (otherUserId: string) => {
     acceptSafePay,
     completeSafePay,
     releaseFunds,
-    cancelSafePay
+    cancelSafePay,
+    requestCancel,
+    approveCancel,
+    fileDispute
   }
 }
