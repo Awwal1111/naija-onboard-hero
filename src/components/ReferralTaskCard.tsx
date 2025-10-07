@@ -20,7 +20,13 @@ export const ReferralTaskCard = ({ task, hasSubmitted, submissionStatus, onSubmi
   const [proof, setProof] = useState('')
   const [textExplanation, setTextExplanation] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const { uploadFile, uploadProgress } = useSecureFileUpload()
+
+  // Debug: Log when component mounts
+  useState(() => {
+    console.log('ReferralTaskCard mounted for task:', task.id, task.title)
+  })
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -38,26 +44,35 @@ export const ReferralTaskCard = ({ task, hasSubmitted, submissionStatus, onSubmi
   }
 
   const handleSubmit = async () => {
-    console.log('handleSubmit called', { proof, textExplanation: textExplanation.trim() })
+    console.log('🔵 handleSubmit called', { proof, textExplanation: textExplanation.trim() })
+    setError(null)
     
     if (!proof && !textExplanation.trim()) {
-      console.warn('No proof or explanation provided')
+      const msg = 'Please provide either a screenshot or text explanation'
+      console.warn('❌ Validation failed:', msg)
+      setError(msg)
       return
     }
 
     setSubmitting(true)
     try {
-      console.log('Submitting task:', { taskId: task.id, proof, textExplanation })
+      console.log('🚀 Submitting task:', { taskId: task.id, proof, textExplanation })
       const result = await onSubmit(task.id, proof || undefined, textExplanation || undefined)
-      console.log('Submission result:', result)
+      console.log('📥 Submission result:', result)
       
       if (result.success) {
+        console.log('✅ Success - closing dialog')
         setOpen(false)
         setProof('')
         setTextExplanation('')
+        setError(null)
+      } else {
+        console.error('❌ Submission failed:', result.error)
+        setError(result.error || 'Submission failed')
       }
-    } catch (error) {
-      console.error('Submit error:', error)
+    } catch (error: any) {
+      console.error('💥 Submit exception:', error)
+      setError(error.message || 'An unexpected error occurred')
     } finally {
       setSubmitting(false)
     }
@@ -161,6 +176,12 @@ export const ReferralTaskCard = ({ task, hasSubmitted, submissionStatus, onSubmi
                   className="mt-2"
                 />
               </div>
+
+              {error && (
+                <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-md">
+                  {error}
+                </div>
+              )}
 
               <div className="flex gap-2">
                 <Button
