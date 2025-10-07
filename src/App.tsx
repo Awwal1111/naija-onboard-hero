@@ -26,6 +26,7 @@ import Connections from "./pages/Connections";
 import EnhancedEarn from "./pages/EnhancedEarn";
 import { SocialMediaTasks } from "./pages/SocialMediaTasks";
 import { Surveys } from "./pages/Surveys";
+import { CpxSurveys } from "./pages/CpxSurveys";
 import { GuessNumberGame } from "./pages/GuessNumberGame";
 import { Referrals } from "./pages/Referrals";
 import PaymentSuccess from "./pages/PaymentSuccess";
@@ -71,6 +72,7 @@ const App = () => (
           <Route path="/experts" element={<ProtectedRoute><Experts /></ProtectedRoute>} />
           <Route path="/jobs" element={<ProtectedRoute><Jobs /></ProtectedRoute>} />
           <Route path="/surveys" element={<ProtectedRoute><Surveys /></ProtectedRoute>} />
+          <Route path="/cpx-surveys" element={<ProtectedRoute><CpxSurveys /></ProtectedRoute>} />
           <Route path="/games/guess-number" element={<ProtectedRoute><GuessNumberGame /></ProtectedRoute>} />
           <Route path="/referrals" element={<ProtectedRoute><Referrals /></ProtectedRoute>} />
           <Route path="/earn" element={<ProtectedRoute><EnhancedEarn /></ProtectedRoute>} />

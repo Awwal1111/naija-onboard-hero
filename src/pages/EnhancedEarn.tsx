@@ -46,6 +46,13 @@ const EnhancedEarn = () => {
       path: '/surveys'
     },
     {
+      title: 'CPX Research Surveys',
+      description: 'Complete surveys from CPX Research',
+      icon: FileText,
+      reward: 'Up to NC 2000',
+      path: '/cpx-surveys'
+    },
+    {
       title: 'Gigs & Services',
       description: 'Offer your professional services',
       icon: User,

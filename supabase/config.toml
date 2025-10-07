@@ -6,6 +6,18 @@ verify_jwt = true
 [functions.bitlabs-callbacks]
 verify_jwt = false
 
+[functions.cpx-postback]
+verify_jwt = false
+
+[functions.cpx-screenout]
+verify_jwt = false
+
+[functions.cpx-bonus]
+verify_jwt = false
+
+[functions.cpx-event-canceled]
+verify_jwt = false
+
 [functions.send-expert-notification]
 verify_jwt = true
 
