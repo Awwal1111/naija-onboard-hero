@@ -26,9 +26,14 @@ export const ReferralTaskCard = ({ task, hasSubmitted, submissionStatus, onSubmi
     const file = event.target.files?.[0]
     if (!file) return
 
-    const result = await uploadFile(file, 'referral-tasks')
+    console.log('Uploading file:', file.name, 'Type:', file.type, 'Size:', file.size)
+    const result = await uploadFile(file, 'referral-tasks', undefined, 'image')
+    
     if (result.url) {
+      console.log('Upload successful:', result.url)
       setProof(result.url)
+    } else {
+      console.error('Upload failed:', result.error)
     }
   }
 
