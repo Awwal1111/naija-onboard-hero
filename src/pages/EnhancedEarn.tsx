@@ -65,6 +65,34 @@ const EnhancedEarn = () => {
       icon: FileText,
       reward: 'Up to NC 200',
       path: '/earn/articles'
+    },
+    {
+      title: 'Guess Number Game',
+      description: 'Guess the number and win',
+      icon: Trophy,
+      reward: 'Win NC 10',
+      path: '/earn/guess-number'
+    },
+    {
+      title: 'Nigerian Trivia',
+      description: 'Test your Nigerian knowledge',
+      icon: Trophy,
+      reward: 'Win NC 50',
+      path: '/earn/trivia'
+    },
+    {
+      title: 'Spin Wheel',
+      description: 'Spin the wheel for prizes',
+      icon: Trophy,
+      reward: 'Up to NC 100',
+      path: '/earn/spin-wheel'
+    },
+    {
+      title: 'Naija Predictor',
+      description: 'Predict outcomes and win',
+      icon: Trophy,
+      reward: 'Win from pool',
+      path: '/earn/predictor'
     }
   ]
 
