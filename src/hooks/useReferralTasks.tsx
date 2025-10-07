@@ -18,6 +18,7 @@ export interface ReferralSubmission {
   user_id: string
   task_id: string
   proof_url?: string
+  text_explanation?: string
   status: string
   admin_comment?: string
   created_at: string

@@ -246,6 +246,13 @@ export const AdminReferralTasks = () => {
                       </div>
                     </div>
                   )}
+
+                  {submission.text_explanation && (
+                    <div>
+                      <Label>Text Explanation:</Label>
+                      <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{submission.text_explanation}</p>
+                    </div>
+                  )}
                   
                   {submission.admin_comment && (
                     <div>

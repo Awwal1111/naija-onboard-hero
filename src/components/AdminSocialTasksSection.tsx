@@ -45,7 +45,7 @@ export const AdminSocialTasksSection = () => {
           earner:profiles!social_tasks_progress_earner_id_fkey(full_name, profile_picture_url),
           task:social_tasks!social_tasks_progress_task_id_fkey(platform, type, reward)
         `)
-        .eq('status', 'completed')
+        .eq('status', 'pending')
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -63,7 +63,7 @@ export const AdminSocialTasksSection = () => {
       // Update submission status
       const { error: updateError } = await supabase
         .from('social_tasks_progress')
-        .update({ status: 'approved' })
+        .update({ status: 'completed' })
         .eq('id', submissionId)
 
       if (updateError) throw updateError
