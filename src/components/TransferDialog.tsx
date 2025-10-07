@@ -58,19 +58,44 @@ export const TransferDialog = ({ open, onOpenChange }: TransferDialogProps) => {
 
     setLoading(true)
     try {
-      // For now, we'll just set a placeholder recipient and verify during transfer
-      // In production, you might want to create a lookup function
+      // Call an RPC function to look up the user by email
+      const { data, error } = await supabase.rpc('lookup_user_by_email', {
+        lookup_email: email.trim().toLowerCase()
+      })
+
+      if (error) throw error
+
+      const result = data as any
+
+      if (!result || !result.found) {
+        toast({
+          title: "User Not Found",
+          description: "No user found with this email address",
+          variant: "destructive"
+        })
+        return
+      }
+
+      if (result.user_id === user?.id) {
+        toast({
+          title: "Invalid Recipient",
+          description: "You cannot send money to yourself",
+          variant: "destructive"
+        })
+        return
+      }
+
       setRecipient({
-        name: 'User', // Will be updated during transfer
-        email: email.trim(),
-        userId: 'temp' // Temporary, will be resolved during transfer
+        name: result.full_name || result.email || 'NaijaLancers User',
+        email: result.email || email.trim(),
+        userId: result.user_id
       })
       setStep('confirm')
     } catch (error: any) {
       console.error('Error finding recipient:', error)
       toast({
         title: "Error",
-        description: "Failed to validate recipient",
+        description: error.message || "Failed to find recipient. Please try again.",
         variant: "destructive"
       })
     } finally {
@@ -101,7 +126,7 @@ export const TransferDialog = ({ open, onOpenChange }: TransferDialogProps) => {
     if (transferAmount > balance.withdrawable) {
       toast({
         title: "Insufficient Balance",
-        description: "You don't have enough withdrawable balance",
+        description: `You don't have enough withdrawable balance. Available: NC ${balance.withdrawable.toLocaleString()}`,
         variant: "destructive"
       })
       return
@@ -123,19 +148,19 @@ export const TransferDialog = ({ open, onOpenChange }: TransferDialogProps) => {
         sender_id: user?.id,
         recipient_email: email.trim(),
         amount: transferAmount,
-        pin_hash: pin // In real app, this should be hashed client-side
+        pin_hash: pin
       })
 
       if (error) throw error
 
-      const result = data as { success: boolean; error?: string; recipient_name?: string }
+      const result = data as any
       
-      if (!result.success) {
-        throw new Error(result.error || 'Transfer failed')
+      if (!result || !result.success) {
+        throw new Error(result?.error || 'Transfer failed')
       }
 
       toast({
-        title: "Transfer Successful",
+        title: "Transfer Successful! 🎉",
         description: `Successfully sent NC ${transferAmount.toLocaleString()} to ${result.recipient_name}`,
       })
 
@@ -143,11 +168,21 @@ export const TransferDialog = ({ open, onOpenChange }: TransferDialogProps) => {
       handleClose()
     } catch (error: any) {
       console.error('Transfer error:', error)
-      toast({
-        title: "Transfer Failed",
-        description: error.message || "Failed to complete transfer",
-        variant: "destructive"
-      })
+      
+      // Check if error is about PIN setup
+      if (error.message?.includes('set up your transaction PIN')) {
+        toast({
+          title: "PIN Not Set",
+          description: "Please set up your transaction PIN in Settings before making transfers",
+          variant: "destructive"
+        })
+      } else {
+        toast({
+          title: "Transfer Failed",
+          description: error.message || "Failed to complete transfer",
+          variant: "destructive"
+        })
+      }
     } finally {
       setLoading(false)
     }
@@ -247,7 +282,12 @@ export const TransferDialog = ({ open, onOpenChange }: TransferDialogProps) => {
                 value={pin}
                 onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
                 maxLength={4}
+                autoFocus
               />
+              <p className="text-xs text-muted-foreground">
+                Don't have a PIN? Set it up in{' '}
+                <a href="/settings/pin" className="text-primary underline">Settings</a>
+              </p>
             </div>
 
             <div className="flex gap-2">

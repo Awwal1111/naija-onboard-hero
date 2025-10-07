@@ -272,7 +272,7 @@ export const SetupPin = () => {
         <Alert className="mt-6">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            <strong>Important:</strong> Keep your PIN secure. You'll need it for all money transfers.
+            <strong>Important:</strong> Your PIN is stored securely and is required for all money transfers. Never share your PIN with anyone, including NaijaLancers support staff.
           </AlertDescription>
         </Alert>
       </div>

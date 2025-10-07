@@ -2511,6 +2511,10 @@ export type Database = {
         Args: { p_group_id: string; p_user_id: string }
         Returns: boolean
       }
+      lookup_user_by_email: {
+        Args: { lookup_email: string }
+        Returns: Json
+      }
       refund_safepay: {
         Args: { p_escrow_id: string; p_requester: string }
         Returns: undefined
