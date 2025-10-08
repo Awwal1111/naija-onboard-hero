@@ -23,7 +23,7 @@ const networks = [
 ];
 
 const bonusOptions = [
-  { value: '', label: 'Regular Airtime' },
+  { value: 'none', label: 'Regular Airtime' },
   { value: '01', label: 'MTN Awuf (400% bonus)' },
   { value: '02', label: 'MTN Garabasa (1000% bonus)' },
 ];
@@ -34,7 +34,7 @@ export const AirtimeDialog = ({ open, onOpenChange, currentBalance, onSuccess }:
   const [network, setNetwork] = useState<string>('');
   const [amount, setAmount] = useState<string>('');
   const [phone, setPhone] = useState<string>('');
-  const [bonusType, setBonusType] = useState<string>('');
+  const [bonusType, setBonusType] = useState<string>('none');
 
   const handlePurchase = async () => {
     if (!network || !amount || !phone) {
@@ -73,7 +73,7 @@ export const AirtimeDialog = ({ open, onOpenChange, currentBalance, onSuccess }:
           network,
           amount: amountNum,
           phone,
-          ...(bonusType && network === '01' ? { bonusType } : {})
+          ...(bonusType !== 'none' && network === '01' ? { bonusType } : {})
         }
       });
 
@@ -87,7 +87,7 @@ export const AirtimeDialog = ({ open, onOpenChange, currentBalance, onSuccess }:
         setNetwork('');
         setAmount('');
         setPhone('');
-        setBonusType('');
+        setBonusType('none');
         onOpenChange(false);
         if (onSuccess) onSuccess();
       } else {
