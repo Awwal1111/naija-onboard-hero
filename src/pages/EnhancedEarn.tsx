@@ -2,19 +2,21 @@ import React, { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Trophy, Zap, FileText, User, History, Users, ArrowUpRight } from 'lucide-react'
+import { Trophy, Zap, FileText, User, History, Users, ArrowUpRight, Phone, Wifi, TrendingUp } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useWallet } from '@/hooks/useWallet'
 import NaijaLanceWalletCard from '@/components/NaijaLanceWalletCard'
 import { DailySigninCard } from '@/components/DailySigninCard'
 import { TransactionHistory } from '@/components/TransactionHistory'
 import { WithdrawalDialog } from '@/components/WithdrawalDialog'
+import { AirtimeDialog } from '@/components/AirtimeDialog'
 import TopBannerAd from '@/components/TopBannerAd'
 
 const EnhancedEarn = () => {
   const { balance, loading } = useWallet()
   const navigate = useNavigate()
   const [showWithdrawDialog, setShowWithdrawDialog] = useState(false)
+  const [showAirtimeDialog, setShowAirtimeDialog] = useState(false)
 
   const earningMethods = [
     {
@@ -109,13 +111,13 @@ const EnhancedEarn = () => {
           <p className="text-text-secondary">Complete tasks and earn Naijacoins</p>
         </div>
 
-        {/* Wallet Summary with Withdraw Button */}
+        {/* Wallet Summary with Action Buttons */}
         <div className="mb-6">
           <NaijaLanceWalletCard balance={balance} />
-          <div className="mt-4 flex gap-3">
+          <div className="mt-4 grid grid-cols-2 gap-3">
             <Button
               variant="outline" 
-              className="flex-1"
+              className="w-full"
               onClick={() => setShowWithdrawDialog(true)}
             >
               <ArrowUpRight className="h-4 w-4 mr-2" />
@@ -123,12 +125,46 @@ const EnhancedEarn = () => {
             </Button>
             <Button
               variant="outline"
-              className="flex-1"
+              className="w-full"
               onClick={() => navigate('/activity-log')}
             >
               <History className="h-4 w-4 mr-2" />
               History
             </Button>
+          </div>
+          
+          {/* Bill Payment Options */}
+          <div className="mt-4">
+            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-primary" />
+              Bill Payments & Services
+            </h3>
+            <div className="grid grid-cols-3 gap-3">
+              <Button
+                variant="outline"
+                className="flex flex-col items-center justify-center h-20 gap-2"
+                onClick={() => setShowAirtimeDialog(true)}
+              >
+                <Phone className="h-5 w-5 text-primary" />
+                <span className="text-xs">Airtime</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="flex flex-col items-center justify-center h-20 gap-2"
+                disabled
+              >
+                <Wifi className="h-5 w-5 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">Data</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="flex flex-col items-center justify-center h-20 gap-2"
+                disabled
+              >
+                <Trophy className="h-5 w-5 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">Bet Fund</span>
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -179,6 +215,17 @@ const EnhancedEarn = () => {
         open={showWithdrawDialog}
         onOpenChange={setShowWithdrawDialog}
         currentBalance={balance.total}
+      />
+
+      {/* Airtime Purchase Dialog */}
+      <AirtimeDialog 
+        open={showAirtimeDialog}
+        onOpenChange={setShowAirtimeDialog}
+        currentBalance={balance.total}
+        onSuccess={() => {
+          // Refresh wallet balance after successful purchase
+          window.location.reload();
+        }}
       />
     </div>
   )
