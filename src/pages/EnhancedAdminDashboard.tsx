@@ -21,13 +21,18 @@ import { AdminWalletManagement } from '@/components/AdminWalletManagement'
 const EnhancedAdminDashboard = () => {
   const navigate = useNavigate()
   const { toast } = useToast()
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
 
   // Check if user is admin
   useEffect(() => {
     const checkAdminAccess = async () => {
+      // Wait for auth to finish loading
+      if (authLoading) {
+        return
+      }
+
       if (!user) {
         navigate('/login')
         return
@@ -50,7 +55,7 @@ const EnhancedAdminDashboard = () => {
     }
 
     checkAdminAccess()
-  }, [user, navigate, toast])
+  }, [user, authLoading, navigate, toast])
   
   // Dashboard Data
   const [dashboardStats, setDashboardStats] = useState({
@@ -214,7 +219,7 @@ const EnhancedAdminDashboard = () => {
     post.title?.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
