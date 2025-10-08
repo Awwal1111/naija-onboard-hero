@@ -14,6 +14,96 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_invitations: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invitation_token: string
+          invited_by: string
+          role: Database["public"]["Enums"]["user_role"]
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invitation_token: string
+          invited_by: string
+          role: Database["public"]["Enums"]["user_role"]
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invitation_token?: string
+          invited_by?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      admin_stats: {
+        Row: {
+          active_users: number
+          created_at: string
+          id: string
+          new_signups: number
+          pending_applications: number
+          stat_date: string
+          total_experts: number
+          total_jobs: number
+          total_posts: number
+          total_revenue: number
+          total_transactions: number
+          total_users: number
+          total_wallet_balance: number
+          updated_at: string
+        }
+        Insert: {
+          active_users?: number
+          created_at?: string
+          id?: string
+          new_signups?: number
+          pending_applications?: number
+          stat_date?: string
+          total_experts?: number
+          total_jobs?: number
+          total_posts?: number
+          total_revenue?: number
+          total_transactions?: number
+          total_users?: number
+          total_wallet_balance?: number
+          updated_at?: string
+        }
+        Update: {
+          active_users?: number
+          created_at?: string
+          id?: string
+          new_signups?: number
+          pending_applications?: number
+          stat_date?: string
+          total_experts?: number
+          total_jobs?: number
+          total_posts?: number
+          total_revenue?: number
+          total_transactions?: number
+          total_users?: number
+          total_wallet_balance?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       admin_wallet: {
         Row: {
           balance: number
@@ -2421,6 +2511,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_admin_invitation: {
+        Args: { p_token: string }
+        Returns: Json
+      }
       accept_safepay: {
         Args:
           | { p_acceptor: string; p_escrow_id: string }
@@ -2514,6 +2608,10 @@ export type Database = {
       lookup_user_by_email: {
         Args: { lookup_email: string }
         Returns: Json
+      }
+      refresh_admin_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       refund_safepay: {
         Args: { p_escrow_id: string; p_requester: string }

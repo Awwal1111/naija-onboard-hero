@@ -17,6 +17,7 @@ import { AdminSocialTasksSection } from '@/components/AdminSocialTasksSection'
 import { AdminReferralTasksSection } from '@/components/AdminReferralTasksSection'
 import { AdminArticlesSection } from '@/components/AdminArticlesSection'
 import { AdminWalletManagement } from '@/components/AdminWalletManagement'
+import { AdminSettingsTab } from '@/components/AdminSettingsTab'
 
 const EnhancedAdminDashboard = () => {
   const navigate = useNavigate()
@@ -80,7 +81,37 @@ const EnhancedAdminDashboard = () => {
 
   useEffect(() => {
     fetchDashboardData()
+    refreshStats()
   }, [])
+
+  const refreshStats = async () => {
+    try {
+      // Refresh admin stats
+      await supabase.rpc('refresh_admin_stats')
+      
+      // Fetch the updated stats
+      const { data: statsData } = await supabase
+        .from('admin_stats')
+        .select('*')
+        .eq('stat_date', new Date().toISOString().split('T')[0])
+        .single()
+
+      if (statsData) {
+        setDashboardStats({
+          totalUsers: statsData.total_users,
+          activeUsers: statsData.active_users,
+          totalExperts: statsData.total_experts,
+          totalPosts: statsData.total_posts,
+          totalJobs: statsData.total_jobs,
+          totalRevenue: Number(statsData.total_revenue),
+          pendingApplications: statsData.pending_applications,
+          recentSignups: statsData.new_signups
+        })
+      }
+    } catch (error) {
+      console.error('Error refreshing stats:', error)
+    }
+  }
 
   const fetchDashboardData = async () => {
     try {
@@ -114,14 +145,14 @@ const EnhancedAdminDashboard = () => {
         .select('*')
         .order('submitted_at', { ascending: false })
 
-      // Calculate stats
+      // Calculate real stats
       const stats = {
         totalUsers: usersData?.length || 0,
         activeUsers: usersData?.filter(u => new Date(u.created_at) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)).length || 0,
         totalExperts: usersData?.filter(u => u.is_expert).length || 0,
         totalPosts: postsData?.length || 0,
         totalJobs: jobPostsData?.length || 0,
-        totalRevenue: 25680, // Mock data - would come from transactions
+        totalRevenue: 0, // Will be calculated from admin_stats
         pendingApplications: applicationsData?.filter(a => a.status === 'pending').length || 0,
         recentSignups: usersData?.filter(u => new Date(u.created_at) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)).length || 0
       }
@@ -131,14 +162,6 @@ const EnhancedAdminDashboard = () => {
       setJobPosts(jobPostsData || [])
       setApplications(applicationsData || [])
       setDashboardStats(stats)
-      
-      // Mock system activity
-      setSystemActivity([
-        { id: 1, type: 'user_signup', description: 'New user registration', time: '2 minutes ago', severity: 'info' },
-        { id: 2, type: 'expert_approved', description: 'Expert application approved', time: '15 minutes ago', severity: 'success' },
-        { id: 3, type: 'post_reported', description: 'Post flagged for review', time: '1 hour ago', severity: 'warning' },
-        { id: 4, type: 'payment_processed', description: 'Payment of NC 5,000 processed', time: '2 hours ago', severity: 'success' }
-      ])
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
@@ -355,7 +378,7 @@ const EnhancedAdminDashboard = () => {
             <TabsTrigger value="applications">Expert Applications</TabsTrigger>
             <TabsTrigger value="wallet">Wallet Management</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
-            <TabsTrigger value="system">System Activity</TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
@@ -366,23 +389,32 @@ const EnhancedAdminDashboard = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Activity className="h-5 w-5" />
-                    Recent System Activity
+                    Platform Statistics
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {systemActivity.map((activity) => (
-                    <div key={activity.id} className="flex items-center gap-3 p-3 bg-muted rounded-xl">
-                      <div className={`w-2 h-2 rounded-full ${
-                        activity.severity === 'success' ? 'bg-green-500' :
-                        activity.severity === 'warning' ? 'bg-yellow-500' :
-                        activity.severity === 'error' ? 'bg-red-500' : 'bg-blue-500'
-                      }`} />
-                      <div className="flex-1">
-                        <p className="text-sm text-text-primary">{activity.description}</p>
-                        <p className="text-xs text-text-secondary">{activity.time}</p>
-                      </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <p className="text-xs text-text-secondary">Total Users</p>
+                      <p className="text-2xl font-bold text-text-primary">{dashboardStats.totalUsers}</p>
                     </div>
-                  ))}
+                    <div className="space-y-1">
+                      <p className="text-xs text-text-secondary">Total Experts</p>
+                      <p className="text-2xl font-bold text-text-primary">{dashboardStats.totalExperts}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs text-text-secondary">Total Posts</p>
+                      <p className="text-2xl font-bold text-text-primary">{dashboardStats.totalPosts}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs text-text-secondary">Total Jobs</p>
+                      <p className="text-2xl font-bold text-text-primary">{dashboardStats.totalJobs}</p>
+                    </div>
+                  </div>
+                  <Button onClick={refreshStats} variant="outline" className="w-full mt-4">
+                    <Activity className="h-4 w-4 mr-2" />
+                    Refresh Statistics
+                  </Button>
                 </CardContent>
               </Card>
 
@@ -630,6 +662,11 @@ const EnhancedAdminDashboard = () => {
             <AdminWalletManagement />
           </TabsContent>
 
+          {/* Settings Tab */}
+          <TabsContent value="settings" className="space-y-6">
+            <AdminSettingsTab />
+          </TabsContent>
+
           {/* Analytics Tab */}
           <TabsContent value="analytics" className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -692,42 +729,6 @@ const EnhancedAdminDashboard = () => {
             </Alert>
           </TabsContent>
 
-          {/* System Activity Tab */}
-          <TabsContent value="system" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Activity className="h-5 w-5" />
-                  System Activity Log
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {systemActivity.concat([
-                    { id: 5, type: 'database_backup', description: 'Automated database backup completed', time: '3 hours ago', severity: 'success' },
-                    { id: 6, type: 'security_scan', description: 'Security scan completed - no issues found', time: '6 hours ago', severity: 'success' },
-                    { id: 7, type: 'maintenance', description: 'Scheduled maintenance window', time: '12 hours ago', severity: 'info' },
-                    { id: 8, type: 'server_restart', description: 'Server restart due to update', time: '1 day ago', severity: 'warning' }
-                  ]).map((activity) => (
-                    <div key={activity.id} className="flex items-center gap-4 p-4 bg-muted rounded-xl">
-                      <div className={`w-3 h-3 rounded-full flex-shrink-0 ${
-                        activity.severity === 'success' ? 'bg-green-500' :
-                        activity.severity === 'warning' ? 'bg-yellow-500' :
-                        activity.severity === 'error' ? 'bg-red-500' : 'bg-blue-500'
-                      }`} />
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <p className="font-medium text-text-primary">{activity.description}</p>
-                          <span className="text-xs text-text-secondary">{activity.time}</span>
-                        </div>
-                        <p className="text-sm text-text-secondary capitalize">{activity.type.replace('_', ' ')}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
         </Tabs>
       </div>
 

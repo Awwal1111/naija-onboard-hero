@@ -1,5 +1,6 @@
-import React, { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import React, { useState, useEffect } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { supabase } from '@/integrations/supabase/client'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Logo } from '@/components/ui/logo'
 import { BrandButton } from '@/components/ui/brand-button'
@@ -12,12 +13,62 @@ import { validatePasswordStrength } from '@/lib/security'
 const SignUp = () => {
   const navigate = useNavigate()
   const { toast } = useToast()
+  const [searchParams] = useSearchParams()
+  const inviteToken = searchParams.get('invite')
+  
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     password: '',
     acceptedTerms: false
   })
+  const [invitationRole, setInvitationRole] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (inviteToken) {
+      // Verify invitation and pre-fill email
+      supabase
+        .from('admin_invitations')
+        .select('email, role, status, expires_at')
+        .eq('invitation_token', inviteToken)
+        .single()
+        .then(({ data, error }) => {
+          if (error || !data) {
+            toast({
+              title: "Invalid Invitation",
+              description: "This invitation link is invalid or has expired",
+              variant: "destructive"
+            })
+            return
+          }
+
+          if (data.status !== 'pending') {
+            toast({
+              title: "Invitation Already Used",
+              description: "This invitation has already been accepted",
+              variant: "destructive"
+            })
+            return
+          }
+
+          if (new Date(data.expires_at) < new Date()) {
+            toast({
+              title: "Invitation Expired",
+              description: "This invitation has expired",
+              variant: "destructive"
+            })
+            return
+          }
+
+          setFormData(prev => ({ ...prev, email: data.email }))
+          setInvitationRole(data.role)
+          toast({
+            title: "Invitation Found",
+            description: `You've been invited as ${data.role}. Please complete your registration.`,
+          })
+        })
+    }
+  }, [inviteToken])
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [passwordValidation, setPasswordValidation] = useState<{
@@ -64,6 +115,30 @@ const SignUp = () => {
       formData.password || '', 
       formData.fullName || 'User'
     )
+    
+    if (!error && inviteToken) {
+      // Accept invitation after successful signup
+      try {
+        const { data, error: inviteError } = await supabase.rpc('accept_admin_invitation', {
+          p_token: inviteToken
+        }) as { data: any; error: any }
+
+        if (inviteError || !data?.success) {
+          toast({
+            title: "Invitation Error",
+            description: data?.error || "Failed to accept invitation",
+            variant: "destructive"
+          })
+        } else {
+          toast({
+            title: "Role Assigned",
+            description: `You've been assigned the ${data.role} role`,
+          })
+        }
+      } catch (error: any) {
+        console.error('Error accepting invitation:', error)
+      }
+    }
     
     setIsLoading(false)
     
