@@ -99,15 +99,59 @@ serve(async (req) => {
     }
 
     console.log("Calling Clubkonnect API for user:", user.id);
+    console.log("API URL:", apiUrl.replace(apiKey, 'HIDDEN'));
 
     // Call Clubkonnect API
     const apiResponse = await fetch(apiUrl);
-    const apiData = await apiResponse.json();
+    
+    if (!apiResponse.ok) {
+      throw new Error(`API request failed with status ${apiResponse.status}`);
+    }
 
-    console.log("Clubkonnect API response:", apiData);
+    const responseText = await apiResponse.text();
+    console.log("Clubkonnect API raw response:", responseText);
 
+    let apiData;
+    try {
+      apiData = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error("Failed to parse API response:", parseError);
+      throw new Error("Invalid response from airtime provider");
+    }
+
+    console.log("Clubkonnect API parsed response:", apiData);
+
+    // Check for API errors
+    const statusCode = apiData.statuscode?.toString();
+    const status = apiData.status || apiData.STATUS;
+    
+    // Handle error responses
+    const errorStatuses = [
+      'INVALID_CREDENTIALS', 'MISSING_CREDENTIALS', 'MISSING_USERID',
+      'MISSING_APIKEY', 'MISSING_MOBILENETWORK', 'MISSING_AMOUNT',
+      'INVALID_AMOUNT', 'MINIMUM_50', 'MAXIMUM_200000', 'INVALID_RECIPIENT'
+    ];
+    
+    if (errorStatuses.includes(status)) {
+      // Refund the wallet since purchase failed
+      await supabaseService
+        .from('profiles')
+        .update({
+          wallet_balance: profile.wallet_balance,
+          balance_withdrawable: profile.balance_withdrawable,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id);
+      
+      throw new Error(status.replace(/_/g, ' '));
+    }
+
+    // statuscode "100" = ORDER_RECEIVED (success)
+    // statuscode "200" = ORDER_COMPLETED (success)
+    const isSuccess = statusCode === "100" || statusCode === "200";
+    const transactionStatus = statusCode === "200" ? 'completed' : 'pending';
+    
     // Log transaction
-    const transactionStatus = apiData.statuscode === "200" ? 'completed' : 'pending';
     const { error: transactionError } = await supabaseService
       .from('wallet_transactions')
       .insert({
@@ -121,6 +165,7 @@ serve(async (req) => {
           phone: cleanPhone,
           bonusType,
           orderid: apiData.orderid,
+          statuscode: statusCode,
           clubkonnect_response: apiData
         }
       });
@@ -131,11 +176,12 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({
-        success: apiData.statuscode === "200",
-        message: apiData.orderstatus || apiData.orderremark || "Airtime purchase initiated",
+        success: isSuccess,
+        message: status || apiData.remark || "Airtime purchase initiated",
         orderid: apiData.orderid,
         requestId,
-        balance: profile.wallet_balance - amount
+        balance: profile.wallet_balance - amount,
+        statusCode
       }),
       {
         status: 200,
