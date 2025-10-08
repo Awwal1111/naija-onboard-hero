@@ -49,25 +49,25 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // Check wallet balance
-    const { data: wallet, error: walletError } = await supabaseService
-      .from('wallets')
-      .select('balance')
+    // Check wallet balance from profiles table
+    const { data: profile, error: profileError } = await supabaseService
+      .from('profiles')
+      .select('balance_withdrawable, wallet_balance')
       .eq('user_id', user.id)
       .single();
 
-    if (walletError || !wallet) {
-      throw new Error("Wallet not found");
+    if (profileError || !profile) {
+      throw new Error("Profile not found");
     }
 
-    if (wallet.balance < amount) {
-      throw new Error("Insufficient wallet balance");
+    if (profile.balance_withdrawable < amount) {
+      throw new Error(`Insufficient withdrawable balance. Available: ${profile.balance_withdrawable} NC`);
     }
 
     // Generate transfer reference
     const transferRef = `payout_${Date.now()}_${Math.random().toString(36).substring(7)}`;
 
-    // Create payout record and debit wallet in a transaction
+    // Create payout record
     const { data: payout, error: payoutError } = await supabaseService
       .from('payouts')
       .insert({
@@ -86,17 +86,23 @@ serve(async (req) => {
       throw new Error("Failed to create payout record");
     }
 
-    // Debit wallet immediately
+    // Debit wallet immediately (lock funds)
     const { error: walletUpdateError } = await supabaseService
-      .from('wallets')
+      .from('profiles')
       .update({ 
-        balance: wallet.balance - amount,
-        last_update: new Date().toISOString()
+        balance_withdrawable: profile.balance_withdrawable - amount,
+        wallet_balance: profile.wallet_balance - amount,
+        updated_at: new Date().toISOString()
       })
       .eq('user_id', user.id);
 
     if (walletUpdateError) {
       console.error("Wallet update error:", walletUpdateError);
+      // Rollback payout
+      await supabaseService
+        .from('payouts')
+        .delete()
+        .eq('id', payout.id);
       throw new Error("Failed to debit wallet");
     }
 
@@ -105,76 +111,14 @@ serve(async (req) => {
       .from('wallet_transactions')
       .insert({
         user_id: user.id,
-        amount: -amount, // Negative for debit
-        transaction_type: 'debit',
-        description: `Withdrawal via ${method}`,
-        reference_id: transferRef,
+        amount: -amount,
+        transaction_type: 'withdrawal_pending',
+        description: `Withdrawal request pending admin approval`,
+        reference: transferRef,
         status: 'pending'
       });
 
-    if (method === 'bank' && bank_details) {
-      // Create Paystack transfer recipient
-      const recipientResponse = await fetch("https://api.paystack.co/transferrecipient", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${Deno.env.get("PAYSTACK_SECRET_KEY")}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          type: "nuban",
-          name: bank_details.account_name,
-          account_number: bank_details.account_number,
-          bank_code: bank_details.bank_code,
-          currency: "NGN"
-        }),
-      });
-
-      const recipientData = await recipientResponse.json();
-
-      if (!recipientData.status) {
-        console.error("Paystack recipient creation failed:", recipientData);
-        throw new Error("Failed to create transfer recipient");
-      }
-
-      // Initiate transfer
-      const transferResponse = await fetch("https://api.paystack.co/transfer", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${Deno.env.get("PAYSTACK_SECRET_KEY")}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          source: "balance",
-          amount: amount * 100, // Convert to kobo
-          recipient: recipientData.data.recipient_code,
-          reason: "Wallet withdrawal",
-          reference: transferRef
-        }),
-      });
-
-      const transferData = await transferResponse.json();
-
-      if (!transferData.status) {
-        console.error("Paystack transfer failed:", transferData);
-        
-        // Refund wallet on transfer failure
-        await supabaseService
-          .from('wallets')
-          .update({ 
-            balance: wallet.balance // Restore original balance
-          })
-          .eq('user_id', user.id);
-
-        await supabaseService
-          .from('payouts')
-          .update({ status: 'failed' })
-          .eq('id', payout.id);
-
-        throw new Error("Transfer initialization failed");
-      }
-
-      console.log("Transfer initiated:", transferData.data);
-    }
+    // DO NOT initiate Paystack transfer here - admin will do it after approval
 
     console.log("Payout created successfully:", {
       payout_id: payout.id,

@@ -18,6 +18,7 @@ import { AdminReferralTasksSection } from '@/components/AdminReferralTasksSectio
 import { AdminArticlesSection } from '@/components/AdminArticlesSection'
 import { AdminWalletManagement } from '@/components/AdminWalletManagement'
 import { AdminSettingsTab } from '@/components/AdminSettingsTab'
+import { AdminWithdrawalsSection } from '@/components/AdminWithdrawalsSection'
 
 const EnhancedAdminDashboard = () => {
   const navigate = useNavigate()
@@ -624,6 +625,7 @@ const EnhancedAdminDashboard = () => {
                 <TabsTrigger value="social">Social Media Tasks</TabsTrigger>
                 <TabsTrigger value="referral">Referral Tasks</TabsTrigger>
                 <TabsTrigger value="articles">Articles</TabsTrigger>
+                <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
               </TabsList>
 
               <TabsContent value="expert">
@@ -653,6 +655,10 @@ const EnhancedAdminDashboard = () => {
 
               <TabsContent value="articles">
                 <AdminArticlesSection />
+              </TabsContent>
+
+              <TabsContent value="withdrawals">
+                <AdminWithdrawalsSection />
               </TabsContent>
             </Tabs>
           </TabsContent>

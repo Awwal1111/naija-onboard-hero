@@ -1246,6 +1246,51 @@ export type Database = {
         }
         Relationships: []
       }
+      payouts: {
+        Row: {
+          admin_notes: string | null
+          amount: number
+          approved_at: string | null
+          approved_by: string | null
+          bank_details: Json | null
+          created_at: string
+          id: string
+          method: string
+          paystack_transfer_ref: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          amount: number
+          approved_at?: string | null
+          approved_by?: string | null
+          bank_details?: Json | null
+          created_at?: string
+          id?: string
+          method?: string
+          paystack_transfer_ref?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          amount?: number
+          approved_at?: string | null
+          approved_by?: string | null
+          bank_details?: Json | null
+          created_at?: string
+          id?: string
+          method?: string
+          paystack_transfer_ref?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       portfolio_items: {
         Row: {
           created_at: string
