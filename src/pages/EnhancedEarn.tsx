@@ -2,21 +2,19 @@ import React, { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Trophy, Zap, FileText, User, History, Users, ArrowUpRight, Phone, Wifi, TrendingUp } from 'lucide-react'
+import { Trophy, Zap, FileText, User, History, Users, ArrowUpRight, Wifi, TrendingUp } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useWallet } from '@/hooks/useWallet'
 import NaijaLanceWalletCard from '@/components/NaijaLanceWalletCard'
 import { DailySigninCard } from '@/components/DailySigninCard'
 import { TransactionHistory } from '@/components/TransactionHistory'
 import { WithdrawalDialog } from '@/components/WithdrawalDialog'
-import { AirtimeDialog } from '@/components/AirtimeDialog'
 import TopBannerAd from '@/components/TopBannerAd'
 
 const EnhancedEarn = () => {
   const { balance, loading } = useWallet()
   const navigate = useNavigate()
   const [showWithdrawDialog, setShowWithdrawDialog] = useState(false)
-  const [showAirtimeDialog, setShowAirtimeDialog] = useState(false)
 
   const earningMethods = [
     {
@@ -143,26 +141,18 @@ const EnhancedEarn = () => {
               <Button
                 variant="outline"
                 className="flex flex-col items-center justify-center h-20 gap-2"
-                onClick={() => setShowAirtimeDialog(true)}
-              >
-                <Phone className="h-5 w-5 text-primary" />
-                <span className="text-xs">Airtime</span>
-              </Button>
-              <Button
-                variant="outline"
-                className="flex flex-col items-center justify-center h-20 gap-2"
                 disabled
               >
                 <Wifi className="h-5 w-5 text-muted-foreground" />
-                <span className="text-xs text-muted-foreground">Data</span>
+                <span className="text-xs">Data</span>
               </Button>
               <Button
                 variant="outline"
                 className="flex flex-col items-center justify-center h-20 gap-2"
                 disabled
               >
-                <Trophy className="h-5 w-5 text-muted-foreground" />
-                <span className="text-xs text-muted-foreground">Bet Fund</span>
+                <TrendingUp className="h-5 w-5 text-muted-foreground" />
+                <span className="text-xs">Bet Fund</span>
               </Button>
             </div>
           </div>
@@ -215,17 +205,6 @@ const EnhancedEarn = () => {
         open={showWithdrawDialog}
         onOpenChange={setShowWithdrawDialog}
         currentBalance={balance.total}
-      />
-
-      {/* Airtime Purchase Dialog */}
-      <AirtimeDialog 
-        open={showAirtimeDialog}
-        onOpenChange={setShowAirtimeDialog}
-        currentBalance={balance.total}
-        onSuccess={() => {
-          // Refresh wallet balance after successful purchase
-          window.location.reload();
-        }}
       />
     </div>
   )
