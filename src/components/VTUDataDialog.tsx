@@ -1,0 +1,239 @@
+import React, { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { Loader2, Wifi } from 'lucide-react';
+
+interface VTUDataDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  currentBalance: number;
+  onSuccess?: () => void;
+}
+
+interface DataPlan {
+  variation_id: string;
+  service_name: string;
+  service_id: string;
+  data_plan: string;
+  price: string;
+  availability: string;
+}
+
+const networks = [
+  { value: 'mtn', label: 'MTN' },
+  { value: 'glo', label: 'GLO' },
+  { value: '9mobile', label: '9mobile' },
+  { value: 'airtel', label: 'Airtel' },
+];
+
+export const VTUDataDialog = ({ open, onOpenChange, currentBalance, onSuccess }: VTUDataDialogProps) => {
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+  const [loadingPlans, setLoadingPlans] = useState(false);
+  const [network, setNetwork] = useState<string>('');
+  const [phone, setPhone] = useState<string>('');
+  const [dataPlans, setDataPlans] = useState<DataPlan[]>([]);
+  const [selectedPlan, setSelectedPlan] = useState<DataPlan | null>(null);
+
+  useEffect(() => {
+    if (network && open) {
+      fetchDataPlans();
+    }
+  }, [network, open]);
+
+  const fetchDataPlans = async () => {
+    setLoadingPlans(true);
+    try {
+      const response = await fetch(`https://vtu.ng/wp-json/api/v2/variations/data?service_id=${network}`);
+      const data = await response.json();
+      
+      if (data.code === 'success' && data.data) {
+        // Filter only available plans
+        const availablePlans = data.data.filter((plan: DataPlan) => plan.availability === 'Available');
+        setDataPlans(availablePlans);
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to load data plans",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching data plans:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load data plans",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingPlans(false);
+    }
+  };
+
+  const handlePurchase = async () => {
+    if (!network || !phone || !selectedPlan) {
+      toast({
+        title: "Error",
+        description: "Please fill in all fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const price = parseFloat(selectedPlan.price);
+
+    if (price > currentBalance) {
+      toast({
+        title: "Error",
+        description: `Insufficient balance. Available: ${currentBalance} NC`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('buy-vtu-data', {
+        body: {
+          network: selectedPlan.service_name,
+          phone,
+          variationId: selectedPlan.variation_id,
+          dataPlan: selectedPlan.data_plan,
+          price
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        toast({
+          title: "Success",
+          description: data.message || "Data purchased successfully",
+        });
+        setNetwork('');
+        setPhone('');
+        setSelectedPlan(null);
+        setDataPlans([]);
+        onOpenChange(false);
+        if (onSuccess) onSuccess();
+      } else {
+        throw new Error(data?.error || "Purchase failed");
+      }
+    } catch (error: any) {
+      console.error('Data purchase error:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to purchase data",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Wifi className="h-5 w-5" />
+            Buy Data
+          </DialogTitle>
+        </DialogHeader>
+        
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label htmlFor="network">Network Provider</Label>
+            <Select value={network} onValueChange={(value) => {
+              setNetwork(value);
+              setSelectedPlan(null);
+            }}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select network" />
+              </SelectTrigger>
+              <SelectContent>
+                {networks.map((net) => (
+                  <SelectItem key={net.value} value={net.value}>
+                    {net.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="phone">Phone Number</Label>
+            <Input
+              id="phone"
+              type="tel"
+              placeholder="08012345678"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              maxLength={11}
+            />
+          </div>
+
+          {network && (
+            <div className="space-y-2">
+              <Label htmlFor="plan">Data Plan</Label>
+              {loadingPlans ? (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                </div>
+              ) : (
+                <Select 
+                  value={selectedPlan?.variation_id} 
+                  onValueChange={(value) => {
+                    const plan = dataPlans.find(p => p.variation_id === value);
+                    setSelectedPlan(plan || null);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select data plan" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[300px]">
+                    {dataPlans.map((plan) => (
+                      <SelectItem key={plan.variation_id} value={plan.variation_id}>
+                        {plan.data_plan} - ₦{plan.price}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              {selectedPlan && (
+                <p className="text-sm text-muted-foreground">
+                  Price: ₦{selectedPlan.price}
+                </p>
+              )}
+            </div>
+          )}
+
+          <p className="text-xs text-muted-foreground">
+            Available balance: {currentBalance} NC
+          </p>
+
+          <Button 
+            onClick={handlePurchase} 
+            disabled={loading || !network || !phone || !selectedPlan}
+            className="w-full"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              `Purchase Data${selectedPlan ? ` - ₦${selectedPlan.price}` : ''}`
+            )}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};

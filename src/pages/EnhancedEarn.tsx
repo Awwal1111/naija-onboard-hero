@@ -2,19 +2,25 @@ import React, { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Trophy, Zap, FileText, User, History, Users, ArrowUpRight, Wifi, TrendingUp } from 'lucide-react'
+import { Trophy, Zap, FileText, User, History, Users, ArrowUpRight, Phone, Wifi, TrendingUp } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useWallet } from '@/hooks/useWallet'
 import NaijaLanceWalletCard from '@/components/NaijaLanceWalletCard'
 import { DailySigninCard } from '@/components/DailySigninCard'
 import { TransactionHistory } from '@/components/TransactionHistory'
 import { WithdrawalDialog } from '@/components/WithdrawalDialog'
+import { VTUAirtimeDialog } from '@/components/VTUAirtimeDialog'
+import { VTUDataDialog } from '@/components/VTUDataDialog'
+import { BettingFundDialog } from '@/components/BettingFundDialog'
 import TopBannerAd from '@/components/TopBannerAd'
 
 const EnhancedEarn = () => {
   const { balance, loading } = useWallet()
   const navigate = useNavigate()
   const [showWithdrawDialog, setShowWithdrawDialog] = useState(false)
+  const [showAirtimeDialog, setShowAirtimeDialog] = useState(false)
+  const [showDataDialog, setShowDataDialog] = useState(false)
+  const [showBettingDialog, setShowBettingDialog] = useState(false)
 
   const earningMethods = [
     {
@@ -141,17 +147,25 @@ const EnhancedEarn = () => {
               <Button
                 variant="outline"
                 className="flex flex-col items-center justify-center h-20 gap-2"
-                disabled
+                onClick={() => setShowAirtimeDialog(true)}
               >
-                <Wifi className="h-5 w-5 text-muted-foreground" />
+                <Phone className="h-5 w-5 text-primary" />
+                <span className="text-xs">Airtime</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="flex flex-col items-center justify-center h-20 gap-2"
+                onClick={() => setShowDataDialog(true)}
+              >
+                <Wifi className="h-5 w-5 text-primary" />
                 <span className="text-xs">Data</span>
               </Button>
               <Button
                 variant="outline"
                 className="flex flex-col items-center justify-center h-20 gap-2"
-                disabled
+                onClick={() => setShowBettingDialog(true)}
               >
-                <TrendingUp className="h-5 w-5 text-muted-foreground" />
+                <TrendingUp className="h-5 w-5 text-primary" />
                 <span className="text-xs">Bet Fund</span>
               </Button>
             </div>
@@ -205,6 +219,28 @@ const EnhancedEarn = () => {
         open={showWithdrawDialog}
         onOpenChange={setShowWithdrawDialog}
         currentBalance={balance.total}
+      />
+
+      {/* VTU Dialogs */}
+      <VTUAirtimeDialog
+        open={showAirtimeDialog}
+        onOpenChange={setShowAirtimeDialog}
+        currentBalance={balance.total}
+        onSuccess={() => window.location.reload()}
+      />
+      
+      <VTUDataDialog
+        open={showDataDialog}
+        onOpenChange={setShowDataDialog}
+        currentBalance={balance.total}
+        onSuccess={() => window.location.reload()}
+      />
+      
+      <BettingFundDialog
+        open={showBettingDialog}
+        onOpenChange={setShowBettingDialog}
+        currentBalance={balance.total}
+        onSuccess={() => window.location.reload()}
       />
     </div>
   )
