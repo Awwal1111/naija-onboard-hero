@@ -6,12 +6,28 @@ import ConnectionRequests from './ConnectionRequests'
 import Connected from './Connected'
 import { useConnections } from '@/hooks/useConnections'
 import ResponsiveLayout from '@/components/ResponsiveLayout'
+import { supabase } from '@/integrations/supabase/client'
 
 export const Connections = () => {
   const { connectionRequests, connections, refetch } = useConnections()
   
   React.useEffect(() => {
     refetch()
+    
+    // Set up real-time subscriptions
+    const channel = supabase
+      .channel('connections_updates')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'connections' }, () => {
+        refetch()
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'connection_requests' }, () => {
+        refetch()
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [])
   
   const pendingRequestsCount = connectionRequests.filter(req => req.status === 'pending').length

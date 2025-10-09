@@ -11,6 +11,7 @@ import { useConnections } from '@/hooks/useConnections'
 import { useUserPresence } from '@/hooks/useUserPresence'
 import ResponsiveLayout from '@/components/ResponsiveLayout'
 import { useNavigate } from 'react-router-dom'
+import { supabase } from '@/integrations/supabase/client'
 
 export const Connected = () => {
   const { connections, loading, refetch } = useConnections()
@@ -21,6 +22,18 @@ export const Connected = () => {
   
   useEffect(() => {
     refetch()
+    
+    // Set up real-time subscription for connections
+    const channel = supabase
+      .channel('connections_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'connections' }, () => {
+        refetch()
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [])
 
   const filteredConnections = connections.filter(connection => {

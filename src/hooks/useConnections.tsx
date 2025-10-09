@@ -250,7 +250,8 @@ export const useConnections = () => {
           description: "You are now connected! You can start chatting.",
         })
 
-        fetchConnections()
+        // Refresh both connections and requests
+        await Promise.all([fetchConnections(), fetchConnectionRequests()])
       } else {
         // Reject request
         const { error } = await supabase
@@ -264,9 +265,11 @@ export const useConnections = () => {
           title: "Request Rejected",
           description: "Connection request has been rejected.",
         })
+        
+        // Refresh requests
+        await fetchConnectionRequests()
       }
 
-      fetchConnectionRequests()
       return { success: true }
     } catch (error: any) {
       console.error('Error responding to connection request:', error)

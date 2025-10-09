@@ -22,19 +22,6 @@ export const ConnectionRequests = () => {
     fetchMutualConnections()
   }, [])
 
-  useEffect(() => {
-    const channel = supabase
-      .channel('connection_requests_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'connection_requests' }, () => {
-        refetch()
-      })
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [])
-
   const fetchMutualConnections = async () => {
     const pending = connectionRequests.filter(req => req.status === 'pending')
     const counts: Record<string, number> = {}
@@ -73,8 +60,7 @@ export const ConnectionRequests = () => {
         `${request.requested_profile?.full_name || 'Someone'} accepted your connection request.`,
         { connectionId: request.id }
       )
-      refetch()
-      fetchMutualConnections()
+      // Don't manually refetch here - the hook already does it
     }
   }
 
@@ -85,7 +71,7 @@ export const ConnectionRequests = () => {
         title: "Request declined",
         description: "Connection request has been declined.",
       })
-      refetch()
+      // Don't manually refetch here - the hook already does it
     }
   }
 
