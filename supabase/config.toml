@@ -41,3 +41,12 @@ verify_jwt = true
 
 [functions.refund-escrow]
 verify_jwt = true
+
+[functions.buy-vtu-airtime]
+verify_jwt = true
+
+[functions.buy-vtu-data]
+verify_jwt = true
+
+[functions.fund-betting]
+verify_jwt = true

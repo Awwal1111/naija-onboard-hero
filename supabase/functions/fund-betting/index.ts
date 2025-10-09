@@ -15,6 +15,8 @@ async function getVTUToken() {
   const username = Deno.env.get('VTU_USERNAME');
   const password = Deno.env.get('VTU_PASSWORD');
 
+  console.log('Getting VTU token for user:', username);
+
   const response = await fetch('https://vtu.ng/wp-json/jwt-auth/v1/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -23,10 +25,12 @@ async function getVTUToken() {
 
   if (!response.ok) {
     const error = await response.json();
+    console.error('VTU auth error:', error);
     throw new Error(error.message || 'VTU authentication failed');
   }
 
   const data = await response.json();
+  console.log('VTU token obtained successfully');
   return data.token;
 }
 
@@ -55,17 +59,19 @@ Deno.serve(async (req) => {
 
     const { provider, customerId, amount }: BettingRequest = await req.json();
 
+    console.log('Betting fund request:', { provider, customerId, amount, user: user.id });
+
     // Validate input
     if (!provider || !customerId || !amount) {
       return new Response(
-        JSON.stringify({ error: 'Missing required fields' }),
+        JSON.stringify({ success: false, error: 'Missing required fields: provider, customerId, or amount' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     if (amount < 100 || amount > 100000) {
       return new Response(
-        JSON.stringify({ error: 'Amount must be between ₦100 and ₦100,000' }),
+        JSON.stringify({ success: false, error: 'Amount must be between ₦100 and ₦100,000' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -78,8 +84,11 @@ Deno.serve(async (req) => {
       .single();
 
     if (profileError || !profile) {
+      console.error('Profile fetch error:', profileError);
       throw new Error('Failed to fetch user profile');
     }
+
+    console.log('User balance:', profile.balance_withdrawable, 'Required:', amount);
 
     if (profile.balance_withdrawable < amount) {
       return new Response(
@@ -92,7 +101,7 @@ Deno.serve(async (req) => {
     }
 
     // Deduct from wallet
-    await supabase
+    const { error: deductError } = await supabase
       .from('profiles')
       .update({
         wallet_balance: profile.wallet_balance - amount,
@@ -101,11 +110,17 @@ Deno.serve(async (req) => {
       })
       .eq('user_id', user.id);
 
+    if (deductError) {
+      console.error('Wallet deduction error:', deductError);
+      throw new Error('Failed to deduct from wallet');
+    }
+
+    console.log('Wallet deducted successfully');
+
     // Get VTU token
     const vtuToken = await getVTUToken();
 
-    // Generate unique request ID
-    const requestId = `${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    console.log('Verifying customer...');
 
     // Verify customer first
     const verifyResponse = await fetch('https://vtu.ng/wp-json/api/v2/verify-customer', {
@@ -121,8 +136,10 @@ Deno.serve(async (req) => {
     });
 
     const verifyData = await verifyResponse.json();
+    console.log('Customer verification response:', JSON.stringify(verifyData));
     
     if (verifyData.code !== 'success') {
+      console.log('Customer verification failed, refunding...');
       // Refund
       await supabase
         .from('profiles')
@@ -142,6 +159,11 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Generate unique request ID
+    const requestId = `${Date.now()}_${Math.random().toString(36).substring(7)}`;
+
+    console.log('Calling VTU API with request ID:', requestId);
+
     // Call VTU API to fund betting account
     const vtuResponse = await fetch('https://vtu.ng/wp-json/api/v2/betting', {
       method: 'POST',
@@ -158,7 +180,7 @@ Deno.serve(async (req) => {
     });
 
     const vtuData = await vtuResponse.json();
-    console.log('VTU API response:', vtuData);
+    console.log('VTU API response:', JSON.stringify(vtuData));
 
     const isSuccess = vtuData.code === 'success' && 
       (vtuData.data?.status === 'completed-api' || vtuData.data?.status === 'processing-api');
@@ -184,6 +206,7 @@ Deno.serve(async (req) => {
 
     // Refund if failed
     if (!isSuccess) {
+      console.log('Transaction failed, refunding...');
       await supabase
         .from('profiles')
         .update({
@@ -203,6 +226,8 @@ Deno.serve(async (req) => {
       );
     }
 
+    console.log('Transaction successful');
+
     return new Response(
       JSON.stringify({ 
         success: true, 
@@ -216,7 +241,7 @@ Deno.serve(async (req) => {
   } catch (error: any) {
     console.error('Error in fund-betting:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ success: false, error: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

@@ -15,6 +15,8 @@ async function getVTUToken() {
   const username = Deno.env.get('VTU_USERNAME');
   const password = Deno.env.get('VTU_PASSWORD');
 
+  console.log('Getting VTU token for user:', username);
+
   const response = await fetch('https://vtu.ng/wp-json/jwt-auth/v1/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -23,10 +25,12 @@ async function getVTUToken() {
 
   if (!response.ok) {
     const error = await response.json();
+    console.error('VTU auth error:', error);
     throw new Error(error.message || 'VTU authentication failed');
   }
 
   const data = await response.json();
+  console.log('VTU token obtained successfully');
   return data.token;
 }
 
@@ -55,23 +59,45 @@ Deno.serve(async (req) => {
 
     const { network, amount, phone }: AirtimeRequest = await req.json();
 
+    console.log('VTU Airtime request:', { network, amount, phone, user: user.id });
+
     // Validate input
     if (!network || !amount || !phone) {
       return new Response(
-        JSON.stringify({ error: 'Missing required fields' }),
+        JSON.stringify({ success: false, error: 'Missing required fields: network, amount, or phone' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Map network names to service IDs
+    // Map network names to service IDs (ensure lowercase)
     const serviceIdMap: { [key: string]: string } = {
       'MTN': 'mtn',
       'Airtel': 'airtel',
       'Glo': 'glo',
       '9mobile': '9mobile',
+      'mtn': 'mtn',
+      'airtel': 'airtel',
+      'glo': 'glo',
     };
 
-    const serviceId = serviceIdMap[network] || network.toLowerCase();
+    const serviceId = serviceIdMap[network];
+    
+    if (!serviceId) {
+      return new Response(
+        JSON.stringify({ success: false, error: `Invalid network: ${network}` }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Clean phone number (remove non-digits)
+    const cleanPhone = phone.replace(/\D/g, '');
+    
+    if (cleanPhone.length < 10 || cleanPhone.length > 11) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Phone number must be 10 or 11 digits' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Check user's wallet balance
     const { data: profile, error: profileError } = await supabase
@@ -81,8 +107,11 @@ Deno.serve(async (req) => {
       .single();
 
     if (profileError || !profile) {
+      console.error('Profile fetch error:', profileError);
       throw new Error('Failed to fetch user profile');
     }
+
+    console.log('User balance:', profile.balance_withdrawable, 'Required:', amount);
 
     if (profile.balance_withdrawable < amount) {
       return new Response(
@@ -95,7 +124,7 @@ Deno.serve(async (req) => {
     }
 
     // Deduct from wallet
-    await supabase
+    const { error: deductError } = await supabase
       .from('profiles')
       .update({
         wallet_balance: profile.wallet_balance - amount,
@@ -104,11 +133,20 @@ Deno.serve(async (req) => {
       })
       .eq('user_id', user.id);
 
+    if (deductError) {
+      console.error('Wallet deduction error:', deductError);
+      throw new Error('Failed to deduct from wallet');
+    }
+
+    console.log('Wallet deducted successfully');
+
     // Get VTU token
     const vtuToken = await getVTUToken();
 
     // Generate unique request ID
     const requestId = `${Date.now()}_${Math.random().toString(36).substring(7)}`;
+
+    console.log('Calling VTU API with request ID:', requestId);
 
     // Call VTU API
     const vtuResponse = await fetch('https://vtu.ng/wp-json/api/v2/airtime', {
@@ -119,14 +157,14 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         request_id: requestId,
-        phone: phone.replace(/\D/g, ''),
+        phone: cleanPhone,
         service_id: serviceId,
         amount: amount,
       }),
     });
 
     const vtuData = await vtuResponse.json();
-    console.log('VTU API response:', vtuData);
+    console.log('VTU API response:', JSON.stringify(vtuData));
 
     const isSuccess = vtuData.code === 'success' && 
       (vtuData.data?.status === 'completed-api' || vtuData.data?.status === 'processing-api');
@@ -139,10 +177,10 @@ Deno.serve(async (req) => {
         transaction_type: 'airtime_purchase',
         amount: -amount,
         status: isSuccess ? 'completed' : 'failed',
-        description: `Airtime purchase - ${network} ${phone}`,
+        description: `Airtime purchase - ${network} ${cleanPhone}`,
         metadata: {
           network,
-          phone,
+          phone: cleanPhone,
           service_id: serviceId,
           vtu_order_id: vtuData.data?.order_id,
           vtu_request_id: requestId,
@@ -152,6 +190,7 @@ Deno.serve(async (req) => {
 
     // Refund if failed
     if (!isSuccess) {
+      console.log('Transaction failed, refunding...');
       await supabase
         .from('profiles')
         .update({
@@ -171,6 +210,8 @@ Deno.serve(async (req) => {
       );
     }
 
+    console.log('Transaction successful');
+
     return new Response(
       JSON.stringify({ 
         success: true, 
@@ -183,7 +224,7 @@ Deno.serve(async (req) => {
   } catch (error: any) {
     console.error('Error in buy-vtu-airtime:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ success: false, error: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
