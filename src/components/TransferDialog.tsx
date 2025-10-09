@@ -143,7 +143,8 @@ export const TransferDialog = ({ open, onOpenChange }: TransferDialogProps) => {
 
     setLoading(true)
     try {
-      // Call the transfer function
+      console.log('Starting transfer...', { sender_id: user?.id, recipient_email: email.trim(), amount: transferAmount })
+      
       const { data, error } = await supabase.rpc('transfer_funds', {
         sender_id: user?.id,
         recipient_email: email.trim(),
@@ -151,7 +152,12 @@ export const TransferDialog = ({ open, onOpenChange }: TransferDialogProps) => {
         pin_hash: pin
       })
 
-      if (error) throw error
+      console.log('Transfer response:', { data, error })
+
+      if (error) {
+        console.error('Transfer RPC error:', error)
+        throw error
+      }
 
       const result = data as any
       
@@ -164,12 +170,11 @@ export const TransferDialog = ({ open, onOpenChange }: TransferDialogProps) => {
         description: `Successfully sent NC ${transferAmount.toLocaleString()} to ${result.recipient_name}`,
       })
 
-      refreshWallet()
+      await refreshWallet()
       handleClose()
     } catch (error: any) {
       console.error('Transfer error:', error)
       
-      // Check if error is about PIN setup
       if (error.message?.includes('set up your transaction PIN')) {
         toast({
           title: "PIN Not Set",
@@ -179,7 +184,7 @@ export const TransferDialog = ({ open, onOpenChange }: TransferDialogProps) => {
       } else {
         toast({
           title: "Transfer Failed",
-          description: error.message || "Failed to complete transfer",
+          description: error.message || "Failed to complete transfer. Please try again.",
           variant: "destructive"
         })
       }
