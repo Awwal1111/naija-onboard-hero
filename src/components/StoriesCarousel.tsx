@@ -213,21 +213,21 @@ const StoriesCarousel: React.FC<StoriesCarouselProps> = ({ onCreateStory }) => {
 
   return (
     <>
-      <div className="flex gap-4 p-4 overflow-x-auto scrollbar-hide">
+      <div className="flex gap-3 px-4 py-3 overflow-x-auto scrollbar-hide">
         {/* Add Story Button */}
         <button
           onClick={onCreateStory}
-          className="flex-shrink-0 flex flex-col items-center gap-2 group"
+          className="flex-shrink-0 flex flex-col items-center gap-1.5 group"
         >
-          <div className="relative w-16 h-16 bg-gradient-to-br from-primary to-brand-green rounded-full flex items-center justify-center border-2 border-background group-hover:scale-105 transition-transform">
-            <Plus className="h-6 w-6 text-white" />
+          <div className="relative w-14 h-14 bg-gradient-to-br from-primary to-brand-green rounded-full flex items-center justify-center border-2 border-background group-hover:scale-105 transition-transform shadow-sm">
+            <Plus className="h-5 w-5 text-white" />
             {userStories.length > 0 && (
-              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-primary rounded-full flex items-center justify-center text-xs text-white font-bold">
+              <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-primary rounded-full flex items-center justify-center text-[10px] text-white font-bold border border-background">
                 {userStories.length}
               </div>
             )}
           </div>
-          <span className="text-xs text-text-secondary font-medium">Your Story</span>
+          <span className="text-[10px] text-text-secondary font-medium">You</span>
         </button>
 
         {/* User Stories */}
@@ -239,12 +239,12 @@ const StoriesCarousel: React.FC<StoriesCarouselProps> = ({ onCreateStory }) => {
             <button
               key={userId}
               onClick={() => handleStoryClick(latestStory, 0)}
-              className="flex-shrink-0 flex flex-col items-center gap-2 group"
+              className="flex-shrink-0 flex flex-col items-center gap-1.5 group"
             >
-              <div className={`relative w-16 h-16 rounded-full p-0.5 group-hover:scale-105 transition-transform ${
+              <div className={`relative w-14 h-14 rounded-full p-[2px] group-hover:scale-105 transition-transform shadow-sm ${
                 hasUnviewedStories 
                   ? 'bg-gradient-to-r from-pink-500 to-purple-500' 
-                  : 'bg-gray-300'
+                  : 'bg-muted'
               }`}>
                 <Avatar className="w-full h-full border-2 border-background">
                   <AvatarImage src={latestStory.profiles?.profile_picture_url} />
@@ -253,12 +253,12 @@ const StoriesCarousel: React.FC<StoriesCarouselProps> = ({ onCreateStory }) => {
                   </AvatarFallback>
                 </Avatar>
                 {userStories.length > 1 && (
-                  <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center text-xs text-white font-bold">
+                  <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-primary rounded-full flex items-center justify-center text-[10px] text-white font-bold border border-background">
                     {userStories.length}
                   </div>
                 )}
               </div>
-              <span className="text-xs text-text-secondary font-medium max-w-16 truncate">
+              <span className="text-[10px] text-text-secondary font-medium max-w-[56px] truncate">
                 {latestStory.profiles?.full_name || 'Anonymous'}
               </span>
             </button>
@@ -268,7 +268,7 @@ const StoriesCarousel: React.FC<StoriesCarouselProps> = ({ onCreateStory }) => {
 
       {/* Story Viewer Dialog */}
       <Dialog open={!!viewingStory} onOpenChange={() => setViewingStory(null)}>
-        <DialogContent className="max-w-md w-full h-[600px] p-0 overflow-hidden">
+        <DialogContent className="max-w-md w-full h-[90vh] max-h-[600px] p-0 overflow-hidden">
           {viewingStory && (
             <div className="relative w-full h-full bg-black">
               {/* Story Progress Bars */}
@@ -362,18 +362,61 @@ const StoriesCarousel: React.FC<StoriesCarouselProps> = ({ onCreateStory }) => {
               </div>
 
               {/* Story Text Content */}
-              {viewingStory.content && (
-                <div className="absolute bottom-8 left-4 right-4 z-10">
+              {viewingStory.content && viewingStory.media_url && (
+                <div className="absolute bottom-20 left-4 right-4 z-10">
                   <p className="text-white text-sm text-center bg-black/50 p-3 rounded-lg">
                     {viewingStory.content}
                   </p>
                 </div>
               )}
 
-              {/* View Count */}
-              <div className="absolute bottom-4 left-4 z-10 flex items-center gap-1 text-white/70">
-                <Eye className="h-4 w-4" />
-                <span className="text-xs">{viewingStory.views_count}</span>
+              {/* Bottom Bar */}
+              <div className="absolute bottom-4 left-4 right-4 z-10 flex items-center justify-between">
+                {/* View Count - Only visible to story owner */}
+                {viewingStory.user_id === user?.id ? (
+                  <div className="flex items-center gap-1 text-white/70">
+                    <Eye className="h-4 w-4" />
+                    <span className="text-xs">{viewingStory.views_count} views</span>
+                  </div>
+                ) : (
+                  <div />
+                )}
+
+                {/* Hire Me Button - Only for other users' stories */}
+                {viewingStory.user_id !== user?.id && (
+                  <Button
+                    onClick={async () => {
+                      // Navigate to chat with story owner
+                      const { data: existingChat } = await supabase
+                        .from('chats')
+                        .select('id')
+                        .or(`and(user1_id.eq.${user?.id},user2_id.eq.${viewingStory.user_id}),and(user1_id.eq.${viewingStory.user_id},user2_id.eq.${user?.id})`)
+                        .single()
+
+                      if (existingChat) {
+                        window.location.href = `/chat/${existingChat.id}`
+                      } else {
+                        // Create new chat
+                        const { data: newChat } = await supabase
+                          .from('chats')
+                          .insert({
+                            user1_id: user?.id,
+                            user2_id: viewingStory.user_id
+                          })
+                          .select()
+                          .single()
+
+                        if (newChat) {
+                          window.location.href = `/chat/${newChat.id}`
+                        }
+                      }
+                    }}
+                    size="sm"
+                    className="bg-primary hover:bg-primary/90 text-white font-medium px-4 py-2 h-8"
+                  >
+                    Hire Me
+                  </Button>
+                )}
               </div>
             </div>
           )}
