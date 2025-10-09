@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { MessageCircle, Share, Eye, MoreVertical, Briefcase, Clock, DollarSign, Users, Award, Calendar, Vote, Hash, MapPin, ExternalLink, ChevronDown, ChevronUp, Bookmark, Flag, Link, Edit, Trash2 } from 'lucide-react'
 import { EnhancedPost } from '@/hooks/useEnhancedFeed'
 import { Button } from '@/components/ui/button'
@@ -37,7 +37,7 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
   const [showComments, setShowComments] = useState(false)
   const [commentText, setCommentText] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [hasViewed, setHasViewed] = useState(false)
+  const viewTracked = useRef(false)
   const { toast } = useToast()
   const { trackPostView } = usePostViews()
 
@@ -79,13 +79,30 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
     })
   }
 
-  // Track post view when component mounts
+  // Track post view when 50% of post is visible using IntersectionObserver
   useEffect(() => {
-    if (!hasViewed && currentUserId && post.id) {
-      trackPostView(post.id)
-      setHasViewed(true)
+    if (!viewTracked.current && currentUserId && post.id) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting && !viewTracked.current) {
+              trackPostView(post.id)
+              viewTracked.current = true
+              observer.disconnect()
+            }
+          })
+        },
+        { threshold: 0.5 } // Track when 50% of post is visible
+      )
+
+      const element = document.getElementById(`post-${post.id}`)
+      if (element) {
+        observer.observe(element)
+      }
+
+      return () => observer.disconnect()
     }
-  }, [post.id, currentUserId, hasViewed, trackPostView])
+  }, [post.id, currentUserId, trackPostView])
 
   const formatTimeAgo = (date: string) => {
     const now = new Date()
@@ -258,7 +275,7 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
   }
 
   return (
-    <Card className={`mb-4 overflow-hidden ${postTypeInfo?.borderColor || ''} transition-all duration-300 hover:shadow-lg`}>
+    <Card id={`post-${post.id}`} className={`mb-4 overflow-hidden ${postTypeInfo?.borderColor || ''} transition-all duration-300 hover:shadow-lg`}>
       <CardContent className="p-6">
         {/* Privacy indicator */}
         {post.visibility !== 'public' && (
