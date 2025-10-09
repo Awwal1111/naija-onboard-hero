@@ -497,24 +497,7 @@ const MainFeed = () => {
                     )}
                   </div>
                 ) : (
-                  <>
-                    {/* Feed Stats */}
-                    <div className="mb-6 flex items-center justify-between text-sm bg-muted/50 rounded-xl p-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-primary rounded-full"></div>
-                        <span className="font-medium text-text-primary">{filteredAndSortedPosts.length} posts</span>
-                      </div>
-                      <div className="flex items-center gap-3 text-text-secondary">
-                        <span>Sorted by {sortBy}</span>
-                        {selectedCategory !== 'all' && (
-                          <Badge variant="outline" className="text-xs">
-                            {postCategories.find(c => c.id === selectedCategory)?.label}
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <InfiniteScrollFeed
+                  <InfiniteScrollFeed
                       posts={filteredAndSortedPosts}
                       hasNextPage={false}
                       isFetchingNextPage={false}
@@ -526,7 +509,6 @@ const MainFeed = () => {
                       onJobApply={handleJobApply}
                       onProfileClick={handleProfileClick}
                     />
-                  </>
                 )}
               </>
             )}
