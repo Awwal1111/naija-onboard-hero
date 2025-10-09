@@ -16,9 +16,9 @@ serve(async (req) => {
     const { message, context, userProfile } = await req.json();
     console.log('AI Assistant request:', { message, context, userProfile });
 
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-    if (!OPENAI_API_KEY) {
-      throw new Error('OPENAI_API_KEY is not configured');
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY is not configured');
     }
 
     // Create context-aware system prompt
@@ -57,32 +57,38 @@ GUIDELINES:
 - Use Nigerian context and language patterns naturally
 - Focus on helping users succeed on the platform`;
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5-mini-2025-08-07', // ✅ Fast, efficient model for real-time responses
+        model: 'google/gemini-2.5-flash', // ✅ Free Gemini model, fast and efficient
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: message }
         ],
-        max_completion_tokens: 200, // ✅ Shorter responses for better UX
-        presence_penalty: 0.1,
-        frequency_penalty: 0.1
+        max_tokens: 200, // ✅ Shorter responses for better UX
       }),
     });
 
     if (!response.ok) {
       const errorData = await response.json();
-      console.error('OpenAI API Error:', errorData);
-      throw new Error(`OpenAI API Error: ${errorData.error?.message || 'Unknown error'}`);
+      console.error('Lovable AI Gateway Error:', errorData);
+      
+      if (response.status === 429) {
+        throw new Error('Rate limit exceeded. Please try again in a moment.');
+      }
+      if (response.status === 402) {
+        throw new Error('AI credits exhausted. Please contact support.');
+      }
+      
+      throw new Error(`AI Gateway Error: ${errorData.error?.message || 'Unknown error'}`);
     }
 
     const data = await response.json();
-    console.log('OpenAI response received');
+    console.log('Lovable AI Gateway response received successfully');
 
     const assistantResponse = data.choices[0].message.content;
 
