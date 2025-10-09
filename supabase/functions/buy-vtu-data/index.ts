@@ -115,13 +115,13 @@ Deno.serve(async (req) => {
       throw new Error('Failed to fetch user profile');
     }
 
-    console.log('User balance:', profile.balance_withdrawable, 'Required:', price);
+    console.log('User balance:', profile.wallet_balance, 'Required:', price);
 
-    if (profile.balance_withdrawable < price) {
+    if (profile.wallet_balance < price) {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: `Insufficient balance. Available: ${profile.balance_withdrawable} NC` 
+          error: `Insufficient balance. Available: ₦${profile.wallet_balance} NC` 
         }),
         { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -132,7 +132,6 @@ Deno.serve(async (req) => {
       .from('profiles')
       .update({
         wallet_balance: profile.wallet_balance - price,
-        balance_withdrawable: profile.balance_withdrawable - price,
         updated_at: new Date().toISOString(),
       })
       .eq('user_id', user.id);
@@ -201,7 +200,6 @@ Deno.serve(async (req) => {
         .from('profiles')
         .update({
           wallet_balance: profile.wallet_balance,
-          balance_withdrawable: profile.balance_withdrawable,
           updated_at: new Date().toISOString(),
         })
         .eq('user_id', user.id);
