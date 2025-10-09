@@ -21,7 +21,7 @@ const CreateStoryDialog: React.FC<CreateStoryDialogProps> = ({
   const [content, setContent] = useState('')
   const [mediaFile, setMediaFile] = useState<File | null>(null)
   const [mediaPreview, setMediaPreview] = useState<string | null>(null)
-  const [mediaType, setMediaType] = useState<'image' | 'video' | 'audio' | 'document'>('image')
+  const [mediaType, setMediaType] = useState<'image' | 'video' | 'audio' | 'document' | 'text'>('text')
   const { toast } = useToast()
   const { uploadFile, uploadProgress } = useFileUpload()
 
@@ -56,10 +56,11 @@ const CreateStoryDialog: React.FC<CreateStoryDialogProps> = ({
   }
 
   const handleSubmit = async () => {
-    if (!mediaFile) {
+    // Allow text-only stories like Facebook/Instagram
+    if (!mediaFile && !content.trim()) {
       toast({
-        title: "Media required",
-        description: "Please upload a file for your professional highlight",
+        title: "Content required",
+        description: "Please add text or upload media for your story",
         variant: "destructive"
       })
       return
@@ -72,31 +73,42 @@ const CreateStoryDialog: React.FC<CreateStoryDialogProps> = ({
         throw new Error('User not authenticated')
       }
 
-      // Upload file
-      const fileExt = mediaFile.name.split('.').pop()
-      const fileName = `story-${Date.now()}.${fileExt}`
-      
-      const { url, error } = await uploadFile(mediaFile, 'stories', fileName)
-      
-      if (error || !url) {
-        throw new Error(error || 'Upload failed')
+      let mediaUrl = null
+
+      // Upload media if provided
+      if (mediaFile) {
+        // Upload file with user folder structure (like Instagram)
+        const fileExt = mediaFile.name.split('.').pop()
+        const fileName = `${user.user.id}/story-${Date.now()}.${fileExt}`
+        
+        const { url, error } = await uploadFile(mediaFile, 'stories', fileName)
+        
+        if (error || !url) {
+          throw new Error(error || 'Upload failed')
+        }
+        
+        mediaUrl = url
       }
 
-      // Create story record
+      // Create story record (expires in 24 hours like Instagram/Facebook)
+      const expiresAt = new Date()
+      expiresAt.setHours(expiresAt.getHours() + 24)
+      
       const { error: storyError } = await supabase
         .from('stories')
         .insert({
           user_id: user.user.id,
-          content: content.trim(),
-          media_url: url,
-          media_type: mediaType
+          content: content.trim() || null,
+          media_url: mediaUrl,
+          media_type: mediaUrl ? mediaType : 'text',
+          expires_at: expiresAt.toISOString()
         })
 
       if (storyError) throw storyError
 
       toast({
         title: "Success",
-        description: "Your professional highlight has been posted!"
+        description: "Your story has been posted!"
       })
 
       // Reset form
@@ -108,7 +120,7 @@ const CreateStoryDialog: React.FC<CreateStoryDialogProps> = ({
       console.error('Error creating story:', error)
       toast({
         title: "Error",
-        description: error.message || "Failed to create highlight",
+        description: error.message || "Failed to create story",
         variant: "destructive"
       })
     }
@@ -126,10 +138,24 @@ const CreateStoryDialog: React.FC<CreateStoryDialogProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Create Professional Highlight</DialogTitle>
+          <DialogTitle>Create Story</DialogTitle>
         </DialogHeader>
         
         <div className="space-y-4">
+          {/* Text Content (like Instagram/Facebook text stories) */}
+          <div>
+            <label className="text-sm font-medium text-text-primary mb-2 block">
+              What's on your mind?
+            </label>
+            <BrandInput
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="Share something..."
+              maxLength={280}
+              className="min-h-[100px]"
+            />
+          </div>
+
           {/* Media Upload Options */}
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-2">
@@ -256,15 +282,6 @@ const CreateStoryDialog: React.FC<CreateStoryDialogProps> = ({
             )}
           </div>
 
-          {/* Caption */}
-          <BrandInput
-            label="Caption (optional)"
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="Share what you're working on..."
-            maxLength={280}
-          />
-
           {/* Actions */}
           <div className="flex gap-3">
             <BrandButton 
@@ -278,9 +295,9 @@ const CreateStoryDialog: React.FC<CreateStoryDialogProps> = ({
             <BrandButton 
               className="flex-1"
               onClick={handleSubmit}
-              disabled={uploadProgress.isUploading || !mediaFile}
+              disabled={uploadProgress.isUploading || (!mediaFile && !content.trim())}
             >
-              {uploadProgress.isUploading ? 'Posting...' : 'Post Highlight'}
+              {uploadProgress.isUploading ? 'Posting...' : 'Post Story'}
             </BrandButton>
           </div>
         </div>

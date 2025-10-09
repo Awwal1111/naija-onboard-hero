@@ -314,7 +314,13 @@ const StoriesCarousel: React.FC<StoriesCarouselProps> = ({ onCreateStory }) => {
 
               {/* Story Content */}
               <div className="w-full h-full flex items-center justify-center">
-                {viewingStory.media_type?.startsWith('image') ? (
+                {viewingStory.media_type === 'text' || (!viewingStory.media_url && viewingStory.content) ? (
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary to-brand-green p-8">
+                    <p className="text-white text-xl font-medium text-center max-w-md">
+                      {viewingStory.content}
+                    </p>
+                  </div>
+                ) : viewingStory.media_type?.startsWith('image') ? (
                   <img
                     src={viewingStory.media_url}
                     alt="Story content"

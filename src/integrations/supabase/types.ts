@@ -254,6 +254,38 @@ export type Database = {
         }
         Relationships: []
       }
+      comment_views: {
+        Row: {
+          comment_id: string
+          created_at: string
+          id: string
+          user_id: string
+          viewed_at: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+          viewed_at?: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+          viewed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_views_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "post_comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       connection_requests: {
         Row: {
           created_at: string
@@ -1334,6 +1366,7 @@ export type Database = {
           post_id: string
           updated_at: string
           user_id: string
+          views_count: number | null
         }
         Insert: {
           content: string
@@ -1344,6 +1377,7 @@ export type Database = {
           post_id: string
           updated_at?: string
           user_id: string
+          views_count?: number | null
         }
         Update: {
           content?: string
@@ -1354,6 +1388,7 @@ export type Database = {
           post_id?: string
           updated_at?: string
           user_id?: string
+          views_count?: number | null
         }
         Relationships: [
           {
@@ -2565,6 +2600,10 @@ export type Database = {
           | { p_acceptor: string; p_escrow_id: string }
           | { p_safepay_id: string }
         Returns: undefined
+      }
+      calculate_comment_engagement: {
+        Args: { p_comment_id: string }
+        Returns: number
       }
       calculate_nc_amount: {
         Args: { amount_ngn: number; payment_method?: string }
