@@ -1,5 +1,8 @@
 project_id = "jxybqmquymxkvxxpiuhv"
 
+[functions.vtu-webhook]
+verify_jwt = false
+
 [functions.bitlabs-offers]
 verify_jwt = true
 
