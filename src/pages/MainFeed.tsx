@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Plus, Search, Filter, TrendingUp, Home, MessageCircle, Users, DollarSign, User, Image, FileText, Briefcase, Award, Calendar, Vote, Hash, RefreshCw, ArrowRight, Star, MapPin } from 'lucide-react'
+import { Plus, Search, Filter, TrendingUp, Home, MessageCircle, Users, DollarSign, User, Image, FileText, Briefcase, Award, Calendar, Vote, Hash, RefreshCw, ArrowRight, Star, MapPin, MoreVertical, Settings, Wallet } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Logo } from '@/components/ui/logo'
 import { BrandInput } from '@/components/ui/brand-input'
@@ -197,7 +197,41 @@ const MainFeed = () => {
           <header className="bg-background/95 backdrop-blur-sm border-b border-border px-4 sm:px-6 py-4 sticky top-[60px] z-10">
             <div className="flex items-center justify-between mb-4">
               <Logo />
-              <NotificationBell />
+              <div className="flex items-center gap-2">
+                <NotificationBell />
+                
+                {/* Profile Menu */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <MoreVertical className="h-5 w-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    {!isComplete && (
+                      <DropdownMenuItem onClick={() => navigate('/profile')} className="bg-orange-50 dark:bg-orange-950">
+                        <User className="mr-2 h-4 w-4 text-orange-600" />
+                        <div className="flex-1">
+                          <div className="font-medium text-orange-600">Complete Profile</div>
+                          <div className="text-xs text-orange-600/70">{missingFields.length} fields missing</div>
+                        </div>
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem onClick={() => navigate('/profile')}>
+                      <User className="mr-2 h-4 w-4" />
+                      My Profile
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/settings')}>
+                      <Settings className="mr-2 h-4 w-4" />
+                      Settings
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/earn')}>
+                      <Wallet className="mr-2 h-4 w-4" />
+                      Wallet & Earnings
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
             
             {/* Feed Toggle */}

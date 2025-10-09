@@ -7,6 +7,7 @@ import { useProfile } from '@/hooks/useProfile'
 import { useAuth } from '@/hooks/useAuth'
 import { useFileUpload } from '@/hooks/useFileUpload'
 import { useConnections } from '@/hooks/useConnections'
+import { useProfileCompletion } from '@/hooks/useProfileCompletion'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,6 +33,7 @@ const Profile = () => {
   const { toast } = useToast()
   const { uploadFile, uploadProgress } = useFileUpload()
   const { connectionRequests, respondToConnectionRequest, fetchConnectionRequests } = useConnections()
+  const { isComplete, missingFields } = useProfileCompletion()
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [editForm, setEditForm] = useState({
     full_name: '',
@@ -229,6 +231,15 @@ const Profile = () => {
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
+                    {!isComplete && (
+                      <DropdownMenuItem onClick={handleEditProfile} className="bg-orange-50 dark:bg-orange-950">
+                        <Edit className="mr-2 h-4 w-4 text-orange-600" />
+                        <div className="flex-1">
+                          <div className="font-medium text-orange-600">Complete Profile</div>
+                          <div className="text-xs text-orange-600/70">{missingFields.length} fields missing</div>
+                        </div>
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem onClick={handleEditProfile}>
                       <Edit className="mr-2 h-4 w-4" />
                       Edit Profile
