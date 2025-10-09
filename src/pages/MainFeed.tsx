@@ -15,6 +15,7 @@ import { useEnhancedFeed } from '@/hooks/useEnhancedFeed'
 import { useSuggestions } from '@/hooks/useSuggestions'
 import InfiniteScrollFeed from '@/components/InfiniteScrollFeed'
 import EnhancedCreatePostDialog from '@/components/EnhancedCreatePostDialog'
+import CreateStoryDialog from '@/components/CreateStoryDialog'
 import TrendingSection from '@/components/TrendingSection'
 import ResponsiveLayout from '@/components/ResponsiveLayout'
 import NotificationBell from '@/components/NotificationBell'
@@ -122,6 +123,11 @@ const MainFeed = () => {
 
   const handleCreateStory = () => {
     setShowCreateStory(true)
+  }
+
+  const handleStoryCreated = () => {
+    // Refresh feed when a new story is created
+    refetchFeed()
   }
 
   const handleJobApply = (jobPost: any) => {
@@ -534,6 +540,13 @@ const MainFeed = () => {
           createPost(content, contentType, visibility, title, mediaUrls)
         }
         userProfile={profile}
+      />
+
+      {/* Create Story Dialog */}
+      <CreateStoryDialog
+        isOpen={showCreateStory}
+        onClose={() => setShowCreateStory(false)}
+        onStoryCreated={handleStoryCreated}
       />
 
       {/* Job Application Dialog */}

@@ -38,6 +38,27 @@ const StoriesCarousel: React.FC<StoriesCarouselProps> = ({ onCreateStory }) => {
 
   useEffect(() => {
     fetchStories()
+    
+    // Set up real-time subscription for stories
+    const channel = supabase
+      .channel('stories-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'stories'
+        },
+        () => {
+          // Refetch stories when any change occurs
+          fetchStories()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [user])
 
   const fetchStories = async () => {
