@@ -1,11 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Send, Plus, Image, Paperclip, Smile, Users, Pin, X } from 'lucide-react'
+import { ArrowLeft, Send, Paperclip, Users, Pin, X, Check, CheckCheck, MoreVertical, MessageSquare } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/use-toast'
@@ -52,20 +58,27 @@ const GroupChatInterface: React.FC = () => {
   const [sending, setSending] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set())
+  const [isUserTyping, setIsUserTyping] = useState(false)
   const { uploadFile, uploadProgress } = useFileUpload()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     if (groupId && user) {
       fetchGroup()
       fetchMessages()
-      subscribeToMessages()
+      const unsubscribe = subscribeToMessages()
+      subscribeToTyping()
     }
     
     // Cleanup preview URL on unmount
     return () => {
       if (previewUrl) {
         URL.revokeObjectURL(previewUrl)
+      }
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current)
       }
     }
   }, [groupId, user])
@@ -169,7 +182,63 @@ const GroupChatInterface: React.FC = () => {
       )
       .subscribe()
 
-    return () => supabase.removeChannel(channel)
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }
+
+  const subscribeToTyping = () => {
+    if (!groupId || !user) return
+
+    const channel = supabase.channel(`typing-${groupId}`)
+    
+    channel
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState()
+        const typingUserIds = new Set<string>()
+        
+        Object.keys(state).forEach(key => {
+          const presences = state[key] as any[]
+          presences.forEach(presence => {
+            if (presence.typing && presence.user_id !== user.id) {
+              typingUserIds.add(presence.user_id)
+            }
+          })
+        })
+        
+        setTypingUsers(typingUserIds)
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await channel.track({ user_id: user.id, typing: false })
+        }
+      })
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }
+
+  const handleTyping = async (value: string) => {
+    setNewMessage(value)
+    
+    if (!groupId || !user) return
+    
+    const channel = supabase.channel(`typing-${groupId}`)
+    
+    if (value.trim() && !isUserTyping) {
+      setIsUserTyping(true)
+      await channel.track({ user_id: user.id, typing: true })
+    }
+    
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current)
+    }
+    
+    typingTimeoutRef.current = setTimeout(async () => {
+      setIsUserTyping(false)
+      await channel.track({ user_id: user.id, typing: false })
+    }, 3000)
   }
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -254,6 +323,18 @@ const GroupChatInterface: React.FC = () => {
 
       setNewMessage('')
       removeFile()
+      
+      // Clear typing indicator
+      if (groupId && user) {
+        const channel = supabase.channel(`typing-${groupId}`)
+        await channel.track({ user_id: user.id, typing: false })
+        setIsUserTyping(false)
+      }
+      
+      toast({
+        title: "Sent",
+        description: "Message sent successfully"
+      })
     } catch (error) {
       console.error('Error sending message:', error)
       toast({
@@ -317,8 +398,10 @@ const GroupChatInterface: React.FC = () => {
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         {messages.length === 0 ? (
-          <div className="text-center text-text-secondary py-8">
-            <p>No messages yet. Start the conversation!</p>
+          <div className="flex flex-col items-center justify-center h-full text-center text-text-secondary py-8">
+            <MessageSquare className="h-16 w-16 mb-4 text-muted-foreground" />
+            <h3 className="text-lg font-semibold mb-2">No messages yet</h3>
+            <p>Start the conversation!</p>
           </div>
         ) : (
           messages.map((message) => (
@@ -373,9 +456,14 @@ const GroupChatInterface: React.FC = () => {
                       )}
                       
                       <div className="flex items-center justify-between mt-2">
-                        <span className="text-xs opacity-70">
-                          {formatTime(message.created_at)}
-                        </span>
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs opacity-70">
+                            {formatTime(message.created_at)}
+                          </span>
+                          {message.sender_id === user?.id && (
+                            <CheckCheck className="h-3 w-3 opacity-70" />
+                          )}
+                        </div>
                         
                         {/* Reaction summary */}
                         {message.reactions_summary && Object.keys(message.reactions_summary).length > 0 && (
@@ -395,6 +483,19 @@ const GroupChatInterface: React.FC = () => {
             </div>
           ))
         )}
+        
+        {/* Typing Indicator */}
+        {typingUsers.size > 0 && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground px-2">
+            <div className="flex gap-1">
+              <span className="animate-bounce" style={{ animationDelay: '0ms' }}>●</span>
+              <span className="animate-bounce" style={{ animationDelay: '150ms' }}>●</span>
+              <span className="animate-bounce" style={{ animationDelay: '300ms' }}>●</span>
+            </div>
+            <span>Someone is typing...</span>
+          </div>
+        )}
+        
         <div ref={messagesEndRef} />
       </div>
 
@@ -444,7 +545,7 @@ const GroupChatInterface: React.FC = () => {
           <div className="flex-1">
             <Input
               value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
+              onChange={(e) => handleTyping(e.target.value)}
               placeholder={selectedFile ? "Add a caption..." : "Type a message..."}
               onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
               disabled={sending || uploadProgress.isUploading}

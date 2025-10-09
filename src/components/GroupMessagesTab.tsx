@@ -4,10 +4,11 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Users, Crown, MapPin, Search, MessageSquare } from 'lucide-react'
+import { Users, Crown, MapPin, Search, MessageSquare, Clock } from 'lucide-react'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import { useNavigate } from 'react-router-dom'
+import { useToast } from '@/hooks/use-toast'
 
 interface Group {
   id: string
@@ -27,20 +28,28 @@ interface Group {
     role: string
     is_active: boolean
   }
+  last_message?: {
+    content: string
+    created_at: string
+    sender_name: string
+  }
+  unread_count?: number
 }
 
 const GroupMessagesTab: React.FC = () => {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const { toast } = useToast()
   const [groups, setGroups] = useState<Group[]>([])
   const [myGroups, setMyGroups] = useState<Group[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const [activeFilter, setActiveFilter] = useState<'all' | 'joined'>('all')
+  const [activeFilter, setActiveFilter] = useState<'all' | 'joined'>('joined')
 
   useEffect(() => {
     if (user) {
       fetchGroups()
+      subscribeToRealtime()
     }
   }, [user])
 
@@ -112,6 +121,40 @@ const GroupMessagesTab: React.FC = () => {
     }
   }
 
+  const subscribeToRealtime = () => {
+    const channel = supabase
+      .channel('group-messages-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'group_messages'
+        },
+        () => {
+          fetchGroups()
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'group_members'
+        },
+        (payload) => {
+          if ((payload.new as any)?.user_id === user?.id || (payload.old as any)?.user_id === user?.id) {
+            fetchGroups()
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }
+
   const joinGroup = async (groupId: string) => {
     if (!user) return
 
@@ -124,12 +167,31 @@ const GroupMessagesTab: React.FC = () => {
           role: 'member'
         })
 
-      if (error) throw error
+      if (error) {
+        if (error.code === '23505') {
+          toast({
+            title: "Already Joined",
+            description: "You're already a member of this group",
+            variant: "destructive"
+          })
+          return
+        }
+        throw error
+      }
 
-      // Refresh groups
+      toast({
+        title: "Joined Successfully",
+        description: "You can now chat in this group"
+      })
+
       fetchGroups()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error joining group:', error)
+      toast({
+        title: "Error",
+        description: error.message || "Failed to join group",
+        variant: "destructive"
+      })
     }
   }
 
@@ -265,6 +327,27 @@ const GroupMessagesTab: React.FC = () => {
                         <p className="text-sm text-text-secondary mb-3 line-clamp-2">
                           {group.description}
                         </p>
+                      )}
+
+                      {group.last_message && (
+                        <div className="flex items-start gap-2 p-2 bg-muted/50 rounded-lg mb-2">
+                          <MessageSquare className="h-3 w-3 mt-0.5 text-muted-foreground flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-muted-foreground truncate">
+                              <span className="font-medium">{group.last_message.sender_name}:</span>{' '}
+                              {group.last_message.content}
+                            </p>
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                              <Clock className="h-2.5 w-2.5" />
+                              <span>{new Date(group.last_message.created_at).toLocaleDateString()}</span>
+                            </div>
+                          </div>
+                          {group.unread_count && group.unread_count > 0 && (
+                            <Badge variant="default" className="ml-2 h-5 min-w-5 flex items-center justify-center rounded-full text-xs px-1">
+                              {group.unread_count}
+                            </Badge>
+                          )}
+                        </div>
                       )}
 
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
