@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, MapPin, Clock, DollarSign, Users, Briefcase } from 'lucide-react'
+import { useNavigate, Link } from 'react-router-dom'
+import { ArrowLeft, MapPin, Clock, DollarSign, Users, Briefcase, Home, MessageCircle, User as UserIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -56,6 +56,15 @@ const Jobs = () => {
     'Data Analysis', 'Virtual Assistant', 'Customer Service', 'Other'
   ]
 
+  const bottomNavItems = [
+    { icon: Home, label: 'Feed', path: '/feed' },
+    { icon: MessageCircle, label: 'Chat', path: '/chat' },
+    { icon: Users, label: 'Expert', path: '/experts' },
+    { icon: Briefcase, label: 'Gig', path: '/jobs', active: true },
+    { icon: DollarSign, label: 'Earn', path: '/earn' },
+    { icon: UserIcon, label: 'Profile', path: '/profile' }
+  ]
+
   const filteredJobs = jobs.filter(job => {
     const matchesSearch = job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          job.description.toLowerCase().includes(searchQuery.toLowerCase())
@@ -97,7 +106,7 @@ const Jobs = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-subtle p-4">
+    <div className="min-h-screen bg-gradient-subtle p-4 pb-20">
       {/* Top Ad Banner */}
       <TopBannerAd />
       
@@ -263,6 +272,26 @@ const Jobs = () => {
           </>
         )}
       </div>
+
+      {/* Bottom Navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-background border-t border-border">
+        <div className="flex justify-around items-center px-4 py-2">
+          {bottomNavItems.map((item) => (
+            <Link 
+              key={item.label} 
+              to={item.path}
+              className={`flex flex-col items-center gap-1 py-2 px-3 rounded-xl transition-colors ${
+                item.active 
+                  ? 'text-primary bg-primary/10' 
+                  : 'text-text-secondary hover:text-primary hover:bg-primary/5'
+              }`}
+            >
+              <item.icon className="h-5 w-5" />
+              <span className="text-xs font-medium">{item.label}</span>
+            </Link>
+          ))}
+        </div>
+      </nav>
     </div>
   )
 }

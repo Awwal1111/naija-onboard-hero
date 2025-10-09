@@ -2,8 +2,8 @@ import React, { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Trophy, Zap, FileText, User, History, Users, ArrowUpRight, Phone, Wifi, TrendingUp } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { Trophy, Zap, FileText, User, History, Users, ArrowUpRight, Phone, Wifi, TrendingUp, Home, MessageCircle, Briefcase, DollarSign, User as UserIcon } from 'lucide-react'
+import { useNavigate, Link } from 'react-router-dom'
 import { useWallet } from '@/hooks/useWallet'
 import NaijaLanceWalletCard from '@/components/NaijaLanceWalletCard'
 import { DailySigninCard } from '@/components/DailySigninCard'
@@ -102,6 +102,14 @@ const EnhancedEarn = () => {
     }
   ]
 
+  const bottomNavItems = [
+    { icon: Home, label: 'Feed', path: '/feed' },
+    { icon: MessageCircle, label: 'Chat', path: '/chat' },
+    { icon: Users, label: 'Expert', path: '/experts' },
+    { icon: Briefcase, label: 'Gig', path: '/jobs' },
+    { icon: DollarSign, label: 'Earn', path: '/earn', active: true },
+    { icon: UserIcon, label: 'Profile', path: '/profile' }
+  ]
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -242,6 +250,26 @@ const EnhancedEarn = () => {
         currentBalance={balance.total}
         onSuccess={() => window.location.reload()}
       />
+
+      {/* Bottom Navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-background border-t border-border">
+        <div className="flex justify-around items-center px-4 py-2">
+          {bottomNavItems.map((item) => (
+            <Link 
+              key={item.label} 
+              to={item.path}
+              className={`flex flex-col items-center gap-1 py-2 px-3 rounded-xl transition-colors ${
+                item.active 
+                  ? 'text-primary bg-primary/10' 
+                  : 'text-text-secondary hover:text-primary hover:bg-primary/5'
+              }`}
+            >
+              <item.icon className="h-5 w-5" />
+              <span className="text-xs font-medium">{item.label}</span>
+            </Link>
+          ))}
+        </div>
+      </nav>
     </div>
   )
 }

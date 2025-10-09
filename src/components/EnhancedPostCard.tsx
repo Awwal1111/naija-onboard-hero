@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast'
 import { usePostViews } from '@/hooks/usePostViews'
 import { sanitizeText } from '@/lib/security'
 import PostOptionsMenu from './PostOptionsMenu'
+import { supabase } from '@/integrations/supabase/client'
 
 interface EnhancedPostCardProps {
   post: EnhancedPost
@@ -42,32 +43,100 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
   const { trackPostView } = usePostViews()
 
   // Handler functions for post menu actions
-  const handleEditPost = () => {
-    toast({
-      title: "Edit Post",
-      description: "Edit functionality will be available soon",
-    })
+  const handleEditPost = async () => {
+    // Navigate to edit page or open edit modal
+    window.location.href = `/post/edit/${post.id}`
   }
 
-  const handleDeletePost = () => {
-    toast({
-      title: "Delete Post", 
-      description: "Delete functionality will be available soon",
-    })
+  const handleDeletePost = async () => {
+    if (!confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
+      return
+    }
+    
+    try {
+      const { error } = await supabase
+        .from('posts')
+        .delete()
+        .eq('id', post.id)
+        .eq('user_id', currentUserId)
+      
+      if (error) throw error
+      
+      toast({
+        title: "Post Deleted",
+        description: "Your post has been deleted successfully",
+      })
+      
+      // Reload the page to reflect changes
+      window.location.reload()
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete post. Please try again.",
+        variant: "destructive"
+      })
+    }
   }
 
-  const handleSavePost = () => {
-    toast({
-      title: "Post Saved",
-      description: "Post has been saved to your collection",
-    })
+  const handleSavePost = async () => {
+    try {
+      const { error } = await supabase
+        .from('saved_posts')
+        .insert({
+          user_id: currentUserId,
+          post_id: post.id
+        })
+      
+      if (error) {
+        if (error.code === '23505') {
+          toast({
+            title: "Already Saved",
+            description: "You've already saved this post",
+          })
+          return
+        }
+        throw error
+      }
+      
+      toast({
+        title: "Post Saved",
+        description: "Post has been saved to your collection",
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save post. Please try again.",
+        variant: "destructive"
+      })
+    }
   }
 
-  const handleReportPost = () => {
-    toast({
-      title: "Post Reported",
-      description: "Thank you for reporting. We'll review this content.",
-    })
+  const handleReportPost = async () => {
+    const reason = prompt('Please provide a reason for reporting this post:')
+    if (!reason) return
+    
+    try {
+      const { error } = await supabase
+        .from('post_reports')
+        .insert({
+          post_id: post.id,
+          reported_by: currentUserId,
+          reason: reason.trim()
+        })
+      
+      if (error) throw error
+      
+      toast({
+        title: "Post Reported",
+        description: "Thank you for reporting. We'll review this content.",
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to submit report. Please try again.",
+        variant: "destructive"
+      })
+    }
   }
 
   const handleCopyLink = () => {
