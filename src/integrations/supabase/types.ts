@@ -2152,34 +2152,37 @@ export type Database = {
       }
       stories: {
         Row: {
+          background_color: string | null
           content: string | null
           created_at: string
           expires_at: string
           id: string
           media_type: string
-          media_url: string
+          media_url: string | null
           privacy_setting: string | null
           user_id: string
           views_count: number
         }
         Insert: {
+          background_color?: string | null
           content?: string | null
           created_at?: string
           expires_at?: string
           id?: string
           media_type?: string
-          media_url: string
+          media_url?: string | null
           privacy_setting?: string | null
           user_id: string
           views_count?: number
         }
         Update: {
+          background_color?: string | null
           content?: string | null
           created_at?: string
           expires_at?: string
           id?: string
           media_type?: string
-          media_url?: string
+          media_url?: string | null
           privacy_setting?: string | null
           user_id?: string
           views_count?: number

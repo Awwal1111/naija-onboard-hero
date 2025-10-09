@@ -22,8 +22,19 @@ const CreateStoryDialog: React.FC<CreateStoryDialogProps> = ({
   const [mediaFile, setMediaFile] = useState<File | null>(null)
   const [mediaPreview, setMediaPreview] = useState<string | null>(null)
   const [mediaType, setMediaType] = useState<'image' | 'video' | 'audio' | 'document' | 'text'>('text')
+  const [storyType, setStoryType] = useState<'text' | 'media'>('text')
+  const [backgroundColor, setBackgroundColor] = useState('gradient-primary')
   const { toast } = useToast()
   const { uploadFile, uploadProgress } = useFileUpload()
+
+  // Facebook/Instagram style background options
+  const backgroundOptions = [
+    { id: 'gradient-primary', name: 'Green', class: 'bg-gradient-to-br from-primary to-brand-green' },
+    { id: 'gradient-purple', name: 'Purple', class: 'bg-gradient-to-br from-purple-500 to-pink-500' },
+    { id: 'gradient-blue', name: 'Blue', class: 'bg-gradient-to-br from-blue-500 to-cyan-500' },
+    { id: 'gradient-orange', name: 'Orange', class: 'bg-gradient-to-br from-orange-500 to-red-500' },
+    { id: 'solid-black', name: 'Black', class: 'bg-black' },
+  ]
 
   const handleMediaUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -37,6 +48,7 @@ const CreateStoryDialog: React.FC<CreateStoryDialogProps> = ({
 
     setMediaFile(file)
     setMediaType(type)
+    setStoryType('media')
     
     // Create preview URL for images and videos
     if (type === 'image' || type === 'video') {
@@ -53,6 +65,7 @@ const CreateStoryDialog: React.FC<CreateStoryDialogProps> = ({
     }
     setMediaFile(null)
     setMediaPreview(null)
+    setStoryType('text')
   }
 
   const handleSubmit = async () => {
@@ -100,7 +113,8 @@ const CreateStoryDialog: React.FC<CreateStoryDialogProps> = ({
           user_id: user.user.id,
           content: content.trim() || null,
           media_url: mediaUrl,
-          media_type: mediaUrl ? mediaType : 'text',
+          media_type: storyType === 'text' ? 'text' : mediaType,
+          background_color: storyType === 'text' ? backgroundColor : null,
           expires_at: expiresAt.toISOString()
         })
 
@@ -114,6 +128,8 @@ const CreateStoryDialog: React.FC<CreateStoryDialogProps> = ({
       // Reset form
       setContent('')
       removeMedia()
+      setStoryType('text')
+      setBackgroundColor('gradient-primary')
       onStoryCreated()
       onClose()
     } catch (error: any) {
@@ -142,22 +158,87 @@ const CreateStoryDialog: React.FC<CreateStoryDialogProps> = ({
         </DialogHeader>
         
         <div className="space-y-4">
-          {/* Text Content (like Instagram/Facebook text stories) */}
-          <div>
-            <label className="text-sm font-medium text-text-primary mb-2 block">
-              What's on your mind?
-            </label>
-            <BrandInput
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Share something..."
-              maxLength={280}
-              className="min-h-[100px]"
-            />
+          {/* Story Type Toggle */}
+          <div className="flex gap-2 p-1 bg-muted rounded-lg">
+            <button
+              onClick={() => setStoryType('text')}
+              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                storyType === 'text' 
+                  ? 'bg-primary text-white' 
+                  : 'text-text-secondary hover:text-text-primary'
+              }`}
+            >
+              Text Story
+            </button>
+            <button
+              onClick={() => setStoryType('media')}
+              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                storyType === 'media' 
+                  ? 'bg-primary text-white' 
+                  : 'text-text-secondary hover:text-text-primary'
+              }`}
+            >
+              Media Story
+            </button>
           </div>
 
+          {/* Text Story Content */}
+          {storyType === 'text' && (
+            <>
+              <div>
+                <label className="text-sm font-medium text-text-primary mb-2 block">
+                  What's on your mind?
+                </label>
+                <textarea
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  placeholder="Share something..."
+                  maxLength={280}
+                  className="w-full min-h-[120px] p-3 rounded-lg border border-border bg-background text-text-primary resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+                <p className="text-xs text-text-secondary mt-1">{content.length}/280</p>
+              </div>
+
+              {/* Background Color Selection */}
+              <div>
+                <label className="text-sm font-medium text-text-primary mb-2 block">
+                  Background Style
+                </label>
+                <div className="grid grid-cols-5 gap-2">
+                  {backgroundOptions.map((option) => (
+                    <button
+                      key={option.id}
+                      onClick={() => setBackgroundColor(option.id)}
+                      className={`h-12 rounded-lg ${option.class} border-2 transition-all ${
+                        backgroundColor === option.id 
+                          ? 'border-primary scale-105' 
+                          : 'border-transparent'
+                      }`}
+                      title={option.name}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Preview */}
+              {content && (
+                <div className="border border-border rounded-lg overflow-hidden">
+                  <div className={`h-48 ${backgroundOptions.find(o => o.id === backgroundColor)?.class} flex items-center justify-center p-6`}>
+                    <p className="text-white text-lg font-medium text-center line-clamp-4">
+                      {content}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
           {/* Media Upload Options */}
+          {storyType === 'media' && (
           <div className="space-y-3">
+            <label className="text-sm font-medium text-text-primary mb-2 block">
+              Add media to your story
+            </label>
             <div className="grid grid-cols-2 gap-2">
               <label>
                 <input
@@ -281,6 +362,7 @@ const CreateStoryDialog: React.FC<CreateStoryDialogProps> = ({
               </div>
             )}
           </div>
+          )}
 
           {/* Actions */}
           <div className="flex gap-3">
@@ -295,7 +377,10 @@ const CreateStoryDialog: React.FC<CreateStoryDialogProps> = ({
             <BrandButton 
               className="flex-1"
               onClick={handleSubmit}
-              disabled={uploadProgress.isUploading || (!mediaFile && !content.trim())}
+              disabled={
+                uploadProgress.isUploading || 
+                (storyType === 'text' ? !content.trim() : !mediaFile)
+              }
             >
               {uploadProgress.isUploading ? 'Posting...' : 'Post Story'}
             </BrandButton>

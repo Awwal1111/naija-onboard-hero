@@ -10,9 +10,10 @@ import { useToast } from '@/hooks/use-toast'
 interface Story {
   id: string
   user_id: string
-  media_url: string
+  media_url: string | null
   media_type: string
   content?: string | null
+  background_color?: string | null
   views_count: number
   created_at: string
   expires_at: string
@@ -74,6 +75,7 @@ const StoriesCarousel: React.FC<StoriesCarouselProps> = ({ onCreateStory }) => {
           media_url,
           media_type,
           content,
+          background_color,
           views_count,
           created_at,
           expires_at
@@ -315,8 +317,14 @@ const StoriesCarousel: React.FC<StoriesCarouselProps> = ({ onCreateStory }) => {
               {/* Story Content */}
               <div className="w-full h-full flex items-center justify-center">
                 {viewingStory.media_type === 'text' || (!viewingStory.media_url && viewingStory.content) ? (
-                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary to-brand-green p-8">
-                    <p className="text-white text-xl font-medium text-center max-w-md">
+                  <div className={`w-full h-full flex items-center justify-center p-8 ${
+                    viewingStory.background_color === 'gradient-purple' ? 'bg-gradient-to-br from-purple-500 to-pink-500' :
+                    viewingStory.background_color === 'gradient-blue' ? 'bg-gradient-to-br from-blue-500 to-cyan-500' :
+                    viewingStory.background_color === 'gradient-orange' ? 'bg-gradient-to-br from-orange-500 to-red-500' :
+                    viewingStory.background_color === 'solid-black' ? 'bg-black' :
+                    'bg-gradient-to-br from-primary to-brand-green'
+                  }`}>
+                    <p className="text-white text-2xl font-semibold text-center max-w-md leading-relaxed">
                       {viewingStory.content}
                     </p>
                   </div>
