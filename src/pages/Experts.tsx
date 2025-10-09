@@ -131,7 +131,7 @@ const Experts = () => {
     const result = await submitRating(rating, comment)
     if (result.success) {
       // Refresh the experts list to show updated ratings
-      fetchExperts()
+      await fetchExperts()
     }
     setSelectedExpert(null)
   }

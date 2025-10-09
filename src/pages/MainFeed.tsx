@@ -24,11 +24,14 @@ import StoriesCarousel from '@/components/StoriesCarousel'
 import JobApplicationDialog from '@/components/JobApplicationDialog'
 import ProfilePreview from '@/components/ProfilePreview'
 import TopBannerAd from '@/components/TopBannerAd'
+import ProfileCompletionDialog from '@/components/ProfileCompletionDialog'
+import { useProfileCompletion } from '@/hooks/useProfileCompletion'
 
 const MainFeed = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { profile } = useProfile()
+  const { isComplete, missingFields, shouldShowDialog } = useProfileCompletion()
   const { 
     posts, 
     loading, 
@@ -170,6 +173,7 @@ const MainFeed = () => {
   }
 
   return (
+    <>
     <ResponsiveLayout className="pb-20">
       {/* Pull to Refresh Indicator */}
       {isRefreshing && (
@@ -583,6 +587,13 @@ const MainFeed = () => {
         </div>
       </div>
     </ResponsiveLayout>
+      
+      {/* Profile Completion Dialog */}
+      <ProfileCompletionDialog 
+        isOpen={shouldShowDialog}
+        missingFields={missingFields}
+      />
+    </>
   )
 }
 
