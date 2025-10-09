@@ -69,10 +69,10 @@ export const useDailySignin = () => {
         throw signinError
       }
 
-      // Update user's wallet balance using direct update
+      // Update user's wallet balance - daily sign-in goes to NON-WITHDRAWABLE
       const { data: currentProfile, error: fetchError } = await supabase
         .from('profiles')
-        .select('wallet_balance')
+        .select('wallet_balance, balance_non_withdrawable')
         .eq('user_id', user.id)
         .single()
 
@@ -82,11 +82,15 @@ export const useDailySignin = () => {
         return
       }
 
-      const newBalance = (currentProfile.wallet_balance || 0) + rewardAmount
+      const newTotalBalance = (currentProfile.wallet_balance || 0) + rewardAmount
+      const newNonWithdrawable = (currentProfile.balance_non_withdrawable || 0) + rewardAmount
 
       const { error: walletError } = await supabase
         .from('profiles')
-        .update({ wallet_balance: newBalance })
+        .update({ 
+          wallet_balance: newTotalBalance,
+          balance_non_withdrawable: newNonWithdrawable
+        })
         .eq('user_id', user.id)
 
       if (walletError) {

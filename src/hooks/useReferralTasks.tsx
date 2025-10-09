@@ -325,18 +325,22 @@ export const useAdminReferralTasks = () => {
 
         if (walletError) throw walletError
 
-        // Update user wallet balance in profiles table
+        // Update user wallet balance - referral task rewards go to WITHDRAWABLE
         const { data: currentProfile } = await supabase
           .from('profiles')
-          .select('wallet_balance')
+          .select('wallet_balance, balance_withdrawable')
           .eq('user_id', submission.user_id)
           .single()
 
         if (currentProfile) {
-          const newBalance = (currentProfile.wallet_balance || 0) + reward
+          const newTotalBalance = (currentProfile.wallet_balance || 0) + reward
+          const newWithdrawable = (currentProfile.balance_withdrawable || 0) + reward
           await supabase
             .from('profiles')
-            .update({ wallet_balance: newBalance })
+            .update({ 
+              wallet_balance: newTotalBalance,
+              balance_withdrawable: newWithdrawable
+            })
             .eq('user_id', submission.user_id)
         }
       }

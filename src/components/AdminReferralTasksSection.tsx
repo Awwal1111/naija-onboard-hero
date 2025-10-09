@@ -67,13 +67,24 @@ export const AdminReferralTasksSection = () => {
 
       if (updateError) throw updateError
 
-      // Credit user wallet
-      const { error: walletError } = await supabase.rpc('increment_wallet_balance', {
-        target_user_id: userId,
-        amount_to_add: reward
-      })
+      // Credit user wallet - referral task rewards go to WITHDRAWABLE balance
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('wallet_balance, balance_withdrawable')
+        .eq('user_id', userId)
+        .single()
 
-      if (walletError) throw walletError
+      if (profile) {
+        const { error: walletError } = await supabase
+          .from('profiles')
+          .update({
+            wallet_balance: profile.wallet_balance + reward,
+            balance_withdrawable: profile.balance_withdrawable + reward
+          })
+          .eq('user_id', userId)
+
+        if (walletError) throw walletError
+      }
 
       // Create transaction record
       await supabase.from('wallet_transactions').insert({
