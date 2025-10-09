@@ -117,35 +117,54 @@ const GroupChatInterface: React.FC = () => {
     if (!groupId) return
 
     try {
-      const { data, error } = await supabase
+      const { data: messagesData, error: messagesError } = await supabase
         .from('group_messages')
-        .select(`
-          id,
-          content,
-          sender_id,
-          message_type,
-          media_url,
-          is_pinned,
-          created_at,
-          profiles!group_messages_sender_id_fkey(full_name, profile_picture_url)
-        `)
+        .select('id, content, sender_id, message_type, media_url, media_type, is_pinned, created_at')
         .eq('group_id', groupId)
         .is('deleted_at', null)
         .order('created_at', { ascending: true })
 
-      if (error) throw error
+      if (messagesError) throw messagesError
 
-      // Process messages to handle profiles
-      const processedMessages = (data || []).map(message => ({
+      if (!messagesData || messagesData.length === 0) {
+        setMessages([])
+        setLoading(false)
+        return
+      }
+
+      // Fetch sender profiles separately
+      const senderIds = [...new Set(messagesData.map(m => m.sender_id))]
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, profile_picture_url')
+        .in('user_id', senderIds)
+
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError)
+      }
+
+      // Create a map of user_id to profile
+      const profilesMap = new Map(
+        (profilesData || []).map(profile => [profile.user_id, profile])
+      )
+
+      // Combine messages with profiles
+      const processedMessages = messagesData.map(message => ({
         ...message,
-        profiles: Array.isArray(message.profiles) && message.profiles.length > 0
-          ? message.profiles[0]
-          : { full_name: 'Unknown User' }
+        profiles: profilesMap.get(message.sender_id) || { 
+          full_name: 'Unknown User',
+          profile_picture_url: null 
+        }
       }))
 
       setMessages(processedMessages)
     } catch (error) {
       console.error('Error fetching messages:', error)
+      toast({
+        title: "Error",
+        description: "Failed to load messages",
+        variant: "destructive"
+      })
     } finally {
       setLoading(false)
     }
@@ -167,17 +186,33 @@ const GroupChatInterface: React.FC = () => {
         async (payload) => {
           const newMessage = payload.new as GroupMessage
           
-          // Fetch the sender's profile
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('full_name, profile_picture_url')
-            .eq('user_id', newMessage.sender_id)
-            .single()
+          // Only add if not already in the list (avoid duplicates)
+          setMessages(prev => {
+            if (prev.some(msg => msg.id === newMessage.id)) {
+              return prev
+            }
 
-          setMessages(prev => [...prev, {
-            ...newMessage,
-            profiles: profile || { full_name: 'Unknown User' }
-          }])
+            // Fetch the sender's profile
+            supabase
+              .from('profiles')
+              .select('full_name, profile_picture_url')
+              .eq('user_id', newMessage.sender_id)
+              .single()
+              .then(({ data: profile }) => {
+                setMessages(current => 
+                  current.map(msg => 
+                    msg.id === newMessage.id 
+                      ? { ...msg, profiles: profile || { full_name: 'Unknown User', profile_picture_url: null } }
+                      : msg
+                  )
+                )
+              })
+
+            return [...prev, {
+              ...newMessage,
+              profiles: { full_name: 'Loading...', profile_picture_url: null }
+            }]
+          })
         }
       )
       .subscribe()
