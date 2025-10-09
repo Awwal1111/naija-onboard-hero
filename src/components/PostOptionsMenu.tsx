@@ -25,11 +25,11 @@ const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-primary/10">
           <MoreVertical className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-48">
+      <DropdownMenuContent align="end" className="w-48 z-50 bg-background border-border shadow-lg">
         {isOwnPost ? (
           <>
             <DropdownMenuItem onClick={onEdit}>

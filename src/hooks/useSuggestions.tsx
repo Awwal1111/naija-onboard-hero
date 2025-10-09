@@ -117,13 +117,19 @@ export const useSuggestions = () => {
 
     try {
       // NaijaLancers Calculation for group suggestions
-      const { data, error } = await supabase
+      let query = supabase
         .from('groups')
         .select('id, name, category, description, state_name, lga_name, member_count')
         .eq('is_active', true)
-        .or(`category.eq.${profile.profession},lga_name.eq.${profile.lga_name}`)
         .order('member_count', { ascending: false })
         .limit(10)
+
+      // Only add filters if values exist
+      if (profile.lga_name) {
+        query = query.eq('lga_name', profile.lga_name)
+      }
+
+      const { data, error } = await query
 
       if (error) throw error
 

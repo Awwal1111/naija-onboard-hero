@@ -378,8 +378,8 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
+        <div className="mb-4">
+          <div className="flex items-center justify-center gap-3 py-2">
             <ReactionPicker 
               onReact={handleReaction}
               currentReaction={post.user_reaction}
@@ -389,7 +389,7 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
               variant="ghost"
               size="sm"
               onClick={() => setShowComments(!showComments)}
-              className="text-text-secondary hover:text-primary hover:bg-primary/10"
+              className="text-text-secondary hover:text-primary hover:bg-primary/10 flex-1 max-w-[140px]"
             >
               <MessageCircle className="h-4 w-4 mr-2" />
               <span className="hidden sm:inline">Comment</span>
@@ -399,16 +399,16 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
               variant="ghost"
               size="sm"
               onClick={handleShare}
-              className="text-text-secondary hover:text-primary hover:bg-primary/10"
+              className="text-text-secondary hover:text-primary hover:bg-primary/10 flex-1 max-w-[140px]"
             >
               <Share className="h-4 w-4 mr-2" />
               <span className="hidden sm:inline">Share</span>
             </Button>
           </div>
           
-          <div className="flex items-center gap-2 text-sm text-text-secondary">
+          <div className="flex items-center justify-center gap-2 text-sm text-text-secondary mt-2">
             <Eye className="h-4 w-4" />
-            <span>{post.views_count || 0}</span>
+            <span>{post.views_count || 0} views</span>
           </div>
         </div>
 
