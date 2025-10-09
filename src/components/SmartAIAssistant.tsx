@@ -30,7 +30,6 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
   const [isOpen, setIsOpen] = useState(false)
   const [hasInteracted, setHasInteracted] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)
-  const [isVisible, setIsVisible] = useState(true) // Auto-hide functionality
   const [message, setMessage] = useState('')
   const [messages, setMessages] = useState<Message[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -53,14 +52,17 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
     scrollToBottom()
   }, [messages])
 
-  // Auto-hide after 30 seconds
+  // Auto-open after 1 minute of no interaction
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsVisible(false)
-    }, 30000)
+    if (!hasInteracted) {
+      const timer = setTimeout(() => {
+        setIsOpen(true)
+        setHasInteracted(true)
+      }, 60000) // 1 minute
 
-    return () => clearTimeout(timer)
-  }, [])
+      return () => clearTimeout(timer)
+    }
+  }, [hasInteracted])
 
   useEffect(() => {
     // Add welcome message based on current page context - only when user opens it
@@ -207,14 +209,13 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
     setMessages([welcomeMessage])
   }
 
-  if (!isOpen && isVisible) {
+  if (!isOpen) {
     return (
       <div className="fixed bottom-6 right-6 z-50">
         <Button
           onClick={() => {
             setIsOpen(true)
             setHasInteracted(true)
-            setIsVisible(true) // Make sure it's visible when clicked
           }}
           className="w-14 h-14 rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl transition-all duration-300 group"
         >
@@ -224,8 +225,6 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
       </div>
     )
   }
-
-  if (!isVisible) return null
 
   return (
     <div className="fixed bottom-6 right-6 z-50">
