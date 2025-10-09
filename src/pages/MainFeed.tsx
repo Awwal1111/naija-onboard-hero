@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { Plus, Search, Filter, TrendingUp, Home, MessageCircle, Users, DollarSign, User, Image, FileText, Briefcase, Award, Calendar, Vote, Hash } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { Plus, Search, Filter, TrendingUp, Home, MessageCircle, Users, DollarSign, User, Image, FileText, Briefcase, Award, Calendar, Vote, Hash, RefreshCw, ArrowRight, Star, MapPin } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Logo } from '@/components/ui/logo'
 import { BrandInput } from '@/components/ui/brand-input'
@@ -7,9 +7,12 @@ import { BrandButton } from '@/components/ui/brand-button'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { Card, CardContent } from '@/components/ui/card'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
 import { useEnhancedFeed } from '@/hooks/useEnhancedFeed'
+import { useSuggestions } from '@/hooks/useSuggestions'
 import InfiniteScrollFeed from '@/components/InfiniteScrollFeed'
 import EnhancedCreatePostDialog from '@/components/EnhancedCreatePostDialog'
 import TrendingSection from '@/components/TrendingSection'
@@ -33,8 +36,15 @@ const MainFeed = () => {
     createPost, 
     addReaction,
     removeReaction,
-    addComment
+    addComment,
+    refetch: refetchFeed
   } = useEnhancedFeed()
+  const { 
+    groupSuggestions, 
+    expertSuggestions,
+    loading: suggestionsLoading,
+    refreshSuggestions 
+  } = useSuggestions()
   const [showCreatePost, setShowCreatePost] = useState(false)
   const [showCreateStory, setShowCreateStory] = useState(false)
   const [feedType, setFeedType] = useState<'for-you' | 'following'>('for-you')
@@ -44,6 +54,8 @@ const MainFeed = () => {
   const [aiAssistantOpen, setAiAssistantOpen] = useState(false)
   const [jobApplicationDialog, setJobApplicationDialog] = useState<{ isOpen: boolean; jobPost: any | null }>({ isOpen: false, jobPost: null })
   const [profilePreview, setProfilePreview] = useState<{ isOpen: boolean; userId: string | null }>({ isOpen: false, userId: null })
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [pullStartY, setPullStartY] = useState(0)
 
   const feedSuggestions = [
     "How do I create an engaging post?",
@@ -120,6 +132,26 @@ const MainFeed = () => {
     setProfilePreview({ isOpen: true, userId })
   }
 
+  // Pull to refresh handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setPullStartY(e.touches[0].clientY)
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    const currentY = e.touches[0].clientY
+    const pullDistance = currentY - pullStartY
+    
+    if (pullDistance > 100 && window.scrollY === 0 && !isRefreshing) {
+      handleRefresh()
+    }
+  }
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true)
+    await Promise.all([refetchFeed(), refreshSuggestions()])
+    setTimeout(() => setIsRefreshing(false), 500)
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center pb-20">
@@ -133,10 +165,22 @@ const MainFeed = () => {
 
   return (
     <ResponsiveLayout className="pb-20">
+      {/* Pull to Refresh Indicator */}
+      {isRefreshing && (
+        <div className="fixed top-16 left-1/2 transform -translate-x-1/2 z-50 bg-primary text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 animate-in slide-in-from-top">
+          <RefreshCw className="h-4 w-4 animate-spin" />
+          <span className="text-sm font-medium">Refreshing...</span>
+        </div>
+      )}
+      
       {/* Top Banner Ad */}
       <TopBannerAd />
       
-      <div className="flex">
+      <div 
+        className="flex"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+      >
         {/* Main Content */}
         <div className="flex-1 max-w-4xl mx-auto">
           {/* Header */}
@@ -318,11 +362,119 @@ const MainFeed = () => {
           </div>
 
           {/* Main Feed Content */}
-          <div className="px-4 sm:px-6 py-6">
+          <div className="px-4 sm:px-6 py-6 space-y-6">
             {feedType === 'following' ? (
               <SuggestionsTab />
             ) : (
               <>
+                {/* Groups You May Be Interested In */}
+                {groupSuggestions.length > 0 && (
+                  <Card className="overflow-hidden border-border">
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-semibold text-text-primary flex items-center gap-2">
+                          <Users className="h-5 w-5 text-primary" />
+                          Groups You May Be Interested In
+                        </h3>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => navigate('/connections?tab=suggestions')}
+                          className="text-primary hover:text-primary"
+                        >
+                          See all
+                          <ArrowRight className="h-4 w-4 ml-1" />
+                        </Button>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {groupSuggestions.slice(0, 4).map((group) => (
+                          <div 
+                            key={group.id}
+                            className="p-4 bg-muted rounded-xl hover:bg-accent transition-colors cursor-pointer border border-transparent hover:border-primary/20"
+                            onClick={() => navigate(`/group/${group.id}`)}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <Users className="h-6 w-6 text-primary" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-semibold text-text-primary truncate mb-1">
+                                  {group.name}
+                                </h4>
+                                <div className="flex items-center gap-2 text-xs text-text-secondary mb-2">
+                                  <MapPin className="h-3 w-3" />
+                                  <span>{group.lga_name}, {group.state_name}</span>
+                                </div>
+                                <Badge variant="secondary" className="text-xs">
+                                  {group.member_count} members
+                                </Badge>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Expert Suggestions */}
+                {expertSuggestions.length > 0 && (
+                  <Card className="overflow-hidden border-border">
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-semibold text-text-primary flex items-center gap-2">
+                          <Award className="h-5 w-5 text-primary" />
+                          Expert Suggestions
+                        </h3>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => navigate('/experts')}
+                          className="text-primary hover:text-primary"
+                        >
+                          See all
+                          <ArrowRight className="h-4 w-4 ml-1" />
+                        </Button>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {expertSuggestions.slice(0, 4).map((expert) => (
+                          <div 
+                            key={expert.id}
+                            className="p-4 bg-muted rounded-xl hover:bg-accent transition-colors cursor-pointer border border-transparent hover:border-primary/20"
+                            onClick={() => handleProfileClick(expert.id)}
+                          >
+                            <div className="flex items-center gap-3">
+                              <Avatar className="h-12 w-12 border-2 border-primary/20">
+                                <AvatarImage src={expert.profile_picture_url} alt={expert.full_name} />
+                                <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                                  {expert.full_name.charAt(0)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-semibold text-text-primary truncate">
+                                  {expert.full_name}
+                                </h4>
+                                <p className="text-sm text-text-secondary truncate mb-1">
+                                  {expert.profession}
+                                </p>
+                                <div className="flex items-center gap-1">
+                                  <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
+                                  <span className="text-xs font-medium text-text-primary">
+                                    {expert.average_rating.toFixed(1)}
+                                  </span>
+                                  <span className="text-xs text-text-secondary">
+                                    ({expert.rating_count})
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
                 {filteredAndSortedPosts.length === 0 && !loading ? (
                   <div className="text-center py-16">
                     <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-6">
