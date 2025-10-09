@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Users, MapPin, Briefcase, Star, UserPlus, MessageCircle, TrendingUp } from 'lucide-react'
+import { Users, MapPin, Briefcase, Star, UserPlus, MessageCircle, TrendingUp, Check } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
@@ -26,11 +26,12 @@ interface SuggestedUser {
 const SuggestionsTab: React.FC = () => {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const { sendConnectionRequest } = useConnections()
+  const { sendConnectionRequest, checkPendingRequest } = useConnections()
   const [peopleYouMayKnow, setPeopleYouMayKnow] = useState<SuggestedUser[]>([])
   const [expertSuggestions, setExpertSuggestions] = useState<SuggestedUser[]>([])
   const [nearbyFriends, setNearbyFriends] = useState<SuggestedUser[]>([])
   const [loading, setLoading] = useState(true)
+  const [pendingRequests, setPendingRequests] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     fetchSuggestions()
@@ -171,9 +172,7 @@ const SuggestionsTab: React.FC = () => {
         title: "Connection request sent",
         description: "Your request has been sent successfully!",
       })
-      setPeopleYouMayKnow(prev => prev.filter(p => p.user_id !== userId))
-      setExpertSuggestions(prev => prev.filter(p => p.user_id !== userId))
-      setNearbyFriends(prev => prev.filter(p => p.user_id !== userId))
+      setPendingRequests(prev => new Set([...prev, userId]))
     }
   }
 
@@ -182,6 +181,8 @@ const SuggestionsTab: React.FC = () => {
     onConnect: (userId: string) => void
     reason?: string
   }> = ({ user, onConnect, reason }) => {
+    const isPending = pendingRequests.has(user.user_id)
+    
     return (
       <Card className="overflow-hidden hover:shadow-lg transition-all duration-200 group">
         <CardContent className="p-0">
@@ -239,10 +240,21 @@ const SuggestionsTab: React.FC = () => {
               <Button
                 size="default"
                 onClick={() => onConnect(user.user_id)}
+                disabled={isPending}
+                variant={isPending ? "secondary" : "default"}
                 className="flex-1"
               >
-                <UserPlus className="h-4 w-4 mr-2" />
-                Connect
+                {isPending ? (
+                  <>
+                    <Check className="h-4 w-4 mr-2" />
+                    Request Sent
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Connect
+                  </>
+                )}
               </Button>
               <Button
                 size="default"

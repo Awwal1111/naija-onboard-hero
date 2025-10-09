@@ -330,6 +330,25 @@ export const useConnections = () => {
     }
   }
 
+  const checkPendingRequest = async (targetUserId: string): Promise<boolean> => {
+    if (!user?.id) return false
+    
+    try {
+      const { data } = await supabase
+        .from('connection_requests')
+        .select('id')
+        .eq('requester_id', user.id)
+        .eq('requested_id', targetUserId)
+        .eq('status', 'pending')
+        .maybeSingle()
+      
+      return !!data
+    } catch (error) {
+      console.error('Error checking pending request:', error)
+      return false
+    }
+  }
+
   return {
     connectionRequests,
     connections,
@@ -337,6 +356,7 @@ export const useConnections = () => {
     sendConnectionRequest,
     respondToConnectionRequest,
     checkConnection,
+    checkPendingRequest,
     getSuggestedUsers,
     refetch: () => {
       fetchConnectionRequests()

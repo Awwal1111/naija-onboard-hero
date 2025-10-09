@@ -8,7 +8,11 @@ import { useConnections } from '@/hooks/useConnections'
 import ResponsiveLayout from '@/components/ResponsiveLayout'
 
 export const Connections = () => {
-  const { connectionRequests, connections } = useConnections()
+  const { connectionRequests, connections, refetch } = useConnections()
+  
+  React.useEffect(() => {
+    refetch()
+  }, [])
   
   const pendingRequestsCount = connectionRequests.filter(req => req.status === 'pending').length
   const connectedCount = connections.length
