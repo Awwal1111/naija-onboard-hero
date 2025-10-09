@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Lock, Check, AlertCircle, KeyRound } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -38,12 +38,12 @@ export const SetupPin = () => {
   const hasExistingPin = Boolean((profile as any)?.transaction_pin)
   
   // Initialize mode based on whether PIN exists
-  useState(() => {
+  useEffect(() => {
     if (hasExistingPin) {
       setMode('change')
       setStep('current')
     }
-  })
+  }, [hasExistingPin])
 
   const handleResetPin = async () => {
     setLoading(true)
