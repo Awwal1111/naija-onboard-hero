@@ -144,7 +144,6 @@ Deno.serve(async (req) => {
         .from('profiles')
         .update({
           wallet_balance: profile.wallet_balance,
-          balance_withdrawable: profile.balance_withdrawable,
           updated_at: new Date().toISOString(),
         })
         .eq('user_id', user.id);
@@ -185,14 +184,14 @@ Deno.serve(async (req) => {
       (vtuData.data?.status === 'completed-api' || vtuData.data?.status === 'processing-api');
 
     // Log transaction
-    await supabase
+    const { error: txError } = await supabase
       .from('wallet_transactions')
       .insert({
         user_id: user.id,
-        transaction_type: 'betting_funding',
+        kind: 'betting_fund',
         amount: -amount,
         status: isSuccess ? 'completed' : 'failed',
-        description: `Betting account funding - ${provider}`,
+        reference: `Betting account funding - ${provider}`,
         metadata: {
           provider,
           customer_id: customerId,
@@ -202,6 +201,10 @@ Deno.serve(async (req) => {
           vtu_response: vtuData,
         },
       });
+
+    if (txError) {
+      console.error('Transaction logging error:', txError);
+    }
 
     // Refund if failed
     if (!isSuccess) {
