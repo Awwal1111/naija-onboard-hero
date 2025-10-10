@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Camera, Wallet, MoreVertical, Edit, Share, Settings, LogOut, Plus, ArrowLeft, Home, MessageCircle, Users, DollarSign, User, Phone, Mail, FileText, Shield, Award, Star, MapPin, Calendar, Clock, TrendingUp, Briefcase, UserPlus } from 'lucide-react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Logo } from '@/components/ui/logo'
 import { BrandButton } from '@/components/ui/brand-button'
 import { useProfile } from '@/hooks/useProfile'
@@ -27,6 +27,7 @@ import TopBannerAd from '@/components/TopBannerAd'
 
 const Profile = () => {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { userId } = useParams() // Get userId from URL params
   const { profile, loading, updateProfile } = useProfile()
   const { signOut } = useAuth()
@@ -46,6 +47,13 @@ const Profile = () => {
   useEffect(() => {
     fetchConnectionRequests()
   }, [])
+
+  // Auto-open edit dialog if ?edit=true is in URL
+  useEffect(() => {
+    if (searchParams.get('edit') === 'true' && profile) {
+      handleEditProfile()
+    }
+  }, [searchParams, profile])
 
   // Check if this is viewing someone else's profile
   const isOwnProfile = !userId

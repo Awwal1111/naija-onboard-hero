@@ -51,9 +51,9 @@ const ProfileCompletionDialog: React.FC<ProfileCompletionDialogProps> = ({
             </ul>
           </div>
 
-          <Link to="/profile" className="block">
+          <Link to="/profile?edit=true" className="block">
             <BrandButton className="w-full" size="lg">
-              Complete My Profile
+              Edit My Profile
             </BrandButton>
           </Link>
 

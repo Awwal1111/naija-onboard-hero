@@ -209,26 +209,28 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
     setMessages([welcomeMessage])
   }
 
-  if (!isOpen) {
-    return (
-      <div className="fixed bottom-6 right-6 z-50">
-        <Button
-          onClick={() => {
-            setIsOpen(true)
-            setHasInteracted(true)
-          }}
-          className="w-14 h-14 rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl transition-all duration-300 group"
-        >
-          <Bot className="h-6 w-6 text-white group-hover:scale-110 transition-transform" />
-          <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full animate-pulse" />
-        </Button>
-      </div>
-    )
-  }
-
   return (
-    <div className="fixed bottom-6 right-6 z-50">
-      <Card className={`w-80 shadow-2xl border-primary/20 ${isMinimized ? 'h-16' : 'h-96'} transition-all duration-300`}>
+    <>
+      {/* Floating AI Button - always visible */}
+      {!isOpen && (
+        <div className="fixed bottom-6 right-6 z-50">
+          <Button
+            onClick={() => {
+              setIsOpen(true)
+              setHasInteracted(true)
+            }}
+            className="w-14 h-14 rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl transition-all duration-300 group"
+          >
+            <Bot className="h-6 w-6 text-white group-hover:scale-110 transition-transform" />
+            <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full animate-pulse" />
+          </Button>
+        </div>
+      )}
+
+      {/* AI Chat Window - floating above content */}
+      {isOpen && (
+        <div className="fixed bottom-6 right-6 z-50">
+          <Card className={`w-80 shadow-2xl border-primary/20 ${isMinimized ? 'h-16' : 'h-96'} transition-all duration-300`}>
         <CardHeader className="py-3 px-4 bg-gradient-to-r from-primary to-primary/80 text-white">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -366,7 +368,9 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
           </CardContent>
         )}
       </Card>
-    </div>
+        </div>
+      )}
+    </>
   )
 }
 

@@ -11,6 +11,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
 import { useSocialTasks } from '@/hooks/useSocialTasks'
 import { SocialTaskCompletionDialog } from '@/components/SocialTaskCompletionDialog'
+import { ExpandableText } from '@/components/ExpandableText'
 import { toast } from 'sonner'
 
 interface CreateTaskForm {

@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useSecureFileUpload } from '@/hooks/useSecureFileUpload'
 import { ReferralTask } from '@/hooks/useReferralTasks'
+import { ExpandableText } from './ExpandableText'
 
 interface ReferralTaskCardProps {
   task: ReferralTask
@@ -115,9 +116,11 @@ export const ReferralTaskCard = ({ task, hasSubmitted, submissionStatus, onSubmi
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
-          <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-            {task.description}
-          </p>
+          <ExpandableText 
+            text={task.description} 
+            maxLength={150}
+            className="text-sm text-muted-foreground"
+          />
         </div>
 
         <Dialog open={open} onOpenChange={setOpen}>

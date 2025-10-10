@@ -107,9 +107,10 @@ export const useSocialTasks = () => {
     if (!user) return { success: false, error: 'Not authenticated' }
 
     try {
-      // Calculate the fee based on total slots (4,000 NC per 100 units)
+      // Calculate total task cost: total_slots * reward_amount
       const totalSlots = taskData.total_slots || 0
-      const feeAmount = Math.ceil(totalSlots / 100) * 4000 // 4,000 NC per 100 slots
+      const rewardAmount = (taskData as any).reward_amount || 0
+      const totalCost = totalSlots * rewardAmount
       
       // Check if user has sufficient balance
       const { data: profile } = await supabase
@@ -118,19 +119,19 @@ export const useSocialTasks = () => {
         .eq('user_id', user.id)
         .single()
 
-      if (!profile || profile.wallet_balance < feeAmount) {
+      if (!profile || profile.wallet_balance < totalCost) {
         toast({
           title: "Insufficient Balance",
-          description: `You need ${feeAmount} NC to create this task (4,000 NC per 100 slots)`,
+          description: `You need ${totalCost.toLocaleString()} NC to create this task (${totalSlots} slots × ${rewardAmount} NC)`,
           variant: "destructive",
         })
         return { success: false, error: 'Insufficient balance' }
       }
 
-      // Deduct the fee from user's balance
+      // Deduct the total cost from user's balance
       const { error: deductError } = await supabase
         .from('profiles')
-        .update({ wallet_balance: profile.wallet_balance - feeAmount })
+        .update({ wallet_balance: profile.wallet_balance - totalCost })
         .eq('user_id', user.id)
 
       if (deductError) throw deductError
@@ -140,10 +141,10 @@ export const useSocialTasks = () => {
         .from('wallet_transactions')
         .insert({
           user_id: user.id,
-          amount: feeAmount,
+          amount: -totalCost,
           kind: 'task_creation_fee',
           status: 'completed',
-          reference: `Social media task creation fee (${totalSlots} slots)`
+          reference: `Social media task creation (${totalSlots} slots × ${rewardAmount} NC)`
         })
 
       // Create the task
@@ -154,8 +155,8 @@ export const useSocialTasks = () => {
           task_giver_id: user.id,
           status: 'active',
           done_slots: 0,
-          reward_amount: (taskData as any).reward_amount || 0, // Ensure reward is in NC
-          fee_paid: feeAmount
+          reward_amount: rewardAmount,
+          fee_paid: totalCost
         })
         .select()
         .single()
@@ -164,7 +165,7 @@ export const useSocialTasks = () => {
 
       toast({
         title: "Task Created Successfully!",
-        description: `Fee of ${feeAmount} NC deducted. Task is now live.`,
+        description: `Total of ${totalCost.toLocaleString()} NC deducted. Task is now live.`,
       })
 
       fetchTasks() // Refresh the list

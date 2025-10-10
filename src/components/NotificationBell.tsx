@@ -132,7 +132,7 @@ const NotificationBell = () => {
         return metadata?.chat_id ? `/chat/${metadata.chat_id}` : '/chat'
       
       case 'connection_request':
-        return '/connections/requests'
+        return '/connection-requests'
       
       case 'connection':
         return '/connections'

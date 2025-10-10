@@ -3,6 +3,7 @@ import { Heart, MessageCircle, Share, Eye, MoreVertical } from 'lucide-react'
 import { Post } from '@/hooks/useFeed'
 import { BrandButton } from '@/components/ui/brand-button'
 import { BrandInput } from '@/components/ui/brand-input'
+import { ExpandableText } from './ExpandableText'
 
 interface PostCardProps {
   post: Post
@@ -128,9 +129,11 @@ const PostCard: React.FC<PostCardProps> = ({ post, onLike, onComment, currentUse
             {post.title}
           </h4>
         )}
-        <p className="text-text-primary whitespace-pre-wrap">
-          {post.content}
-        </p>
+        <ExpandableText 
+          text={post.content} 
+          maxLength={300}
+          className="text-text-primary"
+        />
         
         {/* Media */}
         {post.media_urls && post.media_urls.length > 0 && (
