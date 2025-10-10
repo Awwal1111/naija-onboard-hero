@@ -8,25 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
-
-// Types for API responses
-interface State {
-  id: string
-  name: string
-}
-
-interface LGA {
-  id: string
-  name: string
-}
+import { useNigerianStates } from '@/hooks/useNigerianStates'
 
 const ExpertApplication = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { toast } = useToast()
+  const { states, lgas, loadingStates, loadingLGAs, fetchLGAs } = useNigerianStates()
   
-  const [states, setStates] = useState<State[]>([])
-  const [lgas, setLgas] = useState<LGA[]>([])
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     full_name: '',
@@ -63,136 +52,17 @@ const ExpertApplication = () => {
     'Other'
   ]
 
-  // Fetch states on component mount
-  useEffect(() => {
-    fetchStates()
-  }, [])
-
   // Fetch LGAs when state changes
   useEffect(() => {
     if (formData.location_state) {
-      fetchLGAs(formData.location_state)
+      const stateName = states.find(s => s.id === formData.location_state)?.name
+      if (stateName) {
+        fetchLGAs(stateName)
+      }
       setFormData(prev => ({ ...prev, location_lga: '' }))
     }
-  }, [formData.location_state])
+  }, [formData.location_state, states])
 
-  const fetchStates = async () => {
-    try {
-      // Try primary API first
-      let response = await fetch('https://locus.fkkas.com/api/states')
-      if (response.ok) {
-        const data = await response.json()
-        if (data.data && Array.isArray(data.data)) {
-          setStates(data.data)
-          return
-        }
-      }
-    } catch (error) {
-      console.log('Primary API failed, using fallback data:', error)
-    }
-
-    // Fallback to static data
-    const fallbackStates = [
-      { id: "1", name: "Abia" },
-      { id: "2", name: "Adamawa" },
-      { id: "3", name: "Akwa Ibom" },
-      { id: "4", name: "Anambra" },
-      { id: "5", name: "Bauchi" },
-      { id: "6", name: "Bayelsa" },
-      { id: "7", name: "Benue" },
-      { id: "8", name: "Borno" },
-      { id: "9", name: "Cross River" },
-      { id: "10", name: "Delta" },
-      { id: "11", name: "Ebonyi" },
-      { id: "12", name: "Edo" },
-      { id: "13", name: "Ekiti" },
-      { id: "14", name: "Enugu" },
-      { id: "15", name: "Abuja" },
-      { id: "16", name: "Gombe" },
-      { id: "17", name: "Imo" },
-      { id: "18", name: "Jigawa" },
-      { id: "19", name: "Kaduna" },
-      { id: "20", name: "Kano" },
-      { id: "21", name: "Katsina" },
-      { id: "22", name: "Kebbi" },
-      { id: "23", name: "Kogi" },
-      { id: "24", name: "Kwara" },
-      { id: "25", name: "Lagos" },
-      { id: "26", name: "Nasarawa" },
-      { id: "27", name: "Niger" },
-      { id: "28", name: "Ogun" },
-      { id: "29", name: "Ondo" },
-      { id: "30", name: "Osun" },
-      { id: "31", name: "Oyo" },
-      { id: "32", name: "Plateau" },
-      { id: "33", name: "Rivers" },
-      { id: "34", name: "Sokoto" },
-      { id: "35", name: "Taraba" },
-      { id: "36", name: "Yobe" },
-      { id: "37", name: "Zamfara" }
-    ]
-    setStates(fallbackStates)
-  }
-
-  const fetchLGAs = async (stateId: string) => {
-    try {
-      // Try API first  
-      let response = await fetch(`https://locus.fkkas.com/api/regions/${stateId}`)
-      if (response.ok) {
-        const data = await response.json()
-        if (data.data && Array.isArray(data.data)) {
-          setLgas(data.data)
-          return
-        }
-      }
-    } catch (error) {
-      console.log('Primary API failed for LGAs, using fallback:', error)
-    }
-
-    // Static LGA data based on state
-    const stateLGAMap: Record<string, LGA[]> = {
-      "25": [ // Lagos
-        { id: "1", name: "Agege" },
-        { id: "2", name: "Ajeromi-Ifelodun" },
-        { id: "3", name: "Alimosho" },
-        { id: "4", name: "Amuwo-Odofin" },
-        { id: "5", name: "Apapa" },
-        { id: "6", name: "Badagry" },
-        { id: "7", name: "Epe" },
-        { id: "8", name: "Eti Osa" },
-        { id: "9", name: "Ibeju-Lekki" },
-        { id: "10", name: "Ifako-Ijaiye" },
-        { id: "11", name: "Ikeja" },
-        { id: "12", name: "Ikorodu" },
-        { id: "13", name: "Kosofe" },
-        { id: "14", name: "Lagos Island" },
-        { id: "15", name: "Lagos Mainland" },
-        { id: "16", name: "Mushin" },
-        { id: "17", name: "Ojo" },
-        { id: "18", name: "Oshodi-Isolo" },
-        { id: "19", name: "Shomolu" },
-        { id: "20", name: "Surulere" }
-      ],
-      "15": [ // Abuja (FCT)
-        { id: "1", name: "Abaji" },
-        { id: "2", name: "Bwari" },
-        { id: "3", name: "Gwagwalada" },
-        { id: "4", name: "Kuje" },
-        { id: "5", name: "Kwali" },
-        { id: "6", name: "Municipal Area Council" }
-      ]
-    }
-
-    // Use fallback data for the selected state
-    const selectedStateName = states.find(s => s.id === stateId)?.name
-    const fallbackLGAs = stateLGAMap[stateId] || [
-      { id: "1", name: `${selectedStateName} Local Government 1` },
-      { id: "2", name: `${selectedStateName} Local Government 2` },
-      { id: "3", name: `${selectedStateName} Local Government 3` }
-    ]
-    
-    setLgas(fallbackLGAs)
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
