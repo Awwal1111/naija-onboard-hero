@@ -209,19 +209,26 @@ export const AdminArticlesSection = () => {
                 <Input
                   id="reward"
                   type="number"
-                  value={formData.reward_amount}
+                  min="1"
+                  value={formData.reward_amount || ''}
                   onChange={(e) => setFormData(prev => ({ ...prev, reward_amount: Number(e.target.value) }))}
                   placeholder="e.g., 50"
                 />
+                <p className="text-xs text-muted-foreground mt-1">Users earn this amount per article read</p>
               </div>
 
               <Button
                 onClick={handleCreateArticle}
-                disabled={!formData.title || !formData.article_url || formData.reward_amount <= 0}
+                disabled={!formData.title || !formData.description || !formData.article_url || formData.reward_amount <= 0}
                 className="w-full"
               >
                 Create Article
               </Button>
+              {(!formData.title || !formData.description || !formData.article_url || formData.reward_amount <= 0) && (
+                <p className="text-xs text-destructive text-center">
+                  Please fill all required fields (marked with *)
+                </p>
+              )}
             </div>
           </DialogContent>
         </Dialog>

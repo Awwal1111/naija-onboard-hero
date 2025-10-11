@@ -151,7 +151,7 @@ export const useSocialTasks = () => {
           reference: `Social media task creation (${totalSlots} slots × ${rewardAmount} NC)`
         })
 
-      // Create the task
+      // Create the task - set BOTH reward and reward_amount for compatibility
       const { data, error } = await supabase
         .from('social_tasks' as any)
         .insert({
@@ -159,7 +159,8 @@ export const useSocialTasks = () => {
           task_giver_id: user.id,
           status: 'active',
           done_slots: 0,
-          reward_amount: rewardAmount,
+          reward: rewardAmount,          // Primary column used by queries
+          reward_amount: rewardAmount,   // Secondary column for compatibility
           fee_paid: totalCost
         })
         .select()
