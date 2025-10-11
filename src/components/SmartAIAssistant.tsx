@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react'
-import { Bot, Send, X, Minimize2, Maximize2, Sparkles, MessageCircle, HelpCircle, Zap } from 'lucide-react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
+import { Bot, Send, X, Minimize2, Maximize2, Sparkles, MessageCircle, HelpCircle, Zap, GripVertical } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { BrandInput } from '@/components/ui/brand-input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -28,11 +28,13 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
   const location = useLocation()
   
   const [isOpen, setIsOpen] = useState(false)
-  const [hasInteracted, setHasInteracted] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)
   const [message, setMessage] = useState('')
   const [messages, setMessages] = useState<Message[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [position, setPosition] = useState({ x: 0, y: 0 })
+  const [isDragging, setIsDragging] = useState(false)
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
   const [suggestions] = useState([
     "How do I post a job?",
     "How can I become an expert?",
@@ -43,6 +45,7 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const cardRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -52,21 +55,9 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
     scrollToBottom()
   }, [messages])
 
-  // Auto-open after 1 minute of no interaction
   useEffect(() => {
-    if (!hasInteracted) {
-      const timer = setTimeout(() => {
-        setIsOpen(true)
-        setHasInteracted(true)
-      }, 60000) // 1 minute
-
-      return () => clearTimeout(timer)
-    }
-  }, [hasInteracted])
-
-  useEffect(() => {
-    // Add welcome message based on current page context - only when user opens it
-    if (isOpen && messages.length === 0 && hasInteracted) {
+    // Add welcome message based on current page context
+    if (isOpen && messages.length === 0) {
       const pageContext = getPageContext()
       const welcomeMessage: Message = {
         id: Date.now().toString(),
@@ -76,7 +67,52 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
       }
       setMessages([welcomeMessage])
     }
-  }, [isOpen, location.pathname, hasInteracted])
+  }, [isOpen, location.pathname])
+
+  // Dragging functionality
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('.drag-handle')) {
+      setIsDragging(true)
+      const rect = cardRef.current?.getBoundingClientRect()
+      if (rect) {
+        setDragOffset({
+          x: e.clientX - rect.left,
+          y: e.clientY - rect.top
+        })
+      }
+    }
+  }, [])
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (isDragging) {
+      const newX = e.clientX - dragOffset.x
+      const newY = e.clientY - dragOffset.y
+      
+      // Keep within viewport bounds
+      const maxX = window.innerWidth - (cardRef.current?.offsetWidth || 320)
+      const maxY = window.innerHeight - (cardRef.current?.offsetHeight || 384)
+      
+      setPosition({
+        x: Math.max(0, Math.min(newX, maxX)),
+        y: Math.max(0, Math.min(newY, maxY))
+      })
+    }
+  }, [isDragging, dragOffset])
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false)
+  }, [])
+
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mouseup', handleMouseUp)
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove)
+        document.removeEventListener('mouseup', handleMouseUp)
+      }
+    }
+  }, [isDragging, handleMouseMove, handleMouseUp])
 
   const getPageContext = () => {
     const path = location.pathname
@@ -215,10 +251,7 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
       {!isOpen && (
         <div className="fixed bottom-6 right-6 z-50">
           <Button
-            onClick={() => {
-              setIsOpen(true)
-              setHasInteracted(true)
-            }}
+            onClick={() => setIsOpen(true)}
             className="w-14 h-14 rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl transition-all duration-300 group"
           >
             <Bot className="h-6 w-6 text-white group-hover:scale-110 transition-transform" />
@@ -227,20 +260,34 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
         </div>
       )}
 
-      {/* AI Chat Window - floating above content */}
+      {/* AI Chat Window - draggable */}
       {isOpen && (
-        <div className="fixed bottom-6 right-6 z-50">
+        <div 
+          ref={cardRef}
+          className="fixed z-50"
+          style={{
+            bottom: position.y === 0 ? '1.5rem' : 'auto',
+            right: position.x === 0 ? '1.5rem' : 'auto',
+            left: position.x > 0 ? `${position.x}px` : 'auto',
+            top: position.y > 0 ? `${position.y}px` : 'auto',
+            cursor: isDragging ? 'grabbing' : 'default'
+          }}
+          onMouseDown={handleMouseDown}
+        >
           <Card className={`w-80 shadow-2xl border-primary/20 ${isMinimized ? 'h-16' : 'h-96'} transition-all duration-300`}>
         <CardHeader className="py-3 px-4 bg-gradient-to-r from-primary to-primary/80 text-white">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
+              <div className="drag-handle cursor-grab active:cursor-grabbing">
+                <GripVertical className="h-4 w-4 text-white/70" />
+              </div>
               <div className="relative">
                 <Bot className="h-5 w-5" />
                 <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full animate-pulse" />
               </div>
               <div>
                 <CardTitle className="text-sm font-medium">NaijaLancers AI</CardTitle>
-                <div className="text-xs opacity-90">Smart Assistant</div>
+                <div className="text-xs opacity-90">Drag me anywhere!</div>
               </div>
             </div>
             <div className="flex items-center gap-1">

@@ -115,7 +115,7 @@ export const useSocialTasks = () => {
       // Check if user has sufficient balance
       const { data: profile } = await supabase
         .from('profiles')
-        .select('wallet_balance')
+        .select('wallet_balance, balance_withdrawable')
         .eq('user_id', user.id)
         .single()
 
@@ -128,10 +128,14 @@ export const useSocialTasks = () => {
         return { success: false, error: 'Insufficient balance' }
       }
 
-      // Deduct the total cost from user's balance
+      // Deduct the total cost from user's balance (both total and withdrawable)
+      const newWithdrawable = Math.max(0, (profile.balance_withdrawable || 0) - totalCost)
       const { error: deductError } = await supabase
         .from('profiles')
-        .update({ wallet_balance: profile.wallet_balance - totalCost })
+        .update({ 
+          wallet_balance: profile.wallet_balance - totalCost,
+          balance_withdrawable: newWithdrawable
+        })
         .eq('user_id', user.id)
 
       if (deductError) throw deductError
