@@ -77,7 +77,7 @@ export const useSocialTasks = () => {
       const { error } = await supabase
         .from('social_tasks_progress' as any)
         .update({
-          status: 'completed',
+          status: 'pending',  // Set to pending for admin review
           screenshot_url: screenshotUrl,
           text_explanation: textExplanation
         })
@@ -88,7 +88,7 @@ export const useSocialTasks = () => {
 
       toast({
         title: "Success",
-        description: "Task marked as completed! Awaiting verification.",
+        description: "Task submitted successfully! Awaiting admin verification.",
       })
 
       return { success: true }
@@ -96,7 +96,7 @@ export const useSocialTasks = () => {
       console.error('Error completing task:', error)
       toast({
         title: "Error",
-        description: error.message || "Failed to complete task",
+        description: error.message || "Failed to submit task",
         variant: "destructive",
       })
       return { success: false, error: error.message }
@@ -107,9 +107,9 @@ export const useSocialTasks = () => {
     if (!user) return { success: false, error: 'Not authenticated' }
 
     try {
-      // Calculate total task cost: total_slots * reward_amount
+      // Calculate total task cost: total_slots * reward
       const totalSlots = taskData.total_slots || 0
-      const rewardAmount = (taskData as any).reward_amount || 0
+      const rewardAmount = (taskData as any).reward || (taskData as any).reward_amount || 0
       const totalCost = totalSlots * rewardAmount
       
       // Check if user has sufficient balance

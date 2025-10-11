@@ -68,11 +68,23 @@ export const AdminSocialTasksSection = () => {
 
       if (updateError) throw updateError
 
-      // Credit user wallet
-      const { error: walletError } = await supabase.rpc('increment_wallet_balance', {
-        target_user_id: earnerId,
-        amount_to_add: reward
-      })
+      // Get current profile balances
+      const { data: profile, error: fetchError } = await supabase
+        .from('profiles')
+        .select('wallet_balance, balance_withdrawable')
+        .eq('user_id', earnerId)
+        .single()
+
+      if (fetchError || !profile) throw fetchError || new Error('Profile not found')
+
+      // Credit user wallet (both total balance and withdrawable)
+      const { error: walletError } = await supabase
+        .from('profiles')
+        .update({
+          wallet_balance: profile.wallet_balance + reward,
+          balance_withdrawable: profile.balance_withdrawable + reward
+        })
+        .eq('user_id', earnerId)
 
       if (walletError) throw walletError
 

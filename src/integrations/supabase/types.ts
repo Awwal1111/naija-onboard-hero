@@ -2144,10 +2144,12 @@ export type Database = {
         Row: {
           created_at: string
           done_slots: number
+          fee_paid: number | null
           id: number
           link: string
           platform: string
           reward: number
+          reward_amount: number | null
           status: string
           task_giver_id: string
           total_slots: number
@@ -2156,10 +2158,12 @@ export type Database = {
         Insert: {
           created_at?: string
           done_slots?: number
+          fee_paid?: number | null
           id?: number
           link: string
           platform: string
           reward: number
+          reward_amount?: number | null
           status?: string
           task_giver_id: string
           total_slots: number
@@ -2168,10 +2172,12 @@ export type Database = {
         Update: {
           created_at?: string
           done_slots?: number
+          fee_paid?: number | null
           id?: number
           link?: string
           platform?: string
           reward?: number
+          reward_amount?: number | null
           status?: string
           task_giver_id?: string
           total_slots?: number
