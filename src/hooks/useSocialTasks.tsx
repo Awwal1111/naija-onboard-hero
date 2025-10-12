@@ -109,8 +109,30 @@ export const useSocialTasks = () => {
     try {
       // Calculate total task cost: total_slots * reward
       const totalSlots = taskData.total_slots || 0
-      const rewardAmount = (taskData as any).reward || (taskData as any).reward_amount || 0
+      const rewardAmount = taskData.reward || 0
+      
+      // Validate inputs
+      if (!rewardAmount || rewardAmount <= 0) {
+        toast({
+          title: "Invalid Reward",
+          description: "Please enter a valid reward amount greater than 0",
+          variant: "destructive",
+        })
+        return { success: false, error: 'Invalid reward amount' }
+      }
+      
+      if (!totalSlots || totalSlots <= 0) {
+        toast({
+          title: "Invalid Slots",
+          description: "Please enter valid number of slots greater than 0",
+          variant: "destructive",
+        })
+        return { success: false, error: 'Invalid number of slots' }
+      }
+      
       const totalCost = totalSlots * rewardAmount
+      
+      console.log('Task Creation Debug:', { totalSlots, rewardAmount, totalCost, taskData })
       
       // Check if user has sufficient balance
       const { data: profile } = await supabase

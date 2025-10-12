@@ -74,12 +74,30 @@ export const SocialMediaTasks = () => {
   }
 
   const handleCreateTask = async () => {
-    if (!createForm.platform || !createForm.type || !createForm.link || createForm.reward <= 0 || createForm.total_slots <= 0) {
-      toast.error('Please fill in all fields with valid values')
+    // Validate all fields
+    if (!createForm.platform) {
+      toast.error('Please select a platform')
+      return
+    }
+    if (!createForm.type) {
+      toast.error('Please select a task type')
+      return
+    }
+    if (!createForm.link) {
+      toast.error('Please enter a link')
+      return
+    }
+    if (!createForm.reward || createForm.reward <= 0) {
+      toast.error('Please enter a valid reward amount greater than 0')
+      return
+    }
+    if (!createForm.total_slots || createForm.total_slots <= 0) {
+      toast.error('Please enter valid number of slots greater than 0')
       return
     }
 
     try {
+      console.log('Creating task with form data:', createForm)
       const result = await createTask(createForm)
       if (result.success) {
         toast.success('Task created successfully!')
@@ -374,22 +392,32 @@ export const SocialMediaTasks = () => {
 
               <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium text-foreground mb-2 block">Reward (NC)</label>
+                <label className="text-sm font-medium text-foreground mb-2 block">Reward (NC) *</label>
                 <BrandInput
                   type="number"
+                  min="1"
                   placeholder="50"
-                  value={createForm.reward || ''}
-                  onChange={(e) => setCreateForm({...createForm, reward: Number(e.target.value)})}
+                  value={createForm.reward === 0 ? '' : createForm.reward}
+                  onChange={(e) => {
+                    const value = e.target.value === '' ? 0 : Number(e.target.value)
+                    setCreateForm({...createForm, reward: value})
+                  }}
                 />
+                <p className="text-xs text-muted-foreground mt-1">Amount each earner receives per task</p>
               </div>
                 <div>
-                  <label className="text-sm font-medium text-foreground mb-2 block">Total Slots</label>
+                  <label className="text-sm font-medium text-foreground mb-2 block">Total Slots *</label>
                   <BrandInput
                     type="number"
+                    min="1"
                     placeholder="100"
-                    value={createForm.total_slots || ''}
-                    onChange={(e) => setCreateForm({...createForm, total_slots: Number(e.target.value)})}
+                    value={createForm.total_slots === 0 ? '' : createForm.total_slots}
+                    onChange={(e) => {
+                      const value = e.target.value === '' ? 0 : Number(e.target.value)
+                      setCreateForm({...createForm, total_slots: value})
+                    }}
                   />
+                  <p className="text-xs text-muted-foreground mt-1">Number of people who can complete this task</p>
                 </div>
               </div>
 
