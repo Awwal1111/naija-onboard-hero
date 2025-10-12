@@ -71,15 +71,17 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
 
   // Dragging functionality
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest('.drag-handle')) {
-      setIsDragging(true)
-      const rect = cardRef.current?.getBoundingClientRect()
-      if (rect) {
-        setDragOffset({
-          x: e.clientX - rect.left,
-          y: e.clientY - rect.top
-        })
-      }
+    // Check if clicking on header or drag handle (not on buttons)
+    const target = e.target as HTMLElement
+    if (target.closest('button')) return // Don't drag when clicking buttons
+    
+    setIsDragging(true)
+    const rect = cardRef.current?.getBoundingClientRect()
+    if (rect) {
+      setDragOffset({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      })
     }
   }, [])
 
@@ -270,17 +272,16 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
             right: position.x === 0 ? '1.5rem' : 'auto',
             left: position.x > 0 ? `${position.x}px` : 'auto',
             top: position.y > 0 ? `${position.y}px` : 'auto',
-            cursor: isDragging ? 'grabbing' : 'default'
           }}
-          onMouseDown={handleMouseDown}
         >
           <Card className={`w-80 shadow-2xl border-primary/20 ${isMinimized ? 'h-16' : 'h-96'} transition-all duration-300`}>
-        <CardHeader className="py-3 px-4 bg-gradient-to-r from-primary to-primary/80 text-white">
+        <CardHeader 
+          className="py-3 px-4 bg-gradient-to-r from-primary to-primary/80 text-white cursor-grab active:cursor-grabbing"
+          onMouseDown={handleMouseDown}
+        >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="drag-handle cursor-grab active:cursor-grabbing">
-                <GripVertical className="h-4 w-4 text-white/70" />
-              </div>
+              <GripVertical className="h-4 w-4 text-white/70" />
               <div className="relative">
                 <Bot className="h-5 w-5" />
                 <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full animate-pulse" />
