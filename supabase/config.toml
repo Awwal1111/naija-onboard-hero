@@ -53,3 +53,15 @@ verify_jwt = true
 
 [functions.fund-betting]
 verify_jwt = true
+
+[functions.ai-assistant]
+verify_jwt = true
+
+[functions.ai-moderation]
+verify_jwt = true
+
+[functions.approve-payout]
+verify_jwt = true
+
+[functions.send-notification]
+verify_jwt = true
