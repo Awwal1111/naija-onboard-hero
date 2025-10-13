@@ -2409,10 +2409,16 @@ export type Database = {
       }
       safepay_transactions: {
         Row: {
+          admin_ruling: string | null
           amount: number
+          auto_release_at: string | null
           buyer_id: string | null
+          cancel_approved_by: string | null
+          cancel_requester_id: string | null
           cancellation_requester_id: string | null
+          completed_at: string | null
           created_at: string | null
+          dispute_reason: string | null
           expires_at: string | null
           id: string
           seller_id: string | null
@@ -2420,10 +2426,16 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          admin_ruling?: string | null
           amount: number
+          auto_release_at?: string | null
           buyer_id?: string | null
+          cancel_approved_by?: string | null
+          cancel_requester_id?: string | null
           cancellation_requester_id?: string | null
+          completed_at?: string | null
           created_at?: string | null
+          dispute_reason?: string | null
           expires_at?: string | null
           id?: string
           seller_id?: string | null
@@ -2431,17 +2443,52 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          admin_ruling?: string | null
           amount?: number
+          auto_release_at?: string | null
           buyer_id?: string | null
+          cancel_approved_by?: string | null
+          cancel_requester_id?: string | null
           cancellation_requester_id?: string | null
+          completed_at?: string | null
           created_at?: string | null
+          dispute_reason?: string | null
           expires_at?: string | null
           id?: string
           seller_id?: string | null
           status?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "safepay_transactions_buyer_fk"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "safepay_transactions_cancel_approver_fk"
+            columns: ["cancel_approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "safepay_transactions_cancel_requester_fk"
+            columns: ["cancel_requester_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "safepay_transactions_seller_fk"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       saved_posts: {
         Row: {
