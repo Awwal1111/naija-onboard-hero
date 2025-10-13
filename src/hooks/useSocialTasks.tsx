@@ -42,13 +42,13 @@ export const useSocialTasks = () => {
     if (!user) return { success: false, error: 'Not authenticated' }
 
     try {
-      // Create progress entry for the user
+      // Create progress entry for the user with 'claimed' status
       const { error: progressError } = await supabase
         .from('social_tasks_progress' as any)
         .insert({
           task_id: taskId,
           earner_id: user.id,
-          status: 'pending'
+          status: 'claimed' // Changed from 'pending' to 'claimed'
         })
 
       if (progressError) throw progressError
@@ -77,7 +77,7 @@ export const useSocialTasks = () => {
       const { error } = await supabase
         .from('social_tasks_progress' as any)
         .update({
-          status: 'completed',
+          status: 'pending', // Changed from 'completed' to 'pending' for admin review
           screenshot_url: screenshotUrl,
           text_explanation: textExplanation
         })
@@ -88,7 +88,7 @@ export const useSocialTasks = () => {
 
       toast({
         title: "Success",
-        description: "Task marked as completed! Awaiting verification.",
+        description: "Task submitted! Awaiting admin approval.",
       })
 
       return { success: true }
