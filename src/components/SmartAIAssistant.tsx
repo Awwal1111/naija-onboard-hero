@@ -239,9 +239,9 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
 
   return (
     <>
-      {/* Floating AI Button - always visible */}
+      {/* Floating AI Button - positioned higher to avoid bottom nav */}
       {!isOpen && (
-        <div className="fixed bottom-6 right-6 z-50">
+        <div className="fixed bottom-24 right-6 z-50">
           <Button
             onClick={() => {
               setIsOpen(true)
