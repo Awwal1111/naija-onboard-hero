@@ -80,6 +80,39 @@ const SignUp = () => {
   } | null>(null)
   const { signUp, signInWithGoogle } = useAuth()
 
+  const generateStrongPassword = () => {
+    const chars = 'abcdefghijklmnopqrstuvwxyz';
+    const numbers = '0123456789';
+    const special = '@#$%&*!';
+    const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    
+    // Format: @Capital + lowercase letters + numbers (like @Awwal2886)
+    const randomSpecial = special[Math.floor(Math.random() * special.length)];
+    const randomUpper = upper[Math.floor(Math.random() * upper.length)];
+    const randomChars = Array.from({ length: 5 }, () => 
+      chars[Math.floor(Math.random() * chars.length)]
+    ).join('');
+    const randomNumbers = Array.from({ length: 4 }, () => 
+      numbers[Math.floor(Math.random() * numbers.length)]
+    ).join('');
+    
+    const suggestedPassword = `${randomSpecial}${randomUpper}${randomChars}${randomNumbers}`;
+    
+    setFormData(prev => ({
+      ...prev,
+      password: suggestedPassword,
+      confirmPassword: suggestedPassword
+    }));
+    
+    const validation = validatePasswordStrength(suggestedPassword);
+    setPasswordValidation(validation);
+    
+    toast({
+      title: "Password Generated",
+      description: "A strong password has been created for you. Make sure to save it!",
+    });
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     console.log('Input changed:', { name, value, currentFormData: formData })
@@ -246,9 +279,18 @@ const SignUp = () => {
               </div>
 
               <div>
-                <label htmlFor="password" className="block text-sm font-medium mb-2 text-text-primary">
-                  Password
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label htmlFor="password" className="block text-sm font-medium text-text-primary">
+                    Password
+                  </label>
+                  <button
+                    type="button"
+                    onClick={generateStrongPassword}
+                    className="text-xs text-primary hover:text-primary/80 font-medium transition-colors"
+                  >
+                    Suggest Strong Password
+                  </button>
+                </div>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-text-secondary" />
                   <input
@@ -314,9 +356,16 @@ const SignUp = () => {
                     value={formData.confirmPassword}
                     onChange={handleInputChange}
                     placeholder="Re-enter your password"
-                    className="w-full pl-10 pr-4 py-3 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                    className="w-full pl-10 pr-12 py-3 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                     required
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
                 </div>
               </div>
 
