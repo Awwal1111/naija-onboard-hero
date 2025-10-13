@@ -54,7 +54,7 @@ const InfiniteScrollFeed: React.FC<InfiniteScrollFeedProps> = ({
   }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 sm:space-y-6">
       {posts.map((post, index) => (
         <React.Fragment key={`post-${post.id}-${index}`}>
           {/* Insert "People You May Know" only once at the second block (after first post) */}
@@ -82,15 +82,15 @@ const InfiniteScrollFeed: React.FC<InfiniteScrollFeedProps> = ({
       ))}
       
       {hasNextPage && (
-        <div ref={loadingRef} className="flex justify-center py-8">
+        <div ref={loadingRef} className="flex justify-center py-4 sm:py-8">
           {isFetchingNextPage ? (
-            <div className="flex items-center gap-2 text-text-secondary bg-muted/50 rounded-full px-4 py-2">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Loading more posts...</span>
+            <div className="flex items-center gap-2 text-text-secondary bg-muted/50 rounded-full px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm">
+              <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
+              <span>Loading more...</span>
             </div>
           ) : (
-            <div className="text-text-secondary text-sm bg-muted/30 rounded-full px-3 py-1">
-              Scroll for more posts
+            <div className="text-text-secondary text-xs sm:text-sm bg-muted/30 rounded-full px-2.5 sm:px-3 py-0.5 sm:py-1">
+              Scroll for more
             </div>
           )}
         </div>
