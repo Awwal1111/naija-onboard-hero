@@ -28,7 +28,6 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
   const location = useLocation()
   
   const [isOpen, setIsOpen] = useState(false)
-  const [hasInteracted, setHasInteracted] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)
   const [message, setMessage] = useState('')
   const [messages, setMessages] = useState<Message[]>([])
@@ -63,21 +62,9 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
     }
   }, [isOpen, isMinimized])
 
-  // Auto-open after 1 minute of no interaction
-  useEffect(() => {
-    if (!hasInteracted) {
-      const timer = setTimeout(() => {
-        setIsOpen(true)
-        setHasInteracted(true)
-      }, 60000) // 1 minute
-
-      return () => clearTimeout(timer)
-    }
-  }, [hasInteracted])
-
   useEffect(() => {
     // Add welcome message based on current page context - only when user opens it
-    if (isOpen && messages.length === 0 && hasInteracted) {
+    if (isOpen && messages.length === 0) {
       const pageContext = getPageContext()
       const welcomeMessage: Message = {
         id: Date.now().toString(),
@@ -87,7 +74,7 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
       }
       setMessages([welcomeMessage])
     }
-  }, [isOpen, location.pathname, hasInteracted])
+  }, [isOpen, location.pathname])
 
   const getPageContext = () => {
     const path = location.pathname
@@ -250,10 +237,7 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
       {!isOpen && (
         <div className="fixed bottom-24 right-6 z-50">
           <Button
-            onClick={() => {
-              setIsOpen(true)
-              setHasInteracted(true)
-            }}
+            onClick={() => setIsOpen(true)}
             className="w-14 h-14 rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl transition-all duration-300 group"
           >
             <Bot className="h-6 w-6 text-white group-hover:scale-110 transition-transform" />
