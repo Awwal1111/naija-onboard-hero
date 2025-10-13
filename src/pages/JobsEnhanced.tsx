@@ -1,19 +1,22 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Search, Briefcase, MapPin } from "lucide-react";
+import { ArrowLeft, Search, Briefcase, MapPin, Clock, Bookmark, Star, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNigerianStates } from "@/hooks/useNigerianStates";
 import JobApplicationDialog from "@/components/JobApplicationDialog";
 import { format } from "date-fns";
 
 export default function JobsEnhanced() {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedState, setSelectedState] = useState<string>("all");
   const [selectedLGA, setSelectedLGA] = useState<string>("all");
@@ -45,6 +48,24 @@ export default function JobsEnhanced() {
 
       if (error) throw error;
       return data;
+    },
+  });
+
+  const saveJobMutation = useMutation({
+    mutationFn: async (jobId: string) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { error } = await supabase.from("saved_jobs").insert({
+        user_id: user.id,
+        job_post_id: jobId,
+      });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: "Job saved successfully!" });
+      queryClient.invalidateQueries({ queryKey: ["saved-jobs"] });
     },
   });
 
@@ -164,10 +185,22 @@ export default function JobsEnhanced() {
                 <CardHeader className="p-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1">
-                      <h3 className="font-semibold text-sm">{job.title}</h3>
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-semibold text-sm">{job.title}</h3>
+                        {job.is_remote && <Badge variant="secondary" className="text-xs">Remote</Badge>}
+                      </div>
                       <p className="text-xs text-muted-foreground">{job.company_name || "Company"}</p>
                     </div>
-                    <Badge>{job.job_type}</Badge>
+                    <div className="flex gap-1">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        onClick={() => saveJobMutation.mutate(job.id)}
+                      >
+                        <Bookmark className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="p-3 pt-0 space-y-2">
@@ -184,16 +217,35 @@ export default function JobsEnhanced() {
                         ₦{job.budget_min} - ₦{job.budget_max}
                       </Badge>
                     )}
+                    {job.experience_level && (
+                      <Badge variant="outline" className="text-xs capitalize">
+                        {job.experience_level}
+                      </Badge>
+                    )}
+                    {job.application_deadline && new Date(job.application_deadline) > new Date() && (
+                      <Badge variant="outline" className="text-xs text-orange-500">
+                        <Clock className="h-3 w-3 mr-1" />
+                        {Math.ceil((new Date(job.application_deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))}d left
+                      </Badge>
+                    )}
                   </div>
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>{job.applications_count} applicants</span>
+                    <div className="flex items-center gap-3">
+                      <span>{job.applications_count} applicants</span>
+                      {job.views_count > 0 && (
+                        <span className="flex items-center gap-1">
+                          <TrendingUp className="h-3 w-3" />
+                          {job.views_count} views
+                        </span>
+                      )}
+                    </div>
                     <span>{format(new Date(job.created_at), "MMM dd, yyyy")}</span>
                   </div>
                 </CardContent>
-                <CardFooter className="p-3 pt-0">
+                <CardFooter className="p-3 pt-0 gap-2">
                   <Button
                     size="sm"
-                    className="w-full"
+                    className="flex-1"
                     onClick={() => {
                       setSelectedJob(job);
                       setApplicationDialogOpen(true);

@@ -479,14 +479,60 @@ export type Database = {
           },
         ]
       }
+      course_reviews: {
+        Row: {
+          course_id: string
+          created_at: string | null
+          id: string
+          rating: number
+          review_text: string | null
+          student_id: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string | null
+          id?: string
+          rating: number
+          review_text?: string | null
+          student_id: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string | null
+          id?: string
+          rating?: number
+          review_text?: string | null
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_reviews_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_reviews_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       courses: {
         Row: {
+          average_rating: number | null
           course_urls: Json
           created_at: string | null
           description: string
+          duration_hours: number | null
           enrollment_count: number | null
           id: string
+          level: string | null
           price: number
+          review_count: number | null
           status: Database["public"]["Enums"]["course_status"] | null
           thumbnail_url: string | null
           title: string
@@ -494,12 +540,16 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          average_rating?: number | null
           course_urls?: Json
           created_at?: string | null
           description: string
+          duration_hours?: number | null
           enrollment_count?: number | null
           id?: string
+          level?: string | null
           price: number
+          review_count?: number | null
           status?: Database["public"]["Enums"]["course_status"] | null
           thumbnail_url?: string | null
           title: string
@@ -507,12 +557,16 @@ export type Database = {
           user_id: string
         }
         Update: {
+          average_rating?: number | null
           course_urls?: Json
           created_at?: string | null
           description?: string
+          duration_hours?: number | null
           enrollment_count?: number | null
           id?: string
+          level?: string | null
           price?: number
+          review_count?: number | null
           status?: Database["public"]["Enums"]["course_status"] | null
           thumbnail_url?: string | null
           title?: string
@@ -579,42 +633,51 @@ export type Database = {
       }
       digital_products: {
         Row: {
+          average_rating: number | null
           category: Database["public"]["Enums"]["digital_product_category"]
           created_at: string | null
           description: string
           download_count: number | null
           file_url: string | null
           id: string
+          is_verified: boolean | null
           preview_url: string | null
           price: number
+          review_count: number | null
           status: string | null
           title: string
           updated_at: string | null
           user_id: string
         }
         Insert: {
+          average_rating?: number | null
           category: Database["public"]["Enums"]["digital_product_category"]
           created_at?: string | null
           description: string
           download_count?: number | null
           file_url?: string | null
           id?: string
+          is_verified?: boolean | null
           preview_url?: string | null
           price: number
+          review_count?: number | null
           status?: string | null
           title: string
           updated_at?: string | null
           user_id: string
         }
         Update: {
+          average_rating?: number | null
           category?: Database["public"]["Enums"]["digital_product_category"]
           created_at?: string | null
           description?: string
           download_count?: number | null
           file_url?: string | null
           id?: string
+          is_verified?: boolean | null
           preview_url?: string | null
           price?: number
+          review_count?: number | null
           status?: string | null
           title?: string
           updated_at?: string | null
@@ -933,14 +996,49 @@ export type Database = {
           },
         ]
       }
+      fundraising_updates: {
+        Row: {
+          content: string
+          created_at: string | null
+          fundraising_id: string
+          id: string
+          title: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          fundraising_id: string
+          id?: string
+          title: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          fundraising_id?: string
+          id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fundraising_updates_fundraising_id_fkey"
+            columns: ["fundraising_id"]
+            isOneToOne: false
+            referencedRelation: "fundraisings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fundraisings: {
         Row: {
           approved_at: string | null
           approved_by: string | null
+          backer_count: number | null
           created_at: string | null
+          deadline: string | null
           description: string
           goal_amount: number
           id: string
+          is_verified: boolean | null
           raised_amount: number | null
           status: Database["public"]["Enums"]["fundraising_status"] | null
           title: string
@@ -950,10 +1048,13 @@ export type Database = {
         Insert: {
           approved_at?: string | null
           approved_by?: string | null
+          backer_count?: number | null
           created_at?: string | null
+          deadline?: string | null
           description: string
           goal_amount: number
           id?: string
+          is_verified?: boolean | null
           raised_amount?: number | null
           status?: Database["public"]["Enums"]["fundraising_status"] | null
           title: string
@@ -963,10 +1064,13 @@ export type Database = {
         Update: {
           approved_at?: string | null
           approved_by?: string | null
+          backer_count?: number | null
           created_at?: string | null
+          deadline?: string | null
           description?: string
           goal_amount?: number
           id?: string
+          is_verified?: boolean | null
           raised_amount?: number | null
           status?: Database["public"]["Enums"]["fundraising_status"] | null
           title?: string
@@ -1422,6 +1526,7 @@ export type Database = {
           experience_level: string | null
           featured: boolean | null
           id: string
+          is_remote: boolean | null
           job_type: string | null
           location: string | null
           required_skills: string[] | null
@@ -1443,6 +1548,7 @@ export type Database = {
           experience_level?: string | null
           featured?: boolean | null
           id?: string
+          is_remote?: boolean | null
           job_type?: string | null
           location?: string | null
           required_skills?: string[] | null
@@ -1464,6 +1570,7 @@ export type Database = {
           experience_level?: string | null
           featured?: boolean | null
           id?: string
+          is_remote?: boolean | null
           job_type?: string | null
           location?: string | null
           required_skills?: string[] | null
@@ -2069,6 +2176,57 @@ export type Database = {
         }
         Relationships: []
       }
+      product_reviews: {
+        Row: {
+          created_at: string | null
+          helpful_count: number | null
+          id: string
+          is_verified_purchase: boolean | null
+          product_id: string
+          rating: number
+          review_text: string | null
+          reviewer_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          helpful_count?: number | null
+          id?: string
+          is_verified_purchase?: boolean | null
+          product_id: string
+          rating: number
+          review_text?: string | null
+          reviewer_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          helpful_count?: number | null
+          id?: string
+          is_verified_purchase?: boolean | null
+          product_id?: string
+          rating?: number
+          review_text?: string | null
+          reviewer_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_reviews_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "digital_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       profile_views: {
         Row: {
           created_at: string
@@ -2490,6 +2648,42 @@ export type Database = {
           {
             foreignKeyName: "safepay_transactions_seller_fk"
             columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      saved_jobs: {
+        Row: {
+          created_at: string | null
+          id: string
+          job_post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          job_post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          job_post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_jobs_job_post_id_fkey"
+            columns: ["job_post_id"]
+            isOneToOne: false
+            referencedRelation: "job_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saved_jobs_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]

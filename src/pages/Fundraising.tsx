@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Search, Heart } from "lucide-react";
+import { ArrowLeft, Plus, Search, Heart, Users, Clock, CheckCircle, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
@@ -202,18 +202,44 @@ export default function Fundraising() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {filteredFundraisings.map((fundraising: any) => {
               const progress = (fundraising.raised_amount / fundraising.goal_amount) * 100;
+              const daysLeft = fundraising.deadline 
+                ? Math.ceil((new Date(fundraising.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+                : null;
+              
               return (
                 <Card key={fundraising.id}>
                   <CardHeader className="p-3">
-                    <Badge className="w-fit bg-red-500">{fundraising.status}</Badge>
-                    <h3 className="font-semibold text-sm mt-2">{fundraising.title}</h3>
+                    <div className="flex items-center justify-between mb-2">
+                      <Badge className={`w-fit ${progress >= 100 ? 'bg-green-500' : 'bg-primary'}`}>
+                        {progress >= 100 ? 'Funded' : 'Active'}
+                      </Badge>
+                      {fundraising.is_verified && (
+                        <div className="flex items-center gap-1 text-xs text-green-600">
+                          <CheckCircle className="h-3 w-3" />
+                          Verified
+                        </div>
+                      )}
+                    </div>
+                    <h3 className="font-semibold text-sm">{fundraising.title}</h3>
                     <p className="text-xs text-muted-foreground line-clamp-2">{fundraising.description}</p>
                   </CardHeader>
                   <CardContent className="p-3 pt-0 space-y-2">
-                    <Progress value={progress} className="h-2" />
+                    <Progress value={Math.min(progress, 100)} className="h-2" />
                     <div className="flex items-center justify-between text-xs">
-                      <span className="font-semibold">₦{fundraising.raised_amount}NC</span>
-                      <span className="text-muted-foreground">of ₦{fundraising.goal_amount}NC</span>
+                      <span className="font-semibold text-primary">₦{fundraising.raised_amount.toLocaleString()}NC</span>
+                      <span className="text-muted-foreground">of ₦{fundraising.goal_amount.toLocaleString()}NC</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <Users className="h-3 w-3" />
+                        <span>{fundraising.backer_count || 0} backers</span>
+                      </div>
+                      {daysLeft !== null && daysLeft > 0 && (
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          <span>{daysLeft} days left</span>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                   <CardFooter className="p-3 pt-0">
@@ -224,9 +250,10 @@ export default function Fundraising() {
                         setSelectedFundraising(fundraising);
                         setContributeDialogOpen(true);
                       }}
+                      disabled={progress >= 100}
                     >
                       <Heart className="h-4 w-4 mr-1" />
-                      Contribute
+                      {progress >= 100 ? 'Goal Reached' : 'Contribute'}
                     </Button>
                   </CardFooter>
                 </Card>

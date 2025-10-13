@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Search, Video } from "lucide-react";
+import { ArrowLeft, Plus, Search, Video, Star, Clock, Users, Award } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -18,12 +19,14 @@ export default function Courses() {
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<any>({
     title: "",
     description: "",
     price: "",
     course_urls: "",
     thumbnail_url: "",
+    duration_hours: "",
+    level: "beginner",
   });
 
   const { data: courses = [], isLoading } = useQuery({
@@ -57,8 +60,10 @@ export default function Courses() {
         price: parseFloat(data.price),
         course_urls: urls,
         thumbnail_url: data.thumbnail_url,
+        duration_hours: data.duration_hours ? parseInt(data.duration_hours) : null,
+        level: data.level,
         status: "active",
-      });
+      } as any);
 
       if (error) throw error;
     },
@@ -66,7 +71,7 @@ export default function Courses() {
       toast({ title: "Course created successfully!" });
       queryClient.invalidateQueries({ queryKey: ["courses"] });
       setCreateDialogOpen(false);
-      setFormData({ title: "", description: "", price: "", course_urls: "", thumbnail_url: "" });
+      setFormData({ title: "", description: "", price: "", course_urls: "", thumbnail_url: "", duration_hours: "", level: "beginner" });
     },
     onError: () => {
       toast({ title: "Failed to create course", variant: "destructive" });
@@ -175,8 +180,33 @@ export default function Courses() {
                     value={formData.course_urls}
                     onChange={(e) => setFormData({ ...formData, course_urls: e.target.value })}
                     placeholder="https://video1.com&#10;https://video2.com"
-                    rows={5}
+                    rows={3}
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label>Duration (hours)</Label>
+                  <Input
+                    type="number"
+                    value={formData.duration_hours || ""}
+                    onChange={(e) => setFormData({ ...formData, duration_hours: e.target.value })}
+                    placeholder="0"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Level</Label>
+                  <Select 
+                    value={formData.level || "beginner"} 
+                    onValueChange={(v) => setFormData({ ...formData, level: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="beginner">Beginner</SelectItem>
+                      <SelectItem value="intermediate">Intermediate</SelectItem>
+                      <SelectItem value="advanced">Advanced</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label>Thumbnail URL (Optional)</Label>
@@ -219,18 +249,43 @@ export default function Courses() {
             {filteredCourses.map((course: any) => (
               <Card key={course.id}>
                 <CardHeader className="p-3">
-                  <Badge className="w-fit">
-                    <Video className="h-3 w-3 mr-1" />
-                    {course.course_urls?.length || 0} Videos
-                  </Badge>
-                  <h3 className="font-semibold text-sm mt-2">{course.title}</h3>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge className="w-fit">
+                      <Video className="h-3 w-3 mr-1" />
+                      {course.course_urls?.length || 0} Videos
+                    </Badge>
+                    {course.level && (
+                      <Badge variant="outline" className="text-xs capitalize">
+                        {course.level}
+                      </Badge>
+                    )}
+                  </div>
+                  <h3 className="font-semibold text-sm">{course.title}</h3>
                   <p className="text-xs text-muted-foreground line-clamp-2">{course.description}</p>
+                  {course.average_rating > 0 && (
+                    <div className="flex items-center gap-2 mt-2">
+                      <div className="flex items-center gap-1">
+                        <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
+                        <span className="text-xs font-semibold">{course.average_rating.toFixed(1)}</span>
+                      </div>
+                      <span className="text-xs text-muted-foreground">({course.review_count} reviews)</span>
+                    </div>
+                  )}
                 </CardHeader>
-                <CardContent className="p-3 pt-0">
+                <CardContent className="p-3 pt-0 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-lg font-bold text-primary">₦{course.price}NC</span>
-                    <span className="text-xs text-muted-foreground">{course.enrollment_count} enrolled</span>
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Users className="h-3 w-3" />
+                      <span>{course.enrollment_count} students</span>
+                    </div>
                   </div>
+                  {course.duration_hours && (
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Clock className="h-3 w-3" />
+                      <span>{course.duration_hours} hours of content</span>
+                    </div>
+                  )}
                 </CardContent>
                 <CardFooter className="p-3 pt-0">
                   <Button
@@ -239,6 +294,7 @@ export default function Courses() {
                     onClick={() => enrollMutation.mutate({ courseId: course.id, price: course.price })}
                     disabled={enrollMutation.isPending}
                   >
+                    <Award className="h-4 w-4 mr-1" />
                     Enroll Now
                   </Button>
                 </CardFooter>

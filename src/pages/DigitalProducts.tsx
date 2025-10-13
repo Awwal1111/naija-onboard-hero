@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Search, ShoppingCart } from "lucide-react";
+import { ArrowLeft, Plus, Search, ShoppingCart, Star, Eye, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
@@ -41,7 +41,7 @@ export default function DigitalProducts() {
           profiles!digital_products_user_id_fkey(full_name, profile_picture_url)
         `)
         .eq("status", "active")
-        .order("created_at", { ascending: false });
+        .order("average_rating", { ascending: false });
 
       if (selectedCategory !== "all") {
         query = query.eq("category", selectedCategory);
@@ -269,15 +269,45 @@ export default function DigitalProducts() {
             {filteredProducts.map((product: any) => (
               <Card key={product.id}>
                 <CardHeader className="p-3">
-                  <Badge className="w-fit">{product.category}</Badge>
-                  <h3 className="font-semibold text-sm mt-2">{product.title}</h3>
+                  <div className="flex items-center justify-between mb-2">
+                    <Badge className="w-fit">{product.category}</Badge>
+                    {product.is_verified && (
+                      <div className="flex items-center gap-1 text-xs text-green-600">
+                        <CheckCircle className="h-3 w-3" />
+                        Verified
+                      </div>
+                    )}
+                  </div>
+                  <h3 className="font-semibold text-sm">{product.title}</h3>
                   <p className="text-xs text-muted-foreground line-clamp-2">{product.description}</p>
+                  {product.average_rating > 0 && (
+                    <div className="flex items-center gap-2 mt-2">
+                      <div className="flex items-center gap-1">
+                        <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
+                        <span className="text-xs font-semibold">{product.average_rating.toFixed(1)}</span>
+                      </div>
+                      <span className="text-xs text-muted-foreground">({product.review_count} reviews)</span>
+                    </div>
+                  )}
                 </CardHeader>
                 <CardContent className="p-3 pt-0">
                   <div className="flex items-center justify-between">
                     <span className="text-lg font-bold text-primary">₦{product.price}NC</span>
-                    <span className="text-xs text-muted-foreground">{product.download_count} downloads</span>
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Eye className="h-3 w-3" />
+                      {product.download_count} downloads
+                    </span>
                   </div>
+                  {product.preview_url && (
+                    <a
+                      href={product.preview_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-primary hover:underline mt-2 inline-block"
+                    >
+                      Preview Product
+                    </a>
+                  )}
                 </CardContent>
                 <CardFooter className="p-3 pt-0">
                   <Button
