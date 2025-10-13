@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
-import { ArrowLeft, MapPin, Clock, DollarSign, Users, Briefcase, Home, MessageCircle, User as UserIcon } from 'lucide-react'
+import { useNavigate, useLocation } from 'react-router-dom'
+import { ArrowLeft, MapPin, Clock, DollarSign, Users, Briefcase, Home, MessageCircle, Menu } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -12,19 +12,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { BrandInput } from '@/components/ui/brand-input'
 import { useJobs } from '@/hooks/useJobs'
 import { useAuth } from '@/hooks/useAuth'
+import { useNigerianStates } from '@/hooks/useNigerianStates'
 import JobPostingDialog from '@/components/JobPostingDialog'
 import TopBannerAd from '@/components/TopBannerAd'
+import { MoreMenuDrawer } from '@/components/MoreMenuDrawer'
 
 const Jobs = () => {
   const navigate = useNavigate()
+  const location = useLocation()
   const { user } = useAuth()
   const { jobs, loading, applyToJob } = useJobs()
-  const [selectedJob, setSelectedJob] = useState<string | null>(null)
-  const [coverLetter, setCoverLetter] = useState('')
-  const [applying, setApplying] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [stateFilter, setStateFilter] = useState('all')
   const [categoryFilter, setCategoryFilter] = useState('all')
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false)
+  const [selectedJob, setSelectedJob] = useState<string | null>(null)
+  const [coverLetter, setCoverLetter] = useState('')
+  const [applying, setApplying] = useState(false)
+  const { states } = useNigerianStates()
 
   const handleApply = async (jobId: string) => {
     setApplying(true)
@@ -60,10 +65,13 @@ const Jobs = () => {
     { icon: Home, label: 'Feed', path: '/feed' },
     { icon: MessageCircle, label: 'Chat', path: '/chat' },
     { icon: Users, label: 'Expert', path: '/experts' },
-    { icon: Briefcase, label: 'Gig', path: '/jobs', active: true },
-    { icon: DollarSign, label: 'Earn', path: '/earn' },
-    { icon: UserIcon, label: 'Profile', path: '/profile' }
+    { icon: Briefcase, label: 'Gig', path: '/jobs' },
+    { icon: DollarSign, label: 'Earn', path: '/earn' }
   ]
+
+  const handleNavigation = (path: string) => {
+    navigate(path)
+  }
 
   const filteredJobs = jobs.filter(job => {
     const matchesSearch = job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -274,24 +282,32 @@ const Jobs = () => {
       </div>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-background border-t border-border">
-        <div className="flex justify-around items-center px-4 py-2">
+      <nav className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border z-50">
+        <div className="flex justify-around items-center px-1 sm:px-4 py-1.5 sm:py-2 max-w-md mx-auto">
           {bottomNavItems.map((item) => (
-            <Link 
-              key={item.label} 
-              to={item.path}
-              className={`flex flex-col items-center gap-1 py-2 px-3 rounded-xl transition-colors ${
-                item.active 
-                  ? 'text-primary bg-primary/10' 
+            <button
+              key={item.label}
+              onClick={() => handleNavigation(item.path)}
+              className={`flex flex-col items-center gap-0.5 sm:gap-1 py-1.5 sm:py-2 px-2 sm:px-3 rounded-xl transition-colors ${
+                location.pathname === item.path
+                  ? 'text-primary bg-primary/10'
                   : 'text-text-secondary hover:text-primary hover:bg-primary/5'
               }`}
             >
-              <item.icon className="h-5 w-5" />
-              <span className="text-xs font-medium">{item.label}</span>
-            </Link>
+              <item.icon className="h-5 w-5 sm:h-6 sm:w-6" />
+              <span className="text-[10px] sm:text-xs font-medium">{item.label}</span>
+            </button>
           ))}
+          <button
+            onClick={() => setMoreMenuOpen(true)}
+            className="flex flex-col items-center gap-0.5 sm:gap-1 py-1.5 sm:py-2 px-2 sm:px-3 rounded-xl transition-colors text-text-secondary hover:text-primary hover:bg-primary/5"
+          >
+            <Menu className="h-5 w-5 sm:h-6 sm:w-6" />
+            <span className="text-[10px] sm:text-xs font-medium">More</span>
+          </button>
         </div>
       </nav>
+      <MoreMenuDrawer open={moreMenuOpen} onOpenChange={setMoreMenuOpen} />
     </div>
   )
 }

@@ -2,8 +2,8 @@ import React, { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Trophy, Zap, FileText, User, History, Users, ArrowUpRight, Phone, Wifi, TrendingUp, Home, MessageCircle, Briefcase, DollarSign, User as UserIcon } from 'lucide-react'
-import { useNavigate, Link } from 'react-router-dom'
+import { Trophy, Zap, FileText, User, History, Users, ArrowUpRight, Phone, Wifi, TrendingUp, Home, MessageCircle, Briefcase, DollarSign, Menu } from 'lucide-react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useWallet } from '@/hooks/useWallet'
 import NaijaLanceWalletCard from '@/components/NaijaLanceWalletCard'
 import { DailySigninCard } from '@/components/DailySigninCard'
@@ -13,11 +13,19 @@ import { VTUAirtimeDialog } from '@/components/VTUAirtimeDialog'
 import { VTUDataDialog } from '@/components/VTUDataDialog'
 import { BettingFundDialog } from '@/components/BettingFundDialog'
 import TopBannerAd from '@/components/TopBannerAd'
+import { MoreMenuDrawer } from '@/components/MoreMenuDrawer'
+import { useDailySignin } from '@/hooks/useDailySignin'
+import { useProfile } from '@/hooks/useProfile'
 
 const EnhancedEarn = () => {
   const { balance, loading } = useWallet()
   const navigate = useNavigate()
+  const location = useLocation()
+  const { profile } = useProfile()
+  const { hasSignedInToday, claimDailyBonus, loading: signinLoading } = useDailySignin()
   const [showWithdrawDialog, setShowWithdrawDialog] = useState(false)
+  const [activeSection, setActiveSection] = useState<string>('wallet')
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false)
   const [showAirtimeDialog, setShowAirtimeDialog] = useState(false)
   const [showDataDialog, setShowDataDialog] = useState(false)
   const [showBettingDialog, setShowBettingDialog] = useState(false)
@@ -107,9 +115,12 @@ const EnhancedEarn = () => {
     { icon: MessageCircle, label: 'Chat', path: '/chat' },
     { icon: Users, label: 'Expert', path: '/experts' },
     { icon: Briefcase, label: 'Gig', path: '/jobs' },
-    { icon: DollarSign, label: 'Earn', path: '/earn', active: true },
-    { icon: UserIcon, label: 'Profile', path: '/profile' }
+    { icon: DollarSign, label: 'Earn', path: '/earn' }
   ]
+
+  const handleNavigation = (path: string) => {
+    navigate(path)
+  }
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -252,24 +263,32 @@ const EnhancedEarn = () => {
       />
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-background border-t border-border">
-        <div className="flex justify-around items-center px-4 py-2">
+      <nav className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border z-50">
+        <div className="flex justify-around items-center px-1 sm:px-4 py-1.5 sm:py-2 max-w-md mx-auto">
           {bottomNavItems.map((item) => (
-            <Link 
-              key={item.label} 
-              to={item.path}
-              className={`flex flex-col items-center gap-1 py-2 px-3 rounded-xl transition-colors ${
-                item.active 
-                  ? 'text-primary bg-primary/10' 
+            <button
+              key={item.label}
+              onClick={() => handleNavigation(item.path)}
+              className={`flex flex-col items-center gap-0.5 sm:gap-1 py-1.5 sm:py-2 px-2 sm:px-3 rounded-xl transition-colors ${
+                location.pathname === item.path
+                  ? 'text-primary bg-primary/10'
                   : 'text-text-secondary hover:text-primary hover:bg-primary/5'
               }`}
             >
-              <item.icon className="h-5 w-5" />
-              <span className="text-xs font-medium">{item.label}</span>
-            </Link>
+              <item.icon className="h-5 w-5 sm:h-6 sm:w-6" />
+              <span className="text-[10px] sm:text-xs font-medium">{item.label}</span>
+            </button>
           ))}
+          <button
+            onClick={() => setMoreMenuOpen(true)}
+            className="flex flex-col items-center gap-0.5 sm:gap-1 py-1.5 sm:py-2 px-2 sm:px-3 rounded-xl transition-colors text-text-secondary hover:text-primary hover:bg-primary/5"
+          >
+            <Menu className="h-5 w-5 sm:h-6 sm:w-6" />
+            <span className="text-[10px] sm:text-xs font-medium">More</span>
+          </button>
         </div>
       </nav>
+      <MoreMenuDrawer open={moreMenuOpen} onOpenChange={setMoreMenuOpen} />
     </div>
   )
 }
