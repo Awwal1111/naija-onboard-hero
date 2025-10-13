@@ -9,7 +9,7 @@ import { BrandInput } from '@/components/ui/brand-input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
-import { useSocialTasks } from '@/hooks/useSocialTasks'
+import { useSocialTasks, TaskWithStatus } from '@/hooks/useSocialTasks'
 import { SocialTaskCompletionDialog } from '@/components/SocialTaskCompletionDialog'
 import { ExpandableText } from '@/components/ExpandableText'
 import { toast } from 'sonner'
@@ -232,24 +232,34 @@ export const SocialMediaTasks = () => {
                         </div>
                       </div>
                       
-              <div className="space-y-3">
-                <BrandButton 
-                  className="w-full" 
-                  onClick={() => {
-                    if (task.link && task.link !== '#') {
-                      window.open(task.link, '_blank', 'noopener,noreferrer')
-                      toast.success(`Opened ${task.platform} link. Complete the task and come back to mark it as done.`)
-                    } else {
-                      toast.error('Task link not available')
-                    }
-                  }}
-                  disabled={task.done_slots >= task.total_slots}
-                >
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  {task.done_slots >= task.total_slots ? 'Task Completed' : `Open ${task.platform}`}
-                </BrandButton>
+                      <div className="space-y-3">
+                        <BrandButton 
+                          className="w-full" 
+                          onClick={() => {
+                            if (task.link && task.link !== '#') {
+                              window.open(task.link, '_blank', 'noopener,noreferrer')
+                              toast.success(`Opened ${task.platform} link. Complete the task and come back to mark it as done.`)
+                            } else {
+                              toast.error('Task link not available')
+                            }
+                          }}
+                          disabled={task.done_slots >= task.total_slots || task.userSubmission?.status === 'pending'}
+                        >
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          {task.userSubmission?.status === 'pending' 
+                            ? 'Pending Approval' 
+                            : task.done_slots >= task.total_slots 
+                            ? 'Task Completed' 
+                            : `Open ${task.platform}`}
+                        </BrandButton>
                         
-                        {task.done_slots < task.total_slots && (
+                        {task.userSubmission?.status === 'pending' ? (
+                          <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded-lg">
+                            <p className="text-sm text-amber-800 dark:text-amber-200 text-center">
+                              ✓ Submitted! Wait for admin approval
+                            </p>
+                          </div>
+                        ) : task.done_slots < task.total_slots ? (
                           <div className="flex gap-2">
                             <Button 
                               variant="outline" 
@@ -265,7 +275,7 @@ export const SocialMediaTasks = () => {
                               Submit Proof
                             </Button>
                           </div>
-                        )}
+                        ) : null}
                       </div>
                     </CardContent>
                   </Card>

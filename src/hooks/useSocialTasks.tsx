@@ -4,29 +4,57 @@ import { useAuth } from './useAuth'
 import { useToast } from './use-toast'
 import { SocialTask } from './useProfile'
 
+export interface TaskWithStatus extends SocialTask {
+  userSubmission?: {
+    status: string
+    created_at: string
+  }
+}
+
 export const useSocialTasks = () => {
   const { user } = useAuth()
   const { toast } = useToast()
-  const [tasks, setTasks] = useState<SocialTask[]>([])
+  const [tasks, setTasks] = useState<TaskWithStatus[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetchTasks()
-  }, [])
+    if (user) {
+      fetchTasks()
+    }
+  }, [user])
 
   const fetchTasks = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: tasksData, error: tasksError } = await supabase
         .from('social_tasks' as any)
         .select('*')
         .eq('status', 'active')
         .order('created_at', { ascending: false })
 
-      if (error) throw error
-      setTasks((data as any) || [])
+      if (tasksError) throw tasksError
+
+      // Fetch user's submission status for each task
+      if (user && tasksData) {
+        const { data: submissions } = await supabase
+          .from('social_tasks_progress')
+          .select('task_id, status, created_at')
+          .eq('earner_id', user.id)
+
+        const submissionMap = new Map(
+          submissions?.map(s => [s.task_id, { status: s.status, created_at: s.created_at }]) || []
+        )
+
+        const tasksWithStatus = (tasksData as any[]).map((task: any) => ({
+          ...task,
+          userSubmission: submissionMap.get(task.id)
+        }))
+
+        setTasks(tasksWithStatus)
+      } else {
+        setTasks((tasksData as any) || [])
+      }
     } catch (error) {
       console.error('Error fetching social tasks:', error)
-      // Set empty array instead of crashing
       setTasks([])
       toast({
         title: "Info",
@@ -42,13 +70,30 @@ export const useSocialTasks = () => {
     if (!user) return { success: false, error: 'Not authenticated' }
 
     try {
+      // Check if user has already submitted this task
+      const { data: existing } = await supabase
+        .from('social_tasks_progress')
+        .select('status')
+        .eq('task_id', taskId)
+        .eq('earner_id', user.id)
+        .maybeSingle()
+
+      if (existing) {
+        toast({
+          title: "Already Submitted",
+          description: `Your submission is ${existing.status}. Please wait for admin approval.`,
+          variant: "default",
+        })
+        return { success: false, error: 'Already submitted' }
+      }
+
       // Create progress entry for the user with 'claimed' status
       const { error: progressError } = await supabase
         .from('social_tasks_progress' as any)
         .insert({
           task_id: taskId,
           earner_id: user.id,
-          status: 'claimed' // Changed from 'pending' to 'claimed'
+          status: 'claimed'
         })
 
       if (progressError) throw progressError
@@ -58,9 +103,20 @@ export const useSocialTasks = () => {
         description: "Task claimed successfully! Complete it and submit proof.",
       })
 
+      fetchTasks() // Refresh to show updated status
       return { success: true }
     } catch (error: any) {
       console.error('Error claiming task:', error)
+      
+      if (error.code === '23505') { // Unique constraint violation
+        toast({
+          title: "Already Submitted",
+          description: "You have already submitted this task. Please wait for admin approval.",
+          variant: "default",
+        })
+        return { success: false, error: 'Already submitted' }
+      }
+      
       toast({
         title: "Error",
         description: error.message || "Failed to claim task",
@@ -74,10 +130,27 @@ export const useSocialTasks = () => {
     if (!user) return { success: false, error: 'Not authenticated' }
 
     try {
+      // Check if user has already submitted
+      const { data: existing } = await supabase
+        .from('social_tasks_progress')
+        .select('status')
+        .eq('task_id', taskId)
+        .eq('earner_id', user.id)
+        .maybeSingle()
+
+      if (existing && existing.status === 'pending') {
+        toast({
+          title: "Already Submitted",
+          description: "Your submission is pending. Please wait for admin approval.",
+          variant: "default",
+        })
+        return { success: false, error: 'Already submitted' }
+      }
+
       const { error } = await supabase
         .from('social_tasks_progress' as any)
         .update({
-          status: 'pending', // Changed from 'completed' to 'pending' for admin review
+          status: 'pending',
           screenshot_url: screenshotUrl,
           text_explanation: textExplanation
         })
@@ -91,6 +164,7 @@ export const useSocialTasks = () => {
         description: "Task submitted! Awaiting admin approval.",
       })
 
+      fetchTasks() // Refresh to show updated status
       return { success: true }
     } catch (error: any) {
       console.error('Error completing task:', error)
