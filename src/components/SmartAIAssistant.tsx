@@ -27,6 +27,8 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
   const { toast } = useToast()
   const location = useLocation()
   
+  console.log('🤖 SmartAIAssistant rendered, route:', location.pathname, 'user:', user?.id)
+  
   const [isOpen, setIsOpen] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)
   const [message, setMessage] = useState('')
@@ -257,6 +259,7 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
 
   return (
     <>
+      {console.log('🎨 Rendering AI Assistant, isOpen:', isOpen, 'position:', position)}
       {/* Floating AI Button - always visible */}
       {!isOpen && (
         <div className="fixed bottom-6 right-6 z-50">
@@ -284,8 +287,9 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
         >
           <Card className={`w-80 shadow-2xl border-primary/20 ${isMinimized ? 'h-16' : 'h-96'} transition-all duration-300`}>
         <CardHeader 
-          className="py-3 px-4 bg-gradient-to-r from-primary to-primary/80 text-white cursor-grab active:cursor-grabbing"
+          className="py-3 px-4 bg-gradient-to-r from-primary to-primary/80 text-white cursor-grab active:cursor-grabbing select-none"
           onMouseDown={handleMouseDown}
+          style={{ touchAction: 'none' }}
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
