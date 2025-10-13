@@ -21,6 +21,7 @@ const SignUp = () => {
     fullName: '',
     email: '',
     password: '',
+    confirmPassword: '',
     acceptedTerms: false
   })
   const [invitationRole, setInvitationRole] = useState<string | null>(null)
@@ -101,6 +102,15 @@ const SignUp = () => {
       toast({
         title: "Terms Required",
         description: "Please accept the Terms & Conditions to continue",
+        variant: "destructive"
+      })
+      return
+    }
+    
+    if (formData.password !== formData.confirmPassword) {
+      toast({
+        title: "Passwords Don't Match",
+        description: "Please make sure both passwords are the same",
         variant: "destructive"
       })
       return
@@ -289,6 +299,25 @@ const SignUp = () => {
                     )}
                   </div>
                 )}
+              </div>
+
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium mb-2 text-text-primary">
+                  Confirm Password
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-text-secondary" />
+                  <input
+                    id="confirmPassword"
+                    type={showPassword ? "text" : "password"}
+                    name="confirmPassword"
+                    value={formData.confirmPassword}
+                    onChange={handleInputChange}
+                    placeholder="Re-enter your password"
+                    className="w-full pl-10 pr-4 py-3 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                    required
+                  />
+                </div>
               </div>
 
               {/* Terms & Conditions Checkbox */}
