@@ -13,14 +13,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
-const categories = ["document", "ebook", "pdf", "template", "audio", "video", "other"];
+const categories: Array<"document" | "ebook" | "pdf" | "template" | "audio" | "video" | "other"> = ["document", "ebook", "pdf", "template", "audio", "video", "other"];
 
 export default function DigitalProducts() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [selectedCategory, setSelectedCategory] = useState<"all" | "document" | "ebook" | "pdf" | "template" | "audio" | "video" | "other">("all");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
@@ -187,7 +187,7 @@ export default function DigitalProducts() {
                 </div>
                 <div className="space-y-2">
                   <Label>Category</Label>
-                  <Select value={formData.category} onValueChange={(v) => setFormData({ ...formData, category: v })}>
+                  <Select value={formData.category} onValueChange={(v) => setFormData({ ...formData, category: v as any })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>

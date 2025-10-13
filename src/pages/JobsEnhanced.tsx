@@ -209,12 +209,13 @@ export default function JobsEnhanced() {
         )}
       </div>
 
-      <JobApplicationDialog
-        open={applicationDialogOpen}
-        onOpenChange={setApplicationDialogOpen}
-        jobId={selectedJob?.id}
-        onSuccess={() => setApplicationDialogOpen(false)}
-      />
+      {selectedJob && (
+        <JobApplicationDialog
+          isOpen={applicationDialogOpen}
+          onClose={() => setApplicationDialogOpen(false)}
+          jobPost={selectedJob}
+        />
+      )}
     </div>
   );
 }

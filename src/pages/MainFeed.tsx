@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Plus, Search, Filter, TrendingUp, Home, MessageCircle, Users, DollarSign, User, Image, FileText, Briefcase, Award, Calendar, Vote, Hash, RefreshCw, ArrowRight, Star, MapPin, MoreVertical, Settings, Wallet } from 'lucide-react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { Logo } from '@/components/ui/logo'
 import { BrandInput } from '@/components/ui/brand-input'
 import { BrandButton } from '@/components/ui/brand-button'
@@ -27,12 +27,15 @@ import TopBannerAd from '@/components/TopBannerAd'
 import ProfileCompletionDialog from '@/components/ProfileCompletionDialog'
 import { useProfileCompletion } from '@/hooks/useProfileCompletion'
 import PeopleYouMayKnow from '@/components/PeopleYouMayKnow'
+import { MoreMenuDrawer } from '@/components/MoreMenuDrawer'
 
 const MainFeed = () => {
   const navigate = useNavigate()
+  const location = useLocation()
   const { user } = useAuth()
   const { profile } = useProfile()
   const { isComplete, missingFields, shouldShowDialog } = useProfileCompletion()
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false)
   const { 
     posts, 
     loading, 
@@ -80,10 +83,12 @@ const MainFeed = () => {
     { icon: Home, label: 'Feed', path: '/feed', active: true },
     { icon: MessageCircle, label: 'Chat', path: '/chat' },
     { icon: Users, label: 'Expert', path: '/experts' },
-    { icon: Briefcase, label: 'Gig', path: '/jobs' },
-    { icon: DollarSign, label: 'Earn', path: '/earn', className: 'text-brand-green' },
-    { icon: User, label: 'Profile', path: '/profile' }
+    { icon: Briefcase, label: 'Gig', path: '/jobs' }
   ]
+
+  const handleNavigation = (path: string) => {
+    navigate(path)
+  }
 
   const postCategories = [
     { id: 'all', label: 'All Posts', icon: FileText },
@@ -611,19 +616,28 @@ const MainFeed = () => {
       <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border px-1 sm:px-4 py-1.5 sm:py-2 safe-area-bottom z-50">
         <div className="flex justify-around items-center max-w-md mx-auto">
           {bottomNavItems.map((item) => (
-            <Link 
+            <button 
               key={item.label} 
-              to={item.path}
+              onClick={() => handleNavigation(item.path)}
               className={`flex flex-col items-center gap-0.5 sm:gap-1 py-1.5 sm:py-2 px-1.5 sm:px-3 rounded-xl transition-colors min-w-0 flex-1 ${
-                item.active 
+                location.pathname === item.path
                   ? 'text-primary bg-primary/10' 
-                  : item.className || 'text-text-secondary hover:text-primary hover:bg-primary/5'
+                  : 'text-text-secondary hover:text-primary hover:bg-primary/5'
               }`}
             >
               <item.icon className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
               <span className="text-[10px] sm:text-xs font-medium truncate max-w-full">{item.label}</span>
-            </Link>
+            </button>
           ))}
+          <button
+            onClick={() => setMoreMenuOpen(true)}
+            className="flex flex-col items-center gap-0.5 sm:gap-1 py-1.5 sm:py-2 px-1.5 sm:px-3 rounded-xl transition-colors min-w-0 flex-1 text-text-secondary hover:text-primary hover:bg-primary/5"
+          >
+            <svg className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+            <span className="text-[10px] sm:text-xs font-medium truncate max-w-full">More</span>
+          </button>
         </div>
       </div>
     </ResponsiveLayout>
@@ -633,6 +647,9 @@ const MainFeed = () => {
         isOpen={shouldShowDialog}
         missingFields={missingFields}
       />
+      
+      {/* More Menu Drawer */}
+      <MoreMenuDrawer open={moreMenuOpen} onOpenChange={setMoreMenuOpen} />
     </>
   )
 }

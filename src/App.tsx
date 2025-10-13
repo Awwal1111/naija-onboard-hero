@@ -31,7 +31,14 @@ import { GuessNumberGame } from "./pages/GuessNumberGame";
 import { Referrals } from "./pages/Referrals";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentFailed from "./pages/PaymentFailed";
-import { ReferralTasks } from "./pages/ReferralTasks";
+import ReferralTasks from "./pages/ReferralTasks";
+import DigitalProducts from "./pages/DigitalProducts";
+import Courses from "./pages/Courses";
+import Fundraising from "./pages/Fundraising";
+import Emergency from "./pages/Emergency";
+import Loan from "./pages/Loan";
+import Donations from "./pages/Donations";
+import JobsEnhanced from "./pages/JobsEnhanced";
 import ExpertProfile from "./pages/ExpertProfile";
 import TermsConditions from "./pages/TermsConditions";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
@@ -78,6 +85,14 @@ const App = () => (
           <Route path="/earn" element={<ProtectedRoute><EnhancedEarn /></ProtectedRoute>} />
           <Route path="/earn/social-tasks" element={<ProtectedRoute><SocialMediaTasks /></ProtectedRoute>} />
           <Route path="/earn/referral-tasks" element={<ProtectedRoute><ReferralTasks /></ProtectedRoute>} />
+          <Route path="/referral-tasks" element={<ProtectedRoute><ReferralTasks /></ProtectedRoute>} />
+          <Route path="/digital-products" element={<ProtectedRoute><DigitalProducts /></ProtectedRoute>} />
+          <Route path="/courses" element={<ProtectedRoute><Courses /></ProtectedRoute>} />
+          <Route path="/fundraising" element={<ProtectedRoute><Fundraising /></ProtectedRoute>} />
+          <Route path="/emergency" element={<ProtectedRoute><Emergency /></ProtectedRoute>} />
+          <Route path="/loan" element={<ProtectedRoute><Loan /></ProtectedRoute>} />
+          <Route path="/donations" element={<ProtectedRoute><Donations /></ProtectedRoute>} />
+          <Route path="/jobs-enhanced" element={<ProtectedRoute><JobsEnhanced /></ProtectedRoute>} />
           <Route path="/earn/guess-number" element={<ProtectedRoute><GuessNumberGame /></ProtectedRoute>} />
           <Route path="/earn/trivia" element={<ProtectedRoute><NigerianTrivia /></ProtectedRoute>} />
           <Route path="/earn/spin-wheel" element={<ProtectedRoute><SpinWheelGame /></ProtectedRoute>} />

@@ -1,104 +1,115 @@
-import { useState } from 'react'
-import { ArrowLeft } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
-import { Logo } from '@/components/ui/logo'
-import { ReferralTaskCard } from '@/components/ReferralTaskCard'
-import { useReferralTasks } from '@/hooks/useReferralTasks'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft, Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
-export const ReferralTasks = () => {
-  const navigate = useNavigate()
-  const { tasks, loading, submitTask, hasSubmitted, getSubmissionStatus } = useReferralTasks()
-  const [statusFilter, setStatusFilter] = useState('all')
-  const [sortBy, setSortBy] = useState('reward-high')
+export default function ReferralTasks() {
+  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<"highest" | "lowest">("highest");
 
-  const filteredAndSortedTasks = tasks
-    .filter(task => {
-      if (statusFilter === 'all') return true
-      if (statusFilter === 'available') return !hasSubmitted(task.id)
-      const status = getSubmissionStatus(task.id)
-      return status === statusFilter
+  const { data: tasks = [], isLoading } = useQuery({
+    queryKey: ["referral-tasks"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("referral_tasks")
+        .select("*")
+        .eq("is_active", true)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const filteredTasks = tasks
+    .filter((task) => {
+      const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        task.description.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesStatus = statusFilter === "all" || task.status === statusFilter;
+      return matchesSearch && matchesStatus;
     })
     .sort((a, b) => {
-      if (sortBy === 'reward-high') return b.reward - a.reward
-      if (sortBy === 'reward-low') return a.reward - b.reward
-      return 0
-    })
+      if (sortBy === "highest") {
+        return b.reward - a.reward;
+      }
+      return a.reward - b.reward;
+    });
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      {/* Header */}
-      <header className="bg-background border-b border-border px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between sticky top-0 z-10">
-        <button onClick={() => navigate('/earn')} className="flex items-center gap-1 sm:gap-2">
-          <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5 text-text-secondary" />
-        </button>
-        <Logo className="h-6 sm:h-8" />
-        <div className="w-4 sm:w-5" />
-      </header>
+    <div className="min-h-screen bg-background">
+      <div className="sticky top-0 z-10 bg-background border-b px-2 sm:px-3 py-2">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="h-8 w-8 p-0">
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <h1 className="text-base sm:text-lg font-bold">Referral Tasks</h1>
+        </div>
+      </div>
 
-      <div className="px-3 sm:px-6 py-3 sm:py-6">
-        <div className="mb-4 sm:mb-6">
-          <h1 className="text-xl sm:text-2xl font-bold text-text-primary mb-1 sm:mb-2">Referral Tasks</h1>
-          <p className="text-xs sm:text-sm text-text-secondary">Complete referral tasks by signing up for partner services and earn rewards!</p>
+      <div className="p-2 sm:p-3 space-y-3">
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search tasks..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 h-9 text-sm"
+          />
         </div>
 
         {/* Filters */}
-        <div className="mb-4 space-y-3">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Tabs value={statusFilter} onValueChange={setStatusFilter} className="w-full">
-              <TabsList className="grid w-full grid-cols-3 sm:grid-cols-5 h-auto">
-                <TabsTrigger value="all" className="text-xs sm:text-sm py-1.5 sm:py-2">All</TabsTrigger>
-                <TabsTrigger value="available" className="text-xs sm:text-sm py-1.5 sm:py-2">Available</TabsTrigger>
-                <TabsTrigger value="pending" className="text-xs sm:text-sm py-1.5 sm:py-2">Pending</TabsTrigger>
-                <TabsTrigger value="approved" className="text-xs sm:text-sm py-1.5 sm:py-2">Approved</TabsTrigger>
-                <TabsTrigger value="rejected" className="text-xs sm:text-sm py-1.5 sm:py-2">Rejected</TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <span className="text-xs sm:text-sm text-text-secondary whitespace-nowrap">Sort by:</span>
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-full sm:w-[180px] h-9">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="reward-high">Highest Reward</SelectItem>
-                <SelectItem value="reward-low">Lowest Reward</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Tabs value={statusFilter} onValueChange={setStatusFilter} className="flex-1">
+            <TabsList className="grid w-full grid-cols-5 h-9">
+              <TabsTrigger value="all" className="text-xs">All</TabsTrigger>
+              <TabsTrigger value="available" className="text-xs">Available</TabsTrigger>
+              <TabsTrigger value="pending" className="text-xs">Pending</TabsTrigger>
+              <TabsTrigger value="approved" className="text-xs">Approved</TabsTrigger>
+              <TabsTrigger value="rejected" className="text-xs">Rejected</TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          <Select value={sortBy} onValueChange={(value: "highest" | "lowest") => setSortBy(value)}>
+            <SelectTrigger className="w-full sm:w-[180px] h-9">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="highest">Highest Reward</SelectItem>
+              <SelectItem value="lowest">Lowest Reward</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
-        {loading ? (
-          <div className="flex justify-center p-6 sm:p-8">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-primary mx-auto"></div>
-              <p className="mt-2 text-xs sm:text-sm text-text-secondary">Loading referral tasks...</p>
-            </div>
-          </div>
-        ) : filteredAndSortedTasks.length === 0 ? (
-          <div className="text-center p-6 sm:p-8 text-text-secondary text-sm">
-            {statusFilter === 'all' 
-              ? 'No referral tasks available right now. Check back later!'
-              : `No ${statusFilter} tasks found.`
-            }
-          </div>
+        {/* Tasks List */}
+        {isLoading ? (
+          <div className="text-center py-8 text-sm">Loading...</div>
+        ) : filteredTasks.length === 0 ? (
+          <div className="text-center py-8 text-sm text-muted-foreground">No tasks found</div>
         ) : (
-          <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredAndSortedTasks.map((task) => (
-              <ReferralTaskCard
-                key={task.id}
-                task={task}
-                hasSubmitted={hasSubmitted(task.id)}
-                submissionStatus={getSubmissionStatus(task.id)}
-                onSubmit={submitTask}
-              />
+          <div className="space-y-2 sm:space-y-3">
+            {filteredTasks.map((task) => (
+              <Card key={task.id} className="p-3">
+                <h3 className="font-semibold text-sm">{task.title}</h3>
+                <p className="text-xs text-muted-foreground mt-1">{task.description}</p>
+                <div className="flex items-center justify-between mt-2">
+                  <Badge>₦{task.reward}NC</Badge>
+                  <span className="text-xs text-muted-foreground">{task.status}</span>
+                </div>
+              </Card>
             ))}
           </div>
         )}
       </div>
     </div>
-  )
+  );
 }
