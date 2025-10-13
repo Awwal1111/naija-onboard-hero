@@ -100,7 +100,9 @@ async function handleRewardCallback(supabase: any, data: any) {
 
   try {
     // Convert USD to Naira (BitLabs sends reward in USD)
-    const nairaReward = Math.round(parseFloat(reward) * 400) // Assuming 1 USD = 400 NGN
+    const nairaReward = Math.round(parseFloat(reward) * 1600) // 1 USD ≈ 1600 NGN
+    
+    console.log(`Processing reward: $${reward} = ₦${nairaReward} for user ${user_id}`)
     
     // Update survey completion
     const { error: updateError } = await supabase
@@ -116,22 +118,32 @@ async function handleRewardCallback(supabase: any, data: any) {
 
     if (updateError) {
       console.error('Error updating survey completion:', updateError)
-      return
     }
 
     // Update user's wallet balance
-    const { error: walletError } = await supabase
+    const { data: currentProfile } = await supabase
       .from('profiles')
-      .update({
-        wallet_balance: supabase.raw(`wallet_balance + ${nairaReward}`)
-      })
+      .select('wallet_balance, balance_withdrawable')
       .eq('user_id', user_id)
+      .single()
 
-    if (walletError) {
-      console.error('Error updating wallet balance:', walletError)
+    if (currentProfile) {
+      const { error: walletError } = await supabase
+        .from('profiles')
+        .update({
+          wallet_balance: currentProfile.wallet_balance + nairaReward,
+          balance_withdrawable: currentProfile.balance_withdrawable + nairaReward
+        })
+        .eq('user_id', user_id)
+
+      if (walletError) {
+        console.error('Error updating wallet balance:', walletError)
+      } else {
+        console.log(`Successfully rewarded user ${user_id} with ₦${nairaReward}`)
+      }
     }
 
-    console.log(`Rewarded user ${user_id} with ₦${nairaReward} for survey ${offer_id}`)
+    console.log(`Reward callback completed for survey ${offer_id}`)
     
   } catch (error) {
     console.error('Error processing reward callback:', error)
@@ -145,14 +157,29 @@ async function handleReconciliationCallback(supabase: any, data: any) {
     // Handle reconciliation based on type
     if (reconciliation_type === 'chargeback') {
       // Deduct points from user's balance
-      const nairaAmount = Math.round(parseFloat(reward) * 400)
+      const nairaAmount = Math.round(parseFloat(reward) * 1600)
       
-      const { error } = await supabase
+      const { data: currentProfile } = await supabase
         .from('profiles')
-        .update({
-          wallet_balance: supabase.raw(`GREATEST(0, wallet_balance - ${nairaAmount})`)
-        })
+        .select('wallet_balance, balance_withdrawable')
         .eq('user_id', user_id)
+        .single()
+
+      if (currentProfile) {
+        const { error } = await supabase
+          .from('profiles')
+          .update({
+            wallet_balance: Math.max(0, currentProfile.wallet_balance - nairaAmount),
+            balance_withdrawable: Math.max(0, currentProfile.balance_withdrawable - nairaAmount)
+          })
+          .eq('user_id', user_id)
+
+        if (error) {
+          console.error('Error processing chargeback:', error)
+        } else {
+          console.log(`Chargeback processed for user ${user_id}: ₦${nairaAmount}`)
+        }
+      }
 
       if (error) {
         console.error('Error processing chargeback:', error)
@@ -204,18 +231,27 @@ async function handleMagicReceiptsCallback(supabase: any, data: any) {
   const { uid: user_id, receipt_data, cashback_amount } = data
   
   if (cashback_amount && cashback_amount > 0) {
-    const nairaAmount = Math.round(cashback_amount * 4)
+    const nairaAmount = Math.round(cashback_amount * 1600)
     
     try {
-      const { error } = await supabase
+      const { data: currentProfile } = await supabase
         .from('profiles')
-        .update({
-          wallet_balance: supabase.raw(`wallet_balance + ${nairaAmount}`)
-        })
+        .select('wallet_balance, balance_withdrawable')
         .eq('user_id', user_id)
+        .single()
 
-      if (!error) {
-        console.log(`Cashback credited to user ${user_id}: ₦${nairaAmount}`)
+      if (currentProfile) {
+        const { error } = await supabase
+          .from('profiles')
+          .update({
+            wallet_balance: currentProfile.wallet_balance + nairaAmount,
+            balance_withdrawable: currentProfile.balance_withdrawable + nairaAmount
+          })
+          .eq('user_id', user_id)
+
+        if (!error) {
+          console.log(`Cashback credited to user ${user_id}: ₦${nairaAmount}`)
+        }
       }
     } catch (error) {
       console.error('Error processing cashback:', error)
@@ -230,18 +266,27 @@ async function handleUnrewardedScreenoutCallback(supabase: any, data: any) {
   const { uid: user_id, oid: offer_id } = data
   
   try {
-    // Give small compensation for screenout (e.g., 1 naira)
-    const compensationAmount = 1
+    // Give small compensation for screenout (e.g., 5 naira)
+    const compensationAmount = 5
     
-    const { error } = await supabase
+    const { data: currentProfile } = await supabase
       .from('profiles')
-      .update({
-        wallet_balance: supabase.raw(`wallet_balance + ${compensationAmount}`)
-      })
+      .select('wallet_balance, balance_withdrawable')
       .eq('user_id', user_id)
+      .single()
 
-    if (!error) {
-      console.log(`Screenout compensation given to user ${user_id}: ₦${compensationAmount}`)
+    if (currentProfile) {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          wallet_balance: currentProfile.wallet_balance + compensationAmount,
+          balance_withdrawable: currentProfile.balance_withdrawable + compensationAmount
+        })
+        .eq('user_id', user_id)
+
+      if (!error) {
+        console.log(`Screenout compensation given to user ${user_id}: ₦${compensationAmount}`)
+      }
     }
   } catch (error) {
     console.error('Error processing screenout compensation:', error)

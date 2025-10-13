@@ -157,6 +157,8 @@ serve(async (req) => {
     }
 
     try {
+      console.log(`Fetching BitLabs surveys for user: ${user_id}`)
+      
       // Make request to BitLabs API v2
       const bitLabsResponse = await fetch(`https://api.bitlabs.ai/v2/client/surveys`, {
         headers: {
@@ -166,12 +168,16 @@ serve(async (req) => {
         }
       })
 
+      console.log(`BitLabs API status: ${bitLabsResponse.status}`)
+
       if (!bitLabsResponse.ok) {
+        const errorText = await bitLabsResponse.text()
+        console.error(`BitLabs API error: ${bitLabsResponse.status} - ${errorText}`)
         throw new Error(`BitLabs API error: ${bitLabsResponse.status}`)
       }
 
       const bitLabsData = await bitLabsResponse.json()
-      console.log('BitLabs API response:', bitLabsData)
+      console.log('BitLabs API response:', JSON.stringify(bitLabsData, null, 2))
       
       // Check for restriction reasons
       if (bitLabsData.data?.restriction_reason) {
@@ -193,18 +199,28 @@ serve(async (req) => {
       }
       
       // Transform BitLabs data to our format
-      const offers: BitLabsOffer[] = (bitLabsData.data?.surveys || []).map((survey: any) => ({
-        id: survey.id,
-        name: survey.category?.name || 'Survey',
-        description: `Complete this ${survey.category?.name || 'survey'} and earn rewards`,
-        reward: Math.round(parseFloat(survey.cpi) * 400), // Convert USD to Naira (approx rate)
-        duration: Math.round(survey.loi || 5),
-        category: survey.category?.name || 'General',
-        url: survey.click_url
-      }))
+      const surveys = bitLabsData.data?.surveys || []
+      console.log(`Found ${surveys.length} surveys from BitLabs`)
+      
+      const offers: BitLabsOffer[] = surveys.map((survey: any) => {
+        const reward = Math.round(parseFloat(survey.cpi) * 1600) // Convert USD to Naira
+        console.log(`Survey ${survey.id}: ${survey.category?.name}, CPI: ${survey.cpi}, Reward: ₦${reward}, URL: ${survey.click_url}`)
+        
+        return {
+          id: survey.id,
+          name: survey.category?.name || 'Survey',
+          description: `Complete this ${survey.category?.name || 'survey'} and earn rewards`,
+          reward: reward,
+          duration: Math.round(survey.loi || 5),
+          category: survey.category?.name || 'General',
+          url: survey.click_url
+        }
+      })
+
+      console.log(`Returning ${offers.length} transformed offers`)
 
       return new Response(
-        JSON.stringify({ offers }),
+        JSON.stringify({ offers, success: true }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
 
