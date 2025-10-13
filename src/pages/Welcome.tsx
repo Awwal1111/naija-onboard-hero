@@ -34,116 +34,46 @@ const Welcome = () => {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-background to-accent/5 py-24 md:py-32">
-        {/* Animated Background Elements */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-20 left-10 w-72 h-72 bg-primary/5 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/5 rounded-full blur-3xl animate-pulse delay-75"></div>
-        </div>
-
-        <div className="container mx-auto px-6 relative">
-          <div className="max-w-7xl mx-auto">
-            <div className="grid lg:grid-cols-2 gap-16 items-center">
+      <section className="relative overflow-hidden bg-gradient-to-br from-primary/5 to-accent/5 py-20">
+        <div className="container mx-auto px-6">
+          <div className="max-w-6xl mx-auto">
+            <div className="grid lg:grid-cols-2 gap-12 items-center">
               {/* Text Content */}
-              <div className="space-y-8 animate-fade-in">
-                <Badge variant="secondary" className="w-fit px-4 py-2 text-sm">
-                  <Zap className="w-4 h-4 mr-2" />
-                  Nigeria's #1 Freelancing Platform
+              <div className="space-y-6">
+                <Badge variant="secondary" className="w-fit">
+                  <Target className="w-4 h-4 mr-2" />
+                  Nigerian Freelancing Platform
                 </Badge>
                 
-                <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-text-primary leading-tight">
-                  Find Your Next
+                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-text-primary leading-tight">
+                  Connect with Experts
                   <span className="block text-primary mt-2">
-                    Great Opportunity
+                    Get Work Done
                   </span>
                 </h1>
                 
-                <p className="text-xl md:text-2xl text-text-secondary leading-relaxed max-w-xl">
-                  Connect with top Nigerian talent or find your dream projects. Join 10,000+ professionals building their future on NaijaLancers.
+                <p className="text-lg text-text-secondary leading-relaxed">
+                  A platform connecting Nigerian freelancers with clients. Find skilled professionals or discover opportunities that match your expertise.
                 </p>
 
-                <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                  <BrandButton asChild size="lg" className="px-8 py-6 text-lg font-semibold group">
-                    <Link to="/signup">
-                      Start Earning Today
-                      <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                    </Link>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <BrandButton asChild size="lg" className="px-8">
+                    <Link to="/signup">Get Started</Link>
                   </BrandButton>
-                  <BrandButton variant="outline" asChild size="lg" className="px-8 py-6 text-lg">
+                  <BrandButton variant="outline" asChild size="lg" className="px-8">
                     <Link to="/login">Sign In</Link>
                   </BrandButton>
-                </div>
-
-                {/* Trust Indicators */}
-                <div className="flex flex-wrap items-center gap-6 pt-8 border-t border-border/50">
-                  <div className="flex items-center gap-2">
-                    <div className="flex -space-x-2">
-                      <div className="w-8 h-8 rounded-full bg-primary/20 border-2 border-background"></div>
-                      <div className="w-8 h-8 rounded-full bg-accent/20 border-2 border-background"></div>
-                      <div className="w-8 h-8 rounded-full bg-primary/30 border-2 border-background"></div>
-                    </div>
-                    <p className="text-sm text-text-secondary">
-                      <span className="font-semibold text-text-primary">10,000+</span> Active Users
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
-                    <p className="text-sm text-text-secondary">
-                      <span className="font-semibold text-text-primary">4.8/5</span> Rating
-                    </p>
-                  </div>
                 </div>
               </div>
 
               {/* Hero Image */}
-              <div className="relative animate-fade-in">
-                <div className="absolute -inset-4 bg-gradient-to-br from-primary/20 to-accent/20 rounded-3xl blur-2xl"></div>
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-3xl transform rotate-3 transition-transform hover:rotate-6"></div>
-                  <img 
-                    src={heroImage} 
-                    alt="NaijaLancers - Connecting experts and clients across Nigeria" 
-                    className="relative w-full rounded-3xl shadow-2xl object-cover aspect-[4/3] transform transition-transform hover:scale-105"
-                  />
-                  {/* Floating Stats */}
-                  <div className="absolute -bottom-6 -left-6 bg-card border border-border rounded-2xl p-4 shadow-lg backdrop-blur-sm">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                        <TrendingUp className="w-6 h-6 text-primary" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold">500+</p>
-                        <p className="text-xs text-text-secondary">Jobs Posted Daily</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Stats Section */}
-      <section className="py-16 bg-primary text-primary-foreground">
-        <div className="container mx-auto px-6">
-          <div className="max-w-6xl mx-auto">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-              <div className="text-center">
-                <div className="text-4xl md:text-5xl font-bold mb-2">10K+</div>
-                <p className="text-primary-foreground/80">Active Users</p>
-              </div>
-              <div className="text-center">
-                <div className="text-4xl md:text-5xl font-bold mb-2">500+</div>
-                <p className="text-primary-foreground/80">Daily Jobs</p>
-              </div>
-              <div className="text-center">
-                <div className="text-4xl md:text-5xl font-bold mb-2">₦50M+</div>
-                <p className="text-primary-foreground/80">Earned</p>
-              </div>
-              <div className="text-center">
-                <div className="text-4xl md:text-5xl font-bold mb-2">98%</div>
-                <p className="text-primary-foreground/80">Satisfaction</p>
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-accent/10 rounded-2xl transform rotate-3"></div>
+                <img 
+                  src={heroImage} 
+                  alt="NaijaLancers Platform" 
+                  className="relative w-full rounded-2xl shadow-xl object-cover aspect-[4/3]"
+                />
               </div>
             </div>
           </div>
@@ -151,23 +81,11 @@ const Welcome = () => {
       </section>
 
       {/* Promotional Video Section */}
-      <section className="py-20 bg-background">
+      <section className="py-16 bg-gradient-to-br from-primary/5 to-accent/5">
         <div className="container mx-auto px-6">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-12">
-              <Badge variant="secondary" className="mb-4">
-                <Youtube className="w-4 h-4 mr-2" />
-                Platform Overview
-              </Badge>
-              <h2 className="text-4xl md:text-5xl font-bold text-text-primary mb-4">
-                See NaijaLancers in Action
-              </h2>
-              <p className="text-xl text-text-secondary max-w-2xl mx-auto">
-                Watch how we're transforming the way Nigerians work and hire
-              </p>
-            </div>
-            
-            <div className="relative rounded-3xl overflow-hidden shadow-2xl border-4 border-border">
+          <div className="max-w-5xl mx-auto">
+            <h2 className="text-3xl font-bold text-center text-text-primary mb-8">Platform Overview</h2>
+            <div className="relative rounded-2xl overflow-hidden shadow-xl">
               <div className="relative" style={{ height: 0, paddingBottom: 'calc(56.25%)', position: 'relative', width: '100%' }}>
                 <iframe 
                   allow="autoplay; gyroscope;" 
@@ -186,181 +104,77 @@ const Welcome = () => {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 bg-background">
+      <section className="py-16 bg-background">
         <div className="container mx-auto px-6">
           <div className="max-w-6xl mx-auto">
-            {/* Section Header */}
-            <div className="text-center mb-16">
-              <Badge variant="secondary" className="mb-4">
-                <Target className="w-4 h-4 mr-2" />
-                Why Choose NaijaLancers
-              </Badge>
-              <h2 className="text-4xl md:text-5xl font-bold text-text-primary mb-4">
-                Everything You Need to Succeed
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-bold text-text-primary mb-3">
+                Platform Features
               </h2>
-              <p className="text-xl text-text-secondary max-w-2xl mx-auto">
-                Join Nigeria's most trusted freelancing platform with powerful features designed for your success
+              <p className="text-text-secondary">
+                Tools and services to support your freelancing journey
               </p>
             </div>
 
-            {/* Features Grid */}
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              <Card className="border-2 hover:border-primary/50 transition-all hover:shadow-lg group">
+            <div className="grid md:grid-cols-3 gap-6">
+              <Card>
                 <CardContent className="pt-6">
-                  <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <Shield className="w-7 h-7 text-primary" />
-                  </div>
-                  <h3 className="text-xl font-semibold mb-3">Secure Payments</h3>
-                  <p className="text-text-secondary">
-                    SafePay escrow system ensures your money is protected until work is completed
+                  <Shield className="w-10 h-10 text-primary mb-3" />
+                  <h3 className="font-semibold mb-2">Secure Payments</h3>
+                  <p className="text-sm text-text-secondary">
+                    SafePay escrow protects funds until work is completed
                   </p>
                 </CardContent>
               </Card>
 
-              <Card className="border-2 hover:border-primary/50 transition-all hover:shadow-lg group">
+              <Card>
                 <CardContent className="pt-6">
-                  <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <Users className="w-7 h-7 text-primary" />
-                  </div>
-                  <h3 className="text-xl font-semibold mb-3">Verified Experts</h3>
-                  <p className="text-text-secondary">
-                    Work with pre-screened, verified professionals you can trust
+                  <Users className="w-10 h-10 text-primary mb-3" />
+                  <h3 className="font-semibold mb-2">Verified Professionals</h3>
+                  <p className="text-sm text-text-secondary">
+                    Connect with pre-screened freelancers
                   </p>
                 </CardContent>
               </Card>
 
-              <Card className="border-2 hover:border-primary/50 transition-all hover:shadow-lg group">
+              <Card>
                 <CardContent className="pt-6">
-                  <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <Clock className="w-7 h-7 text-primary" />
-                  </div>
-                  <h3 className="text-xl font-semibold mb-3">Fast Hiring</h3>
-                  <p className="text-text-secondary">
-                    Post a job and receive qualified proposals within hours
+                  <MessageSquare className="w-10 h-10 text-primary mb-3" />
+                  <h3 className="font-semibold mb-2">Direct Messaging</h3>
+                  <p className="text-sm text-text-secondary">
+                    Communicate directly with clients and freelancers
                   </p>
                 </CardContent>
               </Card>
-
-              <Card className="border-2 hover:border-primary/50 transition-all hover:shadow-lg group">
-                <CardContent className="pt-6">
-                  <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <Briefcase className="w-7 h-7 text-primary" />
-                  </div>
-                  <h3 className="text-xl font-semibold mb-3">Quality Jobs</h3>
-                  <p className="text-text-secondary">
-                    Access to thousands of legitimate, high-paying opportunities
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="border-2 hover:border-primary/50 transition-all hover:shadow-lg group">
-                <CardContent className="pt-6">
-                  <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <MessageSquare className="w-7 h-7 text-primary" />
-                  </div>
-                  <h3 className="text-xl font-semibold mb-3">24/7 Support</h3>
-                  <p className="text-text-secondary">
-                    Get help anytime with our dedicated support team
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="border-2 hover:border-primary/50 transition-all hover:shadow-lg group">
-                <CardContent className="pt-6">
-                  <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <DollarSign className="w-7 h-7 text-primary" />
-                  </div>
-                  <h3 className="text-xl font-semibold mb-3">Fair Pricing</h3>
-                  <p className="text-text-secondary">
-                    Low fees mean you keep more of what you earn
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* How It Works Section */}
-      <section className="py-20 bg-gradient-to-br from-primary/5 to-accent/5">
-        <div className="container mx-auto px-6">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-5xl font-bold text-text-primary mb-4">
-                How It Works
-              </h2>
-              <p className="text-xl text-text-secondary max-w-2xl mx-auto">
-                Get started in three simple steps
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-8">
-              <div className="relative">
-                <div className="bg-card border-2 border-border rounded-2xl p-8 hover:border-primary/50 transition-all hover:shadow-lg">
-                  <div className="w-16 h-16 bg-primary text-primary-foreground rounded-2xl flex items-center justify-center text-2xl font-bold mb-6">
-                    1
-                  </div>
-                  <h3 className="text-2xl font-semibold mb-4">Create Account</h3>
-                  <p className="text-text-secondary">
-                    Sign up for free and complete your profile in minutes
-                  </p>
-                </div>
-                <div className="hidden md:block absolute top-1/2 -right-4 w-8 h-0.5 bg-primary/30"></div>
-              </div>
-
-              <div className="relative">
-                <div className="bg-card border-2 border-border rounded-2xl p-8 hover:border-primary/50 transition-all hover:shadow-lg">
-                  <div className="w-16 h-16 bg-primary text-primary-foreground rounded-2xl flex items-center justify-center text-2xl font-bold mb-6">
-                    2
-                  </div>
-                  <h3 className="text-2xl font-semibold mb-4">Find or Post Jobs</h3>
-                  <p className="text-text-secondary">
-                    Browse opportunities or post your project requirements
-                  </p>
-                </div>
-                <div className="hidden md:block absolute top-1/2 -right-4 w-8 h-0.5 bg-primary/30"></div>
-              </div>
-
-              <div className="relative">
-                <div className="bg-card border-2 border-border rounded-2xl p-8 hover:border-primary/50 transition-all hover:shadow-lg">
-                  <div className="w-16 h-16 bg-primary text-primary-foreground rounded-2xl flex items-center justify-center text-2xl font-bold mb-6">
-                    3
-                  </div>
-                  <h3 className="text-2xl font-semibold mb-4">Start Working</h3>
-                  <p className="text-text-secondary">
-                    Connect, collaborate, and get paid securely
-                  </p>
-                </div>
-              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-primary text-primary-foreground">
+      <section className="py-16 bg-primary text-primary-foreground">
         <div className="container mx-auto px-6">
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-4xl md:text-5xl font-bold mb-6">
-              Ready to Get Started?
+          <div className="max-w-3xl mx-auto text-center">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Ready to Start?
             </h2>
-            <p className="text-xl mb-8 text-primary-foreground/90">
-              Join thousands of Nigerian professionals building their future on NaijaLancers
+            <p className="text-lg mb-6 text-primary-foreground/90">
+              Create your account and begin connecting with opportunities
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <BrandButton 
                 asChild 
                 size="lg" 
                 variant="secondary"
-                className="px-8 py-6 text-lg font-semibold"
+                className="px-8"
               >
-                <Link to="/signup">Create Free Account</Link>
+                <Link to="/signup">Sign Up</Link>
               </BrandButton>
               <BrandButton 
                 asChild 
                 size="lg" 
                 variant="outline"
-                className="px-8 py-6 text-lg border-primary-foreground text-primary-foreground hover:bg-primary-foreground/10"
+                className="px-8 border-primary-foreground text-primary-foreground hover:bg-primary-foreground/10"
               >
                 <Link to="/login">Sign In</Link>
               </BrandButton>
