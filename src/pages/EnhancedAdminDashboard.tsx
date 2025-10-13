@@ -35,7 +35,7 @@ const DonationsSection = () => {
         .from('donations')
         .select(`
           *,
-          profiles!donations_user_id_fkey(full_name)
+          profiles(full_name)
         `)
         .order('created_at', { ascending: false })
         .limit(50)
