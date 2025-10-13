@@ -35,12 +35,13 @@ const DonationsSection = () => {
         .from('donations')
         .select(`
           *,
-          profiles!donations_user_id_fkey(full_name, email)
+          profiles!donations_user_id_fkey(full_name)
         `)
         .order('created_at', { ascending: false })
         .limit(50)
 
       if (error) throw error
+      console.log('Donations fetched:', data)
       setDonations(data || [])
     } catch (error) {
       console.error('Error fetching donations:', error)
