@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function ReferralTasks() {
@@ -15,29 +14,40 @@ export default function ReferralTasks() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<"highest" | "lowest">("highest");
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const { data: tasks = [], isLoading } = useQuery({
-    queryKey: ["referral-tasks"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("referral_tasks")
-        .select("*")
-        .eq("is_active", true)
-        .order("created_at", { ascending: false });
+  useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        // @ts-ignore - Temporary fix for type instantiation issue
+        const response = await supabase
+          .from("referral_tasks")
+          .select("*")
+          .eq("is_active", true)
+          .order("created_at", { ascending: false });
 
-      if (error) throw error;
-      return data;
-    },
-  });
+        if (response.error) throw response.error;
+        setTasks(response.data || []);
+      } catch (error) {
+        console.error("Error fetching tasks:", error);
+        setTasks([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTasks();
+  }, []);
 
   const filteredTasks = tasks
-    .filter((task) => {
+    .filter((task: any) => {
       const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         task.description.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesStatus = statusFilter === "all" || task.status === statusFilter;
       return matchesSearch && matchesStatus;
     })
-    .sort((a, b) => {
+    .sort((a: any, b: any) => {
       if (sortBy === "highest") {
         return b.reward - a.reward;
       }
@@ -97,7 +107,7 @@ export default function ReferralTasks() {
           <div className="text-center py-8 text-sm text-muted-foreground">No tasks found</div>
         ) : (
           <div className="space-y-2 sm:space-y-3">
-            {filteredTasks.map((task) => (
+            {filteredTasks.map((task: any) => (
               <Card key={task.id} className="p-3">
                 <h3 className="font-semibold text-sm">{task.title}</h3>
                 <p className="text-xs text-muted-foreground mt-1">{task.description}</p>

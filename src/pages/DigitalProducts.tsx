@@ -247,7 +247,7 @@ export default function DigitalProducts() {
               className="pl-9"
             />
           </div>
-          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+          <Select value={selectedCategory} onValueChange={(v) => setSelectedCategory(v as any)}>
             <SelectTrigger className="w-[140px]">
               <SelectValue />
             </SelectTrigger>

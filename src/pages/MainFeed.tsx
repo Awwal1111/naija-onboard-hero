@@ -80,10 +80,11 @@ const MainFeed = () => {
   }
 
   const bottomNavItems = [
-    { icon: Home, label: 'Feed', path: '/feed', active: true },
+    { icon: Home, label: 'Feed', path: '/feed' },
     { icon: MessageCircle, label: 'Chat', path: '/chat' },
     { icon: Users, label: 'Expert', path: '/experts' },
-    { icon: Briefcase, label: 'Gig', path: '/jobs' }
+    { icon: Briefcase, label: 'Gig', path: '/jobs' },
+    { icon: DollarSign, label: 'Earn', path: '/earn' }
   ]
 
   const handleNavigation = (path: string) => {
