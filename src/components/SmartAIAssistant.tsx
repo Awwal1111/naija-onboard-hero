@@ -32,10 +32,10 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
   const [message, setMessage] = useState('')
   const [messages, setMessages] = useState<Message[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  // Initialize position in bottom-right corner
+  // Initialize position in top-right area
   const [position, setPosition] = useState(() => ({
     x: typeof window !== 'undefined' ? window.innerWidth - 320 - 24 : 0,
-    y: typeof window !== 'undefined' ? window.innerHeight - 384 - 24 : 0
+    y: 100 // Position 100px from top
   }))
   const [isDragging, setIsDragging] = useState(false)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
