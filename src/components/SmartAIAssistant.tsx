@@ -7,7 +7,6 @@ import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
-import { supabase } from '@/integrations/supabase/client'
 import { useLocation } from 'react-router-dom'
 
 interface Message {
@@ -141,10 +140,36 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
     setMessage('')
     setIsLoading(true)
 
+    // Create placeholder for streaming assistant response
+    const assistantId = (Date.now() + 1).toString()
+    const assistantMessage: Message = {
+      id: assistantId,
+      type: 'assistant',
+      content: '',
+      timestamp: new Date()
+    }
+    setMessages(prev => [...prev, assistantMessage])
+
     try {
-      const { data, error } = await supabase.functions.invoke('ai-assistant', {
-        body: {
-          message: userMessage.content,
+      const STREAM_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant`
+      
+      // Prepare conversation history in proper format
+      const conversationHistory = messages.map(msg => ({
+        role: msg.type === 'user' ? 'user' : 'assistant',
+        content: msg.content
+      }))
+
+      const response = await fetch(STREAM_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({
+          messages: [
+            ...conversationHistory,
+            { role: 'user', content: userMessage.content }
+          ],
           context: getCurrentContext(),
           userProfile: {
             full_name: profile?.full_name,
@@ -153,37 +178,111 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
             wallet_balance: profile?.wallet_balance,
             connections_count: profile?.connections_count
           }
-        }
+        }),
       })
 
-      if (error) {
-        throw error
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        
+        if (response.status === 429) {
+          throw new Error(errorData.message || 'Rate limit exceeded. Please wait a moment.')
+        }
+        if (response.status === 402) {
+          throw new Error(errorData.message || 'AI service temporarily unavailable.')
+        }
+        throw new Error(errorData.message || 'Failed to connect to AI')
       }
 
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        type: 'assistant',
-        content: data.response || 'I apologize, but I encountered an issue processing your request. Please try asking in a different way!',
-        timestamp: new Date()
+      if (!response.body) throw new Error('No response stream')
+
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
+      let textBuffer = ''
+      let accumulatedContent = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        textBuffer += decoder.decode(value, { stream: true })
+
+        // Process line by line for token-by-token rendering
+        let newlineIndex: number
+        while ((newlineIndex = textBuffer.indexOf('\n')) !== -1) {
+          let line = textBuffer.slice(0, newlineIndex)
+          textBuffer = textBuffer.slice(newlineIndex + 1)
+
+          if (line.endsWith('\r')) line = line.slice(0, -1)
+          if (line.startsWith(':') || line.trim() === '') continue
+          if (!line.startsWith('data: ')) continue
+
+          const jsonStr = line.slice(6).trim()
+          if (jsonStr === '[DONE]') break
+
+          try {
+            const parsed = JSON.parse(jsonStr)
+            const content = parsed.choices?.[0]?.delta?.content
+
+            if (content) {
+              accumulatedContent += content
+              // Update the assistant message with accumulated content
+              setMessages(prev => prev.map(msg => 
+                msg.id === assistantId 
+                  ? { ...msg, content: accumulatedContent }
+                  : msg
+              ))
+            }
+          } catch (parseError) {
+            // Partial JSON - put it back and wait for more data
+            textBuffer = line + '\n' + textBuffer
+            break
+          }
+        }
       }
 
-      setMessages(prev => [...prev, assistantMessage])
+      // Final flush for any remaining buffered content
+      if (textBuffer.trim()) {
+        for (let raw of textBuffer.split('\n')) {
+          if (!raw || raw.startsWith(':') || !raw.startsWith('data: ')) continue
+          const jsonStr = raw.slice(6).trim()
+          if (jsonStr === '[DONE]') continue
+          try {
+            const parsed = JSON.parse(jsonStr)
+            const content = parsed.choices?.[0]?.delta?.content
+            if (content) {
+              accumulatedContent += content
+              setMessages(prev => prev.map(msg => 
+                msg.id === assistantId 
+                  ? { ...msg, content: accumulatedContent }
+                  : msg
+              ))
+            }
+          } catch {}
+        }
+      }
+
+      // If no content was received, show error
+      if (!accumulatedContent) {
+        throw new Error('No response received from AI')
+      }
 
     } catch (error) {
-      console.error('Error sending message to AI:', error)
+      console.error('Error streaming AI response:', error)
       
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        type: 'assistant',
-        content: 'I apologize, but I\'m having trouble connecting right now. Please try again in a moment! 😊',
-        timestamp: new Date()
-      }
+      const errorContent = error instanceof Error 
+        ? error.message 
+        : 'I\'m having trouble connecting right now. Please try again! 😊'
 
-      setMessages(prev => [...prev, errorMessage])
+      // Update the assistant message with error
+      setMessages(prev => prev.map(msg => 
+        msg.id === assistantId 
+          ? { ...msg, content: errorContent }
+          : msg
+      ))
       
       toast({
-        title: "Connection Error",
-        description: "Unable to reach the AI assistant. Please try again.",
+        title: "Connection Issue",
+        description: errorContent,
         variant: "destructive"
       })
     } finally {
