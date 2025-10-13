@@ -63,25 +63,33 @@ const DonationsSection = () => {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="max-h-[600px] overflow-y-auto pr-2 space-y-4">
+      <div className="mb-4 p-4 bg-muted/30 rounded-lg sticky top-0 z-10">
+        <p className="text-sm text-text-secondary">Total Donations: <span className="font-semibold text-text-primary">{donations.length}</span></p>
+        <p className="text-sm text-text-secondary">Total Amount: <span className="font-semibold text-primary">NC {donations.reduce((sum, d) => sum + Number(d.amount), 0).toLocaleString()}</span></p>
+      </div>
       {donations.map((donation) => (
-        <Card key={donation.id}>
+        <Card key={donation.id} className="border-l-4 border-l-red-500">
           <CardContent className="pt-6">
             <div className="flex justify-between items-start">
-              <div>
-                <p className="font-semibold text-text-primary">
-                  {donation.profiles?.full_name || 'Anonymous'}
-                </p>
-                <p className="text-sm text-text-secondary">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <p className="font-semibold text-text-primary">
+                    {donation.profiles?.full_name || 'Anonymous'}
+                  </p>
+                  <Badge variant="outline" className="text-xs">
+                    {new Date(donation.created_at).toLocaleDateString()}
+                  </Badge>
+                </div>
+                <p className="text-lg font-bold text-primary mb-2">
                   NC {donation.amount.toLocaleString()}
                 </p>
                 {donation.message && (
-                  <p className="text-sm text-text-secondary mt-2">{donation.message}</p>
+                  <p className="text-sm text-text-secondary mt-2 italic border-l-2 border-border pl-3">
+                    "{donation.message}"
+                  </p>
                 )}
               </div>
-              <Badge variant="outline">
-                {new Date(donation.created_at).toLocaleDateString()}
-              </Badge>
             </div>
           </CardContent>
         </Card>
@@ -132,22 +140,35 @@ const DigitalProductsSection = () => {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="max-h-[600px] overflow-y-auto pr-2 space-y-4">
+      <div className="mb-4 p-4 bg-muted/30 rounded-lg grid grid-cols-2 gap-4 sticky top-0 z-10">
+        <div>
+          <p className="text-sm text-text-secondary">Total Products</p>
+          <p className="text-2xl font-bold text-text-primary">{products.length}</p>
+        </div>
+        <div>
+          <p className="text-sm text-text-secondary">Total Downloads</p>
+          <p className="text-2xl font-bold text-primary">{products.reduce((sum, p) => sum + (p.download_count || 0), 0)}</p>
+        </div>
+      </div>
       {products.map((product) => (
-        <Card key={product.id}>
+        <Card key={product.id} className="border-l-4 border-l-blue-500">
           <CardContent className="pt-6">
-            <div className="flex justify-between items-start">
-              <div>
-                <h3 className="font-semibold text-text-primary">{product.title}</h3>
-                <p className="text-sm text-text-secondary mt-1">{product.description}</p>
-                <p className="text-sm text-primary mt-2">NC {product.price}</p>
-                <p className="text-xs text-text-secondary mt-1">
-                  by {product.profiles?.full_name} • {product.download_count} downloads
-                </p>
+            <div className="flex justify-between items-start gap-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <h3 className="font-semibold text-text-primary">{product.title}</h3>
+                  <Badge variant={product.status === 'active' ? 'default' : 'secondary'} className="text-xs">
+                    {product.status}
+                  </Badge>
+                </div>
+                <p className="text-sm text-text-secondary mb-2 line-clamp-2">{product.description}</p>
+                <div className="flex items-center gap-4 text-sm">
+                  <span className="text-primary font-semibold">NC {product.price}</span>
+                  <span className="text-text-secondary">by {product.profiles?.full_name}</span>
+                  <span className="text-text-secondary">{product.download_count} downloads</span>
+                </div>
               </div>
-              <Badge variant={product.status === 'active' ? 'default' : 'secondary'}>
-                {product.status}
-              </Badge>
             </div>
           </CardContent>
         </Card>
@@ -198,22 +219,35 @@ const CoursesSection = () => {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="max-h-[600px] overflow-y-auto pr-2 space-y-4">
+      <div className="mb-4 p-4 bg-muted/30 rounded-lg grid grid-cols-2 gap-4 sticky top-0 z-10">
+        <div>
+          <p className="text-sm text-text-secondary">Total Courses</p>
+          <p className="text-2xl font-bold text-text-primary">{courses.length}</p>
+        </div>
+        <div>
+          <p className="text-sm text-text-secondary">Total Enrolled</p>
+          <p className="text-2xl font-bold text-primary">{courses.reduce((sum, c) => sum + (c.enrollment_count || 0), 0)}</p>
+        </div>
+      </div>
       {courses.map((course) => (
-        <Card key={course.id}>
+        <Card key={course.id} className="border-l-4 border-l-green-500">
           <CardContent className="pt-6">
-            <div className="flex justify-between items-start">
-              <div>
-                <h3 className="font-semibold text-text-primary">{course.title}</h3>
-                <p className="text-sm text-text-secondary mt-1">{course.description}</p>
-                <p className="text-sm text-primary mt-2">NC {course.price}</p>
-                <p className="text-xs text-text-secondary mt-1">
-                  by {course.profiles?.full_name} • {course.enrollment_count} enrolled
-                </p>
+            <div className="flex justify-between items-start gap-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <h3 className="font-semibold text-text-primary">{course.title}</h3>
+                  <Badge variant={course.status === 'active' ? 'default' : 'secondary'} className="text-xs">
+                    {course.status}
+                  </Badge>
+                </div>
+                <p className="text-sm text-text-secondary mb-2 line-clamp-2">{course.description}</p>
+                <div className="flex items-center gap-4 text-sm">
+                  <span className="text-primary font-semibold">NC {course.price}</span>
+                  <span className="text-text-secondary">by {course.profiles?.full_name}</span>
+                  <span className="text-text-secondary">{course.enrollment_count} enrolled</span>
+                </div>
               </div>
-              <Badge variant={course.status === 'active' ? 'default' : 'secondary'}>
-                {course.status}
-              </Badge>
             </div>
           </CardContent>
         </Card>
@@ -315,40 +349,63 @@ const FundraisingSection = () => {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="max-h-[600px] overflow-y-auto pr-2 space-y-4">
+      <div className="mb-4 p-4 bg-muted/30 rounded-lg grid grid-cols-3 gap-4 sticky top-0 z-10">
+        <div>
+          <p className="text-sm text-text-secondary">Total Requests</p>
+          <p className="text-2xl font-bold text-text-primary">{fundraisings.length}</p>
+        </div>
+        <div>
+          <p className="text-sm text-text-secondary">Pending</p>
+          <p className="text-2xl font-bold text-orange-500">{fundraisings.filter(f => f.status === 'pending').length}</p>
+        </div>
+        <div>
+          <p className="text-sm text-text-secondary">Total Goal</p>
+          <p className="text-2xl font-bold text-primary">NC {fundraisings.reduce((sum, f) => sum + Number(f.goal_amount), 0).toLocaleString()}</p>
+        </div>
+      </div>
       {fundraisings.map((fundraising) => (
-        <Card key={fundraising.id}>
+        <Card key={fundraising.id} className="border-l-4 border-l-purple-500">
           <CardContent className="pt-6">
-            <div className="flex justify-between items-start mb-4">
-              <div className="flex-1">
-                <h3 className="font-semibold text-text-primary">{fundraising.title}</h3>
-                <p className="text-sm text-text-secondary mt-1">{fundraising.description}</p>
-                <p className="text-sm text-primary mt-2">
-                  Goal: NC {fundraising.goal_amount.toLocaleString()} • Raised: NC {fundraising.raised_amount?.toLocaleString() || 0}
-                </p>
-                <p className="text-xs text-text-secondary mt-1">
-                  by {fundraising.profiles?.full_name}
-                </p>
+            <div className="space-y-4">
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <h3 className="font-semibold text-text-primary">{fundraising.title}</h3>
+                    <Badge variant={
+                      fundraising.status === 'approved' ? 'default' : 
+                      fundraising.status === 'pending' ? 'secondary' : 'destructive'
+                    } className="text-xs">
+                      {fundraising.status}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-text-secondary mb-3 line-clamp-2">{fundraising.description}</p>
+                  <div className="flex items-center gap-4 text-sm">
+                    <div>
+                      <span className="text-text-secondary">Goal: </span>
+                      <span className="font-semibold text-primary">NC {fundraising.goal_amount.toLocaleString()}</span>
+                    </div>
+                    <div>
+                      <span className="text-text-secondary">Raised: </span>
+                      <span className="font-semibold text-green-600">NC {fundraising.raised_amount?.toLocaleString() || 0}</span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-text-secondary mt-2">by {fundraising.profiles?.full_name}</p>
+                </div>
               </div>
-              <Badge variant={
-                fundraising.status === 'approved' ? 'default' : 
-                fundraising.status === 'pending' ? 'secondary' : 'destructive'
-              }>
-                {fundraising.status}
-              </Badge>
+              {fundraising.status === 'pending' && (
+                <div className="flex gap-2 pt-3 border-t">
+                  <Button size="sm" onClick={() => handleApprove(fundraising.id)} className="flex-1">
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Approve
+                  </Button>
+                  <Button size="sm" variant="destructive" onClick={() => handleReject(fundraising.id)} className="flex-1">
+                    <AlertCircle className="h-4 w-4 mr-2" />
+                    Reject
+                  </Button>
+                </div>
+              )}
             </div>
-            {fundraising.status === 'pending' && (
-              <div className="flex gap-2">
-                <Button size="sm" onClick={() => handleApprove(fundraising.id)}>
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  Approve
-                </Button>
-                <Button size="sm" variant="destructive" onClick={() => handleReject(fundraising.id)}>
-                  <AlertCircle className="h-4 w-4 mr-2" />
-                  Reject
-                </Button>
-              </div>
-            )}
           </CardContent>
         </Card>
       ))}
@@ -474,44 +531,62 @@ const EmergencySection = () => {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="max-h-[600px] overflow-y-auto pr-2 space-y-4">
+      <div className="mb-4 p-4 bg-muted/30 rounded-lg grid grid-cols-3 gap-4 sticky top-0 z-10">
+        <div>
+          <p className="text-sm text-text-secondary">Total Requests</p>
+          <p className="text-2xl font-bold text-text-primary">{emergencies.length}</p>
+        </div>
+        <div>
+          <p className="text-sm text-text-secondary">Pending</p>
+          <p className="text-2xl font-bold text-orange-500">{emergencies.filter(e => e.status === 'pending').length}</p>
+        </div>
+        <div>
+          <p className="text-sm text-text-secondary">Total Amount</p>
+          <p className="text-2xl font-bold text-primary">NC {emergencies.reduce((sum, e) => sum + Number(e.amount_requested), 0).toLocaleString()}</p>
+        </div>
+      </div>
       {emergencies.map((emergency) => (
-        <Card key={emergency.id}>
+        <Card key={emergency.id} className="border-l-4 border-l-orange-500">
           <CardContent className="pt-6">
-            <div className="flex justify-between items-start mb-4">
-              <div className="flex-1">
-                <h3 className="font-semibold text-text-primary">
-                  {emergency.profiles?.full_name || 'User'}
-                </h3>
-                <p className="text-sm text-text-secondary mt-1">{emergency.reason}</p>
-                <p className="text-sm text-primary mt-2">
-                  Amount: NC {emergency.amount_requested.toLocaleString()}
-                </p>
-                {emergency.admin_notes && (
-                  <p className="text-xs text-text-secondary mt-1 italic">
-                    Note: {emergency.admin_notes}
+            <div className="space-y-4">
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <h3 className="font-semibold text-text-primary">
+                      {emergency.profiles?.full_name || 'User'}
+                    </h3>
+                    <Badge variant={
+                      emergency.status === 'approved' ? 'default' : 
+                      emergency.status === 'pending' ? 'secondary' : 'destructive'
+                    } className="text-xs">
+                      {emergency.status}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-text-secondary mb-3 line-clamp-2">{emergency.reason}</p>
+                  <p className="text-lg font-bold text-primary mb-2">
+                    Amount: NC {emergency.amount_requested.toLocaleString()}
                   </p>
-                )}
+                  {emergency.admin_notes && (
+                    <p className="text-xs text-text-secondary italic border-l-2 border-border pl-3">
+                      Admin Note: {emergency.admin_notes}
+                    </p>
+                  )}
+                </div>
               </div>
-              <Badge variant={
-                emergency.status === 'approved' ? 'default' : 
-                emergency.status === 'pending' ? 'secondary' : 'destructive'
-              }>
-                {emergency.status}
-              </Badge>
+              {emergency.status === 'pending' && (
+                <div className="flex gap-2 pt-3 border-t">
+                  <Button size="sm" onClick={() => handleApprove(emergency)} className="flex-1">
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Approve & Disburse
+                  </Button>
+                  <Button size="sm" variant="destructive" onClick={() => handleReject(emergency.id)} className="flex-1">
+                    <AlertCircle className="h-4 w-4 mr-2" />
+                    Reject
+                  </Button>
+                </div>
+              )}
             </div>
-            {emergency.status === 'pending' && (
-              <div className="flex gap-2">
-                <Button size="sm" onClick={() => handleApprove(emergency)}>
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  Approve & Disburse
-                </Button>
-                <Button size="sm" variant="destructive" onClick={() => handleReject(emergency.id)}>
-                  <AlertCircle className="h-4 w-4 mr-2" />
-                  Reject
-                </Button>
-              </div>
-            )}
           </CardContent>
         </Card>
       ))}
@@ -772,8 +847,7 @@ const EnhancedAdminDashboard = () => {
         </div>
       </header>
 
-      <div className="px-6 py-6">
-        {/* Dashboard Header */}
+      <div className="px-6 py-6 max-w-7xl mx-auto">{/* Dashboard Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-text-primary mb-2">Admin Dashboard</h1>
           <p className="text-text-secondary">Comprehensive platform management and analytics</p>
@@ -871,16 +945,18 @@ const EnhancedAdminDashboard = () => {
 
         {/* Main Tabs */}
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="mb-6 flex-wrap">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="users">User Management</TabsTrigger>
-            <TabsTrigger value="content">Content Moderation</TabsTrigger>
-            <TabsTrigger value="applications">Expert Applications</TabsTrigger>
-            <TabsTrigger value="marketplace">Marketplace</TabsTrigger>
-            <TabsTrigger value="wallet">Wallet Management</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto mb-6">
+            <TabsList className="inline-flex w-full min-w-max">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="users">Users</TabsTrigger>
+              <TabsTrigger value="content">Content</TabsTrigger>
+              <TabsTrigger value="applications">Applications</TabsTrigger>
+              <TabsTrigger value="marketplace">Marketplace</TabsTrigger>
+              <TabsTrigger value="wallet">Wallet</TabsTrigger>
+              <TabsTrigger value="analytics">Analytics</TabsTrigger>
+              <TabsTrigger value="settings">Settings</TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
@@ -1120,13 +1196,15 @@ const EnhancedAdminDashboard = () => {
           {/* Applications Tab */}
           <TabsContent value="applications" className="space-y-6">
             <Tabs defaultValue="expert" className="w-full">
-              <TabsList>
-                <TabsTrigger value="expert">Expert Applications</TabsTrigger>
-                <TabsTrigger value="social">Social Media Tasks</TabsTrigger>
-                <TabsTrigger value="referral">Referral Tasks</TabsTrigger>
-                <TabsTrigger value="articles">Articles</TabsTrigger>
-                <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
-              </TabsList>
+              <div className="overflow-x-auto mb-6">
+                <TabsList className="inline-flex w-full min-w-max">
+                  <TabsTrigger value="expert">Expert Applications</TabsTrigger>
+                  <TabsTrigger value="social">Social Tasks</TabsTrigger>
+                  <TabsTrigger value="referral">Referral Tasks</TabsTrigger>
+                  <TabsTrigger value="articles">Articles</TabsTrigger>
+                  <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
+                </TabsList>
+              </div>
 
               <TabsContent value="expert">
                 <Card>
@@ -1166,64 +1244,96 @@ const EnhancedAdminDashboard = () => {
           {/* Marketplace Tab */}
           <TabsContent value="marketplace" className="space-y-6">
             <Tabs defaultValue="donations" className="w-full">
-              <TabsList>
-                <TabsTrigger value="donations">Donations</TabsTrigger>
-                <TabsTrigger value="digital-products">Digital Products</TabsTrigger>
-                <TabsTrigger value="courses">Courses</TabsTrigger>
-                <TabsTrigger value="fundraising">Fundraising</TabsTrigger>
-                <TabsTrigger value="emergency">Emergency Requests</TabsTrigger>
-              </TabsList>
+              <div className="overflow-x-auto mb-6">
+                <TabsList className="inline-flex w-full min-w-max">
+                  <TabsTrigger value="donations">
+                    <Heart className="h-4 w-4 mr-2" />
+                    Donations
+                  </TabsTrigger>
+                  <TabsTrigger value="digital-products">
+                    <Package className="h-4 w-4 mr-2" />
+                    Digital Products
+                  </TabsTrigger>
+                  <TabsTrigger value="courses">
+                    <BookOpen className="h-4 w-4 mr-2" />
+                    Courses
+                  </TabsTrigger>
+                  <TabsTrigger value="fundraising">
+                    <Target className="h-4 w-4 mr-2" />
+                    Fundraising
+                  </TabsTrigger>
+                  <TabsTrigger value="emergency">
+                    <AlertTriangle className="h-4 w-4 mr-2" />
+                    Emergency
+                  </TabsTrigger>
+                </TabsList>
+              </div>
 
-              <TabsContent value="donations">
+              <TabsContent value="donations" className="mt-0">
                 <Card>
-                  <CardHeader>
-                    <CardTitle>Recent Donations</CardTitle>
+                  <CardHeader className="bg-muted/30">
+                    <CardTitle className="flex items-center gap-2">
+                      <Heart className="h-5 w-5 text-red-500" />
+                      Recent Donations
+                    </CardTitle>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="pt-6">
                     <DonationsSection />
                   </CardContent>
                 </Card>
               </TabsContent>
 
-              <TabsContent value="digital-products">
+              <TabsContent value="digital-products" className="mt-0">
                 <Card>
-                  <CardHeader>
-                    <CardTitle>Digital Products</CardTitle>
+                  <CardHeader className="bg-muted/30">
+                    <CardTitle className="flex items-center gap-2">
+                      <Package className="h-5 w-5 text-blue-500" />
+                      Digital Products
+                    </CardTitle>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="pt-6">
                     <DigitalProductsSection />
                   </CardContent>
                 </Card>
               </TabsContent>
 
-              <TabsContent value="courses">
+              <TabsContent value="courses" className="mt-0">
                 <Card>
-                  <CardHeader>
-                    <CardTitle>Courses</CardTitle>
+                  <CardHeader className="bg-muted/30">
+                    <CardTitle className="flex items-center gap-2">
+                      <BookOpen className="h-5 w-5 text-green-500" />
+                      Courses
+                    </CardTitle>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="pt-6">
                     <CoursesSection />
                   </CardContent>
                 </Card>
               </TabsContent>
 
-              <TabsContent value="fundraising">
+              <TabsContent value="fundraising" className="mt-0">
                 <Card>
-                  <CardHeader>
-                    <CardTitle>Fundraising Requests</CardTitle>
+                  <CardHeader className="bg-muted/30">
+                    <CardTitle className="flex items-center gap-2">
+                      <Target className="h-5 w-5 text-purple-500" />
+                      Fundraising Requests
+                    </CardTitle>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="pt-6">
                     <FundraisingSection />
                   </CardContent>
                 </Card>
               </TabsContent>
 
-              <TabsContent value="emergency">
+              <TabsContent value="emergency" className="mt-0">
                 <Card>
-                  <CardHeader>
-                    <CardTitle>Emergency Requests</CardTitle>
+                  <CardHeader className="bg-muted/30">
+                    <CardTitle className="flex items-center gap-2">
+                      <AlertTriangle className="h-5 w-5 text-orange-500" />
+                      Emergency Requests
+                    </CardTitle>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="pt-6">
                     <EmergencySection />
                   </CardContent>
                 </Card>
