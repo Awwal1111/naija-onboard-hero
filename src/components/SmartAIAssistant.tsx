@@ -27,14 +27,16 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
   const { toast } = useToast()
   const location = useLocation()
   
-  console.log('🤖 SmartAIAssistant rendered, route:', location.pathname, 'user:', user?.id)
-  
   const [isOpen, setIsOpen] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)
   const [message, setMessage] = useState('')
   const [messages, setMessages] = useState<Message[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const [position, setPosition] = useState({ x: 0, y: 0 })
+  // Initialize position in bottom-right corner
+  const [position, setPosition] = useState(() => ({
+    x: typeof window !== 'undefined' ? window.innerWidth - 320 - 24 : 0,
+    y: typeof window !== 'undefined' ? window.innerHeight - 384 - 24 : 0
+  }))
   const [isDragging, setIsDragging] = useState(false)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
   const [suggestions] = useState([
@@ -73,42 +75,35 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
 
   // Dragging functionality
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    console.log('🖱️ Mouse down on AI assistant header')
-    // Check if clicking on header or drag handle (not on buttons)
     const target = e.target as HTMLElement
     if (target.closest('button')) {
-      console.log('❌ Clicked on button, ignoring drag')
       return // Don't drag when clicking buttons
     }
     
-    console.log('✅ Starting drag')
     setIsDragging(true)
     const rect = cardRef.current?.getBoundingClientRect()
     if (rect) {
-      const offset = {
+      setDragOffset({
         x: e.clientX - rect.left,
         y: e.clientY - rect.top
-      }
-      console.log('📍 Drag offset:', offset)
-      setDragOffset(offset)
+      })
     }
   }, [])
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (isDragging) {
-      console.log('🎯 Dragging, mouse position:', { x: e.clientX, y: e.clientY })
-      const newX = e.clientX - dragOffset.x
-      const newY = e.clientY - dragOffset.y
-      
-      // Keep within viewport bounds
-      const maxX = window.innerWidth - (cardRef.current?.offsetWidth || 320)
-      const maxY = window.innerHeight - (cardRef.current?.offsetHeight || 384)
-      
-      setPosition({
-        x: Math.max(0, Math.min(newX, maxX)),
-        y: Math.max(0, Math.min(newY, maxY))
-      })
-    }
+    if (!isDragging) return
+    
+    const newX = e.clientX - dragOffset.x
+    const newY = e.clientY - dragOffset.y
+    
+    // Keep within viewport bounds
+    const maxX = window.innerWidth - (cardRef.current?.offsetWidth || 320)
+    const maxY = window.innerHeight - (cardRef.current?.offsetHeight || 384)
+    
+    setPosition({
+      x: Math.max(0, Math.min(newX, maxX)),
+      y: Math.max(0, Math.min(newY, maxY))
+    })
   }, [isDragging, dragOffset])
 
   const handleMouseUp = useCallback(() => {
@@ -259,7 +254,6 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
 
   return (
     <>
-      {console.log('🎨 Rendering AI Assistant, isOpen:', isOpen, 'position:', position)}
       {/* Floating AI Button - always visible */}
       {!isOpen && (
         <div className="fixed bottom-6 right-6 z-50">
@@ -279,10 +273,8 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
           ref={cardRef}
           className="fixed z-50"
           style={{
-            bottom: position.y === 0 ? '1.5rem' : 'auto',
-            right: position.x === 0 ? '1.5rem' : 'auto',
-            left: position.x > 0 ? `${position.x}px` : 'auto',
-            top: position.y > 0 ? `${position.y}px` : 'auto',
+            left: `${position.x}px`,
+            top: `${position.y}px`,
           }}
         >
           <Card className={`w-80 shadow-2xl border-primary/20 ${isMinimized ? 'h-16' : 'h-96'} transition-all duration-300`}>
