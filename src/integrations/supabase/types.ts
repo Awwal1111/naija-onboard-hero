@@ -2415,12 +2415,14 @@ export type Database = {
           buyer_id: string | null
           cancel_approved_by: string | null
           cancel_requester_id: string | null
-          cancellation_requester_id: string | null
+          cancelled_at: string | null
           completed_at: string | null
           created_at: string | null
           dispute_reason: string | null
+          disputed_at: string | null
           expires_at: string | null
           id: string
+          released_at: string | null
           seller_id: string | null
           status: string | null
           updated_at: string | null
@@ -2432,12 +2434,14 @@ export type Database = {
           buyer_id?: string | null
           cancel_approved_by?: string | null
           cancel_requester_id?: string | null
-          cancellation_requester_id?: string | null
+          cancelled_at?: string | null
           completed_at?: string | null
           created_at?: string | null
           dispute_reason?: string | null
+          disputed_at?: string | null
           expires_at?: string | null
           id?: string
+          released_at?: string | null
           seller_id?: string | null
           status?: string | null
           updated_at?: string | null
@@ -2449,12 +2453,14 @@ export type Database = {
           buyer_id?: string | null
           cancel_approved_by?: string | null
           cancel_requester_id?: string | null
-          cancellation_requester_id?: string | null
+          cancelled_at?: string | null
           completed_at?: string | null
           created_at?: string | null
           dispute_reason?: string | null
+          disputed_at?: string | null
           expires_at?: string | null
           id?: string
+          released_at?: string | null
           seller_id?: string | null
           status?: string | null
           updated_at?: string | null
@@ -3124,6 +3130,14 @@ export type Database = {
           | { p_safepay_id: string }
         Returns: undefined
       }
+      approve_cancel_safepay: {
+        Args: { p_safepay_id: string }
+        Returns: undefined
+      }
+      auto_release_safepay: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       calculate_comment_engagement: {
         Args: { p_comment_id: string }
         Returns: number
@@ -3143,6 +3157,14 @@ export type Database = {
           window_minutes?: number
         }
         Returns: boolean
+      }
+      complete_safepay_work: {
+        Args: { p_safepay_id: string }
+        Returns: undefined
+      }
+      file_dispute_safepay: {
+        Args: { p_reason: string; p_safepay_id: string }
+        Returns: undefined
       }
       generate_referral_code: {
         Args: Record<PropertyKey, never>
@@ -3228,6 +3250,10 @@ export type Database = {
         Args:
           | { p_escrow_id: string; p_releaser: string }
           | { p_safepay_id: string }
+        Returns: undefined
+      }
+      request_cancel_safepay: {
+        Args: { p_safepay_id: string }
         Returns: undefined
       }
       transfer_funds: {
