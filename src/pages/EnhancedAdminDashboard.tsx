@@ -31,15 +31,12 @@ const DonationsSection = () => {
 
   const fetchDonations = async () => {
     try {
+      setLoading(true)
       const { data, error } = await supabase
         .from('donations')
         .select(`
-          id,
-          user_id,
-          amount,
-          message,
-          created_at,
-          profiles!inner(full_name)
+          *,
+          profiles(full_name)
         `)
         .order('created_at', { ascending: false })
         .limit(50)
@@ -53,7 +50,6 @@ const DonationsSection = () => {
       setDonations(data || [])
     } catch (error: any) {
       console.error('Error fetching donations:', error)
-      // Show error in UI
       setDonations([])
     } finally {
       setLoading(false)
