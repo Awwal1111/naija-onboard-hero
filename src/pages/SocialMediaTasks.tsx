@@ -80,7 +80,16 @@ export const SocialMediaTasks = () => {
     }
 
     try {
-      const result = await createTask(createForm)
+      // Map form data to match database schema
+      const taskData = {
+        platform: createForm.platform,
+        type: createForm.type,
+        link: createForm.link,
+        reward_amount: createForm.reward, // Fix: map 'reward' to 'reward_amount'
+        total_slots: createForm.total_slots
+      }
+      
+      const result = await createTask(taskData)
       if (result.success) {
         toast.success('Task created successfully!')
         setCreateForm({
