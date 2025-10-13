@@ -48,8 +48,8 @@ export const AdminSocialTasksSection = () => {
         .from('social_tasks_progress')
         .select(`
           *,
-          earner:profiles!social_tasks_progress_earner_id_fkey(full_name, profile_picture_url),
-          task:social_tasks!social_tasks_progress_task_id_fkey(platform, type, reward)
+          earner:profiles!earner_id(full_name, profile_picture_url),
+          task:social_tasks!task_id(platform, type, reward)
         `)
         .eq('status', 'pending')
         .order('created_at', { ascending: false })
