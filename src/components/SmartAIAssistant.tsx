@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
+import { supabase } from '@/integrations/supabase/client'
 import { useLocation } from 'react-router-dom'
 
 interface Message {
@@ -32,10 +33,9 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
   const [message, setMessage] = useState('')
   const [messages, setMessages] = useState<Message[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const [position, setPosition] = useState({ x: window.innerWidth - 350, y: 100 })
+  const [position, setPosition] = useState({ x: window.innerWidth - 380, y: 20 })
   const [isDragging, setIsDragging] = useState(false)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
-  const [hasBeenDragged, setHasBeenDragged] = useState(false)
   const [suggestions] = useState([
     "How do I post a job?",
     "How can I become an expert?",
@@ -140,151 +140,41 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
     setMessage('')
     setIsLoading(true)
 
-    // Create placeholder for streaming assistant response
-    const assistantId = (Date.now() + 1).toString()
-    const assistantMessage: Message = {
-      id: assistantId,
-      type: 'assistant',
-      content: '',
-      timestamp: new Date()
-    }
-    setMessages(prev => [...prev, assistantMessage])
-
     try {
-      const STREAM_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant`
-      
-      // Prepare conversation history in proper format
-      const conversationHistory = messages.map(msg => ({
-        role: msg.type === 'user' ? 'user' : 'assistant',
-        content: msg.content
-      }))
-
-      const response = await fetch(STREAM_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify({
-          messages: [
-            ...conversationHistory,
-            { role: 'user', content: userMessage.content }
-          ],
+      const { data, error } = await supabase.functions.invoke('ai-assistant', {
+        body: {
+          message: userMessage.content,
           context: getCurrentContext(),
           userProfile: {
             full_name: profile?.full_name,
             profession: profile?.profession,
             is_expert: profile?.is_expert,
-            wallet_balance: profile?.wallet_balance,
-            connections_count: profile?.connections_count
           }
-        }),
+        }
       })
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        
-        if (response.status === 429) {
-          throw new Error(errorData.message || 'Rate limit exceeded. Please wait a moment.')
-        }
-        if (response.status === 402) {
-          throw new Error(errorData.message || 'AI service temporarily unavailable.')
-        }
-        throw new Error(errorData.message || 'Failed to connect to AI')
+      if (error) throw error
+
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        type: 'assistant',
+        content: data.response || data.error || 'Sorry, I couldn\'t process that. Try again! 😊',
+        timestamp: new Date()
       }
 
-      if (!response.body) throw new Error('No response stream')
-
-      const reader = response.body.getReader()
-      const decoder = new TextDecoder()
-      let textBuffer = ''
-      let accumulatedContent = ''
-
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-
-        textBuffer += decoder.decode(value, { stream: true })
-
-        // Process line by line for token-by-token rendering
-        let newlineIndex: number
-        while ((newlineIndex = textBuffer.indexOf('\n')) !== -1) {
-          let line = textBuffer.slice(0, newlineIndex)
-          textBuffer = textBuffer.slice(newlineIndex + 1)
-
-          if (line.endsWith('\r')) line = line.slice(0, -1)
-          if (line.startsWith(':') || line.trim() === '') continue
-          if (!line.startsWith('data: ')) continue
-
-          const jsonStr = line.slice(6).trim()
-          if (jsonStr === '[DONE]') break
-
-          try {
-            const parsed = JSON.parse(jsonStr)
-            const content = parsed.choices?.[0]?.delta?.content
-
-            if (content) {
-              accumulatedContent += content
-              // Update the assistant message with accumulated content
-              setMessages(prev => prev.map(msg => 
-                msg.id === assistantId 
-                  ? { ...msg, content: accumulatedContent }
-                  : msg
-              ))
-            }
-          } catch (parseError) {
-            // Partial JSON - put it back and wait for more data
-            textBuffer = line + '\n' + textBuffer
-            break
-          }
-        }
-      }
-
-      // Final flush for any remaining buffered content
-      if (textBuffer.trim()) {
-        for (let raw of textBuffer.split('\n')) {
-          if (!raw || raw.startsWith(':') || !raw.startsWith('data: ')) continue
-          const jsonStr = raw.slice(6).trim()
-          if (jsonStr === '[DONE]') continue
-          try {
-            const parsed = JSON.parse(jsonStr)
-            const content = parsed.choices?.[0]?.delta?.content
-            if (content) {
-              accumulatedContent += content
-              setMessages(prev => prev.map(msg => 
-                msg.id === assistantId 
-                  ? { ...msg, content: accumulatedContent }
-                  : msg
-              ))
-            }
-          } catch {}
-        }
-      }
-
-      // If no content was received, show error
-      if (!accumulatedContent) {
-        throw new Error('No response received from AI')
-      }
+      setMessages(prev => [...prev, assistantMessage])
 
     } catch (error) {
-      console.error('Error streaming AI response:', error)
+      console.error('AI error:', error)
       
-      const errorContent = error instanceof Error 
-        ? error.message 
-        : 'I\'m having trouble connecting right now. Please try again! 😊'
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        type: 'assistant',
+        content: 'Connection issue. Please try again! 😊',
+        timestamp: new Date()
+      }
 
-      // Update the assistant message with error
-      setMessages(prev => prev.map(msg => 
-        msg.id === assistantId 
-          ? { ...msg, content: errorContent }
-          : msg
-      ))
-      
-      toast({
-        title: "Connection Issue",
-        description: errorContent,
-        variant: "destructive"
-      })
+      setMessages(prev => [...prev, errorMessage])
     } finally {
       setIsLoading(false)
     }
@@ -315,7 +205,6 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('.drag-handle')) {
-      console.log('🎯 Drag started')
       setIsDragging(true)
       setDragOffset({
         x: e.clientX - position.x,
@@ -328,25 +217,13 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
     const handleMouseMove = (e: MouseEvent) => {
       if (isDragging) {
         const newX = Math.max(0, Math.min(e.clientX - dragOffset.x, window.innerWidth - 350))
-        const newY = Math.max(0, Math.min(e.clientY - dragOffset.y, window.innerHeight - (isMinimized ? 80 : 420)))
+        const newY = Math.max(0, Math.min(e.clientY - dragOffset.y, window.innerHeight - 100))
         setPosition({ x: newX, y: newY })
-        
-        if (!hasBeenDragged) {
-          console.log('✅ AI Assistant is now draggable!')
-          toast({
-            title: "AI Assistant Moved",
-            description: "You can drag me anywhere on the screen!",
-          })
-          setHasBeenDragged(true)
-        }
       }
     }
 
     const handleMouseUp = () => {
-      if (isDragging) {
-        console.log('🎯 Drag ended at position:', position)
-        setIsDragging(false)
-      }
+      setIsDragging(false)
     }
 
     if (isDragging) {
@@ -358,7 +235,7 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
       document.removeEventListener('mousemove', handleMouseMove)
       document.removeEventListener('mouseup', handleMouseUp)
     }
-  }, [isDragging, dragOffset, isMinimized, hasBeenDragged, position, toast])
+  }, [isDragging, dragOffset])
 
   return (
     <>
@@ -394,15 +271,9 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
         <CardHeader className="drag-handle py-3 px-4 bg-gradient-to-r from-primary to-primary/80 text-white cursor-grab active:cursor-grabbing select-none">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <GripVertical className="h-4 w-4 opacity-50" />
-              <div className="relative">
-                <Bot className="h-5 w-5" />
-                <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-              </div>
-              <div>
-                <CardTitle className="text-sm font-medium">NaijaLancers AI</CardTitle>
-                <div className="text-xs opacity-90">Drag me anywhere!</div>
-              </div>
+              <GripVertical className="h-4 w-4 opacity-70" />
+              <Bot className="h-5 w-5" />
+              <CardTitle className="text-sm font-medium">NaijaLancers AI</CardTitle>
             </div>
             <div className="flex items-center gap-1">
               <Button
