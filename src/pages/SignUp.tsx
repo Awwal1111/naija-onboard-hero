@@ -106,15 +106,6 @@ const SignUp = () => {
       return
     }
     
-    if (passwordValidation && !passwordValidation.isValid) {
-      toast({
-        title: "Weak Password",
-        description: "Please create a stronger password",
-        variant: "destructive"
-      })
-      return
-    }
-    
     setIsLoading(true)
     
     const { error } = await signUp(
