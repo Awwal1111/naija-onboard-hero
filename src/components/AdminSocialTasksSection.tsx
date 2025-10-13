@@ -37,7 +37,6 @@ export const AdminSocialTasksSection = () => {
   }, [])
 
   const fetchSubmissions = async () => {
-    console.log('[Admin] Fetching social task submissions...')
     try {
       const { data, error } = await supabase
         .from('social_tasks_progress')
@@ -49,23 +48,17 @@ export const AdminSocialTasksSection = () => {
         .eq('status', 'pending')
         .order('created_at', { ascending: false })
 
-      if (error) {
-        console.error('[Admin] Error fetching submissions:', error)
-        throw error
-      }
-      
-      console.log('[Admin] Fetched submissions:', data?.length || 0, 'items')
+      if (error) throw error
       setSubmissions(data as any || [])
     } catch (error) {
-      console.error('[Admin] Failed to fetch submissions:', error)
-      toast.error(`Failed to load submissions: ${error.message}`)
+      console.error('Error fetching submissions:', error)
+      toast.error('Failed to load submissions')
     } finally {
       setLoading(false)
     }
   }
 
   const handleApprove = async (submissionId: number, earnerId: string, reward: number) => {
-    console.log('[Admin] Approving submission:', { submissionId, earnerId, reward })
     try {
       // Update submission status
       const { error: updateError } = await supabase
@@ -73,38 +66,15 @@ export const AdminSocialTasksSection = () => {
         .update({ status: 'completed' })
         .eq('id', submissionId)
 
-      if (updateError) {
-        console.error('[Admin] Update error:', updateError)
-        throw updateError
-      }
+      if (updateError) throw updateError
 
-      // Get current profile balances
-      const { data: profile, error: fetchError } = await supabase
-        .from('profiles')
-        .select('wallet_balance, balance_withdrawable')
-        .eq('user_id', earnerId)
-        .single()
+      // Credit user wallet
+      const { error: walletError } = await supabase.rpc('increment_wallet_balance', {
+        target_user_id: earnerId,
+        amount_to_add: reward
+      })
 
-      if (fetchError || !profile) {
-        console.error('[Admin] Profile fetch error:', fetchError)
-        throw fetchError || new Error('Profile not found')
-      }
-
-      console.log('[Admin] Current balance:', profile.wallet_balance, 'Withdrawable:', profile.balance_withdrawable)
-
-      // Credit user wallet (both total balance and withdrawable)
-      const { error: walletError } = await supabase
-        .from('profiles')
-        .update({
-          wallet_balance: profile.wallet_balance + reward,
-          balance_withdrawable: profile.balance_withdrawable + reward
-        })
-        .eq('user_id', earnerId)
-
-      if (walletError) {
-        console.error('[Admin] Wallet update error:', walletError)
-        throw walletError
-      }
+      if (walletError) throw walletError
 
       // Create transaction record
       await supabase.from('wallet_transactions').insert({
@@ -116,34 +86,27 @@ export const AdminSocialTasksSection = () => {
         metadata: { task_id: submissionId }
       })
 
-      console.log('[Admin] Successfully approved and credited:', reward, 'NC')
       toast.success(`Approved! ${reward} NC credited to user`)
       fetchSubmissions()
     } catch (error) {
-      console.error('[Admin] Approval error:', error)
-      toast.error(`Failed to approve: ${error.message}`)
+      console.error('Error approving submission:', error)
+      toast.error('Failed to approve submission')
     }
   }
 
   const handleReject = async (submissionId: number) => {
-    console.log('[Admin] Rejecting submission:', submissionId)
     try {
       const { error } = await supabase
         .from('social_tasks_progress')
         .update({ status: 'rejected' })
         .eq('id', submissionId)
 
-      if (error) {
-        console.error('[Admin] Rejection error:', error)
-        throw error
-      }
-      
-      console.log('[Admin] Successfully rejected submission')
+      if (error) throw error
       toast.success('Submission rejected')
       fetchSubmissions()
     } catch (error) {
-      console.error('[Admin] Reject error:', error)
-      toast.error(`Failed to reject: ${error.message}`)
+      console.error('Error rejecting submission:', error)
+      toast.error('Failed to reject submission')
     }
   }
 

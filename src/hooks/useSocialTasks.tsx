@@ -77,7 +77,7 @@ export const useSocialTasks = () => {
       const { error } = await supabase
         .from('social_tasks_progress' as any)
         .update({
-          status: 'pending',  // Set to pending for admin review
+          status: 'completed',
           screenshot_url: screenshotUrl,
           text_explanation: textExplanation
         })
@@ -88,7 +88,7 @@ export const useSocialTasks = () => {
 
       toast({
         title: "Success",
-        description: "Task submitted successfully! Awaiting admin verification.",
+        description: "Task marked as completed! Awaiting verification.",
       })
 
       return { success: true }
@@ -96,7 +96,7 @@ export const useSocialTasks = () => {
       console.error('Error completing task:', error)
       toast({
         title: "Error",
-        description: error.message || "Failed to submit task",
+        description: error.message || "Failed to complete task",
         variant: "destructive",
       })
       return { success: false, error: error.message }
@@ -107,37 +107,15 @@ export const useSocialTasks = () => {
     if (!user) return { success: false, error: 'Not authenticated' }
 
     try {
-      // Calculate total task cost: total_slots * reward
+      // Calculate total task cost: total_slots * reward_amount
       const totalSlots = taskData.total_slots || 0
-      const rewardAmount = taskData.reward || 0
-      
-      // Validate inputs
-      if (!rewardAmount || rewardAmount <= 0) {
-        toast({
-          title: "Invalid Reward",
-          description: "Please enter a valid reward amount greater than 0",
-          variant: "destructive",
-        })
-        return { success: false, error: 'Invalid reward amount' }
-      }
-      
-      if (!totalSlots || totalSlots <= 0) {
-        toast({
-          title: "Invalid Slots",
-          description: "Please enter valid number of slots greater than 0",
-          variant: "destructive",
-        })
-        return { success: false, error: 'Invalid number of slots' }
-      }
-      
+      const rewardAmount = (taskData as any).reward_amount || 0
       const totalCost = totalSlots * rewardAmount
-      
-      console.log('Task Creation Debug:', { totalSlots, rewardAmount, totalCost, taskData })
       
       // Check if user has sufficient balance
       const { data: profile } = await supabase
         .from('profiles')
-        .select('wallet_balance, balance_withdrawable')
+        .select('wallet_balance')
         .eq('user_id', user.id)
         .single()
 
@@ -150,14 +128,10 @@ export const useSocialTasks = () => {
         return { success: false, error: 'Insufficient balance' }
       }
 
-      // Deduct the total cost from user's balance (both total and withdrawable)
-      const newWithdrawable = Math.max(0, (profile.balance_withdrawable || 0) - totalCost)
+      // Deduct the total cost from user's balance
       const { error: deductError } = await supabase
         .from('profiles')
-        .update({ 
-          wallet_balance: profile.wallet_balance - totalCost,
-          balance_withdrawable: newWithdrawable
-        })
+        .update({ wallet_balance: profile.wallet_balance - totalCost })
         .eq('user_id', user.id)
 
       if (deductError) throw deductError
@@ -173,7 +147,7 @@ export const useSocialTasks = () => {
           reference: `Social media task creation (${totalSlots} slots × ${rewardAmount} NC)`
         })
 
-      // Create the task - set BOTH reward and reward_amount for compatibility
+      // Create the task
       const { data, error } = await supabase
         .from('social_tasks' as any)
         .insert({
@@ -181,8 +155,7 @@ export const useSocialTasks = () => {
           task_giver_id: user.id,
           status: 'active',
           done_slots: 0,
-          reward: rewardAmount,          // Primary column used by queries
-          reward_amount: rewardAmount,   // Secondary column for compatibility
+          reward_amount: rewardAmount,
           fee_paid: totalCost
         })
         .select()

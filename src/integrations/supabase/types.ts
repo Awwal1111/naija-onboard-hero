@@ -173,89 +173,6 @@ export type Database = {
           },
         ]
       }
-      article_submissions: {
-        Row: {
-          article_id: string
-          created_at: string
-          id: string
-          reviewed_at: string | null
-          reviewed_by: string | null
-          short_note: string
-          status: string
-          user_id: string
-        }
-        Insert: {
-          article_id: string
-          created_at?: string
-          id?: string
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          short_note: string
-          status?: string
-          user_id: string
-        }
-        Update: {
-          article_id?: string
-          created_at?: string
-          id?: string
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          short_note?: string
-          status?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "article_submissions_article_id_fkey"
-            columns: ["article_id"]
-            isOneToOne: false
-            referencedRelation: "articles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      articles: {
-        Row: {
-          approved_submissions: number
-          article_url: string
-          created_at: string
-          created_by: string | null
-          description: string
-          id: string
-          reward_amount: number
-          status: string
-          submission_instructions: string | null
-          title: string
-          total_submissions: number
-        }
-        Insert: {
-          approved_submissions?: number
-          article_url: string
-          created_at?: string
-          created_by?: string | null
-          description: string
-          id?: string
-          reward_amount?: number
-          status?: string
-          submission_instructions?: string | null
-          title: string
-          total_submissions?: number
-        }
-        Update: {
-          approved_submissions?: number
-          article_url?: string
-          created_at?: string
-          created_by?: string | null
-          description?: string
-          id?: string
-          reward_amount?: number
-          status?: string
-          submission_instructions?: string | null
-          title?: string
-          total_submissions?: number
-        }
-        Relationships: []
-      }
       audit_logs: {
         Row: {
           action: string
@@ -2227,12 +2144,10 @@ export type Database = {
         Row: {
           created_at: string
           done_slots: number
-          fee_paid: number | null
           id: number
           link: string
           platform: string
           reward: number
-          reward_amount: number | null
           status: string
           task_giver_id: string
           total_slots: number
@@ -2241,12 +2156,10 @@ export type Database = {
         Insert: {
           created_at?: string
           done_slots?: number
-          fee_paid?: number | null
           id?: number
           link: string
           platform: string
           reward: number
-          reward_amount?: number | null
           status?: string
           task_giver_id: string
           total_slots: number
@@ -2255,12 +2168,10 @@ export type Database = {
         Update: {
           created_at?: string
           done_slots?: number
-          fee_paid?: number | null
           id?: number
           link?: string
           platform?: string
           reward?: number
-          reward_amount?: number | null
           status?: string
           task_giver_id?: string
           total_slots?: number
