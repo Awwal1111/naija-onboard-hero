@@ -1033,14 +1033,24 @@ export type Database = {
           approved_at: string | null
           approved_by: string | null
           backer_count: number | null
+          beneficiary_name: string | null
+          beneficiary_relationship: string | null
+          category: string | null
           created_at: string | null
           deadline: string | null
           description: string
+          detailed_story: string | null
+          featured_image_url: string | null
+          fund_usage_breakdown: Json | null
           goal_amount: number
           id: string
           is_verified: boolean | null
+          location: string | null
+          minimum_contribution: number | null
           raised_amount: number | null
+          risks_challenges: string | null
           status: Database["public"]["Enums"]["fundraising_status"] | null
+          supporting_documents: Json | null
           title: string
           updated_at: string | null
           user_id: string
@@ -1049,14 +1059,24 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           backer_count?: number | null
+          beneficiary_name?: string | null
+          beneficiary_relationship?: string | null
+          category?: string | null
           created_at?: string | null
           deadline?: string | null
           description: string
+          detailed_story?: string | null
+          featured_image_url?: string | null
+          fund_usage_breakdown?: Json | null
           goal_amount: number
           id?: string
           is_verified?: boolean | null
+          location?: string | null
+          minimum_contribution?: number | null
           raised_amount?: number | null
+          risks_challenges?: string | null
           status?: Database["public"]["Enums"]["fundraising_status"] | null
+          supporting_documents?: Json | null
           title: string
           updated_at?: string | null
           user_id: string
@@ -1065,14 +1085,24 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           backer_count?: number | null
+          beneficiary_name?: string | null
+          beneficiary_relationship?: string | null
+          category?: string | null
           created_at?: string | null
           deadline?: string | null
           description?: string
+          detailed_story?: string | null
+          featured_image_url?: string | null
+          fund_usage_breakdown?: Json | null
           goal_amount?: number
           id?: string
           is_verified?: boolean | null
+          location?: string | null
+          minimum_contribution?: number | null
           raised_amount?: number | null
+          risks_challenges?: string | null
           status?: Database["public"]["Enums"]["fundraising_status"] | null
+          supporting_documents?: Json | null
           title?: string
           updated_at?: string | null
           user_id?: string

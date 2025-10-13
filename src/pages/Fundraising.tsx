@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Search, Heart, Users, Clock, CheckCircle, TrendingUp } from "lucide-react";
+import { ArrowLeft, Plus, Search, Heart, Users, Clock, CheckCircle, TrendingUp, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
@@ -9,9 +9,11 @@ import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { format } from "date-fns";
 
 export default function Fundraising() {
   const navigate = useNavigate();
@@ -26,6 +28,16 @@ export default function Fundraising() {
     title: "",
     description: "",
     goal_amount: "",
+    category: "medical" as "medical" | "education" | "emergency" | "business" | "community" | "personal" | "other",
+    beneficiary_name: "",
+    beneficiary_relationship: "",
+    location: "",
+    detailed_story: "",
+    risks_challenges: "",
+    deadline: "",
+    minimum_contribution: "10",
+    featured_image_url: "",
+    fund_usage: [{ item: "", amount: "" }],
   });
 
   const { data: fundraisings = [], isLoading } = useQuery({
@@ -50,25 +62,78 @@ export default function Fundraising() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
+      // Validate required fields
+      if (!data.title || !data.goal_amount || !data.category || !data.detailed_story) {
+        throw new Error("Please fill in all required fields");
+      }
+
+      const fundBreakdown = data.fund_usage
+        .filter(item => item.item && item.amount)
+        .map(item => ({ item: item.item, amount: parseFloat(item.amount) }));
+
       const { error } = await supabase.from("fundraisings").insert({
         user_id: user.id,
         title: data.title,
         description: data.description,
         goal_amount: parseFloat(data.goal_amount),
+        category: data.category,
+        beneficiary_name: data.beneficiary_name || null,
+        beneficiary_relationship: data.beneficiary_relationship || null,
+        location: data.location || null,
+        detailed_story: data.detailed_story,
+        risks_challenges: data.risks_challenges || null,
+        deadline: data.deadline ? new Date(data.deadline).toISOString() : null,
+        minimum_contribution: parseFloat(data.minimum_contribution),
+        featured_image_url: data.featured_image_url || null,
+        fund_usage_breakdown: fundBreakdown,
         status: "pending",
-      });
+      } as any);
 
       if (error) throw error;
     },
     onSuccess: () => {
       toast({ title: "Fundraising request submitted! Awaiting admin approval." });
       setCreateDialogOpen(false);
-      setFormData({ title: "", description: "", goal_amount: "" });
+      setFormData({
+        title: "",
+        description: "",
+        goal_amount: "",
+        category: "medical",
+        beneficiary_name: "",
+        beneficiary_relationship: "",
+        location: "",
+        detailed_story: "",
+        risks_challenges: "",
+        deadline: "",
+        minimum_contribution: "10",
+        featured_image_url: "",
+        fund_usage: [{ item: "", amount: "" }],
+      });
     },
-    onError: () => {
-      toast({ title: "Failed to submit fundraising request", variant: "destructive" });
+    onError: (error: any) => {
+      toast({ title: error.message || "Failed to submit fundraising request", variant: "destructive" });
     },
   });
+
+  const addFundUsageItem = () => {
+    setFormData({
+      ...formData,
+      fund_usage: [...formData.fund_usage, { item: "", amount: "" }],
+    });
+  };
+
+  const removeFundUsageItem = (index: number) => {
+    setFormData({
+      ...formData,
+      fund_usage: formData.fund_usage.filter((_, i) => i !== index),
+    });
+  };
+
+  const updateFundUsageItem = (index: number, field: "item" | "amount", value: string) => {
+    const updated = [...formData.fund_usage];
+    updated[index][field] = value;
+    setFormData({ ...formData, fund_usage: updated });
+  };
 
   const contributeMutation = useMutation({
     mutationFn: async ({ fundraisingId, amount }: { fundraisingId: string; amount: number }) => {
@@ -140,42 +205,221 @@ export default function Fundraising() {
                 Create
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-h-[90vh] overflow-y-auto max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Create Fundraising Campaign</DialogTitle>
+                <p className="text-sm text-muted-foreground">Fill in all details to help supporters understand your cause</p>
               </DialogHeader>
               <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label>Title</Label>
-                  <Input
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    placeholder="Campaign title"
-                  />
+                {/* Basic Information */}
+                <div className="space-y-4 border-b pb-4">
+                  <h3 className="font-semibold">Basic Information</h3>
+                  
+                  <div className="space-y-2">
+                    <Label>Campaign Title *</Label>
+                    <Input
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      placeholder="e.g., Help John recover from surgery"
+                      maxLength={100}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Category *</Label>
+                    <Select value={formData.category} onValueChange={(v: any) => setFormData({ ...formData, category: v })}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="medical">Medical & Healthcare</SelectItem>
+                        <SelectItem value="education">Education</SelectItem>
+                        <SelectItem value="emergency">Emergency Relief</SelectItem>
+                        <SelectItem value="business">Business & Startup</SelectItem>
+                        <SelectItem value="community">Community Project</SelectItem>
+                        <SelectItem value="personal">Personal Cause</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Short Description</Label>
+                    <Textarea
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      placeholder="Brief summary (shown in listings)"
+                      rows={2}
+                      maxLength={200}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Location</Label>
+                    <Input
+                      value={formData.location}
+                      onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                      placeholder="City, State or Country"
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>Description</Label>
-                  <Textarea
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Describe your fundraising campaign"
-                  />
+
+                {/* Financial Details */}
+                <div className="space-y-4 border-b pb-4">
+                  <h3 className="font-semibold">Financial Details</h3>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Goal Amount (₦NC) *</Label>
+                      <Input
+                        type="number"
+                        value={formData.goal_amount}
+                        onChange={(e) => setFormData({ ...formData, goal_amount: e.target.value })}
+                        placeholder="0"
+                        min="100"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Minimum Contribution (₦NC)</Label>
+                      <Input
+                        type="number"
+                        value={formData.minimum_contribution}
+                        onChange={(e) => setFormData({ ...formData, minimum_contribution: e.target.value })}
+                        placeholder="10"
+                        min="1"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Campaign Deadline (Optional)</Label>
+                    <Input
+                      type="date"
+                      value={formData.deadline}
+                      onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
+                      min={format(new Date(), "yyyy-MM-dd")}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>How Will Funds Be Used?</Label>
+                    {formData.fund_usage.map((item, index) => (
+                      <div key={index} className="flex gap-2">
+                        <Input
+                          placeholder="Item/Purpose"
+                          value={item.item}
+                          onChange={(e) => updateFundUsageItem(index, "item", e.target.value)}
+                          className="flex-1"
+                        />
+                        <Input
+                          type="number"
+                          placeholder="Amount"
+                          value={item.amount}
+                          onChange={(e) => updateFundUsageItem(index, "amount", e.target.value)}
+                          className="w-32"
+                        />
+                        {formData.fund_usage.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeFundUsageItem(index)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addFundUsageItem}
+                      className="w-full"
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Add Item
+                    </Button>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>Goal Amount (₦NC)</Label>
-                  <Input
-                    type="number"
-                    value={formData.goal_amount}
-                    onChange={(e) => setFormData({ ...formData, goal_amount: e.target.value })}
-                    placeholder="0"
-                  />
+
+                {/* Beneficiary Information */}
+                <div className="space-y-4 border-b pb-4">
+                  <h3 className="font-semibold">Beneficiary Information</h3>
+                  
+                  <div className="space-y-2">
+                    <Label>Beneficiary Name</Label>
+                    <Input
+                      value={formData.beneficiary_name}
+                      onChange={(e) => setFormData({ ...formData, beneficiary_name: e.target.value })}
+                      placeholder="Who will benefit from this campaign?"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Your Relationship to Beneficiary</Label>
+                    <Input
+                      value={formData.beneficiary_relationship}
+                      onChange={(e) => setFormData({ ...formData, beneficiary_relationship: e.target.value })}
+                      placeholder="e.g., Parent, Friend, Family Member, Self"
+                    />
+                  </div>
                 </div>
+
+                {/* Campaign Story */}
+                <div className="space-y-4 border-b pb-4">
+                  <h3 className="font-semibold">Campaign Story</h3>
+                  
+                  <div className="space-y-2">
+                    <Label>Detailed Story *</Label>
+                    <Textarea
+                      value={formData.detailed_story}
+                      onChange={(e) => setFormData({ ...formData, detailed_story: e.target.value })}
+                      placeholder="Tell your story in detail. Explain the situation, why you need help, and how the funds will make a difference."
+                      rows={6}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Be honest and detailed. Include background, current situation, and impact of support.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Risks & Challenges</Label>
+                    <Textarea
+                      value={formData.risks_challenges}
+                      onChange={(e) => setFormData({ ...formData, risks_challenges: e.target.value })}
+                      placeholder="What challenges might you face? How will you handle them?"
+                      rows={3}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Being transparent about potential risks builds trust with supporters.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Media */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold">Campaign Image</h3>
+                  
+                  <div className="space-y-2">
+                    <Label>Featured Image URL</Label>
+                    <Input
+                      value={formData.featured_image_url}
+                      onChange={(e) => setFormData({ ...formData, featured_image_url: e.target.value })}
+                      placeholder="https://..."
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      A compelling image helps your campaign stand out
+                    </p>
+                  </div>
+                </div>
+
                 <Button
                   className="w-full"
                   onClick={() => createFundraisingMutation.mutate(formData)}
-                  disabled={createFundraisingMutation.isPending}
+                  disabled={createFundraisingMutation.isPending || !formData.title || !formData.goal_amount || !formData.detailed_story}
                 >
-                  Submit for Approval
+                  {createFundraisingMutation.isPending ? "Submitting..." : "Submit for Admin Approval"}
                 </Button>
               </div>
             </DialogContent>
@@ -207,12 +451,24 @@ export default function Fundraising() {
                 : null;
               
               return (
-                <Card key={fundraising.id}>
+                <Card key={fundraising.id} className="hover:shadow-lg transition-shadow">
+                  {fundraising.featured_image_url && (
+                    <div className="aspect-video overflow-hidden rounded-t-lg">
+                      <img 
+                        src={fundraising.featured_image_url} 
+                        alt={fundraising.title}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
                   <CardHeader className="p-3">
                     <div className="flex items-center justify-between mb-2">
-                      <Badge className={`w-fit ${progress >= 100 ? 'bg-green-500' : 'bg-primary'}`}>
-                        {progress >= 100 ? 'Funded' : 'Active'}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge className={`${progress >= 100 ? 'bg-green-500' : 'bg-primary'}`}>
+                          {fundraising.category || 'general'}
+                        </Badge>
+                        {progress >= 100 && <Badge variant="outline">Funded</Badge>}
+                      </div>
                       {fundraising.is_verified && (
                         <div className="flex items-center gap-1 text-xs text-green-600">
                           <CheckCircle className="h-3 w-3" />
@@ -220,8 +476,11 @@ export default function Fundraising() {
                         </div>
                       )}
                     </div>
-                    <h3 className="font-semibold text-sm">{fundraising.title}</h3>
-                    <p className="text-xs text-muted-foreground line-clamp-2">{fundraising.description}</p>
+                    <h3 className="font-semibold text-sm line-clamp-2">{fundraising.title}</h3>
+                    {fundraising.location && (
+                      <p className="text-xs text-muted-foreground">{fundraising.location}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{fundraising.description}</p>
                   </CardHeader>
                   <CardContent className="p-3 pt-0 space-y-2">
                     <Progress value={Math.min(progress, 100)} className="h-2" />
@@ -242,10 +501,18 @@ export default function Fundraising() {
                       )}
                     </div>
                   </CardContent>
-                  <CardFooter className="p-3 pt-0">
+                  <CardFooter className="p-3 pt-0 gap-2">
                     <Button
                       size="sm"
-                      className="w-full"
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => navigate(`/fundraising/${fundraising.id}`)}
+                    >
+                      View Details
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="flex-1"
                       onClick={() => {
                         setSelectedFundraising(fundraising);
                         setContributeDialogOpen(true);
