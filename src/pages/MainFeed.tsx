@@ -26,6 +26,7 @@ import ProfilePreview from '@/components/ProfilePreview'
 import TopBannerAd from '@/components/TopBannerAd'
 import ProfileCompletionDialog from '@/components/ProfileCompletionDialog'
 import { useProfileCompletion } from '@/hooks/useProfileCompletion'
+import SmartAIAssistant from '@/components/SmartAIAssistant'
 
 const MainFeed = () => {
   const navigate = useNavigate()
@@ -627,6 +628,9 @@ const MainFeed = () => {
         isOpen={shouldShowDialog}
         missingFields={missingFields}
       />
+      
+      {/* AI Assistant */}
+      <SmartAIAssistant />
     </>
   )
 }
