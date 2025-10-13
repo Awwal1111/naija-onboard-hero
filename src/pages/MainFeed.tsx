@@ -26,6 +26,7 @@ import ProfilePreview from '@/components/ProfilePreview'
 import TopBannerAd from '@/components/TopBannerAd'
 import ProfileCompletionDialog from '@/components/ProfileCompletionDialog'
 import { useProfileCompletion } from '@/hooks/useProfileCompletion'
+import PeopleYouMayKnow from '@/components/PeopleYouMayKnow'
 
 const MainFeed = () => {
   const navigate = useNavigate()
@@ -518,6 +519,9 @@ const MainFeed = () => {
                     </CardContent>
                   </Card>
                 )}
+
+                {/* People You May Know */}
+                <PeopleYouMayKnow onProfileClick={handleProfileClick} />
 
                 {filteredAndSortedPosts.length === 0 && !loading ? (
                   <div className="text-center py-16">
