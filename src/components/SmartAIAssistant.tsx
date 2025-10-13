@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { Bot, Send, X, Minimize2, Maximize2, Sparkles, MessageCircle, HelpCircle, Zap } from 'lucide-react'
+import { Bot, Send, X, Minimize2, Maximize2, Sparkles, MessageCircle, HelpCircle, Zap, GripVertical } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { BrandInput } from '@/components/ui/brand-input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -33,9 +33,10 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
   const [message, setMessage] = useState('')
   const [messages, setMessages] = useState<Message[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const [position, setPosition] = useState({ x: window.innerWidth - 400, y: window.innerHeight - 500 })
+  const [position, setPosition] = useState({ x: window.innerWidth - 350, y: 100 })
   const [isDragging, setIsDragging] = useState(false)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
+  const [hasBeenDragged, setHasBeenDragged] = useState(false)
   const [suggestions] = useState([
     "How do I post a job?",
     "How can I become an expert?",
@@ -215,6 +216,7 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('.drag-handle')) {
+      console.log('🎯 Drag started')
       setIsDragging(true)
       setDragOffset({
         x: e.clientX - position.x,
@@ -226,14 +228,26 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (isDragging) {
-        const newX = Math.max(0, Math.min(e.clientX - dragOffset.x, window.innerWidth - 320))
-        const newY = Math.max(0, Math.min(e.clientY - dragOffset.y, window.innerHeight - (isMinimized ? 64 : 384)))
+        const newX = Math.max(0, Math.min(e.clientX - dragOffset.x, window.innerWidth - 350))
+        const newY = Math.max(0, Math.min(e.clientY - dragOffset.y, window.innerHeight - (isMinimized ? 80 : 420)))
         setPosition({ x: newX, y: newY })
+        
+        if (!hasBeenDragged) {
+          console.log('✅ AI Assistant is now draggable!')
+          toast({
+            title: "AI Assistant Moved",
+            description: "You can drag me anywhere on the screen!",
+          })
+          setHasBeenDragged(true)
+        }
       }
     }
 
     const handleMouseUp = () => {
-      setIsDragging(false)
+      if (isDragging) {
+        console.log('🎯 Drag ended at position:', position)
+        setIsDragging(false)
+      }
     }
 
     if (isDragging) {
@@ -245,7 +259,7 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
       document.removeEventListener('mousemove', handleMouseMove)
       document.removeEventListener('mouseup', handleMouseUp)
     }
-  }, [isDragging, dragOffset, isMinimized])
+  }, [isDragging, dragOffset, isMinimized, hasBeenDragged, position, toast])
 
   return (
     <>
@@ -278,16 +292,17 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
           onMouseDown={handleMouseDown}
         >
           <Card className={`w-80 shadow-2xl border-primary/20 ${isMinimized ? 'h-16' : 'h-96'} transition-all duration-300`}>
-        <CardHeader className="drag-handle py-3 px-4 bg-gradient-to-r from-primary to-primary/80 text-white cursor-grab active:cursor-grabbing">
-          <div className="flex items-center justify-between">
+        <CardHeader className="drag-handle py-3 px-4 bg-gradient-to-r from-primary to-primary/80 text-white cursor-grab active:cursor-grabbing select-none">
+          <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
+              <GripVertical className="h-4 w-4 opacity-50" />
               <div className="relative">
                 <Bot className="h-5 w-5" />
                 <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full animate-pulse" />
               </div>
               <div>
                 <CardTitle className="text-sm font-medium">NaijaLancers AI</CardTitle>
-                <div className="text-xs opacity-90">Smart Assistant</div>
+                <div className="text-xs opacity-90">Drag me anywhere!</div>
               </div>
             </div>
             <div className="flex items-center gap-1">
