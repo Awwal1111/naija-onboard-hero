@@ -180,11 +180,19 @@ export const useAdminArticles = () => {
 
   const createArticle = async (articleData: any) => {
     try {
+      const { data: { user } } = await supabase.auth.getUser()
+      
       const { error } = await supabase
         .from('articles' as any)
-        .insert(articleData)
+        .insert({
+          ...articleData,
+          created_by: user?.id
+        })
 
-      if (error) throw error
+      if (error) {
+        console.error('Article creation error:', error)
+        throw error
+      }
 
       toast({
         title: "Success",
@@ -206,15 +214,21 @@ export const useAdminArticles = () => {
 
   const approveSubmission = async (submissionId: string) => {
     try {
+      const { data: { user } } = await supabase.auth.getUser()
+      
       const { error } = await supabase
         .from('article_submissions' as any)
         .update({ 
           status: 'approved',
+          reviewed_by: user?.id,
           reviewed_at: new Date().toISOString()
         })
         .eq('id', submissionId)
 
-      if (error) throw error
+      if (error) {
+        console.error('Approval error:', error)
+        throw error
+      }
 
       toast({
         title: "Success",
@@ -236,15 +250,21 @@ export const useAdminArticles = () => {
 
   const rejectSubmission = async (submissionId: string) => {
     try {
+      const { data: { user } } = await supabase.auth.getUser()
+      
       const { error } = await supabase
         .from('article_submissions' as any)
         .update({ 
           status: 'rejected',
+          reviewed_by: user?.id,
           reviewed_at: new Date().toISOString()
         })
         .eq('id', submissionId)
 
-      if (error) throw error
+      if (error) {
+        console.error('Rejection error:', error)
+        throw error
+      }
 
       toast({
         title: "Success",
