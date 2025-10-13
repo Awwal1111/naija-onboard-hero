@@ -34,8 +34,12 @@ const DonationsSection = () => {
       const { data, error } = await supabase
         .from('donations')
         .select(`
-          *,
-          profiles(full_name)
+          id,
+          user_id,
+          amount,
+          message,
+          created_at,
+          profiles!inner(full_name)
         `)
         .order('created_at', { ascending: false })
         .limit(50)
