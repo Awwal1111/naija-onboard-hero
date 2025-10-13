@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { ArrowLeft, Users, FileText, TrendingUp, DollarSign, Eye, Settings, AlertCircle, CheckCircle, Clock, Star, MessageCircle, Briefcase, Award, Calendar, BarChart3, PieChart, Activity, Search, Filter, MoreVertical, Trash2, Edit, Ban } from 'lucide-react'
+import { ArrowLeft, Users, FileText, TrendingUp, DollarSign, Eye, Settings, AlertCircle, CheckCircle, Clock, Star, MessageCircle, Briefcase, Award, Calendar, BarChart3, PieChart, Activity, Search, Filter, MoreVertical, Trash2, Edit, Ban, Heart, Package, BookOpen, Target, AlertTriangle } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Logo } from '@/components/ui/logo'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -19,6 +19,505 @@ import { AdminArticlesSection } from '@/components/AdminArticlesSection'
 import { AdminWalletManagement } from '@/components/AdminWalletManagement'
 import { AdminSettingsTab } from '@/components/AdminSettingsTab'
 import { AdminWithdrawalsSection } from '@/components/AdminWithdrawalsSection'
+
+// Marketplace Section Components
+const DonationsSection = () => {
+  const [donations, setDonations] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchDonations()
+  }, [])
+
+  const fetchDonations = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('donations')
+        .select(`
+          *,
+          profiles!donations_user_id_fkey(full_name, email)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(50)
+
+      if (error) throw error
+      setDonations(data || [])
+    } catch (error) {
+      console.error('Error fetching donations:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (loading) {
+    return <div className="text-center py-8">Loading donations...</div>
+  }
+
+  if (donations.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <Heart className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+        <p className="text-text-secondary">No donations yet</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      {donations.map((donation) => (
+        <Card key={donation.id}>
+          <CardContent className="pt-6">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="font-semibold text-text-primary">
+                  {donation.profiles?.full_name || 'Anonymous'}
+                </p>
+                <p className="text-sm text-text-secondary">
+                  NC {donation.amount.toLocaleString()}
+                </p>
+                {donation.message && (
+                  <p className="text-sm text-text-secondary mt-2">{donation.message}</p>
+                )}
+              </div>
+              <Badge variant="outline">
+                {new Date(donation.created_at).toLocaleDateString()}
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  )
+}
+
+const DigitalProductsSection = () => {
+  const [products, setProducts] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchProducts()
+  }, [])
+
+  const fetchProducts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('digital_products')
+        .select(`
+          *,
+          profiles!digital_products_user_id_fkey(full_name)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(50)
+
+      if (error) throw error
+      setProducts(data || [])
+    } catch (error) {
+      console.error('Error fetching products:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (loading) {
+    return <div className="text-center py-8">Loading products...</div>
+  }
+
+  if (products.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+        <p className="text-text-secondary">No products yet</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      {products.map((product) => (
+        <Card key={product.id}>
+          <CardContent className="pt-6">
+            <div className="flex justify-between items-start">
+              <div>
+                <h3 className="font-semibold text-text-primary">{product.title}</h3>
+                <p className="text-sm text-text-secondary mt-1">{product.description}</p>
+                <p className="text-sm text-primary mt-2">NC {product.price}</p>
+                <p className="text-xs text-text-secondary mt-1">
+                  by {product.profiles?.full_name} • {product.download_count} downloads
+                </p>
+              </div>
+              <Badge variant={product.status === 'active' ? 'default' : 'secondary'}>
+                {product.status}
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  )
+}
+
+const CoursesSection = () => {
+  const [courses, setCourses] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchCourses()
+  }, [])
+
+  const fetchCourses = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('courses')
+        .select(`
+          *,
+          profiles!courses_user_id_fkey(full_name)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(50)
+
+      if (error) throw error
+      setCourses(data || [])
+    } catch (error) {
+      console.error('Error fetching courses:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (loading) {
+    return <div className="text-center py-8">Loading courses...</div>
+  }
+
+  if (courses.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+        <p className="text-text-secondary">No courses yet</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      {courses.map((course) => (
+        <Card key={course.id}>
+          <CardContent className="pt-6">
+            <div className="flex justify-between items-start">
+              <div>
+                <h3 className="font-semibold text-text-primary">{course.title}</h3>
+                <p className="text-sm text-text-secondary mt-1">{course.description}</p>
+                <p className="text-sm text-primary mt-2">NC {course.price}</p>
+                <p className="text-xs text-text-secondary mt-1">
+                  by {course.profiles?.full_name} • {course.enrollment_count} enrolled
+                </p>
+              </div>
+              <Badge variant={course.status === 'active' ? 'default' : 'secondary'}>
+                {course.status}
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  )
+}
+
+const FundraisingSection = () => {
+  const [fundraisings, setFundraisings] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const { toast } = useToast()
+
+  useEffect(() => {
+    fetchFundraisings()
+  }, [])
+
+  const fetchFundraisings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('fundraisings')
+        .select(`
+          *,
+          profiles!fundraisings_user_id_fkey(full_name)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(50)
+
+      if (error) throw error
+      setFundraisings(data || [])
+    } catch (error) {
+      console.error('Error fetching fundraisings:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleApprove = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('fundraisings')
+        .update({ 
+          status: 'approved',
+          approved_at: new Date().toISOString(),
+          approved_by: (await supabase.auth.getUser()).data.user?.id
+        })
+        .eq('id', id)
+
+      if (error) throw error
+
+      toast({
+        title: "Success",
+        description: "Fundraising approved successfully",
+      })
+      fetchFundraisings()
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to approve fundraising",
+        variant: "destructive"
+      })
+    }
+  }
+
+  const handleReject = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('fundraisings')
+        .update({ status: 'rejected' })
+        .eq('id', id)
+
+      if (error) throw error
+
+      toast({
+        title: "Success",
+        description: "Fundraising rejected",
+      })
+      fetchFundraisings()
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to reject fundraising",
+        variant: "destructive"
+      })
+    }
+  }
+
+  if (loading) {
+    return <div className="text-center py-8">Loading fundraisings...</div>
+  }
+
+  if (fundraisings.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <Target className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+        <p className="text-text-secondary">No fundraising requests yet</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      {fundraisings.map((fundraising) => (
+        <Card key={fundraising.id}>
+          <CardContent className="pt-6">
+            <div className="flex justify-between items-start mb-4">
+              <div className="flex-1">
+                <h3 className="font-semibold text-text-primary">{fundraising.title}</h3>
+                <p className="text-sm text-text-secondary mt-1">{fundraising.description}</p>
+                <p className="text-sm text-primary mt-2">
+                  Goal: NC {fundraising.goal_amount.toLocaleString()} • Raised: NC {fundraising.raised_amount?.toLocaleString() || 0}
+                </p>
+                <p className="text-xs text-text-secondary mt-1">
+                  by {fundraising.profiles?.full_name}
+                </p>
+              </div>
+              <Badge variant={
+                fundraising.status === 'approved' ? 'default' : 
+                fundraising.status === 'pending' ? 'secondary' : 'destructive'
+              }>
+                {fundraising.status}
+              </Badge>
+            </div>
+            {fundraising.status === 'pending' && (
+              <div className="flex gap-2">
+                <Button size="sm" onClick={() => handleApprove(fundraising.id)}>
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Approve
+                </Button>
+                <Button size="sm" variant="destructive" onClick={() => handleReject(fundraising.id)}>
+                  <AlertCircle className="h-4 w-4 mr-2" />
+                  Reject
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  )
+}
+
+const EmergencySection = () => {
+  const [emergencies, setEmergencies] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const { toast } = useToast()
+
+  useEffect(() => {
+    fetchEmergencies()
+  }, [])
+
+  const fetchEmergencies = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('emergency_requests')
+        .select(`
+          *,
+          profiles!emergency_requests_user_id_fkey(full_name, wallet_balance)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(50)
+
+      if (error) throw error
+      setEmergencies(data || [])
+    } catch (error) {
+      console.error('Error fetching emergencies:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleApprove = async (emergency: any) => {
+    try {
+      const user = await supabase.auth.getUser()
+      
+      // Update emergency status
+      const { error: updateError } = await supabase
+        .from('emergency_requests')
+        .update({ 
+          status: 'approved',
+          approved_at: new Date().toISOString(),
+          approved_by: user.data.user?.id
+        })
+        .eq('id', emergency.id)
+
+      if (updateError) throw updateError
+
+      // Credit user wallet
+      const { error: walletError } = await supabase
+        .from('profiles')
+        .update({ 
+          wallet_balance: emergency.profiles.wallet_balance + emergency.amount_requested,
+          balance_withdrawable: emergency.profiles.wallet_balance + emergency.amount_requested
+        })
+        .eq('user_id', emergency.user_id)
+
+      if (walletError) throw walletError
+
+      // Log transaction
+      await supabase
+        .from('wallet_transactions')
+        .insert({
+          user_id: emergency.user_id,
+          amount: emergency.amount_requested,
+          kind: 'emergency_disbursement',
+          status: 'completed',
+          reference: `Emergency request approved: ${emergency.reason.substring(0, 50)}`
+        })
+
+      toast({
+        title: "Success",
+        description: "Emergency request approved and funds disbursed",
+      })
+      fetchEmergencies()
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to approve emergency request",
+        variant: "destructive"
+      })
+    }
+  }
+
+  const handleReject = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('emergency_requests')
+        .update({ status: 'rejected' })
+        .eq('id', id)
+
+      if (error) throw error
+
+      toast({
+        title: "Success",
+        description: "Emergency request rejected",
+      })
+      fetchEmergencies()
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to reject emergency request",
+        variant: "destructive"
+      })
+    }
+  }
+
+  if (loading) {
+    return <div className="text-center py-8">Loading emergency requests...</div>
+  }
+
+  if (emergencies.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <AlertTriangle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+        <p className="text-text-secondary">No emergency requests yet</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      {emergencies.map((emergency) => (
+        <Card key={emergency.id}>
+          <CardContent className="pt-6">
+            <div className="flex justify-between items-start mb-4">
+              <div className="flex-1">
+                <h3 className="font-semibold text-text-primary">
+                  {emergency.profiles?.full_name || 'User'}
+                </h3>
+                <p className="text-sm text-text-secondary mt-1">{emergency.reason}</p>
+                <p className="text-sm text-primary mt-2">
+                  Amount: NC {emergency.amount_requested.toLocaleString()}
+                </p>
+                {emergency.admin_notes && (
+                  <p className="text-xs text-text-secondary mt-1 italic">
+                    Note: {emergency.admin_notes}
+                  </p>
+                )}
+              </div>
+              <Badge variant={
+                emergency.status === 'approved' ? 'default' : 
+                emergency.status === 'pending' ? 'secondary' : 'destructive'
+              }>
+                {emergency.status}
+              </Badge>
+            </div>
+            {emergency.status === 'pending' && (
+              <div className="flex gap-2">
+                <Button size="sm" onClick={() => handleApprove(emergency)}>
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Approve & Disburse
+                </Button>
+                <Button size="sm" variant="destructive" onClick={() => handleReject(emergency.id)}>
+                  <AlertCircle className="h-4 w-4 mr-2" />
+                  Reject
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  )
+}
 
 const EnhancedAdminDashboard = () => {
   const navigate = useNavigate()
@@ -377,6 +876,7 @@ const EnhancedAdminDashboard = () => {
             <TabsTrigger value="users">User Management</TabsTrigger>
             <TabsTrigger value="content">Content Moderation</TabsTrigger>
             <TabsTrigger value="applications">Expert Applications</TabsTrigger>
+            <TabsTrigger value="marketplace">Marketplace</TabsTrigger>
             <TabsTrigger value="wallet">Wallet Management</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
@@ -659,6 +1159,74 @@ const EnhancedAdminDashboard = () => {
 
               <TabsContent value="withdrawals">
                 <AdminWithdrawalsSection />
+              </TabsContent>
+            </Tabs>
+          </TabsContent>
+
+          {/* Marketplace Tab */}
+          <TabsContent value="marketplace" className="space-y-6">
+            <Tabs defaultValue="donations" className="w-full">
+              <TabsList>
+                <TabsTrigger value="donations">Donations</TabsTrigger>
+                <TabsTrigger value="digital-products">Digital Products</TabsTrigger>
+                <TabsTrigger value="courses">Courses</TabsTrigger>
+                <TabsTrigger value="fundraising">Fundraising</TabsTrigger>
+                <TabsTrigger value="emergency">Emergency Requests</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="donations">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Recent Donations</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <DonationsSection />
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="digital-products">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Digital Products</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <DigitalProductsSection />
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="courses">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Courses</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CoursesSection />
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="fundraising">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Fundraising Requests</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <FundraisingSection />
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="emergency">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Emergency Requests</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <EmergencySection />
+                  </CardContent>
+                </Card>
               </TabsContent>
             </Tabs>
           </TabsContent>
