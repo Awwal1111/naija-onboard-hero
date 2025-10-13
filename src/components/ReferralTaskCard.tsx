@@ -103,18 +103,20 @@ export const ReferralTaskCard = ({ task, hasSubmitted, submissionStatus, onSubmi
 
   return (
     <Card className="h-full">
-      <CardHeader>
-        <div className="flex items-start justify-between">
-          <div>
-            <CardTitle className="text-lg">{task.title}</CardTitle>
-            <CardDescription className="mt-1">
+      <CardHeader className="p-3 sm:p-6">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <CardTitle className="text-sm sm:text-lg line-clamp-2">{task.title}</CardTitle>
+            <CardDescription className="mt-1 text-xs sm:text-sm">
               Reward: {task.reward.toLocaleString()} NC
             </CardDescription>
           </div>
-          {getStatusBadge()}
+          <div className="flex-shrink-0">
+            {getStatusBadge()}
+          </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3 sm:space-y-4 p-3 sm:p-6 pt-0">
         <div>
           <ExpandableText 
             text={task.description} 
@@ -126,14 +128,14 @@ export const ReferralTaskCard = ({ task, hasSubmitted, submissionStatus, onSubmi
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button 
-              className="w-full" 
+              className="w-full text-xs sm:text-sm h-8 sm:h-10" 
               disabled={hasSubmitted && submissionStatus !== 'rejected'}
               variant={hasSubmitted && submissionStatus === 'approved' ? 'secondary' : 'default'}
             >
               {getButtonText()}
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-md max-w-[95vw] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Submit Proof</DialogTitle>
               <DialogDescription>
