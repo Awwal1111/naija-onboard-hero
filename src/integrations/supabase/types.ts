@@ -2301,6 +2301,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "social_tasks_progress_earner_id_fkey"
+            columns: ["earner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "social_tasks_progress_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false

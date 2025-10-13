@@ -48,18 +48,13 @@ export const AdminSocialTasksSection = () => {
         .from('social_tasks_progress')
         .select(`
           *,
-          earner:profiles!earner_id(full_name, profile_picture_url),
-          task:social_tasks!task_id(platform, type, reward)
+          earner:profiles!social_tasks_progress_earner_id_fkey(full_name, profile_picture_url),
+          task:social_tasks!social_tasks_progress_task_id_fkey(platform, type, reward)
         `)
         .eq('status', 'pending')
         .order('created_at', { ascending: false })
 
-      console.log('Query result:', { data, error, count: data?.length })
-
-      if (error) {
-        console.error('Supabase error:', error)
-        throw error
-      }
+      if (error) throw error
       
       setSubmissions(data as any || [])
     } catch (error) {
