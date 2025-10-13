@@ -447,6 +447,80 @@ export type Database = {
         }
         Relationships: []
       }
+      course_enrollments: {
+        Row: {
+          amount: number
+          course_id: string
+          created_at: string | null
+          id: string
+          student_id: string
+        }
+        Insert: {
+          amount: number
+          course_id: string
+          created_at?: string | null
+          id?: string
+          student_id: string
+        }
+        Update: {
+          amount?: number
+          course_id?: string
+          created_at?: string | null
+          id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_enrollments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      courses: {
+        Row: {
+          course_urls: Json
+          created_at: string | null
+          description: string
+          enrollment_count: number | null
+          id: string
+          price: number
+          status: Database["public"]["Enums"]["course_status"] | null
+          thumbnail_url: string | null
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          course_urls?: Json
+          created_at?: string | null
+          description: string
+          enrollment_count?: number | null
+          id?: string
+          price: number
+          status?: Database["public"]["Enums"]["course_status"] | null
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          course_urls?: Json
+          created_at?: string | null
+          description?: string
+          enrollment_count?: number | null
+          id?: string
+          price?: number
+          status?: Database["public"]["Enums"]["course_status"] | null
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       daily_signins: {
         Row: {
           created_at: string
@@ -467,6 +541,83 @@ export type Database = {
           id?: string
           reward_amount?: number
           signin_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      digital_product_purchases: {
+        Row: {
+          amount: number
+          buyer_id: string
+          created_at: string | null
+          id: string
+          product_id: string
+        }
+        Insert: {
+          amount: number
+          buyer_id: string
+          created_at?: string | null
+          id?: string
+          product_id: string
+        }
+        Update: {
+          amount?: number
+          buyer_id?: string
+          created_at?: string | null
+          id?: string
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "digital_product_purchases_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "digital_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      digital_products: {
+        Row: {
+          category: Database["public"]["Enums"]["digital_product_category"]
+          created_at: string | null
+          description: string
+          download_count: number | null
+          file_url: string | null
+          id: string
+          preview_url: string | null
+          price: number
+          status: string | null
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["digital_product_category"]
+          created_at?: string | null
+          description: string
+          download_count?: number | null
+          file_url?: string | null
+          id?: string
+          preview_url?: string | null
+          price: number
+          status?: string | null
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["digital_product_category"]
+          created_at?: string | null
+          description?: string
+          download_count?: number | null
+          file_url?: string | null
+          id?: string
+          preview_url?: string | null
+          price?: number
+          status?: string | null
+          title?: string
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: []
@@ -505,6 +656,72 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      donations: {
+        Row: {
+          amount: number
+          created_at: string | null
+          id: string
+          message: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          id?: string
+          message?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          id?: string
+          message?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      emergency_requests: {
+        Row: {
+          admin_notes: string | null
+          amount_requested: number
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string | null
+          disbursed_at: string | null
+          id: string
+          reason: string
+          status: Database["public"]["Enums"]["emergency_status"] | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          amount_requested: number
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          disbursed_at?: string | null
+          id?: string
+          reason: string
+          status?: Database["public"]["Enums"]["emergency_status"] | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          amount_requested?: number
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          disbursed_at?: string | null
+          id?: string
+          reason?: string
+          status?: Database["public"]["Enums"]["emergency_status"] | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       escrow_payments: {
         Row: {
@@ -672,6 +889,80 @@ export type Database = {
           id?: string
           score?: number | null
           suggestion_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      fundraising_contributions: {
+        Row: {
+          amount: number
+          contributor_id: string
+          created_at: string | null
+          fundraising_id: string
+          id: string
+        }
+        Insert: {
+          amount: number
+          contributor_id: string
+          created_at?: string | null
+          fundraising_id: string
+          id?: string
+        }
+        Update: {
+          amount?: number
+          contributor_id?: string
+          created_at?: string | null
+          fundraising_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fundraising_contributions_fundraising_id_fkey"
+            columns: ["fundraising_id"]
+            isOneToOne: false
+            referencedRelation: "fundraisings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fundraisings: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string | null
+          description: string
+          goal_amount: number
+          id: string
+          raised_amount: number | null
+          status: Database["public"]["Enums"]["fundraising_status"] | null
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          description: string
+          goal_amount: number
+          id?: string
+          raised_amount?: number | null
+          status?: Database["public"]["Enums"]["fundraising_status"] | null
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          description?: string
+          goal_amount?: number
+          id?: string
+          raised_amount?: number | null
+          status?: Database["public"]["Enums"]["fundraising_status"] | null
+          title?: string
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: []
@@ -2891,6 +3182,22 @@ export type Database = {
       }
     }
     Enums: {
+      course_status: "draft" | "active" | "inactive"
+      digital_product_category:
+        | "document"
+        | "ebook"
+        | "pdf"
+        | "template"
+        | "audio"
+        | "video"
+        | "other"
+      emergency_status: "pending" | "approved" | "rejected" | "disbursed"
+      fundraising_status:
+        | "pending"
+        | "approved"
+        | "rejected"
+        | "completed"
+        | "cancelled"
       group_category:
         | "technology"
         | "business"
@@ -3030,6 +3337,24 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      course_status: ["draft", "active", "inactive"],
+      digital_product_category: [
+        "document",
+        "ebook",
+        "pdf",
+        "template",
+        "audio",
+        "video",
+        "other",
+      ],
+      emergency_status: ["pending", "approved", "rejected", "disbursed"],
+      fundraising_status: [
+        "pending",
+        "approved",
+        "rejected",
+        "completed",
+        "cancelled",
+      ],
       group_category: [
         "technology",
         "business",
