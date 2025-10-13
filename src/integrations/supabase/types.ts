@@ -524,16 +524,30 @@ export type Database = {
       courses: {
         Row: {
           average_rating: number | null
+          certificate_included: boolean | null
+          course_category: string | null
           course_urls: Json
           created_at: string | null
+          curriculum: Json | null
           description: string
           duration_hours: number | null
           enrollment_count: number | null
           id: string
+          instructor_bio: string | null
+          instructor_credentials: string | null
+          instructor_name: string | null
+          language: string | null
+          learning_objectives: Json | null
           level: string | null
+          lifetime_access: boolean | null
+          materials_included: Json | null
+          money_back_guarantee: boolean | null
+          prerequisites: string | null
           price: number
           review_count: number | null
           status: Database["public"]["Enums"]["course_status"] | null
+          subtitle_languages: Json | null
+          target_audience: string | null
           thumbnail_url: string | null
           title: string
           updated_at: string | null
@@ -541,16 +555,30 @@ export type Database = {
         }
         Insert: {
           average_rating?: number | null
+          certificate_included?: boolean | null
+          course_category?: string | null
           course_urls?: Json
           created_at?: string | null
+          curriculum?: Json | null
           description: string
           duration_hours?: number | null
           enrollment_count?: number | null
           id?: string
+          instructor_bio?: string | null
+          instructor_credentials?: string | null
+          instructor_name?: string | null
+          language?: string | null
+          learning_objectives?: Json | null
           level?: string | null
+          lifetime_access?: boolean | null
+          materials_included?: Json | null
+          money_back_guarantee?: boolean | null
+          prerequisites?: string | null
           price: number
           review_count?: number | null
           status?: Database["public"]["Enums"]["course_status"] | null
+          subtitle_languages?: Json | null
+          target_audience?: string | null
           thumbnail_url?: string | null
           title: string
           updated_at?: string | null
@@ -558,16 +586,30 @@ export type Database = {
         }
         Update: {
           average_rating?: number | null
+          certificate_included?: boolean | null
+          course_category?: string | null
           course_urls?: Json
           created_at?: string | null
+          curriculum?: Json | null
           description?: string
           duration_hours?: number | null
           enrollment_count?: number | null
           id?: string
+          instructor_bio?: string | null
+          instructor_credentials?: string | null
+          instructor_name?: string | null
+          language?: string | null
+          learning_objectives?: Json | null
           level?: string | null
+          lifetime_access?: boolean | null
+          materials_included?: Json | null
+          money_back_guarantee?: boolean | null
+          prerequisites?: string | null
           price?: number
           review_count?: number | null
           status?: Database["public"]["Enums"]["course_status"] | null
+          subtitle_languages?: Json | null
+          target_audience?: string | null
           thumbnail_url?: string | null
           title?: string
           updated_at?: string | null
@@ -635,53 +677,92 @@ export type Database = {
         Row: {
           average_rating: number | null
           category: Database["public"]["Enums"]["digital_product_category"]
+          compatibility: string | null
           created_at: string | null
+          demo_url: string | null
           description: string
+          detailed_description: string | null
           download_count: number | null
+          features: Json | null
+          file_format: string | null
+          file_size: string | null
           file_url: string | null
           id: string
+          instant_download: boolean | null
           is_verified: boolean | null
+          license_type: string | null
           preview_url: string | null
           price: number
+          refund_policy: string | null
+          requirements: string | null
           review_count: number | null
           status: string | null
+          support_included: boolean | null
           title: string
+          update_history: Json | null
           updated_at: string | null
           user_id: string
+          version: string | null
         }
         Insert: {
           average_rating?: number | null
           category: Database["public"]["Enums"]["digital_product_category"]
+          compatibility?: string | null
           created_at?: string | null
+          demo_url?: string | null
           description: string
+          detailed_description?: string | null
           download_count?: number | null
+          features?: Json | null
+          file_format?: string | null
+          file_size?: string | null
           file_url?: string | null
           id?: string
+          instant_download?: boolean | null
           is_verified?: boolean | null
+          license_type?: string | null
           preview_url?: string | null
           price: number
+          refund_policy?: string | null
+          requirements?: string | null
           review_count?: number | null
           status?: string | null
+          support_included?: boolean | null
           title: string
+          update_history?: Json | null
           updated_at?: string | null
           user_id: string
+          version?: string | null
         }
         Update: {
           average_rating?: number | null
           category?: Database["public"]["Enums"]["digital_product_category"]
+          compatibility?: string | null
           created_at?: string | null
+          demo_url?: string | null
           description?: string
+          detailed_description?: string | null
           download_count?: number | null
+          features?: Json | null
+          file_format?: string | null
+          file_size?: string | null
           file_url?: string | null
           id?: string
+          instant_download?: boolean | null
           is_verified?: boolean | null
+          license_type?: string | null
           preview_url?: string | null
           price?: number
+          refund_policy?: string | null
+          requirements?: string | null
           review_count?: number | null
           status?: string | null
+          support_included?: boolean | null
           title?: string
+          update_history?: Json | null
           updated_at?: string | null
           user_id?: string
+          version?: string | null
         }
         Relationships: []
       }
@@ -1546,69 +1627,114 @@ export type Database = {
       job_posts: {
         Row: {
           application_deadline: string | null
+          application_instructions: string | null
           applications_count: number | null
+          benefits: Json | null
           budget_max: number | null
           budget_min: number | null
+          company_logo_url: string | null
           company_name: string | null
+          company_size: string | null
+          company_website: string | null
+          contact_email: string | null
+          contact_phone: string | null
           created_at: string
           currency: string | null
           description: string
           experience_level: string | null
           featured: boolean | null
           id: string
+          industry: string | null
+          is_negotiable: boolean | null
           is_remote: boolean | null
           job_type: string | null
           location: string | null
+          qualifications: Json | null
           required_skills: string[] | null
+          requirements: string | null
+          responsibilities: string | null
+          salary_currency: string | null
+          salary_period: string | null
           status: string | null
           title: string
           updated_at: string
           user_id: string
           views_count: number | null
+          work_schedule: string | null
         }
         Insert: {
           application_deadline?: string | null
+          application_instructions?: string | null
           applications_count?: number | null
+          benefits?: Json | null
           budget_max?: number | null
           budget_min?: number | null
+          company_logo_url?: string | null
           company_name?: string | null
+          company_size?: string | null
+          company_website?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
           created_at?: string
           currency?: string | null
           description: string
           experience_level?: string | null
           featured?: boolean | null
           id?: string
+          industry?: string | null
+          is_negotiable?: boolean | null
           is_remote?: boolean | null
           job_type?: string | null
           location?: string | null
+          qualifications?: Json | null
           required_skills?: string[] | null
+          requirements?: string | null
+          responsibilities?: string | null
+          salary_currency?: string | null
+          salary_period?: string | null
           status?: string | null
           title: string
           updated_at?: string
           user_id: string
           views_count?: number | null
+          work_schedule?: string | null
         }
         Update: {
           application_deadline?: string | null
+          application_instructions?: string | null
           applications_count?: number | null
+          benefits?: Json | null
           budget_max?: number | null
           budget_min?: number | null
+          company_logo_url?: string | null
           company_name?: string | null
+          company_size?: string | null
+          company_website?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
           created_at?: string
           currency?: string | null
           description?: string
           experience_level?: string | null
           featured?: boolean | null
           id?: string
+          industry?: string | null
+          is_negotiable?: boolean | null
           is_remote?: boolean | null
           job_type?: string | null
           location?: string | null
+          qualifications?: Json | null
           required_skills?: string[] | null
+          requirements?: string | null
+          responsibilities?: string | null
+          salary_currency?: string | null
+          salary_period?: string | null
           status?: string | null
           title?: string
           updated_at?: string
           user_id?: string
           views_count?: number | null
+          work_schedule?: string | null
         }
         Relationships: []
       }

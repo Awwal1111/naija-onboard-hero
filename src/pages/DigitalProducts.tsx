@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import EnhancedProductDialog from "@/components/EnhancedProductDialog";
 
 const categories: Array<"document" | "ebook" | "pdf" | "template" | "audio" | "video" | "other"> = ["document", "ebook", "pdf", "template", "audio", "video", "other"];
 
@@ -21,15 +22,6 @@ export default function DigitalProducts() {
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<"all" | "document" | "ebook" | "pdf" | "template" | "audio" | "video" | "other">("all");
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    category: "document" as "document" | "ebook" | "pdf" | "template" | "audio" | "video" | "other",
-    price: "",
-    file_url: "",
-    preview_url: "",
-  });
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ["digital-products", selectedCategory],
@@ -50,33 +42,6 @@ export default function DigitalProducts() {
       const { data, error } = await query;
       if (error) throw error;
       return data;
-    },
-  });
-
-  const createProductMutation = useMutation({
-    mutationFn: async (data: typeof formData) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-
-      const { error } = await supabase.from("digital_products").insert({
-        title: data.title,
-        description: data.description,
-        category: data.category,
-        price: parseFloat(data.price),
-        file_url: data.file_url,
-        preview_url: data.preview_url,
-      } as any);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast({ title: "Digital product created successfully!" });
-      queryClient.invalidateQueries({ queryKey: ["digital-products"] });
-      setCreateDialogOpen(false);
-      setFormData({ title: "", description: "", category: "document", price: "", file_url: "", preview_url: "" });
-    },
-    onError: () => {
-      toast({ title: "Failed to create product", variant: "destructive" });
     },
   });
 
@@ -157,82 +122,14 @@ export default function DigitalProducts() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <h1 className="text-lg font-bold">Digital Products</h1>
-          <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-            <DialogTrigger asChild>
+          <EnhancedProductDialog
+            trigger={
               <Button size="sm">
                 <Plus className="h-4 w-4 mr-1" />
                 Create
               </Button>
-            </DialogTrigger>
-            <DialogContent className="max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Create Digital Product</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label>Title</Label>
-                  <Input
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    placeholder="Product title"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Description</Label>
-                  <Textarea
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Describe your product"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Category</Label>
-                  <Select value={formData.category} onValueChange={(v) => setFormData({ ...formData, category: v as any })}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map(cat => (
-                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Price (₦NC)</Label>
-                  <Input
-                    type="number"
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                    placeholder="0"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>File URL</Label>
-                  <Input
-                    value={formData.file_url}
-                    onChange={(e) => setFormData({ ...formData, file_url: e.target.value })}
-                    placeholder="https://..."
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Preview URL (Optional)</Label>
-                  <Input
-                    value={formData.preview_url}
-                    onChange={(e) => setFormData({ ...formData, preview_url: e.target.value })}
-                    placeholder="https://..."
-                  />
-                </div>
-                <Button
-                  className="w-full"
-                  onClick={() => createProductMutation.mutate(formData)}
-                  disabled={createProductMutation.isPending}
-                >
-                  Create Product
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+            }
+          />
         </div>
       </div>
 

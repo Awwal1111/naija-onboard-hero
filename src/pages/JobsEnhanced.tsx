@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Search, Briefcase, MapPin, Clock, Bookmark, Star, TrendingUp } from "lucide-react";
+import { ArrowLeft, Search, Briefcase, MapPin, Clock, Bookmark, Star, TrendingUp, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNigerianStates } from "@/hooks/useNigerianStates";
 import JobApplicationDialog from "@/components/JobApplicationDialog";
+import EnhancedJobPostingDialog from "@/components/EnhancedJobPostingDialog";
 import { format } from "date-fns";
 
 export default function JobsEnhanced() {
@@ -101,11 +102,21 @@ export default function JobsEnhanced() {
   return (
     <div className="min-h-screen bg-background">
       <div className="sticky top-0 z-10 bg-background border-b px-3 py-2">
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <h1 className="text-lg font-bold">Job Opportunities</h1>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <h1 className="text-lg font-bold">Job Opportunities</h1>
+          </div>
+          <EnhancedJobPostingDialog
+            trigger={
+              <Button size="sm">
+                <Plus className="h-4 w-4 mr-1" />
+                Post Job
+              </Button>
+            }
+          />
         </div>
       </div>
 

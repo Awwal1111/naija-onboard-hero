@@ -12,22 +12,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import EnhancedCourseDialog from "@/components/EnhancedCourseDialog";
 
 export default function Courses() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [formData, setFormData] = useState<any>({
-    title: "",
-    description: "",
-    price: "",
-    course_urls: "",
-    thumbnail_url: "",
-    duration_hours: "",
-    level: "beginner",
-  });
 
   const { data: courses = [], isLoading } = useQuery({
     queryKey: ["courses"],
@@ -43,38 +34,6 @@ export default function Courses() {
 
       if (error) throw error;
       return data;
-    },
-  });
-
-  const createCourseMutation = useMutation({
-    mutationFn: async (data: typeof formData) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-
-      const urls = data.course_urls.split("\n").filter(u => u.trim()).map(u => ({ url: u.trim() }));
-
-      const { error } = await supabase.from("courses").insert({
-        user_id: user.id,
-        title: data.title,
-        description: data.description,
-        price: parseFloat(data.price),
-        course_urls: urls,
-        thumbnail_url: data.thumbnail_url,
-        duration_hours: data.duration_hours ? parseInt(data.duration_hours) : null,
-        level: data.level,
-        status: "active",
-      } as any);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast({ title: "Course created successfully!" });
-      queryClient.invalidateQueries({ queryKey: ["courses"] });
-      setCreateDialogOpen(false);
-      setFormData({ title: "", description: "", price: "", course_urls: "", thumbnail_url: "", duration_hours: "", level: "beginner" });
-    },
-    onError: () => {
-      toast({ title: "Failed to create course", variant: "destructive" });
     },
   });
 
@@ -137,95 +96,14 @@ export default function Courses() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <h1 className="text-lg font-bold">Courses</h1>
-          <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-            <DialogTrigger asChild>
+          <EnhancedCourseDialog
+            trigger={
               <Button size="sm">
                 <Plus className="h-4 w-4 mr-1" />
                 Create
               </Button>
-            </DialogTrigger>
-            <DialogContent className="max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Create Course</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label>Title</Label>
-                  <Input
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    placeholder="Course title"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Description</Label>
-                  <Textarea
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Describe your course"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Price (₦NC)</Label>
-                  <Input
-                    type="number"
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                    placeholder="0"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Course URLs (one per line)</Label>
-                  <Textarea
-                    value={formData.course_urls}
-                    onChange={(e) => setFormData({ ...formData, course_urls: e.target.value })}
-                    placeholder="https://video1.com&#10;https://video2.com"
-                    rows={3}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Duration (hours)</Label>
-                  <Input
-                    type="number"
-                    value={formData.duration_hours || ""}
-                    onChange={(e) => setFormData({ ...formData, duration_hours: e.target.value })}
-                    placeholder="0"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Level</Label>
-                  <Select 
-                    value={formData.level || "beginner"} 
-                    onValueChange={(v) => setFormData({ ...formData, level: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="beginner">Beginner</SelectItem>
-                      <SelectItem value="intermediate">Intermediate</SelectItem>
-                      <SelectItem value="advanced">Advanced</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Thumbnail URL (Optional)</Label>
-                  <Input
-                    value={formData.thumbnail_url}
-                    onChange={(e) => setFormData({ ...formData, thumbnail_url: e.target.value })}
-                    placeholder="https://..."
-                  />
-                </div>
-                <Button
-                  className="w-full"
-                  onClick={() => createCourseMutation.mutate(formData)}
-                  disabled={createCourseMutation.isPending}
-                >
-                  Create Course
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+            }
+          />
         </div>
       </div>
 
