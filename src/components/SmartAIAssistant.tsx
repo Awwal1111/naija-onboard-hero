@@ -33,12 +33,7 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
   const [messages, setMessages] = useState<Message[]>([])
   const [isLoading, setIsLoading] = useState(false)
   // Initialize position in top-right area
-  const [position, setPosition] = useState(() => ({
-    x: typeof window !== 'undefined' ? window.innerWidth - 320 - 24 : 0,
-    y: 100 // Position 100px from top
-  }))
-  const [isDragging, setIsDragging] = useState(false)
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
+  const [position, setPosition] = useState({ x: 0, y: 100 })
   const [suggestions] = useState([
     "How do I post a job?",
     "How can I become an expert?",
@@ -50,6 +45,8 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const cardRef = useRef<HTMLDivElement>(null)
+  const isDraggingRef = useRef(false)
+  const dragStartRef = useRef({ x: 0, y: 0 })
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -73,53 +70,51 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
     }
   }, [isOpen, location.pathname])
 
-  // Dragging functionality
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    const target = e.target as HTMLElement
-    if (target.closest('button')) {
-      return // Don't drag when clicking buttons
-    }
-    
-    setIsDragging(true)
-    const rect = cardRef.current?.getBoundingClientRect()
-    if (rect) {
-      setDragOffset({
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top
+  // Dragging functionality with refs for immediate updates
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDraggingRef.current) return
+      
+      const newX = e.clientX - dragStartRef.current.x
+      const newY = e.clientY - dragStartRef.current.y
+      
+      // Keep within viewport bounds
+      const maxX = window.innerWidth - 320
+      const maxY = window.innerHeight - 400
+      
+      setPosition({
+        x: Math.max(0, Math.min(newX, maxX)),
+        y: Math.max(0, Math.min(newY, maxY))
       })
     }
+
+    const handleMouseUp = () => {
+      isDraggingRef.current = false
+    }
+
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
+    
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
   }, [])
 
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!isDragging) return
+  const handleMouseDown = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement
+    if (target.closest('button')) return
     
-    const newX = e.clientX - dragOffset.x
-    const newY = e.clientY - dragOffset.y
-    
-    // Keep within viewport bounds
-    const maxX = window.innerWidth - (cardRef.current?.offsetWidth || 320)
-    const maxY = window.innerHeight - (cardRef.current?.offsetHeight || 384)
-    
-    setPosition({
-      x: Math.max(0, Math.min(newX, maxX)),
-      y: Math.max(0, Math.min(newY, maxY))
-    })
-  }, [isDragging, dragOffset])
-
-  const handleMouseUp = useCallback(() => {
-    setIsDragging(false)
-  }, [])
-
-  useEffect(() => {
-    if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove)
-      document.addEventListener('mouseup', handleMouseUp)
-      return () => {
-        document.removeEventListener('mousemove', handleMouseMove)
-        document.removeEventListener('mouseup', handleMouseUp)
+    e.preventDefault()
+    isDraggingRef.current = true
+    const rect = cardRef.current?.getBoundingClientRect()
+    if (rect) {
+      dragStartRef.current = {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
       }
     }
-  }, [isDragging, handleMouseMove, handleMouseUp])
+  }
 
   const getPageContext = () => {
     const path = location.pathname
@@ -271,9 +266,10 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
       {isOpen && (
         <div 
           ref={cardRef}
-          className="fixed z-50"
+          className="fixed z-50 transition-none"
           style={{
-            left: `${position.x}px`,
+            left: position.x === 0 ? 'auto' : `${position.x}px`,
+            right: position.x === 0 ? '1.5rem' : 'auto',
             top: `${position.y}px`,
           }}
         >
