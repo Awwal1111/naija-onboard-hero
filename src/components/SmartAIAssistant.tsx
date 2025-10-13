@@ -56,6 +56,13 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
     scrollToBottom()
   }, [messages])
 
+  // Scroll to bottom when chat opens or un-minimizes
+  useEffect(() => {
+    if (isOpen && !isMinimized) {
+      setTimeout(scrollToBottom, 100)
+    }
+  }, [isOpen, isMinimized])
+
   // Auto-open after 1 minute of no interaction
   useEffect(() => {
     if (!hasInteracted) {
