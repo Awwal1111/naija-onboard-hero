@@ -479,6 +479,47 @@ export type Database = {
           },
         ]
       }
+      course_progress: {
+        Row: {
+          completed_at: string | null
+          completed_lessons: Json | null
+          course_id: string
+          created_at: string | null
+          id: string
+          last_accessed_at: string | null
+          progress_percentage: number | null
+          student_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          completed_lessons?: Json | null
+          course_id: string
+          created_at?: string | null
+          id?: string
+          last_accessed_at?: string | null
+          progress_percentage?: number | null
+          student_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          completed_lessons?: Json | null
+          course_id?: string
+          created_at?: string | null
+          id?: string
+          last_accessed_at?: string | null
+          progress_percentage?: number | null
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_progress_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       course_reviews: {
         Row: {
           course_id: string
@@ -1586,6 +1627,7 @@ export type Database = {
           expected_salary: number | null
           id: string
           job_post_id: string
+          notifications_enabled: boolean | null
           portfolio_urls: string[] | null
           resume_url: string | null
           status: string | null
@@ -1598,6 +1640,7 @@ export type Database = {
           expected_salary?: number | null
           id?: string
           job_post_id: string
+          notifications_enabled?: boolean | null
           portfolio_urls?: string[] | null
           resume_url?: string | null
           status?: string | null
@@ -1610,6 +1653,7 @@ export type Database = {
           expected_salary?: number | null
           id?: string
           job_post_id?: string
+          notifications_enabled?: boolean | null
           portfolio_urls?: string[] | null
           resume_url?: string | null
           status?: string | null
@@ -2331,6 +2375,41 @@ export type Database = {
           total_pool?: number | null
         }
         Relationships: []
+      }
+      product_downloads: {
+        Row: {
+          buyer_id: string
+          created_at: string | null
+          download_count: number | null
+          id: string
+          last_downloaded_at: string | null
+          product_id: string
+        }
+        Insert: {
+          buyer_id: string
+          created_at?: string | null
+          download_count?: number | null
+          id?: string
+          last_downloaded_at?: string | null
+          product_id: string
+        }
+        Update: {
+          buyer_id?: string
+          created_at?: string | null
+          download_count?: number | null
+          id?: string
+          last_downloaded_at?: string | null
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_downloads_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "digital_products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       product_reviews: {
         Row: {
@@ -3557,6 +3636,10 @@ export type Database = {
         Args: { setting_key: string }
         Returns: string
       }
+      has_purchased_product: {
+        Args: { p_product_id: string; p_user_id: string }
+        Returns: boolean
+      }
       has_user_role: {
         Args: {
           check_role: Database["public"]["Enums"]["user_role"]
@@ -3570,6 +3653,10 @@ export type Database = {
       }
       is_admin_user: {
         Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_enrolled_in_course: {
+        Args: { p_course_id: string; p_user_id: string }
         Returns: boolean
       }
       is_group_lead_check: {

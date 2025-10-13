@@ -49,6 +49,10 @@ import EnhancedAdminDashboard from "./pages/EnhancedAdminDashboard";
 import Articles from "./pages/Articles";
 import NotFound from "./pages/NotFound";
 import NigerianTrivia from "./components/NigerianTrivia";
+import FundraisingDetail from "./pages/FundraisingDetail";
+import ProductDetail from "./pages/ProductDetail";
+import CourseDetail from "./pages/CourseDetail";
+import JobDetail from "./pages/JobDetail";
 import SpinWheelGame from "./components/SpinWheelGame";
 import NaijaPredictor from "./components/NaijaPredictor";
 
@@ -87,8 +91,12 @@ const App = () => (
           <Route path="/earn/referral-tasks" element={<ProtectedRoute><ReferralTasks /></ProtectedRoute>} />
           <Route path="/referral-tasks" element={<ProtectedRoute><ReferralTasks /></ProtectedRoute>} />
           <Route path="/digital-products" element={<ProtectedRoute><DigitalProducts /></ProtectedRoute>} />
+          <Route path="/products/:id" element={<ProtectedRoute><ProductDetail /></ProtectedRoute>} />
           <Route path="/courses" element={<ProtectedRoute><Courses /></ProtectedRoute>} />
+          <Route path="/courses/:id" element={<ProtectedRoute><CourseDetail /></ProtectedRoute>} />
           <Route path="/fundraising" element={<ProtectedRoute><Fundraising /></ProtectedRoute>} />
+          <Route path="/fundraising/:id" element={<ProtectedRoute><FundraisingDetail /></ProtectedRoute>} />
+          <Route path="/jobs/:id" element={<ProtectedRoute><JobDetail /></ProtectedRoute>} />
           <Route path="/emergency" element={<ProtectedRoute><Emergency /></ProtectedRoute>} />
           <Route path="/loan" element={<ProtectedRoute><Loan /></ProtectedRoute>} />
           <Route path="/donations" element={<ProtectedRoute><Donations /></ProtectedRoute>} />
