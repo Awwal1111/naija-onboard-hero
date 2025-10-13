@@ -38,6 +38,12 @@ export const AdminSocialTasksSection = () => {
 
   const fetchSubmissions = async () => {
     try {
+      console.log('Fetching social task submissions...')
+      
+      // First check if user has admin access
+      const { data: { user } } = await supabase.auth.getUser()
+      console.log('Current user:', user?.id)
+      
       const { data, error } = await supabase
         .from('social_tasks_progress')
         .select(`
@@ -48,7 +54,13 @@ export const AdminSocialTasksSection = () => {
         .eq('status', 'pending')
         .order('created_at', { ascending: false })
 
-      if (error) throw error
+      console.log('Query result:', { data, error, count: data?.length })
+
+      if (error) {
+        console.error('Supabase error:', error)
+        throw error
+      }
+      
       setSubmissions(data as any || [])
     } catch (error) {
       console.error('Error fetching submissions:', error)
