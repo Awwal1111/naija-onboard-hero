@@ -39,7 +39,6 @@ Keep responses short (2-3 sentences), friendly, and actionable. Use Nigerian con
           { role: 'system', content: systemPrompt },
           { role: 'user', content: message }
         ],
-        max_tokens: 150,
         temperature: 0.7,
       }),
     });
