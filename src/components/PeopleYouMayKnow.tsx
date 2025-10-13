@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'
-import { UserPlus, ChevronLeft, ChevronRight, Check } from 'lucide-react'
+import { UserPlus, Check } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel'
 import { useConnections } from '@/hooks/useConnections'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
@@ -24,7 +25,6 @@ const PeopleYouMayKnow: React.FC<PeopleYouMayKnowProps> = ({ onProfileClick }) =
   const { user } = useAuth()
   const { sendConnectionRequest } = useConnections()
   const [suggestions, setSuggestions] = useState<SuggestedUser[]>([])
-  const [currentIndex, setCurrentIndex] = useState(0)
   const [loading, setLoading] = useState(true)
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null)
   const [showProfilePreview, setShowProfilePreview] = useState(false)
@@ -111,97 +111,73 @@ const PeopleYouMayKnow: React.FC<PeopleYouMayKnowProps> = ({ onProfileClick }) =
     setSelectedProfileId(null)
   }
 
-  const handleNext = () => {
-    if (currentIndex < suggestions.length - 3) {
-      setCurrentIndex(currentIndex + 1)
-    }
-  }
-
-  const handlePrev = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1)
-    }
-  }
-
   if (loading || suggestions.length === 0) return null
-
-  const visibleSuggestions = suggestions.slice(currentIndex, currentIndex + 3)
 
   return (
     <Card className="mb-6 overflow-hidden">
       <CardContent className="p-4">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">People You May Know</h3>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handlePrev}
-              disabled={currentIndex === 0}
-              className="h-8 w-8 p-0"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleNext}
-              disabled={currentIndex >= suggestions.length - 3}
-              className="h-8 w-8 p-0"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
+        <h3 className="text-lg font-semibold mb-4">People You May Know</h3>
 
-        <div className="grid grid-cols-3 gap-4">
-          {visibleSuggestions.map((person) => {
-            const isPending = pendingRequests.has(person.user_id)
-            
-            return (
-              <div key={person.user_id} className="flex flex-col items-center text-center p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors">
-                <div 
-                  onClick={() => handleProfileClick(person.user_id)}
-                  className="cursor-pointer"
-                >
-                  <Avatar className="h-16 w-16 mb-2 hover:ring-2 hover:ring-primary transition-all">
-                    <AvatarImage src={person.profile_picture_url} />
-                    <AvatarFallback>
-                      {person.full_name?.charAt(0) || 'U'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <h4 className="font-medium text-sm truncate w-full hover:text-primary transition-colors">
-                    {person.full_name}
-                  </h4>
-                  {person.profession && (
-                    <p className="text-xs text-text-secondary truncate w-full">
-                      {person.profession}
-                    </p>
-                  )}
-                </div>
-                <Button
-                  size="sm"
-                  onClick={() => handleConnect(person.user_id)}
-                  disabled={isPending}
-                  variant={isPending ? "secondary" : "default"}
-                  className="mt-2 w-full text-xs"
-                >
-                  {isPending ? (
-                    <>
-                      <Check className="h-3 w-3 mr-1" />
-                      Request Sent
-                    </>
-                  ) : (
-                    <>
-                      <UserPlus className="h-3 w-3 mr-1" />
-                      Connect
-                    </>
-                  )}
-                </Button>
-              </div>
-            )
-          })}
-        </div>
+        <Carousel
+          opts={{
+            align: "start",
+            loop: false,
+          }}
+          className="w-full"
+        >
+          <CarouselContent className="-ml-2 md:-ml-4">
+            {suggestions.map((person) => {
+              const isPending = pendingRequests.has(person.user_id)
+              
+              return (
+                <CarouselItem key={person.user_id} className="pl-2 md:pl-4 basis-1/2 md:basis-1/3 lg:basis-1/4">
+                  <div className="flex flex-col items-center text-center p-3 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors h-full">
+                    <div 
+                      onClick={() => handleProfileClick(person.user_id)}
+                      className="cursor-pointer"
+                    >
+                      <Avatar className="h-16 w-16 mb-2 hover:ring-2 hover:ring-primary transition-all">
+                        <AvatarImage src={person.profile_picture_url} />
+                        <AvatarFallback>
+                          {person.full_name?.charAt(0) || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <h4 className="font-medium text-sm truncate w-full hover:text-primary transition-colors">
+                        {person.full_name}
+                      </h4>
+                      {person.profession && (
+                        <p className="text-xs text-muted-foreground truncate w-full">
+                          {person.profession}
+                        </p>
+                      )}
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => handleConnect(person.user_id)}
+                      disabled={isPending}
+                      variant={isPending ? "secondary" : "default"}
+                      className="mt-2 w-full text-xs"
+                    >
+                      {isPending ? (
+                        <>
+                          <Check className="h-3 w-3 mr-1" />
+                          Request Sent
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus className="h-3 w-3 mr-1" />
+                          Connect
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </CarouselItem>
+              )
+            })}
+          </CarouselContent>
+          <CarouselPrevious className="-left-2" />
+          <CarouselNext className="-right-2" />
+        </Carousel>
       </CardContent>
       
       {/* Profile Preview Dialog */}
