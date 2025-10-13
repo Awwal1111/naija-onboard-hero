@@ -40,11 +40,17 @@ const DonationsSection = () => {
         .order('created_at', { ascending: false })
         .limit(50)
 
-      if (error) throw error
-      console.log('Donations fetched:', data)
+      if (error) {
+        console.error('Donations query error:', error)
+        throw error
+      }
+      
+      console.log('Donations fetched successfully:', data)
       setDonations(data || [])
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching donations:', error)
+      // Show error in UI
+      setDonations([])
     } finally {
       setLoading(false)
     }
@@ -58,7 +64,8 @@ const DonationsSection = () => {
     return (
       <div className="text-center py-8">
         <Heart className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-        <p className="text-text-secondary">No donations yet</p>
+        <p className="text-text-secondary">No donations found</p>
+        <p className="text-xs text-text-secondary mt-2">Check console for errors</p>
       </div>
     )
   }
