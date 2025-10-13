@@ -33,6 +33,9 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
   const [message, setMessage] = useState('')
   const [messages, setMessages] = useState<Message[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [position, setPosition] = useState({ x: window.innerWidth - 400, y: window.innerHeight - 500 })
+  const [isDragging, setIsDragging] = useState(false)
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
   const [suggestions] = useState([
     "How do I post a job?",
     "How can I become an expert?",
@@ -43,6 +46,7 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const dragRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -209,6 +213,40 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
     setMessages([welcomeMessage])
   }
 
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('.drag-handle')) {
+      setIsDragging(true)
+      setDragOffset({
+        x: e.clientX - position.x,
+        y: e.clientY - position.y
+      })
+    }
+  }
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isDragging) {
+        const newX = Math.max(0, Math.min(e.clientX - dragOffset.x, window.innerWidth - 320))
+        const newY = Math.max(0, Math.min(e.clientY - dragOffset.y, window.innerHeight - (isMinimized ? 64 : 384)))
+        setPosition({ x: newX, y: newY })
+      }
+    }
+
+    const handleMouseUp = () => {
+      setIsDragging(false)
+    }
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mouseup', handleMouseUp)
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [isDragging, dragOffset, isMinimized])
+
   return (
     <>
       {/* Floating AI Button - always visible */}
@@ -229,9 +267,18 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
 
       {/* AI Chat Window - floating above content */}
       {isOpen && (
-        <div className="fixed bottom-6 right-6 z-50">
+        <div 
+          ref={dragRef}
+          className="fixed z-50"
+          style={{ 
+            left: `${position.x}px`, 
+            top: `${position.y}px`,
+            cursor: isDragging ? 'grabbing' : 'default'
+          }}
+          onMouseDown={handleMouseDown}
+        >
           <Card className={`w-80 shadow-2xl border-primary/20 ${isMinimized ? 'h-16' : 'h-96'} transition-all duration-300`}>
-        <CardHeader className="py-3 px-4 bg-gradient-to-r from-primary to-primary/80 text-white">
+        <CardHeader className="drag-handle py-3 px-4 bg-gradient-to-r from-primary to-primary/80 text-white cursor-grab active:cursor-grabbing">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="relative">
