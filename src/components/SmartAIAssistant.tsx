@@ -71,22 +71,30 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
 
   // Dragging functionality
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    console.log('🖱️ Mouse down on AI assistant header')
     // Check if clicking on header or drag handle (not on buttons)
     const target = e.target as HTMLElement
-    if (target.closest('button')) return // Don't drag when clicking buttons
+    if (target.closest('button')) {
+      console.log('❌ Clicked on button, ignoring drag')
+      return // Don't drag when clicking buttons
+    }
     
+    console.log('✅ Starting drag')
     setIsDragging(true)
     const rect = cardRef.current?.getBoundingClientRect()
     if (rect) {
-      setDragOffset({
+      const offset = {
         x: e.clientX - rect.left,
         y: e.clientY - rect.top
-      })
+      }
+      console.log('📍 Drag offset:', offset)
+      setDragOffset(offset)
     }
   }, [])
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (isDragging) {
+      console.log('🎯 Dragging, mouse position:', { x: e.clientX, y: e.clientY })
       const newX = e.clientX - dragOffset.x
       const newY = e.clientY - dragOffset.y
       
