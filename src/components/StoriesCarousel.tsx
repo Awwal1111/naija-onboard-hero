@@ -246,12 +246,40 @@ const StoriesCarousel: React.FC<StoriesCarouselProps> = ({ onCreateStory }) => {
                   ? 'bg-gradient-to-r from-pink-500 to-purple-500' 
                   : 'bg-muted'
               }`}>
-                <Avatar className="w-full h-full border-2 border-background">
-                  <AvatarImage src={latestStory.profiles?.profile_picture_url} />
-                  <AvatarFallback className="text-xs">
-                    {latestStory.profiles?.full_name?.charAt(0) || 'U'}
-                  </AvatarFallback>
-                </Avatar>
+                <div className="w-full h-full rounded-full overflow-hidden border-2 border-background">
+                  {/* Show actual story content */}
+                  {latestStory.media_type?.startsWith('image') && latestStory.media_url ? (
+                    <img 
+                      src={latestStory.media_url} 
+                      alt="Story"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : latestStory.media_type?.startsWith('video') && latestStory.media_url ? (
+                    <video 
+                      src={latestStory.media_url} 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : latestStory.media_type === 'text' || latestStory.content ? (
+                    <div className={`w-full h-full flex items-center justify-center text-[8px] font-semibold text-white p-1 ${
+                      latestStory.background_color === 'gradient-purple' ? 'bg-gradient-to-br from-purple-500 to-pink-500' :
+                      latestStory.background_color === 'gradient-blue' ? 'bg-gradient-to-br from-blue-500 to-cyan-500' :
+                      latestStory.background_color === 'gradient-orange' ? 'bg-gradient-to-br from-orange-500 to-red-500' :
+                      latestStory.background_color === 'solid-black' ? 'bg-black' :
+                      'bg-gradient-to-br from-primary to-brand-green'
+                    }`}>
+                      <span className="line-clamp-3 text-center leading-tight">
+                        {latestStory.content?.substring(0, 30)}...
+                      </span>
+                    </div>
+                  ) : (
+                    <Avatar className="w-full h-full">
+                      <AvatarImage src={latestStory.profiles?.profile_picture_url} />
+                      <AvatarFallback className="text-xs">
+                        {latestStory.profiles?.full_name?.charAt(0) || 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
+                </div>
                 {userStories.length > 1 && (
                   <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-primary rounded-full flex items-center justify-center text-[10px] text-white font-bold border border-background">
                     {userStories.length}
