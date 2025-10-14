@@ -157,14 +157,18 @@ export const useSafePay = (otherUserId: string) => {
         p_amount: amount
       })
 
-      if (error) throw error
+      if (error) {
+        console.error('RPC Error:', error)
+        throw error
+      }
 
       // Check if the function returned an error
       const result = data as { success: boolean; error?: string; safepay_id?: string }
-      if (result && !result.success) {
+      
+      if (!result || !result.success) {
         toast({
           title: "Cannot Propose SafePay",
-          description: result.error || "Failed to propose SafePay transaction",
+          description: result?.error || "Failed to propose SafePay transaction",
           variant: "destructive"
         })
         return
@@ -332,9 +336,14 @@ export const useSafePay = (otherUserId: string) => {
 
     setLoading(true)
     try {
-      await supabase.rpc('release_safepay', {
+      const { error } = await supabase.rpc('release_safepay', {
         p_safepay_id: activeTransaction.id
       })
+
+      if (error) {
+        console.error('RPC Error:', error)
+        throw error
+      }
 
       toast({
         title: "Funds Released",
