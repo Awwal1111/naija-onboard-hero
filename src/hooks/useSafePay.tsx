@@ -112,17 +112,19 @@ export const useSafePay = (otherUserId: string) => {
   const subscribeToTransactionUpdates = () => {
     if (!user || !otherUserId) return
 
+    // Subscribe to any changes where the current user is involved
     const channel = supabase
-      .channel(`safepay-${user.id}-${otherUserId}`)
+      .channel(`safepay-updates-${user.id}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'safepay_transactions',
-          filter: `buyer_id=eq.${user.id},seller_id=eq.${otherUserId}`
+          filter: `buyer_id=eq.${user.id}`
         },
-        () => {
+        (payload) => {
+          console.log('SafePay update (as buyer):', payload)
           fetchActiveTransaction()
           fetchWallet()
         }
@@ -133,14 +135,17 @@ export const useSafePay = (otherUserId: string) => {
           event: '*',
           schema: 'public',
           table: 'safepay_transactions',
-          filter: `buyer_id=eq.${otherUserId},seller_id=eq.${user.id}`
+          filter: `seller_id=eq.${user.id}`
         },
-        () => {
+        (payload) => {
+          console.log('SafePay update (as seller):', payload)
           fetchActiveTransaction()
           fetchWallet()
         }
       )
-      .subscribe()
+      .subscribe((status) => {
+        console.log('SafePay subscription status:', status)
+      })
 
     return () => {
       supabase.removeChannel(channel)
@@ -240,13 +245,24 @@ export const useSafePay = (otherUserId: string) => {
   }
 
   const completeSafePay = async () => {
-    if (!activeTransaction || activeTransaction.status !== 'active') return
+    if (!activeTransaction || activeTransaction.status !== 'active') {
+      console.log('Cannot complete SafePay:', { activeTransaction, status: activeTransaction?.status })
+      return
+    }
 
     setLoading(true)
     try {
-      await supabase.rpc('complete_safepay_work' as any, {
+      console.log('Completing SafePay:', activeTransaction.id)
+      const { error } = await supabase.rpc('complete_safepay_work' as any, {
         p_safepay_id: activeTransaction.id
       })
+
+      if (error) {
+        console.error('RPC Error:', error)
+        throw error
+      }
+
+      console.log('SafePay completed successfully')
 
       toast({
         title: "Work Marked Complete",
@@ -383,13 +399,24 @@ export const useSafePay = (otherUserId: string) => {
   }
 
   const cancelSafePay = async () => {
-    if (!activeTransaction) return
+    if (!activeTransaction) {
+      console.log('No active transaction to cancel')
+      return
+    }
 
     setLoading(true)
     try {
-      await supabase.rpc('cancel_safepay', {
+      console.log('Cancelling SafePay:', activeTransaction.id, 'Status:', activeTransaction.status)
+      const { error } = await supabase.rpc('cancel_safepay', {
         p_safepay_id: activeTransaction.id
       })
+
+      if (error) {
+        console.error('RPC Error:', error)
+        throw error
+      }
+
+      console.log('SafePay cancelled successfully')
 
       toast({
         title: "SafePay Cancelled",

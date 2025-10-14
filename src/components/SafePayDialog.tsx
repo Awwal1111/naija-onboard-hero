@@ -411,6 +411,16 @@ const SafePayDialog: React.FC<SafePayDialogProps> = ({ otherUserId, otherUserNam
         <DialogHeader>
           <DialogTitle>SafePay Escrow</DialogTitle>
         </DialogHeader>
+        
+        {/* Debug info - remove after testing */}
+        {activeTransaction && (
+          <div className="text-xs bg-muted p-2 rounded mb-2">
+            <div>Status: {activeTransaction.status}</div>
+            <div>Amount: {activeTransaction.amount} NC</div>
+            <div>Your role: {activeTransaction.buyer_id === user?.id ? 'Buyer' : 'Seller'}</div>
+          </div>
+        )}
+        
         {renderTransactionStatus()}
       </DialogContent>
     </Dialog>
