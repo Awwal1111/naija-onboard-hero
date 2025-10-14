@@ -1,11 +1,19 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { ArrowUpRight, ArrowDownLeft, Clock, CheckCircle, XCircle } from 'lucide-react'
-import { useWallet } from '@/hooks/useWallet'
+import { ArrowUpRight, ArrowDownLeft, Clock, CheckCircle, XCircle, ChevronRight } from 'lucide-react'
+import { useWallet, WalletTransaction } from '@/hooks/useWallet'
+import { TransactionDetailDialog } from './TransactionDetailDialog'
 
 export const TransactionHistory = () => {
   const { transactions, loading } = useWallet()
+  const [selectedTransaction, setSelectedTransaction] = useState<WalletTransaction | null>(null)
+  const [dialogOpen, setDialogOpen] = useState(false)
+
+  const handleTransactionClick = (transaction: WalletTransaction) => {
+    setSelectedTransaction(transaction)
+    setDialogOpen(true)
+  }
 
   const getTransactionIcon = (type: string) => {
     return type === 'credit' ? (
@@ -86,45 +94,73 @@ export const TransactionHistory = () => {
             </p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {transactions.slice(0, 5).map((transaction) => (
-              <div key={transaction.id} className="flex items-center justify-between p-3 hover:bg-accent/50 rounded-lg transition-colors">
-                <div className="flex items-center space-x-3">
-                  <div className="flex items-center space-x-1">
-                     {getTransactionIcon(transaction.kind)}
-                    {getStatusIcon(transaction.status)}
-                  </div>
-                  <div>
-                    <p className="font-medium text-sm">{transaction.reference}</p>
-                    <div className="flex items-center space-x-2 mt-1">
-                      <p className="text-xs text-text-secondary">
-                        {new Date(transaction.created_at).toLocaleDateString()}
-                      </p>
-                      {getStatusBadge(transaction.status)}
+          <>
+            <div className="space-y-2">
+              {transactions.slice(0, 5).map((transaction) => {
+                const isCredit = transaction.kind === 'credit' || 
+                               transaction.kind.includes('win') || 
+                               transaction.kind.includes('received') ||
+                               transaction.kind.includes('reward') ||
+                               transaction.kind.includes('deposit') ||
+                               transaction.kind === 'transfer_in'
+                
+                return (
+                  <button
+                    key={transaction.id}
+                    onClick={() => handleTransactionClick(transaction)}
+                    className="w-full flex items-center justify-between p-4 hover:bg-accent/70 active:bg-accent rounded-xl transition-all duration-200 group border border-transparent hover:border-border"
+                  >
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
+                        isCredit ? 'bg-green-500/10' : 'bg-red-500/10'
+                      }`}>
+                        {isCredit ? (
+                          <ArrowDownLeft className="h-5 w-5 text-green-500" />
+                        ) : (
+                          <ArrowUpRight className="h-5 w-5 text-red-500" />
+                        )}
+                      </div>
+                      
+                      <div className="flex-1 min-w-0 text-left">
+                        <p className="font-medium text-sm truncate">{transaction.reference}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(transaction.created_at).toLocaleDateString()}
+                          </p>
+                          {getStatusBadge(transaction.status)}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-                 <div className="text-right">
-                  <p className={`font-medium text-sm ${
-                    transaction.kind === 'credit' || transaction.kind.includes('win') || transaction.kind.includes('received') ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {(transaction.kind === 'credit' || transaction.kind.includes('win') || transaction.kind.includes('received')) ? '+' : '-'}{Math.abs(transaction.amount).toLocaleString()} NC
-                  </p>
-                   <p className="text-xs text-text-secondary">
-                     {transaction.kind}
-                   </p>
-                </div>
-              </div>
-            ))}
+                    
+                    <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                      <div className="text-right">
+                        <p className={`font-semibold text-sm whitespace-nowrap ${
+                          isCredit ? 'text-green-500' : 'text-red-500'
+                        }`}>
+                          {isCredit ? '+' : '-'}{Math.abs(transaction.amount).toLocaleString()} NC
+                        </p>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
             
             {transactions.length > 5 && (
-              <div className="text-center pt-3">
-                <button className="text-sm text-primary hover:underline">
-                  View all transactions
+              <div className="text-center pt-4">
+                <button className="text-sm text-primary hover:underline font-medium">
+                  View all {transactions.length} transactions
                 </button>
               </div>
             )}
-          </div>
+
+            <TransactionDetailDialog
+              transaction={selectedTransaction}
+              open={dialogOpen}
+              onOpenChange={setDialogOpen}
+            />
+          </>
         )}
       </CardContent>
     </Card>

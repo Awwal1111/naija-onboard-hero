@@ -147,7 +147,7 @@ export const useWallet = () => {
         {
           event: '*',
           schema: 'public',
-          table: 'transactions',
+          table: 'wallet_transactions',
           filter: `user_id=eq.${user.id}`
         },
         () => {
