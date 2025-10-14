@@ -250,29 +250,22 @@ const Profile = () => {
         <div className="bg-card border border-border rounded-2xl p-6 mb-6">
           <div className="flex items-start gap-4 mb-6">
             <div className="relative">
-              <button
+              <Avatar 
+                className="w-24 h-24 border-4 border-background shadow-lg cursor-pointer hover:opacity-90 transition-opacity ring-2 ring-primary/20"
                 onClick={() => profile?.profile_picture_url && setIsImageViewerOpen(true)}
-                className={`w-20 h-20 bg-primary rounded-full flex items-center justify-center text-white text-2xl font-bold overflow-hidden ${
-                  profile?.profile_picture_url ? 'cursor-pointer hover:opacity-90 transition-opacity' : ''
-                }`}
               >
-                {profile?.profile_picture_url ? (
-                  <img 
-                    src={profile.profile_picture_url} 
-                    alt={profile.full_name || 'Profile'}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      console.error('Profile picture failed to load:', profile.profile_picture_url)
-                      e.currentTarget.style.display = 'none'
-                    }}
-                  />
-                ) : (
-                  profile?.full_name?.charAt(0) || 'U'
-                )}
-              </button>
+                <AvatarImage 
+                  src={profile?.profile_picture_url} 
+                  alt={profile?.full_name || 'Profile'}
+                  className="object-cover"
+                />
+                <AvatarFallback className="bg-primary text-white text-2xl font-bold">
+                  {profile?.full_name?.charAt(0) || 'U'}
+                </AvatarFallback>
+              </Avatar>
               
-              {isOwnProfile ? (
-                <label className="absolute -bottom-2 -right-2 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white cursor-pointer hover:bg-primary/90 transition-colors z-10">
+              {isOwnProfile && (
+                <label className="absolute bottom-0 right-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white cursor-pointer hover:bg-primary/90 transition-colors shadow-lg border-2 border-background z-10">
                   <input
                     type="file"
                     accept="image/*"
@@ -281,7 +274,7 @@ const Profile = () => {
                   />
                   <Camera className="h-4 w-4" />
                 </label>
-              ) : null}
+              )}
             </div>
             
             <div className="flex-1">
