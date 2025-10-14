@@ -134,7 +134,7 @@ const Profile = () => {
 
   // Refetch profile data when connections change
   useEffect(() => {
-    if (isOwnProfile && currentUserProfile) {
+    if (user?.id) {
       // Set up realtime listener for connections
       const channel = supabase
         .channel('profile-connections')
@@ -143,12 +143,23 @@ const Profile = () => {
           {
             event: '*',
             schema: 'public',
-            table: 'connections',
-            filter: `user1_id=eq.${user?.id},user2_id=eq.${user?.id}`
+            table: 'connections'
           },
-          () => {
-            // Refetch profile to get updated connections_count
-            window.location.reload()
+          async (payload) => {
+            console.log('Connection change detected:', payload)
+            // Refetch the current profile to get updated count
+            if (isOwnProfile) {
+              const { data } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('user_id', user.id)
+                .single()
+              
+              if (data) {
+                // Update the profile via the updateProfile method
+                window.location.reload()
+              }
+            }
           }
         )
         .subscribe()
@@ -157,7 +168,7 @@ const Profile = () => {
         supabase.removeChannel(channel)
       }
     }
-  }, [isOwnProfile, user?.id])
+  }, [user?.id, isOwnProfile])
 
   const handleConnectUser = async () => {
     if (userId) {
