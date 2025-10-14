@@ -211,7 +211,6 @@ export const useSuggestions = () => {
         .select('id, user_id, full_name, profession, profile_picture_url, average_rating, rating_count, is_expert')
         .eq('is_expert', true)
         .neq('user_id', user.id)
-        .not('average_rating', 'is', null)
         .limit(20)
 
       if (error) throw error
