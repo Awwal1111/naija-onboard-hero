@@ -26,6 +26,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 import PortfolioSection from '@/components/PortfolioSection'
+import SkillsSection from '@/components/SkillsSection'
 import TopBannerAd from '@/components/TopBannerAd'
 import { SavedPostsSection } from '@/components/SavedPostsSection'
 
@@ -621,20 +622,7 @@ const Profile = () => {
           )}
 
           <TabsContent value="skills" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Skills & Expertise</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  <Award className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <h3 className="font-semibold text-text-primary mb-2">Skills Management</h3>
-                  <p className="text-sm">
-                    Skills management feature coming soon. Showcase your expertise to attract more clients.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+            <SkillsSection userId={profile?.user_id} isOwnProfile={isOwnProfile} />
           </TabsContent>
 
           <TabsContent value="portfolio" className="mt-6">
