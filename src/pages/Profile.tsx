@@ -250,19 +250,25 @@ const Profile = () => {
         <div className="bg-card border border-border rounded-2xl p-6 mb-6">
           <div className="flex items-start gap-4 mb-6">
             <div className="relative">
-              <Avatar 
-                className="w-24 h-24 border-4 border-background shadow-lg cursor-pointer hover:opacity-90 transition-opacity ring-2 ring-primary/20"
+              <button
                 onClick={() => profile?.profile_picture_url && setIsImageViewerOpen(true)}
+                className={`w-24 h-24 rounded-full p-[3px] transition-all ${
+                  profile?.profile_picture_url 
+                    ? 'bg-gradient-to-r from-pink-500 via-purple-500 to-orange-500 hover:scale-105' 
+                    : 'bg-muted'
+                }`}
               >
-                <AvatarImage 
-                  src={profile?.profile_picture_url} 
-                  alt={profile?.full_name || 'Profile'}
-                  className="object-cover"
-                />
-                <AvatarFallback className="bg-primary text-white text-2xl font-bold">
-                  {profile?.full_name?.charAt(0) || 'U'}
-                </AvatarFallback>
-              </Avatar>
+                <Avatar className="w-full h-full border-[3px] border-background">
+                  <AvatarImage 
+                    src={profile?.profile_picture_url} 
+                    alt={profile?.full_name || 'Profile'}
+                    className="object-cover"
+                  />
+                  <AvatarFallback className="bg-primary text-white text-2xl font-bold">
+                    {profile?.full_name?.charAt(0) || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+              </button>
               
               {isOwnProfile && (
                 <label className="absolute bottom-0 right-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white cursor-pointer hover:bg-primary/90 transition-colors shadow-lg border-2 border-background z-10">
