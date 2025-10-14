@@ -45,6 +45,7 @@ const Profile = () => {
   const [viewedUserProfile, setViewedUserProfile] = useState<any>(null)
   const [viewedUserLoading, setViewedUserLoading] = useState(false)
   const [isConnected, setIsConnected] = useState(false)
+  const [userEmail, setUserEmail] = useState<string | null>(null)
   const [editForm, setEditForm] = useState({
     full_name: '',
     bio: '',
@@ -56,6 +57,17 @@ const Profile = () => {
   const isOwnProfile = !userId || userId === user?.id
   const profile = isOwnProfile ? currentUserProfile : viewedUserProfile
   const loading = isOwnProfile ? currentUserLoading : viewedUserLoading
+
+  // Fetch user email for own profile
+  useEffect(() => {
+    const fetchUserEmail = async () => {
+      if (isOwnProfile && user) {
+        const { data: { user: authUser } } = await supabase.auth.getUser()
+        setUserEmail(authUser?.email || null)
+      }
+    }
+    fetchUserEmail()
+  }, [isOwnProfile, user])
 
   // Fetch other user's profile if viewing someone else
   useEffect(() => {
@@ -487,6 +499,44 @@ const Profile = () => {
                 Post Job
               </BrandButton>
             </div>
+
+            {/* Contact Information - Only visible to owner or connections */}
+            {(isOwnProfile || isConnected) && (profile?.phone_number || userEmail) && (
+              <Card className="mb-4">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Phone className="h-5 w-5" />
+                    Contact Information
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {profile?.phone_number && (
+                    <div className="flex items-center gap-3 p-3 bg-muted rounded-xl">
+                      <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                        <Phone className="h-4 w-4 text-primary" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs text-text-secondary">Phone</p>
+                        <p className="text-sm text-text-primary font-medium">{profile.phone_number}</p>
+                      </div>
+                    </div>
+                  )}
+                  {(isOwnProfile ? userEmail : profile?.email) && (
+                    <div className="flex items-center gap-3 p-3 bg-muted rounded-xl">
+                      <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                        <Mail className="h-4 w-4 text-primary" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs text-text-secondary">Email</p>
+                        <p className="text-sm text-text-primary font-medium">
+                          {isOwnProfile ? userEmail : profile?.email}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
             {/* Recent Activity */}
             <Card>
