@@ -38,9 +38,84 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
   const [showComments, setShowComments] = useState(false)
   const [commentText, setCommentText] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [isSaved, setIsSaved] = useState(false)
   const viewTracked = useRef(false)
   const { toast } = useToast()
   const { trackPostView } = usePostViews()
+
+  // Check if post is saved
+  useEffect(() => {
+    checkIfSaved()
+  }, [post.id, currentUserId])
+
+  const checkIfSaved = async () => {
+    if (!currentUserId) return
+    
+    try {
+      const { data, error } = await supabase
+        .from('saved_posts')
+        .select('id')
+        .eq('user_id', currentUserId)
+        .eq('post_id', post.id)
+        .maybeSingle()
+      
+      if (error && error.code !== 'PGRST116') throw error
+      setIsSaved(!!data)
+    } catch (error) {
+      console.error('Error checking saved status:', error)
+    }
+  }
+
+  const handleSavePost = async () => {
+    if (!currentUserId) {
+      toast({
+        title: "Login required",
+        description: "Please login to save posts",
+        variant: "destructive"
+      })
+      return
+    }
+
+    try {
+      if (isSaved) {
+        // Unsave
+        const { error } = await supabase
+          .from('saved_posts')
+          .delete()
+          .eq('user_id', currentUserId)
+          .eq('post_id', post.id)
+        
+        if (error) throw error
+        setIsSaved(false)
+        toast({
+          title: "Post unsaved",
+          description: "Removed from your saved posts"
+        })
+      } else {
+        // Save
+        const { error } = await supabase
+          .from('saved_posts')
+          .insert({
+            user_id: currentUserId,
+            post_id: post.id
+          })
+        
+        if (error) throw error
+        setIsSaved(true)
+        toast({
+          title: "Post saved",
+          description: "Added to your saved posts"
+        })
+      }
+    } catch (error: any) {
+      console.error('Error saving post:', error)
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save post",
+        variant: "destructive"
+      })
+    }
+  }
 
   // Handler functions for post menu actions
   const handleEditPost = async () => {
@@ -73,39 +148,6 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
       toast({
         title: "Error",
         description: "Failed to delete post. Please try again.",
-        variant: "destructive"
-      })
-    }
-  }
-
-  const handleSavePost = async () => {
-    try {
-      const { error } = await supabase
-        .from('saved_posts')
-        .insert({
-          user_id: currentUserId,
-          post_id: post.id
-        })
-      
-      if (error) {
-        if (error.code === '23505') {
-          toast({
-            title: "Already Saved",
-            description: "You've already saved this post",
-          })
-          return
-        }
-        throw error
-      }
-      
-      toast({
-        title: "Post Saved",
-        description: "Post has been saved to your collection",
-      })
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to save post. Please try again.",
         variant: "destructive"
       })
     }
@@ -388,6 +430,7 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
               <PostOptionsMenu
                 isOwnPost={isOwnPost}
                 postId={post.id}
+                isSaved={isSaved}
                 onEdit={handleEditPost}
                 onDelete={handleDeletePost}
                 onSave={handleSavePost}

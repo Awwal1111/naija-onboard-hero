@@ -26,6 +26,7 @@ import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 import PortfolioSection from '@/components/PortfolioSection'
 import TopBannerAd from '@/components/TopBannerAd'
+import { SavedPostsSection } from '@/components/SavedPostsSection'
 
 const Profile = () => {
   const navigate = useNavigate()
@@ -368,14 +369,32 @@ const Profile = () => {
                 Rating
               </div>
             </div>
-            <div className="text-center">
-              <div className="text-lg font-bold text-primary">NC {profile?.wallet_balance?.toFixed(0) || '0'}</div>
-              <div className="text-xs text-text-secondary">Balance</div>
-            </div>
-            <div className="text-center">
-              <div className="text-lg font-bold text-primary">24</div>
-              <div className="text-xs text-text-secondary">Posts</div>
-            </div>
+            {isOwnProfile && (
+              <>
+                <div className="text-center">
+                  <div className="text-lg font-bold text-primary">NC {profile?.wallet_balance?.toFixed(0) || '0'}</div>
+                  <div className="text-xs text-text-secondary">Balance</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-bold text-primary">24</div>
+                  <div className="text-xs text-text-secondary">Posts</div>
+                </div>
+              </>
+            )}
+            {!isOwnProfile && (
+              <>
+                <div className="text-center">
+                  <div className="text-lg font-bold text-primary">{profile?.rating_count || 0}</div>
+                  <div className="text-xs text-text-secondary">Reviews</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-bold text-primary">
+                    {profile?.is_expert ? 'Yes' : 'No'}
+                  </div>
+                  <div className="text-xs text-text-secondary">Expert</div>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -383,14 +402,15 @@ const Profile = () => {
         <Tabs defaultValue="overview" className="w-full">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="overview">Overview</TabsTrigger>
+            {isOwnProfile && <TabsTrigger value="saved">Saved</TabsTrigger>}
             <TabsTrigger value="skills">Skills</TabsTrigger>
             <TabsTrigger value="portfolio">Portfolio</TabsTrigger>
-            <TabsTrigger value="reviews">Reviews</TabsTrigger>
+            {!isOwnProfile && <TabsTrigger value="reviews">Reviews</TabsTrigger>}
           </TabsList>
           
           <TabsContent value="overview" className="space-y-4 mt-6">
-            {/* Connection Requests Section */}
-            {connectionRequests.filter(req => req.requested_id === profile?.user_id && req.status === 'pending').length > 0 && (
+            {/* Connection Requests Section - Only show on own profile */}
+            {isOwnProfile && connectionRequests.filter(req => req.requested_id === profile?.user_id && req.status === 'pending').length > 0 && (
               <Card className="mb-4">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -494,6 +514,12 @@ const Profile = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {isOwnProfile && (
+            <TabsContent value="saved" className="mt-6">
+              <SavedPostsSection />
+            </TabsContent>
+          )}
 
           <TabsContent value="skills" className="mt-6">
             <Card>

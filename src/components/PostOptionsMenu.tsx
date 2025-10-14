@@ -1,11 +1,12 @@
 import React from 'react'
-import { MoreVertical, Edit, Trash2, Bookmark, Flag, Link } from 'lucide-react'
+import { MoreVertical, Edit, Trash2, Bookmark, BookmarkCheck, Flag, Link } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 
 interface PostOptionsMenuProps {
   isOwnPost: boolean
   postId: string
+  isSaved?: boolean
   onEdit: () => void
   onDelete: () => void
   onSave: () => void
@@ -16,6 +17,7 @@ interface PostOptionsMenuProps {
 const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
   isOwnPost,
   postId,
+  isSaved = false,
   onEdit,
   onDelete,
   onSave,
@@ -41,8 +43,17 @@ const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
               Delete Post
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onSave}>
-              <Bookmark className="h-4 w-4 mr-2" />
-              Save Post
+              {isSaved ? (
+                <>
+                  <BookmarkCheck className="h-4 w-4 mr-2 text-primary" />
+                  Saved
+                </>
+              ) : (
+                <>
+                  <Bookmark className="h-4 w-4 mr-2" />
+                  Save Post
+                </>
+              )}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onCopyLink}>
               <Link className="h-4 w-4 mr-2" />
@@ -52,8 +63,17 @@ const PostOptionsMenu: React.FC<PostOptionsMenuProps> = ({
         ) : (
           <>
             <DropdownMenuItem onClick={onSave}>
-              <Bookmark className="h-4 w-4 mr-2" />
-              Save Post
+              {isSaved ? (
+                <>
+                  <BookmarkCheck className="h-4 w-4 mr-2 text-primary" />
+                  Saved
+                </>
+              ) : (
+                <>
+                  <Bookmark className="h-4 w-4 mr-2" />
+                  Save Post
+                </>
+              )}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onReport} className="text-destructive">
               <Flag className="h-4 w-4 mr-2" />
