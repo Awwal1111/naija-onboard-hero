@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useFileUpload } from '@/hooks/useFileUpload'
 import { useConnections } from '@/hooks/useConnections'
 import { useProfileCompletion } from '@/hooks/useProfileCompletion'
+import { supabase } from '@/integrations/supabase/client'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,21 +31,64 @@ const Profile = () => {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { userId } = useParams() // Get userId from URL params
-  const { profile, loading, updateProfile } = useProfile()
+  const { profile: currentUserProfile, loading: currentUserLoading, updateProfile } = useProfile()
+  const { user } = useAuth()
   const { signOut } = useAuth()
   const { toast } = useToast()
   const { uploadFile, uploadProgress } = useFileUpload()
   const location = useLocation()
-  const { connectionRequests, respondToConnectionRequest, fetchConnectionRequests } = useConnections()
+  const { connectionRequests, respondToConnectionRequest, fetchConnectionRequests, sendConnectionRequest, checkConnection } = useConnections()
   const { isComplete, missingFields } = useProfileCompletion()
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
+  const [viewedUserProfile, setViewedUserProfile] = useState<any>(null)
+  const [viewedUserLoading, setViewedUserLoading] = useState(false)
+  const [isConnected, setIsConnected] = useState(false)
   const [editForm, setEditForm] = useState({
     full_name: '',
     bio: '',
     profession: '',
     phone_number: ''
   })
+
+  // Determine which profile to show
+  const isOwnProfile = !userId || userId === user?.id
+  const profile = isOwnProfile ? currentUserProfile : viewedUserProfile
+  const loading = isOwnProfile ? currentUserLoading : viewedUserLoading
+
+  // Fetch other user's profile if viewing someone else
+  useEffect(() => {
+    const fetchOtherUserProfile = async () => {
+      if (userId && userId !== user?.id) {
+        setViewedUserLoading(true)
+        try {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('user_id', userId)
+            .single()
+          
+          if (error) throw error
+          setViewedUserProfile(data)
+          
+          // Check connection status
+          const connected = await checkConnection(userId)
+          setIsConnected(connected)
+        } catch (error: any) {
+          console.error('Error fetching profile:', error)
+          toast({
+            title: "Error",
+            description: "Failed to load profile",
+            variant: "destructive"
+          })
+        } finally {
+          setViewedUserLoading(false)
+        }
+      }
+    }
+    
+    fetchOtherUserProfile()
+  }, [userId, user?.id])
 
   // Fetch connection requests on mount
   useEffect(() => {
@@ -58,12 +102,13 @@ const Profile = () => {
     }
   }, [searchParams, profile])
 
-  // Check if this is viewing someone else's profile
-  const isOwnProfile = !userId
-  
-  // Use different logic for viewing others' profiles
-  // For now, we'll use the existing profile hook which gets the current user's profile
-  // In a real implementation, you'd want a separate hook or function to get other users' profiles
+  const handleConnectUser = async () => {
+    if (userId) {
+      await sendConnectionRequest(userId)
+      const connected = await checkConnection(userId)
+      setIsConnected(connected)
+    }
+  }
 
   const bottomNavItems = [
     { icon: Home, label: 'Feed', path: '/feed' },
@@ -170,27 +215,6 @@ const Profile = () => {
     )
   }
 
-  // If viewing someone else's profile, show a simple message for now
-  if (!isOwnProfile) {
-    return (
-      <div className="min-h-screen bg-background">
-        <header className="bg-background border-b border-border px-6 py-4 flex items-center">
-          <button onClick={() => navigate(-1)} className="mr-4">
-            <ArrowLeft className="h-6 w-6 text-text-secondary" />
-          </button>
-          <Logo />
-        </header>
-        <div className="px-6 py-8 text-center">
-          <h1 className="text-2xl font-bold text-text-primary mb-4">User Profile</h1>
-          <p className="text-text-secondary mb-6">Profile viewing is coming soon!</p>
-          <BrandButton onClick={() => navigate(`/chat/${userId}`)}>
-            <MessageCircle className="h-4 w-4 mr-2" />
-            Start Chat
-          </BrandButton>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -222,15 +246,18 @@ const Profile = () => {
                   profile?.full_name?.charAt(0) || 'U'
                 )}
               </div>
-              <label className="absolute -bottom-2 -right-2 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white cursor-pointer hover:bg-primary/90 transition-colors">
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleProfilePictureUpload}
-                />
-                <Camera className="h-4 w-4" />
-              </label>
+              
+              {isOwnProfile ? (
+                <label className="absolute -bottom-2 -right-2 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white cursor-pointer hover:bg-primary/90 transition-colors">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleProfilePictureUpload}
+                  />
+                  <Camera className="h-4 w-4" />
+                </label>
+              ) : null}
             </div>
             
             <div className="flex-1">
@@ -238,22 +265,23 @@ const Profile = () => {
                 <h1 className="text-xl font-bold text-text-primary">
                   {profile?.full_name || 'Add your name'}
                 </h1>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button className="p-2 hover:bg-accent rounded-full">
-                      <MoreVertical className="h-5 w-5 text-text-secondary" />
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    {!isComplete && (
-                      <DropdownMenuItem onClick={handleEditProfile} className="bg-orange-50 dark:bg-orange-950">
-                        <Edit className="mr-2 h-4 w-4 text-orange-600" />
-                        <div className="flex-1">
-                          <div className="font-medium text-orange-600">Complete Profile</div>
-                          <div className="text-xs text-orange-600/70">{missingFields.length} fields missing</div>
-                        </div>
-                      </DropdownMenuItem>
-                    )}
+                {isOwnProfile ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="p-2 hover:bg-accent rounded-full">
+                        <MoreVertical className="h-5 w-5 text-text-secondary" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      {!isComplete && (
+                        <DropdownMenuItem onClick={handleEditProfile} className="bg-orange-50 dark:bg-orange-950">
+                          <Edit className="mr-2 h-4 w-4 text-orange-600" />
+                          <div className="flex-1">
+                            <div className="font-medium text-orange-600">Complete Profile</div>
+                            <div className="text-xs text-orange-600/70">{missingFields.length} fields missing</div>
+                          </div>
+                        </DropdownMenuItem>
+                      )}
                     <DropdownMenuItem onClick={handleEditProfile}>
                       <Edit className="mr-2 h-4 w-4" />
                       Edit Profile
@@ -276,6 +304,24 @@ const Profile = () => {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
+                ) : (
+                  <div className="flex gap-2">
+                    {!isConnected ? (
+                      <Button onClick={handleConnectUser} size="sm">
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        Connect
+                      </Button>
+                    ) : (
+                      <Button variant="secondary" size="sm" disabled>
+                        Connected
+                      </Button>
+                    )}
+                    <Button onClick={() => navigate(`/chat/${userId}`)} size="sm" variant="outline">
+                      <MessageCircle className="h-4 w-4 mr-2" />
+                      Message
+                    </Button>
+                  </div>
+                )}
               </div>
               
               <div className="flex items-center gap-2 mb-2">
