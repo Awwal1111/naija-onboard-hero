@@ -10,6 +10,7 @@ import { useFileUpload } from '@/hooks/useFileUpload'
 import { useConnections } from '@/hooks/useConnections'
 import { useProfileCompletion } from '@/hooks/useProfileCompletion'
 import { supabase } from '@/integrations/supabase/client'
+import ImageViewer from '@/components/ImageViewer'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,6 +47,7 @@ const Profile = () => {
   const [viewedUserLoading, setViewedUserLoading] = useState(false)
   const [isConnected, setIsConnected] = useState(false)
   const [userEmail, setUserEmail] = useState<string | null>(null)
+  const [isImageViewerOpen, setIsImageViewerOpen] = useState(false)
   const [editForm, setEditForm] = useState({
     full_name: '',
     bio: '',
@@ -248,20 +250,29 @@ const Profile = () => {
         <div className="bg-card border border-border rounded-2xl p-6 mb-6">
           <div className="flex items-start gap-4 mb-6">
             <div className="relative">
-              <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center text-white text-2xl font-bold overflow-hidden">
+              <button
+                onClick={() => profile?.profile_picture_url && setIsImageViewerOpen(true)}
+                className={`w-20 h-20 bg-primary rounded-full flex items-center justify-center text-white text-2xl font-bold overflow-hidden ${
+                  profile?.profile_picture_url ? 'cursor-pointer hover:opacity-90 transition-opacity' : ''
+                }`}
+              >
                 {profile?.profile_picture_url ? (
                   <img 
                     src={profile.profile_picture_url} 
                     alt={profile.full_name || 'Profile'}
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      console.error('Profile picture failed to load:', profile.profile_picture_url)
+                      e.currentTarget.style.display = 'none'
+                    }}
                   />
                 ) : (
                   profile?.full_name?.charAt(0) || 'U'
                 )}
-              </div>
+              </button>
               
               {isOwnProfile ? (
-                <label className="absolute -bottom-2 -right-2 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white cursor-pointer hover:bg-primary/90 transition-colors">
+                <label className="absolute -bottom-2 -right-2 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white cursor-pointer hover:bg-primary/90 transition-colors z-10">
                   <input
                     type="file"
                     accept="image/*"
@@ -668,6 +679,16 @@ const Profile = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Image Viewer for Profile Picture */}
+      {profile?.profile_picture_url && (
+        <ImageViewer
+          images={[profile.profile_picture_url]}
+          isOpen={isImageViewerOpen}
+          onClose={() => setIsImageViewerOpen(false)}
+          initialIndex={0}
+        />
+      )}
 
       {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border px-1 sm:px-4 py-1.5 sm:py-2 safe-area-bottom z-50">
