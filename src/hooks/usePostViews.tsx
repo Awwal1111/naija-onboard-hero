@@ -15,8 +15,7 @@ export const usePostViews = () => {
         .from('post_views')
         .insert({
           post_id: postId,
-          user_id: user.id,
-          viewed_at: new Date().toISOString()
+          user_id: user.id
         })
         .select()
         .single()
