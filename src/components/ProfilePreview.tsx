@@ -142,7 +142,8 @@ const ProfilePreview: React.FC<ProfilePreviewProps> = ({
   }
 
   const handleViewFullProfile = () => {
-    window.location.href = `/profile/${profileId}`
+    onClose()
+    navigate(`/profile/${profileId}`)
   }
 
   if (!isOpen) return null

@@ -58,11 +58,15 @@ export const useChat = (otherUserId: string) => {
           .from('profiles')
           .select('user_id, full_name, profession')
           .eq('user_id', otherUserId)
-          .single()
+          .maybeSingle()
 
         if (profileError) {
           console.error('Profile fetch error:', profileError)
           throw profileError
+        }
+
+        if (!profile) {
+          throw new Error('User profile not found')
         }
 
         if (profile) {
