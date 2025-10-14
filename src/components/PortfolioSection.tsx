@@ -20,9 +20,14 @@ interface PortfolioItem {
   created_at: string
 }
 
-const PortfolioSection = () => {
+interface PortfolioSectionProps {
+  userId?: string
+  isOwnProfile?: boolean
+}
+
+const PortfolioSection: React.FC<PortfolioSectionProps> = ({ userId, isOwnProfile = true }) => {
   const { user } = useAuth()
-  const { items, loading, addPortfolioItem, updatePortfolioItem, deletePortfolioItem } = usePortfolio()
+  const { items, loading, addPortfolioItem, updatePortfolioItem, deletePortfolioItem } = usePortfolio(userId)
   const { uploadFile } = useFileUpload()
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<PortfolioItem | null>(null)
@@ -139,16 +144,17 @@ const PortfolioSection = () => {
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           Portfolio
-          <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
-            setIsCreateDialogOpen(open)
-            if (!open) resetForm()
-          }}>
-            <DialogTrigger asChild>
-              <Button size="sm" className="gap-2">
-                <Plus className="h-4 w-4" />
-                Add Item
-              </Button>
-            </DialogTrigger>
+          {isOwnProfile && (
+            <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
+              setIsCreateDialogOpen(open)
+              if (!open) resetForm()
+            }}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Add Item
+                </Button>
+              </DialogTrigger>
             <DialogContent className="max-w-md">
               <DialogHeader>
                 <DialogTitle>
@@ -236,6 +242,7 @@ const PortfolioSection = () => {
               </form>
             </DialogContent>
           </Dialog>
+          )}
         </CardTitle>
       </CardHeader>
       
@@ -244,7 +251,12 @@ const PortfolioSection = () => {
           <div className="text-center py-8 text-muted-foreground">
             <Plus className="h-12 w-12 mx-auto mb-4 opacity-50" />
             <h3 className="font-semibold mb-2">No portfolio items yet</h3>
-            <p className="text-sm">Add your first project to showcase your work</p>
+            <p className="text-sm">
+              {isOwnProfile 
+                ? 'Add your first project to showcase your work'
+                : 'This user hasn\'t added any portfolio items yet'
+              }
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -258,12 +270,12 @@ const PortfolioSection = () => {
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center">
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
                       <div className="text-center">
-                        <div className="text-2xl font-bold text-muted-foreground">
+                        <div className="text-3xl font-bold text-primary">
                           {item.title.charAt(0).toUpperCase()}
                         </div>
-                        <div className="text-xs text-muted-foreground mt-1">
+                        <div className="text-xs text-muted-foreground mt-2 px-2">
                           {item.title}
                         </div>
                       </div>
@@ -281,20 +293,24 @@ const PortfolioSection = () => {
                         <ExternalLink className="h-3 w-3" />
                       </Button>
                     )}
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => handleEdit(item)}
-                    >
-                      <Edit className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => handleDelete(item.id)}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
+                    {isOwnProfile && (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => handleEdit(item)}
+                        >
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDelete(item.id)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </div>
                 

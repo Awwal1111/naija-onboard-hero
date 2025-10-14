@@ -626,7 +626,7 @@ const Profile = () => {
           </TabsContent>
 
           <TabsContent value="portfolio" className="mt-6">
-            <PortfolioSection />
+            <PortfolioSection userId={profile?.user_id} isOwnProfile={isOwnProfile} />
           </TabsContent>
 
           <TabsContent value="reviews" className="mt-6">
