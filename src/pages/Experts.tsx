@@ -111,11 +111,13 @@ const Experts = () => {
       
       if (profilesError) console.warn('Profile fetch error:', profilesError)
 
-      // Combine the data
-      const expertsWithProfiles = expertApps?.map(app => ({
-        ...app,
-        profiles: profiles?.find(p => p.user_id === app.user_id) || null
-      })) || []
+      // Combine the data and filter out experts without profiles
+      const expertsWithProfiles = expertApps
+        ?.map(app => ({
+          ...app,
+          profiles: profiles?.find(p => p.user_id === app.user_id) || null
+        }))
+        .filter(expert => expert.profiles !== null) || [] // Only show experts with valid profiles
       
       setExperts(expertsWithProfiles)
     } catch (error) {
@@ -140,6 +142,22 @@ const Experts = () => {
       return
     }
 
+    // Verify expert profile exists
+    const { data: profileCheck, error: checkError } = await supabase
+      .from('profiles')
+      .select('user_id')
+      .eq('user_id', expertUserId)
+      .single()
+
+    if (checkError || !profileCheck) {
+      toast({
+        title: "Error",
+        description: "Expert profile not found. Please try again later.",
+        variant: "destructive"
+      })
+      return
+    }
+
     try {
       const { data, error } = await supabase
         .from('expert_ratings')
@@ -153,7 +171,7 @@ const Experts = () => {
         .single()
 
       if (error) {
-        if (error.message?.includes('duplicate')) {
+        if (error.message?.includes('duplicate') || error.code === '23505') {
           toast({
             title: "Already Rated",
             description: "You have already rated this expert",
