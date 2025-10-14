@@ -3520,6 +3520,7 @@ export type Database = {
           kind: string
           metadata: Json | null
           reference: string | null
+          safepay_id: string | null
           status: string
           user_id: string
         }
@@ -3531,6 +3532,7 @@ export type Database = {
           kind: string
           metadata?: Json | null
           reference?: string | null
+          safepay_id?: string | null
           status?: string
           user_id: string
         }
@@ -3542,10 +3544,18 @@ export type Database = {
           kind?: string
           metadata?: Json | null
           reference?: string | null
+          safepay_id?: string | null
           status?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "wallet_transactions_safepay_id_fkey"
+            columns: ["safepay_id"]
+            isOneToOne: false
+            referencedRelation: "safepay_transactions"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "wallet_transactions_user_fk"
             columns: ["user_id"]
