@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Camera, Wallet, MoreVertical, Edit, Share, Settings, LogOut, Plus, ArrowLeft, Home, MessageCircle, Users, DollarSign, Phone, Mail, FileText, Shield, Award, Star, MapPin, Calendar, Clock, TrendingUp, Briefcase, UserPlus, Menu } from 'lucide-react'
+import { Camera, Wallet, MoreVertical, Edit, Share, Settings, LogOut, Plus, ArrowLeft, Home, MessageCircle, Users, DollarSign, Phone, Mail, Award, Star, MapPin, Briefcase, UserPlus, Menu } from 'lucide-react'
 import { useNavigate, useParams, useSearchParams, useLocation } from 'react-router-dom'
 import { MoreMenuDrawer } from '@/components/MoreMenuDrawer'
 import { Logo } from '@/components/ui/logo'
@@ -488,27 +488,29 @@ const Profile = () => {
               </Card>
             )}
 
-            {/* Professional Action Buttons */}
-            <div className="grid grid-cols-2 gap-3 mb-6">
-              <BrandButton 
-                className="flex items-center justify-center gap-2" 
-                size="lg"
-                onClick={() => navigate(profile?.is_expert ? '/admin/dashboard' : '/expert-application')}
-              >
-                <Award className="h-4 w-4" />
-                {profile?.is_expert ? 'Admin Dashboard' : 'Apply Expert'}
-              </BrandButton>
-              
-              <BrandButton 
-                variant="outline"
-                className="flex items-center justify-center gap-2" 
-                size="lg"
-                onClick={() => navigate('/post-job')}
-              >
-                <Plus className="h-4 w-4" />
-                Post Job
-              </BrandButton>
-            </div>
+            {/* Professional Action Buttons - Only for own profile */}
+            {isOwnProfile && (
+              <div className="grid grid-cols-2 gap-3 mb-6">
+                <BrandButton 
+                  className="flex items-center justify-center gap-2" 
+                  size="lg"
+                  onClick={() => navigate(profile?.is_expert ? '/admin/dashboard' : '/expert-application')}
+                >
+                  <Award className="h-4 w-4" />
+                  {profile?.is_expert ? 'Admin Dashboard' : 'Apply Expert'}
+                </BrandButton>
+                
+                <BrandButton 
+                  variant="outline"
+                  className="flex items-center justify-center gap-2" 
+                  size="lg"
+                  onClick={() => navigate('/post-job')}
+                >
+                  <Plus className="h-4 w-4" />
+                  Post Job
+                </BrandButton>
+              </div>
+            )}
 
             {/* Contact Information - Only visible to owner or connections */}
             {(isOwnProfile || isConnected) && (profile?.phone_number || userEmail) && (
@@ -548,31 +550,6 @@ const Profile = () => {
               </Card>
             )}
 
-            {/* Recent Activity */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" />
-                  Recent Activity
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center gap-3 p-3 bg-muted rounded-xl">
-                  <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                    <MessageCircle className="h-4 w-4 text-primary" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm text-text-primary">Joined NaijaLancers</p>
-                    <p className="text-xs text-text-secondary">
-                      {new Date(profile?.created_at || Date.now()).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-                <div className="text-center py-6 text-text-secondary text-sm">
-                  More activity will appear here as you use the platform
-                </div>
-              </CardContent>
-            </Card>
           </TabsContent>
 
           {isOwnProfile && (
