@@ -4,11 +4,14 @@ import { Badge } from '@/components/ui/badge'
 import { ArrowUpRight, ArrowDownLeft, Clock, CheckCircle, XCircle, ChevronRight } from 'lucide-react'
 import { useWallet, WalletTransaction } from '@/hooks/useWallet'
 import { TransactionDetailDialog } from './TransactionDetailDialog'
+import { AllTransactionsDialog } from './AllTransactionsDialog'
+import { BrandButton } from './ui/brand-button'
 
 export const TransactionHistory = () => {
   const { transactions, loading } = useWallet()
   const [selectedTransaction, setSelectedTransaction] = useState<WalletTransaction | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [allTransactionsOpen, setAllTransactionsOpen] = useState(false)
 
   const handleTransactionClick = (transaction: WalletTransaction) => {
     setSelectedTransaction(transaction)
@@ -149,9 +152,14 @@ export const TransactionHistory = () => {
             
             {transactions.length > 5 && (
               <div className="text-center pt-4">
-                <button className="text-sm text-primary hover:underline font-medium">
+                <BrandButton 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setAllTransactionsOpen(true)}
+                  className="w-full"
+                >
                   View all {transactions.length} transactions
-                </button>
+                </BrandButton>
               </div>
             )}
 
@@ -159,6 +167,11 @@ export const TransactionHistory = () => {
               transaction={selectedTransaction}
               open={dialogOpen}
               onOpenChange={setDialogOpen}
+            />
+
+            <AllTransactionsDialog
+              open={allTransactionsOpen}
+              onOpenChange={setAllTransactionsOpen}
             />
           </>
         )}
