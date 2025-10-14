@@ -54,6 +54,13 @@ export const WalletCard = () => {
                 '****'
               )}
             </div>
+
+            {showBalance && balance.escrow_hold > 0 && (
+              <div className="text-xs text-white/70 bg-white/10 rounded px-2 py-1">
+                🔒 Escrow Hold: NC {balance.escrow_hold.toLocaleString()}
+                <p className="text-[10px] mt-0.5">Locked in SafePay transactions</p>
+              </div>
+            )}
             
             <div className="grid grid-cols-3 gap-2">
               <BrandButton

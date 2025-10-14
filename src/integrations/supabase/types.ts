@@ -3717,6 +3717,10 @@ export type Database = {
         Args: { lookup_email: string }
         Returns: Json
       }
+      propose_safepay: {
+        Args: { p_amount: number; p_buyer_id: string; p_seller_id: string }
+        Returns: Json
+      }
       refresh_admin_stats: {
         Args: Record<PropertyKey, never>
         Returns: undefined

@@ -134,13 +134,21 @@ const SafePayDialog: React.FC<SafePayDialogProps> = ({ otherUserId, otherUserNam
                 Amount: {activeTransaction.amount} NC
               </p>
               {isBuyer && (
-                <p className="text-sm text-muted-foreground mt-2">
-                  You proposed a SafePay of {activeTransaction.amount} NC. Waiting for @{otherUserName} to accept...
-                </p>
+                <>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    You proposed a SafePay of {activeTransaction.amount} NC
+                  </p>
+                  <p className="text-sm text-green-600 font-medium mt-1">
+                    ✅ Funds locked in escrow - not visible in your balance
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Waiting for @{otherUserName} to accept...
+                  </p>
+                </>
               )}
               {isSeller && (
                 <p className="text-sm text-muted-foreground mt-2">
-                  @{otherUserName} proposed a SafePay of {activeTransaction.amount} NC
+                  @{otherUserName} proposed a SafePay of {activeTransaction.amount} NC. Funds are secured in escrow.
                 </p>
               )}
             </div>

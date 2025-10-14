@@ -7,6 +7,7 @@ export interface WalletBalance {
   withdrawable: number
   non_withdrawable: number
   total: number
+  escrow_hold: number
 }
 
 export interface WalletTransaction {
@@ -53,7 +54,8 @@ export const useWallet = () => {
   const [balance, setBalance] = useState<WalletBalance>({
     withdrawable: 0,
     non_withdrawable: 0,
-    total: 0
+    total: 0,
+    escrow_hold: 0
   })
   const [loading, setLoading] = useState(true)
   const [transactions, setTransactions] = useState<WalletTransaction[]>([])
@@ -81,10 +83,18 @@ export const useWallet = () => {
 
       if (error) throw error
 
+      // Get escrow hold from user_wallets table
+      const { data: walletData } = await supabase
+        .from('user_wallets')
+        .select('escrow_hold')
+        .eq('user_id', user.id)
+        .maybeSingle()
+
       const walletBalance = {
         withdrawable: Number(profile?.balance_withdrawable || 0),
         non_withdrawable: Number(profile?.balance_non_withdrawable || 0),
-        total: Number(profile?.wallet_balance || 0) // Use wallet_balance as total
+        total: Number(profile?.wallet_balance || 0), // Use wallet_balance as total
+        escrow_hold: Number(walletData?.escrow_hold || 0)
       }
 
       setBalance(walletBalance)

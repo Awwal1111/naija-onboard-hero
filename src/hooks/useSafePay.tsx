@@ -150,61 +150,38 @@ export const useSafePay = (otherUserId: string) => {
 
     setLoading(true)
     try {
-      // Check withdrawable balance since that's what gets deducted
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('balance_withdrawable, wallet_balance')
-        .eq('user_id', user.id)
-        .single()
+      // Use the new propose_safepay function which handles all the logic
+      const { data, error } = await supabase.rpc('propose_safepay', {
+        p_buyer_id: user.id,
+        p_seller_id: otherUserId,
+        p_amount: amount
+      })
 
-      if (profileError) throw profileError
+      if (error) throw error
 
-      const withdrawableBalance = profileData?.balance_withdrawable || 0
-      const totalBalance = profileData?.wallet_balance || 0
-
-      // Check if user has sufficient withdrawable balance
-      if (withdrawableBalance < amount) {
+      // Check if the function returned an error
+      const result = data as { success: boolean; error?: string; safepay_id?: string }
+      if (result && !result.success) {
         toast({
-          title: "Insufficient Withdrawable Balance",
-          description: `You need ${amount} NC withdrawable balance but only have ${withdrawableBalance} NC available (Total: ${totalBalance} NC). Only withdrawable balance can be used for SafePay.`,
+          title: "Cannot Propose SafePay",
+          description: result.error || "Failed to propose SafePay transaction",
           variant: "destructive"
         })
         return
       }
 
-      // Ensure user has a wallet record
-      await supabase
-        .from('user_wallets')
-        .insert({
-          user_id: user.id,
-          balance: 0,
-          escrow_hold: 0
-        })
-        .select()
-        .maybeSingle()
-
-      const { error } = await supabase
-        .from('safepay_transactions')
-        .insert({
-          buyer_id: user.id,
-          seller_id: otherUserId,
-          amount: amount,
-          status: 'proposed'
-        })
-
-      if (error) throw error
-
       toast({
         title: "SafePay Proposed",
-        description: `Proposed ${amount} NC SafePay transaction`
+        description: `${amount} NC has been locked in escrow. Waiting for acceptance.`
       })
 
       await fetchActiveTransaction()
-    } catch (error) {
+      await fetchWallet()
+    } catch (error: any) {
       console.error('Error proposing SafePay:', error)
       toast({
         title: "Error",
-        description: "Failed to propose SafePay transaction",
+        description: error.message || "Failed to propose SafePay transaction",
         variant: "destructive"
       })
     } finally {
