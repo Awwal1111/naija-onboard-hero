@@ -564,21 +564,12 @@ const Profile = () => {
                 <CardTitle>Skills & Expertise</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {/* Placeholder for skills */}
-                  <Badge variant="outline" className="cursor-pointer hover:bg-primary hover:text-white">
-                    Web Development
-                  </Badge>
-                  <Badge variant="outline" className="cursor-pointer hover:bg-primary hover:text-white">
-                    UI/UX Design
-                  </Badge>
-                  <Badge variant="outline" className="cursor-pointer hover:bg-primary hover:text-white">
-                    <Plus className="h-3 w-3 mr-1" />
-                    Add Skills
-                  </Badge>
-                </div>
-                <div className="text-sm text-text-secondary">
-                  Showcase your expertise to attract more clients
+                <div className="text-center py-8 text-muted-foreground">
+                  <Award className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <h3 className="font-semibold text-text-primary mb-2">Skills Management</h3>
+                  <p className="text-sm">
+                    Skills management feature coming soon. Showcase your expertise to attract more clients.
+                  </p>
                 </div>
               </CardContent>
             </Card>
