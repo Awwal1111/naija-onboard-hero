@@ -28,6 +28,7 @@ import ProfileCompletionDialog from '@/components/ProfileCompletionDialog'
 import { useProfileCompletion } from '@/hooks/useProfileCompletion'
 import PeopleYouMayKnow from '@/components/PeopleYouMayKnow'
 import { MoreMenuDrawer } from '@/components/MoreMenuDrawer'
+import { ConnectionRequestsPreview } from '@/components/ConnectionRequestsPreview'
 
 const MainFeed = () => {
   const navigate = useNavigate()
@@ -412,6 +413,11 @@ const MainFeed = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
+          </div>
+
+          {/* Connection Requests Preview */}
+          <div className="px-3 sm:px-6 py-3">
+            <ConnectionRequestsPreview />
           </div>
 
           {/* Main Feed Content */}
