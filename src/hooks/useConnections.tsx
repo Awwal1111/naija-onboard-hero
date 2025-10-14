@@ -127,7 +127,17 @@ export const useConnections = () => {
   }
 
   const sendConnectionRequest = async (targetUserId: string) => {
-    if (!user?.id || user.id === targetUserId) return { error: 'Invalid request' }
+    if (!user?.id) return { error: 'Not authenticated' }
+    
+    // Prevent users from sending connection requests to themselves
+    if (user.id === targetUserId) {
+      toast({
+        title: "Invalid Action",
+        description: "You cannot send a connection request to yourself.",
+        variant: "destructive"
+      })
+      return { error: 'Cannot connect with yourself' }
+    }
 
     try {
       // Check if request already exists
