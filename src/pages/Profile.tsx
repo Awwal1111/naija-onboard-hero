@@ -48,6 +48,7 @@ const Profile = () => {
   const [isConnected, setIsConnected] = useState(false)
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [isImageViewerOpen, setIsImageViewerOpen] = useState(false)
+  const [postsCount, setPostsCount] = useState(0)
   const [editForm, setEditForm] = useState({
     full_name: '',
     bio: '',
@@ -70,6 +71,20 @@ const Profile = () => {
     }
     fetchUserEmail()
   }, [isOwnProfile, user])
+
+  // Fetch posts count
+  useEffect(() => {
+    const fetchPostsCount = async () => {
+      if (profile?.user_id) {
+        const { count } = await supabase
+          .from('posts')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', profile.user_id)
+        setPostsCount(count || 0)
+      }
+    }
+    fetchPostsCount()
+  }, [profile?.user_id])
 
   // Fetch other user's profile if viewing someone else
   useEffect(() => {
@@ -117,11 +132,47 @@ const Profile = () => {
     }
   }, [searchParams, profile])
 
+  // Refetch profile data when connections change
+  useEffect(() => {
+    if (isOwnProfile && currentUserProfile) {
+      // Set up realtime listener for connections
+      const channel = supabase
+        .channel('profile-connections')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'connections',
+            filter: `user1_id=eq.${user?.id},user2_id=eq.${user?.id}`
+          },
+          () => {
+            // Refetch profile to get updated connections_count
+            window.location.reload()
+          }
+        )
+        .subscribe()
+
+      return () => {
+        supabase.removeChannel(channel)
+      }
+    }
+  }, [isOwnProfile, user?.id])
+
   const handleConnectUser = async () => {
     if (userId) {
       await sendConnectionRequest(userId)
       const connected = await checkConnection(userId)
       setIsConnected(connected)
+      // Refetch the viewed user's profile to update connection count
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .single()
+      if (data) {
+        setViewedUserProfile(data)
+      }
     }
   }
 
@@ -398,7 +449,7 @@ const Profile = () => {
                   <div className="text-xs text-text-secondary">Balance</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-lg font-bold text-primary">24</div>
+                  <div className="text-lg font-bold text-primary">{postsCount}</div>
                   <div className="text-xs text-text-secondary">Posts</div>
                 </div>
               </>
