@@ -36,9 +36,15 @@ export const useSafePay = (otherUserId: string) => {
   useEffect(() => {
     if (!user || !otherUserId) return
 
-    fetchActiveTransaction()
-    fetchWallet()
-    subscribeToTransactionUpdates()
+    const loadData = async () => {
+      await fetchActiveTransaction()
+      await fetchWallet()
+    }
+    
+    loadData()
+    const cleanup = subscribeToTransactionUpdates()
+    
+    return cleanup
   }, [user, otherUserId])
 
   const fetchActiveTransaction = async () => {
@@ -157,42 +163,35 @@ export const useSafePay = (otherUserId: string) => {
 
     setLoading(true)
     try {
-      // Use the new propose_safepay function which handles all the logic
       const { data, error } = await supabase.rpc('propose_safepay', {
         p_buyer_id: user.id,
         p_seller_id: otherUserId,
         p_amount: amount
       })
 
-      if (error) {
-        console.error('RPC Error:', error)
-        throw error
-      }
+      if (error) throw error
 
-      // Check if the function returned an error
-      const result = data as { success: boolean; error?: string; safepay_id?: string }
+      const result = data as { success: boolean; error?: string }
       
-      if (!result || !result.success) {
+      if (!result?.success) {
         toast({
-          title: "Cannot Propose SafePay",
-          description: result?.error || "Failed to propose SafePay transaction",
+          title: "Failed to Propose",
+          description: result?.error || "Could not create SafePay",
           variant: "destructive"
         })
         return
       }
 
       toast({
-        title: "SafePay Proposed",
-        description: `${amount} NC has been locked in escrow. Waiting for acceptance.`
+        title: "SafePay Created",
+        description: `${amount} NC locked in escrow`
       })
 
-      await fetchActiveTransaction()
-      await fetchWallet()
+      await Promise.all([fetchActiveTransaction(), fetchWallet()])
     } catch (error: any) {
-      console.error('Error proposing SafePay:', error)
       toast({
         title: "Error",
-        description: error.message || "Failed to propose SafePay transaction",
+        description: error.message,
         variant: "destructive"
       })
     } finally {
@@ -201,42 +200,26 @@ export const useSafePay = (otherUserId: string) => {
   }
 
   const acceptSafePay = async () => {
-    if (!activeTransaction || activeTransaction.status !== 'proposed') {
-      console.log('Cannot accept SafePay:', { activeTransaction, status: activeTransaction?.status })
-      return
-    }
+    if (!activeTransaction || activeTransaction.status !== 'proposed') return
 
     setLoading(true)
     try {
-      console.log('Accepting SafePay:', activeTransaction.id)
       const { error } = await supabase.rpc('accept_safepay', {
         p_safepay_id: activeTransaction.id
       })
 
-      if (error) {
-        console.error('RPC Error:', error)
-        throw error
-      }
-
-      console.log('SafePay accepted successfully')
+      if (error) throw error
 
       toast({
-        title: "SafePay Accepted",
-        description: "Funds are now secured in escrow"
+        title: "Accepted",
+        description: "Work can now begin"
       })
 
-      // Force immediate refresh
       await Promise.all([fetchActiveTransaction(), fetchWallet()])
-      
-      // Set a short timeout to ensure state updates
-      setTimeout(() => {
-        fetchActiveTransaction()
-      }, 500)
     } catch (error: any) {
-      console.error('Error accepting SafePay:', error)
       toast({
         title: "Error",
-        description: error.message || "Failed to accept SafePay",
+        description: error.message,
         variant: "destructive"
       })
     } finally {
@@ -245,63 +228,26 @@ export const useSafePay = (otherUserId: string) => {
   }
 
   const completeSafePay = async () => {
-    if (!activeTransaction || activeTransaction.status !== 'active') {
-      console.log('Cannot complete SafePay:', { activeTransaction, status: activeTransaction?.status })
-      return
-    }
-
-    setLoading(true)
-    try {
-      console.log('Completing SafePay:', activeTransaction.id)
-      const { error } = await supabase.rpc('complete_safepay_work' as any, {
-        p_safepay_id: activeTransaction.id
-      })
-
-      if (error) {
-        console.error('RPC Error:', error)
-        throw error
-      }
-
-      console.log('SafePay completed successfully')
-
-      toast({
-        title: "Work Marked Complete",
-        description: "Buyer has 5 days to release funds or file a dispute"
-      })
-
-      await fetchActiveTransaction()
-    } catch (error: any) {
-      console.error('Error completing SafePay:', error)
-      toast({
-        title: "Error",
-        description: error.message || "Failed to mark work as complete",
-        variant: "destructive"
-      })
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const requestCancel = async () => {
     if (!activeTransaction || activeTransaction.status !== 'active') return
 
     setLoading(true)
     try {
-      await supabase.rpc('request_cancel_safepay' as any, {
+      const { error } = await supabase.rpc('mark_safepay_complete', {
         p_safepay_id: activeTransaction.id
       })
 
+      if (error) throw error
+
       toast({
-        title: "Cancel Requested",
-        description: "Waiting for the other party to agree"
+        title: "Marked Complete",
+        description: "Waiting for buyer to release funds"
       })
 
       await fetchActiveTransaction()
     } catch (error: any) {
-      console.error('Error requesting cancel:', error)
       toast({
         title: "Error",
-        description: error.message || "Failed to request cancellation",
+        description: error.message,
         variant: "destructive"
       })
     } finally {
@@ -309,88 +255,29 @@ export const useSafePay = (otherUserId: string) => {
     }
   }
 
-  const approveCancel = async () => {
-    if (!activeTransaction) return
-
-    setLoading(true)
-    try {
-      await supabase.rpc('approve_cancel_safepay' as any, {
-        p_safepay_id: activeTransaction.id
-      })
-
-      toast({
-        title: "SafePay Cancelled",
-        description: "Funds have been returned to the buyer"
-      })
-
-      await fetchActiveTransaction()
-      await fetchWallet()
-    } catch (error: any) {
-      console.error('Error approving cancel:', error)
-      toast({
-        title: "Error",
-        description: error.message || "Failed to approve cancellation",
-        variant: "destructive"
-      })
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const fileDispute = async (reason: string) => {
-    if (!activeTransaction || activeTransaction.status !== 'complete') return
-
-    setLoading(true)
-    try {
-      await supabase.rpc('file_dispute_safepay' as any, {
-        p_safepay_id: activeTransaction.id,
-        p_reason: reason
-      })
-
-      toast({
-        title: "Dispute Filed",
-        description: "An admin will review the case and make a ruling"
-      })
-
-      await fetchActiveTransaction()
-    } catch (error: any) {
-      console.error('Error filing dispute:', error)
-      toast({
-        title: "Error",
-        description: error.message || "Failed to file dispute",
-        variant: "destructive"
-      })
-    } finally {
-      setLoading(false)
-    }
-  }
+  // Removed complex cancel/dispute flows - keeping it simple
 
   const releaseFunds = async () => {
     if (!activeTransaction) return
 
     setLoading(true)
     try {
-      const { error } = await supabase.rpc('release_safepay', {
+      const { error } = await supabase.rpc('release_safepay_funds', {
         p_safepay_id: activeTransaction.id
       })
 
-      if (error) {
-        console.error('RPC Error:', error)
-        throw error
-      }
+      if (error) throw error
 
       toast({
-        title: "Funds Released",
-        description: "Payment has been sent to the seller"
+        title: "Payment Released",
+        description: "Seller has been paid"
       })
 
-      await fetchActiveTransaction()
-      await fetchWallet()
+      await Promise.all([fetchActiveTransaction(), fetchWallet()])
     } catch (error: any) {
-      console.error('Error releasing funds:', error)
       toast({
         title: "Error",
-        description: error.message || "Failed to release funds",
+        description: error.message,
         variant: "destructive"
       })
     } finally {
@@ -399,37 +286,26 @@ export const useSafePay = (otherUserId: string) => {
   }
 
   const cancelSafePay = async () => {
-    if (!activeTransaction) {
-      console.log('No active transaction to cancel')
-      return
-    }
+    if (!activeTransaction) return
 
     setLoading(true)
     try {
-      console.log('Cancelling SafePay:', activeTransaction.id, 'Status:', activeTransaction.status)
-      const { error } = await supabase.rpc('cancel_safepay', {
+      const { error } = await supabase.rpc('cancel_safepay_proposal', {
         p_safepay_id: activeTransaction.id
       })
 
-      if (error) {
-        console.error('RPC Error:', error)
-        throw error
-      }
-
-      console.log('SafePay cancelled successfully')
+      if (error) throw error
 
       toast({
-        title: "SafePay Cancelled",
-        description: "Transaction has been cancelled"
+        title: "Cancelled",
+        description: "Funds have been refunded"
       })
 
-      await fetchActiveTransaction()
-      await fetchWallet()
+      await Promise.all([fetchActiveTransaction(), fetchWallet()])
     } catch (error: any) {
-      console.error('Error cancelling SafePay:', error)
       toast({
         title: "Error",
-        description: error.message || "Failed to cancel SafePay",
+        description: error.message,
         variant: "destructive"
       })
     } finally {
@@ -445,9 +321,6 @@ export const useSafePay = (otherUserId: string) => {
     acceptSafePay,
     completeSafePay,
     releaseFunds,
-    cancelSafePay,
-    requestCancel,
-    approveCancel,
-    fileDispute
+    cancelSafePay
   }
 }

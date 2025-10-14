@@ -3601,10 +3601,6 @@ export type Database = {
           | { p_safepay_id: string }
         Returns: undefined
       }
-      approve_cancel_safepay: {
-        Args: { p_safepay_id: string }
-        Returns: undefined
-      }
       auto_release_safepay: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -3617,7 +3613,7 @@ export type Database = {
         Args: { amount_ngn: number; payment_method?: string }
         Returns: number
       }
-      cancel_safepay: {
+      cancel_safepay_proposal: {
         Args: { p_safepay_id: string }
         Returns: undefined
       }
@@ -3628,10 +3624,6 @@ export type Database = {
           window_minutes?: number
         }
         Returns: boolean
-      }
-      complete_safepay_work: {
-        Args: { p_safepay_id: string }
-        Returns: undefined
       }
       file_dispute_safepay: {
         Args: { p_reason: string; p_safepay_id: string }
@@ -3717,6 +3709,10 @@ export type Database = {
         Args: { lookup_email: string }
         Returns: Json
       }
+      mark_safepay_complete: {
+        Args: { p_safepay_id: string }
+        Returns: undefined
+      }
       propose_safepay: {
         Args: { p_amount: number; p_buyer_id: string; p_seller_id: string }
         Returns: Json
@@ -3730,12 +3726,10 @@ export type Database = {
         Returns: undefined
       }
       release_safepay: {
-        Args:
-          | { p_escrow_id: string; p_releaser: string }
-          | { p_safepay_id: string }
+        Args: { p_escrow_id: string; p_releaser: string }
         Returns: undefined
       }
-      request_cancel_safepay: {
+      release_safepay_funds: {
         Args: { p_safepay_id: string }
         Returns: undefined
       }
