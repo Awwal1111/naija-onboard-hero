@@ -43,9 +43,7 @@ const Experts = () => {
   const location = useLocation()
   const [stateFilter, setStateFilter] = useState('all')
   const [skillFilter, setSkillFilter] = useState('all')
-  const [selectedExpert, setSelectedExpert] = useState<string | null>(null)
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
-  const { submitRating } = useExpertRatings(selectedExpert || undefined)
 
   const bottomNavItems = [
     { icon: Home, label: 'Feed', path: '/feed' },
@@ -133,13 +131,55 @@ const Experts = () => {
   }
 
   const handleRatingSubmit = async (expertUserId: string, rating: number, comment?: string) => {
-    setSelectedExpert(expertUserId)
-    const result = await submitRating(rating, comment)
-    if (result.success) {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to rate this expert",
+        variant: "destructive"
+      })
+      return
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('expert_ratings')
+        .insert({
+          expert_id: expertUserId,
+          user_id: user.id,
+          rating,
+          comment: comment || null
+        })
+        .select()
+        .single()
+
+      if (error) {
+        if (error.message?.includes('duplicate')) {
+          toast({
+            title: "Already Rated",
+            description: "You have already rated this expert",
+            variant: "destructive"
+          })
+        } else {
+          throw error
+        }
+        return
+      }
+
+      toast({
+        title: "Success",
+        description: "Rating submitted successfully!",
+      })
+
       // Refresh the experts list to show updated ratings
       await fetchExperts()
+    } catch (error: any) {
+      console.error('Error submitting rating:', error)
+      toast({
+        title: "Error",
+        description: error.message || "Failed to submit rating",
+        variant: "destructive"
+      })
     }
-    setSelectedExpert(null)
   }
 
   const filteredExperts = experts.filter(expert => {

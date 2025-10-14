@@ -12,7 +12,7 @@ export const useExpertRatings = (expertId?: string) => {
   const [hasRated, setHasRated] = useState(false)
 
   useEffect(() => {
-    if (expertId) {
+    if (expertId && user) {
       fetchRatings()
       checkIfUserHasRated()
     }

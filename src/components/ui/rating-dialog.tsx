@@ -1,12 +1,12 @@
 import React, { useState } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { BrandButton } from '@/components/ui/brand-button'
 import { Textarea } from '@/components/ui/textarea'
 import { StarRating } from './star-rating'
-import { Star } from 'lucide-react'
+import { Star, Sparkles } from 'lucide-react'
 
 interface RatingDialogProps {
-  onSubmit: (rating: number, comment?: string) => void
+  onSubmit: (rating: number, comment?: string) => Promise<void> | void
   trigger?: React.ReactNode
   disabled?: boolean
 }
@@ -19,21 +19,27 @@ export const RatingDialog: React.FC<RatingDialogProps> = ({
   const [rating, setRating] = useState(0)
   const [comment, setComment] = useState('')
   const [open, setOpen] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
 
-  const handleSubmit = () => {
-    if (rating > 0) {
-      onSubmit(rating, comment.trim() || undefined)
-      setOpen(false)
+  const handleSubmit = async () => {
+    if (rating === 0) return
+    
+    setSubmitting(true)
+    try {
+      await onSubmit(rating, comment.trim() || undefined)
       setRating(0)
       setComment('')
+      setOpen(false)
+    } finally {
+      setSubmitting(false)
     }
   }
 
   const defaultTrigger = (
-    <Button variant="outline" size="sm" disabled={disabled}>
+    <BrandButton variant="outline" size="sm" disabled={disabled}>
       <Star className="h-4 w-4 mr-2" />
       Rate Expert
-    </Button>
+    </BrandButton>
   )
 
   return (
@@ -41,53 +47,69 @@ export const RatingDialog: React.FC<RatingDialogProps> = ({
       <DialogTrigger asChild>
         {trigger || defaultTrigger}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md bg-card border-border">
         <DialogHeader>
-          <DialogTitle>Rate This Expert</DialogTitle>
+          <DialogTitle className="text-2xl font-bold text-center flex items-center justify-center gap-2">
+            <Sparkles className="h-6 w-6 text-primary" />
+            Rate This Expert
+          </DialogTitle>
+          <DialogDescription className="text-center">
+            Your feedback helps the community make better connections
+          </DialogDescription>
         </DialogHeader>
         
-        <div className="space-y-6">
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground mb-4">
-              How would you rate your experience with this expert?
-            </p>
-            <StarRating
-              rating={rating}
-              onRatingChange={setRating}
-              size="lg"
-              className="justify-center"
-            />
+        <div className="space-y-6 py-4">
+          <div className="space-y-4">
+            <label className="text-sm font-medium text-center block">How would you rate your experience?</label>
+            <div className="flex justify-center py-2">
+              <StarRating
+                rating={rating}
+                onRatingChange={setRating}
+                size="lg"
+              />
+            </div>
+            {rating > 0 && (
+              <p className="text-center text-sm text-primary font-medium animate-in fade-in duration-300">
+                {rating === 5 && "Outstanding! 🌟"}
+                {rating === 4 && "Great Experience! 👍"}
+                {rating === 3 && "Good! 👌"}
+                {rating === 2 && "Could Be Better 🤔"}
+                {rating === 1 && "Needs Improvement 😕"}
+              </p>
+            )}
           </div>
 
-          <div>
-            <label className="text-sm font-medium text-foreground mb-2 block">
-              Comment (Optional)
-            </label>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Share Your Experience (Optional)</label>
             <Textarea
-              placeholder="Share your experience working with this expert..."
+              placeholder="Tell others what you liked or what could be improved..."
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              rows={3}
-              className="resize-none"
+              className="min-h-[120px] resize-none bg-background/50"
+              maxLength={500}
             />
+            <p className="text-xs text-muted-foreground text-right">
+              {comment.length}/500
+            </p>
           </div>
+        </div>
 
-          <div className="flex gap-3">
-            <Button
-              variant="outline"
-              onClick={() => setOpen(false)}
-              className="flex-1"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSubmit}
-              disabled={rating === 0}
-              className="flex-1"
-            >
-              Submit Rating
-            </Button>
-          </div>
+        <div className="flex gap-3">
+          <BrandButton
+            variant="outline"
+            onClick={() => setOpen(false)}
+            className="flex-1"
+            disabled={submitting}
+          >
+            Cancel
+          </BrandButton>
+          <BrandButton
+            onClick={handleSubmit}
+            disabled={rating === 0 || disabled || submitting}
+            className="flex-1"
+          >
+            {submitting ? "Submitting..." : "Submit Rating"}
+          </BrandButton>
         </div>
       </DialogContent>
     </Dialog>

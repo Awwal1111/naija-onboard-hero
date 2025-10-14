@@ -23,8 +23,8 @@ export const StarRating: React.FC<StarRatingProps> = ({
   
   const sizeClasses = {
     sm: 'h-4 w-4',
-    md: 'h-5 w-5',
-    lg: 'h-6 w-6'
+    md: 'h-6 w-6',
+    lg: 'h-8 w-8'
   }
 
   const handleClick = (newRating: number) => {
@@ -67,10 +67,10 @@ export const StarRating: React.FC<StarRatingProps> = ({
             <Star
               className={cn(
                 sizeClasses[size],
-                "transition-colors",
+                "transition-all duration-200",
                 star <= displayRating
-                  ? "text-yellow-400 fill-yellow-400"
-                  : "text-gray-300"
+                  ? "text-yellow-500 fill-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.5)]"
+                  : "text-muted/30 fill-muted/10"
               )}
             />
           </button>
