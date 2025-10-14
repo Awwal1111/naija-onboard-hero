@@ -55,6 +55,8 @@ export const useSafePay = (otherUserId: string) => {
         .maybeSingle()
 
       if (error) throw error
+      
+      console.log('Fetched active transaction:', data)
       setActiveTransaction(data as SafePayTransaction | null)
     } catch (error) {
       console.error('Error fetching SafePay transaction:', error)
@@ -194,21 +196,37 @@ export const useSafePay = (otherUserId: string) => {
   }
 
   const acceptSafePay = async () => {
-    if (!activeTransaction || activeTransaction.status !== 'proposed') return
+    if (!activeTransaction || activeTransaction.status !== 'proposed') {
+      console.log('Cannot accept SafePay:', { activeTransaction, status: activeTransaction?.status })
+      return
+    }
 
     setLoading(true)
     try {
-      await supabase.rpc('accept_safepay', {
+      console.log('Accepting SafePay:', activeTransaction.id)
+      const { error } = await supabase.rpc('accept_safepay', {
         p_safepay_id: activeTransaction.id
       })
+
+      if (error) {
+        console.error('RPC Error:', error)
+        throw error
+      }
+
+      console.log('SafePay accepted successfully')
 
       toast({
         title: "SafePay Accepted",
         description: "Funds are now secured in escrow"
       })
 
-      await fetchActiveTransaction()
-      await fetchWallet()
+      // Force immediate refresh
+      await Promise.all([fetchActiveTransaction(), fetchWallet()])
+      
+      // Set a short timeout to ensure state updates
+      setTimeout(() => {
+        fetchActiveTransaction()
+      }, 500)
     } catch (error: any) {
       console.error('Error accepting SafePay:', error)
       toast({
