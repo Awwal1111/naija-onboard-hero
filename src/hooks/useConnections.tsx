@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from './useAuth'
 import { useToast } from './use-toast'
 import { supabase } from '@/integrations/supabase/client'
@@ -351,6 +351,14 @@ export const useConnections = () => {
       return false
     }
   }
+
+  // Auto-fetch data on mount and when user changes
+  useEffect(() => {
+    if (user?.id) {
+      fetchConnectionRequests()
+      fetchConnections()
+    }
+  }, [user?.id])
 
   return {
     connectionRequests,
