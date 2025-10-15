@@ -2711,6 +2711,7 @@ export type Database = {
           created_at: string
           description: string
           id: string
+          is_active: boolean
           reward: number
           status: string
           title: string
@@ -2720,6 +2721,7 @@ export type Database = {
           created_at?: string
           description: string
           id?: string
+          is_active?: boolean
           reward: number
           status?: string
           title: string
@@ -2729,6 +2731,7 @@ export type Database = {
           created_at?: string
           description?: string
           id?: string
+          is_active?: boolean
           reward?: number
           status?: string
           title?: string

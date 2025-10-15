@@ -229,7 +229,8 @@ export const useSocialTasks = () => {
           task_giver_id: user.id,
           status: 'active',
           done_slots: 0,
-          reward_amount: rewardAmount,
+          reward: rewardAmount, // Set the NOT NULL column
+          reward_amount: rewardAmount, // Also set this for consistency
           fee_paid: totalCost
         })
         .select()
