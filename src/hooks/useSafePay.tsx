@@ -243,7 +243,7 @@ export const useSafePay = (otherUserId: string) => {
         description: "Waiting for buyer to release funds"
       })
 
-      await fetchActiveTransaction()
+      await Promise.all([fetchActiveTransaction(), fetchWallet()])
     } catch (error: any) {
       toast({
         title: "Error",

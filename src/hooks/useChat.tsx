@@ -182,25 +182,7 @@ export const useChat = (otherUserId: string) => {
   const sendMessage = async (content: string, mediaUrl?: string | null, mediaType?: string | null) => {
     if (!chat || !user) return
 
-    // Check if user is blocked before sending message
     try {
-      const { data: blocked, error: blockError } = await supabase
-        .from('blocked_users')
-        .select('*')
-        .or(`and(blocker_id.eq.${chat.user1_id},blocked_id.eq.${chat.user2_id}),and(blocker_id.eq.${chat.user2_id},blocked_id.eq.${chat.user1_id})`)
-        .maybeSingle()
-
-      if (blockError && blockError.code !== 'PGRST116') throw blockError
-
-      if (blocked) {
-        toast({
-          title: "Message Blocked",
-          description: "Cannot send message - user is blocked",
-          variant: "destructive"
-        })
-        return
-      }
-
       const { error } = await supabase
         .from('messages')
         .insert({

@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { ArrowLeft, Paperclip, Smile, Send, X, Image as ImageIcon, FileText, Video } from 'lucide-react'
+import { ArrowLeft, Paperclip, Smile, Send, X, Image as ImageIcon, FileText, Video, ShieldOff } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useChat } from '@/hooks/useChat'
+import { useBlockUser } from '@/hooks/useBlockUser'
 import { useSecureFileUpload } from '@/hooks/useSecureFileUpload'
 import { BrandButton } from '@/components/ui/brand-button'
 import { BrandInput } from '@/components/ui/brand-input'
@@ -64,6 +65,7 @@ const EnhancedChat = () => {
   const { userId } = useParams<{ userId: string }>()
   const { user } = useAuth()
   const { messages, sendMessage, otherUser, loading } = useChat(userId!)
+  const { isBlocked, isBlockedBy, canSendMessage } = useBlockUser(userId!)
   const { uploadFile, uploadProgress } = useSecureFileUpload()
   const { toast } = useToast()
   
@@ -255,6 +257,43 @@ const EnhancedChat = () => {
     )
   }
 
+  // Show blocked UI if either party has blocked the other
+  if (isBlocked || isBlockedBy) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <header className="bg-background border-b border-border px-4 py-3 flex items-center gap-3 sticky top-0 z-20">
+          <button 
+            onClick={() => navigate(-1)}
+            className="p-2 hover:bg-accent rounded-full"
+          >
+            <ArrowLeft className="h-5 w-5 text-text-secondary" />
+          </button>
+          
+          <div className="flex-1 min-w-0">
+            <h1 className="font-semibold text-text-primary truncate">
+              {otherUser?.full_name || 'User'}
+            </h1>
+          </div>
+        </header>
+
+        <div className="flex-1 flex items-center justify-center px-4">
+          <div className="text-center max-w-md">
+            <ShieldOff className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+            <h2 className="text-xl font-semibold mb-2">
+              {isBlocked ? "You blocked this user" : "This user has blocked you"}
+            </h2>
+            <p className="text-text-secondary">
+              {isBlocked 
+                ? "You cannot send or receive messages from this user. Unblock them to restore messaging."
+                : "You cannot send messages to this user."
+              }
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
@@ -346,7 +385,7 @@ const EnhancedChat = () => {
           <BrandButton
             type="submit"
             size="sm"
-            disabled={(!newMessage.trim() && selectedFiles.length === 0) || uploading}
+            disabled={(!newMessage.trim() && selectedFiles.length === 0) || uploading || !canSendMessage}
             className="rounded-full w-10 h-10 p-0"
           >
             {uploading ? (
