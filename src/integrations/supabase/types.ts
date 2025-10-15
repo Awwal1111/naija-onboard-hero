@@ -1188,12 +1188,16 @@ export type Database = {
           detailed_story: string | null
           featured_image_url: string | null
           fund_usage_breakdown: Json | null
+          funds_held_by_admin: boolean | null
+          funds_release_requested: boolean | null
+          funds_released_at: string | null
           goal_amount: number
           id: string
           is_verified: boolean | null
           location: string | null
           minimum_contribution: number | null
           raised_amount: number | null
+          release_requested_at: string | null
           risks_challenges: string | null
           status: Database["public"]["Enums"]["fundraising_status"] | null
           supporting_documents: Json | null
@@ -1214,12 +1218,16 @@ export type Database = {
           detailed_story?: string | null
           featured_image_url?: string | null
           fund_usage_breakdown?: Json | null
+          funds_held_by_admin?: boolean | null
+          funds_release_requested?: boolean | null
+          funds_released_at?: string | null
           goal_amount: number
           id?: string
           is_verified?: boolean | null
           location?: string | null
           minimum_contribution?: number | null
           raised_amount?: number | null
+          release_requested_at?: string | null
           risks_challenges?: string | null
           status?: Database["public"]["Enums"]["fundraising_status"] | null
           supporting_documents?: Json | null
@@ -1240,12 +1248,16 @@ export type Database = {
           detailed_story?: string | null
           featured_image_url?: string | null
           fund_usage_breakdown?: Json | null
+          funds_held_by_admin?: boolean | null
+          funds_release_requested?: boolean | null
+          funds_released_at?: string | null
           goal_amount?: number
           id?: string
           is_verified?: boolean | null
           location?: string | null
           minimum_contribution?: number | null
           raised_amount?: number | null
+          release_requested_at?: string | null
           risks_challenges?: string | null
           status?: Database["public"]["Enums"]["fundraising_status"] | null
           supporting_documents?: Json | null
@@ -3604,6 +3616,10 @@ export type Database = {
           | { p_safepay_id: string }
         Returns: undefined
       }
+      admin_release_fundraising_funds: {
+        Args: { p_admin_id: string; p_fundraising_id: string }
+        Returns: Json
+      }
       auto_release_safepay: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -3627,6 +3643,14 @@ export type Database = {
           window_minutes?: number
         }
         Returns: boolean
+      }
+      contribute_to_fundraising: {
+        Args: {
+          p_amount: number
+          p_contributor_id: string
+          p_fundraising_id: string
+        }
+        Returns: Json
       }
       file_dispute_safepay: {
         Args: { p_reason: string; p_safepay_id: string }
@@ -3735,6 +3759,10 @@ export type Database = {
       release_safepay_funds: {
         Args: { p_safepay_id: string }
         Returns: undefined
+      }
+      request_fundraising_release: {
+        Args: { p_fundraising_id: string; p_user_id: string }
+        Returns: Json
       }
       transfer_funds: {
         Args: {

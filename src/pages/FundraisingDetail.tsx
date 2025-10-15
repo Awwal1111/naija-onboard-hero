@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, MapPin, Calendar, Users, Target, CheckCircle, Clock, FileText } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, Users, Target, CheckCircle, Clock, FileText, Send } from "lucide-react";
 import { format } from "date-fns";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
@@ -23,6 +23,38 @@ export default function FundraisingDetail() {
   const { user } = useAuth();
   const [contributeOpen, setContributeOpen] = useState(false);
   const [amount, setAmount] = useState("");
+
+  const requestReleaseMutation = useMutation({
+    mutationFn: async () => {
+      if (!user) throw new Error("Not authenticated");
+      
+      const { data, error } = await supabase.rpc("request_fundraising_release", {
+        p_fundraising_id: id,
+        p_user_id: user.id,
+      });
+
+      if (error) throw error;
+
+      const result = data as { success: boolean; error?: string };
+      if (!result.success) {
+        throw new Error(result.error || "Request failed");
+      }
+    },
+    onSuccess: () => {
+      toast({
+        title: "Release request submitted!",
+        description: "Admin will review and release funds within 3-5 business days",
+      });
+      queryClient.invalidateQueries({ queryKey: ["fundraising", id] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Request failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   const { data: campaign, isLoading } = useQuery({
     queryKey: ["fundraising", id],
@@ -74,57 +106,18 @@ export default function FundraisingDetail() {
     mutationFn: async (contributionAmount: number) => {
       if (!user) throw new Error("Please log in to contribute");
 
-      // Check user balance
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("balance_withdrawable")
-        .eq("user_id", user.id)
-        .single();
-
-      if (!profile || profile.balance_withdrawable < contributionAmount) {
-        throw new Error("Insufficient balance");
-      }
-
-      // Deduct from user
-      const { error: deductError } = await supabase
-        .from("profiles")
-        .update({
-          wallet_balance: profile.balance_withdrawable - contributionAmount,
-          balance_withdrawable: profile.balance_withdrawable - contributionAmount,
-        })
-        .eq("user_id", user.id);
-
-      if (deductError) throw deductError;
-
-      // Add to campaign
-      const { error: campaignError } = await supabase
-        .from("fundraisings")
-        .update({
-          raised_amount: (campaign?.raised_amount || 0) + contributionAmount,
-        })
-        .eq("id", id);
-
-      if (campaignError) throw campaignError;
-
-      // Record contribution
-      const { error: contributionError } = await supabase
-        .from("fundraising_contributions")
-        .insert({
-          fundraising_id: id,
-          contributor_id: user.id,
-          amount: contributionAmount,
-        });
-
-      if (contributionError) throw contributionError;
-
-      // Log transaction
-      await supabase.from("wallet_transactions").insert({
-        user_id: user.id,
-        kind: "fundraising_contribution",
-        amount: -contributionAmount,
-        status: "completed",
-        reference: `Contribution to: ${campaign?.title}`,
+      const { data, error } = await supabase.rpc("contribute_to_fundraising", {
+        p_fundraising_id: id,
+        p_contributor_id: user.id,
+        p_amount: contributionAmount,
       });
+
+      if (error) throw error;
+
+      const result = data as { success: boolean; error?: string };
+      if (!result.success) {
+        throw new Error(result.error || "Contribution failed");
+      }
     },
     onSuccess: () => {
       toast({
@@ -153,6 +146,7 @@ export default function FundraisingDetail() {
     return <div className="container mx-auto px-4 py-8">Campaign not found</div>;
   }
 
+  const isOwner = user?.id === campaign.user_id;
   const progress = (campaign.raised_amount / campaign.goal_amount) * 100;
   const daysLeft = campaign.deadline
     ? Math.max(0, Math.ceil((new Date(campaign.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
@@ -294,11 +288,55 @@ export default function FundraisingDetail() {
                   </p>
                 )}
 
-                {progress < 100 ? (
+                {/* Fund Status Info */}
+                {campaign.funds_held_by_admin && (
+                  <div className="bg-primary/10 p-3 rounded-lg text-sm">
+                    <p className="font-medium text-primary mb-1">🔒 Funds Protected</p>
+                    <p className="text-xs text-muted-foreground">
+                      All contributions held securely by admin until release
+                    </p>
+                  </div>
+                )}
+
+                {campaign.funds_release_requested && !campaign.funds_released_at && (
+                  <div className="bg-yellow-100 dark:bg-yellow-900/20 p-3 rounded-lg text-sm">
+                    <p className="font-medium text-yellow-800 dark:text-yellow-200 mb-1">⏳ Release Pending</p>
+                    <p className="text-xs text-muted-foreground">
+                      Admin reviewing release request
+                    </p>
+                  </div>
+                )}
+
+                {campaign.funds_released_at && (
+                  <div className="bg-green-100 dark:bg-green-900/20 p-3 rounded-lg text-sm">
+                    <p className="font-medium text-green-800 dark:text-green-200 mb-1">✅ Funds Released</p>
+                    <p className="text-xs text-muted-foreground">
+                      Released on {format(new Date(campaign.funds_released_at), "PPP")}
+                    </p>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                {isOwner && campaign.funds_held_by_admin && !campaign.funds_release_requested && (
+                  <Button 
+                    onClick={() => requestReleaseMutation.mutate()}
+                    disabled={requestReleaseMutation.isPending}
+                    className="w-full" 
+                    size="lg"
+                    variant="outline"
+                  >
+                    <Send className="w-4 h-4 mr-2" />
+                    {requestReleaseMutation.isPending ? "Requesting..." : "Request Fund Release"}
+                  </Button>
+                )}
+
+                {!isOwner && progress < 100 && (
                   <Button onClick={() => setContributeOpen(true)} className="w-full" size="lg">
                     Contribute Now
                   </Button>
-                ) : (
+                )}
+
+                {!isOwner && progress >= 100 && (
                   <Button disabled className="w-full" size="lg">
                     Goal Reached
                   </Button>

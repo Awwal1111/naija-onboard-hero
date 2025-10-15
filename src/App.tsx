@@ -54,6 +54,8 @@ import CourseDetail from "./pages/CourseDetail";
 import JobDetail from "./pages/JobDetail";
 import SpinWheelGame from "./components/SpinWheelGame";
 import NaijaPredictor from "./components/NaijaPredictor";
+import FAQ from "./pages/FAQ";
+import Index from "./pages/Index";
 
 const App = () => (
   <TooltipProvider>
@@ -62,7 +64,8 @@ const App = () => (
       <BrowserRouter>
         <WalletInitializer />
         <Routes>
-          <Route path="/" element={<Welcome />} />
+          <Route path="/" element={<Index />} />
+          <Route path="/welcome" element={<Welcome />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -90,8 +93,9 @@ const App = () => (
           <Route path="/products/:id" element={<ProtectedRoute><ProductDetail /></ProtectedRoute>} />
           <Route path="/courses" element={<ProtectedRoute><Courses /></ProtectedRoute>} />
           <Route path="/courses/:id" element={<ProtectedRoute><CourseDetail /></ProtectedRoute>} />
-          <Route path="/fundraising" element={<ProtectedRoute><Fundraising /></ProtectedRoute>} />
-          <Route path="/fundraising/:id" element={<ProtectedRoute><FundraisingDetail /></ProtectedRoute>} />
+          <Route path="/fundraising" element={<Fundraising />} />
+          <Route path="/fundraising/:id" element={<FundraisingDetail />} />
+          <Route path="/faq" element={<FAQ />} />
           <Route path="/jobs/:id" element={<ProtectedRoute><JobDetail /></ProtectedRoute>} />
           <Route path="/emergency" element={<ProtectedRoute><Emergency /></ProtectedRoute>} />
           <Route path="/loan" element={<ProtectedRoute><Loan /></ProtectedRoute>} />
