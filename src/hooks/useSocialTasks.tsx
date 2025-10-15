@@ -235,7 +235,25 @@ export const useSocialTasks = () => {
         .select()
         .single()
 
-      if (error) throw error
+      if (error) {
+        // REFUND THE MONEY if task creation failed
+        await supabase
+          .from('profiles')
+          .update({ wallet_balance: profile.wallet_balance })
+          .eq('user_id', user.id)
+        
+        await supabase
+          .from('wallet_transactions')
+          .insert({
+            user_id: user.id,
+            amount: totalCost,
+            kind: 'refund',
+            status: 'completed',
+            reference: 'Refund: Social media task creation failed'
+          })
+        
+        throw error
+      }
 
       toast({
         title: "Task Created Successfully!",
