@@ -19,6 +19,7 @@ import { AdminArticlesSection } from '@/components/AdminArticlesSection'
 import { AdminWalletManagement } from '@/components/AdminWalletManagement'
 import { AdminSettingsTab } from '@/components/AdminSettingsTab'
 import { AdminWithdrawalsSection } from '@/components/AdminWithdrawalsSection'
+import { AdminDisputeManagement } from '@/components/AdminDisputeManagement'
 
 // Marketplace Section Components
 const DonationsSection = () => {
@@ -343,6 +344,37 @@ const FundraisingSection = () => {
     }
   }
 
+  const handleReleaseFunds = async (fundraising: any) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { data, error } = await supabase.rpc("admin_release_fundraising_funds", {
+        p_fundraising_id: fundraising.id,
+        p_admin_id: user.id,
+      });
+
+      if (error) throw error;
+
+      const result = data as { success: boolean; error?: string };
+      if (!result.success) {
+        throw new Error(result.error || "Release failed");
+      }
+
+      toast({
+        title: "Success",
+        description: "Funds released successfully to campaign owner",
+      });
+      fetchFundraisings();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to release funds",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading) {
     return <div className="text-center py-8">Loading fundraisings...</div>
   }
@@ -410,6 +442,14 @@ const FundraisingSection = () => {
                   <Button size="sm" variant="destructive" onClick={() => handleReject(fundraising.id)} className="flex-1">
                     <AlertCircle className="h-4 w-4 mr-2" />
                     Reject
+                  </Button>
+                </div>
+              )}
+              {fundraising.funds_release_requested && !fundraising.funds_released_at && (
+                <div className="flex gap-2 pt-3 border-t">
+                  <Button size="sm" onClick={() => handleReleaseFunds(fundraising)} className="w-full" variant="default">
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Release Funds to Campaign Owner
                   </Button>
                 </div>
               )}
@@ -1211,6 +1251,7 @@ const EnhancedAdminDashboard = () => {
                   <TabsTrigger value="referral">Referral Tasks</TabsTrigger>
                   <TabsTrigger value="articles">Articles</TabsTrigger>
                   <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
+                  <TabsTrigger value="disputes">Disputes</TabsTrigger>
                 </TabsList>
               </div>
 
@@ -1245,6 +1286,17 @@ const EnhancedAdminDashboard = () => {
 
               <TabsContent value="withdrawals">
                 <AdminWithdrawalsSection />
+              </TabsContent>
+
+              <TabsContent value="disputes">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Transaction Disputes</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <AdminDisputeManagement />
+                  </CardContent>
+                </Card>
               </TabsContent>
             </Tabs>
           </TabsContent>

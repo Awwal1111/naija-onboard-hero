@@ -1,10 +1,15 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { ArrowUpRight, ArrowDownLeft, Calendar, Hash, FileText, CheckCircle, Clock, XCircle, DollarSign } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Input } from '@/components/ui/input'
+import { ArrowUpRight, ArrowDownLeft, Calendar, Hash, FileText, CheckCircle, Clock, XCircle, DollarSign, AlertTriangle } from 'lucide-react'
 import { WalletTransaction } from '@/hooks/useWallet'
 import { format } from 'date-fns'
+import { useDisputes } from '@/hooks/useDisputes'
 
 interface TransactionDetailDialogProps {
   transaction: WalletTransaction | null
@@ -17,7 +22,29 @@ export const TransactionDetailDialog: React.FC<TransactionDetailDialogProps> = (
   open,
   onOpenChange
 }) => {
-  if (!transaction) return null
+  const [showDisputeForm, setShowDisputeForm] = useState(false);
+  const [disputeReason, setDisputeReason] = useState("");
+  const [disputeDetails, setDisputeDetails] = useState("");
+  const { createDispute, isCreatingDispute, getDisputeForTransaction } = useDisputes();
+
+  if (!transaction) return null;
+
+  const existingDispute = getDisputeForTransaction(transaction.id);
+
+  const handleDisputeSubmit = () => {
+    if (!disputeReason.trim()) return;
+    
+    createDispute({
+      transactionId: transaction.id,
+      reason: disputeReason,
+      details: disputeDetails,
+    });
+    
+    setShowDisputeForm(false);
+    setDisputeReason("");
+    setDisputeDetails("");
+    onOpenChange(false);
+  };
 
   const getStatusIcon = () => {
     switch (transaction.status) {
@@ -77,7 +104,85 @@ export const TransactionDetailDialog: React.FC<TransactionDetailDialogProps> = (
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="space-y-4 py-4">
+          {/* Dispute Section at Top */}
+          {existingDispute ? (
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <h4 className="font-semibold text-sm mb-1">Dispute {existingDispute.status}</h4>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Submitted: {format(new Date(existingDispute.created_at), "PPp")}
+                  </p>
+                  <p className="text-sm"><strong>Reason:</strong> {existingDispute.dispute_reason}</p>
+                  {existingDispute.admin_response && (
+                    <div className="mt-2 p-2 bg-background rounded">
+                      <p className="text-xs font-medium">Admin Response:</p>
+                      <p className="text-sm">{existingDispute.admin_response}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : showDisputeForm ? (
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-red-600" />
+                <h4 className="font-semibold">Create Dispute</h4>
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <Label>Dispute Reason *</Label>
+                  <Input
+                    value={disputeReason}
+                    onChange={(e) => setDisputeReason(e.target.value)}
+                    placeholder="e.g., Duplicate charge, incorrect amount"
+                    maxLength={100}
+                  />
+                </div>
+                <div>
+                  <Label>Additional Details</Label>
+                  <Textarea
+                    value={disputeDetails}
+                    onChange={(e) => setDisputeDetails(e.target.value)}
+                    placeholder="Provide more information about the issue..."
+                    rows={3}
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={handleDisputeSubmit} 
+                    disabled={!disputeReason.trim() || isCreatingDispute}
+                    className="flex-1"
+                    variant="destructive"
+                  >
+                    {isCreatingDispute ? "Submitting..." : "Submit Dispute"}
+                  </Button>
+                  <Button 
+                    onClick={() => setShowDisputeForm(false)} 
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <Button 
+              onClick={() => setShowDisputeForm(true)} 
+              variant="outline" 
+              className="w-full"
+              size="sm"
+            >
+              <AlertTriangle className="h-4 w-4 mr-2" />
+              Report Issue / Create Dispute
+            </Button>
+          )}
+
+          <Separator />
+
           {/* Amount Section */}
           <div className="text-center py-6 bg-accent/50 rounded-xl">
             <p className="text-sm text-muted-foreground mb-2">Amount</p>

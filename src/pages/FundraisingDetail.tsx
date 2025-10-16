@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, MapPin, Calendar, Users, Target, CheckCircle, Clock, FileText, Send } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, Users, Target, CheckCircle, Clock, FileText, Send, Share2, Copy } from "lucide-react";
 import { format } from "date-fns";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
@@ -23,6 +23,33 @@ export default function FundraisingDetail() {
   const { user } = useAuth();
   const [contributeOpen, setContributeOpen] = useState(false);
   const [amount, setAmount] = useState("");
+
+  const shareUrl = `${window.location.origin}/fundraising/${id}`;
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(shareUrl);
+    toast({
+      title: "Link copied!",
+      description: "Fundraising link copied to clipboard",
+    });
+  };
+
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: campaign?.title || "Support this campaign",
+          text: campaign?.description || "Help support this fundraising campaign",
+          url: shareUrl,
+        });
+      } catch (error) {
+        // User cancelled or error occurred
+        handleCopyLink();
+      }
+    } else {
+      handleCopyLink();
+    }
+  };
 
   const requestReleaseMutation = useMutation({
     mutationFn: async () => {
@@ -341,6 +368,23 @@ export default function FundraisingDetail() {
                     Goal Reached
                   </Button>
                 )}
+
+                <Separator />
+
+                {/* Share Section */}
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Share this campaign</p>
+                  <div className="flex gap-2">
+                    <Button onClick={handleShare} variant="outline" size="sm" className="flex-1">
+                      <Share2 className="w-4 h-4 mr-2" />
+                      Share
+                    </Button>
+                    <Button onClick={handleCopyLink} variant="outline" size="sm" className="flex-1">
+                      <Copy className="w-4 h-4 mr-2" />
+                      Copy Link
+                    </Button>
+                  </div>
+                </div>
 
                 <Separator />
 

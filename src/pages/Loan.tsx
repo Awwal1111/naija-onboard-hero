@@ -1,7 +1,8 @@
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Banknote, Lock } from "lucide-react";
+import { ArrowLeft, Banknote, Lock, ExternalLink, AlertTriangle, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function Loan() {
   const navigate = useNavigate();
@@ -18,15 +19,66 @@ export default function Loan() {
       </div>
 
       <div className="p-4 max-w-2xl mx-auto space-y-6">
-        <div className="text-center space-y-4 py-12">
+        {/* Third-Party Service Warning */}
+        <Alert className="border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20">
+          <AlertTriangle className="h-5 w-5 text-yellow-600" />
+          <AlertDescription className="text-sm">
+            <strong className="block mb-2">⚠️ Third-Party Service</strong>
+            The loan service below is provided by FairMoney, a third-party financial service.
+            NaijaLancers is <strong>NOT responsible</strong> for any transactions, issues, or disputes
+            related to FairMoney. Use at your own discretion.
+          </AlertDescription>
+        </Alert>
+
+        {/* FairMoney Referral Card */}
+        <Card className="border-primary">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Banknote className="h-6 w-6 text-primary" />
+              Quick Loan via FairMoney
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Get instant access to loans with flexible repayment options through our partner FairMoney.
+            </p>
+            <ul className="text-sm space-y-2 text-muted-foreground">
+              <li className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-green-500" />
+                Fast approval (within minutes)
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-green-500" />
+                Competitive interest rates
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-green-500" />
+                Flexible repayment terms
+              </li>
+            </ul>
+            <Button 
+              className="w-full" 
+              size="lg"
+              onClick={() => window.open("https://fairmoney.io/referral?referral_code=8PBFK", "_blank")}
+            >
+              <ExternalLink className="h-4 w-4 mr-2" />
+              Apply for Loan with FairMoney
+            </Button>
+            <p className="text-xs text-center text-muted-foreground italic">
+              You will be redirected to FairMoney's website
+            </p>
+          </CardContent>
+        </Card>
+
+        <div className="text-center space-y-4 py-8">
           <div className="flex justify-center">
             <div className="bg-primary/10 p-6 rounded-full">
               <Banknote className="h-16 w-16 text-primary" />
             </div>
           </div>
-          <h2 className="text-2xl font-bold">Loan Services Coming Soon</h2>
+          <h2 className="text-2xl font-bold">Native Loan Services Coming Soon</h2>
           <p className="text-muted-foreground max-w-md mx-auto">
-            We're working on integrating a comprehensive loan service to help you access quick financial assistance when you need it most.
+            We're working on integrating our own comprehensive loan service to help you access quick financial assistance directly through NaijaLancers.
           </p>
         </div>
 

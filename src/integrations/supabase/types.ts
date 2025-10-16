@@ -3317,6 +3317,48 @@ export type Database = {
         }
         Relationships: []
       }
+      transaction_disputes: {
+        Row: {
+          admin_response: string | null
+          created_at: string
+          dispute_details: string | null
+          dispute_reason: string
+          id: string
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          transaction_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_response?: string | null
+          created_at?: string
+          dispute_details?: string | null
+          dispute_reason: string
+          id?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          transaction_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_response?: string | null
+          created_at?: string
+          dispute_details?: string | null
+          dispute_reason?: string
+          id?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          transaction_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       transactions: {
         Row: {
           amount: number

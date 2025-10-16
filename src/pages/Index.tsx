@@ -1,9 +1,9 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { 
   Briefcase, Users, Heart, GraduationCap, ShoppingBag, 
-  Coins, TrendingUp, Shield, Clock, ChevronRight
+  Coins, TrendingUp, Shield, Clock, ChevronRight, Mail, Phone
 } from "lucide-react";
 
 export default function Index() {

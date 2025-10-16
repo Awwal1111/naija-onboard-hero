@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, AlertCircle } from "lucide-react";
+import { ArrowLeft, Plus, AlertCircle, FileText, Phone, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -55,7 +55,10 @@ export default function Emergency() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast({ title: "Emergency request submitted! Awaiting admin review." });
+      toast({ 
+        title: "Emergency request submitted!", 
+        description: "Check your email for next steps to submit required documents."
+      });
       queryClient.invalidateQueries({ queryKey: ["emergency-requests"] });
       setCreateDialogOpen(false);
       setFormData({ reason: "", amount_requested: "" });
@@ -137,6 +140,43 @@ export default function Emergency() {
             </div>
           </div>
         </div>
+
+        <Card className="bg-primary/5 border-primary/20">
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-primary" />
+              <h3 className="font-semibold">Required Documents for Fund Release</h3>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              After your emergency request is approved, you MUST submit the following documents to receive funds:
+            </p>
+            <ul className="text-sm space-y-2 ml-4 list-disc text-muted-foreground">
+              <li>A video explaining your emergency situation</li>
+              <li>Police report (if applicable to your emergency)</li>
+              <li>Any supporting documents (medical reports, bills, etc.)</li>
+            </ul>
+            <div className="bg-background p-3 rounded-lg space-y-2 mt-3">
+              <p className="text-sm font-medium">Submit documents via:</p>
+              <div className="flex items-center gap-2 text-sm">
+                <Phone className="h-4 w-4 text-primary" />
+                <span className="font-medium">WhatsApp:</span>
+                <a href="https://wa.me/2348167140857" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                  +234 816 714 0857
+                </a>
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <Mail className="h-4 w-4 text-primary" />
+                <span className="font-medium">Email:</span>
+                <a href="mailto:support@naijalancers.name.ng" className="text-primary hover:underline">
+                  support@naijalancers.name.ng
+                </a>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground italic">
+              ⚠️ Funds will only be released after admin verifies your submitted documents.
+            </p>
+          </CardContent>
+        </Card>
 
         {isLoading ? (
           <div className="text-center py-8">Loading...</div>
