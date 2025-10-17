@@ -145,36 +145,55 @@ export default function Emergency() {
           <CardContent className="p-4 space-y-3">
             <div className="flex items-center gap-2">
               <FileText className="h-5 w-5 text-primary" />
-              <h3 className="font-semibold">Required Documents for Fund Release</h3>
+              <h3 className="font-semibold text-base">Required Documents for Fund Release</h3>
             </div>
-            <p className="text-sm text-muted-foreground">
-              After your emergency request is approved, you MUST submit the following documents to receive funds:
-            </p>
-            <ul className="text-sm space-y-2 ml-4 list-disc text-muted-foreground">
-              <li>A video explaining your emergency situation</li>
-              <li>Police report (if applicable to your emergency)</li>
-              <li>Any supporting documents (medical reports, bills, etc.)</li>
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+              <p className="text-sm font-semibold text-yellow-900 dark:text-yellow-100 mb-2">
+                📋 IMPORTANT: Document Submission Requirements
+              </p>
+              <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                After your emergency request is approved, you MUST submit the following documents before funds can be released:
+              </p>
+            </div>
+            <ul className="text-sm space-y-2 ml-4 list-disc text-foreground">
+              <li><strong>Video explanation</strong> of your emergency situation</li>
+              <li><strong>Police report</strong> (if applicable to your emergency)</li>
+              <li><strong>Supporting documents</strong> (medical reports, bills, receipts, etc.)</li>
             </ul>
-            <div className="bg-background p-3 rounded-lg space-y-2 mt-3">
-              <p className="text-sm font-medium">Submit documents via:</p>
-              <div className="flex items-center gap-2 text-sm">
-                <Phone className="h-4 w-4 text-primary" />
-                <span className="font-medium">WhatsApp:</span>
-                <a href="https://wa.me/2348167140857" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                  +234 816 714 0857
-                </a>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <Mail className="h-4 w-4 text-primary" />
-                <span className="font-medium">Email:</span>
-                <a href="mailto:support@naijalancers.name.ng" className="text-primary hover:underline">
-                  support@naijalancers.name.ng
-                </a>
+            <div className="bg-background border border-primary/20 p-4 rounded-lg space-y-3 mt-3">
+              <p className="text-sm font-semibold text-foreground">📤 Submit Your Documents Here:</p>
+              <div className="space-y-2">
+                <div className="flex items-start gap-3 text-sm bg-green-50 dark:bg-green-900/20 p-3 rounded-md">
+                  <Phone className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-green-900 dark:text-green-100">WhatsApp (Recommended)</p>
+                    <a href="https://wa.me/2348167140857" target="_blank" rel="noopener noreferrer" className="text-green-700 dark:text-green-300 hover:underline font-medium">
+                      +234 816 714 0857
+                    </a>
+                    <p className="text-xs text-green-700 dark:text-green-300 mt-1">Send your video and documents here</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 text-sm bg-blue-50 dark:bg-blue-900/20 p-3 rounded-md">
+                  <Mail className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-blue-900 dark:text-blue-100">Email (Alternative)</p>
+                    <a href="mailto:support@naijalancers.name.ng" className="text-blue-700 dark:text-blue-300 hover:underline font-medium break-all">
+                      support@naijalancers.name.ng
+                    </a>
+                    <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">Attach all documents to your email</p>
+                  </div>
+                </div>
               </div>
             </div>
-            <p className="text-xs text-muted-foreground italic">
-              ⚠️ Funds will only be released after admin verifies your submitted documents.
-            </p>
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
+              <p className="text-sm font-semibold text-red-900 dark:text-red-100 flex items-center gap-2">
+                <AlertCircle className="h-4 w-4" />
+                Critical Notice
+              </p>
+              <p className="text-xs text-red-800 dark:text-red-200 mt-1">
+                ⚠️ Funds will ONLY be released AFTER admin verifies your submitted documents. Incomplete submissions will delay processing.
+              </p>
+            </div>
           </CardContent>
         </Card>
 

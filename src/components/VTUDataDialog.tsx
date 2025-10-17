@@ -39,6 +39,8 @@ export const VTUDataDialog = ({ open, onOpenChange, currentBalance, onSuccess }:
   const [phone, setPhone] = useState<string>('');
   const [dataPlans, setDataPlans] = useState<DataPlan[]>([]);
   const [selectedPlan, setSelectedPlan] = useState<DataPlan | null>(null);
+  const [pin, setPin] = useState<string>('');
+  const [showPinInput, setShowPinInput] = useState(false);
 
   useEffect(() => {
     if (network && open) {
@@ -75,7 +77,7 @@ export const VTUDataDialog = ({ open, onOpenChange, currentBalance, onSuccess }:
     }
   };
 
-  const handlePurchase = async () => {
+  const handleContinue = () => {
     if (!network || !phone || !selectedPlan) {
       toast({
         title: "Error",
@@ -90,7 +92,20 @@ export const VTUDataDialog = ({ open, onOpenChange, currentBalance, onSuccess }:
     if (price > currentBalance) {
       toast({
         title: "Error",
-        description: `Insufficient balance. Available: ${currentBalance} NC`,
+        description: `Insufficient withdrawable balance. Available: ${currentBalance} NC`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setShowPinInput(true);
+  };
+
+  const handlePurchase = async () => {
+    if (pin.length !== 4) {
+      toast({
+        title: "Error",
+        description: "Please enter your 4-digit PIN",
         variant: "destructive",
       });
       return;
@@ -101,11 +116,12 @@ export const VTUDataDialog = ({ open, onOpenChange, currentBalance, onSuccess }:
     try {
       const { data, error } = await supabase.functions.invoke('buy-vtu-data', {
         body: {
-          network: selectedPlan.service_name,
+          network: selectedPlan!.service_name,
           phone,
-          variationId: selectedPlan.variation_id,
-          dataPlan: selectedPlan.data_plan,
-          price
+          variationId: selectedPlan!.variation_id,
+          dataPlan: selectedPlan!.data_plan,
+          price: parseFloat(selectedPlan!.price),
+          pin
         }
       });
 
@@ -120,6 +136,8 @@ export const VTUDataDialog = ({ open, onOpenChange, currentBalance, onSuccess }:
         setPhone('');
         setSelectedPlan(null);
         setDataPlans([]);
+        setPin('');
+        setShowPinInput(false);
         onOpenChange(false);
         if (onSuccess) onSuccess();
       } else {
@@ -215,23 +233,61 @@ export const VTUDataDialog = ({ open, onOpenChange, currentBalance, onSuccess }:
           )}
 
           <p className="text-xs text-muted-foreground">
-            Available balance: {currentBalance} NC
+            Available withdrawable balance: {currentBalance} NC
           </p>
 
-          <Button 
-            onClick={handlePurchase} 
-            disabled={loading || !network || !phone || !selectedPlan}
-            className="w-full"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Processing...
-              </>
-            ) : (
-              `Purchase Data${selectedPlan ? ` - ₦${selectedPlan.price}` : ''}`
-            )}
-          </Button>
+          {!showPinInput ? (
+            <Button 
+              onClick={handleContinue} 
+              disabled={!network || !phone || !selectedPlan}
+              className="w-full"
+            >
+              Continue to PIN
+            </Button>
+          ) : (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="pin">Transaction PIN</Label>
+                <Input
+                  id="pin"
+                  type="password"
+                  placeholder="Enter 4-digit PIN"
+                  value={pin}
+                  onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                  maxLength={4}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Enter your PIN to confirm purchase
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    setShowPinInput(false);
+                    setPin('');
+                  }}
+                  className="flex-1"
+                >
+                  Back
+                </Button>
+                <Button 
+                  onClick={handlePurchase} 
+                  disabled={loading || pin.length !== 4}
+                  className="flex-1"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    `Purchase ₦${selectedPlan?.price}`
+                  )}
+                </Button>
+              </div>
+            </>
+          )}
         </div>
       </DialogContent>
     </Dialog>

@@ -11,6 +11,7 @@ interface DataRequest {
   variationId: string;
   dataPlan: string;
   price: number;
+  pin: string;
 }
 
 async function getVTUToken() {
@@ -59,12 +60,12 @@ Deno.serve(async (req) => {
       throw new Error('Invalid authentication');
     }
 
-    const { network, phone, variationId, dataPlan, price }: DataRequest = await req.json();
+    const { network, phone, variationId, dataPlan, price, pin }: DataRequest = await req.json();
 
     console.log('VTU Data request:', { network, phone, variationId, dataPlan, price, user: user.id });
 
     // Validate input
-    if (!network || !phone || !variationId || !price) {
+    if (!network || !phone || !variationId || !price || !pin) {
       return new Response(
         JSON.stringify({ success: false, error: 'Missing required fields' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -103,10 +104,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check user's wallet balance
+    // Check user's wallet balance and PIN
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('wallet_balance, balance_withdrawable')
+      .select('wallet_balance, balance_withdrawable, transaction_pin')
       .eq('user_id', user.id)
       .single();
 
@@ -115,23 +116,33 @@ Deno.serve(async (req) => {
       throw new Error('Failed to fetch user profile');
     }
 
-    console.log('User balance:', profile.wallet_balance, 'Required:', price);
+    // Verify PIN
+    if (!profile.transaction_pin || profile.transaction_pin !== pin) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid PIN' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
-    if (profile.wallet_balance < price) {
+    console.log('User withdrawable balance:', profile.balance_withdrawable, 'Required:', price);
+
+    // Check withdrawable balance (excludes signup bonus and daily signin rewards)
+    if (profile.balance_withdrawable < price) {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: `Insufficient balance. Available: ₦${profile.wallet_balance} NC` 
+          error: `Insufficient withdrawable balance. Available: ₦${profile.balance_withdrawable} NC` 
         }),
         { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Deduct from wallet
+    // Deduct from both wallet_balance and balance_withdrawable
     const { error: deductError } = await supabase
       .from('profiles')
       .update({
         wallet_balance: profile.wallet_balance - price,
+        balance_withdrawable: profile.balance_withdrawable - price,
         updated_at: new Date().toISOString(),
       })
       .eq('user_id', user.id);
@@ -204,6 +215,7 @@ Deno.serve(async (req) => {
         .from('profiles')
         .update({
           wallet_balance: profile.wallet_balance,
+          balance_withdrawable: profile.balance_withdrawable,
           updated_at: new Date().toISOString(),
         })
         .eq('user_id', user.id);

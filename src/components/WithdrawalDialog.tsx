@@ -4,6 +4,7 @@ import { BrandButton } from '@/components/ui/brand-button'
 import { BrandInput } from '@/components/ui/brand-input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useWallet } from '@/hooks/useWallet'
+import { useToast } from '@/hooks/use-toast'
 
 interface WithdrawalDialogProps {
   open: boolean
@@ -29,6 +30,7 @@ const nigerianBanks = [
 
 export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: WithdrawalDialogProps) => {
   const { initiateWithdrawal } = useWallet()
+  const { toast } = useToast()
   const [amount, setAmount] = useState('')
   const [accountNumber, setAccountNumber] = useState('')
   const [accountName, setAccountName] = useState('')
@@ -37,8 +39,32 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
 
   const handleWithdraw = async () => {
     const withdrawAmount = parseFloat(amount)
-    if (!withdrawAmount || withdrawAmount < 3000 || withdrawAmount > currentBalance) return
-    if (!accountNumber || !accountName || !bankCode) return
+    if (!withdrawAmount || withdrawAmount < 3000) {
+      toast({
+        title: "Invalid Amount",
+        description: "Minimum withdrawal is NC 3,000",
+        variant: "destructive"
+      })
+      return
+    }
+    
+    if (withdrawAmount > currentBalance) {
+      toast({
+        title: "Insufficient Balance",
+        description: `You only have NC ${currentBalance.toLocaleString()} withdrawable balance`,
+        variant: "destructive"
+      })
+      return
+    }
+    
+    if (!accountNumber || !accountName || !bankCode) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all bank details",
+        variant: "destructive"
+      })
+      return
+    }
 
     setLoading(true)
     try {
@@ -73,11 +99,14 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
         <div className="space-y-4">
           <div className="bg-accent/50 rounded-lg p-3">
             <p className="text-sm">
-              <span className="font-medium">Available Balance:</span>{' '}
+              <span className="font-medium">Withdrawable Balance:</span>{' '}
               NC {currentBalance.toLocaleString()}
             </p>
             <p className="text-xs text-text-secondary mt-1">
               Minimum withdrawal: NC 3,000
+            </p>
+            <p className="text-xs text-amber-600 mt-1">
+              ⚠️ Only withdrawable balance can be withdrawn. Sign up bonus and daily rewards are non-withdrawable.
             </p>
           </div>
 

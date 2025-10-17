@@ -30,6 +30,7 @@ export const AdminDisputeManagement = () => {
   const fetchDisputes = async () => {
     try {
       setLoading(true);
+      console.log('Fetching disputes...');
       const { data, error } = await supabase
         .from("transaction_disputes")
         .select(`
@@ -38,13 +39,17 @@ export const AdminDisputeManagement = () => {
         `)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      console.log('Disputes fetch result:', { data, error });
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
       setDisputes(data || []);
     } catch (error: any) {
       console.error("Error fetching disputes:", error);
       toast({
         title: "Error",
-        description: "Failed to fetch disputes",
+        description: `Failed to fetch disputes: ${error.message}`,
         variant: "destructive",
       });
     } finally {

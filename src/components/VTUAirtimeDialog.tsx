@@ -28,8 +28,10 @@ export const VTUAirtimeDialog = ({ open, onOpenChange, currentBalance, onSuccess
   const [network, setNetwork] = useState<string>('');
   const [amount, setAmount] = useState<string>('');
   const [phone, setPhone] = useState<string>('');
+  const [pin, setPin] = useState<string>('');
+  const [showPinInput, setShowPinInput] = useState(false);
 
-  const handlePurchase = async () => {
+  const handleContinue = () => {
     if (!network || !amount || !phone) {
       toast({
         title: "Error",
@@ -54,7 +56,20 @@ export const VTUAirtimeDialog = ({ open, onOpenChange, currentBalance, onSuccess
     if (amountNum > currentBalance) {
       toast({
         title: "Error",
-        description: `Insufficient balance. Available: ${currentBalance} NC`,
+        description: `Insufficient withdrawable balance. Available: ${currentBalance} NC`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setShowPinInput(true);
+  };
+
+  const handlePurchase = async () => {
+    if (pin.length !== 4) {
+      toast({
+        title: "Error",
+        description: "Please enter your 4-digit PIN",
         variant: "destructive",
       });
       return;
@@ -64,7 +79,12 @@ export const VTUAirtimeDialog = ({ open, onOpenChange, currentBalance, onSuccess
 
     try {
       const { data, error } = await supabase.functions.invoke('buy-vtu-airtime', {
-        body: { network, amount: amountNum, phone }
+        body: { 
+          network, 
+          amount: parseFloat(amount), 
+          phone,
+          pin
+        }
       });
 
       if (error) throw error;
@@ -77,6 +97,8 @@ export const VTUAirtimeDialog = ({ open, onOpenChange, currentBalance, onSuccess
         setNetwork('');
         setAmount('');
         setPhone('');
+        setPin('');
+        setShowPinInput(false);
         onOpenChange(false);
         if (onSuccess) onSuccess();
       } else {
@@ -145,24 +167,62 @@ export const VTUAirtimeDialog = ({ open, onOpenChange, currentBalance, onSuccess
               max={50000}
             />
             <p className="text-xs text-muted-foreground">
-              Available balance: {currentBalance} NC
+              Available withdrawable balance: {currentBalance} NC
             </p>
           </div>
 
-          <Button 
-            onClick={handlePurchase} 
-            disabled={loading || !network || !amount || !phone}
-            className="w-full"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Processing...
-              </>
-            ) : (
-              `Purchase Airtime - ${amount || '0'} NC`
-            )}
-          </Button>
+          {!showPinInput ? (
+            <Button 
+              onClick={handleContinue} 
+              disabled={!network || !amount || !phone}
+              className="w-full"
+            >
+              Continue to PIN
+            </Button>
+          ) : (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="pin">Transaction PIN</Label>
+                <Input
+                  id="pin"
+                  type="password"
+                  placeholder="Enter 4-digit PIN"
+                  value={pin}
+                  onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                  maxLength={4}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Enter your PIN to confirm purchase
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    setShowPinInput(false);
+                    setPin('');
+                  }}
+                  className="flex-1"
+                >
+                  Back
+                </Button>
+                <Button 
+                  onClick={handlePurchase} 
+                  disabled={loading || pin.length !== 4}
+                  className="flex-1"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    `Purchase ₦${amount || '0'}`
+                  )}
+                </Button>
+              </div>
+            </>
+          )}
         </div>
       </DialogContent>
     </Dialog>

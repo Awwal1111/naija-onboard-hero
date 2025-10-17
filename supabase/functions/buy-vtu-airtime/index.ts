@@ -9,6 +9,7 @@ interface AirtimeRequest {
   network: string;
   amount: number;
   phone: string;
+  pin: string;
 }
 
 async function getVTUToken() {
@@ -57,17 +58,67 @@ Deno.serve(async (req) => {
       throw new Error('Invalid authentication');
     }
 
-    const { network, amount, phone }: AirtimeRequest = await req.json();
+    const { network, amount, phone, pin }: AirtimeRequest = await req.json();
 
     console.log('VTU Airtime request:', { network, amount, phone, user: user.id });
 
     // Validate input
-    if (!network || !amount || !phone) {
+    if (!network || !amount || !phone || !pin) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Missing required fields: network, amount, or phone' }),
+        JSON.stringify({ success: false, error: 'Missing required fields: network, amount, phone, or pin' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Check user's wallet balance and PIN
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('wallet_balance, balance_withdrawable, transaction_pin')
+      .eq('user_id', user.id)
+      .single();
+
+    if (profileError || !profile) {
+      console.error('Profile fetch error:', profileError);
+      throw new Error('Failed to fetch user profile');
+    }
+
+    // Verify PIN
+    if (!profile.transaction_pin || profile.transaction_pin !== pin) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid PIN' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('User withdrawable balance:', profile.balance_withdrawable, 'Required:', amount);
+
+    // Check withdrawable balance (excludes signup bonus and daily signin rewards)
+    if (profile.balance_withdrawable < amount) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: `Insufficient withdrawable balance. Available: ₦${profile.balance_withdrawable} NC` 
+        }),
+        { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Deduct from both wallet_balance and balance_withdrawable
+    const { error: deductError } = await supabase
+      .from('profiles')
+      .update({
+        wallet_balance: profile.wallet_balance - amount,
+        balance_withdrawable: profile.balance_withdrawable - amount,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('user_id', user.id);
+
+    if (deductError) {
+      console.error('Wallet deduction error:', deductError);
+      throw new Error('Failed to deduct from wallet');
+    }
+
+    console.log('Wallet deducted successfully');
 
     // Map network names to service IDs (ensure lowercase)
     const serviceIdMap: { [key: string]: string } = {
@@ -98,46 +149,6 @@ Deno.serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    // Check user's wallet balance
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('wallet_balance, balance_withdrawable')
-      .eq('user_id', user.id)
-      .single();
-
-    if (profileError || !profile) {
-      console.error('Profile fetch error:', profileError);
-      throw new Error('Failed to fetch user profile');
-    }
-
-    console.log('User balance:', profile.wallet_balance, 'Required:', amount);
-
-    if (profile.wallet_balance < amount) {
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: `Insufficient balance. Available: ₦${profile.wallet_balance} NC` 
-        }),
-        { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Deduct from wallet
-    const { error: deductError } = await supabase
-      .from('profiles')
-      .update({
-        wallet_balance: profile.wallet_balance - amount,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('user_id', user.id);
-
-    if (deductError) {
-      console.error('Wallet deduction error:', deductError);
-      throw new Error('Failed to deduct from wallet');
-    }
-
-    console.log('Wallet deducted successfully');
 
     // Get VTU token
     const vtuToken = await getVTUToken();
@@ -198,6 +209,7 @@ Deno.serve(async (req) => {
         .from('profiles')
         .update({
           wallet_balance: profile.wallet_balance,
+          balance_withdrawable: profile.balance_withdrawable,
           updated_at: new Date().toISOString(),
         })
         .eq('user_id', user.id);

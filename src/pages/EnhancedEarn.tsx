@@ -237,28 +237,28 @@ const EnhancedEarn = () => {
       <WithdrawalDialog 
         open={showWithdrawDialog}
         onOpenChange={setShowWithdrawDialog}
-        currentBalance={balance.total}
+        currentBalance={balance.withdrawable}
       />
 
       {/* VTU Dialogs */}
       <VTUAirtimeDialog
         open={showAirtimeDialog}
         onOpenChange={setShowAirtimeDialog}
-        currentBalance={balance.total}
+        currentBalance={balance.withdrawable}
         onSuccess={() => window.location.reload()}
       />
       
       <VTUDataDialog
         open={showDataDialog}
         onOpenChange={setShowDataDialog}
-        currentBalance={balance.total}
+        currentBalance={balance.withdrawable}
         onSuccess={() => window.location.reload()}
       />
       
       <BettingFundDialog
         open={showBettingDialog}
         onOpenChange={setShowBettingDialog}
-        currentBalance={balance.total}
+        currentBalance={balance.withdrawable}
         onSuccess={() => window.location.reload()}
       />
 
