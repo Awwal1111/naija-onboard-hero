@@ -177,6 +177,45 @@ export const useAdminReferralTasks = () => {
   useEffect(() => {
     fetchAllTasks()
     fetchAllSubmissions()
+
+    // Set up real-time subscription for submissions
+    const submissionsChannel = supabase
+      .channel('referral-submissions-admin')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'referral_submissions'
+        },
+        (payload) => {
+          console.log('Referral submission update:', payload)
+          fetchAllSubmissions()
+        }
+      )
+      .subscribe()
+
+    // Set up real-time subscription for tasks
+    const tasksChannel = supabase
+      .channel('referral-tasks-admin')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'referral_tasks'
+        },
+        (payload) => {
+          console.log('Referral task update:', payload)
+          fetchAllTasks()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(submissionsChannel)
+      supabase.removeChannel(tasksChannel)
+    }
   }, [])
 
   const fetchAllTasks = async () => {

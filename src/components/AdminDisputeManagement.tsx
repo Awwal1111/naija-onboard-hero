@@ -50,7 +50,6 @@ export const AdminDisputeManagement = () => {
 
   const fetchDisputes = async () => {
     try {
-      setLoading(true);
       console.log('Fetching disputes...');
       const { data, error } = await supabase
         .from("transaction_disputes")
@@ -65,6 +64,7 @@ export const AdminDisputeManagement = () => {
         console.error('Supabase error:', error);
         throw error;
       }
+      console.log('Setting disputes:', data?.length || 0, 'disputes found');
       setDisputes(data || []);
     } catch (error: any) {
       console.error("Error fetching disputes:", error);
