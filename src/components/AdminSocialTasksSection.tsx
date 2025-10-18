@@ -43,8 +43,7 @@ export const AdminSocialTasksSection = () => {
         {
           event: '*',
           schema: 'public',
-          table: 'social_tasks_progress',
-          filter: 'status=eq.pending'
+          table: 'social_tasks_progress'
         },
         (payload) => {
           console.log('Real-time update received:', payload)
