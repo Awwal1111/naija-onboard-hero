@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Search } from "lucide-react";
+import { ArrowLeft, Search, ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function ReferralTasks() {
@@ -16,11 +17,11 @@ export default function ReferralTasks() {
   const [sortBy, setSortBy] = useState<"highest" | "lowest">("highest");
   const [tasks, setTasks] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const fetchTasks = async () => {
       try {
-        // @ts-ignore - Temporary fix for type instantiation issue
         const response = await supabase
           .from("referral_tasks")
           .select("*")
@@ -39,6 +40,47 @@ export default function ReferralTasks() {
 
     fetchTasks();
   }, []);
+
+  const toggleExpanded = (taskId: string) => {
+    setExpandedTasks(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(taskId)) {
+        newSet.delete(taskId);
+      } else {
+        newSet.add(taskId);
+      }
+      return newSet;
+    });
+  };
+
+  const extractLinks = (text: string) => {
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    return text.match(urlRegex) || [];
+  };
+
+  const renderTextWithLinks = (text: string) => {
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const parts = text.split(urlRegex);
+    
+    return parts.map((part, index) => {
+      if (part.match(urlRegex)) {
+        return (
+          <a
+            key={index}
+            href={part}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary hover:underline inline-flex items-center gap-1"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {part}
+            <ExternalLink className="h-3 w-3" />
+          </a>
+        );
+      }
+      return <span key={index}>{part}</span>;
+    });
+  };
 
   const filteredTasks = tasks
     .filter((task: any) => {
@@ -107,16 +149,87 @@ export default function ReferralTasks() {
           <div className="text-center py-8 text-sm text-muted-foreground">No tasks found</div>
         ) : (
           <div className="space-y-2 sm:space-y-3">
-            {filteredTasks.map((task: any) => (
-              <Card key={task.id} className="p-3">
-                <h3 className="font-semibold text-sm">{task.title}</h3>
-                <p className="text-xs text-muted-foreground mt-1">{task.description}</p>
-                <div className="flex items-center justify-between mt-2">
-                  <Badge>₦{task.reward}NC</Badge>
-                  <span className="text-xs text-muted-foreground">{task.status}</span>
-                </div>
-              </Card>
-            ))}
+            {filteredTasks.map((task: any) => {
+              const isExpanded = expandedTasks.has(task.id);
+              const hasLinks = extractLinks(task.description).length > 0;
+              
+              return (
+                <Collapsible key={task.id} open={isExpanded} onOpenChange={() => toggleExpanded(task.id)}>
+                  <Card>
+                    <CardHeader className="p-3 sm:p-4 pb-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <CardTitle className="text-sm sm:text-base line-clamp-2">
+                            {task.title}
+                          </CardTitle>
+                          <CardDescription className="text-xs sm:text-sm mt-1">
+                            Reward: {task.reward.toLocaleString()} NC
+                          </CardDescription>
+                        </div>
+                        <Badge variant="secondary" className="flex-shrink-0">
+                          ₦{task.reward}NC
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="p-3 sm:p-4 pt-0">
+                      <CollapsibleTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="w-full justify-between text-xs sm:text-sm h-8"
+                        >
+                          <span>{isExpanded ? 'Show less' : 'View details'}</span>
+                          {isExpanded ? (
+                            <ChevronUp className="h-4 w-4" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </CollapsibleTrigger>
+                      
+                      <CollapsibleContent className="mt-3">
+                        <div className="space-y-3">
+                          <div className="text-sm text-muted-foreground">
+                            {renderTextWithLinks(task.description)}
+                          </div>
+                          
+                          {hasLinks && (
+                            <div className="pt-2 border-t">
+                              <p className="text-xs font-medium text-muted-foreground mb-2">
+                                Quick Links:
+                              </p>
+                              <div className="flex flex-wrap gap-2">
+                                {extractLinks(task.description).map((link, idx) => (
+                                  <Button
+                                    key={idx}
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-xs h-7"
+                                    onClick={() => window.open(link, '_blank')}
+                                  >
+                                    <ExternalLink className="h-3 w-3 mr-1" />
+                                    Link {idx + 1}
+                                  </Button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          <div className="flex items-center justify-between pt-2 border-t">
+                            <span className="text-xs text-muted-foreground">
+                              Status: {task.status || 'available'}
+                            </span>
+                            <Button size="sm" className="text-xs h-7">
+                              Start Task
+                            </Button>
+                          </div>
+                        </div>
+                      </CollapsibleContent>
+                    </CardContent>
+                  </Card>
+                </Collapsible>
+              );
+            })}
           </div>
         )}
       </div>

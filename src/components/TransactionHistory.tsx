@@ -105,7 +105,14 @@ export const TransactionHistory = () => {
                                transaction.kind.includes('received') ||
                                transaction.kind.includes('reward') ||
                                transaction.kind.includes('deposit') ||
-                               transaction.kind === 'transfer_in'
+                               transaction.kind === 'transfer_in' ||
+                               transaction.kind === 'fundraising_release' ||
+                               transaction.kind === 'refund'
+                
+                const isDebit = transaction.kind === 'withdrawal' ||
+                              transaction.kind === 'transfer_out' ||
+                              transaction.kind.includes('loss') ||
+                              transaction.kind.includes('payment_sent')
                 
                 return (
                   <button
@@ -115,12 +122,14 @@ export const TransactionHistory = () => {
                   >
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                       <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
-                        isCredit ? 'bg-green-500/10' : 'bg-red-500/10'
+                        isCredit ? 'bg-green-500/10' : isDebit ? 'bg-red-500/10' : 'bg-gray-500/10'
                       }`}>
                         {isCredit ? (
                           <ArrowDownLeft className="h-5 w-5 text-green-500" />
-                        ) : (
+                        ) : isDebit ? (
                           <ArrowUpRight className="h-5 w-5 text-red-500" />
+                        ) : (
+                          <Clock className="h-5 w-5 text-gray-500" />
                         )}
                       </div>
                       
@@ -138,9 +147,9 @@ export const TransactionHistory = () => {
                     <div className="flex items-center gap-2 flex-shrink-0 ml-2">
                       <div className="text-right">
                         <p className={`font-semibold text-sm whitespace-nowrap ${
-                          isCredit ? 'text-green-500' : 'text-red-500'
+                          isCredit ? 'text-green-500' : isDebit ? 'text-red-500' : 'text-gray-500'
                         }`}>
-                          {isCredit ? '+' : '-'}{Math.abs(transaction.amount).toLocaleString()} NC
+                          {isCredit ? '+' : isDebit ? '-' : ''}{Math.abs(transaction.amount).toLocaleString()} NC
                         </p>
                       </div>
                       <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />

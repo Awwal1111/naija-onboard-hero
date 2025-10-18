@@ -235,6 +235,81 @@ export default function Index() {
         </div>
       </div>
 
+      {/* About Us Section */}
+      <div className="container mx-auto px-4 py-16">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-3xl font-bold text-center mb-8">About NaijaLancers</h2>
+          <div className="prose prose-lg mx-auto text-muted-foreground">
+            <p className="text-center mb-6">
+              NaijaLancers is Nigeria's premier all-in-one platform connecting freelancers, professionals, and entrepreneurs. 
+              We provide a comprehensive ecosystem where Nigerians can find work, offer services, learn new skills, 
+              raise funds, and build successful careers.
+            </p>
+            <div className="grid md:grid-cols-3 gap-6 mt-8">
+              <Card className="text-center p-6">
+                <Users className="h-12 w-12 mx-auto mb-4 text-primary" />
+                <h3 className="font-semibold mb-2">Our Mission</h3>
+                <p className="text-sm">Empowering Nigerians through accessible opportunities and connections</p>
+              </Card>
+              <Card className="text-center p-6">
+                <Shield className="h-12 w-12 mx-auto mb-4 text-primary" />
+                <h3 className="font-semibold mb-2">Our Values</h3>
+                <p className="text-sm">Trust, transparency, and community-first approach in everything we do</p>
+              </Card>
+              <Card className="text-center p-6">
+                <TrendingUp className="h-12 w-12 mx-auto mb-4 text-primary" />
+                <h3 className="font-semibold mb-2">Our Vision</h3>
+                <p className="text-sm">Building Africa's largest professional and entrepreneurial network</p>
+              </Card>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Contact Us Section */}
+      <div className="bg-muted/30 py-16">
+        <div className="container mx-auto px-4">
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-3xl font-bold text-center mb-8">Contact Us</h2>
+            <div className="grid md:grid-cols-2 gap-8">
+              <Card className="p-6">
+                <Mail className="h-8 w-8 text-primary mb-4" />
+                <h3 className="font-semibold text-lg mb-2">Email Support</h3>
+                <p className="text-muted-foreground mb-4">
+                  For general inquiries, support requests, or partnership opportunities
+                </p>
+                <a 
+                  href="mailto:support@naijalancers.name.ng" 
+                  className="text-primary hover:underline font-medium"
+                >
+                  support@naijalancers.name.ng
+                </a>
+              </Card>
+              <Card className="p-6">
+                <Phone className="h-8 w-8 text-primary mb-4" />
+                <h3 className="font-semibold text-lg mb-2">WhatsApp Support</h3>
+                <p className="text-muted-foreground mb-4">
+                  Connect with us directly for urgent matters and quick assistance
+                </p>
+                <a 
+                  href="https://wa.me/2348167140857" 
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline font-medium"
+                >
+                  +234 816 714 0857
+                </a>
+              </Card>
+            </div>
+            <div className="text-center mt-8">
+              <p className="text-muted-foreground">
+                We typically respond within 24 hours during business days
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Footer */}
       <div className="bg-background border-t py-8">
         <div className="container mx-auto px-4">

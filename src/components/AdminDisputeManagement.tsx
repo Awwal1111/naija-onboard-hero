@@ -24,8 +24,29 @@ export const AdminDisputeManagement = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchDisputes();
-  }, []);
+    fetchDisputes()
+
+    // Set up real-time subscription for new disputes
+    const channel = supabase
+      .channel('transaction-disputes-admin')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'transaction_disputes'
+        },
+        (payload) => {
+          console.log('Dispute real-time update:', payload)
+          fetchDisputes() // Refresh disputes when changes occur
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [])
 
   const fetchDisputes = async () => {
     try {

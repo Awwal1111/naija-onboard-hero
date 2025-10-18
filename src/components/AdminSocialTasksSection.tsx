@@ -34,6 +34,28 @@ export const AdminSocialTasksSection = () => {
 
   useEffect(() => {
     fetchSubmissions()
+
+    // Set up real-time subscription for new submissions
+    const channel = supabase
+      .channel('social-tasks-submissions-admin')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'social_tasks_progress',
+          filter: 'status=eq.pending'
+        },
+        (payload) => {
+          console.log('Real-time update received:', payload)
+          fetchSubmissions() // Refresh submissions when changes occur
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [])
 
   const fetchSubmissions = async () => {
