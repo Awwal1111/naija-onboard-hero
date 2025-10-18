@@ -147,17 +147,33 @@ export const useSocialTasks = () => {
         return { success: false, error: 'Already submitted' }
       }
 
-      const { error } = await supabase
-        .from('social_tasks_progress' as any)
-        .update({
-          status: 'pending',
-          screenshot_url: screenshotUrl,
-          text_explanation: textExplanation
-        })
-        .eq('task_id', taskId)
-        .eq('earner_id', user.id)
+      // If record exists (claimed), update it. Otherwise, insert a new one
+      if (existing) {
+        const { error } = await supabase
+          .from('social_tasks_progress' as any)
+          .update({
+            status: 'pending',
+            screenshot_url: screenshotUrl,
+            text_explanation: textExplanation
+          })
+          .eq('task_id', taskId)
+          .eq('earner_id', user.id)
 
-      if (error) throw error
+        if (error) throw error
+      } else {
+        // User clicked "Submit Proof" without claiming first - insert directly
+        const { error } = await supabase
+          .from('social_tasks_progress' as any)
+          .insert({
+            task_id: taskId,
+            earner_id: user.id,
+            status: 'pending',
+            screenshot_url: screenshotUrl,
+            text_explanation: textExplanation
+          })
+
+        if (error) throw error
+      }
 
       toast({
         title: "Success",
