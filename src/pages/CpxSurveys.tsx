@@ -109,38 +109,16 @@ export const CpxSurveys = () => {
           </CardContent>
         </Card>
 
-        {/* CPX Research Survey Iframe */}
+        {/* CPX Research Iframe */}
         <Card className="border-accent/20 overflow-hidden">
           <CardContent className="p-0">
-            <div className="p-3 bg-primary/5 border-b">
-              <p className="text-sm font-semibold text-foreground">📋 Surveys</p>
-            </div>
             <iframe 
               key={iframeKey}
               width="100%" 
               frameBorder="0" 
-              height="1200px"
+              height="2000px"
               src={`https://offers.cpx-research.com/index.php?app_id=29272&ext_user_id=${user.id}&secure_hash=${secureHash}&username=${encodeURIComponent(userName)}&email=${encodeURIComponent(userEmail)}&subid_1=&subid_2`}
               title="CPX Research Surveys"
-              className="w-full"
-            />
-          </CardContent>
-        </Card>
-
-        {/* CPX Research Offerwall */}
-        <Card className="border-accent/20 overflow-hidden">
-          <CardContent className="p-0">
-            <div className="p-3 bg-primary/5 border-b">
-              <p className="text-sm font-semibold text-foreground">🎁 Offerwall</p>
-              <p className="text-xs text-muted-foreground">Complete offers for extra rewards</p>
-            </div>
-            <iframe 
-              key={`offerwall-${iframeKey}`}
-              width="100%" 
-              frameBorder="0" 
-              height="1500px"
-              src={`https://offers.cpx-research.com/index.php?app_id=28486&ext_user_id=${user.id}&secure_hash=${secureHash}&subid_1=${encodeURIComponent(profile?.state_name || '')}&subid_2=${encodeURIComponent(profile?.lga_name || '')}`}
-              title="CPX Research Offerwall"
               className="w-full"
             />
           </CardContent>

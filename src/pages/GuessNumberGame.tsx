@@ -239,25 +239,11 @@ export const GuessNumberGame = () => {
                 <p>• Win 50 NC if you guess correctly!</p>
               </div>
               
-              {/* AdMob Rewarded Ad */}
-              <div className="p-4 border-2 border-primary/30 rounded-lg bg-gradient-to-br from-primary/10 to-primary/5">
-                <div className="text-center space-y-3">
-                  <div className="flex items-center justify-center gap-2">
-                    <Trophy className="h-5 w-5 text-primary" />
-                    <p className="text-sm font-semibold text-foreground">Watch Ad to Play Free!</p>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Watch a rewarded ad to play without spending 10 NC
-                  </p>
-                  <div className="bg-white/50 dark:bg-gray-800/50 rounded p-3 text-xs font-mono">
-                    <p className="text-muted-foreground">App ID: ca-app-pub-8391637296552757~8383341687</p>
-                    <p className="text-muted-foreground">Ad Unit: ca-app-pub-8391637296552757/1999252651</p>
-                  </div>
-                  <Button variant="outline" size="sm" className="w-full" disabled>
-                    <Trophy className="h-4 w-4 mr-2" />
-                    Watch Ad (Integration Pending)
-                  </Button>
-                </div>
+              {/* Ad Redemption Placeholder */}
+              <div className="p-4 border-2 border-dashed border-primary/30 rounded-lg bg-primary/5">
+                <p className="text-sm text-center text-muted-foreground">
+                  Watch ads to redeem (Coming soon)
+                </p>
               </div>
               
               <Button 
