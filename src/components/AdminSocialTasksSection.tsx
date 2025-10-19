@@ -96,13 +96,28 @@ export const AdminSocialTasksSection = () => {
 
       if (updateError) throw updateError
 
-      // Credit user wallet
-      const { error: walletError } = await supabase.rpc('increment_wallet_balance', {
-        target_user_id: earnerId,
-        amount_to_add: reward
-      })
+      // Get current wallet balances
+      const { data: currentProfile } = await supabase
+        .from('profiles')
+        .select('wallet_balance, balance_withdrawable')
+        .eq('user_id', earnerId)
+        .single()
 
-      if (walletError) throw walletError
+      if (currentProfile) {
+        // Credit user wallet - social task rewards are WITHDRAWABLE
+        const newTotalBalance = (currentProfile.wallet_balance || 0) + reward
+        const newWithdrawable = (currentProfile.balance_withdrawable || 0) + reward
+        
+        const { error: walletError } = await supabase
+          .from('profiles')
+          .update({ 
+            wallet_balance: newTotalBalance,
+            balance_withdrawable: newWithdrawable
+          })
+          .eq('user_id', earnerId)
+
+        if (walletError) throw walletError
+      }
 
       // Create transaction record
       await supabase.from('wallet_transactions').insert({
@@ -114,7 +129,7 @@ export const AdminSocialTasksSection = () => {
         metadata: { task_id: submissionId }
       })
 
-      toast.success(`Approved! ${reward} NC credited to user`)
+      toast.success(`Approved! ${reward} NC credited to user (withdrawable)`)
       fetchSubmissions()
     } catch (error) {
       console.error('Error approving submission:', error)
