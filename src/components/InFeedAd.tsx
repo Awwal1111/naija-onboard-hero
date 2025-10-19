@@ -7,50 +7,51 @@ interface InFeedAdProps {
 
 const InFeedAd = ({ index }: InFeedAdProps) => {
   const adContainerRef = useRef<HTMLDivElement>(null)
-  const scriptLoadedRef = useRef(false)
 
   useEffect(() => {
-    // Only load the script once per ad instance
-    if (scriptLoadedRef.current) return
-    
-    const loadAdScript = () => {
+    // Load AdMob native ad
+    const loadAdMobAd = () => {
       try {
-        const script = document.createElement('script')
-        script.async = true
-        script.setAttribute('data-cfasync', 'false')
-        script.src = '//pl27766561.revenuecpmgate.com/6b822cbe4be5b41c48d271c1d94043a6/invoke.js'
+        // AdMob Native Advanced Ad Integration
+        const adContainer = adContainerRef.current
+        if (!adContainer) return
+
+        // Create AdMob ad placeholder
+        const adElement = document.createElement('div')
+        adElement.className = 'admob-native-ad'
+        adElement.innerHTML = `
+          <div class="bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg p-4 space-y-2">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-[10px] font-medium text-muted-foreground uppercase tracking-wider px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 rounded">
+                Sponsored • AdMob
+              </span>
+            </div>
+            <div class="text-xs text-muted-foreground space-y-1">
+              <p class="font-medium">AdMob Native Ad Slot</p>
+              <p class="text-[10px]">App ID: ca-app-pub-8391637296552757~8383341687</p>
+              <p class="text-[10px]">Ad Unit: ca-app-pub-8391637296552757/8373089313</p>
+              <p class="text-[10px] italic mt-2">Integration with Google Mobile Ads SDK required</p>
+            </div>
+          </div>
+        `
         
-        if (adContainerRef.current) {
-          adContainerRef.current.appendChild(script)
-          scriptLoadedRef.current = true
-        }
+        adContainer.appendChild(adElement)
       } catch (error) {
-        console.error('Error loading in-feed ad script:', error)
+        console.error('Error loading AdMob native ad:', error)
       }
     }
 
-    // Small delay to ensure DOM is ready
-    const timer = setTimeout(loadAdScript, 100)
+    const timer = setTimeout(loadAdMobAd, 100)
     return () => clearTimeout(timer)
-  }, [])
+  }, [index])
 
   return (
     <Card className="sponsored-feed-item bg-muted/20 border-muted mb-6">
       <CardContent className="pt-4">
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-[10px] font-medium text-text-secondary uppercase tracking-wider px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 rounded">
-            Sponsored
-          </span>
-        </div>
         <div 
           ref={adContainerRef}
-          className="w-full min-h-[60px] flex justify-center items-center"
-        >
-          <div 
-            id={`container-6b822cbe4be5b41c48d271c1d94043a6-${index}`} 
-            className="w-full h-[60px]"
-          />
-        </div>
+          className="w-full min-h-[120px] flex justify-center items-center"
+        />
       </CardContent>
     </Card>
   )
