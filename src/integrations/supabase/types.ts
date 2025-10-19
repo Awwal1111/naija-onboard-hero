@@ -1937,6 +1937,57 @@ export type Database = {
         }
         Relationships: []
       }
+      manual_deposits: {
+        Row: {
+          admin_notes: string | null
+          amount_approved: number | null
+          amount_claimed: number
+          created_at: string
+          id: string
+          proof_url: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          telegram_user_id: string | null
+          telegram_username: string | null
+          transaction_reference: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          amount_approved?: number | null
+          amount_claimed: number
+          created_at?: string
+          id?: string
+          proof_url?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          telegram_user_id?: string | null
+          telegram_username?: string | null
+          transaction_reference?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          amount_approved?: number | null
+          amount_claimed?: number
+          created_at?: string
+          id?: string
+          proof_url?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          telegram_user_id?: string | null
+          telegram_username?: string | null
+          transaction_reference?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           chat_id: string
@@ -2553,6 +2604,8 @@ export type Database = {
           referral_code: string | null
           state_id: string | null
           state_name: string | null
+          telegram_user_id: string | null
+          telegram_username: string | null
           transaction_pin: string | null
           updated_at: string
           user_id: string
@@ -2580,6 +2633,8 @@ export type Database = {
           referral_code?: string | null
           state_id?: string | null
           state_name?: string | null
+          telegram_user_id?: string | null
+          telegram_username?: string | null
           transaction_pin?: string | null
           updated_at?: string
           user_id: string
@@ -2607,6 +2662,8 @@ export type Database = {
           referral_code?: string | null
           state_id?: string | null
           state_name?: string | null
+          telegram_user_id?: string | null
+          telegram_username?: string | null
           transaction_pin?: string | null
           updated_at?: string
           user_id?: string

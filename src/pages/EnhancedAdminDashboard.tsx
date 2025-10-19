@@ -20,6 +20,7 @@ import { AdminWalletManagement } from '@/components/AdminWalletManagement'
 import { AdminSettingsTab } from '@/components/AdminSettingsTab'
 import { AdminWithdrawalsSection } from '@/components/AdminWithdrawalsSection'
 import { AdminDisputeManagement } from '@/components/AdminDisputeManagement'
+import { AdminManualDepositsSection } from '@/components/AdminManualDepositsSection'
 
 // Marketplace Section Components
 const DonationsSection = () => {
@@ -1404,6 +1405,12 @@ const EnhancedAdminDashboard = () => {
           {/* Wallet Management Tab */}
           <TabsContent value="wallet" className="space-y-6">
             <AdminWalletManagement />
+            
+            <Card>
+              <CardContent className="pt-6">
+                <AdminManualDepositsSection />
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Settings Tab */}

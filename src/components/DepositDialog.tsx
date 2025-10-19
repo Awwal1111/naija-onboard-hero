@@ -3,8 +3,10 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { CreditCard, Wallet } from 'lucide-react'
-import { useWallet } from '@/hooks/useWallet'
+import { Send, Wallet, Copy } from 'lucide-react'
+import { useAuth } from '@/hooks/useAuth'
+import { useProfile } from '@/hooks/useProfile'
+import { toast } from 'sonner'
 
 interface DepositDialogProps {
   open: boolean
@@ -12,8 +14,8 @@ interface DepositDialogProps {
 }
 
 export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
-  const { initiateDeposit } = useWallet()
-  const [loading, setLoading] = useState(false)
+  const { user } = useAuth()
+  const { profile } = useProfile()
 
   const depositAmounts = [
     { nc: 500, naira: 500 },
@@ -28,16 +30,30 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
     { nc: 100000, naira: 100000 }
   ]
 
-  const handleDeposit = async (amount: number) => {
-    setLoading(true)
-    try {
-      await initiateDeposit(amount)
-      onOpenChange(false)
-    } catch (error) {
-      console.error('Deposit error:', error)
-    } finally {
-      setLoading(false)
+  const handleTelegramDeposit = () => {
+    if (!user || !profile) {
+      toast.error('Please log in first')
+      return
     }
+
+    // Generate deep link with email for account linking
+    const identifier = encodeURIComponent(user.email || profile.referral_code || '')
+    const telegramLink = `https://t.me/naijalancersbot?start=${identifier}`
+    
+    // Open Telegram
+    window.open(telegramLink, '_blank')
+    
+    toast.success('Opening Telegram bot...', {
+      description: 'Follow the instructions in the bot to complete your deposit'
+    })
+    
+    onOpenChange(false)
+  }
+
+  const copyBankDetails = () => {
+    const details = `Bank: Opay\nAccount Number: 8129002732\nAccount Name: Awwal Dayyabu`
+    navigator.clipboard.writeText(details)
+    toast.success('Bank details copied!')
   }
 
   return (
@@ -49,38 +65,72 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
             Buy Naijacoin
           </DialogTitle>
           <DialogDescription>
-            Select an amount to purchase Naijacoin using Paystack (1 NC = ₦1)
+            Deposit funds via Telegram bot (1 NC = ₦1)
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            {depositAmounts.map(({ nc, naira }) => (
-              <Card key={nc} className="cursor-pointer hover:shadow-md transition-shadow">
-                <CardContent className="p-4">
-                  <Button
-                    variant="ghost"
-                    className="w-full h-auto p-0 flex flex-col gap-2"
-                    onClick={() => handleDeposit(naira)}
-                    disabled={loading}
-                  >
-                    <div className="flex items-center gap-1">
-                      <CreditCard className="h-4 w-4 text-primary" />
-                      <span className="font-semibold text-lg">NC {nc.toLocaleString()}</span>
-                    </div>
-                    <Badge variant="secondary" className="text-xs">
-                      ₦{naira.toLocaleString()}
-                    </Badge>
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
+          {/* Bank Details Card */}
+          <Card className="bg-primary/5 border-primary/20">
+            <CardContent className="pt-6 space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-sm">Bank Details</h3>
+                <Button size="sm" variant="ghost" onClick={copyBankDetails}>
+                  <Copy className="h-4 w-4 mr-1" />
+                  Copy
+                </Button>
+              </div>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Bank:</span>
+                  <span className="font-medium">Opay</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Account Number:</span>
+                  <span className="font-medium font-mono">8129002732</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Account Name:</span>
+                  <span className="font-medium">Awwal Dayyabu</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Telegram Deposit Button */}
+          <Card className="border-2 border-primary/30 hover:border-primary/50 transition-colors cursor-pointer" onClick={handleTelegramDeposit}>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Send className="h-6 w-6 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold">Deposit via Telegram</h3>
+                  <p className="text-xs text-muted-foreground">Fast & easy manual deposits</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Suggested Amounts */}
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground text-center">Suggested amounts:</p>
+            <div className="grid grid-cols-5 gap-2">
+              {depositAmounts.slice(0, 5).map(({ nc }) => (
+                <Badge key={nc} variant="secondary" className="justify-center py-2 text-xs">
+                  {nc.toLocaleString()}
+                </Badge>
+              ))}
+            </div>
           </div>
 
-          <div className="text-center text-sm text-muted-foreground border-t pt-4">
-            <p>• Payments are processed securely by Paystack</p>
-            <p>• Naijacoins are added instantly after payment</p>
-            <p>• All transactions are recorded in your history</p>
+          {/* Instructions */}
+          <div className="text-xs text-muted-foreground space-y-1 border-t pt-4">
+            <p className="font-medium">How it works:</p>
+            <p>1. Transfer money to the account above</p>
+            <p>2. Click "Deposit via Telegram"</p>
+            <p>3. Send amount and proof to the bot</p>
+            <p>4. Wait for admin approval (usually within minutes)</p>
           </div>
         </div>
       </DialogContent>
