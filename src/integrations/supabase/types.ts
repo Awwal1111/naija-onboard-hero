@@ -666,6 +666,57 @@ export type Database = {
           },
         ]
       }
+      crypto_transactions: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          crypto_amount: number
+          crypto_currency: string
+          error_message: string | null
+          exchange_rate: number
+          id: string
+          naira_amount: number
+          nc_amount: number
+          status: string
+          transaction_type: string
+          tx_hash: string | null
+          user_id: string
+          wallet_address: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          crypto_amount: number
+          crypto_currency: string
+          error_message?: string | null
+          exchange_rate: number
+          id?: string
+          naira_amount: number
+          nc_amount: number
+          status?: string
+          transaction_type: string
+          tx_hash?: string | null
+          user_id: string
+          wallet_address: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          crypto_amount?: number
+          crypto_currency?: string
+          error_message?: string | null
+          exchange_rate?: number
+          id?: string
+          naira_amount?: number
+          nc_amount?: number
+          status?: string
+          transaction_type?: string
+          tx_hash?: string | null
+          user_id?: string
+          wallet_address?: string
+        }
+        Relationships: []
+      }
       daily_signins: {
         Row: {
           created_at: string
@@ -2588,6 +2639,7 @@ export type Database = {
           balance_non_withdrawable: number | null
           balance_withdrawable: number
           bio: string | null
+          celo_wallet_address: string | null
           connections_count: number | null
           created_at: string
           email_confirmed: boolean | null
@@ -2617,6 +2669,7 @@ export type Database = {
           balance_non_withdrawable?: number | null
           balance_withdrawable?: number
           bio?: string | null
+          celo_wallet_address?: string | null
           connections_count?: number | null
           created_at?: string
           email_confirmed?: boolean | null
@@ -2646,6 +2699,7 @@ export type Database = {
           balance_non_withdrawable?: number | null
           balance_withdrawable?: number
           bio?: string | null
+          celo_wallet_address?: string | null
           connections_count?: number | null
           created_at?: string
           email_confirmed?: boolean | null

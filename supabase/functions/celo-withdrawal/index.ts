@@ -1,0 +1,245 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { ethers } from "https://esm.sh/ethers@6.7.0";
+
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const ALCHEMY_RPC = "https://celo-mainnet.g.alchemy.com/v2/nJP_zi_my4rK4ihI5i7Py";
+const MASTER_WALLET_PRIVATE_KEY = Deno.env.get("CELO_MASTER_WALLET_PRIVATE_KEY")!;
+const EXCHANGE_RATE_API = "https://v6.exchangerate-api.com/v6/c06b378e6d590d4c22aa2998/latest/USD";
+const MIN_WITHDRAWAL_NC = 3000;
+
+// cUSD token address on Celo mainnet
+const CUSD_ADDRESS = "0x765DE816845861e75A25fCA122bb6898B8B1282a";
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader) {
+      throw new Error("No authorization header");
+    }
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+    if (authError || !user) {
+      throw new Error("Unauthorized");
+    }
+
+    const { walletAddress, ncAmount, currency } = await req.json();
+
+    // Validate inputs
+    if (!walletAddress || !ethers.isAddress(walletAddress)) {
+      throw new Error("Invalid wallet address");
+    }
+
+    if (!ncAmount || ncAmount < MIN_WITHDRAWAL_NC) {
+      throw new Error(`Minimum withdrawal is ${MIN_WITHDRAWAL_NC} NC`);
+    }
+
+    if (!["cUSD", "CELO"].includes(currency)) {
+      throw new Error("Currency must be cUSD or CELO");
+    }
+
+    // Get user profile and check balance
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("wallet_balance, balance_withdrawable, full_name, telegram_user_id")
+      .eq("user_id", user.id)
+      .single();
+
+    if (!profile || profile.balance_withdrawable < ncAmount) {
+      throw new Error("Insufficient withdrawable balance");
+    }
+
+    // Get exchange rate
+    const rateResponse = await fetch(EXCHANGE_RATE_API);
+    const rateData = await rateResponse.json();
+    const usdToNgn = rateData.conversion_rates?.NGN || 1600;
+
+    // Calculate crypto amount to send
+    const nairaAmount = ncAmount;
+    let cryptoAmount = 0;
+
+    if (currency === "cUSD") {
+      cryptoAmount = nairaAmount / usdToNgn; // Convert NGN to USD (cUSD)
+    } else if (currency === "CELO") {
+      const celoUsdPrice = 0.50; // TODO: Get real-time CELO price
+      cryptoAmount = (nairaAmount / usdToNgn) / celoUsdPrice;
+    }
+
+    console.log(`Withdrawal: ${ncAmount} NC -> ${cryptoAmount} ${currency}`);
+
+    // Create transaction record
+    const { data: txRecord, error: txError } = await supabase
+      .from("crypto_transactions")
+      .insert({
+        user_id: user.id,
+        transaction_type: "withdrawal",
+        crypto_amount: cryptoAmount,
+        crypto_currency: currency,
+        naira_amount: nairaAmount,
+        nc_amount: ncAmount,
+        exchange_rate: usdToNgn,
+        wallet_address: walletAddress.toLowerCase(),
+        status: "processing"
+      })
+      .select()
+      .single();
+
+    if (txError) {
+      throw new Error("Failed to create transaction record");
+    }
+
+    // Deduct from user balance first
+    const { error: walletError } = await supabase
+      .from("profiles")
+      .update({
+        wallet_balance: profile.wallet_balance - ncAmount,
+        balance_withdrawable: profile.balance_withdrawable - ncAmount
+      })
+      .eq("user_id", user.id);
+
+    if (walletError) {
+      throw new Error("Failed to update wallet balance");
+    }
+
+    // Log wallet transaction
+    await supabase.from("wallet_transactions").insert({
+      user_id: user.id,
+      kind: "withdrawal",
+      amount: -ncAmount,
+      status: "processing",
+      reference: `Crypto withdrawal: ${cryptoAmount} ${currency} to ${walletAddress}`
+    });
+
+    // Send blockchain transaction
+    try {
+      const provider = new ethers.JsonRpcProvider(ALCHEMY_RPC);
+      const wallet = new ethers.Wallet(MASTER_WALLET_PRIVATE_KEY, provider);
+
+      let txHash = "";
+
+      if (currency === "cUSD") {
+        // Send cUSD (ERC-20 token)
+        const cUsdAbi = [
+          "function transfer(address to, uint256 amount) returns (bool)"
+        ];
+        const cUsdContract = new ethers.Contract(CUSD_ADDRESS, cUsdAbi, wallet);
+        
+        const decimals = 18;
+        const amount = ethers.parseUnits(cryptoAmount.toFixed(6), decimals);
+        
+        const tx = await cUsdContract.transfer(walletAddress, amount);
+        const receipt = await tx.wait();
+        txHash = receipt.hash;
+      } else {
+        // Send native CELO
+        const tx = await wallet.sendTransaction({
+          to: walletAddress,
+          value: ethers.parseEther(cryptoAmount.toFixed(6))
+        });
+        const receipt = await tx.wait();
+        txHash = receipt.hash;
+      }
+
+      console.log("Transaction sent:", txHash);
+
+      // Update transaction record as completed
+      await supabase
+        .from("crypto_transactions")
+        .update({
+          status: "completed",
+          tx_hash: txHash,
+          completed_at: new Date().toISOString()
+        })
+        .eq("id", txRecord.id);
+
+      // Update wallet transaction
+      await supabase
+        .from("wallet_transactions")
+        .update({
+          status: "completed",
+          reference: `Crypto withdrawal: ${cryptoAmount} ${currency} (Tx: ${txHash})`
+        })
+        .eq("user_id", user.id)
+        .eq("kind", "withdrawal")
+        .eq("status", "processing")
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      // Send Telegram notification
+      if (profile.telegram_user_id) {
+        try {
+          const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
+          if (TELEGRAM_BOT_TOKEN) {
+            await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chat_id: profile.telegram_user_id,
+                text: `✅ *Withdrawal Successful!*\n\n` +
+                      `Amount: ${cryptoAmount.toFixed(4)} ${currency}\n` +
+                      `Deducted: ₦${ncAmount} NC\n` +
+                      `To: ${walletAddress}\n` +
+                      `Tx Hash: ${txHash}\n\n` +
+                      `Funds should arrive shortly! 🎉`,
+                parse_mode: "Markdown"
+              })
+            });
+          }
+        } catch (notifError) {
+          console.error("Error sending Telegram notification:", notifError);
+        }
+      }
+
+      return new Response(JSON.stringify({
+        success: true,
+        txHash,
+        cryptoAmount,
+        currency
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200
+      });
+    } catch (blockchainError) {
+      console.error("Blockchain error:", blockchainError);
+
+      // Refund user on blockchain error
+      await supabase
+        .from("profiles")
+        .update({
+          wallet_balance: profile.wallet_balance,
+          balance_withdrawable: profile.balance_withdrawable
+        })
+        .eq("user_id", user.id);
+
+      await supabase
+        .from("crypto_transactions")
+        .update({
+          status: "failed",
+          error_message: blockchainError.message
+        })
+        .eq("id", txRecord.id);
+
+      throw new Error(`Blockchain transaction failed: ${blockchainError.message}`);
+    }
+  } catch (error) {
+    console.error("Withdrawal error:", error);
+    return new Response(JSON.stringify({ error: error.message }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500
+    });
+  }
+});

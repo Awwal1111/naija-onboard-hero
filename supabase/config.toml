@@ -56,3 +56,9 @@ verify_jwt = true
 
 [functions.fund-betting]
 verify_jwt = true
+
+[functions.celo-deposit-webhook]
+verify_jwt = false
+
+[functions.celo-withdrawal]
+verify_jwt = true
