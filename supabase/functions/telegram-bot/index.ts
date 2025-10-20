@@ -41,35 +41,65 @@ serve(async (req) => {
     if (text.startsWith("/start")) {
       const parts = text.split(" ");
       if (parts.length > 1) {
-        const identifier = parts[1]; // Could be email or referral code
+        let identifier = parts[1]; // Could be email or referral code
         
-        // Try to find user by email or referral code
+        console.log("Received identifier:", identifier);
+        
+        // Decode URL encoding if present
+        try {
+          identifier = decodeURIComponent(identifier);
+        } catch (e) {
+          // Already decoded or invalid encoding
+        }
+        
+        // Try to find user by referral code first (primary method), then email
         let userData = null;
+        let lookupMethod = "";
         
-        // Check if it's an email
-        if (identifier.includes("@")) {
-          const { data: authUser } = await supabase.auth.admin.getUserByEmail(identifier);
-          if (authUser?.user) {
+        // First, try referral code (case-insensitive)
+        const { data: profileByRef, error: refError } = await supabase
+          .from("profiles")
+          .select("user_id, full_name, telegram_user_id")
+          .eq("referral_code", identifier.toUpperCase())
+          .single();
+        
+        console.log("Lookup by referral code:", { profileByRef, refError });
+        
+        if (profileByRef) {
+          userData = profileByRef;
+          lookupMethod = "referral code";
+        } else if (identifier.includes("@")) {
+          // Try email lookup
+          const { data: authUser, error: emailError } = await supabase.auth.admin.listUsers();
+          console.log("Auth users count:", authUser?.users?.length);
+          
+          const foundUser = authUser?.users?.find(u => 
+            u.email?.toLowerCase() === identifier.toLowerCase()
+          );
+          
+          if (foundUser) {
             const { data: profile } = await supabase
               .from("profiles")
-              .select("user_id, full_name")
-              .eq("user_id", authUser.user.id)
+              .select("user_id, full_name, telegram_user_id")
+              .eq("user_id", foundUser.id)
               .single();
             userData = profile;
+            lookupMethod = "email";
           }
-        } else {
-          // Try referral code
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("user_id, full_name")
-            .eq("referral_code", identifier.toUpperCase())
-            .single();
-          userData = profile;
         }
 
         if (userData) {
+          // Check if already linked to another Telegram account
+          if (userData.telegram_user_id && userData.telegram_user_id !== userId?.toString()) {
+            await sendTelegramMessage(
+              chatId,
+              `⚠️ This account is already linked to another Telegram account.\n\nPlease contact support if you need to change the linked account.`
+            );
+            return new Response("OK", { status: 200 });
+          }
+
           // Link Telegram account
-          await supabase
+          const { error: updateError } = await supabase
             .from("profiles")
             .update({
               telegram_user_id: userId?.toString(),
@@ -77,14 +107,17 @@ serve(async (req) => {
             })
             .eq("user_id", userData.user_id);
 
+          console.log("Update result:", { updateError });
+
           await sendTelegramMessage(
             chatId,
-            `✅ Account linked successfully!\n\nHello ${userData.full_name || userName}! 👋\n\nYour NaijaLancers account is now connected to this Telegram chat.\n\nYou can now:\n• Deposit NaijaCoin\n• Check your balance\n• View transactions\n\nType /help to see all available commands.`
+            `✅ Account linked successfully via ${lookupMethod}!\n\nHello ${userData.full_name || userName}! 👋\n\nYour NaijaLancers account is now connected to this Telegram chat.\n\nYou can now:\n• Deposit NaijaCoin using /deposit\n• Check your balance using /balance\n• View help using /help\n\nType /deposit to get started!`
           );
         } else {
+          console.log("No user found for identifier:", identifier);
           await sendTelegramMessage(
             chatId,
-            `❌ Account not found.\n\nPlease make sure you're using the correct link from the NaijaLancers app.\n\nThe link should contain your email or referral code.`
+            `❌ Account not found with identifier: ${identifier}\n\nPlease make sure you're using the correct link from the NaijaLancers app.\n\nThe link should look like:\nhttps://t.me/NaijaLancersBot?start=YOUR_REFERRAL_CODE`
           );
         }
         return new Response("OK", { status: 200 });

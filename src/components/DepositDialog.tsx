@@ -36,15 +36,25 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
       return
     }
 
-    // Generate deep link with email for account linking
-    const identifier = encodeURIComponent(user.email || profile.referral_code || '')
-    const telegramLink = `https://t.me/naijalancersbot?start=${identifier}`
+    // Use referral code as primary identifier (more reliable than email)
+    // Format: use referral code if available, otherwise email
+    const identifier = profile.referral_code || user.email || ''
+    
+    if (!identifier) {
+      toast.error('No identifier found. Please contact support.')
+      return
+    }
+
+    // Don't use encodeURIComponent - Telegram handles this
+    const telegramLink = `https://t.me/NaijaLancersBot?start=${identifier}`
+    
+    console.log('Opening Telegram with link:', telegramLink)
     
     // Open Telegram
     window.open(telegramLink, '_blank')
     
     toast.success('Opening Telegram bot...', {
-      description: 'Follow the instructions in the bot to complete your deposit'
+      description: 'Your link: ' + identifier
     })
     
     onOpenChange(false)
