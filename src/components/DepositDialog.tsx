@@ -159,7 +159,10 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
 
                 {/* Save User Wallet */}
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Your Celo Wallet (for tracking):</label>
+                  <label className="text-sm font-medium">🔗 Your Sending Wallet Address</label>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Which Celo wallet will you send from?
+                  </p>
                   <div className="flex gap-2">
                     <input
                       type="text"
@@ -177,7 +180,7 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
                     </Button>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Save your wallet address so deposits are automatically credited to your account
+                    (So we know it's you when you deposit)
                   </p>
                 </div>
 

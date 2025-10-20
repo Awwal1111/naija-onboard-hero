@@ -195,9 +195,9 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
                 <div className="flex items-start gap-3">
                   <Coins className="h-5 w-5 text-green-500 mt-0.5" />
                   <div className="flex-1 space-y-2">
-                    <h3 className="font-semibold">Withdraw to Celo Wallet</h3>
+                    <h3 className="font-semibold">Withdraw to Any Wallet or Exchange</h3>
                     <p className="text-sm text-muted-foreground">
-                      Receive cUSD or CELO instantly to your MiniPay or any Celo wallet
+                      Receive USDT/cUSD instantly to your MiniPay, Binance, or any wallet that supports Celo network
                     </p>
                   </div>
                 </div>
@@ -223,7 +223,7 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="cUSD">cUSD (Stable - Recommended)</SelectItem>
+                      <SelectItem value="cUSD">cUSD/USDT (Stable - Recommended) - Arrives as USDT on exchanges</SelectItem>
                       <SelectItem value="CELO">CELO</SelectItem>
                     </SelectContent>
                   </Select>
@@ -247,7 +247,7 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
                 {/* Wallet Address */}
                 <div>
                   <label className="text-sm font-medium mb-2 block">
-                    Your Celo Wallet Address
+                    Your Wallet Address
                   </label>
                   <BrandInput
                     type="text"
@@ -255,8 +255,8 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
                     onChange={(e) => setCryptoWallet(e.target.value)}
                     placeholder="0x..."
                   />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Your MiniPay or Celo-compatible wallet address
+                  <p className="text-xs text-blue-600 mt-1">
+                    💡 Get this from: Your exchange → Deposit → USDT → Select CELO network → Copy address
                   </p>
                 </div>
 
