@@ -88,14 +88,18 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
 
     setSavingWallet(true)
     try {
+      const normalizedAddress = celoWallet.toLowerCase()
+      console.log('Saving wallet address:', normalizedAddress)
+      
       const { error } = await supabase
         .from('profiles')
-        .update({ celo_wallet_address: celoWallet.toLowerCase() })
+        .update({ celo_wallet_address: normalizedAddress })
         .eq('user_id', user.id)
 
       if (error) throw error
 
-      toast.success('Celo wallet address saved!')
+      toast.success('✅ Wallet saved! Now send crypto to the deposit address above.')
+      console.log('Wallet saved successfully for user:', user.id)
     } catch (error) {
       console.error('Error saving wallet:', error)
       toast.error('Failed to save wallet address')

@@ -54,11 +54,11 @@ serve(async (req) => {
       }
 
       const txHash = activity.hash;
-      const fromAddress = activity.fromAddress;
+      const fromAddress = activity.fromAddress.toLowerCase();
       const cryptoAmount = activity.value;
       const asset = activity.asset; // "cUSD" or "CELO"
 
-      console.log(`Processing deposit: ${cryptoAmount} ${asset} from ${fromAddress}`);
+      console.log(`[DEPOSIT] Processing: ${cryptoAmount} ${asset} from ${fromAddress}, tx: ${txHash}`);
 
       // Check if transaction already processed
       const { data: existing } = await supabase
@@ -92,15 +92,22 @@ serve(async (req) => {
 
       const ncAmount = Math.floor(nairaAmount); // 1 NC = 1 Naira
 
-      // Find user by wallet address
-      const { data: profile } = await supabase
+      // Find user by wallet address (case-insensitive)
+      console.log(`[LOOKUP] Searching for user with wallet: ${fromAddress}`);
+      
+      const { data: profile, error: profileError } = await supabase
         .from("profiles")
-        .select("user_id, full_name, telegram_user_id")
-        .eq("celo_wallet_address", fromAddress.toLowerCase())
-        .single();
+        .select("user_id, full_name, telegram_user_id, celo_wallet_address")
+        .eq("celo_wallet_address", fromAddress)
+        .maybeSingle();
+
+      console.log(`[LOOKUP] Profile found:`, profile ? `Yes (user: ${profile.user_id})` : 'No');
+      if (profileError) {
+        console.error(`[LOOKUP] Error:`, profileError);
+      }
 
       if (!profile) {
-        console.log("No user found with wallet address:", fromAddress);
+        console.log(`[ERROR] No user found with wallet address: ${fromAddress}`);
         // Create unmatched transaction record
         await supabase.from("crypto_transactions").insert({
           user_id: "00000000-0000-0000-0000-000000000000", // Placeholder
@@ -119,6 +126,7 @@ serve(async (req) => {
       }
 
       // Create transaction record
+      console.log(`[CREDIT] Creating transaction record for ${ncAmount} NC`);
       const { error: txError } = await supabase
         .from("crypto_transactions")
         .insert({
@@ -129,39 +137,46 @@ serve(async (req) => {
           naira_amount: nairaAmount,
           nc_amount: ncAmount,
           exchange_rate: usdToNgn,
-          wallet_address: fromAddress.toLowerCase(),
+          wallet_address: fromAddress,
           tx_hash: txHash,
           status: "completed",
           completed_at: new Date().toISOString()
         });
 
       if (txError) {
-        console.error("Error creating transaction record:", txError);
+        console.error("[ERROR] Failed to create transaction record:", txError);
+        continue;
+      }
+
+      // Get current balance
+      const { data: currentProfile } = await supabase
+        .from("profiles")
+        .select("wallet_balance, balance_withdrawable")
+        .eq("user_id", profile.user_id)
+        .single();
+
+      if (!currentProfile) {
+        console.error("[ERROR] Could not fetch current balance");
         continue;
       }
 
       // Credit user wallet
+      console.log(`[CREDIT] Current balance: ${currentProfile.wallet_balance}, Adding: ${ncAmount}`);
       const { error: walletError } = await supabase
         .from("profiles")
         .update({
-          wallet_balance: supabase.rpc("increment_wallet_balance", {
-            target_user_id: profile.user_id,
-            amount_to_add: ncAmount
-          }),
-          balance_withdrawable: supabase.rpc("increment_wallet_balance", {
-            target_user_id: profile.user_id,
-            amount_to_add: ncAmount
-          })
+          wallet_balance: currentProfile.wallet_balance + ncAmount,
+          balance_withdrawable: currentProfile.balance_withdrawable + ncAmount
         })
         .eq("user_id", profile.user_id);
 
       if (walletError) {
-        console.error("Error updating wallet:", walletError);
+        console.error("[ERROR] Failed to update wallet:", walletError);
         continue;
       }
 
       // Log wallet transaction
-      await supabase.from("wallet_transactions").insert({
+      const { error: wtError } = await supabase.from("wallet_transactions").insert({
         user_id: profile.user_id,
         kind: "deposit",
         amount: ncAmount,
@@ -169,7 +184,11 @@ serve(async (req) => {
         reference: `Crypto deposit: ${cryptoAmount} ${asset} (Tx: ${txHash})`
       });
 
-      console.log(`Successfully credited ${ncAmount} NC to user ${profile.user_id}`);
+      if (wtError) {
+        console.error("[ERROR] Failed to log wallet transaction:", wtError);
+      }
+
+      console.log(`[SUCCESS] ✅ Credited ${ncAmount} NC to user ${profile.user_id}`);
 
       // Send Telegram notification if user has linked account
       if (profile.telegram_user_id) {
