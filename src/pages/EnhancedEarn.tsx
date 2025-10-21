@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Trophy, Zap, FileText, User, History, Users, ArrowUpRight, Phone, Wifi, TrendingUp, Home, MessageCircle, Briefcase, DollarSign, Menu } from 'lucide-react'
+import { Trophy, Zap, FileText, User, History, Users, ArrowUpRight, Phone, Wifi, TrendingUp, Home, MessageCircle, Briefcase, DollarSign, Menu, Tv, GraduationCap } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useWallet } from '@/hooks/useWallet'
 import NaijaLanceWalletCard from '@/components/NaijaLanceWalletCard'
@@ -12,6 +12,9 @@ import { WithdrawalDialog } from '@/components/WithdrawalDialog'
 import { VTUAirtimeDialog } from '@/components/VTUAirtimeDialog'
 import { VTUDataDialog } from '@/components/VTUDataDialog'
 import { BettingFundDialog } from '@/components/BettingFundDialog'
+import { VTUElectricityDialog } from '@/components/VTUElectricityDialog'
+import { VTUCableTVDialog } from '@/components/VTUCableTVDialog'
+import { VTUEducationDialog } from '@/components/VTUEducationDialog'
 import TopBannerAd from '@/components/TopBannerAd'
 import { MoreMenuDrawer } from '@/components/MoreMenuDrawer'
 import { useDailySignin } from '@/hooks/useDailySignin'
@@ -29,6 +32,10 @@ const EnhancedEarn = () => {
   const [showAirtimeDialog, setShowAirtimeDialog] = useState(false)
   const [showDataDialog, setShowDataDialog] = useState(false)
   const [showBettingDialog, setShowBettingDialog] = useState(false)
+  const [showElectricityDialog, setShowElectricityDialog] = useState(false)
+  const [showCableTVDialog, setShowCableTVDialog] = useState(false)
+  const [showEducationDialog, setShowEducationDialog] = useState(false)
+  const [showMoreServices, setShowMoreServices] = useState(false)
 
   const earningMethods = [
     {
@@ -188,6 +195,45 @@ const EnhancedEarn = () => {
                 <span className="text-xs">Bet Fund</span>
               </Button>
             </div>
+
+            {/* View More Button */}
+            <Button
+              variant="ghost"
+              className="w-full mt-2 text-primary"
+              onClick={() => setShowMoreServices(!showMoreServices)}
+            >
+              {showMoreServices ? 'Show Less' : 'View More Services'}
+            </Button>
+
+            {/* More Services */}
+            {showMoreServices && (
+              <div className="grid grid-cols-3 gap-3 mt-3">
+                <Button
+                  variant="outline"
+                  className="flex flex-col items-center justify-center h-20 gap-2"
+                  onClick={() => setShowElectricityDialog(true)}
+                >
+                  <Zap className="h-5 w-5 text-primary" />
+                  <span className="text-xs">Electricity</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex flex-col items-center justify-center h-20 gap-2"
+                  onClick={() => setShowCableTVDialog(true)}
+                >
+                  <Tv className="h-5 w-5 text-primary" />
+                  <span className="text-xs">Cable TV</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex flex-col items-center justify-center h-20 gap-2"
+                  onClick={() => setShowEducationDialog(true)}
+                >
+                  <GraduationCap className="h-5 w-5 text-primary" />
+                  <span className="text-xs">Education</span>
+                </Button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -258,6 +304,27 @@ const EnhancedEarn = () => {
       <BettingFundDialog
         open={showBettingDialog}
         onOpenChange={setShowBettingDialog}
+        currentBalance={balance.withdrawable}
+        onSuccess={() => window.location.reload()}
+      />
+      
+      <VTUElectricityDialog
+        open={showElectricityDialog}
+        onOpenChange={setShowElectricityDialog}
+        currentBalance={balance.withdrawable}
+        onSuccess={() => window.location.reload()}
+      />
+      
+      <VTUCableTVDialog
+        open={showCableTVDialog}
+        onOpenChange={setShowCableTVDialog}
+        currentBalance={balance.withdrawable}
+        onSuccess={() => window.location.reload()}
+      />
+      
+      <VTUEducationDialog
+        open={showEducationDialog}
+        onOpenChange={setShowEducationDialog}
         currentBalance={balance.withdrawable}
         onSuccess={() => window.location.reload()}
       />
