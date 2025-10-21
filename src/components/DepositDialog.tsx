@@ -98,7 +98,7 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
 
       if (error) throw error
 
-      toast.success('✅ Wallet saved! Now send crypto to the deposit address above.')
+      toast.success('✅ Wallet saved to your Supabase profile! Now send crypto to the deposit address above.')
       console.log('Wallet saved successfully for user:', user.id)
     } catch (error) {
       console.error('Error saving wallet:', error)
@@ -110,7 +110,7 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Wallet className="h-5 w-5 text-primary" />
@@ -122,14 +122,16 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
         </DialogHeader>
 
         <Tabs defaultValue="auto" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="auto" className="gap-2">
-              <Coins className="h-4 w-4" />
-              Automatic (Recommended)
+          <TabsList className="grid w-full grid-cols-2 h-auto">
+            <TabsTrigger value="auto" className="gap-1 sm:gap-2 text-xs sm:text-sm py-2">
+              <Coins className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Automatic (Recommended)</span>
+              <span className="sm:hidden">Auto</span>
             </TabsTrigger>
-            <TabsTrigger value="manual">
-              <Send className="h-4 w-4 mr-2" />
-              Manual (Not Recommended)
+            <TabsTrigger value="manual" className="gap-1 sm:gap-2 text-xs sm:text-sm py-2">
+              <Send className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Manual (Not Recommended)</span>
+              <span className="sm:hidden">Manual</span>
             </TabsTrigger>
           </TabsList>
 
@@ -137,11 +139,11 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
           <TabsContent value="auto" className="space-y-4">
             <Card className="bg-green-500/5 border-green-500/20">
               <CardContent className="pt-6 space-y-4">
-                <div className="flex items-start gap-3">
-                  <Coins className="h-5 w-5 text-green-500 mt-0.5" />
-                  <div className="flex-1 space-y-2">
-                    <h3 className="font-semibold">Deposit with Celo (cUSD/CELO)</h3>
-                    <p className="text-sm text-muted-foreground">
+                <div className="flex items-start gap-2 sm:gap-3">
+                  <Coins className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 mt-0.5" />
+                  <div className="flex-1 space-y-1 sm:space-y-2">
+                    <h3 className="font-semibold text-sm sm:text-base">Deposit with Celo (cUSD/CELO)</h3>
+                    <p className="text-xs sm:text-sm text-muted-foreground">
                       Send cUSD or CELO from MiniPay or any Celo wallet to receive Naijacoin instantly!
                     </p>
                   </div>
@@ -149,36 +151,37 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
 
                 {/* Master Wallet Address */}
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium">Deposit Address:</label>
-                    <Button size="sm" variant="ghost" onClick={copyWalletAddress}>
-                      <Copy className="h-4 w-4 mr-1" />
+                  <div className="flex items-center justify-between gap-2">
+                    <label className="text-xs sm:text-sm font-medium">Deposit Address:</label>
+                    <Button size="sm" variant="ghost" onClick={copyWalletAddress} className="h-8 text-xs">
+                      <Copy className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                       Copy
                     </Button>
                   </div>
-                  <div className="p-3 bg-muted rounded-lg">
-                    <p className="text-xs font-mono break-all">{MASTER_WALLET}</p>
+                  <div className="p-2 sm:p-3 bg-muted rounded-lg">
+                    <p className="text-[10px] sm:text-xs font-mono break-all">{MASTER_WALLET}</p>
                   </div>
                 </div>
 
                 {/* Save User Wallet */}
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">🔗 Your Sending Wallet Address</label>
+                  <label className="text-xs sm:text-sm font-medium">🔗 Your Sending Wallet Address</label>
                   <p className="text-xs text-muted-foreground mb-2">
                     Which Celo wallet will you send from?
                   </p>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <input
                       type="text"
                       placeholder="0x..."
                       value={celoWallet}
                       onChange={(e) => setCeloWallet(e.target.value)}
-                      className="flex-1 px-3 py-2 bg-background border rounded-lg text-sm"
+                      className="flex-1 px-2 sm:px-3 py-2 bg-background border rounded-lg text-xs sm:text-sm"
                     />
                     <Button 
                       onClick={saveCeloWallet} 
                       disabled={savingWallet || !celoWallet}
                       size="sm"
+                      className="w-full sm:w-auto"
                     >
                       Save
                     </Button>
@@ -215,9 +218,9 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
             {/* Suggested Amounts */}
             <div className="space-y-2">
               <p className="text-xs text-muted-foreground text-center">Suggested amounts:</p>
-              <div className="grid grid-cols-5 gap-2">
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-1 sm:gap-2">
                 {depositAmounts.slice(0, 5).map(({ nc }) => (
-                  <Badge key={nc} variant="secondary" className="justify-center py-2 text-xs">
+                  <Badge key={nc} variant="secondary" className="justify-center py-1 sm:py-2 text-[10px] sm:text-xs">
                     {nc.toLocaleString()}
                   </Badge>
                 ))}

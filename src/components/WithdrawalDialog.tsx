@@ -165,7 +165,7 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Wallet className="h-5 w-5 text-primary" />
@@ -177,14 +177,16 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
         </DialogHeader>
         
         <Tabs defaultValue="auto" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="auto" className="gap-2">
-              <Coins className="h-4 w-4" />
-              Automatic (Recommended)
+          <TabsList className="grid w-full grid-cols-2 h-auto">
+            <TabsTrigger value="auto" className="gap-1 sm:gap-2 text-xs sm:text-sm py-2">
+              <Coins className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Automatic (Recommended)</span>
+              <span className="sm:hidden">Auto</span>
             </TabsTrigger>
-            <TabsTrigger value="manual">
-              <Send className="h-4 w-4 mr-2" />
-              Manual (Not Recommended)
+            <TabsTrigger value="manual" className="gap-1 sm:gap-2 text-xs sm:text-sm py-2">
+              <Send className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Manual (Not Recommended)</span>
+              <span className="sm:hidden">Manual</span>
             </TabsTrigger>
           </TabsList>
 
@@ -192,11 +194,11 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
           <TabsContent value="auto" className="space-y-4">
             <Card className="bg-green-500/5 border-green-500/20">
               <CardContent className="pt-6 space-y-4">
-                <div className="flex items-start gap-3">
-                  <Coins className="h-5 w-5 text-green-500 mt-0.5" />
-                  <div className="flex-1 space-y-2">
-                    <h3 className="font-semibold">Withdraw to Any Wallet or Exchange</h3>
-                    <p className="text-sm text-muted-foreground">
+                <div className="flex items-start gap-2 sm:gap-3">
+                  <Coins className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 mt-0.5" />
+                  <div className="flex-1 space-y-1 sm:space-y-2">
+                    <h3 className="font-semibold text-sm sm:text-base">Withdraw to Any Wallet or Exchange</h3>
+                    <p className="text-xs sm:text-sm text-muted-foreground">
                       Receive USDT/cUSD instantly to your MiniPay, Binance, or any wallet that supports Celo network
                     </p>
                   </div>
@@ -215,23 +217,23 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
 
                 {/* Currency Selection */}
                 <div>
-                  <label className="text-sm font-medium mb-2 block">
+                  <label className="text-xs sm:text-sm font-medium mb-2 block">
                     Currency
                   </label>
                   <Select value={cryptoCurrency} onValueChange={(v: 'cUSD' | 'CELO') => setCryptoCurrency(v)}>
-                    <SelectTrigger>
+                    <SelectTrigger className="text-xs sm:text-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="cUSD">cUSD/USDT (Stable - Recommended) - Arrives as USDT on exchanges</SelectItem>
-                      <SelectItem value="CELO">CELO</SelectItem>
+                      <SelectItem value="cUSD" className="text-xs sm:text-sm">cUSD/USDT (Stable - Recommended) - Arrives as USDT on exchanges</SelectItem>
+                      <SelectItem value="CELO" className="text-xs sm:text-sm">CELO</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 {/* Amount */}
                 <div>
-                  <label className="text-sm font-medium mb-2 block">
+                  <label className="text-xs sm:text-sm font-medium mb-2 block">
                     Amount (NC)
                   </label>
                   <BrandInput
@@ -241,12 +243,13 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
                     placeholder="Enter amount"
                     min="3000"
                     max={currentBalance.toString()}
+                    className="text-xs sm:text-sm"
                   />
                 </div>
 
                 {/* Wallet Address */}
                 <div>
-                  <label className="text-sm font-medium mb-2 block">
+                  <label className="text-xs sm:text-sm font-medium mb-2 block">
                     Your Wallet Address
                   </label>
                   <BrandInput
@@ -254,6 +257,7 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
                     value={cryptoWallet}
                     onChange={(e) => setCryptoWallet(e.target.value)}
                     placeholder="0x..."
+                    className="text-xs sm:text-sm"
                   />
                   <p className="text-xs text-blue-600 mt-1">
                     💡 Get this from: Your exchange → Deposit → USDT → Select CELO network → Copy address
