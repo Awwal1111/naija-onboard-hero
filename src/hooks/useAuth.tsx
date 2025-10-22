@@ -69,6 +69,36 @@ export const useAuth = () => {
 
   useEffect(() => {
     let isInitialLoad = true
+    let refreshTimer: NodeJS.Timeout | null = null
+    
+    // Proactive session refresh - refresh token 5 minutes before expiry
+    const scheduleTokenRefresh = (session: Session) => {
+      if (refreshTimer) clearTimeout(refreshTimer)
+      
+      if (session?.expires_at) {
+        const expiresAt = session.expires_at * 1000 // Convert to milliseconds
+        const now = Date.now()
+        const timeUntilExpiry = expiresAt - now
+        const refreshTime = Math.max(timeUntilExpiry - (5 * 60 * 1000), 5000) // 5 min before expiry, min 5 seconds
+        
+        console.log(`Token will be refreshed in ${Math.round(refreshTime / 1000)} seconds`)
+        
+        refreshTimer = setTimeout(async () => {
+          console.log('Proactively refreshing token...')
+          const { data, error } = await supabase.auth.refreshSession()
+          if (error) {
+            console.error('Failed to refresh session:', error)
+            // If refresh fails, sign user out
+            await supabase.auth.signOut()
+          } else if (data.session) {
+            console.log('Token refreshed proactively')
+            setSession(data.session)
+            setUser(data.session.user)
+            scheduleTokenRefresh(data.session) // Schedule next refresh
+          }
+        }, refreshTime)
+      }
+    }
     
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -78,23 +108,36 @@ export const useAuth = () => {
         setUser(session?.user ?? null)
         setLoading(false)
 
+        // Schedule proactive token refresh whenever we get a session
+        if (session) {
+          scheduleTokenRefresh(session)
+        }
+
         if (event === 'SIGNED_IN' && session?.user) {
           // Redirect on sign in events (not initial load)
           if (!isInitialLoad) {
             setTimeout(() => checkProfileAndRedirect(session.user), 100)
           }
         } else if (event === 'SIGNED_OUT') {
-          // Only handle explicit signouts, not token refreshes
+          // Clear refresh timer on sign out
+          if (refreshTimer) clearTimeout(refreshTimer)
           setSession(null)
           setUser(null)
           const currentPath = window.location.pathname
-          // Only redirect to login if on protected routes, not if on auth pages
+          // Only redirect to login if on protected routes
           if (!authPaths.includes(currentPath) && currentPath !== '/' && currentPath !== '/onboarding') {
             navigate('/login')
           }
         } else if (event === 'TOKEN_REFRESHED') {
-          // Token was refreshed successfully, update session but don't redirect
+          // Token was refreshed successfully
           console.log('Token refreshed successfully')
+          setSession(session)
+          setUser(session?.user ?? null)
+          if (session) {
+            scheduleTokenRefresh(session)
+          }
+        } else if (event === 'USER_UPDATED') {
+          // User data updated
           setSession(session)
           setUser(session?.user ?? null)
         }
@@ -107,6 +150,9 @@ export const useAuth = () => {
         setSession(session)
         setUser(session.user)
         setLoading(false)
+        
+        // Schedule token refresh for existing session
+        scheduleTokenRefresh(session)
         
         // Redirect authenticated users away from welcome/auth pages
         const currentPath = window.location.pathname
@@ -125,7 +171,10 @@ export const useAuth = () => {
       isInitialLoad = false
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      subscription.unsubscribe()
+      if (refreshTimer) clearTimeout(refreshTimer)
+    }
   }, [navigate])
 
   const signUp = async (email: string, password: string, fullName?: string) => {
