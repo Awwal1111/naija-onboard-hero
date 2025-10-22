@@ -18,7 +18,7 @@ async function getVTUToken() {
   const username = Deno.env.get('VTU_USERNAME')
   const password = Deno.env.get('VTU_PASSWORD')
 
-  const response = await fetch('https://vtu.ng/wp-json/api/v1/auth', {
+  const response = await fetch('https://vtu.ng/wp-json/api/v2/auth', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, password })
@@ -78,23 +78,22 @@ serve(async (req) => {
     // Get VTU token
     const token = await getVTUToken()
 
-    // Get plan details to know the price
-    const plansResponse = await fetch(`https://vtu.ng/wp-json/api/v1/tv-variations?service_id=${provider}`, {
+    // Get plan details using v2 API
+    const plansResponse = await fetch(`https://vtu.ng/wp-json/api/v2/variations/tv?service_id=${provider}`, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       }
     })
 
     const plansData = await plansResponse.json()
-    const plan = plansData.data?.variations?.find((p: any) => p.code === plan_code)
+    const plan = plansData.data?.find((p: any) => p.variation_id?.toString() === plan_code)
     
     if (!plan) {
       throw new Error('Invalid plan selected')
     }
 
-    const amount = plan.price
+    const amount = parseFloat(plan.price || '0')
 
     if (profile.balance_withdrawable < amount) {
       throw new Error('Insufficient balance')
@@ -111,17 +110,22 @@ serve(async (req) => {
 
     if (deductError) throw deductError
 
-    // Purchase cable TV from VTU.ng
-    const vtuResponse = await fetch('https://vtu.ng/wp-json/api/v1/tv', {
+    // Generate unique request ID
+    const requestId = `tv_${user.id}_${Date.now()}`
+
+    // Purchase cable TV subscription from VTU.ng
+    const vtuResponse = await fetch('https://vtu.ng/wp-json/api/v2/tv', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
+        request_id: requestId,
+        customer_id: smart_card_number,
         service_id: provider,
-        smartcard_number: smart_card_number,
-        variation_code: plan_code
+        variation_id: plan_code,
+        subscription_type: 'renew'
       })
     })
 
@@ -154,7 +158,7 @@ serve(async (req) => {
           provider,
           smart_card_number,
           plan_code,
-          plan_name: plan.name,
+          plan_name: plan.package_bouquet || plan.name,
           vtu_order_id: vtuData.data?.order_id
         }
       })

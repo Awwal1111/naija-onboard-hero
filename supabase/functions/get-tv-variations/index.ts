@@ -10,7 +10,7 @@ async function getVTUToken() {
   const username = Deno.env.get('VTU_USERNAME')
   const password = Deno.env.get('VTU_PASSWORD')
 
-  const response = await fetch('https://vtu.ng/wp-json/api/v1/auth', {
+  const response = await fetch('https://vtu.ng/wp-json/api/v2/auth', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, password })
@@ -38,10 +38,10 @@ serve(async (req) => {
 
     const token = await getVTUToken()
 
-    const response = await fetch(`https://vtu.ng/wp-json/api/v1/tv-variations?service_id=${provider}`, {
+    // VTU.ng v2 API does not require authentication for variations
+    const response = await fetch(`https://vtu.ng/wp-json/api/v2/variations/tv?service_id=${provider}`, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       }
     })
@@ -52,8 +52,15 @@ serve(async (req) => {
       throw new Error(data.message || 'Failed to fetch TV variations')
     }
 
+    // Map the response to match our expected format
+    const variations = (data.data || []).map((item: any) => ({
+      code: item.variation_id?.toString() || '',
+      name: item.package_bouquet || '',
+      price: parseFloat(item.price || '0')
+    }))
+
     return new Response(
-      JSON.stringify({ variations: data.data?.variations || [] }),
+      JSON.stringify({ variations }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 

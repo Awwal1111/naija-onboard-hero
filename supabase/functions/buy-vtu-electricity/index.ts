@@ -19,7 +19,7 @@ async function getVTUToken() {
   const username = Deno.env.get('VTU_USERNAME')
   const password = Deno.env.get('VTU_PASSWORD')
 
-  const response = await fetch('https://vtu.ng/wp-json/api/v1/auth', {
+  const response = await fetch('https://vtu.ng/wp-json/api/v2/auth', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, password })
@@ -117,17 +117,21 @@ serve(async (req) => {
     // Get VTU token
     const token = await getVTUToken()
 
+    // Generate unique request ID
+    const requestId = `elec_${user.id}_${Date.now()}`
+
     // Purchase electricity from VTU.ng
-    const vtuResponse = await fetch('https://vtu.ng/wp-json/api/v1/electricity', {
+    const vtuResponse = await fetch('https://vtu.ng/wp-json/api/v2/electricity', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
+        request_id: requestId,
+        customer_id: meter_number,
         service_id: serviceId,
-        meter_number: meter_number,
-        meter_type: meter_type,
+        variation_id: meter_type,
         amount: amount
       })
     })

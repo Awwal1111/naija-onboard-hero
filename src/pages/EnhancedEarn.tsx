@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Trophy, Zap, FileText, User, History, Users, ArrowUpRight, Phone, Wifi, TrendingUp, Home, MessageCircle, Briefcase, DollarSign, Menu, Tv, GraduationCap } from 'lucide-react'
+import { Trophy, Zap, FileText, User, History, Users, ArrowUpRight, Phone, Wifi, TrendingUp, Home, MessageCircle, Briefcase, DollarSign, Menu, Tv } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useWallet } from '@/hooks/useWallet'
 import NaijaLanceWalletCard from '@/components/NaijaLanceWalletCard'
@@ -14,7 +14,6 @@ import { VTUDataDialog } from '@/components/VTUDataDialog'
 import { BettingFundDialog } from '@/components/BettingFundDialog'
 import { VTUElectricityDialog } from '@/components/VTUElectricityDialog'
 import { VTUCableTVDialog } from '@/components/VTUCableTVDialog'
-import { VTUEducationDialog } from '@/components/VTUEducationDialog'
 import TopBannerAd from '@/components/TopBannerAd'
 import { MoreMenuDrawer } from '@/components/MoreMenuDrawer'
 import { useDailySignin } from '@/hooks/useDailySignin'
@@ -34,7 +33,6 @@ const EnhancedEarn = () => {
   const [showBettingDialog, setShowBettingDialog] = useState(false)
   const [showElectricityDialog, setShowElectricityDialog] = useState(false)
   const [showCableTVDialog, setShowCableTVDialog] = useState(false)
-  const [showEducationDialog, setShowEducationDialog] = useState(false)
   const [showMoreServices, setShowMoreServices] = useState(false)
 
   const earningMethods = [
@@ -224,14 +222,6 @@ const EnhancedEarn = () => {
                   <Tv className="h-5 w-5 text-primary" />
                   <span className="text-xs">Cable TV</span>
                 </Button>
-                <Button
-                  variant="outline"
-                  className="flex flex-col items-center justify-center h-20 gap-2"
-                  onClick={() => setShowEducationDialog(true)}
-                >
-                  <GraduationCap className="h-5 w-5 text-primary" />
-                  <span className="text-xs">Education</span>
-                </Button>
               </div>
             )}
           </div>
@@ -318,13 +308,6 @@ const EnhancedEarn = () => {
       <VTUCableTVDialog
         open={showCableTVDialog}
         onOpenChange={setShowCableTVDialog}
-        currentBalance={balance.withdrawable}
-        onSuccess={() => window.location.reload()}
-      />
-      
-      <VTUEducationDialog
-        open={showEducationDialog}
-        onOpenChange={setShowEducationDialog}
         currentBalance={balance.withdrawable}
         onSuccess={() => window.location.reload()}
       />

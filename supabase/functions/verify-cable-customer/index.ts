@@ -10,7 +10,7 @@ async function getVTUToken() {
   const username = Deno.env.get('VTU_USERNAME')
   const password = Deno.env.get('VTU_PASSWORD')
 
-  const response = await fetch('https://vtu.ng/wp-json/api/v1/auth', {
+  const response = await fetch('https://vtu.ng/wp-json/api/v2/auth', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, password })
@@ -38,15 +38,15 @@ serve(async (req) => {
 
     const token = await getVTUToken()
 
-    const response = await fetch('https://vtu.ng/wp-json/api/v1/verify-customer', {
+    const response = await fetch('https://vtu.ng/wp-json/api/v2/verify-customer', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        service_id: provider,
-        account_number: smart_card_number
+        customer_id: smart_card_number,
+        service_id: provider
       })
     })
 
