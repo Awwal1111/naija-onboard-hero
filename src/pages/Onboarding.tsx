@@ -35,9 +35,19 @@ const Onboarding = () => {
   const [purpose, setPurpose] = useState('')
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
-    full_name: profile?.full_name || '',
-    profession: profile?.profession || ''
+    full_name: '',
+    profession: ''
   })
+
+  // Update form data when profile loads
+  useEffect(() => {
+    if (profile) {
+      setFormData({
+        full_name: profile.full_name || '',
+        profession: profile.profession || ''
+      })
+    }
+  }, [profile])
 
   const totalSteps = 3
   const progress = (currentStep / totalSteps) * 100
@@ -53,7 +63,7 @@ const Onboarding = () => {
     }
   }, [selectedState, states])
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (!selectedState || !selectedLGA || !area.trim()) {
       toast({
         title: "Incomplete Information",
@@ -68,31 +78,40 @@ const Onboarding = () => {
     const selectedStateName = states.find(s => s.id === selectedState)?.name
     const selectedLGAName = lgas.find(l => l.name === selectedLGA)?.name
     
-    // Handle onboarding completion
-    console.log('Onboarding data:', {
-      state: selectedState,
-      lga: selectedLGA,
-      area: area.trim(),
-      purpose
-    })
-    
-    setTimeout(() => {
-      toast({
-        title: "Welcome to NaijaLancers!",
-        description: "Your profile has been set up successfully.",
-      })
-      
-      // Update the user's profile with onboarding data
-      updateProfile({
-        full_name: formData.full_name || profile?.full_name,
+    try {
+      // Update the user's profile with all onboarding data
+      const result = await updateProfile({
+        full_name: formData.full_name?.trim() || profile?.full_name || '',
+        profession: formData.profession?.trim() || '',
         state_name: selectedStateName,
         lga_name: selectedLGAName,
         area: area.trim(),
         state_id: selectedState
-      }).then(() => {
-        navigate('/feed')
       })
-    }, 1000)
+
+      if (result?.success) {
+        toast({
+          title: "Welcome to NaijaLancers! 🎉",
+          description: "Your profile has been set up successfully.",
+        })
+        
+        // Small delay for toast to show, then navigate
+        setTimeout(() => {
+          navigate('/main-feed')
+        }, 500)
+      } else {
+        throw new Error(result?.error || 'Failed to update profile')
+      }
+    } catch (error: any) {
+      console.error('Onboarding error:', error)
+      toast({
+        title: "Setup Error",
+        description: error.message || "Failed to complete setup. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleContinue = () => {
@@ -242,30 +261,41 @@ const Onboarding = () => {
                 </div>
 
                 <div className="space-y-4">
-                  <BrandInput
-                    label="Full Name"
-                    value={formData.full_name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
-                    placeholder="e.g., Chinedu Okafor"
-                    required
-                  />
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-text-primary">
+                      Full Name *
+                    </label>
+                    <BrandInput
+                      value={formData.full_name}
+                      onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
+                      placeholder="e.g., Chinedu Okafor"
+                      required
+                    />
+                  </div>
 
-                  <BrandInput
-                    label="Profession (Optional)"
-                    value={formData.profession}
-                    onChange={(e) => setFormData(prev => ({ ...prev, profession: e.target.value }))}
-                    placeholder="e.g., Graphic Designer, Developer, etc."
-                  />
+                  <div>
+                    <label className="block text-sm font-medium mb-2 text-text-primary">
+                      Profession (Optional)
+                    </label>
+                    <BrandInput
+                      value={formData.profession}
+                      onChange={(e) => setFormData(prev => ({ ...prev, profession: e.target.value }))}
+                      placeholder="e.g., Graphic Designer, Developer, etc."
+                    />
+                  </div>
 
                   <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
                     <div className="flex gap-3">
                       <Award className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                       <div className="space-y-1">
                         <p className="text-sm font-medium text-text-primary">
-                          Pro Tip
+                          {formData.full_name ? '✓ Name saved from your Google account' : 'Pro Tip'}
                         </p>
                         <p className="text-xs text-text-secondary">
-                          Adding your profession helps us show you relevant opportunities and connect you with the right people.
+                          {formData.full_name 
+                            ? 'We automatically filled your name from Google. You can edit it if needed.'
+                            : 'Adding your profession helps us show you relevant opportunities and connect you with the right people.'
+                          }
                         </p>
                       </div>
                     </div>
