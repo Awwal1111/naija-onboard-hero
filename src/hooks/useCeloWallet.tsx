@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { toast } from 'sonner';
 import CryptoJS from 'crypto-js';
+import { supabase } from '@/integrations/supabase/client';
 
 const CELO_MAINNET_RPC = 'https://forno.celo.org';
 const CELO_ALFAJORES_RPC = 'https://alfajores-forno.celo-testnet.org'; // Testnet
@@ -40,6 +41,9 @@ export const useCeloWallet = () => {
         const walletInstance = new ethers.Wallet(walletData.privateKey, provider);
         setWallet(walletInstance);
         setAddress(walletInstance.address);
+        
+        // Ensure wallet address is saved to profile
+        await saveWalletToProfile(walletInstance.address);
         
         await updateBalances(walletInstance);
       } else {
@@ -89,10 +93,33 @@ export const useCeloWallet = () => {
       
       await updateBalances(newWallet);
       
+      // Save wallet address to profile
+      await saveWalletToProfile(newWallet.address);
+      
       toast.success('New Celo wallet created!');
     } catch (error) {
       console.error('Error creating wallet:', error);
       toast.error('Failed to create wallet');
+    }
+  };
+
+  const saveWalletToProfile = async (walletAddress: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ celo_wallet_address: walletAddress.toLowerCase() })
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error saving wallet address:', error);
+      } else {
+        console.log('Wallet address saved to profile:', walletAddress);
+      }
+    } catch (error) {
+      console.error('Error in saveWalletToProfile:', error);
     }
   };
 

@@ -74,6 +74,8 @@ export const AdminManualDepositsSection = () => {
         .in('status', ['pending', 'awaiting_proof'])
         .order('created_at', { ascending: false })
 
+      console.log('Fetched manual deposits:', data)
+
       if (error) throw error
       setDeposits(data as any || [])
     } catch (error) {
