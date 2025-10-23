@@ -1,14 +1,16 @@
-import { useState } from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
+import { BrandButton } from '@/components/ui/brand-button'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Send, Wallet, Copy, Coins, AlertCircle } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Send, Wallet, Copy, RefreshCw, Info } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
+import { useCeloWallet } from '@/hooks/useCeloWallet'
 import { toast } from 'sonner'
-import { supabase } from '@/integrations/supabase/client'
 
 interface DepositDialogProps {
   open: boolean
@@ -18,23 +20,7 @@ interface DepositDialogProps {
 export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
   const { user } = useAuth()
   const { profile } = useProfile()
-  const [savingWallet, setSavingWallet] = useState(false)
-  const [celoWallet, setCeloWallet] = useState('')
-
-  const MASTER_WALLET = "0x7ed3d953ad3ef99f101f4808d4c123052c583282"
-
-  const depositAmounts = [
-    { nc: 500, naira: 500 },
-    { nc: 1000, naira: 1000 },
-    { nc: 1500, naira: 1500 },
-    { nc: 3000, naira: 3000 },
-    { nc: 5000, naira: 5000 },
-    { nc: 10000, naira: 10000 },
-    { nc: 15000, naira: 15000 },
-    { nc: 20000, naira: 20000 },
-    { nc: 50000, naira: 50000 },
-    { nc: 100000, naira: 100000 }
-  ]
+  const { address, celoBalance, cUsdBalance, loading: walletLoading, refreshBalances, isTestnet } = useCeloWallet()
 
   const handleTelegramDeposit = () => {
     if (!user || !profile) {
@@ -42,8 +28,6 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
       return
     }
 
-    // Use referral code as primary identifier (more reliable than email)
-    // Format: use referral code if available, otherwise email
     const identifier = profile.referral_code || user.email || ''
     
     if (!identifier) {
@@ -51,18 +35,9 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
       return
     }
 
-    // Don't use encodeURIComponent - Telegram handles this
     const telegramLink = `https://t.me/NaijaLancersBot?start=${identifier}`
-    
-    console.log('Opening Telegram with link:', telegramLink)
-    
-    // Open Telegram
     window.open(telegramLink, '_blank')
-    
-    toast.success('Opening Telegram bot...', {
-      description: 'Your link: ' + identifier
-    })
-    
+    toast.success('Opening Telegram bot...')
     onOpenChange(false)
   }
 
@@ -73,39 +48,13 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
   }
 
   const copyWalletAddress = () => {
-    navigator.clipboard.writeText(MASTER_WALLET)
-    toast.success('Wallet address copied!')
+    navigator.clipboard.writeText(address)
+    toast.success('Your wallet address copied!')
   }
 
-  const saveCeloWallet = async () => {
-    if (!user || !celoWallet) return
-
-    // Basic validation
-    if (!celoWallet.match(/^0x[a-fA-F0-9]{40}$/)) {
-      toast.error('Invalid Celo wallet address')
-      return
-    }
-
-    setSavingWallet(true)
-    try {
-      const normalizedAddress = celoWallet.toLowerCase()
-      console.log('Saving wallet address:', normalizedAddress)
-      
-      const { error } = await supabase
-        .from('profiles')
-        .update({ celo_wallet_address: normalizedAddress })
-        .eq('user_id', user.id)
-
-      if (error) throw error
-
-      toast.success('✅ Wallet saved to your Supabase profile! Now send crypto to the deposit address above.')
-      console.log('Wallet saved successfully for user:', user.id)
-    } catch (error) {
-      console.error('Error saving wallet:', error)
-      toast.error('Failed to save wallet address')
-    } finally {
-      setSavingWallet(false)
-    }
+  const handleRefreshBalances = async () => {
+    await refreshBalances()
+    toast.success('Balances updated!')
   }
 
   return (
@@ -114,126 +63,95 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Wallet className="h-5 w-5 text-primary" />
-            Buy Naijacoin
+            Deposit Funds
           </DialogTitle>
           <DialogDescription>
-            Choose your preferred deposit method (1 NC = ₦1)
+            Send crypto to your wallet or use bank transfer
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="auto" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 h-auto">
-            <TabsTrigger value="auto" className="gap-1 sm:gap-2 text-xs sm:text-sm py-2">
-              <Coins className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Automatic (Recommended)</span>
-              <span className="sm:hidden">Auto</span>
+        <Tabs defaultValue="deposit" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="deposit">
+              Deposit
             </TabsTrigger>
-            <TabsTrigger value="manual" className="gap-1 sm:gap-2 text-xs sm:text-sm py-2">
-              <Send className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Manual (Not Recommended)</span>
-              <span className="sm:hidden">Manual</span>
+            <TabsTrigger value="manual">
+              Manual/Bank Transfer
             </TabsTrigger>
           </TabsList>
 
-          {/* Automatic Deposit (Celo) */}
-          <TabsContent value="auto" className="space-y-4">
-            <Card className="bg-green-500/5 border-green-500/20">
-              <CardContent className="pt-6 space-y-4">
-                <div className="flex items-start gap-2 sm:gap-3">
-                  <Coins className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 mt-0.5" />
-                  <div className="flex-1 space-y-1 sm:space-y-2">
-                    <h3 className="font-semibold text-sm sm:text-base">Deposit with Celo (cUSD/CELO)</h3>
-                    <p className="text-xs sm:text-sm text-muted-foreground">
-                      Send cUSD or CELO from MiniPay or any Celo wallet to receive Naijacoin instantly!
-                    </p>
+          <TabsContent value="deposit" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Wallet className="h-5 w-5" />
+                  Your Celo Wallet
+                  <Badge variant="default">{isTestnet ? 'Testnet' : 'Mainnet'}</Badge>
+                </CardTitle>
+                <CardDescription>
+                  Send cUSD or CELO to this address from any exchange or wallet
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {walletLoading ? (
+                  <div className="text-center py-4">
+                    <p className="text-muted-foreground">Loading wallet...</p>
                   </div>
-                </div>
+                ) : (
+                  <>
+                    <div className="space-y-2">
+                      <Label>Your Wallet Address</Label>
+                      <div className="flex gap-2">
+                        <Input 
+                          value={address}
+                          readOnly
+                          className="font-mono text-sm"
+                        />
+                        <BrandButton onClick={copyWalletAddress} variant="outline" size="icon">
+                          <Copy className="h-4 w-4" />
+                        </BrandButton>
+                      </div>
+                    </div>
 
-                {/* Master Wallet Address */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <label className="text-xs sm:text-sm font-medium">Deposit Address:</label>
-                    <Button size="sm" variant="ghost" onClick={copyWalletAddress} className="h-8 text-xs">
-                      <Copy className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                      Copy
-                    </Button>
-                  </div>
-                  <div className="p-2 sm:p-3 bg-muted rounded-lg">
-                    <p className="text-[10px] sm:text-xs font-mono break-all">{MASTER_WALLET}</p>
-                  </div>
-                </div>
+                    <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
+                      <div>
+                        <p className="text-xs text-muted-foreground">cUSD Balance</p>
+                        <p className="text-lg font-bold">{parseFloat(cUsdBalance).toFixed(4)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">CELO Balance</p>
+                        <p className="text-lg font-bold">{parseFloat(celoBalance).toFixed(4)}</p>
+                      </div>
+                    </div>
 
-                {/* Save User Wallet */}
-                <div className="space-y-2">
-                  <label className="text-xs sm:text-sm font-medium">🔗 Your Sending Wallet Address</label>
-                  <p className="text-xs text-muted-foreground mb-2">
-                    Which Celo wallet will you send from?
-                  </p>
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <input
-                      type="text"
-                      placeholder="0x..."
-                      value={celoWallet}
-                      onChange={(e) => setCeloWallet(e.target.value)}
-                      className="flex-1 px-2 sm:px-3 py-2 bg-background border rounded-lg text-xs sm:text-sm"
-                    />
-                    <Button 
-                      onClick={saveCeloWallet} 
-                      disabled={savingWallet || !celoWallet}
-                      size="sm"
-                      className="w-full sm:w-auto"
-                    >
-                      Save
-                    </Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    (So we know it's you when you deposit)
-                  </p>
-                </div>
-
-                {/* Alert */}
-                <div className="flex items-start gap-2 p-3 bg-blue-500/5 border border-blue-500/20 rounded-lg">
-                  <AlertCircle className="h-4 w-4 text-blue-500 mt-0.5" />
-                  <div className="text-xs space-y-1">
-                    <p className="font-medium">💡 MiniPay Recommended</p>
-                    <p className="text-muted-foreground">
-                      For the best experience, use <strong>MiniPay</strong> wallet. Deposits are automatic and instant!
-                    </p>
-                  </div>
-                </div>
-
-                {/* Instructions */}
-                <div className="space-y-2 text-xs border-t pt-3">
-                  <p className="font-medium">How it works:</p>
-                  <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
-                    <li>Save your Celo wallet address above</li>
-                    <li>Send cUSD or CELO to the deposit address</li>
-                    <li>Your NC balance updates automatically (within 1-2 minutes)</li>
-                    <li>Start earning immediately!</li>
-                  </ol>
-                </div>
+                    <BrandButton onClick={handleRefreshBalances} className="w-full" variant="outline">
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      Refresh Balances
+                    </BrandButton>
+                  </>
+                )}
               </CardContent>
             </Card>
 
-            {/* Suggested Amounts */}
-            <div className="space-y-2">
-              <p className="text-xs text-muted-foreground text-center">Suggested amounts:</p>
-              <div className="grid grid-cols-3 sm:grid-cols-5 gap-1 sm:gap-2">
-                {depositAmounts.slice(0, 5).map(({ nc }) => (
-                  <Badge key={nc} variant="secondary" className="justify-center py-1 sm:py-2 text-[10px] sm:text-xs">
-                    {nc.toLocaleString()}
-                  </Badge>
-                ))}
-              </div>
-            </div>
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertDescription>
+                <ul className="list-disc list-inside space-y-1 text-sm">
+                  <li>Send cUSD or CELO from Binance, Coinbase, or any wallet</li>
+                  <li>Funds appear instantly in your wallet</li>
+                  <li>Convert to NC in the app to use for services</li>
+                  <li>1 cUSD ≈ ₦{(1600).toLocaleString()} NC</li>
+                  {isTestnet && <li className="text-orange-500 font-bold">⚠️ Using Alfajores Testnet</li>}
+                </ul>
+              </AlertDescription>
+            </Alert>
           </TabsContent>
 
-          {/* Manual Deposit (Telegram) */}
           <TabsContent value="manual" className="space-y-4">
             <Card className="bg-orange-500/5 border-orange-500/20">
               <CardContent className="pt-6 space-y-4">
                 <div className="flex items-start gap-3">
-                  <AlertCircle className="h-5 w-5 text-orange-500 mt-0.5" />
+                  <Info className="h-5 w-5 text-orange-500 mt-0.5" />
                   <div className="text-sm space-y-1">
                     <p className="font-medium">Manual Bank Transfer (Slower)</p>
                     <p className="text-muted-foreground">
@@ -244,15 +162,14 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
               </CardContent>
             </Card>
 
-            {/* Bank Details Card */}
             <Card className="bg-primary/5 border-primary/20">
               <CardContent className="pt-6 space-y-3">
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold text-sm">Bank Details</h3>
-                  <Button size="sm" variant="ghost" onClick={copyBankDetails}>
+                  <BrandButton size="sm" variant="ghost" onClick={copyBankDetails}>
                     <Copy className="h-4 w-4 mr-1" />
                     Copy
-                  </Button>
+                  </BrandButton>
                 </div>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
@@ -271,17 +188,15 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
               </CardContent>
             </Card>
 
-            {/* Telegram Deposit Button */}
-            <Button 
+            <BrandButton 
               onClick={handleTelegramDeposit} 
               className="w-full gap-2"
               size="lg"
             >
               <Send className="h-5 w-5" />
               Continue with Telegram
-            </Button>
+            </BrandButton>
 
-            {/* Instructions */}
             <div className="text-xs text-muted-foreground space-y-1 border-t pt-4">
               <p className="font-medium">How it works:</p>
               <ol className="list-decimal list-inside space-y-1">

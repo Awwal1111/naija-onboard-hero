@@ -1,0 +1,206 @@
+import { useState, useEffect } from 'react';
+import { ethers } from 'ethers';
+import { toast } from 'sonner';
+import CryptoJS from 'crypto-js';
+
+const CELO_MAINNET_RPC = 'https://forno.celo.org';
+const CELO_ALFAJORES_RPC = 'https://alfajores-forno.celo-testnet.org'; // Testnet
+const USE_TESTNET = true; // Set to false for mainnet
+
+const RPC_URL = USE_TESTNET ? CELO_ALFAJORES_RPC : CELO_MAINNET_RPC;
+
+const cUSD_ADDRESS = USE_TESTNET 
+  ? '0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1' // Alfajores cUSD
+  : '0x765DE816845861e75A25fCA122bb6898B8B1282a'; // Mainnet cUSD
+
+export const useCeloWallet = () => {
+  const [wallet, setWallet] = useState<ethers.HDNodeWallet | ethers.Wallet | null>(null);
+  const [address, setAddress] = useState<string>('');
+  const [celoBalance, setCeloBalance] = useState<string>('0');
+  const [cUsdBalance, setCUsdBalance] = useState<string>('0');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    initializeWallet();
+  }, []);
+
+  const initializeWallet = async () => {
+    try {
+      const provider = new ethers.JsonRpcProvider(RPC_URL);
+      
+      // Check if wallet exists in localStorage
+      const encryptedWallet = localStorage.getItem('celo_wallet');
+      
+      if (encryptedWallet) {
+        // Decrypt and load wallet
+        const password = await getOrCreatePassword();
+        const decrypted = CryptoJS.AES.decrypt(encryptedWallet, password).toString(CryptoJS.enc.Utf8);
+        const walletData = JSON.parse(decrypted);
+        
+        const walletInstance = new ethers.Wallet(walletData.privateKey, provider);
+        setWallet(walletInstance);
+        setAddress(walletInstance.address);
+        
+        await updateBalances(walletInstance);
+      } else {
+        // Create new wallet
+        await createNewWallet();
+      }
+    } catch (error) {
+      console.error('Error initializing wallet:', error);
+      toast.error('Failed to initialize wallet');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getOrCreatePassword = async (): Promise<string> => {
+    // In production, this should use user's PIN or password
+    // For now, using a device-specific identifier
+    let password = localStorage.getItem('wallet_key');
+    if (!password) {
+      password = Math.random().toString(36).substring(2) + Date.now().toString(36);
+      localStorage.setItem('wallet_key', password);
+    }
+    return password;
+  };
+
+  const createNewWallet = async () => {
+    try {
+      const provider = new ethers.JsonRpcProvider(RPC_URL);
+      const newWallet = ethers.Wallet.createRandom(provider);
+      
+      // Encrypt and save
+      const password = await getOrCreatePassword();
+      const walletData = {
+        address: newWallet.address,
+        privateKey: newWallet.privateKey
+      };
+      
+      const encrypted = CryptoJS.AES.encrypt(
+        JSON.stringify(walletData),
+        password
+      ).toString();
+      
+      localStorage.setItem('celo_wallet', encrypted);
+      
+      setWallet(newWallet);
+      setAddress(newWallet.address);
+      
+      await updateBalances(newWallet);
+      
+      toast.success('New Celo wallet created!');
+    } catch (error) {
+      console.error('Error creating wallet:', error);
+      toast.error('Failed to create wallet');
+    }
+  };
+
+  const updateBalances = async (walletInstance: ethers.HDNodeWallet | ethers.Wallet) => {
+    try {
+      // Get CELO balance
+      const celoBalance = await walletInstance.provider!.getBalance(walletInstance.address);
+      setCeloBalance(ethers.formatEther(celoBalance));
+
+      // Get cUSD balance
+      const cUsdContract = new ethers.Contract(
+        cUSD_ADDRESS,
+        ['function balanceOf(address) view returns (uint256)'],
+        walletInstance.provider
+      );
+      
+      const cUsdBalance = await cUsdContract.balanceOf(walletInstance.address);
+      setCUsdBalance(ethers.formatEther(cUsdBalance));
+    } catch (error) {
+      console.error('Error updating balances:', error);
+    }
+  };
+
+  const sendCUSD = async (toAddress: string, amount: string) => {
+    if (!wallet) throw new Error('Wallet not initialized');
+
+    try {
+      const cUsdContract = new ethers.Contract(
+        cUSD_ADDRESS,
+        [
+          'function transfer(address to, uint256 amount) returns (bool)',
+          'function balanceOf(address) view returns (uint256)'
+        ],
+        wallet
+      );
+
+      const amountInWei = ethers.parseEther(amount);
+      
+      // Check balance
+      const balance = await cUsdContract.balanceOf(wallet.address);
+      if (balance < amountInWei) {
+        throw new Error('Insufficient cUSD balance');
+      }
+
+      const tx = await cUsdContract.transfer(toAddress, amountInWei);
+      toast.info('Transaction submitted, waiting for confirmation...');
+      
+      const receipt = await tx.wait();
+      await updateBalances(wallet);
+      
+      return receipt.hash;
+    } catch (error: any) {
+      console.error('Error sending cUSD:', error);
+      throw new Error(error.message || 'Failed to send cUSD');
+    }
+  };
+
+  const sendCELO = async (toAddress: string, amount: string) => {
+    if (!wallet) throw new Error('Wallet not initialized');
+
+    try {
+      const amountInWei = ethers.parseEther(amount);
+      
+      // Check balance
+      const balance = await wallet.provider!.getBalance(wallet.address);
+      if (balance < amountInWei) {
+        throw new Error('Insufficient CELO balance');
+      }
+
+      const tx = await wallet.sendTransaction({
+        to: toAddress,
+        value: amountInWei
+      });
+      
+      toast.info('Transaction submitted, waiting for confirmation...');
+      const receipt = await tx.wait();
+      await updateBalances(wallet);
+      
+      return receipt!.hash;
+    } catch (error: any) {
+      console.error('Error sending CELO:', error);
+      throw new Error(error.message || 'Failed to send CELO');
+    }
+  };
+
+  const refreshBalances = async () => {
+    if (wallet) {
+      await updateBalances(wallet);
+    }
+  };
+
+  const exportPrivateKey = async (userPin: string): Promise<string> => {
+    if (!wallet) throw new Error('Wallet not initialized');
+    
+    // In production, verify PIN before exporting
+    return wallet.privateKey;
+  };
+
+  return {
+    wallet,
+    address,
+    celoBalance,
+    cUsdBalance,
+    loading,
+    sendCUSD,
+    sendCELO,
+    refreshBalances,
+    exportPrivateKey,
+    isTestnet: USE_TESTNET
+  };
+};
