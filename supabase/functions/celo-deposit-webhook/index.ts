@@ -3,7 +3,6 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const MASTER_WALLET = "0x7ed3d953ad3ef99f101f4808d4c123052c583282";
 const EXCHANGE_RATE_API = "https://v6.exchangerate-api.com/v6/c06b378e6d590d4c22aa2998/latest/USD";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -48,17 +47,12 @@ serve(async (req) => {
     const activities = webhookData.event?.activity || [];
 
     for (const activity of activities) {
-      // Only process deposits to master wallet
-      if (activity.toAddress.toLowerCase() !== MASTER_WALLET.toLowerCase()) {
-        continue;
-      }
-
       const txHash = activity.hash;
-      const fromAddress = activity.fromAddress.toLowerCase();
+      const toAddress = activity.toAddress.toLowerCase(); // User's wallet receiving the deposit
       const cryptoAmount = activity.value;
       const asset = activity.asset; // "cUSD" or "CELO"
 
-      console.log(`[DEPOSIT] Processing: ${cryptoAmount} ${asset} from ${fromAddress}, tx: ${txHash}`);
+      console.log(`[DEPOSIT] Processing: ${cryptoAmount} ${asset} to ${toAddress}, tx: ${txHash}`);
 
       // Check if transaction already processed
       const { data: existing } = await supabase
@@ -92,13 +86,13 @@ serve(async (req) => {
 
       const ncAmount = Math.floor(nairaAmount); // 1 NC = 1 Naira
 
-      // Find user by wallet address (case-insensitive)
-      console.log(`[LOOKUP] Searching for user with wallet: ${fromAddress}`);
+      // Find user by their wallet address (the recipient of the deposit)
+      console.log(`[LOOKUP] Searching for user with wallet: ${toAddress}`);
       
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("user_id, full_name, telegram_user_id, celo_wallet_address")
-        .eq("celo_wallet_address", fromAddress)
+        .eq("celo_wallet_address", toAddress)
         .maybeSingle();
 
       console.log(`[LOOKUP] Profile found:`, profile ? `Yes (user: ${profile.user_id})` : 'No');
@@ -107,7 +101,7 @@ serve(async (req) => {
       }
 
       if (!profile) {
-        console.log(`[ERROR] No user found with wallet address: ${fromAddress}`);
+        console.log(`[ERROR] No user found with wallet address: ${toAddress}`);
         // Create unmatched transaction record
         await supabase.from("crypto_transactions").insert({
           user_id: "00000000-0000-0000-0000-000000000000", // Placeholder
@@ -117,7 +111,7 @@ serve(async (req) => {
           naira_amount: nairaAmount,
           nc_amount: ncAmount,
           exchange_rate: usdToNgn,
-          wallet_address: fromAddress.toLowerCase(),
+          wallet_address: toAddress,
           tx_hash: txHash,
           status: "failed",
           error_message: "No user found with this wallet address"
@@ -137,7 +131,7 @@ serve(async (req) => {
           naira_amount: nairaAmount,
           nc_amount: ncAmount,
           exchange_rate: usdToNgn,
-          wallet_address: fromAddress,
+          wallet_address: toAddress,
           tx_hash: txHash,
           status: "completed",
           completed_at: new Date().toISOString()
