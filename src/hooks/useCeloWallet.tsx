@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 const CELO_MAINNET_RPC = 'https://forno.celo.org';
 const CELO_ALFAJORES_RPC = 'https://alfajores-forno.celo-testnet.org'; // Testnet
-const USE_TESTNET = true; // Set to false for mainnet
+const USE_TESTNET = false; // PRODUCTION: Using mainnet for real transactions
 
 const RPC_URL = USE_TESTNET ? CELO_ALFAJORES_RPC : CELO_MAINNET_RPC;
 
@@ -33,21 +33,43 @@ export const useCeloWallet = () => {
       const encryptedWallet = localStorage.getItem('celo_wallet');
       
       if (encryptedWallet) {
-        // Decrypt and load wallet
-        const password = await getOrCreatePassword();
-        const decrypted = CryptoJS.AES.decrypt(encryptedWallet, password).toString(CryptoJS.enc.Utf8);
-        const walletData = JSON.parse(decrypted);
-        
-        const walletInstance = new ethers.Wallet(walletData.privateKey, provider);
-        setWallet(walletInstance);
-        setAddress(walletInstance.address);
-        
-        // Ensure wallet address is saved to profile
-        await saveWalletToProfile(walletInstance.address);
-        
-        await updateBalances(walletInstance);
+        try {
+          // Decrypt and load wallet
+          const password = await getOrCreatePassword();
+          const decrypted = CryptoJS.AES.decrypt(encryptedWallet, password).toString(CryptoJS.enc.Utf8);
+          
+          if (!decrypted) {
+            console.error('Failed to decrypt wallet, creating new one');
+            await createNewWallet();
+            return;
+          }
+          
+          const walletData = JSON.parse(decrypted);
+          
+          if (!walletData.privateKey || !walletData.address) {
+            console.error('Invalid wallet data, creating new one');
+            await createNewWallet();
+            return;
+          }
+          
+          const walletInstance = new ethers.Wallet(walletData.privateKey, provider);
+          console.log('✅ Loaded existing wallet:', walletInstance.address);
+          setWallet(walletInstance);
+          setAddress(walletInstance.address);
+          
+          // Ensure wallet address is saved to profile
+          await saveWalletToProfile(walletInstance.address);
+          
+          await updateBalances(walletInstance);
+        } catch (decryptError) {
+          console.error('Error decrypting wallet, creating new one:', decryptError);
+          // Clear corrupted data
+          localStorage.removeItem('celo_wallet');
+          await createNewWallet();
+        }
       } else {
         // Create new wallet
+        console.log('No existing wallet found, creating new one');
         await createNewWallet();
       }
     } catch (error) {
@@ -74,6 +96,8 @@ export const useCeloWallet = () => {
       const provider = new ethers.JsonRpcProvider(RPC_URL);
       const newWallet = ethers.Wallet.createRandom(provider);
       
+      console.log('🔑 Creating new wallet:', newWallet.address);
+      
       // Encrypt and save
       const password = await getOrCreatePassword();
       const walletData = {
@@ -87,16 +111,17 @@ export const useCeloWallet = () => {
       ).toString();
       
       localStorage.setItem('celo_wallet', encrypted);
+      console.log('💾 Wallet encrypted and saved to localStorage');
       
       setWallet(newWallet);
       setAddress(newWallet.address);
       
       await updateBalances(newWallet);
       
-      // Save wallet address to profile
+      // Save wallet address to profile - CRITICAL for deposits to work
       await saveWalletToProfile(newWallet.address);
       
-      toast.success('New Celo wallet created!');
+      toast.success('New Celo wallet created on Mainnet!');
     } catch (error) {
       console.error('Error creating wallet:', error);
       toast.error('Failed to create wallet');
@@ -106,7 +131,12 @@ export const useCeloWallet = () => {
   const saveWalletToProfile = async (walletAddress: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        console.error('❌ Cannot save wallet: User not authenticated');
+        return;
+      }
+
+      console.log(`💾 Saving wallet ${walletAddress} to profile for user ${user.id}`);
 
       const { error } = await supabase
         .from('profiles')
@@ -114,12 +144,27 @@ export const useCeloWallet = () => {
         .eq('user_id', user.id);
 
       if (error) {
-        console.error('Error saving wallet address:', error);
+        console.error('❌ Error saving wallet address:', error);
+        toast.error('Failed to link wallet to your account');
       } else {
-        console.log('Wallet address saved to profile:', walletAddress);
+        console.log('✅ Wallet address saved to profile:', walletAddress.toLowerCase());
+        
+        // Verify it was saved
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('celo_wallet_address')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (profile?.celo_wallet_address === walletAddress.toLowerCase()) {
+          console.log('✅ Verification: Wallet address confirmed in database');
+        } else {
+          console.error('❌ Verification failed: Wallet address not found in database');
+        }
       }
     } catch (error) {
-      console.error('Error in saveWalletToProfile:', error);
+      console.error('❌ Error in saveWalletToProfile:', error);
+      toast.error('Failed to link wallet to your account');
     }
   };
 
