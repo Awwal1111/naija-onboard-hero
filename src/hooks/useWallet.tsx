@@ -162,6 +162,7 @@ export const useWallet = () => {
         },
         () => {
           fetchTransactions()
+          initializeWallet() // Also refresh balance when transactions change
         }
       )
       .subscribe()

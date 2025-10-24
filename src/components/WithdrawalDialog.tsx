@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Coins, Send, AlertCircle, Wallet, Info } from 'lucide-react'
 import { useWallet } from '@/hooks/useWallet'
-import { useCeloWallet } from '@/hooks/useCeloWallet'
+import { supabase } from '@/integrations/supabase/client'
 import { toast } from 'sonner'
 
 interface WithdrawalDialogProps {
@@ -38,7 +38,6 @@ const nigerianBanks = [
 
 export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: WithdrawalDialogProps) => {
   const { initiateWithdrawal } = useWallet()
-  const { sendCUSD, sendCELO, cUsdBalance, celoBalance, isTestnet } = useCeloWallet()
   
   // Bank withdrawal state
   const [amount, setAmount] = useState('')
@@ -105,39 +104,43 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
     }
 
     if (!cryptoAmount || parseFloat(cryptoAmount) <= 0) {
-      toast.error("Please enter a valid amount")
+      toast.error("Please enter a valid NC amount")
       return
     }
 
-    const amountNum = parseFloat(cryptoAmount)
+    const ncAmount = parseFloat(cryptoAmount)
     
-    // Check balance based on currency
-    const availableBalance = cryptoCurrency === 'cUSD' 
-      ? parseFloat(cUsdBalance) 
-      : parseFloat(celoBalance)
-
-    if (amountNum > availableBalance) {
-      toast.error(`Insufficient ${cryptoCurrency} balance`)
+    // Check NC balance (withdrawable balance)
+    if (ncAmount > currentBalance) {
+      toast.error(`Insufficient balance. You have NC ${currentBalance.toLocaleString()}`)
       return
     }
 
-    if (amountNum < 0.01) {
-      toast.error("Minimum withdrawal is 0.01")
+    if (ncAmount < 3000) {
+      toast.error("Minimum withdrawal is NC 3,000")
       return
     }
 
     setIsLoading(true)
 
     try {
-      let txHash: string
+      // Call the backend edge function to process withdrawal
+      const { data: { session } } = await supabase.auth.getSession()
       
-      if (cryptoCurrency === 'cUSD') {
-        txHash = await sendCUSD(cryptoWalletAddress, cryptoAmount)
-      } else {
-        txHash = await sendCELO(cryptoWalletAddress, cryptoAmount)
-      }
+      const response = await supabase.functions.invoke('celo-withdrawal', {
+        body: {
+          walletAddress: cryptoWalletAddress,
+          ncAmount: ncAmount,
+          currency: cryptoCurrency
+        },
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`
+        }
+      })
 
-      toast.success(`Withdrawal successful! Tx: ${txHash.slice(0, 10)}...`)
+      if (response.error) throw new Error(response.error.message)
+
+      toast.success(`Withdrawal successful! ${response.data.cryptoAmount.toFixed(4)} ${cryptoCurrency} sent`)
       setCryptoAmount("")
       setCryptoWalletAddress("")
       onOpenChange(false)
@@ -181,22 +184,25 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
                   <Wallet className="h-5 w-5" />
                   Crypto Withdrawal
                   <Badge variant="default">Instant</Badge>
-                  {isTestnet && <Badge variant="outline">Testnet</Badge>}
                 </CardTitle>
                 <CardDescription>
-                  Send {cryptoCurrency} from your wallet to any address
+                  Convert your NC balance to {cryptoCurrency} and send to any wallet
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Available cUSD</p>
-                    <p className="text-lg font-bold">{parseFloat(cUsdBalance).toFixed(4)}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Available CELO</p>
-                    <p className="text-lg font-bold">{parseFloat(celoBalance).toFixed(4)}</p>
-                  </div>
+                <Alert>
+                  <Info className="h-4 w-4" />
+                  <AlertDescription className="text-xs">
+                    <p className="font-medium mb-1">How it works:</p>
+                    <p>• Your NC balance will be converted to crypto at current rates</p>
+                    <p>• Crypto will be sent from our master wallet to your address</p>
+                    <p>• Transaction is instant and final</p>
+                  </AlertDescription>
+                </Alert>
+
+                <div className="p-4 bg-muted rounded-lg">
+                  <p className="text-xs text-muted-foreground">Your Withdrawable Balance</p>
+                  <p className="text-2xl font-bold">NC {currentBalance.toLocaleString()}</p>
                 </div>
 
                 <div className="space-y-2">
@@ -223,35 +229,37 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="crypto-amount">Amount ({cryptoCurrency})</Label>
+                  <Label htmlFor="crypto-amount">Amount (NC)</Label>
                   <Input
                     id="crypto-amount"
                     type="number"
-                    step="0.01"
-                    placeholder="Enter amount"
+                    step="100"
+                    min="3000"
+                    placeholder="Enter NC amount"
                     value={cryptoAmount}
                     onChange={(e) => setCryptoAmount(e.target.value)}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Available: {cryptoCurrency === 'cUSD' ? cUsdBalance : celoBalance} {cryptoCurrency}
+                    Min: NC 3,000 | Available: NC {currentBalance.toLocaleString()}
                   </p>
                 </div>
 
                 <Alert>
                   <Info className="h-4 w-4" />
                   <AlertDescription className="text-xs space-y-1">
-                    <p>• Minimum: 0.01 {cryptoCurrency}</p>
-                    <p>• Network: Celo {isTestnet ? 'Alfajores (Testnet)' : 'Mainnet'}</p>
-                    <p>• Instant transfer with minimal gas fees</p>
+                    <p>• Minimum: NC 3,000</p>
+                    <p>• Network: Celo Mainnet</p>
+                    <p>• Current Rate: ~₦1,600/USD</p>
+                    <p>• Gas fees covered by us</p>
                   </AlertDescription>
                 </Alert>
 
                 <BrandButton 
                   onClick={handleCryptoWithdraw} 
                   className="w-full"
-                  disabled={isLoading}
+                  disabled={isLoading || !cryptoAmount || parseFloat(cryptoAmount) < 3000}
                 >
-                  {isLoading ? "Processing..." : `Send ${cryptoCurrency}`}
+                  {isLoading ? "Processing..." : `Withdraw as ${cryptoCurrency}`}
                 </BrandButton>
               </CardContent>
             </Card>
