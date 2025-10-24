@@ -225,6 +225,12 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
                     placeholder="0x..."
                     value={cryptoWalletAddress}
                     onChange={(e) => setCryptoWalletAddress(e.target.value)}
+                    onPaste={(e) => {
+                      e.preventDefault()
+                      const pastedText = e.clipboardData.getData('text')
+                      setCryptoWalletAddress(pastedText.trim())
+                    }}
+                    autoComplete="off"
                   />
                 </div>
 
@@ -266,113 +272,22 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
           </TabsContent>
 
           <TabsContent value="manual" className="space-y-4">
-            <Card className="bg-orange-500/5 border-orange-500/20">
+            <Card className="bg-red-500/5 border-red-500/20">
               <CardContent className="pt-6 space-y-4">
                 <div className="flex items-start gap-3">
-                  <AlertCircle className="h-5 w-5 text-orange-500 mt-0.5" />
-                  <div className="text-sm space-y-1">
-                    <p className="font-medium">Manual Bank Transfer (Slower)</p>
+                  <AlertCircle className="h-5 w-5 text-red-500 mt-0.5" />
+                  <div className="text-sm space-y-2">
+                    <p className="font-medium text-red-500">Manual Withdrawal Temporarily Unavailable</p>
                     <p className="text-muted-foreground">
-                      Requires admin processing. May take 1-3 business days.
+                      Manual bank withdrawals are currently disabled. Please use automatic crypto withdrawal instead.
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Automatic withdrawal is instant and more secure. Your NC will be converted to crypto and sent directly to your wallet.
                     </p>
                   </div>
                 </div>
               </CardContent>
             </Card>
-
-            <div className="space-y-4">
-              <div className="bg-accent/50 rounded-lg p-3">
-                <p className="text-sm">
-                  <span className="font-medium">Withdrawable Balance:</span>{' '}
-                  NC {currentBalance.toLocaleString()}
-                </p>
-                <p className="text-xs text-amber-600 mt-1">
-                  ⚠️ Minimum withdrawal: NC 3,000
-                </p>
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium mb-2 block">
-                  Amount (NC)
-                </Label>
-                <BrandInput
-                  type="number"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder="Enter amount"
-                  min="3000"
-                  max={currentBalance.toString()}
-                />
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium mb-2 block">
-                  Bank
-                </Label>
-                <Select value={bankCode} onValueChange={setBankCode}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select your bank" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {nigerianBanks.map((bank) => (
-                      <SelectItem key={bank.code} value={bank.code}>
-                        {bank.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium mb-2 block">
-                  Account Number
-                </Label>
-                <BrandInput
-                  type="text"
-                  value={accountNumber}
-                  onChange={(e) => setAccountNumber(e.target.value)}
-                  placeholder="Enter account number"
-                  maxLength={10}
-                />
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium mb-2 block">
-                  Account Name
-                </Label>
-                <BrandInput
-                  type="text"
-                  value={accountName}
-                  onChange={(e) => setAccountName(e.target.value)}
-                  placeholder="Enter account name"
-                />
-              </div>
-
-              <div className="flex gap-2">
-                <BrandButton
-                  variant="outline"
-                  onClick={() => onOpenChange(false)}
-                  className="flex-1"
-                >
-                  Cancel
-                </BrandButton>
-                <BrandButton
-                  onClick={handleWithdraw}
-                  disabled={
-                    !amount || 
-                    parseFloat(amount) < 3000 || 
-                    parseFloat(amount) > currentBalance ||
-                    !accountNumber || 
-                    !accountName || 
-                    !bankCode ||
-                    loading
-                  }
-                  className="flex-1"
-                >
-                  {loading ? 'Processing...' : 'Withdraw'}
-                </BrandButton>
-              </div>
-            </div>
           </TabsContent>
         </Tabs>
       </DialogContent>

@@ -65,19 +65,40 @@ export const AdminManualDepositsSection = () => {
 
   const fetchDeposits = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch manual deposits
+      const { data: depositsData, error: depositsError } = await supabase
         .from('manual_deposits')
-        .select(`
-          *,
-          user:profiles!manual_deposits_user_id_fkey(full_name, profile_picture_url, wallet_balance)
-        `)
+        .select('*')
         .in('status', ['pending', 'awaiting_proof'])
         .order('created_at', { ascending: false })
 
-      console.log('Fetched manual deposits:', data)
+      if (depositsError) throw depositsError
 
-      if (error) throw error
-      setDeposits(data as any || [])
+      // Fetch user profiles separately
+      let enrichedData: ManualDeposit[] = []
+      if (depositsData && depositsData.length > 0) {
+        const userIds = [...new Set(depositsData.map(d => d.user_id))]
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('user_id, full_name, profile_picture_url, wallet_balance')
+          .in('user_id', userIds)
+
+        const profilesMap = new Map(
+          profilesData?.map(p => [p.user_id, p]) || []
+        )
+
+        enrichedData = depositsData.map(deposit => ({
+          ...deposit,
+          user: profilesMap.get(deposit.user_id) || {
+            full_name: 'Unknown User',
+            profile_picture_url: null,
+            wallet_balance: 0
+          }
+        })) as ManualDeposit[]
+      }
+
+      console.log('Fetched manual deposits:', enrichedData)
+      setDeposits(enrichedData)
     } catch (error) {
       console.error('Error fetching deposits:', error)
       toast.error('Failed to load deposits')
