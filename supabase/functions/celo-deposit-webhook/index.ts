@@ -50,7 +50,17 @@ serve(async (req) => {
       const txHash = activity.hash;
       const toAddress = activity.toAddress.toLowerCase(); // User's wallet receiving the deposit
       const cryptoAmount = activity.value;
-      const asset = activity.asset; // "cUSD" or "CELO"
+      const rawAsset = activity.asset;
+      
+      // Normalize asset names to match database constraints
+      let asset = rawAsset;
+      if (rawAsset === "USD₮" || rawAsset === "USDT") {
+        asset = "cUSD"; // Map USDT to cUSD for database compatibility
+      } else if (rawAsset === "ETH") {
+        asset = "CELO"; // Map ETH to CELO for Celo network
+      }
+      
+      console.log(`[CURRENCY] Raw asset: ${rawAsset}, Normalized to: ${asset}`);
 
       console.log(`[DEPOSIT] Processing: ${cryptoAmount} ${asset} to ${toAddress}, tx: ${txHash}`);
 
