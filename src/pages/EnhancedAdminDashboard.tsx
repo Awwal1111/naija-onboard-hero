@@ -18,6 +18,7 @@ import { AdminReferralTasksSection } from '@/components/AdminReferralTasksSectio
 import { AdminArticlesSection } from '@/components/AdminArticlesSection'
 import { AdminWalletManagement } from '@/components/AdminWalletManagement'
 import { AdminMasterWalletInfo } from '@/components/AdminMasterWalletInfo'
+import { AdminWalletMigration } from '@/components/AdminWalletMigration'
 import { AdminSettingsTab } from '@/components/AdminSettingsTab'
 import { AdminWithdrawalsSection } from '@/components/AdminWithdrawalsSection'
 import { AdminDisputeManagement } from '@/components/AdminDisputeManagement'
@@ -1405,6 +1406,8 @@ const EnhancedAdminDashboard = () => {
 
           {/* Wallet Management Tab */}
           <TabsContent value="wallet" className="space-y-6">
+            <AdminWalletMigration />
+            
             <AdminMasterWalletInfo />
             
             <AdminWalletManagement />

@@ -332,18 +332,74 @@ Based on the logs, your deposit likely failed because:
 
 ---
 
-## 🎯 Next Steps
+## 🎯 IMMEDIATE NEXT STEPS (DO THIS NOW)
 
-I will now implement:
-1. ✅ Server-side wallet creation on signup
-2. ✅ Auto-sweep mechanism in deposit webhook
-3. ✅ Migration script for 23 existing users
-4. ✅ Improved logging and monitoring
-5. ✅ User notification system for wallet addresses
+### Step 1: Run User Migration (2 minutes)
+1. Go to **Admin Dashboard → Wallet Management** tab
+2. Click "Check Users Without Wallets" - you should see **23 users**
+3. Click "Run Migration" button
+4. Wait for confirmation (takes ~30 seconds)
+5. **Result**: All 23 users will now have permanent Celo wallets!
 
-**Estimated Time**: 30 minutes
-**Downtime Required**: None (backwards compatible)
+### Step 2: Configure Alchemy Webhook (5 minutes)
+Your deposits are failing because Alchemy isn't triggering the webhook.
+
+1. Go to [Alchemy Dashboard](https://dashboard.alchemy.com/)
+2. Find your webhook configuration
+3. **Update webhook URL** to:
+   ```
+   https://jxybqmquymxkvxxpiuhv.supabase.co/functions/v1/celo-deposit-webhook
+   ```
+4. Enable these events:
+   - ✅ Address Activity
+   - ✅ Internal Transfers
+   - ✅ Token Transfers (ERC-20)
+5. Add the master wallet address you just saved
+6. **Test**: Send 0.01 cUSD to your wallet
+7. Check edge function logs to verify it's working
+
+### Step 3: Test Deposit Flow (2 minutes)
+1. Go to your profile
+2. Copy your wallet address
+3. Send **0.1 cUSD** from Coinbase/Binance to your wallet
+4. Wait 1-2 minutes
+5. Check your NC balance - should increase!
+6. Check Admin Dashboard → Manual Deposits to see the transaction
+
+### Step 4: Recover Lost Deposits (5 minutes)
+```sql
+-- Run this query in Supabase SQL Editor
+SELECT 
+  user_id,
+  tx_hash,
+  nc_amount,
+  crypto_amount,
+  crypto_currency,
+  wallet_address,
+  status,
+  error_message
+FROM crypto_transactions
+WHERE status = 'failed'
+AND transaction_type = 'deposit'
+ORDER BY created_at DESC;
+```
+
+For each failed transaction:
+1. Identify the user
+2. Go to Admin Dashboard → Wallet Management
+3. Manually add the `nc_amount` to their balance
+4. Add note: "Recovered deposit from [tx_hash]"
 
 ---
 
-**Questions?** Let me know which part you'd like me to implement first!
+## 🔐 Security Configuration Done
+
+✅ `WALLET_ENCRYPTION_SECRET` - Added to Supabase Secrets
+✅ `CELO_MASTER_WALLET_ADDRESS` - Added to Supabase Secrets
+✅ Database column `encrypted_wallet` - Created
+✅ Edge functions deployed:
+   - `create-user-wallet` - For new signups
+   - `migrate-existing-users` - For existing users
+   - `celo-deposit-webhook` - With auto-sweep
+
+---
