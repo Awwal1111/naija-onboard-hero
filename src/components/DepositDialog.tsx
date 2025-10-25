@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { BrandButton } from '@/components/ui/brand-button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -6,10 +7,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Send, Wallet, Copy, RefreshCw, Info } from 'lucide-react'
+import { Send, Wallet, Copy, Info, AlertCircle } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
-import { useCeloWallet } from '@/hooks/useCeloWallet'
+import { supabase } from '@/integrations/supabase/client'
 import { toast } from 'sonner'
 
 interface DepositDialogProps {
@@ -20,7 +21,67 @@ interface DepositDialogProps {
 export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
   const { user } = useAuth()
   const { profile } = useProfile()
-  const { address, celoBalance, cUsdBalance, loading: walletLoading, refreshBalances, isTestnet } = useCeloWallet()
+  const [walletAddress, setWalletAddress] = useState<string>('')
+  const [loading, setLoading] = useState(true)
+  const [creatingWallet, setCreatingWallet] = useState(false)
+
+  useEffect(() => {
+    if (user && profile) {
+      loadWalletAddress()
+    }
+  }, [user, profile])
+
+  const loadWalletAddress = async () => {
+    if (!user) return
+    
+    try {
+      setLoading(true)
+      
+      // Fetch the user's wallet address from their profile
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('celo_wallet_address')
+        .eq('user_id', user.id)
+        .single()
+      
+      if (error) throw error
+      
+      if (data?.celo_wallet_address) {
+        setWalletAddress(data.celo_wallet_address)
+      } else {
+        // No wallet yet, create one
+        await createWallet()
+      }
+    } catch (error: any) {
+      console.error('Error loading wallet:', error)
+      toast.error('Failed to load wallet address')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const createWallet = async () => {
+    if (!user) return
+    
+    setCreatingWallet(true)
+    try {
+      const { data, error } = await supabase.functions.invoke('create-user-wallet')
+      
+      if (error) throw error
+      
+      if (data?.success && data?.address) {
+        setWalletAddress(data.address)
+        toast.success('Your wallet has been created!')
+      } else {
+        throw new Error('Failed to create wallet')
+      }
+    } catch (error: any) {
+      console.error('Error creating wallet:', error)
+      toast.error('Failed to create wallet. Please contact support.')
+    } finally {
+      setCreatingWallet(false)
+    }
+  }
 
   const handleTelegramDeposit = () => {
     if (!user || !profile) {
@@ -48,13 +109,10 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
   }
 
   const copyWalletAddress = () => {
-    navigator.clipboard.writeText(address)
-    toast.success('Your wallet address copied!')
-  }
-
-  const handleRefreshBalances = async () => {
-    await refreshBalances()
-    toast.success('Balances updated!')
+    if (walletAddress) {
+      navigator.clipboard.writeText(walletAddress)
+      toast.success('Wallet address copied!')
+    }
   }
 
   return (
@@ -85,25 +143,27 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Wallet className="h-5 w-5" />
-                  Your Celo Wallet
-                  <Badge variant="default">{isTestnet ? 'Testnet' : 'Mainnet'}</Badge>
+                  Your Permanent Celo Wallet
+                  <Badge variant="default">Mainnet</Badge>
                 </CardTitle>
                 <CardDescription>
-                  Send cUSD or CELO to this address from any exchange or wallet
+                  This is your permanent wallet address. Send cUSD, CELO, or USDT here from any exchange or wallet.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {walletLoading ? (
-                  <div className="text-center py-4">
-                    <p className="text-muted-foreground">Loading wallet...</p>
+                {loading || creatingWallet ? (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">
+                      {creatingWallet ? 'Creating your wallet...' : 'Loading wallet...'}
+                    </p>
                   </div>
-                ) : (
+                ) : walletAddress ? (
                   <>
                     <div className="space-y-2">
-                      <Label>Your Wallet Address</Label>
+                      <Label>Your Wallet Address (Celo Mainnet)</Label>
                       <div className="flex gap-2">
                         <Input 
-                          value={address}
+                          value={walletAddress}
                           readOnly
                           className="font-mono text-sm"
                         />
@@ -111,24 +171,27 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
                           <Copy className="h-4 w-4" />
                         </BrandButton>
                       </div>
+                      <p className="text-xs text-muted-foreground">
+                        This address is unique to you. You can share it to receive deposits.
+                      </p>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
-                      <div>
-                        <p className="text-xs text-muted-foreground">cUSD Balance</p>
-                        <p className="text-lg font-bold">{parseFloat(cUsdBalance).toFixed(4)}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">CELO Balance</p>
-                        <p className="text-lg font-bold">{parseFloat(celoBalance).toFixed(4)}</p>
-                      </div>
-                    </div>
-
-                    <BrandButton onClick={handleRefreshBalances} className="w-full" variant="outline">
-                      <RefreshCw className="mr-2 h-4 w-4" />
-                      Refresh Balances
-                    </BrandButton>
+                    <Alert>
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription className="text-sm">
+                        <strong>Important:</strong> Deposits are automatically converted to NC and moved to our secure system. 
+                        The conversion rate is approximately 1 cUSD = ₦1,600 NC.
+                      </AlertDescription>
+                    </Alert>
                   </>
+                ) : (
+                  <div className="text-center py-8 space-y-4">
+                    <AlertCircle className="h-12 w-12 mx-auto text-orange-500" />
+                    <div>
+                      <p className="font-medium">No Wallet Found</p>
+                      <p className="text-sm text-muted-foreground">Contact support to create your wallet</p>
+                    </div>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -137,11 +200,11 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
               <Info className="h-4 w-4" />
               <AlertDescription>
                 <ul className="list-disc list-inside space-y-1 text-sm">
-                  <li>Send cUSD or CELO from Binance, Coinbase, or any wallet</li>
-                  <li>Funds appear instantly in your wallet</li>
-                  <li>Convert to NC in the app to use for services</li>
+                  <li>Send cUSD, CELO, or USDT from Binance, Coinbase, or any wallet</li>
+                  <li>Deposits are detected automatically within minutes</li>
+                  <li>Funds are converted to NC and credited to your balance</li>
                   <li>1 cUSD ≈ ₦{(1600).toLocaleString()} NC</li>
-                  {isTestnet && <li className="text-orange-500 font-bold">⚠️ Using Alfajores Testnet</li>}
+                  <li>Your unique address works across all Celo-compatible wallets</li>
                 </ul>
               </AlertDescription>
             </Alert>
