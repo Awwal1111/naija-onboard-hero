@@ -261,7 +261,7 @@ export type Database = {
           action: string
           created_at: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           metadata: Json | null
           record_id: string | null
           table_name: string
@@ -272,7 +272,7 @@ export type Database = {
           action: string
           created_at?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           metadata?: Json | null
           record_id?: string | null
           table_name: string
@@ -283,7 +283,7 @@ export type Database = {
           action?: string
           created_at?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           metadata?: Json | null
           record_id?: string | null
           table_name?: string
@@ -2643,6 +2643,7 @@ export type Database = {
           connections_count: number | null
           created_at: string
           email_confirmed: boolean | null
+          encrypted_wallet: string | null
           expert_verified_at: string | null
           full_name: string | null
           id: string
@@ -2673,6 +2674,7 @@ export type Database = {
           connections_count?: number | null
           created_at?: string
           email_confirmed?: boolean | null
+          encrypted_wallet?: string | null
           expert_verified_at?: string | null
           full_name?: string | null
           id?: string
@@ -2703,6 +2705,7 @@ export type Database = {
           connections_count?: number | null
           created_at?: string
           email_confirmed?: boolean | null
+          encrypted_wallet?: string | null
           expert_verified_at?: string | null
           full_name?: string | null
           id?: string
@@ -3759,24 +3762,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      accept_admin_invitation: {
-        Args: { p_token: string }
-        Returns: Json
-      }
-      accept_safepay: {
-        Args:
-          | { p_acceptor: string; p_escrow_id: string }
-          | { p_safepay_id: string }
-        Returns: undefined
-      }
+      accept_admin_invitation: { Args: { p_token: string }; Returns: Json }
+      accept_safepay:
+        | { Args: { p_safepay_id: string }; Returns: undefined }
+        | {
+            Args: { p_acceptor: string; p_escrow_id: string }
+            Returns: undefined
+          }
       admin_release_fundraising_funds: {
         Args: { p_admin_id: string; p_fundraising_id: string }
         Returns: Json
       }
-      auto_release_safepay: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      auto_release_safepay: { Args: never; Returns: undefined }
       calculate_comment_engagement: {
         Args: { p_comment_id: string }
         Returns: number
@@ -3809,10 +3806,7 @@ export type Database = {
         Args: { p_reason: string; p_safepay_id: string }
         Returns: undefined
       }
-      generate_referral_code: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      generate_referral_code: { Args: never; Returns: string }
       get_connected_profile_info: {
         Args: { target_user_id: string }
         Returns: {
@@ -3846,10 +3840,7 @@ export type Database = {
           user_id: string
         }[]
       }
-      get_system_setting: {
-        Args: { setting_key: string }
-        Returns: string
-      }
+      get_system_setting: { Args: { setting_key: string }; Returns: string }
       has_purchased_product: {
         Args: { p_product_id: string; p_user_id: string }
         Returns: boolean
@@ -3865,10 +3856,7 @@ export type Database = {
         Args: { amount_to_add: number; target_user_id: string }
         Returns: undefined
       }
-      is_admin_user: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+      is_admin_user: { Args: never; Returns: boolean }
       is_enrolled_in_course: {
         Args: { p_course_id: string; p_user_id: string }
         Returns: boolean
@@ -3885,10 +3873,7 @@ export type Database = {
         Args: { p_group_id: string; p_user_id: string }
         Returns: boolean
       }
-      lookup_user_by_email: {
-        Args: { lookup_email: string }
-        Returns: Json
-      }
+      lookup_user_by_email: { Args: { lookup_email: string }; Returns: Json }
       mark_safepay_complete: {
         Args: { p_safepay_id: string }
         Returns: undefined
@@ -3897,10 +3882,7 @@ export type Database = {
         Args: { p_amount: number; p_buyer_id: string; p_seller_id: string }
         Returns: Json
       }
-      refresh_admin_stats: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      refresh_admin_stats: { Args: never; Returns: undefined }
       refund_safepay: {
         Args: { p_escrow_id: string; p_requester: string }
         Returns: undefined

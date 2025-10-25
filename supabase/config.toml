@@ -3,6 +3,12 @@ project_id = "jxybqmquymxkvxxpiuhv"
 [functions.get-master-wallet-address]
 verify_jwt = false
 
+[functions.create-user-wallet]
+verify_jwt = true
+
+[functions.migrate-existing-users]
+verify_jwt = true
+
 [functions.telegram-bot]
 verify_jwt = false
 

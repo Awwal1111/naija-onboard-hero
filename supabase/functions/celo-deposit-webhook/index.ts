@@ -194,6 +194,91 @@ serve(async (req) => {
 
       console.log(`[SUCCESS] ✅ Credited ${ncAmount} NC to user ${profile.user_id}`);
 
+      // AUTO-SWEEP: Transfer funds from user wallet to master wallet
+      console.log(`[SWEEP] Starting auto-sweep of ${cryptoAmount} ${asset} to master wallet`);
+      
+      try {
+        // Get user's encrypted wallet from database
+        const { data: userWalletData, error: walletError } = await supabase
+          .from("profiles")
+          .select("encrypted_wallet")
+          .eq("user_id", profile.user_id)
+          .single();
+
+        if (walletError || !userWalletData?.encrypted_wallet) {
+          console.error("[SWEEP] ❌ No encrypted wallet found for user - cannot sweep");
+        } else {
+          // Decrypt private key
+          const encryptionSecret = Deno.env.get("WALLET_ENCRYPTION_SECRET") || "default_secret_change_in_production";
+          
+          const CryptoJS = await import("https://cdn.skypack.dev/crypto-js@4.1.1");
+          const decryptedKey = CryptoJS.AES.decrypt(
+            userWalletData.encrypted_wallet,
+            encryptionSecret
+          ).toString(CryptoJS.enc.Utf8);
+
+          if (!decryptedKey) {
+            console.error("[SWEEP] ❌ Failed to decrypt wallet key");
+          } else {
+            // Create wallet instance for user
+            const provider = new ethers.JsonRpcProvider("https://forno.celo.org");
+            const userWallet = new ethers.Wallet(decryptedKey, provider);
+
+            const masterWalletAddress = Deno.env.get("CELO_MASTER_WALLET_ADDRESS");
+            if (!masterWalletAddress) {
+              console.error("[SWEEP] ❌ Master wallet address not configured");
+            } else {
+              console.log(`[SWEEP] Transferring from ${userWallet.address} to ${masterWalletAddress}`);
+
+              if (asset === "cUSD") {
+                // Transfer cUSD using ERC-20 contract
+                const cUsdAddress = "0x765DE816845861e75A25fCA122bb6898B8B1282a";
+                const cUsdContract = new ethers.Contract(
+                  cUsdAddress,
+                  ["function transfer(address to, uint256 amount) returns (bool)"],
+                  userWallet
+                );
+
+                const amountInWei = ethers.parseEther(cryptoAmount.toString());
+                const sweepTx = await cUsdContract.transfer(masterWalletAddress, amountInWei);
+                await sweepTx.wait();
+                
+                console.log(`[SWEEP] ✅ Successfully swept ${cryptoAmount} cUSD to master wallet`);
+                console.log(`[SWEEP] Tx hash: ${sweepTx.hash}`);
+              } else if (asset === "CELO") {
+                // Transfer native CELO
+                const amountInWei = ethers.parseEther(cryptoAmount.toString());
+                const sweepTx = await userWallet.sendTransaction({
+                  to: masterWalletAddress,
+                  value: amountInWei
+                });
+                await sweepTx.wait();
+                
+                console.log(`[SWEEP] ✅ Successfully swept ${cryptoAmount} CELO to master wallet`);
+                console.log(`[SWEEP] Tx hash: ${sweepTx.hash}`);
+              }
+
+              // Update crypto_transaction with sweep info
+              await supabase
+                .from("crypto_transactions")
+                .update({
+                  error_message: `Funds auto-swept to master wallet`
+                })
+                .eq("tx_hash", txHash);
+            }
+          }
+        }
+      } catch (sweepError: any) {
+        console.error("[SWEEP] ❌ Auto-sweep failed:", sweepError.message);
+        // Don't fail the entire transaction, just log the error
+        await supabase
+          .from("crypto_transactions")
+          .update({
+            error_message: `Credited successfully but auto-sweep failed: ${sweepError.message}`
+          })
+          .eq("tx_hash", txHash);
+      }
+
       // Send Telegram notification if user has linked account
       if (profile.telegram_user_id) {
         try {
