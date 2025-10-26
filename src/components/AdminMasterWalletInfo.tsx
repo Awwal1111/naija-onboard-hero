@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { Wallet, Copy, CheckCircle, Info, RefreshCw } from 'lucide-react'
+import { Wallet, Copy, CheckCircle, Info, RefreshCw, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import { ethers } from 'ethers'
+import { supabase } from '@/integrations/supabase/client'
 
 export const AdminMasterWalletInfo = () => {
   const [masterAddress, setMasterAddress] = useState<string>('')
@@ -12,6 +13,7 @@ export const AdminMasterWalletInfo = () => {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [initializing, setInitializing] = useState(false)
 
   const ALCHEMY_RPC = "https://celo-mainnet.g.alchemy.com/v2/nJP_zi_my4rK4ihI5i7Py"
   const CUSD_ADDRESS = "0x765DE816845861e75A25fCA122bb6898B8B1282a"
@@ -23,27 +25,61 @@ export const AdminMasterWalletInfo = () => {
   const fetchMasterWalletInfo = async () => {
     setLoading(true)
     try {
-      // Call edge function to get master wallet address
       const response = await fetch('https://jxybqmquymxkvxxpiuhv.supabase.co/functions/v1/get-master-wallet-address', {
         headers: {
           'Content-Type': 'application/json'
         }
       })
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch master wallet address')
+      const data = await response.json()
+      
+      if (!data.success || !data.address) {
+        setMasterAddress('')
+        return
       }
 
-      const data = await response.json()
       setMasterAddress(data.address)
-      
-      // Fetch balances
       await fetchBalances(data.address)
     } catch (error: any) {
       console.error('Error fetching master wallet:', error)
-      toast.error('Failed to load master wallet info')
+      setMasterAddress('')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const initializeMasterWallet = async () => {
+    setInitializing(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        toast.error('Please log in first')
+        return
+      }
+
+      const response = await fetch('https://jxybqmquymxkvxxpiuhv.supabase.co/functions/v1/initialize-master-wallet', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      })
+
+      const data = await response.json()
+      
+      if (!data.success) {
+        toast.error(data.error || 'Failed to initialize master wallet')
+        return
+      }
+
+      toast.success('Master wallet created! Please fund it with at least 0.1 CELO for gas fees.')
+      setMasterAddress(data.address)
+      await fetchBalances(data.address)
+    } catch (error: any) {
+      console.error('Error initializing master wallet:', error)
+      toast.error('Failed to initialize master wallet')
+    } finally {
+      setInitializing(false)
     }
   }
 
@@ -91,6 +127,50 @@ export const AdminMasterWalletInfo = () => {
           <p className="text-muted-foreground">Loading master wallet info...</p>
         </CardContent>
       </Card>
+    )
+  }
+
+  if (!masterAddress) {
+    return (
+      <div className="space-y-4">
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertDescription>
+            <p className="font-medium mb-2">Master Wallet Not Initialized</p>
+            <p className="text-xs">You need to generate the master wallet first. This is a one-time operation that creates a secure wallet for auto-sweep functionality.</p>
+          </AlertDescription>
+        </Alert>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Wallet className="h-5 w-5 text-primary" />
+              Initialize Master Wallet
+            </CardTitle>
+            <CardDescription>Generate a secure master wallet for your platform</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              onClick={initializeMasterWallet}
+              disabled={initializing}
+              className="w-full"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              {initializing ? 'Creating Wallet...' : 'Create Master Wallet'}
+            </Button>
+            <Alert className="mt-4 bg-yellow-500/10 border-yellow-500/20">
+              <Info className="h-4 w-4 text-yellow-500" />
+              <AlertDescription className="text-xs">
+                <p className="font-medium">Important:</p>
+                <p>• This will generate a new Celo wallet</p>
+                <p>• The private key is encrypted and stored securely</p>
+                <p>• You must fund it with at least 0.1 CELO for gas fees</p>
+                <p>• This can only be done once</p>
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+        </Card>
+      </div>
     )
   }
 

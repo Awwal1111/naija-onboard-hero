@@ -1,5 +1,8 @@
 project_id = "jxybqmquymxkvxxpiuhv"
 
+[functions.initialize-master-wallet]
+verify_jwt = true
+
 [functions.get-master-wallet-address]
 verify_jwt = false
 

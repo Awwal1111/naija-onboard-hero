@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { ethers } from "https://esm.sh/ethers@6.7.0";
+import CryptoJS from "https://cdn.skypack.dev/crypto-js@4.1.1";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -211,7 +213,6 @@ serve(async (req) => {
           // Decrypt private key
           const encryptionSecret = Deno.env.get("WALLET_ENCRYPTION_SECRET") || "default_secret_change_in_production";
           
-          const CryptoJS = await import("https://cdn.skypack.dev/crypto-js@4.1.1");
           const decryptedKey = CryptoJS.AES.decrypt(
             userWalletData.encrypted_wallet,
             encryptionSecret
@@ -224,9 +225,16 @@ serve(async (req) => {
             const provider = new ethers.JsonRpcProvider("https://forno.celo.org");
             const userWallet = new ethers.Wallet(decryptedKey, provider);
 
-            const masterWalletAddress = Deno.env.get("CELO_MASTER_WALLET_ADDRESS");
+            // Get master wallet address from database
+            const { data: masterWalletData } = await supabase
+              .from("system_settings")
+              .select("value")
+              .eq("key", "master_wallet_address")
+              .single();
+
+            const masterWalletAddress = masterWalletData?.value;
             if (!masterWalletAddress) {
-              console.error("[SWEEP] ❌ Master wallet address not configured");
+              console.error("[SWEEP] ❌ Master wallet not initialized. Admin must run initialization first.");
             } else {
               console.log(`[SWEEP] Transferring from ${userWallet.address} to ${masterWalletAddress}`);
 

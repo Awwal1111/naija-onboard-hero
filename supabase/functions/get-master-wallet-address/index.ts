@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { ethers } from "https://esm.sh/ethers@6.7.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,34 +7,44 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const privateKey = Deno.env.get("CELO_MASTER_WALLET_PRIVATE_KEY");
-    
-    if (!privateKey) {
-      throw new Error("Master wallet private key not configured");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Get master wallet address from system settings
+    const { data, error } = await supabase
+      .from("system_settings")
+      .select("value")
+      .eq("key", "master_wallet_address")
+      .single();
+
+    if (error || !data) {
+      return new Response(
+        JSON.stringify({ 
+          error: "Master wallet not initialized. Please run initialization from Admin Dashboard.",
+          success: false 
+        }),
+        { 
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
     }
 
-    // Derive the wallet address from private key
-    const wallet = new ethers.Wallet(privateKey);
-    const address = wallet.address;
-
-    console.log('[MASTER_WALLET] Address derived:', address);
+    console.log('[MASTER_WALLET] Address retrieved:', data.value);
 
     return new Response(
       JSON.stringify({ 
-        address,
+        address: data.value,
         success: true 
       }),
       { 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        } 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
     );
   } catch (error: any) {
@@ -46,10 +56,7 @@ serve(async (req) => {
       }),
       { 
         status: 500,
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        } 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
     );
   }
