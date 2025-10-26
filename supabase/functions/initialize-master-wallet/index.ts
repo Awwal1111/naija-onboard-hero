@@ -77,8 +77,7 @@ serve(async (req) => {
       .from("system_settings")
       .insert({
         key: "master_wallet_encrypted",
-        value: encryptedPrivateKey,
-        description: "Encrypted master wallet private key for auto-sweep"
+        value: encryptedPrivateKey
       });
 
     if (insertError) {
@@ -91,8 +90,7 @@ serve(async (req) => {
       .from("system_settings")
       .insert({
         key: "master_wallet_address",
-        value: address,
-        description: "Master wallet address for deposits"
+        value: address
       });
 
     console.log("[MASTER_WALLET] ✅ Master wallet created and stored");
