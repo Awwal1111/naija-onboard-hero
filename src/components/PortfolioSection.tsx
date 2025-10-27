@@ -10,6 +10,7 @@ import { usePortfolio } from '@/hooks/usePortfolio'
 import { useAuth } from '@/hooks/useAuth'
 import { useFileUpload } from '@/hooks/useFileUpload'
 import { toast } from 'sonner'
+import { supabase } from '@/integrations/supabase/client'
 
 interface PortfolioItem {
   id: string
@@ -56,9 +57,9 @@ const PortfolioSection: React.FC<PortfolioSectionProps> = ({ userId, isOwnProfil
     setUploading(true)
     try {
       const fileExt = file.name.split('.').pop()
-      const fileName = `portfolio-${Date.now()}.${fileExt}`
+      const fileName = `${user.id}/portfolio-${Date.now()}.${fileExt}`
       
-      const { url, error } = await uploadFile(file, 'portfolio', fileName)
+      const { url, error } = await uploadFile(file, 'Portfolio', fileName)
       
       if (error || !url) {
         throw new Error(error || 'Upload failed')
@@ -114,7 +115,23 @@ const PortfolioSection: React.FC<PortfolioSectionProps> = ({ userId, isOwnProfil
     if (!confirm('Are you sure you want to delete this portfolio item?')) return
     
     try {
+      // Get the item first to delete the image from storage
+      const itemToDelete = items.find(item => item.id === id)
+      
+      // Delete from database
       await deletePortfolioItem(id)
+      
+      // Delete image from storage if exists
+      if (itemToDelete?.media_url) {
+        try {
+          const urlParts = itemToDelete.media_url.split('/')
+          const bucketPath = urlParts.slice(urlParts.indexOf('Portfolio') + 1).join('/')
+          await supabase.storage.from('Portfolio').remove([bucketPath])
+        } catch (storageError) {
+          console.error('Error deleting image from storage:', storageError)
+        }
+      }
+      
       toast.success('Portfolio item deleted!')
     } catch (error) {
       console.error('Error deleting portfolio item:', error)

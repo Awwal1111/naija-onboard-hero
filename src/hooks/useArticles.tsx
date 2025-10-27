@@ -69,7 +69,10 @@ export const useArticles = () => {
     try {
       const { data, error } = await supabase
         .from('article_submissions' as any)
-        .select('*, article:articles(*)')
+        .select(`
+          *,
+          article:article_id(*)
+        `)
         .eq('user_id', user.id)
 
       if (error) throw error
@@ -166,8 +169,8 @@ export const useAdminArticles = () => {
         .from('article_submissions' as any)
         .select(`
           *,
-          article:articles(*),
-          profiles!article_submissions_user_id_fkey(full_name, email_confirmed)
+          article:article_id(*),
+          profiles:user_id(full_name)
         `)
         .order('created_at', { ascending: false })
 
