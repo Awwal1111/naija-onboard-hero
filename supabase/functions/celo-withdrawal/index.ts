@@ -1,13 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { ethers } from "https://esm.sh/ethers@6.7.0";
+import CryptoJS from "https://cdn.skypack.dev/crypto-js@4.1.1";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ALCHEMY_RPC = "https://celo-mainnet.g.alchemy.com/v2/nJP_zi_my4rK4ihI5i7Py";
-const MASTER_WALLET_PRIVATE_KEY = Deno.env.get("CELO_MASTER_WALLET_PRIVATE_KEY")!;
 const EXCHANGE_RATE_API = "https://v6.exchangerate-api.com/v6/c06b378e6d590d4c22aa2998/latest/USD";
-const MIN_WITHDRAWAL_NC = 3000;
+const MIN_WITHDRAWAL_NC = 100; // Lowered for testing
 
 // cUSD token address on Celo mainnet
 const CUSD_ADDRESS = "0x765DE816845861e75A25fCA122bb6898B8B1282a";
@@ -75,8 +75,18 @@ serve(async (req) => {
     if (currency === "cUSD") {
       cryptoAmount = nairaAmount / usdToNgn; // Convert NGN to USD (cUSD)
     } else if (currency === "CELO") {
-      const celoUsdPrice = 0.50; // TODO: Get real-time CELO price
-      cryptoAmount = (nairaAmount / usdToNgn) / celoUsdPrice;
+      // Fetch real-time CELO price
+      try {
+        const celoResponse = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=celo&vs_currencies=usd");
+        const celoData = await celoResponse.json();
+        const celoUsdPrice = celoData.celo?.usd || 0.65; // Fallback to $0.65
+        console.log(`[CELO_PRICE] Current CELO price: $${celoUsdPrice}`);
+        cryptoAmount = (nairaAmount / usdToNgn) / celoUsdPrice;
+      } catch (priceError) {
+        console.error("[CELO_PRICE] Failed to fetch, using fallback");
+        const celoUsdPrice = 0.65;
+        cryptoAmount = (nairaAmount / usdToNgn) / celoUsdPrice;
+      }
     }
 
     console.log(`Withdrawal: ${ncAmount} NC -> ${cryptoAmount} ${currency}`);
@@ -126,8 +136,33 @@ serve(async (req) => {
 
     // Send blockchain transaction
     try {
+      // Get master wallet encrypted key from database
+      const { data: masterWalletData, error: masterWalletError } = await supabase
+        .from("system_settings")
+        .select("value")
+        .eq("key", "master_wallet_encrypted")
+        .single();
+
+      if (masterWalletError || !masterWalletData) {
+        throw new Error("Master wallet not initialized. Contact admin.");
+      }
+
+      // Decrypt master wallet private key
+      const encryptionSecret = Deno.env.get("WALLET_ENCRYPTION_SECRET") || "default_secret_change_in_production";
+      const decryptedMasterKey = CryptoJS.AES.decrypt(
+        masterWalletData.value,
+        encryptionSecret
+      ).toString(CryptoJS.enc.Utf8);
+
+      if (!decryptedMasterKey) {
+        throw new Error("Failed to decrypt master wallet key");
+      }
+
+      // Initialize master wallet
       const provider = new ethers.JsonRpcProvider(ALCHEMY_RPC);
-      const wallet = new ethers.Wallet(MASTER_WALLET_PRIVATE_KEY, provider);
+      const wallet = new ethers.Wallet(decryptedMasterKey, provider);
+      
+      console.log(`[WITHDRAWAL] Using master wallet: ${wallet.address}`);
 
       let txHash = "";
 

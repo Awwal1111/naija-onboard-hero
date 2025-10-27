@@ -54,8 +54,8 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
 
   const handleWithdraw = async () => {
     const withdrawAmount = parseFloat(amount)
-    if (!withdrawAmount || withdrawAmount < 3000) {
-      toast.error("Minimum withdrawal is NC 3,000")
+    if (!withdrawAmount || withdrawAmount < 100) {
+      toast.error("Minimum withdrawal is NC 100")
       return
     }
     
@@ -116,8 +116,8 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
       return
     }
 
-    if (ncAmount < 3000) {
-      toast.error("Minimum withdrawal is NC 3,000")
+    if (ncAmount < 100) {
+      toast.error("Minimum withdrawal is NC 100")
       return
     }
 

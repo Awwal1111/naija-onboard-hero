@@ -90,10 +90,17 @@ serve(async (req) => {
       if (asset === "cUSD") {
         nairaAmount = cryptoAmount * usdToNgn;
       } else if (asset === "CELO") {
-        // For CELO, you'd need to get CELO/USD price from an API
-        // For now, using a placeholder conversion
-        const celoUsdPrice = 0.50; // TODO: Get real-time CELO price
-        nairaAmount = cryptoAmount * celoUsdPrice * usdToNgn;
+        // Fetch real-time CELO price
+        try {
+          const celoResponse = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=celo&vs_currencies=usd");
+          const celoData = await celoResponse.json();
+          const celoUsdPrice = celoData.celo?.usd || 0.65; // Fallback to $0.65
+          console.log(`[CELO_PRICE] Current CELO price: $${celoUsdPrice}`);
+          nairaAmount = cryptoAmount * celoUsdPrice * usdToNgn;
+        } catch (priceError) {
+          console.error("[CELO_PRICE] Failed to fetch, using fallback $0.65");
+          nairaAmount = cryptoAmount * 0.65 * usdToNgn;
+        }
       }
 
       const ncAmount = Math.floor(nairaAmount); // 1 NC = 1 Naira
