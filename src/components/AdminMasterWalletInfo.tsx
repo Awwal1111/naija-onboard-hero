@@ -14,6 +14,8 @@ export const AdminMasterWalletInfo = () => {
   const [refreshing, setRefreshing] = useState(false)
   const [copied, setCopied] = useState(false)
   const [initializing, setInitializing] = useState(false)
+  const [transactions, setTransactions] = useState<any[]>([])
+  const [loadingTx, setLoadingTx] = useState(false)
 
   const ALCHEMY_RPC = "https://celo-mainnet.g.alchemy.com/v2/nJP_zi_my4rK4ihI5i7Py"
   const CUSD_ADDRESS = "0x765DE816845861e75A25fCA122bb6898B8B1282a"
@@ -40,6 +42,7 @@ export const AdminMasterWalletInfo = () => {
 
       setMasterAddress(data.address)
       await fetchBalances(data.address)
+      await fetchTransactions()
     } catch (error: any) {
       console.error('Error fetching master wallet:', error)
       setMasterAddress('')
@@ -106,9 +109,29 @@ export const AdminMasterWalletInfo = () => {
     }
   }
 
+  const fetchTransactions = async () => {
+    setLoadingTx(true)
+    try {
+      const { data, error } = await supabase
+        .from('crypto_transactions')
+        .select('*, profiles!inner(full_name)')
+        .order('created_at', { ascending: false })
+        .limit(20)
+
+      if (error) throw error
+      setTransactions(data || [])
+    } catch (error) {
+      console.error('Error fetching transactions:', error)
+      toast.error('Failed to fetch transactions')
+    } finally {
+      setLoadingTx(false)
+    }
+  }
+
   const handleRefresh = async () => {
     setRefreshing(true)
     await fetchBalances(masterAddress)
+    await fetchTransactions()
     setRefreshing(false)
     toast.success('Balances refreshed')
   }
@@ -245,6 +268,60 @@ export const AdminMasterWalletInfo = () => {
               <p>• Keep sufficient balance for user withdrawals</p>
             </AlertDescription>
           </Alert>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 justify-between">
+            <div className="flex items-center gap-2">
+              <Wallet className="h-5 w-5 text-primary" />
+              Recent Transactions
+            </div>
+            <Button size="sm" variant="outline" onClick={fetchTransactions} disabled={loadingTx}>
+              <RefreshCw className={`h-3 w-3 ${loadingTx ? 'animate-spin' : ''}`} />
+            </Button>
+          </CardTitle>
+          <CardDescription>Last 20 crypto transactions</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loadingTx ? (
+            <p className="text-center text-muted-foreground">Loading...</p>
+          ) : transactions.length === 0 ? (
+            <p className="text-center text-muted-foreground">No transactions yet</p>
+          ) : (
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {transactions.map((tx) => (
+                <div key={tx.id} className="p-3 border rounded-lg bg-muted/30 space-y-1">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-medium text-sm">
+                        {tx.transaction_type === 'deposit' ? '↓' : '↑'} {tx.crypto_amount.toFixed(4)} {tx.crypto_currency}
+                      </p>
+                      <p className="text-xs text-muted-foreground">{tx.profiles?.full_name || 'Unknown'}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs font-medium">₦{tx.nc_amount.toLocaleString()} NC</p>
+                      <p className={`text-xs ${tx.status === 'completed' ? 'text-green-500' : tx.status === 'failed' ? 'text-red-500' : 'text-yellow-500'}`}>
+                        {tx.status}
+                      </p>
+                    </div>
+                  </div>
+                  {tx.tx_hash && (
+                    <p className="text-xs text-muted-foreground font-mono truncate">
+                      {tx.tx_hash}
+                    </p>
+                  )}
+                  {tx.error_message && (
+                    <p className="text-xs text-red-500">{tx.error_message}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(tx.created_at).toLocaleString()}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

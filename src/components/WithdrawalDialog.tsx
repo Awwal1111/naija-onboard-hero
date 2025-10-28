@@ -240,20 +240,20 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
                     id="crypto-amount"
                     type="number"
                     step="100"
-                    min="3000"
+                    min="100"
                     placeholder="Enter NC amount"
                     value={cryptoAmount}
                     onChange={(e) => setCryptoAmount(e.target.value)}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Min: NC 3,000 | Available: NC {currentBalance.toLocaleString()}
+                    Min: NC 100 | Available: NC {currentBalance.toLocaleString()}
                   </p>
                 </div>
 
                 <Alert>
                   <Info className="h-4 w-4" />
                   <AlertDescription className="text-xs space-y-1">
-                    <p>• Minimum: NC 3,000</p>
+                    <p>• Minimum: NC 100</p>
                     <p>• Network: Celo Mainnet</p>
                     <p>• Current Rate: ~₦1,600/USD</p>
                     <p>• Gas fees covered by us</p>
@@ -263,7 +263,7 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
                 <BrandButton 
                   onClick={handleCryptoWithdraw} 
                   className="w-full"
-                  disabled={isLoading || !cryptoAmount || parseFloat(cryptoAmount) < 3000}
+                  disabled={isLoading || !cryptoAmount || parseFloat(cryptoAmount) < 100}
                 >
                   {isLoading ? "Processing..." : `Withdraw as ${cryptoCurrency}`}
                 </BrandButton>

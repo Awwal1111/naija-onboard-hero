@@ -45,11 +45,11 @@ serve(async (req) => {
 
     console.log('[MIGRATION] Starting wallet migration for existing users...');
 
-    // Find users without wallets
+    // Find users without encrypted wallets (includes both null wallet addresses AND users with old addresses but no encryption)
     const { data: usersWithoutWallets, error: fetchError } = await supabase
       .from('profiles')
-      .select('user_id, full_name, celo_wallet_address')
-      .is('celo_wallet_address', null);
+      .select('user_id, full_name, celo_wallet_address, encrypted_wallet')
+      .or('celo_wallet_address.is.null,encrypted_wallet.is.null');
 
     if (fetchError) {
       throw new Error(`Failed to fetch users: ${fetchError.message}`);
@@ -79,7 +79,7 @@ serve(async (req) => {
     // Create wallets for each user
     for (const userProfile of usersWithoutWallets) {
       try {
-        console.log(`[MIGRATION] Creating wallet for user: ${userProfile.user_id}`);
+        console.log(`[MIGRATION] Processing user: ${userProfile.user_id} (existing wallet: ${userProfile.celo_wallet_address || 'none'})`);
 
         // Create new wallet
         const wallet = ethers.Wallet.createRandom();
@@ -89,6 +89,11 @@ serve(async (req) => {
           wallet.privateKey,
           encryptionSecret
         ).toString();
+
+        // Determine notification message
+        const notificationMsg = userProfile.celo_wallet_address 
+          ? `⚠️ IMPORTANT: Your wallet address has been updated!\n\nOLD ADDRESS (no longer use): ${userProfile.celo_wallet_address}\n\nNEW ADDRESS: ${wallet.address}\n\nPlease use ONLY the new address for all future deposits. The old address will not work for sweeps.`
+          : `We've created a permanent wallet for you!\n\nYour Address: ${wallet.address}\n\nYou can now receive crypto deposits at this address. All deposits will be automatically converted to NC (Naira Credits).\n\nThis wallet address is permanent and will work across all your devices.`;
 
         // Save to database
         const { error: updateError } = await supabase
@@ -107,14 +112,11 @@ serve(async (req) => {
         await supabase.from('notifications').insert({
           user_id: userProfile.user_id,
           type: 'system',
-          title: '🎉 Your Permanent Celo Wallet is Ready!',
-          message: `We've created a permanent wallet for you!\n\n` +
-                   `Your Address: ${wallet.address}\n\n` +
-                   `You can now receive crypto deposits at this address. ` +
-                   `All deposits will be automatically converted to NC (Naira Credits).\n\n` +
-                   `This wallet address is permanent and will work across all your devices.`,
+          title: userProfile.celo_wallet_address ? '⚠️ Wallet Address Updated' : '🎉 Your Permanent Celo Wallet is Ready!',
+          message: notificationMsg,
           metadata: {
             wallet_address: wallet.address,
+            old_wallet_address: userProfile.celo_wallet_address,
             migration: true
           }
         });
