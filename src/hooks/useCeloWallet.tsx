@@ -136,35 +136,34 @@ export const useCeloWallet = () => {
         return;
       }
 
-      console.log(`💾 Saving wallet ${walletAddress} to profile for user ${user.id}`);
+      console.log(`💾 Calling create-user-wallet edge function for user ${user.id}`);
 
-      const { error } = await supabase
-        .from('profiles')
-        .update({ celo_wallet_address: walletAddress.toLowerCase() })
-        .eq('user_id', user.id);
+      // Call the edge function to create user wallet with encryption
+      const { data, error } = await supabase.functions.invoke('create-user-wallet', {
+        headers: {
+          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+        }
+      });
 
       if (error) {
-        console.error('❌ Error saving wallet address:', error);
-        toast.error('Failed to link wallet to your account');
-      } else {
-        console.log('✅ Wallet address saved to profile:', walletAddress.toLowerCase());
+        console.error('❌ Error calling create-user-wallet:', error);
+        toast.error('Failed to initialize secure wallet');
+        return;
+      }
+
+      if (data?.success) {
+        console.log('✅ User wallet created successfully:', data.address);
+        console.log(`[WALLET_CREATED] User: ${user.id}, Address: ${data.address}`);
         
-        // Verify it was saved
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('celo_wallet_address')
-          .eq('user_id', user.id)
-          .single();
-        
-        if (profile?.celo_wallet_address === walletAddress.toLowerCase()) {
-          console.log('✅ Verification: Wallet address confirmed in database');
-        } else {
-          console.error('❌ Verification failed: Wallet address not found in database');
+        // Update local address if different
+        if (data.address.toLowerCase() !== walletAddress.toLowerCase()) {
+          console.log('⚠️ Server-side wallet address differs from local, syncing...');
+          setAddress(data.address);
         }
       }
     } catch (error) {
       console.error('❌ Error in saveWalletToProfile:', error);
-      toast.error('Failed to link wallet to your account');
+      toast.error('Failed to initialize secure wallet');
     }
   };
 

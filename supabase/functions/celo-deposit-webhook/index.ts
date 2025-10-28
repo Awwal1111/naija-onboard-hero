@@ -203,11 +203,12 @@ serve(async (req) => {
 
       console.log(`[SUCCESS] ✅ Credited ${ncAmount} NC to user ${profile.user_id}`);
 
-      // AUTO-SWEEP: Transfer funds from user wallet to master wallet
-      console.log(`[SWEEP] Starting auto-sweep of ${cryptoAmount} ${asset} to master wallet`);
+      // ===== RELAYER SYSTEM: Master wallet pays gas for sweeps =====
+      console.log(`[RELAYER] Starting relayer sweep for ${cryptoAmount} ${asset}`);
+      console.log(`[RELAYER] User: ${profile.user_id}, Wallet: ${toAddress}`);
       
       try {
-        // Get user's encrypted wallet from database
+        // Get user's encrypted wallet
         const { data: userWalletData, error: walletError } = await supabase
           .from("profiles")
           .select("encrypted_wallet")
@@ -215,83 +216,122 @@ serve(async (req) => {
           .single();
 
         if (walletError || !userWalletData?.encrypted_wallet) {
-          console.error("[SWEEP] ❌ No encrypted wallet found for user - cannot sweep");
-        } else {
-          // Decrypt private key
-          const encryptionSecret = Deno.env.get("WALLET_ENCRYPTION_SECRET") || "default_secret_change_in_production";
-          
-          const decryptedKey = CryptoJS.AES.decrypt(
-            userWalletData.encrypted_wallet,
-            encryptionSecret
-          ).toString(CryptoJS.enc.Utf8);
+          console.log("[RELAYER] ❌ No encrypted wallet found - skipping sweep (funds safe in user wallet)");
+          await supabase.from("crypto_transactions").update({
+            error_message: "No encrypted wallet - sweep skipped, funds remain in user wallet"
+          }).eq("tx_hash", txHash);
+          continue;
+        }
 
-          if (!decryptedKey) {
-            console.error("[SWEEP] ❌ Failed to decrypt wallet key");
+        // Decrypt both user and master wallet keys
+        const encryptionSecret = Deno.env.get("WALLET_ENCRYPTION_SECRET") || "default_secret_change_in_production";
+        const userPrivateKey = CryptoJS.AES.decrypt(userWalletData.encrypted_wallet, encryptionSecret).toString(CryptoJS.enc.Utf8);
+
+        if (!userPrivateKey) {
+          console.log("[RELAYER] ❌ Failed to decrypt user wallet key");
+          continue;
+        }
+
+        // Get master wallet info
+        const { data: masterAddressData } = await supabase
+          .from("system_settings")
+          .select("value")
+          .eq("key", "master_wallet_address")
+          .single();
+
+        const { data: masterKeyData } = await supabase
+          .from("system_settings")
+          .select("value")
+          .eq("key", "master_wallet_encrypted")
+          .single();
+
+        if (!masterAddressData || !masterKeyData) {
+          console.log("[RELAYER] ❌ Master wallet not properly configured");
+          continue;
+        }
+
+        const masterAddress = masterAddressData.value;
+        const masterPrivateKey = CryptoJS.AES.decrypt(masterKeyData.value, encryptionSecret).toString(CryptoJS.enc.Utf8);
+
+        console.log(`[RELAYER] Master wallet: ${masterAddress}`);
+        console.log(`[RELAYER] User wallet: ${toAddress}`);
+
+        // Connect wallets
+        const provider = new ethers.JsonRpcProvider("https://forno.celo.org");
+        const userWallet = new ethers.Wallet(userPrivateKey, provider);
+        const masterWallet = new ethers.Wallet(masterPrivateKey, provider);
+
+        // STEP 1: Master sends gas (0.002 CELO) to user wallet
+        console.log("[RELAYER] Step 1: Master wallet sending gas...");
+        const gasAmount = ethers.parseEther("0.002");
+        const gasTx = await masterWallet.sendTransaction({
+          to: toAddress,
+          value: gasAmount
+        });
+        const gasReceipt = await gasTx.wait();
+        console.log(`[RELAYER] ✅ Gas sent: ${gasReceipt!.hash}`);
+
+        // STEP 2: User wallet sweeps funds to master
+        console.log("[RELAYER] Step 2: Sweeping funds to master...");
+        let sweepTxHash = "";
+
+        if (asset === "cUSD") {
+          const cUsdAddress = "0x765DE816845861e75A25fCA122bb6898B8B1282a";
+          const cUsdContract = new ethers.Contract(
+            cUsdAddress,
+            ["function transfer(address to, uint256 amount) returns (bool)"],
+            userWallet
+          );
+          const amountInWei = ethers.parseEther(cryptoAmount.toString());
+          const sweepTx = await cUsdContract.transfer(masterAddress, amountInWei);
+          const sweepReceipt = await sweepTx.wait();
+          sweepTxHash = sweepReceipt.hash;
+          console.log(`[RELAYER] ✅ cUSD swept: ${sweepTxHash}`);
+        } else if (asset === "CELO") {
+          // For CELO, keep 0.001 for future gas
+          const userBalance = await provider.getBalance(toAddress);
+          const keepAmount = ethers.parseEther("0.001");
+          const sweepAmount = userBalance - keepAmount - ethers.parseEther("0.0001"); // Leave gas buffer
+
+          if (sweepAmount > 0) {
+            const sweepTx = await userWallet.sendTransaction({
+              to: masterAddress,
+              value: sweepAmount
+            });
+            const sweepReceipt = await sweepTx.wait();
+            sweepTxHash = sweepReceipt!.hash;
+            console.log(`[RELAYER] ✅ CELO swept: ${sweepTxHash} (kept ${ethers.formatEther(keepAmount)} for future)`);
           } else {
-            // Create wallet instance for user
-            const provider = new ethers.JsonRpcProvider("https://forno.celo.org");
-            const userWallet = new ethers.Wallet(decryptedKey, provider);
-
-            // Get master wallet address from database
-            const { data: masterWalletData } = await supabase
-              .from("system_settings")
-              .select("value")
-              .eq("key", "master_wallet_address")
-              .single();
-
-            const masterWalletAddress = masterWalletData?.value;
-            if (!masterWalletAddress) {
-              console.error("[SWEEP] ❌ Master wallet not initialized. Admin must run initialization first.");
-            } else {
-              console.log(`[SWEEP] Transferring from ${userWallet.address} to ${masterWalletAddress}`);
-
-              if (asset === "cUSD") {
-                // Transfer cUSD using ERC-20 contract
-                const cUsdAddress = "0x765DE816845861e75A25fCA122bb6898B8B1282a";
-                const cUsdContract = new ethers.Contract(
-                  cUsdAddress,
-                  ["function transfer(address to, uint256 amount) returns (bool)"],
-                  userWallet
-                );
-
-                const amountInWei = ethers.parseEther(cryptoAmount.toString());
-                const sweepTx = await cUsdContract.transfer(masterWalletAddress, amountInWei);
-                await sweepTx.wait();
-                
-                console.log(`[SWEEP] ✅ Successfully swept ${cryptoAmount} cUSD to master wallet`);
-                console.log(`[SWEEP] Tx hash: ${sweepTx.hash}`);
-              } else if (asset === "CELO") {
-                // Transfer native CELO
-                const amountInWei = ethers.parseEther(cryptoAmount.toString());
-                const sweepTx = await userWallet.sendTransaction({
-                  to: masterWalletAddress,
-                  value: amountInWei
-                });
-                await sweepTx.wait();
-                
-                console.log(`[SWEEP] ✅ Successfully swept ${cryptoAmount} CELO to master wallet`);
-                console.log(`[SWEEP] Tx hash: ${sweepTx.hash}`);
-              }
-
-              // Update crypto_transaction with sweep info
-              await supabase
-                .from("crypto_transactions")
-                .update({
-                  error_message: `Funds auto-swept to master wallet`
-                })
-                .eq("tx_hash", txHash);
-            }
+            console.log("[RELAYER] ⚠️ Insufficient CELO to sweep");
+            sweepTxHash = "insufficient_balance";
           }
         }
+
+        // Log complete sweep details
+        console.log(`[RELAYER] ========== SWEEP COMPLETE ==========`);
+        console.log(`[RELAYER] User ID: ${profile.user_id}`);
+        console.log(`[RELAYER] Wallet: ${toAddress}`);
+        console.log(`[RELAYER] Amount: ${cryptoAmount} ${asset}`);
+        console.log(`[RELAYER] NC Credited: ${ncAmount}`);
+        console.log(`[RELAYER] Gas TX: ${gasReceipt!.hash}`);
+        console.log(`[RELAYER] Sweep TX: ${sweepTxHash}`);
+        console.log(`[RELAYER] From: ${toAddress} → To: ${masterAddress}`);
+        console.log(`[RELAYER] ====================================`);
+
+        // Update transaction record
+        await supabase.from("crypto_transactions").update({
+          tx_hash: sweepTxHash,
+          error_message: null
+        }).eq("tx_hash", txHash);
+
       } catch (sweepError: any) {
-        console.error("[SWEEP] ❌ Auto-sweep failed:", sweepError.message);
-        // Don't fail the entire transaction, just log the error
-        await supabase
-          .from("crypto_transactions")
-          .update({
-            error_message: `Credited successfully but auto-sweep failed: ${sweepError.message}`
-          })
-          .eq("tx_hash", txHash);
+        console.error(`[RELAYER] ❌ Sweep failed: ${sweepError.message}`);
+        console.error(`[RELAYER] Stack: ${sweepError.stack}`);
+        
+        // Log failure but don't revert NC credit (funds are safe in user wallet)
+        await supabase.from("crypto_transactions").update({
+          error_message: `Sweep failed: ${sweepError.message}. Funds remain safe in user wallet.`
+        }).eq("tx_hash", txHash);
       }
 
       // Send Telegram notification if user has linked account
