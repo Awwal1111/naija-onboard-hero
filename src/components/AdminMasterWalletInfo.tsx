@@ -90,22 +90,35 @@ export const AdminMasterWalletInfo = () => {
     try {
       const provider = new ethers.JsonRpcProvider(ALCHEMY_RPC)
       
+      console.log('[ADMIN] Fetching balances for master wallet:', address)
+      
       // Get CELO balance
       const celoBalance = await provider.getBalance(address)
       const celoFormatted = ethers.formatEther(celoBalance)
+      console.log('[ADMIN] CELO balance:', celoFormatted)
       
       // Get cUSD balance
       const cUsdAbi = ["function balanceOf(address) view returns (uint256)"]
       const cUsdContract = new ethers.Contract(CUSD_ADDRESS, cUsdAbi, provider)
       const cusdBalance = await cUsdContract.balanceOf(address)
       const cusdFormatted = ethers.formatEther(cusdBalance)
+      console.log('[ADMIN] cUSD balance:', cusdFormatted)
       
       setBalance({
         celo: parseFloat(celoFormatted).toFixed(4),
         cusd: parseFloat(cusdFormatted).toFixed(4)
       })
+      
+      // Show warning if balances are low
+      if (parseFloat(celoFormatted) < 0.05) {
+        toast.error('⚠️ Master wallet CELO too low! Need at least 0.1 CELO for gas fees.')
+      }
+      if (parseFloat(cusdFormatted) < 10) {
+        toast.error('⚠️ Master wallet cUSD too low! Fund it to process cUSD withdrawals.')
+      }
     } catch (error) {
       console.error('Error fetching balances:', error)
+      toast.error('Failed to fetch master wallet balances')
     }
   }
 
@@ -265,7 +278,9 @@ export const AdminMasterWalletInfo = () => {
               <p>• Only send CELO, cUSD, or USDT on Celo Mainnet</p>
               <p>• Sending other tokens may result in permanent loss</p>
               <p>• This wallet is used for automatic withdrawals</p>
-              <p>• Keep sufficient balance for user withdrawals</p>
+              <p>• Keep at least 0.1 CELO for gas and 100+ cUSD for withdrawals</p>
+              <p className="text-primary font-bold mt-2">💡 To fund: Send crypto to the address above ↑</p>
+              <p>• The system will auto-detect deposits to this master wallet</p>
             </AlertDescription>
           </Alert>
         </CardContent>

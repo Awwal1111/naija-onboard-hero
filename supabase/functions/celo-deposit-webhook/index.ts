@@ -105,6 +105,37 @@ serve(async (req) => {
 
       const ncAmount = Math.floor(nairaAmount); // 1 NC = 1 Naira
 
+      // Check if this is master wallet deposit (admin funding the system)
+      const { data: masterWalletSettings } = await supabase
+        .from("system_settings")
+        .select("value")
+        .eq("key", "master_wallet_address")
+        .single();
+      
+      const masterWalletAddress = masterWalletSettings?.value?.toLowerCase();
+      
+      if (masterWalletAddress && toAddress === masterWalletAddress) {
+        console.log(`[MASTER_WALLET] ✅ Deposit to master wallet detected: ${cryptoAmount} ${asset}`);
+        console.log(`[MASTER_WALLET] This is admin funding the system - no user credit needed`);
+        
+        // Log master wallet funding transaction
+        await supabase.from("crypto_transactions").insert({
+          user_id: "00000000-0000-0000-0000-000000000000",
+          transaction_type: "deposit",
+          crypto_amount: cryptoAmount,
+          crypto_currency: asset,
+          naira_amount: nairaAmount,
+          nc_amount: ncAmount,
+          exchange_rate: usdToNgn,
+          wallet_address: toAddress,
+          tx_hash: txHash,
+          status: "completed",
+          error_message: "Master wallet funding - system balance increased"
+        });
+        
+        continue; // Skip user credit logic for master wallet
+      }
+
       // Find user by their wallet address (the recipient of the deposit)
       console.log(`[LOOKUP] Searching for user with wallet: ${toAddress}`);
       
@@ -121,9 +152,12 @@ serve(async (req) => {
 
       if (!profile) {
         console.log(`[ERROR] No user found with wallet address: ${toAddress}`);
+        console.log(`[ERROR] This address is not registered as a user wallet`);
+        console.log(`[ERROR] If you want to fund the master wallet, send to: ${masterWalletAddress}`);
+        
         // Create unmatched transaction record
         await supabase.from("crypto_transactions").insert({
-          user_id: "00000000-0000-0000-0000-000000000000", // Placeholder
+          user_id: "00000000-0000-0000-0000-000000000000",
           transaction_type: "deposit",
           crypto_amount: cryptoAmount,
           crypto_currency: asset,
@@ -133,7 +167,7 @@ serve(async (req) => {
           wallet_address: toAddress,
           tx_hash: txHash,
           status: "failed",
-          error_message: "No user found with this wallet address"
+          error_message: `No user found with wallet ${toAddress}. To fund master wallet, send to: ${masterWalletAddress}`
         });
         continue;
       }
@@ -286,21 +320,27 @@ serve(async (req) => {
             userWallet
           );
           
-          // FIX: Check user wallet balance BEFORE attempting sweep
+          // Wait 2 seconds for deposit to fully settle on-chain
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          // Check user wallet balance BEFORE attempting sweep
           const userBalance = await cUsdContract.balanceOf(toAddress);
           const userBalanceFormatted = ethers.formatEther(userBalance);
           console.log(`[RELAYER] User wallet cUSD balance: ${userBalanceFormatted}`);
           console.log(`[RELAYER] Expected deposit amount: ${cryptoAmount}`);
           
-          const amountInWei = ethers.parseEther(cryptoAmount.toString());
+          const amountInWei = ethers.parseEther(cryptoAmount.toFixed(6));
           
-          // Only sweep if user has enough balance (with 1% tolerance for rounding)
-          if (userBalance < (amountInWei * BigInt(99) / BigInt(100))) {
+          // Only sweep if user has enough balance (with 5% tolerance for rounding/gas)
+          if (userBalance < (amountInWei * BigInt(95) / BigInt(100))) {
             console.log(`[RELAYER] ⚠️ Insufficient user balance to sweep. Has: ${userBalanceFormatted}, Needs: ${cryptoAmount}. Skipping sweep - funds safe in user wallet.`);
+            console.log(`[RELAYER] This may happen if the deposit hasn't fully settled yet.`);
             sweepTxHash = "insufficient_balance_skipped";
           } else {
-            // Sweep the actual balance (might be slightly less due to previous gas)
+            // Sweep the actual balance (might be slightly less due to gas estimation)
             const sweepAmount = userBalance > amountInWei ? amountInWei : userBalance;
+            console.log(`[RELAYER] Attempting to sweep ${ethers.formatEther(sweepAmount)} cUSD...`);
+            
             const sweepTx = await cUsdContract.transfer(masterAddress, sweepAmount);
             const sweepReceipt = await sweepTx.wait();
             sweepTxHash = sweepReceipt.hash;
