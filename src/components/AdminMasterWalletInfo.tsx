@@ -17,7 +17,7 @@ export const AdminMasterWalletInfo = () => {
   const [transactions, setTransactions] = useState<any[]>([])
   const [loadingTx, setLoadingTx] = useState(false)
 
-  const ALCHEMY_RPC = "https://celo-mainnet.g.alchemy.com/v2/nJP_zi_my4rK4ihI5i7Py"
+  const ALCHEMY_RPC = "https://celo-mainnet.g.alchemy.com/v2/nJP_zi_my4rK4ihI5i7Py5dQaDCR5RrKi"
   const CUSD_ADDRESS = "0x765DE816845861e75A25fCA122bb6898B8B1282a"
 
   useEffect(() => {
@@ -103,22 +103,31 @@ export const AdminMasterWalletInfo = () => {
       const cusdBalance = await cUsdContract.balanceOf(address)
       const cusdFormatted = ethers.formatEther(cusdBalance)
       console.log('[ADMIN] cUSD balance:', cusdFormatted)
+      console.log('[ADMIN] cUSD balance raw:', cusdBalance.toString())
+      
+      const celoNum = parseFloat(celoFormatted)
+      const cusdNum = parseFloat(cusdFormatted)
       
       setBalance({
-        celo: parseFloat(celoFormatted).toFixed(4),
-        cusd: parseFloat(cusdFormatted).toFixed(4)
+        celo: celoNum.toFixed(4),
+        cusd: cusdNum.toFixed(4)
       })
       
       // Show warning if balances are low
-      if (parseFloat(celoFormatted) < 0.05) {
-        toast.error('⚠️ Master wallet CELO too low! Need at least 0.1 CELO for gas fees.')
+      if (celoNum < 0.05) {
+        toast.warning('⚠️ Master wallet CELO low! Need at least 0.1 CELO for gas fees.')
       }
-      if (parseFloat(cusdFormatted) < 10) {
-        toast.error('⚠️ Master wallet cUSD too low! Fund it to process cUSD withdrawals.')
+      if (cusdNum < 10) {
+        toast.warning('⚠️ Master wallet cUSD low! Fund it to process cUSD withdrawals.')
       }
-    } catch (error) {
+      
+      // Show success if balances are good
+      if (celoNum >= 0.1 && cusdNum >= 10) {
+        console.log('[ADMIN] ✅ Master wallet balances sufficient')
+      }
+    } catch (error: any) {
       console.error('Error fetching balances:', error)
-      toast.error('Failed to fetch master wallet balances')
+      toast.error(`Failed to fetch balances: ${error.message}`)
     }
   }
 
@@ -127,15 +136,23 @@ export const AdminMasterWalletInfo = () => {
     try {
       const { data, error } = await supabase
         .from('crypto_transactions')
-        .select('*, profiles!inner(full_name)')
+        .select(`
+          *,
+          profiles!crypto_transactions_user_id_fkey(full_name)
+        `)
         .order('created_at', { ascending: false })
-        .limit(20)
+        .limit(50)
 
-      if (error) throw error
+      if (error) {
+        console.error('Transaction fetch error:', error)
+        throw error
+      }
+      
+      console.log('[ADMIN] Fetched transactions:', data?.length)
       setTransactions(data || [])
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching transactions:', error)
-      toast.error('Failed to fetch transactions')
+      toast.error(`Failed to fetch transactions: ${error.message}`)
     } finally {
       setLoadingTx(false)
     }
@@ -297,7 +314,7 @@ export const AdminMasterWalletInfo = () => {
               <RefreshCw className={`h-3 w-3 ${loadingTx ? 'animate-spin' : ''}`} />
             </Button>
           </CardTitle>
-          <CardDescription>Last 20 crypto transactions</CardDescription>
+          <CardDescription>Last 50 crypto transactions (all users)</CardDescription>
         </CardHeader>
         <CardContent>
           {loadingTx ? (
@@ -306,32 +323,46 @@ export const AdminMasterWalletInfo = () => {
             <p className="text-center text-muted-foreground">No transactions yet</p>
           ) : (
             <div className="space-y-2 max-h-96 overflow-y-auto">
-              {transactions.map((tx) => (
+              {transactions.map((tx: any) => (
                 <div key={tx.id} className="p-3 border rounded-lg bg-muted/30 space-y-1">
                   <div className="flex justify-between items-start">
-                    <div>
+                    <div className="flex-1">
                       <p className="font-medium text-sm">
-                        {tx.transaction_type === 'deposit' ? '↓' : '↑'} {tx.crypto_amount.toFixed(4)} {tx.crypto_currency}
+                        {tx.transaction_type === 'deposit' ? '📥 Deposit' : '📤 Withdrawal'}: {tx.crypto_amount?.toFixed(4) || '0'} {tx.crypto_currency}
                       </p>
-                      <p className="text-xs text-muted-foreground">{tx.profiles?.full_name || 'Unknown'}</p>
+                      <p className="text-xs text-muted-foreground">
+                        User: {tx.profiles?.full_name || 'Unknown User'}
+                      </p>
+                      <p className="text-xs text-muted-foreground font-mono truncate">
+                        {tx.wallet_address}
+                      </p>
                     </div>
-                    <div className="text-right">
-                      <p className="text-xs font-medium">₦{tx.nc_amount.toLocaleString()} NC</p>
-                      <p className={`text-xs ${tx.status === 'completed' ? 'text-green-500' : tx.status === 'failed' ? 'text-red-500' : 'text-yellow-500'}`}>
-                        {tx.status}
+                    <div className="text-right shrink-0 ml-2">
+                      <p className="text-xs font-medium">₦{tx.nc_amount?.toLocaleString() || '0'} NC</p>
+                      <p className={`text-xs font-semibold ${
+                        tx.status === 'completed' ? 'text-green-500' : 
+                        tx.status === 'failed' ? 'text-red-500' : 
+                        'text-yellow-500'
+                      }`}>
+                        {tx.status?.toUpperCase()}
                       </p>
                     </div>
                   </div>
-                  {tx.tx_hash && (
-                    <p className="text-xs text-muted-foreground font-mono truncate">
-                      {tx.tx_hash}
-                    </p>
+                  {tx.tx_hash && tx.tx_hash !== 'insufficient_balance_skipped' && (
+                    <a 
+                      href={`https://celoscan.io/tx/${tx.tx_hash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-primary hover:underline font-mono truncate block"
+                    >
+                      🔗 {tx.tx_hash}
+                    </a>
                   )}
                   {tx.error_message && (
-                    <p className="text-xs text-red-500">{tx.error_message}</p>
+                    <p className="text-xs text-red-500 font-medium">❌ {tx.error_message}</p>
                   )}
                   <p className="text-xs text-muted-foreground">
-                    {new Date(tx.created_at).toLocaleString()}
+                    ⏰ {new Date(tx.created_at).toLocaleString()}
                   </p>
                 </div>
               ))}
