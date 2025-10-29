@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { ethers } from "https://esm.sh/ethers@6.7.0";
-import CryptoJS from "https://cdn.skypack.dev/crypto-js@4.1.1";
+import CryptoJS from "https://esm.sh/crypto-js@4.1.1";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {

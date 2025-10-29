@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { ethers } from "https://esm.sh/ethers@6.7.0";
-import CryptoJS from "https://cdn.skypack.dev/crypto-js@4.1.1";
+import CryptoJS from "https://esm.sh/crypto-js@4.1.1";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -163,30 +163,54 @@ serve(async (req) => {
       const wallet = new ethers.Wallet(decryptedMasterKey, provider);
       
       console.log(`[WITHDRAWAL] Using master wallet: ${wallet.address}`);
+      console.log(`[WITHDRAWAL] Amount to send: ${cryptoAmount} ${currency}`);
 
       let txHash = "";
 
       if (currency === "cUSD") {
         // Send cUSD (ERC-20 token)
         const cUsdAbi = [
-          "function transfer(address to, uint256 amount) returns (bool)"
+          "function transfer(address to, uint256 amount) returns (bool)",
+          "function balanceOf(address account) view returns (uint256)"
         ];
         const cUsdContract = new ethers.Contract(CUSD_ADDRESS, cUsdAbi, wallet);
         
-        const decimals = 18;
-        const amount = ethers.parseUnits(cryptoAmount.toFixed(6), decimals);
+        // FIX: Use parseEther directly (cUSD has 18 decimals, cryptoAmount is already in token units)
+        const amount = ethers.parseEther(cryptoAmount.toFixed(6));
+        
+        // Check master wallet balance BEFORE attempting transfer
+        const masterBalance = await cUsdContract.balanceOf(wallet.address);
+        console.log(`[WITHDRAWAL] Master wallet cUSD balance: ${ethers.formatEther(masterBalance)}`);
+        console.log(`[WITHDRAWAL] Amount needed (wei): ${amount.toString()}`);
+        
+        if (masterBalance < amount) {
+          throw new Error(`Insufficient master wallet balance. Has: ${ethers.formatEther(masterBalance)} cUSD, Needs: ${cryptoAmount} cUSD. Please fund the master wallet.`);
+        }
         
         const tx = await cUsdContract.transfer(walletAddress, amount);
         const receipt = await tx.wait();
         txHash = receipt.hash;
+        console.log(`[WITHDRAWAL] ✅ cUSD sent: ${txHash}`);
       } else {
         // Send native CELO
+        const amount = ethers.parseEther(cryptoAmount.toFixed(6));
+        
+        // Check master wallet CELO balance
+        const masterBalance = await provider.getBalance(wallet.address);
+        console.log(`[WITHDRAWAL] Master wallet CELO balance: ${ethers.formatEther(masterBalance)}`);
+        console.log(`[WITHDRAWAL] Amount needed: ${cryptoAmount} CELO`);
+        
+        if (masterBalance < amount) {
+          throw new Error(`Insufficient master wallet CELO. Has: ${ethers.formatEther(masterBalance)} CELO, Needs: ${cryptoAmount} CELO. Please fund the master wallet.`);
+        }
+        
         const tx = await wallet.sendTransaction({
           to: walletAddress,
-          value: ethers.parseEther(cryptoAmount.toFixed(6))
+          value: amount
         });
         const receipt = await tx.wait();
         txHash = receipt.hash;
+        console.log(`[WITHDRAWAL] ✅ CELO sent: ${txHash}`);
       }
 
       console.log("Transaction sent:", txHash);

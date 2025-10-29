@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { ethers } from "https://esm.sh/ethers@6.7.0";
-import CryptoJS from "https://cdn.skypack.dev/crypto-js@4.1.1";
+import CryptoJS from "https://esm.sh/crypto-js@4.1.1";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -279,14 +279,33 @@ serve(async (req) => {
           const cUsdAddress = "0x765DE816845861e75A25fCA122bb6898B8B1282a";
           const cUsdContract = new ethers.Contract(
             cUsdAddress,
-            ["function transfer(address to, uint256 amount) returns (bool)"],
+            [
+              "function transfer(address to, uint256 amount) returns (bool)",
+              "function balanceOf(address account) view returns (uint256)"
+            ],
             userWallet
           );
+          
+          // FIX: Check user wallet balance BEFORE attempting sweep
+          const userBalance = await cUsdContract.balanceOf(toAddress);
+          const userBalanceFormatted = ethers.formatEther(userBalance);
+          console.log(`[RELAYER] User wallet cUSD balance: ${userBalanceFormatted}`);
+          console.log(`[RELAYER] Expected deposit amount: ${cryptoAmount}`);
+          
           const amountInWei = ethers.parseEther(cryptoAmount.toString());
-          const sweepTx = await cUsdContract.transfer(masterAddress, amountInWei);
-          const sweepReceipt = await sweepTx.wait();
-          sweepTxHash = sweepReceipt.hash;
-          console.log(`[RELAYER] ✅ cUSD swept: ${sweepTxHash}`);
+          
+          // Only sweep if user has enough balance (with 1% tolerance for rounding)
+          if (userBalance < (amountInWei * BigInt(99) / BigInt(100))) {
+            console.log(`[RELAYER] ⚠️ Insufficient user balance to sweep. Has: ${userBalanceFormatted}, Needs: ${cryptoAmount}. Skipping sweep - funds safe in user wallet.`);
+            sweepTxHash = "insufficient_balance_skipped";
+          } else {
+            // Sweep the actual balance (might be slightly less due to previous gas)
+            const sweepAmount = userBalance > amountInWei ? amountInWei : userBalance;
+            const sweepTx = await cUsdContract.transfer(masterAddress, sweepAmount);
+            const sweepReceipt = await sweepTx.wait();
+            sweepTxHash = sweepReceipt.hash;
+            console.log(`[RELAYER] ✅ cUSD swept: ${sweepTxHash} (amount: ${ethers.formatEther(sweepAmount)})`);
+          }
         } else if (asset === "CELO") {
           // For CELO, keep 0.001 for future gas
           const userBalance = await provider.getBalance(toAddress);
