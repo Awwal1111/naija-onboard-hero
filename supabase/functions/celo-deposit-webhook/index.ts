@@ -320,21 +320,44 @@ serve(async (req) => {
             userWallet
           );
           
-          // Wait 2 seconds for deposit to fully settle on-chain
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          // Wait 10 seconds for deposit to fully settle on-chain
+          console.log(`[RELAYER] Waiting 10 seconds for on-chain settlement...`);
+          await new Promise(resolve => setTimeout(resolve, 10000));
           
-          // Check user wallet balance BEFORE attempting sweep
-          const userBalance = await cUsdContract.balanceOf(toAddress);
+          // Check user wallet balance BEFORE attempting sweep with retries
+          let userBalance = BigInt(0);
+          let retries = 3;
+          
+          for (let i = 0; i < retries; i++) {
+            userBalance = await cUsdContract.balanceOf(toAddress);
+            const userBalanceFormatted = ethers.formatEther(userBalance);
+            console.log(`[RELAYER] Attempt ${i + 1}/${retries} - User wallet cUSD balance: ${userBalanceFormatted}`);
+            
+            const amountInWei = ethers.parseEther(cryptoAmount.toFixed(6));
+            
+            // Check if balance is sufficient (with 1% tolerance for rounding)
+            if (userBalance >= (amountInWei * BigInt(99) / BigInt(100))) {
+              console.log(`[RELAYER] ✅ Balance confirmed: ${userBalanceFormatted} cUSD`);
+              break;
+            }
+            
+            if (i < retries - 1) {
+              console.log(`[RELAYER] Balance not yet settled, waiting 5 more seconds...`);
+              await new Promise(resolve => setTimeout(resolve, 5000));
+            }
+          }
+          
           const userBalanceFormatted = ethers.formatEther(userBalance);
-          console.log(`[RELAYER] User wallet cUSD balance: ${userBalanceFormatted}`);
+          console.log(`[RELAYER] Final check - User wallet cUSD balance: ${userBalanceFormatted}`);
           console.log(`[RELAYER] Expected deposit amount: ${cryptoAmount}`);
           
           const amountInWei = ethers.parseEther(cryptoAmount.toFixed(6));
           
-          // Only sweep if user has enough balance (with 5% tolerance for rounding/gas)
-          if (userBalance < (amountInWei * BigInt(95) / BigInt(100))) {
-            console.log(`[RELAYER] ⚠️ Insufficient user balance to sweep. Has: ${userBalanceFormatted}, Needs: ${cryptoAmount}. Skipping sweep - funds safe in user wallet.`);
-            console.log(`[RELAYER] This may happen if the deposit hasn't fully settled yet.`);
+          // Only sweep if user has enough balance (with 1% tolerance for rounding)
+          if (userBalance < (amountInWei * BigInt(99) / BigInt(100))) {
+            console.log(`[RELAYER] ⚠️ Insufficient user balance to sweep after ${retries} attempts.`);
+            console.log(`[RELAYER] Has: ${userBalanceFormatted} cUSD, Needs: ${cryptoAmount} cUSD`);
+            console.log(`[RELAYER] Skipping sweep - funds safe in user wallet.`);
             sweepTxHash = "insufficient_balance_skipped";
           } else {
             // Sweep the actual balance (might be slightly less due to gas estimation)
