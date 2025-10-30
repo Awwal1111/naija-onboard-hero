@@ -51,18 +51,31 @@ serve(async (req) => {
     for (const activity of activities) {
       const txHash = activity.hash;
       const toAddress = activity.toAddress.toLowerCase(); // User's wallet receiving the deposit
-      const cryptoAmount = activity.value;
       const rawAsset = activity.asset;
+      
+      // For ERC20 tokens (like cUSD), Alchemy sends raw value with decimals
+      // For native tokens (like CELO), it's already formatted
+      let cryptoAmount = activity.value;
+      
+      // Check if this is an ERC20 token transfer
+      if (activity.rawContract && activity.rawContract.decimal) {
+        const decimals = parseInt(activity.rawContract.decimal);
+        // Convert raw value to human-readable format
+        cryptoAmount = parseFloat(ethers.formatUnits(activity.value.toString(), decimals));
+        console.log(`[ERC20] Raw value: ${activity.value}, Decimals: ${decimals}, Formatted: ${cryptoAmount}`);
+      } else {
+        console.log(`[NATIVE] Value already formatted: ${cryptoAmount}`);
+      }
       
       // Normalize asset names to match database constraints
       let asset = rawAsset;
-      if (rawAsset === "USD₮" || rawAsset === "USDT") {
-        asset = "cUSD"; // Map USDT to cUSD for database compatibility
+      if (rawAsset === "USD₮" || rawAsset === "USDT" || rawAsset === "USDC") {
+        asset = "cUSD"; // Map USDT/USDC to cUSD for database compatibility
       } else if (rawAsset === "ETH") {
         asset = "CELO"; // Map ETH to CELO for Celo network
       }
       
-      console.log(`[CURRENCY] Raw asset: ${rawAsset}, Normalized to: ${asset}`);
+      console.log(`[CURRENCY] Raw asset: ${rawAsset}, Normalized to: ${asset}, Amount: ${cryptoAmount}`);
 
       console.log(`[DEPOSIT] Processing: ${cryptoAmount} ${asset} to ${toAddress}, tx: ${txHash}`);
 
