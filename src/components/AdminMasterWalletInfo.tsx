@@ -88,22 +88,51 @@ export const AdminMasterWalletInfo = () => {
 
   const fetchBalances = async (address: string) => {
     try {
-      const provider = new ethers.JsonRpcProvider(ALCHEMY_RPC)
+      console.log('[ADMIN] 🔍 Fetching balances for:', address)
       
-      console.log('[ADMIN] Fetching balances for master wallet:', address)
+      // Try multiple providers for reliability
+      let provider;
+      try {
+        provider = new ethers.JsonRpcProvider(ALCHEMY_RPC)
+        await provider.getNetwork() // Test connection
+        console.log('[ADMIN] ✅ Connected to Alchemy RPC')
+      } catch (rpcError) {
+        console.warn('[ADMIN] ⚠️ Alchemy failed, using Forno fallback')
+        provider = new ethers.JsonRpcProvider("https://forno.celo.org")
+      }
       
-      // Get CELO balance
-      const celoBalance = await provider.getBalance(address)
+      // Get CELO balance with retries
+      let celoBalance = BigInt(0)
+      for (let i = 0; i < 3; i++) {
+        try {
+          celoBalance = await provider.getBalance(address)
+          break
+        } catch (err) {
+          if (i === 2) throw err
+          await new Promise(r => setTimeout(r, 1000))
+        }
+      }
       const celoFormatted = ethers.formatEther(celoBalance)
-      console.log('[ADMIN] CELO balance:', celoFormatted)
+      console.log('[ADMIN] 💰 CELO balance:', celoFormatted)
       
-      // Get cUSD balance
+      // Get cUSD balance with retries
       const cUsdAbi = ["function balanceOf(address) view returns (uint256)"]
       const cUsdContract = new ethers.Contract(CUSD_ADDRESS, cUsdAbi, provider)
-      const cusdBalance = await cUsdContract.balanceOf(address)
+      
+      let cusdBalance = BigInt(0)
+      for (let i = 0; i < 3; i++) {
+        try {
+          cusdBalance = await cUsdContract.balanceOf(address)
+          console.log(`[ADMIN] 💵 cUSD balance (attempt ${i+1}):`, ethers.formatEther(cusdBalance))
+          break
+        } catch (err) {
+          console.error(`[ADMIN] ❌ cUSD fetch attempt ${i+1} failed:`, err)
+          if (i === 2) throw err
+          await new Promise(r => setTimeout(r, 1000))
+        }
+      }
       const cusdFormatted = ethers.formatEther(cusdBalance)
-      console.log('[ADMIN] cUSD balance:', cusdFormatted)
-      console.log('[ADMIN] cUSD balance raw:', cusdBalance.toString())
+      console.log('[ADMIN] 💵 Final cUSD balance:', cusdFormatted)
       
       const celoNum = parseFloat(celoFormatted)
       const cusdNum = parseFloat(cusdFormatted)
@@ -113,21 +142,25 @@ export const AdminMasterWalletInfo = () => {
         cusd: cusdNum.toFixed(4)
       })
       
-      // Show warning if balances are low
+      // Show warnings
       if (celoNum < 0.05) {
-        toast.warning('⚠️ Master wallet CELO low! Need at least 0.1 CELO for gas fees.')
+        toast.warning('⚠️ Master wallet CELO balance LOW: ' + celoNum.toFixed(4) + ' CELO. Need 0.5+ for gas fees.')
       }
       if (cusdNum < 10) {
-        toast.warning('⚠️ Master wallet cUSD low! Fund it to process cUSD withdrawals.')
+        toast.warning('⚠️ Master wallet cUSD balance LOW: ' + cusdNum.toFixed(4) + ' cUSD. Need 100+ for withdrawals.')
       }
       
-      // Show success if balances are good
+      // Show success
       if (celoNum >= 0.1 && cusdNum >= 10) {
-        console.log('[ADMIN] ✅ Master wallet balances sufficient')
+        toast.success(`✅ Master wallet funded: ${celoNum.toFixed(4)} CELO, ${cusdNum.toFixed(4)} cUSD`)
       }
+      
+      return { celoNum, cusdNum }
     } catch (error: any) {
-      console.error('Error fetching balances:', error)
+      console.error('[ADMIN] ❌ Error fetching balances:', error)
       toast.error(`Failed to fetch balances: ${error.message}`)
+      setBalance({ celo: 'Error', cusd: 'Error' })
+      return null
     }
   }
 

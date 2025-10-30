@@ -115,8 +115,11 @@ serve(async (req) => {
       const masterWalletAddress = masterWalletSettings?.value?.toLowerCase();
       
       if (masterWalletAddress && toAddress === masterWalletAddress) {
-        console.log(`[MASTER_WALLET] ✅ Deposit to master wallet detected: ${cryptoAmount} ${asset}`);
-        console.log(`[MASTER_WALLET] This is admin funding the system - no user credit needed`);
+        console.log(`[MASTER_WALLET] 🎯 MASTER WALLET DEPOSIT DETECTED!`);
+        console.log(`[MASTER_WALLET] 💰 Amount: ${cryptoAmount} ${asset}`);
+        console.log(`[MASTER_WALLET] 📍 To: ${toAddress}`);
+        console.log(`[MASTER_WALLET] 🔗 Tx: ${txHash}`);
+        console.log(`[MASTER_WALLET] ✅ This is system funding - no user credit, no sweep`);
         
         // Log master wallet funding transaction
         await supabase.from("crypto_transactions").insert({
@@ -130,10 +133,12 @@ serve(async (req) => {
           wallet_address: toAddress,
           tx_hash: txHash,
           status: "completed",
-          error_message: "Master wallet funding - system balance increased"
+          completed_at: new Date().toISOString(),
+          error_message: `✅ Master wallet funded with ${cryptoAmount} ${asset}. System ready for withdrawals.`
         });
         
-        continue; // Skip user credit logic for master wallet
+        console.log(`[MASTER_WALLET] 📝 Transaction logged. Master wallet now has more ${asset}.`);
+        continue; // Skip user credit and sweep logic for master wallet
       }
 
       // Find user by their wallet address (the recipient of the deposit)
@@ -151,9 +156,10 @@ serve(async (req) => {
       }
 
       if (!profile) {
-        console.log(`[ERROR] No user found with wallet address: ${toAddress}`);
-        console.log(`[ERROR] This address is not registered as a user wallet`);
-        console.log(`[ERROR] If you want to fund the master wallet, send to: ${masterWalletAddress}`);
+        console.log(`[ERROR] ❌ No user found with wallet address: ${toAddress}`);
+        console.log(`[ERROR] 📍 This address is not registered as any user's wallet`);
+        console.log(`[INFO] 💡 To fund the MASTER WALLET for withdrawals, send to: ${masterWalletAddress}`);
+        console.log(`[INFO] 💡 ${asset} deposits to master wallet will be auto-detected and used for system operations`);
         
         // Create unmatched transaction record
         await supabase.from("crypto_transactions").insert({
@@ -167,7 +173,7 @@ serve(async (req) => {
           wallet_address: toAddress,
           tx_hash: txHash,
           status: "failed",
-          error_message: `No user found with wallet ${toAddress}. To fund master wallet, send to: ${masterWalletAddress}`
+          error_message: `❌ Unknown wallet: ${toAddress}. Not a registered user. To fund master wallet (for withdrawals), send to: ${masterWalletAddress}`
         });
         continue;
       }

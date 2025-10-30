@@ -175,22 +175,47 @@ serve(async (req) => {
         ];
         const cUsdContract = new ethers.Contract(CUSD_ADDRESS, cUsdAbi, wallet);
         
-        // FIX: Use parseEther directly (cUSD has 18 decimals, cryptoAmount is already in token units)
+        // Calculate amount
         const amount = ethers.parseEther(cryptoAmount.toFixed(6));
+        console.log(`[WITHDRAWAL] 📊 Requesting ${cryptoAmount} cUSD (${amount.toString()} wei)`);
         
-        // Check master wallet balance BEFORE attempting transfer
-        const masterBalance = await cUsdContract.balanceOf(wallet.address);
-        console.log(`[WITHDRAWAL] Master wallet cUSD balance: ${ethers.formatEther(masterBalance)}`);
-        console.log(`[WITHDRAWAL] Amount needed (wei): ${amount.toString()}`);
+        // Check master wallet cUSD balance with retries
+        let masterBalance = BigInt(0);
+        let balanceCheckAttempts = 3;
         
-        if (masterBalance < amount) {
-          throw new Error(`Insufficient master wallet balance. Has: ${ethers.formatEther(masterBalance)} cUSD, Needs: ${cryptoAmount} cUSD. Please fund the master wallet.`);
+        for (let i = 0; i < balanceCheckAttempts; i++) {
+          try {
+            masterBalance = await cUsdContract.balanceOf(wallet.address);
+            const balanceFormatted = ethers.formatEther(masterBalance);
+            console.log(`[WITHDRAWAL] 💵 Master wallet cUSD balance (attempt ${i+1}/${balanceCheckAttempts}): ${balanceFormatted}`);
+            break;
+          } catch (balanceErr) {
+            console.error(`[WITHDRAWAL] ❌ Balance check attempt ${i+1} failed:`, balanceErr);
+            if (i === balanceCheckAttempts - 1) throw balanceErr;
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          }
         }
         
+        const masterBalanceFormatted = ethers.formatEther(masterBalance);
+        console.log(`[WITHDRAWAL] 💰 Master wallet has: ${masterBalanceFormatted} cUSD`);
+        console.log(`[WITHDRAWAL] 📤 User wants: ${cryptoAmount} cUSD`);
+        
+        if (masterBalance < amount) {
+          const shortfall = ethers.formatEther(amount - masterBalance);
+          throw new Error(
+            `❌ Insufficient master wallet cUSD balance!\n` +
+            `Has: ${masterBalanceFormatted} cUSD\n` +
+            `Needs: ${cryptoAmount} cUSD\n` +
+            `Short: ${shortfall} cUSD\n\n` +
+            `💡 Admin: Please deposit cUSD to master wallet: ${wallet.address}`
+          );
+        }
+        
+        console.log(`[WITHDRAWAL] ✅ Sufficient balance, proceeding with transfer...`);
         const tx = await cUsdContract.transfer(walletAddress, amount);
         const receipt = await tx.wait();
         txHash = receipt.hash;
-        console.log(`[WITHDRAWAL] ✅ cUSD sent: ${txHash}`);
+        console.log(`[WITHDRAWAL] ✅ cUSD sent successfully: ${txHash}`);
       } else {
         // Send native CELO
         const amount = ethers.parseEther(cryptoAmount.toFixed(6));
