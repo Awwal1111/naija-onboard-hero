@@ -5,7 +5,7 @@ import CryptoJS from "https://esm.sh/crypto-js@4.1.1";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const ALCHEMY_RPC = "https://celo-mainnet.g.alchemy.com/v2/nJP_zi_my4rK4ihI5i7Py5dQaDCR5RrK";
+const CELO_RPC = "https://forno.celo.org";
 const EXCHANGE_RATE_API = "https://v6.exchangerate-api.com/v6/c06b378e6d590d4c22aa2998/latest/USD";
 const MIN_WITHDRAWAL_NC = 100;
 
@@ -159,11 +159,8 @@ serve(async (req) => {
         throw new Error("Failed to decrypt master wallet key");
       }
 
-      // Initialize provider with explicit network config
-      const provider = new ethers.JsonRpcProvider(ALCHEMY_RPC, {
-        name: "celo",
-        chainId: 42220
-      });
+      // Initialize provider with Forno (official Celo RPC)
+      const provider = new ethers.JsonRpcProvider(CELO_RPC);
       const wallet = new ethers.Wallet(decryptedMasterKey, provider);
       
       console.log(`[WITHDRAWAL] Using master wallet: ${wallet.address}`);
