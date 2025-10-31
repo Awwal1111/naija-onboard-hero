@@ -17,7 +17,7 @@ export const AdminMasterWalletInfo = () => {
   const [transactions, setTransactions] = useState<any[]>([])
   const [loadingTx, setLoadingTx] = useState(false)
 
-  const ALCHEMY_RPC = "https://celo-mainnet.g.alchemy.com/v2/nJP_zi_my4rK4ihI5i7Py5dQaDCR5RrK"
+  const CELO_RPC = "https://forno.celo.org"
   const CUSD_ADDRESS = "0x765DE816845861e75A25fCA122bb6898B8B1282a"
   const USDT_ADDRESS = "0x48065fbBe25f71C9282ddf5e1cD6d6A887483D5e"
 
@@ -91,22 +91,9 @@ export const AdminMasterWalletInfo = () => {
     try {
       console.log('[ADMIN] 🔍 Fetching balances for:', address)
       
-      // Try multiple providers for reliability
-      let provider;
-      try {
-        provider = new ethers.JsonRpcProvider(ALCHEMY_RPC, {
-          name: "celo",
-          chainId: 42220
-        })
-        await provider.getNetwork() // Test connection
-        console.log('[ADMIN] ✅ Connected to Alchemy RPC')
-      } catch (rpcError) {
-        console.warn('[ADMIN] ⚠️ Alchemy failed, using Forno fallback')
-        provider = new ethers.JsonRpcProvider("https://forno.celo.org", {
-          name: "celo",
-          chainId: 42220
-        })
-      }
+      // Use Forno RPC (official Celo RPC - most stable)
+      const provider = new ethers.JsonRpcProvider(CELO_RPC)
+      console.log('[ADMIN] ✅ Connected to Forno RPC')
       
       // Get CELO balance with retries
       let celoBalance = BigInt(0)
