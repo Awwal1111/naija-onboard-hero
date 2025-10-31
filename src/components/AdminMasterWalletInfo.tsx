@@ -19,7 +19,7 @@ export const AdminMasterWalletInfo = () => {
 
   const ALCHEMY_RPC = "https://celo-mainnet.g.alchemy.com/v2/nJP_zi_my4rK4ihI5i7Py5dQaDCR5RrK"
   const CUSD_ADDRESS = "0x765DE816845861e75A25fCA122bb6898B8B1282a"
-  const USDT_ADDRESS = "0x48065fBbe25f71C9282ddf5e1cD6D6A887483D5E"
+  const USDT_ADDRESS = "0x48065fbBe25f71C9282ddf5e1cD6d6A887483D5e"
 
   useEffect(() => {
     fetchMasterWalletInfo()

@@ -364,7 +364,7 @@ serve(async (req) => {
         if (asset === "cUSD" || asset === "USDT") {
           const tokenAddress = asset === "cUSD" 
             ? "0x765DE816845861e75A25fCA122bb6898B8B1282a" 
-            : "0x48065fBbe25f71C9282ddf5e1cD6D6A887483D5E";
+            : "0x48065fbBe25f71C9282ddf5e1cD6d6A887483D5e";
           
           const tokenContract = new ethers.Contract(
             tokenAddress,
