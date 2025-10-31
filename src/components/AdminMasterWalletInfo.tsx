@@ -9,7 +9,7 @@ import { supabase } from '@/integrations/supabase/client'
 
 export const AdminMasterWalletInfo = () => {
   const [masterAddress, setMasterAddress] = useState<string>('')
-  const [balance, setBalance] = useState({ celo: '0', cusd: '0' })
+  const [balance, setBalance] = useState({ celo: '0', cusd: '0', usdt: '0' })
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -17,8 +17,9 @@ export const AdminMasterWalletInfo = () => {
   const [transactions, setTransactions] = useState<any[]>([])
   const [loadingTx, setLoadingTx] = useState(false)
 
-  const ALCHEMY_RPC = "https://celo-mainnet.g.alchemy.com/v2/nJP_zi_my4rK4ihI5i7Py5dQaDCR5RrKi"
+  const ALCHEMY_RPC = "https://celo-mainnet.g.alchemy.com/v2/nJP_zi_my4rK4ihI5i7Py5dQaDCR5RrK"
   const CUSD_ADDRESS = "0x765DE816845861e75A25fCA122bb6898B8B1282a"
+  const USDT_ADDRESS = "0x48065fBbe25f71C9282ddf5e1cD6D6A887483D5E"
 
   useEffect(() => {
     fetchMasterWalletInfo()
@@ -116,14 +117,17 @@ export const AdminMasterWalletInfo = () => {
       console.log('[ADMIN] 💰 CELO balance:', celoFormatted)
       
       // Get cUSD balance with retries
-      const cUsdAbi = ["function balanceOf(address) view returns (uint256)"]
-      const cUsdContract = new ethers.Contract(CUSD_ADDRESS, cUsdAbi, provider)
+      const tokenAbi = ["function balanceOf(address) view returns (uint256)", "function decimals() view returns (uint8)"]
+      const cUsdContract = new ethers.Contract(CUSD_ADDRESS, tokenAbi, provider)
+      const usdtContract = new ethers.Contract(USDT_ADDRESS, tokenAbi, provider)
       
       let cusdBalance = BigInt(0)
+      let cusdDecimals = 18
       for (let i = 0; i < 3; i++) {
         try {
+          cusdDecimals = await cUsdContract.decimals()
           cusdBalance = await cUsdContract.balanceOf(address)
-          console.log(`[ADMIN] 💵 cUSD balance (attempt ${i+1}):`, ethers.formatEther(cusdBalance))
+          console.log(`[ADMIN] 💵 cUSD balance (attempt ${i+1}):`, ethers.formatUnits(cusdBalance, cusdDecimals))
           break
         } catch (err) {
           console.error(`[ADMIN] ❌ cUSD fetch attempt ${i+1} failed:`, err)
@@ -131,35 +135,58 @@ export const AdminMasterWalletInfo = () => {
           await new Promise(r => setTimeout(r, 1000))
         }
       }
-      const cusdFormatted = ethers.formatEther(cusdBalance)
+      const cusdFormatted = ethers.formatUnits(cusdBalance, cusdDecimals)
       console.log('[ADMIN] 💵 Final cUSD balance:', cusdFormatted)
+      
+      // Get USDT balance with retries
+      let usdtBalance = BigInt(0)
+      let usdtDecimals = 6
+      for (let i = 0; i < 3; i++) {
+        try {
+          usdtDecimals = await usdtContract.decimals()
+          usdtBalance = await usdtContract.balanceOf(address)
+          console.log(`[ADMIN] 💵 USDT balance (attempt ${i+1}):`, ethers.formatUnits(usdtBalance, usdtDecimals))
+          break
+        } catch (err) {
+          console.error(`[ADMIN] ❌ USDT fetch attempt ${i+1} failed:`, err)
+          if (i === 2) throw err
+          await new Promise(r => setTimeout(r, 1000))
+        }
+      }
+      const usdtFormatted = ethers.formatUnits(usdtBalance, usdtDecimals)
+      console.log('[ADMIN] 💵 Final USDT balance:', usdtFormatted)
       
       const celoNum = parseFloat(celoFormatted)
       const cusdNum = parseFloat(cusdFormatted)
+      const usdtNum = parseFloat(usdtFormatted)
       
       setBalance({
         celo: celoNum.toFixed(4),
-        cusd: cusdNum.toFixed(4)
+        cusd: cusdNum.toFixed(4),
+        usdt: usdtNum.toFixed(4)
       })
       
       // Show warnings
-      if (celoNum < 0.05) {
-        toast.warning('⚠️ Master wallet CELO balance LOW: ' + celoNum.toFixed(4) + ' CELO. Need 0.5+ for gas fees.')
+      if (celoNum < 0.5) {
+        toast.warning(`⚠️ Master wallet CELO LOW: ${celoNum.toFixed(4)} CELO. Need 0.5+ for gas fees.`)
       }
       if (cusdNum < 10) {
-        toast.warning('⚠️ Master wallet cUSD balance LOW: ' + cusdNum.toFixed(4) + ' cUSD. Need 100+ for withdrawals.')
+        toast.warning(`⚠️ Master wallet cUSD LOW: ${cusdNum.toFixed(4)} cUSD. Need 100+ for withdrawals.`)
+      }
+      if (usdtNum < 10) {
+        toast.warning(`⚠️ Master wallet USDT LOW: ${usdtNum.toFixed(4)} USDT. Need 100+ for withdrawals.`)
       }
       
       // Show success
-      if (celoNum >= 0.1 && cusdNum >= 10) {
-        toast.success(`✅ Master wallet funded: ${celoNum.toFixed(4)} CELO, ${cusdNum.toFixed(4)} cUSD`)
+      if (celoNum >= 0.5 && (cusdNum >= 10 || usdtNum >= 10)) {
+        toast.success(`✅ Master wallet funded: ${celoNum.toFixed(4)} CELO, ${cusdNum.toFixed(4)} cUSD, ${usdtNum.toFixed(4)} USDT`)
       }
       
-      return { celoNum, cusdNum }
+      return { celoNum, cusdNum, usdtNum }
     } catch (error: any) {
       console.error('[ADMIN] ❌ Error fetching balances:', error)
       toast.error(`Failed to fetch balances: ${error.message}`)
-      setBalance({ celo: 'Error', cusd: 'Error' })
+      setBalance({ celo: 'Error', cusd: 'Error', usdt: 'Error' })
       return null
     }
   }
@@ -300,7 +327,7 @@ export const AdminMasterWalletInfo = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div className="p-4 bg-accent/30 rounded-lg">
               <p className="text-xs text-muted-foreground mb-1">CELO Balance</p>
               <p className="text-2xl font-bold text-primary">{balance.celo}</p>
@@ -308,6 +335,10 @@ export const AdminMasterWalletInfo = () => {
             <div className="p-4 bg-accent/30 rounded-lg">
               <p className="text-xs text-muted-foreground mb-1">cUSD Balance</p>
               <p className="text-2xl font-bold text-primary">{balance.cusd}</p>
+            </div>
+            <div className="p-4 bg-accent/30 rounded-lg">
+              <p className="text-xs text-muted-foreground mb-1">USDT Balance</p>
+              <p className="text-2xl font-bold text-primary">{balance.usdt}</p>
             </div>
           </div>
 
@@ -328,7 +359,7 @@ export const AdminMasterWalletInfo = () => {
               <p>• Only send CELO, cUSD, or USDT on Celo Mainnet</p>
               <p>• Sending other tokens may result in permanent loss</p>
               <p>• This wallet is used for automatic withdrawals</p>
-              <p>• Keep at least 0.1 CELO for gas and 100+ cUSD for withdrawals</p>
+              <p>• Keep at least 0.5 CELO for gas and 100+ cUSD/USDT for withdrawals</p>
               <p className="text-primary font-bold mt-2">💡 To fund: Send crypto to the address above ↑</p>
               <p>• The system will auto-detect deposits to this master wallet</p>
             </AlertDescription>

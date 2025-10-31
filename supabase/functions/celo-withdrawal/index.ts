@@ -5,12 +5,13 @@ import CryptoJS from "https://esm.sh/crypto-js@4.1.1";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const ALCHEMY_RPC = "https://celo-mainnet.g.alchemy.com/v2/nJP_zi_my4rK4ihI5i7Py5dQaDCR5RrKi";
+const ALCHEMY_RPC = "https://celo-mainnet.g.alchemy.com/v2/nJP_zi_my4rK4ihI5i7Py5dQaDCR5RrK";
 const EXCHANGE_RATE_API = "https://v6.exchangerate-api.com/v6/c06b378e6d590d4c22aa2998/latest/USD";
-const MIN_WITHDRAWAL_NC = 100; // Lowered for testing
+const MIN_WITHDRAWAL_NC = 100;
 
-// cUSD token address on Celo mainnet
+// Token addresses on Celo mainnet
 const CUSD_ADDRESS = "0x765DE816845861e75A25fCA122bb6898B8B1282a";
+const USDT_ADDRESS = "0x48065fBbe25f71C9282ddf5e1cD6D6A887483D5E";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
@@ -48,8 +49,8 @@ serve(async (req) => {
       throw new Error(`Minimum withdrawal is ${MIN_WITHDRAWAL_NC} NC`);
     }
 
-    if (!["cUSD", "CELO"].includes(currency)) {
-      throw new Error("Currency must be cUSD or CELO");
+    if (!["cUSD", "CELO", "USDT"].includes(currency)) {
+      throw new Error("Currency must be cUSD, USDT, or CELO");
     }
 
     // Get user profile and check balance
@@ -72,8 +73,8 @@ serve(async (req) => {
     const nairaAmount = ncAmount;
     let cryptoAmount = 0;
 
-    if (currency === "cUSD") {
-      cryptoAmount = nairaAmount / usdToNgn; // Convert NGN to USD (cUSD)
+    if (currency === "cUSD" || currency === "USDT") {
+      cryptoAmount = nairaAmount / usdToNgn; // Convert NGN to USD (cUSD/USDT)
     } else if (currency === "CELO") {
       // Fetch real-time CELO price
       try {
@@ -158,8 +159,11 @@ serve(async (req) => {
         throw new Error("Failed to decrypt master wallet key");
       }
 
-      // Initialize master wallet
-      const provider = new ethers.JsonRpcProvider(ALCHEMY_RPC);
+      // Initialize provider with explicit network config
+      const provider = new ethers.JsonRpcProvider(ALCHEMY_RPC, {
+        name: "celo",
+        chainId: 42220
+      });
       const wallet = new ethers.Wallet(decryptedMasterKey, provider);
       
       console.log(`[WITHDRAWAL] Using master wallet: ${wallet.address}`);
@@ -167,27 +171,33 @@ serve(async (req) => {
 
       let txHash = "";
 
-      if (currency === "cUSD") {
-        // Send cUSD (ERC-20 token)
-        const cUsdAbi = [
+      if (currency === "cUSD" || currency === "USDT") {
+        // Send cUSD or USDT (ERC-20 tokens)
+        const tokenAddress = currency === "cUSD" ? CUSD_ADDRESS : USDT_ADDRESS;
+        const tokenAbi = [
           "function transfer(address to, uint256 amount) returns (bool)",
-          "function balanceOf(address account) view returns (uint256)"
+          "function balanceOf(address account) view returns (uint256)",
+          "function decimals() view returns (uint8)"
         ];
-        const cUsdContract = new ethers.Contract(CUSD_ADDRESS, cUsdAbi, wallet);
+        const tokenContract = new ethers.Contract(tokenAddress, tokenAbi, wallet);
         
-        // Calculate amount
-        const amount = ethers.parseEther(cryptoAmount.toFixed(6));
-        console.log(`[WITHDRAWAL] 📊 Requesting ${cryptoAmount} cUSD (${amount.toString()} wei)`);
+        // Get token decimals
+        const decimals = await tokenContract.decimals();
+        console.log(`[WITHDRAWAL] 📊 ${currency} decimals: ${decimals}`);
         
-        // Check master wallet cUSD balance with retries
+        // Calculate amount based on decimals
+        const amount = ethers.parseUnits(cryptoAmount.toFixed(decimals), decimals);
+        console.log(`[WITHDRAWAL] 📊 Requesting ${cryptoAmount} ${currency} (${amount.toString()} wei)`);
+        
+        // Check master wallet balance with retries
         let masterBalance = BigInt(0);
         let balanceCheckAttempts = 3;
         
         for (let i = 0; i < balanceCheckAttempts; i++) {
           try {
-            masterBalance = await cUsdContract.balanceOf(wallet.address);
-            const balanceFormatted = ethers.formatEther(masterBalance);
-            console.log(`[WITHDRAWAL] 💵 Master wallet cUSD balance (attempt ${i+1}/${balanceCheckAttempts}): ${balanceFormatted}`);
+            masterBalance = await tokenContract.balanceOf(wallet.address);
+            const balanceFormatted = ethers.formatUnits(masterBalance, decimals);
+            console.log(`[WITHDRAWAL] 💵 Master wallet ${currency} balance (attempt ${i+1}/${balanceCheckAttempts}): ${balanceFormatted}`);
             break;
           } catch (balanceErr) {
             console.error(`[WITHDRAWAL] ❌ Balance check attempt ${i+1} failed:`, balanceErr);
@@ -196,26 +206,26 @@ serve(async (req) => {
           }
         }
         
-        const masterBalanceFormatted = ethers.formatEther(masterBalance);
-        console.log(`[WITHDRAWAL] 💰 Master wallet has: ${masterBalanceFormatted} cUSD`);
-        console.log(`[WITHDRAWAL] 📤 User wants: ${cryptoAmount} cUSD`);
+        const masterBalanceFormatted = ethers.formatUnits(masterBalance, decimals);
+        console.log(`[WITHDRAWAL] 💰 Master wallet has: ${masterBalanceFormatted} ${currency}`);
+        console.log(`[WITHDRAWAL] 📤 User wants: ${cryptoAmount} ${currency}`);
         
         if (masterBalance < amount) {
-          const shortfall = ethers.formatEther(amount - masterBalance);
+          const shortfall = ethers.formatUnits(amount - masterBalance, decimals);
           throw new Error(
-            `❌ Insufficient master wallet cUSD balance!\n` +
-            `Has: ${masterBalanceFormatted} cUSD\n` +
-            `Needs: ${cryptoAmount} cUSD\n` +
-            `Short: ${shortfall} cUSD\n\n` +
-            `💡 Admin: Please deposit cUSD to master wallet: ${wallet.address}`
+            `❌ Insufficient master wallet ${currency} balance!\n` +
+            `Has: ${masterBalanceFormatted} ${currency}\n` +
+            `Needs: ${cryptoAmount} ${currency}\n` +
+            `Short: ${shortfall} ${currency}\n\n` +
+            `💡 Admin: Please deposit ${currency} to master wallet: ${wallet.address}`
           );
         }
         
         console.log(`[WITHDRAWAL] ✅ Sufficient balance, proceeding with transfer...`);
-        const tx = await cUsdContract.transfer(walletAddress, amount);
+        const tx = await tokenContract.transfer(walletAddress, amount);
         const receipt = await tx.wait();
         txHash = receipt.hash;
-        console.log(`[WITHDRAWAL] ✅ cUSD sent successfully: ${txHash}`);
+        console.log(`[WITHDRAWAL] ✅ ${currency} sent successfully: ${txHash}`);
       } else {
         // Send native CELO
         const amount = ethers.parseEther(cryptoAmount.toFixed(6));

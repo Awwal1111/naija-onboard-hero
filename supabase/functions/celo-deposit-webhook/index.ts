@@ -69,10 +69,18 @@ serve(async (req) => {
       
       // Normalize asset names to match database constraints
       let asset = rawAsset;
-      if (rawAsset === "USD₮" || rawAsset === "USDT" || rawAsset === "USDC") {
-        asset = "cUSD"; // Map USDT/USDC to cUSD for database compatibility
+      const contractAddress = activity.rawContract?.address?.toLowerCase();
+      
+      // Identify token by contract address for accuracy
+      if (contractAddress === "0x765de816845861e75a25fca122bb6898b8b1282a") {
+        asset = "cUSD"; // cUSD token
+      } else if (contractAddress === "0x48065fbbe25f71c9282ddf5e1cd6d6a887483d5e") {
+        asset = "USDT"; // USDT token
       } else if (rawAsset === "ETH") {
-        asset = "CELO"; // Map ETH to CELO for Celo network
+        asset = "CELO"; // Native CELO (mapped as ETH by Alchemy)
+      } else if (rawAsset === "USD₮" || rawAsset === "USDC") {
+        // Fallback for other USD stablecoins
+        asset = contractAddress === "0x48065fbbe25f71c9282ddf5e1cd6d6a887483d5e" ? "USDT" : "cUSD";
       }
       
       console.log(`[CURRENCY] Raw asset: ${rawAsset}, Normalized to: ${asset}, Amount: ${cryptoAmount}`);
@@ -98,9 +106,9 @@ serve(async (req) => {
 
       console.log("Exchange rate USD -> NGN:", usdToNgn);
 
-      // Calculate Naira amount (assuming 1 cUSD = 1 USD, 1 CELO = current market price)
+      // Calculate Naira amount (assuming 1 cUSD = 1 USD, 1 USDT = 1 USD, 1 CELO = current market price)
       let nairaAmount = 0;
-      if (asset === "cUSD") {
+      if (asset === "cUSD" || asset === "USDT") {
         nairaAmount = cryptoAmount * usdToNgn;
       } else if (asset === "CELO") {
         // Fetch real-time CELO price
@@ -314,9 +322,28 @@ serve(async (req) => {
         const userWallet = new ethers.Wallet(userPrivateKey, provider);
         const masterWallet = new ethers.Wallet(masterPrivateKey, provider);
 
-        // STEP 1: Master sends gas (0.002 CELO) to user wallet
-        console.log("[RELAYER] Step 1: Master wallet sending gas...");
-        const gasAmount = ethers.parseEther("0.002");
+        // STEP 1: Master sends gas to user wallet
+        // For cUSD/USDT, send 0.003 CELO (more for ERC20 transfers)
+        // For CELO, send 0.002 CELO (less needed for native transfers)
+        const gasAmount = (asset === "cUSD" || asset === "USDT") 
+          ? ethers.parseEther("0.003") 
+          : ethers.parseEther("0.002");
+        
+        console.log(`[RELAYER] Step 1: Master wallet sending ${ethers.formatEther(gasAmount)} CELO for gas...`);
+        
+        // Check master wallet CELO balance first
+        const masterCeloBalance = await provider.getBalance(masterAddress);
+        console.log(`[RELAYER] Master CELO balance: ${ethers.formatEther(masterCeloBalance)}`);
+        
+        if (masterCeloBalance < gasAmount) {
+          console.log(`[RELAYER] ❌ Insufficient CELO in master wallet for gas`);
+          console.log(`[RELAYER] Has: ${ethers.formatEther(masterCeloBalance)}, Needs: ${ethers.formatEther(gasAmount)}`);
+          await supabase.from("crypto_transactions").update({
+            error_message: `Insufficient CELO in master wallet for gas. Has: ${ethers.formatEther(masterCeloBalance)}, Needs: ${ethers.formatEther(gasAmount)}. Please fund master wallet with CELO.`
+          }).eq("tx_hash", txHash);
+          continue;
+        }
+        
         const gasTx = await masterWallet.sendTransaction({
           to: toAddress,
           value: gasAmount
@@ -328,16 +355,24 @@ serve(async (req) => {
         console.log("[RELAYER] Step 2: Sweeping funds to master...");
         let sweepTxHash = "";
 
-        if (asset === "cUSD") {
-          const cUsdAddress = "0x765DE816845861e75A25fCA122bb6898B8B1282a";
-          const cUsdContract = new ethers.Contract(
-            cUsdAddress,
+        if (asset === "cUSD" || asset === "USDT") {
+          const tokenAddress = asset === "cUSD" 
+            ? "0x765DE816845861e75A25fCA122bb6898B8B1282a" 
+            : "0x48065fBbe25f71C9282ddf5e1cD6D6A887483D5E";
+          
+          const tokenContract = new ethers.Contract(
+            tokenAddress,
             [
               "function transfer(address to, uint256 amount) returns (bool)",
-              "function balanceOf(address account) view returns (uint256)"
+              "function balanceOf(address account) view returns (uint256)",
+              "function decimals() view returns (uint8)"
             ],
             userWallet
           );
+          
+          // Get token decimals
+          const decimals = await tokenContract.decimals();
+          console.log(`[RELAYER] ${asset} decimals: ${decimals}`);
           
           // Wait 10 seconds for deposit to fully settle on-chain
           console.log(`[RELAYER] Waiting 10 seconds for on-chain settlement...`);
@@ -348,15 +383,15 @@ serve(async (req) => {
           let retries = 3;
           
           for (let i = 0; i < retries; i++) {
-            userBalance = await cUsdContract.balanceOf(toAddress);
-            const userBalanceFormatted = ethers.formatEther(userBalance);
-            console.log(`[RELAYER] Attempt ${i + 1}/${retries} - User wallet cUSD balance: ${userBalanceFormatted}`);
+            userBalance = await tokenContract.balanceOf(toAddress);
+            const userBalanceFormatted = ethers.formatUnits(userBalance, decimals);
+            console.log(`[RELAYER] Attempt ${i + 1}/${retries} - User wallet ${asset} balance: ${userBalanceFormatted}`);
             
-            const amountInWei = ethers.parseEther(cryptoAmount.toFixed(6));
+            const amountInWei = ethers.parseUnits(cryptoAmount.toFixed(decimals), decimals);
             
             // Check if balance is sufficient (with 1% tolerance for rounding)
             if (userBalance >= (amountInWei * BigInt(99) / BigInt(100))) {
-              console.log(`[RELAYER] ✅ Balance confirmed: ${userBalanceFormatted} cUSD`);
+              console.log(`[RELAYER] ✅ Balance confirmed: ${userBalanceFormatted} ${asset}`);
               break;
             }
             
@@ -366,27 +401,27 @@ serve(async (req) => {
             }
           }
           
-          const userBalanceFormatted = ethers.formatEther(userBalance);
-          console.log(`[RELAYER] Final check - User wallet cUSD balance: ${userBalanceFormatted}`);
+          const userBalanceFormatted = ethers.formatUnits(userBalance, decimals);
+          console.log(`[RELAYER] Final check - User wallet ${asset} balance: ${userBalanceFormatted}`);
           console.log(`[RELAYER] Expected deposit amount: ${cryptoAmount}`);
           
-          const amountInWei = ethers.parseEther(cryptoAmount.toFixed(6));
+          const amountInWei = ethers.parseUnits(cryptoAmount.toFixed(decimals), decimals);
           
           // Only sweep if user has enough balance (with 1% tolerance for rounding)
           if (userBalance < (amountInWei * BigInt(99) / BigInt(100))) {
             console.log(`[RELAYER] ⚠️ Insufficient user balance to sweep after ${retries} attempts.`);
-            console.log(`[RELAYER] Has: ${userBalanceFormatted} cUSD, Needs: ${cryptoAmount} cUSD`);
+            console.log(`[RELAYER] Has: ${userBalanceFormatted} ${asset}, Needs: ${cryptoAmount} ${asset}`);
             console.log(`[RELAYER] Skipping sweep - funds safe in user wallet.`);
             sweepTxHash = "insufficient_balance_skipped";
           } else {
             // Sweep the actual balance (might be slightly less due to gas estimation)
             const sweepAmount = userBalance > amountInWei ? amountInWei : userBalance;
-            console.log(`[RELAYER] Attempting to sweep ${ethers.formatEther(sweepAmount)} cUSD...`);
+            console.log(`[RELAYER] Attempting to sweep ${ethers.formatUnits(sweepAmount, decimals)} ${asset}...`);
             
-            const sweepTx = await cUsdContract.transfer(masterAddress, sweepAmount);
+            const sweepTx = await tokenContract.transfer(masterAddress, sweepAmount);
             const sweepReceipt = await sweepTx.wait();
             sweepTxHash = sweepReceipt.hash;
-            console.log(`[RELAYER] ✅ cUSD swept: ${sweepTxHash} (amount: ${ethers.formatEther(sweepAmount)})`);
+            console.log(`[RELAYER] ✅ ${asset} swept: ${sweepTxHash} (amount: ${ethers.formatUnits(sweepAmount, decimals)})`);
           }
         } else if (asset === "CELO") {
           // For CELO, keep 0.001 for future gas
