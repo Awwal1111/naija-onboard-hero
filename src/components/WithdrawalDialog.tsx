@@ -48,7 +48,7 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
 
   // Crypto withdrawal state
   const [cryptoWalletAddress, setCryptoWalletAddress] = useState('')
-  const [cryptoCurrency, setCryptoCurrency] = useState<'cUSD' | 'CELO'>('cUSD')
+  const [cryptoCurrency, setCryptoCurrency] = useState<'cUSD' | 'CELO' | 'USDT'>('cUSD')
   const [cryptoAmount, setCryptoAmount] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
@@ -207,12 +207,13 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
 
                 <div className="space-y-2">
                   <Label htmlFor="crypto-currency">Currency</Label>
-                  <Select value={cryptoCurrency} onValueChange={(v) => setCryptoCurrency(v as 'cUSD' | 'CELO')}>
+                  <Select value={cryptoCurrency} onValueChange={(v) => setCryptoCurrency(v as 'cUSD' | 'CELO' | 'USDT')}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="cUSD">cUSD (Stable)</SelectItem>
+                      <SelectItem value="USDT">USDT (Stable)</SelectItem>
                       <SelectItem value="CELO">CELO</SelectItem>
                     </SelectContent>
                   </Select>

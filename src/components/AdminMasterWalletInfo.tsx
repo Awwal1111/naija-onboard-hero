@@ -94,12 +94,18 @@ export const AdminMasterWalletInfo = () => {
       // Try multiple providers for reliability
       let provider;
       try {
-        provider = new ethers.JsonRpcProvider(ALCHEMY_RPC)
+        provider = new ethers.JsonRpcProvider(ALCHEMY_RPC, {
+          name: "celo",
+          chainId: 42220
+        })
         await provider.getNetwork() // Test connection
         console.log('[ADMIN] ✅ Connected to Alchemy RPC')
       } catch (rpcError) {
         console.warn('[ADMIN] ⚠️ Alchemy failed, using Forno fallback')
-        provider = new ethers.JsonRpcProvider("https://forno.celo.org")
+        provider = new ethers.JsonRpcProvider("https://forno.celo.org", {
+          name: "celo",
+          chainId: 42220
+        })
       }
       
       // Get CELO balance with retries

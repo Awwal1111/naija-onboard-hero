@@ -163,26 +163,29 @@ serve(async (req) => {
       }
 
       // Find user by their wallet address (the recipient of the deposit)
-      console.log(`[LOOKUP] Searching for user with wallet: ${toAddress}`);
+      console.log(`[LOOKUP] 🔍 Searching for user with wallet: ${toAddress}`);
+      console.log(`[LOOKUP] 💰 Deposit: ${cryptoAmount} ${asset}`);
+      console.log(`[LOOKUP] 🔗 Tx Hash: ${txHash}`);
       
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("user_id, full_name, telegram_user_id, celo_wallet_address")
-        .eq("celo_wallet_address", toAddress)
+        .ilike("celo_wallet_address", toAddress)
         .maybeSingle();
 
-      console.log(`[LOOKUP] Profile found:`, profile ? `Yes (user: ${profile.user_id})` : 'No');
+      console.log(`[LOOKUP] 📋 Profile found:`, profile ? `✅ Yes (user: ${profile.user_id}, name: ${profile.full_name})` : '❌ No');
       if (profileError) {
-        console.error(`[LOOKUP] Error:`, profileError);
+        console.error(`[LOOKUP] ⚠️ Database Error:`, profileError);
       }
 
       if (!profile) {
-        console.log(`[ERROR] ❌ No user found with wallet address: ${toAddress}`);
-        console.log(`[ERROR] 📍 This address is not registered as any user's wallet`);
-        console.log(`[INFO] 💡 To fund the MASTER WALLET for withdrawals, send to: ${masterWalletAddress}`);
-        console.log(`[INFO] 💡 ${asset} deposits to master wallet will be auto-detected and used for system operations`);
+        console.log(`[ERROR] ❌ DEPOSIT FAILED - No user found with wallet: ${toAddress}`);
+        console.log(`[ERROR] 📍 This ${asset} deposit cannot be credited - wallet not in database`);
+        console.log(`[ERROR] 💡 User needs to generate their wallet in the app first`);
+        console.log(`[INFO] 💡 Master wallet address: ${masterWalletAddress}`);
+        console.log(`[INFO] 📝 If this was meant for master wallet, it's already there`);
         
-        // Create unmatched transaction record
+        // Create unmatched transaction record with clear error
         await supabase.from("crypto_transactions").insert({
           user_id: "00000000-0000-0000-0000-000000000000",
           transaction_type: "deposit",
@@ -194,10 +197,13 @@ serve(async (req) => {
           wallet_address: toAddress,
           tx_hash: txHash,
           status: "failed",
-          error_message: `❌ Unknown wallet: ${toAddress}. Not a registered user. To fund master wallet (for withdrawals), send to: ${masterWalletAddress}`
+          error_message: `❌ UNMATCHED DEPOSIT: ${cryptoAmount} ${asset} sent to ${toAddress} but no user found with this wallet address. User must generate wallet in app first. If funding master wallet, send to: ${masterWalletAddress}`
         });
         continue;
       }
+      
+      console.log(`[CREDIT] ✅ User identified: ${profile.full_name} (${profile.user_id})`);
+      console.log(`[CREDIT] 💵 Will credit: ${ncAmount} NC for ${cryptoAmount} ${asset}`);
 
       // Create transaction record
       console.log(`[CREDIT] Creating transaction record for ${ncAmount} NC`);
