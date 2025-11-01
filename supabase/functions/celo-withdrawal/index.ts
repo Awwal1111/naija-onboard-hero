@@ -48,12 +48,15 @@ serve(async (req) => {
       throw new Error("Unauthorized");
     }
 
-    const { walletAddress, ncAmount, currency } = await req.json();
+    const { walletAddress: rawWalletAddress, ncAmount, currency } = await req.json();
 
-    // Validate inputs
-    if (!walletAddress || !ethers.isAddress(walletAddress)) {
+    // Validate and checksum the address
+    if (!rawWalletAddress || !ethers.isAddress(rawWalletAddress)) {
       throw new Error("Invalid wallet address");
     }
+    
+    // Convert to checksummed address to avoid checksum errors
+    const walletAddress = ethers.getAddress(rawWalletAddress);
 
     if (!ncAmount || ncAmount < MIN_WITHDRAWAL_NC) {
       throw new Error(`Minimum withdrawal is ${MIN_WITHDRAWAL_NC} NC`);
