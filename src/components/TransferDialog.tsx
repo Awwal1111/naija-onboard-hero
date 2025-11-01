@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import { useWallet } from '@/hooks/useWallet'
+import { Link } from 'react-router-dom'
 
 interface TransferDialogProps {
   open: boolean
@@ -314,7 +315,7 @@ export const TransferDialog = ({ open, onOpenChange }: TransferDialogProps) => {
               />
               <p className="text-xs text-muted-foreground">
                 Don't have a PIN? Set it up in{' '}
-                <a href="/settings/pin" className="text-primary underline">Settings</a>
+                <Link to="/settings/pin" className="text-primary underline">Settings</Link>
               </p>
             </div>
 

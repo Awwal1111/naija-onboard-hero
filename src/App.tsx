@@ -5,6 +5,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import SmartAIAssistant from "@/components/SmartAIAssistant";
 import WalletInitializer from "@/components/WalletInitializer";
+import { useAppState } from "@/hooks/useAppState";
 import Welcome from "./pages/Welcome";
 import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
@@ -57,11 +58,18 @@ import NaijaPredictor from "./components/NaijaPredictor";
 import FAQ from "./pages/FAQ";
 import Index from "./pages/Index";
 
+// Component to handle app state persistence
+const AppStateManager = () => {
+  useAppState();
+  return null;
+};
+
 const App = () => (
   <TooltipProvider>
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <AppStateManager />
         <WalletInitializer />
         <Routes>
           <Route path="/" element={<Index />} />
