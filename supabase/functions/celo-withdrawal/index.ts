@@ -20,6 +20,16 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Helper function to safely format BigInt values
+function formatBigInt(value: bigint, decimals: number = 18): string {
+  return (parseFloat(value.toString()) / Math.pow(10, decimals)).toFixed(decimals);
+}
+
+// Helper to safely convert number to string for parseUnits
+function toAmountString(num: number, decimals: number): string {
+  return num.toFixed(decimals);
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -110,8 +120,12 @@ serve(async (req) => {
       .single();
 
     if (txError) {
-      throw new Error("Failed to create transaction record");
+      console.error("[WITHDRAWAL] ❌ Failed to create transaction record:", txError);
+      console.error("[WITHDRAWAL] Error details:", JSON.stringify(txError, null, 2));
+      throw new Error(`Failed to create transaction record: ${txError.message || JSON.stringify(txError)}`);
     }
+
+    console.log(`[WITHDRAWAL] ✅ Transaction record created with ID: ${txRecord.id}`);
 
     // Deduct from user balance first
     const { error: walletError } = await supabase
@@ -182,8 +196,10 @@ serve(async (req) => {
         const decimals = await tokenContract.decimals();
         console.log(`[WITHDRAWAL] 📊 ${currency} decimals: ${decimals}`);
         
-        // Calculate amount based on decimals
-        const amount = ethers.parseUnits(cryptoAmount.toFixed(decimals), decimals);
+        // Calculate amount based on decimals - ensure proper string conversion
+        const amountString = toAmountString(cryptoAmount, Number(decimals));
+        console.log(`[WITHDRAWAL] 📊 Amount string: ${amountString}`);
+        const amount = ethers.parseUnits(amountString, decimals);
         console.log(`[WITHDRAWAL] 📊 Requesting ${cryptoAmount} ${currency} (${amount.toString()} wei)`);
         
         // Check master wallet balance with retries
@@ -193,7 +209,7 @@ serve(async (req) => {
         for (let i = 0; i < balanceCheckAttempts; i++) {
           try {
             masterBalance = await tokenContract.balanceOf(wallet.address);
-            const balanceFormatted = ethers.formatUnits(masterBalance, decimals);
+            const balanceFormatted = formatBigInt(masterBalance, Number(decimals));
             console.log(`[WITHDRAWAL] 💵 Master wallet ${currency} balance (attempt ${i+1}/${balanceCheckAttempts}): ${balanceFormatted}`);
             break;
           } catch (balanceErr) {
@@ -203,12 +219,12 @@ serve(async (req) => {
           }
         }
         
-        const masterBalanceFormatted = ethers.formatUnits(masterBalance, decimals);
+        const masterBalanceFormatted = formatBigInt(masterBalance, Number(decimals));
         console.log(`[WITHDRAWAL] 💰 Master wallet has: ${masterBalanceFormatted} ${currency}`);
         console.log(`[WITHDRAWAL] 📤 User wants: ${cryptoAmount} ${currency}`);
         
         if (masterBalance < amount) {
-          const shortfall = ethers.formatUnits(amount - masterBalance, decimals);
+          const shortfall = formatBigInt(amount - masterBalance, Number(decimals));
           throw new Error(
             `❌ Insufficient master wallet ${currency} balance!\n` +
             `Has: ${masterBalanceFormatted} ${currency}\n` +
@@ -225,15 +241,18 @@ serve(async (req) => {
         console.log(`[WITHDRAWAL] ✅ ${currency} sent successfully: ${txHash}`);
       } else {
         // Send native CELO
-        const amount = ethers.parseEther(cryptoAmount.toFixed(6));
+        const amountString = toAmountString(cryptoAmount, 18);
+        console.log(`[WITHDRAWAL] 📊 CELO amount string: ${amountString}`);
+        const amount = ethers.parseEther(amountString);
         
         // Check master wallet CELO balance
         const masterBalance = await provider.getBalance(wallet.address);
-        console.log(`[WITHDRAWAL] Master wallet CELO balance: ${ethers.formatEther(masterBalance)}`);
+        const masterBalanceFormatted = formatBigInt(masterBalance, 18);
+        console.log(`[WITHDRAWAL] Master wallet CELO balance: ${masterBalanceFormatted}`);
         console.log(`[WITHDRAWAL] Amount needed: ${cryptoAmount} CELO`);
         
         if (masterBalance < amount) {
-          throw new Error(`Insufficient master wallet CELO. Has: ${ethers.formatEther(masterBalance)} CELO, Needs: ${cryptoAmount} CELO. Please fund the master wallet.`);
+          throw new Error(`Insufficient master wallet CELO. Has: ${masterBalanceFormatted} CELO, Needs: ${cryptoAmount} CELO. Please fund the master wallet.`);
         }
         
         const tx = await wallet.sendTransaction({
@@ -245,7 +264,11 @@ serve(async (req) => {
         console.log(`[WITHDRAWAL] ✅ CELO sent: ${txHash}`);
       }
 
-      console.log("Transaction sent:", txHash);
+      if (!txHash) {
+        throw new Error('Transaction not completed or failed - no tx hash returned');
+      }
+
+      console.log("✅ Transaction sent successfully:", txHash);
 
       // Update transaction record as completed
       await supabase
