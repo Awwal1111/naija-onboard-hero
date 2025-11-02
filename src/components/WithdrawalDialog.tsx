@@ -173,7 +173,7 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
             </TabsTrigger>
             <TabsTrigger value="manual" className="gap-1 sm:gap-2 text-xs sm:text-sm py-2">
               <Send className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span>Manual</span>
+              <span>Bank</span>
             </TabsTrigger>
           </TabsList>
 
@@ -273,19 +273,101 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
           </TabsContent>
 
           <TabsContent value="manual" className="space-y-4">
-            <Card className="bg-red-500/5 border-red-500/20">
-              <CardContent className="pt-6 space-y-4">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="h-5 w-5 text-red-500 mt-0.5" />
-                  <div className="text-sm space-y-2">
-                    <p className="font-medium text-red-500">Manual Withdrawal Temporarily Unavailable</p>
-                    <p className="text-muted-foreground">
-                      Manual bank withdrawals are currently disabled. Please use automatic crypto withdrawal instead.
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Automatic withdrawal is instant and more secure. Your NC will be converted to crypto and sent directly to your wallet.
-                    </p>
-                  </div>
+            <Card className="bg-green-500/5 border-green-500/20">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Send className="h-5 w-5 text-green-500" />
+                  Cash Out to Bank
+                  <Badge variant="default" className="bg-green-500">Direct</Badge>
+                </CardTitle>
+                <CardDescription>
+                  Convert NC to Naira and receive directly in your bank account
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Alert>
+                  <Info className="h-4 w-4" />
+                  <AlertDescription className="text-xs">
+                    <p className="font-medium mb-1">How it works:</p>
+                    <p>• Your NC is converted to USDT</p>
+                    <p>• USDT is sold for Naira via Quidax</p>
+                    <p>• Naira is sent directly to your bank account</p>
+                    <p>• Usually completes within 5-10 minutes</p>
+                  </AlertDescription>
+                </Alert>
+
+                <div className="p-4 bg-muted rounded-lg">
+                  <p className="text-xs text-muted-foreground">Your Withdrawable Balance</p>
+                  <p className="text-2xl font-bold">NC {currentBalance.toLocaleString()}</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="bank-amount">Amount (NC)</Label>
+                  <Input
+                    id="bank-amount"
+                    type="number"
+                    placeholder="Enter NC amount"
+                    min="100"
+                    step="100"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Min: NC 100 | Available: NC {currentBalance.toLocaleString()}
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="bank-account">Bank Account Number</Label>
+                  <Input
+                    id="bank-account"
+                    placeholder="0123456789"
+                    maxLength={10}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="bank-name">Bank</Label>
+                  <Select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select your bank" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {nigerianBanks.map((bank) => (
+                        <SelectItem key={bank.code} value={bank.code}>
+                          {bank.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="account-name">Account Name</Label>
+                  <Input
+                    id="account-name"
+                    placeholder="As shown on your bank account"
+                    disabled
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Auto-verified after entering account number
+                  </p>
+                </div>
+
+                <BrandButton 
+                  className="w-full"
+                  disabled
+                  onClick={() => toast.info('Quidax integration coming soon! Please use crypto withdrawal for now.')}
+                >
+                  Withdraw to Bank Account
+                </BrandButton>
+
+                <div className="text-xs text-muted-foreground space-y-1 border-t pt-4">
+                  <p className="font-medium">Benefits:</p>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>No manual approval needed</li>
+                    <li>Direct to your bank account</li>
+                    <li>Secure automated processing</li>
+                    <li>Real-time status updates</li>
+                  </ul>
                 </div>
               </CardContent>
             </Card>

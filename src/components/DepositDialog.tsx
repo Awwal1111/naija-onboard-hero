@@ -134,7 +134,7 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
               Deposit
             </TabsTrigger>
             <TabsTrigger value="manual">
-              Manual/Bank Transfer
+              Buy with Bank
             </TabsTrigger>
           </TabsList>
 
@@ -211,64 +211,63 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
           </TabsContent>
 
           <TabsContent value="manual" className="space-y-4">
-            <Card className="bg-orange-500/5 border-orange-500/20">
-              <CardContent className="pt-6 space-y-4">
-                <div className="flex items-start gap-3">
-                  <Info className="h-5 w-5 text-orange-500 mt-0.5" />
-                  <div className="text-sm space-y-1">
-                    <p className="font-medium">Manual Bank Transfer (Slower)</p>
-                    <p className="text-muted-foreground">
-                      Requires admin approval. May take 5-30 minutes.
-                    </p>
-                  </div>
+            <Card className="bg-green-500/5 border-green-500/20">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Send className="h-5 w-5 text-green-500" />
+                  Buy NC with Bank Transfer
+                  <Badge variant="default" className="bg-green-500">Instant</Badge>
+                </CardTitle>
+                <CardDescription>
+                  Pay with your bank account and receive USDT automatically
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Alert>
+                  <Info className="h-4 w-4" />
+                  <AlertDescription className="text-xs">
+                    <p className="font-medium mb-1">How it works:</p>
+                    <p>• Enter amount in Naira you want to deposit</p>
+                    <p>• Pay securely with your bank account or card</p>
+                    <p>• USDT is sent directly to your wallet</p>
+                    <p>• Automatically converted to NC within minutes</p>
+                  </AlertDescription>
+                </Alert>
+
+                <div className="space-y-2">
+                  <Label htmlFor="fiat-amount">Amount (₦)</Label>
+                  <Input
+                    id="fiat-amount"
+                    type="number"
+                    placeholder="Enter amount in Naira"
+                    min="1000"
+                    step="100"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Minimum: ₦1,000 | Powered by Quidax
+                  </p>
+                </div>
+
+                <BrandButton 
+                  className="w-full gap-2"
+                  size="lg"
+                  onClick={() => toast.info('Quidax integration coming soon! Please use crypto deposit for now.')}
+                >
+                  <Send className="h-5 w-5" />
+                  Continue with Bank Payment
+                </BrandButton>
+
+                <div className="text-xs text-muted-foreground space-y-1 border-t pt-4">
+                  <p className="font-medium">Benefits:</p>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>No manual approval needed</li>
+                    <li>Instant conversion to crypto</li>
+                    <li>Secure payment processing</li>
+                    <li>Multiple payment methods supported</li>
+                  </ul>
                 </div>
               </CardContent>
             </Card>
-
-            <Card className="bg-primary/5 border-primary/20">
-              <CardContent className="pt-6 space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-sm">Bank Details</h3>
-                  <BrandButton size="sm" variant="ghost" onClick={copyBankDetails}>
-                    <Copy className="h-4 w-4 mr-1" />
-                    Copy
-                  </BrandButton>
-                </div>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Bank:</span>
-                    <span className="font-medium">Opay</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Account Number:</span>
-                    <span className="font-medium font-mono">8129002732</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Account Name:</span>
-                    <span className="font-medium">Awwal Dayyabu</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <BrandButton 
-              onClick={handleTelegramDeposit} 
-              className="w-full gap-2"
-              size="lg"
-            >
-              <Send className="h-5 w-5" />
-              Continue with Telegram
-            </BrandButton>
-
-            <div className="text-xs text-muted-foreground space-y-1 border-t pt-4">
-              <p className="font-medium">How it works:</p>
-              <ol className="list-decimal list-inside space-y-1">
-                <li>Transfer money to the bank account above</li>
-                <li>Click "Continue with Telegram"</li>
-                <li>Send amount and proof screenshot to the bot</li>
-                <li>Wait for admin approval (5-30 minutes)</li>
-              </ol>
-            </div>
           </TabsContent>
         </Tabs>
       </DialogContent>

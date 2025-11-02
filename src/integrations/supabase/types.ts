@@ -2728,6 +2728,57 @@ export type Database = {
         }
         Relationships: []
       }
+      quidax_transactions: {
+        Row: {
+          created_at: string
+          fiat_amount: number
+          fiat_currency: string
+          id: string
+          quidax_data: Json | null
+          reference: string
+          status: string
+          token: string
+          token_amount: number | null
+          transaction_type: string
+          tx_hash: string | null
+          updated_at: string
+          user_id: string
+          wallet_address: string | null
+        }
+        Insert: {
+          created_at?: string
+          fiat_amount: number
+          fiat_currency?: string
+          id?: string
+          quidax_data?: Json | null
+          reference: string
+          status?: string
+          token?: string
+          token_amount?: number | null
+          transaction_type: string
+          tx_hash?: string | null
+          updated_at?: string
+          user_id: string
+          wallet_address?: string | null
+        }
+        Update: {
+          created_at?: string
+          fiat_amount?: number
+          fiat_currency?: string
+          id?: string
+          quidax_data?: Json | null
+          reference?: string
+          status?: string
+          token?: string
+          token_amount?: number | null
+          transaction_type?: string
+          tx_hash?: string | null
+          updated_at?: string
+          user_id?: string
+          wallet_address?: string | null
+        }
+        Relationships: []
+      }
       rate_limits: {
         Row: {
           action: string
