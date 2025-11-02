@@ -24,12 +24,29 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
   const [walletAddress, setWalletAddress] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [creatingWallet, setCreatingWallet] = useState(false)
+  
+  // Quidax On-Ramp state
+  const [fiatAmount, setFiatAmount] = useState('')
+  const [paymentMethod, setPaymentMethod] = useState('')
+  const [paymentMethods, setPaymentMethods] = useState<any[]>([])
+  const [quote, setQuote] = useState<any>(null)
+  const [isLoadingQuote, setIsLoadingQuote] = useState(false)
+  const [isProcessing, setIsProcessing] = useState(false)
 
   useEffect(() => {
     if (user && profile) {
       loadWalletAddress()
+      loadPaymentMethods()
     }
   }, [user, profile])
+
+  useEffect(() => {
+    if (fiatAmount && parseFloat(fiatAmount) >= 1000) {
+      fetchQuote()
+    } else {
+      setQuote(null)
+    }
+  }, [fiatAmount])
 
   const loadWalletAddress = async () => {
     if (!user) return
@@ -112,6 +129,93 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
     if (walletAddress) {
       navigator.clipboard.writeText(walletAddress)
       toast.success('Wallet address copied!')
+    }
+  }
+
+  const loadPaymentMethods = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('quidax-on-ramp', {
+        body: { action: 'get_payment_methods' }
+      })
+      
+      if (error) throw error
+      if (data?.data) {
+        setPaymentMethods(data.data)
+        if (data.data.length > 0) {
+          setPaymentMethod(data.data[0].id)
+        }
+      }
+    } catch (error: any) {
+      console.error('Error loading payment methods:', error)
+    }
+  }
+
+  const fetchQuote = async () => {
+    if (!fiatAmount || parseFloat(fiatAmount) < 1000) return
+    
+    setIsLoadingQuote(true)
+    try {
+      const { data, error } = await supabase.functions.invoke('quidax-on-ramp', {
+        body: { 
+          action: 'get_quote',
+          fiatAmount: parseFloat(fiatAmount)
+        }
+      })
+      
+      if (error) throw error
+      if (data?.data) {
+        setQuote(data.data)
+      }
+    } catch (error: any) {
+      console.error('Error fetching quote:', error)
+      toast.error('Failed to get quote')
+    } finally {
+      setIsLoadingQuote(false)
+    }
+  }
+
+  const handleBankDeposit = async () => {
+    if (!fiatAmount || parseFloat(fiatAmount) < 1000) {
+      toast.error('Minimum deposit is ₦1,000')
+      return
+    }
+
+    if (!walletAddress) {
+      toast.error('Wallet not found. Please try again.')
+      return
+    }
+
+    if (!paymentMethod) {
+      toast.error('Please select a payment method')
+      return
+    }
+
+    setIsProcessing(true)
+    try {
+      const { data, error } = await supabase.functions.invoke('quidax-on-ramp', {
+        body: {
+          action: 'initiate_purchase',
+          fiatAmount: parseFloat(fiatAmount),
+          paymentMethod,
+          walletAddress
+        }
+      })
+
+      if (error) throw error
+
+      if (data?.data?.payment_url) {
+        toast.success('Redirecting to payment page...')
+        window.open(data.data.payment_url, '_blank')
+        onOpenChange(false)
+      } else if (data?.reference) {
+        toast.success('Deposit initiated! You will be notified when USDT arrives.')
+        onOpenChange(false)
+      }
+    } catch (error: any) {
+      console.error('Bank deposit error:', error)
+      toast.error(error.message || 'Failed to initiate deposit')
+    } finally {
+      setIsProcessing(false)
     }
   }
 
@@ -242,19 +346,50 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
                     placeholder="Enter amount in Naira"
                     min="1000"
                     step="100"
+                    value={fiatAmount}
+                    onChange={(e) => setFiatAmount(e.target.value)}
                   />
                   <p className="text-xs text-muted-foreground">
                     Minimum: ₦1,000 | Powered by Quidax
                   </p>
                 </div>
 
+                {paymentMethods.length > 0 && (
+                  <div className="space-y-2">
+                    <Label htmlFor="payment-method">Payment Method</Label>
+                    <select
+                      id="payment-method"
+                      value={paymentMethod}
+                      onChange={(e) => setPaymentMethod(e.target.value)}
+                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    >
+                      {paymentMethods.map((method) => (
+                        <option key={method.id} value={method.id}>
+                          {method.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {quote && (
+                  <div className="p-3 bg-muted rounded-lg space-y-1">
+                    <p className="text-xs text-muted-foreground">You will receive approximately:</p>
+                    <p className="text-lg font-bold">{quote.token_amount} USDT</p>
+                    <p className="text-xs text-muted-foreground">
+                      Rate: ₦{quote.rate} per USDT
+                    </p>
+                  </div>
+                )}
+
                 <BrandButton 
                   className="w-full gap-2"
                   size="lg"
-                  onClick={() => toast.info('Quidax integration coming soon! Please use crypto deposit for now.')}
+                  onClick={handleBankDeposit}
+                  disabled={isProcessing || !fiatAmount || parseFloat(fiatAmount) < 1000 || !walletAddress}
                 >
                   <Send className="h-5 w-5" />
-                  Continue with Bank Payment
+                  {isProcessing ? 'Processing...' : 'Continue with Bank Payment'}
                 </BrandButton>
 
                 <div className="text-xs text-muted-foreground space-y-1 border-t pt-4">

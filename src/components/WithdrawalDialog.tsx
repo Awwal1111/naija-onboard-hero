@@ -39,12 +39,14 @@ const nigerianBanks = [
 export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: WithdrawalDialogProps) => {
   const { initiateWithdrawal } = useWallet()
   
-  // Bank withdrawal state
-  const [amount, setAmount] = useState('')
-  const [accountNumber, setAccountNumber] = useState('')
-  const [accountName, setAccountName] = useState('')
-  const [bankCode, setBankCode] = useState('')
-  const [loading, setLoading] = useState(false)
+  // Bank withdrawal state (Quidax Off-Ramp)
+  const [bankAmount, setBankAmount] = useState('')
+  const [bankAccountNumber, setBankAccountNumber] = useState('')
+  const [bankAccountName, setBankAccountName] = useState('')
+  const [selectedBankCode, setSelectedBankCode] = useState('')
+  const [bankLoading, setBankLoading] = useState(false)
+  const [offRampQuote, setOffRampQuote] = useState<any>(null)
+  const [isLoadingOffRampQuote, setIsLoadingOffRampQuote] = useState(false)
 
   // Crypto withdrawal state
   const [cryptoWalletAddress, setCryptoWalletAddress] = useState('')
@@ -52,8 +54,43 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
   const [cryptoAmount, setCryptoAmount] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
-  const handleWithdraw = async () => {
-    const withdrawAmount = parseFloat(amount)
+  React.useEffect(() => {
+    if (bankAmount && parseFloat(bankAmount) >= 100) {
+      fetchOffRampQuote()
+    } else {
+      setOffRampQuote(null)
+    }
+  }, [bankAmount])
+
+  const fetchOffRampQuote = async () => {
+    if (!bankAmount || parseFloat(bankAmount) < 100) return
+    
+    const ncAmount = parseFloat(bankAmount)
+    // Convert NC to USDT (assuming 1 NC ≈ 1 NGN ≈ 0.000625 USDT at ₦1600/USD)
+    const usdtAmount = ncAmount / 1600
+
+    setIsLoadingOffRampQuote(true)
+    try {
+      const { data, error } = await supabase.functions.invoke('quidax-off-ramp', {
+        body: { 
+          action: 'get_quote',
+          tokenAmount: usdtAmount
+        }
+      })
+      
+      if (error) throw error
+      if (data?.data) {
+        setOffRampQuote(data.data)
+      }
+    } catch (error: any) {
+      console.error('Error fetching off-ramp quote:', error)
+    } finally {
+      setIsLoadingOffRampQuote(false)
+    }
+  }
+
+  const handleBankWithdrawal = async () => {
+    const withdrawAmount = parseFloat(bankAmount)
     if (!withdrawAmount || withdrawAmount < 100) {
       toast.error("Minimum withdrawal is NC 100")
       return
@@ -64,31 +101,42 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
       return
     }
     
-    if (!accountNumber || !accountName || !bankCode) {
+    if (!bankAccountNumber || !bankAccountName || !selectedBankCode) {
       toast.error("Please fill in all bank details")
       return
     }
 
-    setLoading(true)
+    setBankLoading(true)
     try {
       const bankDetails = {
-        account_number: accountNumber,
-        account_name: accountName,
-        bank_code: bankCode
+        account_number: bankAccountNumber,
+        account_name: bankAccountName,
+        bank_code: selectedBankCode
       }
 
-      const result = await initiateWithdrawal(withdrawAmount, bankDetails)
-      if (result.success) {
+      const { data, error } = await supabase.functions.invoke('quidax-off-ramp', {
+        body: {
+          action: 'initiate_withdrawal',
+          ncAmount: withdrawAmount,
+          bankDetails
+        }
+      })
+
+      if (error) throw error
+
+      if (data?.success) {
+        toast.success('Withdrawal initiated! Funds will arrive in your bank account shortly.')
         onOpenChange(false)
-        setAmount('')
-        setAccountNumber('')
-        setAccountName('')
-        setBankCode('')
+        setBankAmount('')
+        setBankAccountNumber('')
+        setBankAccountName('')
+        setSelectedBankCode('')
       }
-    } catch (error) {
-      console.error('Withdrawal error:', error)
+    } catch (error: any) {
+      console.error('Bank withdrawal error:', error)
+      toast.error(error.message || 'Withdrawal failed. Please try again.')
     } finally {
-      setLoading(false)
+      setBankLoading(false)
     }
   }
 
@@ -309,11 +357,23 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
                     placeholder="Enter NC amount"
                     min="100"
                     step="100"
+                    value={bankAmount}
+                    onChange={(e) => setBankAmount(e.target.value)}
                   />
                   <p className="text-xs text-muted-foreground">
                     Min: NC 100 | Available: NC {currentBalance.toLocaleString()}
                   </p>
                 </div>
+
+                {offRampQuote && (
+                  <div className="p-3 bg-muted rounded-lg space-y-1">
+                    <p className="text-xs text-muted-foreground">You will receive approximately:</p>
+                    <p className="text-lg font-bold">₦{offRampQuote.fiat_amount?.toLocaleString()}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Rate: ₦{offRampQuote.rate} per USDT
+                    </p>
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <Label htmlFor="bank-account">Bank Account Number</Label>
@@ -321,12 +381,14 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
                     id="bank-account"
                     placeholder="0123456789"
                     maxLength={10}
+                    value={bankAccountNumber}
+                    onChange={(e) => setBankAccountNumber(e.target.value)}
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="bank-name">Bank</Label>
-                  <Select>
+                  <Select value={selectedBankCode} onValueChange={setSelectedBankCode}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select your bank" />
                     </SelectTrigger>
@@ -344,20 +406,18 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
                   <Label htmlFor="account-name">Account Name</Label>
                   <Input
                     id="account-name"
-                    placeholder="As shown on your bank account"
-                    disabled
+                    placeholder="Enter account name as shown on bank"
+                    value={bankAccountName}
+                    onChange={(e) => setBankAccountName(e.target.value)}
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Auto-verified after entering account number
-                  </p>
                 </div>
 
                 <BrandButton 
                   className="w-full"
-                  disabled
-                  onClick={() => toast.info('Quidax integration coming soon! Please use crypto withdrawal for now.')}
+                  onClick={handleBankWithdrawal}
+                  disabled={bankLoading || !bankAmount || parseFloat(bankAmount) < 100 || !bankAccountNumber || !bankAccountName || !selectedBankCode}
                 >
-                  Withdraw to Bank Account
+                  {bankLoading ? 'Processing...' : 'Withdraw to Bank Account'}
                 </BrandButton>
 
                 <div className="text-xs text-muted-foreground space-y-1 border-t pt-4">
