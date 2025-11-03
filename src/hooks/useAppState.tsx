@@ -30,26 +30,8 @@ export const useAppState = () => {
       if (!document.hidden) {
         // App is coming back to foreground
         console.log('[AppState] App resumed from background');
-        
-        try {
-          // Try to restore from sessionStorage first, then localStorage
-          const savedRouteStr = sessionStorage.getItem('lastRoute') || localStorage.getItem('lastRoute');
-          
-          if (savedRouteStr) {
-            const savedRoute = JSON.parse(savedRouteStr);
-            const currentPath = location.pathname + location.search;
-            
-            // Only restore if route is different and was saved within last hour
-            const oneHour = 60 * 60 * 1000;
-            if (savedRoute.path !== currentPath && 
-                Date.now() - savedRoute.timestamp < oneHour) {
-              console.log('[AppState] Restoring route:', savedRoute.path);
-              navigate(savedRoute.path, { replace: true });
-            }
-          }
-        } catch (error) {
-          console.error('[AppState] Error restoring route:', error);
-        }
+        // DO NOT navigate - just log the resume event
+        // This prevents the app from refreshing/reloading when minimized and reopened
       } else {
         // App is going to background - save state
         console.log('[AppState] App going to background');

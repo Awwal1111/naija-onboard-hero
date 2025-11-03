@@ -138,19 +138,35 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
 
   const loadPaymentMethods = async () => {
     try {
+      console.log('[DEPOSIT] Loading payment methods...')
       const { data, error } = await supabase.functions.invoke('quidax-on-ramp', {
         body: { action: 'get_payment_methods' }
       })
       
-      if (error) throw error
-      if (data?.data) {
-        setPaymentMethods(data.data)
-        if (data.data.length > 0) {
-          setPaymentMethod(data.data[0].id)
-        }
+      console.log('[DEPOSIT] Payment methods response:', data)
+      console.log('[DEPOSIT] Payment methods error:', error)
+      
+      if (error) {
+        console.error('[DEPOSIT] Failed to load payment methods:', error)
+        toast.error('Failed to load payment methods')
+        throw error
+      }
+      
+      // Handle both data.data and direct data response formats
+      const methods = data?.data || data?.payment_methods || []
+      console.log('[DEPOSIT] Extracted payment methods:', methods)
+      
+      if (Array.isArray(methods) && methods.length > 0) {
+        setPaymentMethods(methods)
+        setPaymentMethod(methods[0].id || methods[0].code || methods[0].name)
+        console.log('[DEPOSIT] Payment methods loaded:', methods.length)
+      } else {
+        console.warn('[DEPOSIT] No payment methods available in response')
+        toast.error('No payment methods available')
       }
     } catch (error: any) {
-      console.error('Error loading payment methods:', error)
+      console.error('[DEPOSIT] Error loading payment methods:', error)
+      toast.error('Failed to load payment methods')
     }
   }
 

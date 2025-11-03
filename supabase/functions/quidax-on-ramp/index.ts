@@ -38,6 +38,8 @@ serve(async (req) => {
     switch (action) {
       case 'get_payment_methods': {
         // GET /api/v1/merchants/payment_methods?currency=NGN&side=buy
+        console.log(`[QUIDAX_ON_RAMP] Fetching payment methods...`);
+        
         const response = await fetch(
           `${QUIDAX_BASE_URL}/payment_methods?currency=NGN&side=buy`,
           {
@@ -47,7 +49,11 @@ serve(async (req) => {
             }
           }
         );
+        
+        console.log(`[QUIDAX_ON_RAMP] Payment methods response status: ${response.status}`);
         const data = await response.json();
+        console.log(`[QUIDAX_ON_RAMP] Payment methods data:`, JSON.stringify(data, null, 2));
+        
         return new Response(JSON.stringify(data), {
           headers: { ...corsHeaders, "Content-Type": "application/json" }
         });
