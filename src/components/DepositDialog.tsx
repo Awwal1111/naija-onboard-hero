@@ -41,11 +41,15 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
   }, [user, profile])
 
   useEffect(() => {
-    if (fiatAmount && parseFloat(fiatAmount) >= 1000) {
-      fetchQuote()
-    } else {
-      setQuote(null)
-    }
+    const timer = setTimeout(() => {
+      if (fiatAmount && parseFloat(fiatAmount) >= 1000) {
+        fetchQuote()
+      } else {
+        setQuote(null)
+      }
+    }, 500) // Debounce to avoid too many API calls
+    
+    return () => clearTimeout(timer)
   }, [fiatAmount])
 
   const loadWalletAddress = async () => {
@@ -181,7 +185,7 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
     }
 
     if (!walletAddress) {
-      toast.error('Wallet not found. Please try again.')
+      toast.error('Please wait for your wallet to be generated before proceeding.')
       return
     }
 
@@ -192,6 +196,12 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
 
     setIsProcessing(true)
     try {
+      console.log('[DEPOSIT] Initiating Quidax purchase...', {
+        fiatAmount: parseFloat(fiatAmount),
+        paymentMethod,
+        walletAddress
+      })
+
       const { data, error } = await supabase.functions.invoke('quidax-on-ramp', {
         body: {
           action: 'initiate_purchase',
@@ -201,15 +211,24 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
         }
       })
 
-      if (error) throw error
+      console.log('[DEPOSIT] Quidax response:', data)
+
+      if (error) {
+        console.error('[DEPOSIT] Quidax error:', error)
+        throw error
+      }
 
       if (data?.data?.payment_url) {
         toast.success('Redirecting to payment page...')
         window.open(data.data.payment_url, '_blank')
         onOpenChange(false)
-      } else if (data?.reference) {
-        toast.success('Deposit initiated! You will be notified when USDT arrives.')
+      } else if (data?.data?.reference || data?.reference) {
+        const reference = data?.data?.reference || data?.reference
+        toast.success(`Deposit initiated! Reference: ${reference}. You will be notified when USDT arrives.`)
         onOpenChange(false)
+      } else {
+        console.warn('[DEPOSIT] Unexpected response format:', data)
+        toast.error('Unexpected response from payment provider. Please contact support.')
       }
     } catch (error: any) {
       console.error('Bank deposit error:', error)
@@ -292,9 +311,12 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
                   <div className="text-center py-8 space-y-4">
                     <AlertCircle className="h-12 w-12 mx-auto text-orange-500" />
                     <div>
-                      <p className="font-medium">No Wallet Found</p>
-                      <p className="text-sm text-muted-foreground">Contact support to create your wallet</p>
+                      <p className="font-medium">Wallet Generation in Progress</p>
+                      <p className="text-sm text-muted-foreground">Your wallet is being created. Please refresh this page in a moment.</p>
                     </div>
+                    <BrandButton onClick={loadWalletAddress}>
+                      Refresh Wallet Status
+                    </BrandButton>
                   </div>
                 )}
               </CardContent>
@@ -327,13 +349,23 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                {!walletAddress && (
+                  <Alert className="bg-orange-500/10 border-orange-500/20">
+                    <AlertCircle className="h-4 w-4 text-orange-500" />
+                    <AlertDescription className="text-xs">
+                      <p className="font-medium">Wallet Required</p>
+                      <p>Please go to the <strong>Deposit</strong> tab and wait for your wallet to be generated before proceeding with bank payments.</p>
+                    </AlertDescription>
+                  </Alert>
+                )}
+
                 <Alert>
                   <Info className="h-4 w-4" />
                   <AlertDescription className="text-xs">
                     <p className="font-medium mb-1">How it works:</p>
                     <p>• Enter amount in Naira you want to deposit</p>
                     <p>• Pay securely with your bank account or card</p>
-                    <p>• USDT is sent directly to your wallet</p>
+                    <p>• USDT (Celo Network) is sent directly to your wallet</p>
                     <p>• Automatically converted to NC within minutes</p>
                   </AlertDescription>
                 </Alert>
@@ -372,12 +404,18 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
                   </div>
                 )}
 
-                {quote && (
-                  <div className="p-3 bg-muted rounded-lg space-y-1">
+{isLoadingQuote && fiatAmount && parseFloat(fiatAmount) >= 1000 && (
+                  <div className="p-3 bg-muted rounded-lg">
+                    <p className="text-xs text-muted-foreground">Fetching quote...</p>
+                  </div>
+                )}
+
+                {quote && !isLoadingQuote && (
+                  <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg space-y-1">
                     <p className="text-xs text-muted-foreground">You will receive approximately:</p>
-                    <p className="text-lg font-bold">{quote.token_amount} USDT</p>
+                    <p className="text-lg font-bold text-primary">{quote.token_amount} USDT</p>
                     <p className="text-xs text-muted-foreground">
-                      Rate: ₦{quote.rate} per USDT
+                      Rate: ₦{quote.rate} per USDT • Network: Celo
                     </p>
                   </div>
                 )}

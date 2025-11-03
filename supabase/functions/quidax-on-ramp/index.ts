@@ -71,14 +71,14 @@ serve(async (req) => {
       }
 
       case 'get_quote': {
-        // GET /api/v1/merchants/purchase_quotes/buy?currency=NGN&token=USDT&fiat_amount=X&token_network=BEP20
+        // GET /api/v1/merchants/purchase_quotes/buy?currency=NGN&token=USDT&fiat_amount=X&token_network=CELO
         const { fiatAmount } = params;
         if (!fiatAmount || fiatAmount <= 0) {
           throw new Error("Invalid fiat amount");
         }
 
         const response = await fetch(
-          `${QUIDAX_BASE_URL}/purchase_quotes/buy?currency=NGN&token=USDT&fiat_amount=${fiatAmount}&token_network=BEP20`,
+          `${QUIDAX_BASE_URL}/purchase_quotes/buy?currency=NGN&token=USDT&fiat_amount=${fiatAmount}&token_network=CELO`,
           {
             headers: {
               'Authorization': `Bearer ${QUIDAX_PUBLIC_KEY}`,
@@ -105,12 +105,14 @@ serve(async (req) => {
         const requestBody = {
           currency: "NGN",
           token: "USDT",
-          token_network: "BEP20",
+          token_network: "CELO",
           fiat_amount: fiatAmount,
           payment_method: paymentMethod,
           wallet_address: walletAddress,
           callback_url: `${SUPABASE_URL}/functions/v1/quidax-webhook`
         };
+        
+        console.log(`[QUIDAX_ON_RAMP] Request body:`, requestBody);
 
         const response = await fetch(
           `${QUIDAX_BASE_URL}/on_ramp_transaction`,
