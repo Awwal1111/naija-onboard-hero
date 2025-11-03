@@ -100,7 +100,10 @@ serve(async (req) => {
           throw new Error("Missing required parameters");
         }
 
-        console.log(`[QUIDAX_ON_RAMP] Initiating purchase: ${fiatAmount} NGN → USDT to ${walletAddress}`);
+        console.log(`[QUIDAX_ON_RAMP] ========== INITIATING PURCHASE ==========`);
+        console.log(`[QUIDAX_ON_RAMP] Amount: ${fiatAmount} NGN → USDT`);
+        console.log(`[QUIDAX_ON_RAMP] Wallet: ${walletAddress}`);
+        console.log(`[QUIDAX_ON_RAMP] Payment Method: ${paymentMethod}`);
 
         const requestBody = {
           currency: "NGN",
@@ -112,7 +115,8 @@ serve(async (req) => {
           callback_url: `${SUPABASE_URL}/functions/v1/quidax-webhook`
         };
         
-        console.log(`[QUIDAX_ON_RAMP] Request body:`, requestBody);
+        console.log(`[QUIDAX_ON_RAMP] Request body:`, JSON.stringify(requestBody, null, 2));
+        console.log(`[QUIDAX_ON_RAMP] Endpoint: ${QUIDAX_BASE_URL}/on_ramp_transaction`);
 
         const response = await fetch(
           `${QUIDAX_BASE_URL}/on_ramp_transaction`,
@@ -126,8 +130,24 @@ serve(async (req) => {
           }
         );
 
-        const data = await response.json();
-        console.log(`[QUIDAX_ON_RAMP] Response:`, data);
+        console.log(`[QUIDAX_ON_RAMP] Response status: ${response.status} ${response.statusText}`);
+        
+        const responseText = await response.text();
+        console.log(`[QUIDAX_ON_RAMP] Raw response:`, responseText);
+        
+        let data;
+        try {
+          data = JSON.parse(responseText);
+          console.log(`[QUIDAX_ON_RAMP] Parsed response:`, JSON.stringify(data, null, 2));
+        } catch (e) {
+          console.error(`[QUIDAX_ON_RAMP] Failed to parse response as JSON:`, e);
+          throw new Error(`Quidax API returned invalid JSON: ${responseText}`);
+        }
+
+        if (!response.ok) {
+          console.error(`[QUIDAX_ON_RAMP] ❌ Quidax API error:`, data);
+          throw new Error(data?.message || data?.error || `Quidax API error: ${response.status}`);
+        }
 
         // Store transaction reference
         if (data.reference) {
