@@ -99,7 +99,7 @@ serve(async (req) => {
       }
 
       case 'initiate_purchase': {
-        // POST /api/v1/merchants/custodial/on_ramp_transactions/initiate
+        // POST /api/v1/merchants/on_ramp_transactions/initiate (non-custodial)
         const { fiatAmount, paymentMethod, walletAddress } = params;
 
         if (!fiatAmount || !walletAddress) {
@@ -134,10 +134,10 @@ serve(async (req) => {
         };
         
         console.log(`[QUIDAX_ON_RAMP] Request body:`, JSON.stringify(requestBody, null, 2));
-        console.log(`[QUIDAX_ON_RAMP] Endpoint: ${QUIDAX_BASE_URL}/custodial/on_ramp_transactions/initiate`);
+        console.log(`[QUIDAX_ON_RAMP] Endpoint: ${QUIDAX_BASE_URL}/on_ramp_transactions/initiate`);
 
         const response = await fetch(
-          `${QUIDAX_BASE_URL}/custodial/on_ramp_transactions/initiate`,
+          `${QUIDAX_BASE_URL}/on_ramp_transactions/initiate`,
           {
             method: 'POST',
             headers: {
