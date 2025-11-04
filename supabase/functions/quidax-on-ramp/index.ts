@@ -99,33 +99,45 @@ serve(async (req) => {
       }
 
       case 'initiate_purchase': {
-        // POST /api/v1/merchants/on_ramp_transaction
+        // POST /api/v1/merchants/custodial/on_ramp_transactions/initiate
         const { fiatAmount, paymentMethod, walletAddress } = params;
 
-        if (!fiatAmount || !paymentMethod || !walletAddress) {
+        if (!fiatAmount || !walletAddress) {
           throw new Error("Missing required parameters");
         }
 
         console.log(`[QUIDAX_ON_RAMP] ========== INITIATING PURCHASE ==========`);
         console.log(`[QUIDAX_ON_RAMP] Amount: ${fiatAmount} NGN → USDT`);
         console.log(`[QUIDAX_ON_RAMP] Wallet: ${walletAddress}`);
-        console.log(`[QUIDAX_ON_RAMP] Payment Method: ${paymentMethod}`);
+
+        // Get user profile for customer details
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name, email')
+          .eq('user_id', user.id)
+          .single();
 
         const requestBody = {
-          currency: "ngn",
-          token: "usdt",
-          token_network: "celo",
-          fiat_amount: fiatAmount,
-          payment_method: paymentMethod,
-          wallet_address: walletAddress,
-          callback_url: `${SUPABASE_URL}/functions/v1/quidax-webhook`
+          from_currency: "ngn",
+          to_currency: "usdt",
+          from_amount: fiatAmount.toString(),
+          merchant_reference: `NL_${Date.now()}_${user.id.slice(0, 8)}`,
+          customer: {
+            email: user.email || profile?.email || "user@naijalancers.com",
+            first_name: profile?.full_name?.split(' ')[0] || "User",
+            last_name: profile?.full_name?.split(' ').slice(1).join(' ') || "NaijaLancers"
+          },
+          wallet_address: {
+            address: walletAddress,
+            network: "celo"
+          }
         };
         
         console.log(`[QUIDAX_ON_RAMP] Request body:`, JSON.stringify(requestBody, null, 2));
-        console.log(`[QUIDAX_ON_RAMP] Endpoint: ${QUIDAX_BASE_URL}/on_ramp_transaction`);
+        console.log(`[QUIDAX_ON_RAMP] Endpoint: ${QUIDAX_BASE_URL}/custodial/on_ramp_transactions/initiate`);
 
         const response = await fetch(
-          `${QUIDAX_BASE_URL}/on_ramp_transaction`,
+          `${QUIDAX_BASE_URL}/custodial/on_ramp_transactions/initiate`,
           {
             method: 'POST',
             headers: {
@@ -157,17 +169,17 @@ serve(async (req) => {
         }
 
         // Store transaction reference
-        if (data.reference) {
+        if (data?.data?.reference) {
           await supabase.from('quidax_transactions').insert({
             user_id: user.id,
             transaction_type: 'on_ramp',
-            reference: data.reference,
+            reference: data.data.reference,
             fiat_amount: fiatAmount,
             fiat_currency: 'NGN',
             token: 'USDT',
             wallet_address: walletAddress,
             status: 'pending',
-            quidax_data: data
+            quidax_data: data.data
           });
         }
 
