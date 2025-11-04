@@ -37,15 +37,15 @@ serve(async (req) => {
 
     switch (action) {
       case 'get_payment_methods': {
-        // GET /api/v1/merchants/payment_methods?currency=NGN&side=buy
+        // GET /api/v1/merchants/payment_methods?currency=ngn&side=on_ramp
         console.log(`[QUIDAX_ON_RAMP] Fetching payment methods...`);
         
         const response = await fetch(
-          `${QUIDAX_BASE_URL}/payment_methods?currency=NGN&side=buy`,
+          `${QUIDAX_BASE_URL}/payment_methods?currency=ngn&side=on_ramp`,
           {
             headers: {
-              'Authorization': `Bearer ${QUIDAX_PUBLIC_KEY}`,
-              'Content-Type': 'application/json'
+              'accept': 'application/json',
+              'x-private-key': QUIDAX_PRIVATE_KEY
             }
           }
         );
@@ -60,13 +60,13 @@ serve(async (req) => {
       }
 
       case 'get_purchase_limits': {
-        // GET /api/v1/merchants/purchase_limits/buy?currency_symbol=NGN
+        // GET /api/v1/merchants/purchase_limits/buy?currency_symbol=ngn
         const response = await fetch(
-          `${QUIDAX_BASE_URL}/purchase_limits/buy?currency_symbol=NGN`,
+          `${QUIDAX_BASE_URL}/purchase_limits/buy?currency_symbol=ngn`,
           {
             headers: {
-              'Authorization': `Bearer ${QUIDAX_PUBLIC_KEY}`,
-              'Content-Type': 'application/json'
+              'accept': 'application/json',
+              'x-private-key': QUIDAX_PRIVATE_KEY
             }
           }
         );
@@ -77,18 +77,18 @@ serve(async (req) => {
       }
 
       case 'get_quote': {
-        // GET /api/v1/merchants/purchase_quotes/buy?currency=NGN&token=USDT&fiat_amount=X&token_network=CELO
+        // GET /api/v1/merchants/purchase_quotes/buy?currency=ngn&token=usdt&fiat_amount=X&token_network=celo
         const { fiatAmount } = params;
         if (!fiatAmount || fiatAmount <= 0) {
           throw new Error("Invalid fiat amount");
         }
 
         const response = await fetch(
-          `${QUIDAX_BASE_URL}/purchase_quotes/buy?currency=NGN&token=USDT&fiat_amount=${fiatAmount}&token_network=CELO`,
+          `${QUIDAX_BASE_URL}/purchase_quotes/buy?currency=ngn&token=usdt&fiat_amount=${fiatAmount}&token_network=celo`,
           {
             headers: {
-              'Authorization': `Bearer ${QUIDAX_PUBLIC_KEY}`,
-              'Content-Type': 'application/json'
+              'accept': 'application/json',
+              'x-private-key': QUIDAX_PRIVATE_KEY
             }
           }
         );
@@ -112,9 +112,9 @@ serve(async (req) => {
         console.log(`[QUIDAX_ON_RAMP] Payment Method: ${paymentMethod}`);
 
         const requestBody = {
-          currency: "NGN",
-          token: "USDT",
-          token_network: "CELO",
+          currency: "ngn",
+          token: "usdt",
+          token_network: "celo",
           fiat_amount: fiatAmount,
           payment_method: paymentMethod,
           wallet_address: walletAddress,
@@ -129,7 +129,8 @@ serve(async (req) => {
           {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${QUIDAX_PRIVATE_KEY}`,
+              'accept': 'application/json',
+              'x-private-key': QUIDAX_PRIVATE_KEY,
               'Content-Type': 'application/json'
             },
             body: JSON.stringify(requestBody)
@@ -186,8 +187,8 @@ serve(async (req) => {
           `${QUIDAX_BASE_URL}/on_ramp_transaction/${reference}`,
           {
             headers: {
-              'Authorization': `Bearer ${QUIDAX_PUBLIC_KEY}`,
-              'Content-Type': 'application/json'
+              'accept': 'application/json',
+              'x-private-key': QUIDAX_PRIVATE_KEY
             }
           }
         );
