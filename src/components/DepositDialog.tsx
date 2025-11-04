@@ -34,9 +34,13 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
   const [isProcessing, setIsProcessing] = useState(false)
 
   useEffect(() => {
+    console.log('[DEPOSIT] 🎯 Effect triggered. User:', !!user, 'Profile:', !!profile)
     if (user && profile) {
+      console.log('[DEPOSIT] 🚀 Loading wallet and payment methods...')
       loadWalletAddress()
       loadPaymentMethods()
+    } else {
+      console.warn('[DEPOSIT] ⚠️ No user or profile, skipping load')
     }
   }, [user, profile])
 
@@ -138,37 +142,43 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
 
   const loadPaymentMethods = async () => {
     try {
-      console.log('[DEPOSIT] Loading payment methods...')
+      console.log('[DEPOSIT] 🔄 Loading payment methods...')
+      console.log('[DEPOSIT] User ID:', user?.id)
+      
       const { data, error } = await supabase.functions.invoke('quidax-on-ramp', {
         body: { action: 'get_payment_methods' }
       })
       
-      console.log('[DEPOSIT] Payment methods response:', data)
-      console.log('[DEPOSIT] Payment methods error:', error)
+      console.log('[DEPOSIT] ✅ Raw response:', JSON.stringify(data, null, 2))
+      console.log('[DEPOSIT] ❌ Error:', error)
       
       if (error) {
         console.error('[DEPOSIT] Failed to load payment methods:', error)
-        toast.error('Failed to load payment methods')
-        throw error
+        toast.error(`Failed to load payment methods: ${error.message}`)
+        return
       }
       
       // Handle Quidax API response format
       const methods = data?.data || []
-      console.log('[DEPOSIT] Extracted payment methods:', methods)
+      console.log('[DEPOSIT] 📋 Extracted methods:', methods)
+      console.log('[DEPOSIT] 📊 Methods count:', methods.length)
+      console.log('[DEPOSIT] 🔍 Methods type:', typeof methods, Array.isArray(methods))
       
       if (Array.isArray(methods) && methods.length > 0) {
+        console.log('[DEPOSIT] ✅ Setting payment methods:', methods)
         setPaymentMethods(methods)
-        // Use 'code' field from Quidax response (e.g., "bank_transfer")
         setPaymentMethod(methods[0].code)
-        console.log('[DEPOSIT] Payment methods loaded:', methods.length)
-        toast.success(`${methods.length} payment method(s) available`)
+        console.log('[DEPOSIT] ✅ Payment method set to:', methods[0].code)
+        toast.success(`${methods.length} payment method(s) loaded`)
       } else {
-        console.warn('[DEPOSIT] No payment methods available in response')
-        toast.error('No payment methods available')
+        console.warn('[DEPOSIT] ⚠️ No payment methods in response')
+        console.warn('[DEPOSIT] data?.data:', data?.data)
+        console.warn('[DEPOSIT] data?.status:', data?.status)
+        toast.error('No payment methods available from Quidax')
       }
     } catch (error: any) {
-      console.error('[DEPOSIT] Error loading payment methods:', error)
-      toast.error('Failed to load payment methods')
+      console.error('[DEPOSIT] 💥 Exception:', error)
+      toast.error(`Error: ${error.message}`)
     }
   }
 
@@ -404,7 +414,7 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
                   </p>
                 </div>
 
-                {paymentMethods.length > 0 && (
+                {paymentMethods.length > 0 ? (
                   <div className="space-y-2">
                     <Label htmlFor="payment-method">Payment Method</Label>
                     <select
@@ -413,13 +423,24 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
                       onChange={(e) => setPaymentMethod(e.target.value)}
                       className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                     >
-                      {paymentMethods.map((method, index) => (
-                        <option key={method.code || index} value={method.code}>
-                          {method.title}
-                        </option>
-                      ))}
+                      {paymentMethods.map((method, index) => {
+                        console.log('[DEPOSIT] 🎨 Rendering method:', method)
+                        return (
+                          <option key={method.code || index} value={method.code}>
+                            {method.title}
+                          </option>
+                        )
+                      })}
                     </select>
                   </div>
+                ) : (
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription className="text-xs">
+                      <p className="font-medium">Loading payment methods...</p>
+                      <p>If this persists, please check the console logs.</p>
+                    </AlertDescription>
+                  </Alert>
                 )}
 
 {isLoadingQuote && fiatAmount && parseFloat(fiatAmount) >= 2000 && (
