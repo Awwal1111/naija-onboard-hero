@@ -152,14 +152,16 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
         throw error
       }
       
-      // Handle both data.data and direct data response formats
-      const methods = data?.data || data?.payment_methods || []
+      // Handle Quidax API response format
+      const methods = data?.data || []
       console.log('[DEPOSIT] Extracted payment methods:', methods)
       
       if (Array.isArray(methods) && methods.length > 0) {
         setPaymentMethods(methods)
-        setPaymentMethod(methods[0].id || methods[0].code || methods[0].name)
+        // Use 'code' field from Quidax response (e.g., "bank_transfer")
+        setPaymentMethod(methods[0].code)
         console.log('[DEPOSIT] Payment methods loaded:', methods.length)
+        toast.success(`${methods.length} payment method(s) available`)
       } else {
         console.warn('[DEPOSIT] No payment methods available in response')
         toast.error('No payment methods available')
@@ -411,9 +413,9 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
                       onChange={(e) => setPaymentMethod(e.target.value)}
                       className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                     >
-                      {paymentMethods.map((method) => (
-                        <option key={method.id} value={method.id}>
-                          {method.name}
+                      {paymentMethods.map((method, index) => (
+                        <option key={method.code || index} value={method.code}>
+                          {method.title}
                         </option>
                       ))}
                     </select>
