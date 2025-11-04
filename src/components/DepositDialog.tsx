@@ -42,7 +42,7 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (fiatAmount && parseFloat(fiatAmount) >= 1000) {
+      if (fiatAmount && parseFloat(fiatAmount) >= 2000) {
         fetchQuote()
       } else {
         setQuote(null)
@@ -173,7 +173,7 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
   }
 
   const fetchQuote = async () => {
-    if (!fiatAmount || parseFloat(fiatAmount) < 1000) return
+    if (!fiatAmount || parseFloat(fiatAmount) < 2000) return
     
     setIsLoadingQuote(true)
     try {
@@ -197,8 +197,8 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
   }
 
   const handleBankDeposit = async () => {
-    if (!fiatAmount || parseFloat(fiatAmount) < 1000) {
-      toast.error('Minimum deposit is ₦1,000')
+    if (!fiatAmount || parseFloat(fiatAmount) < 2000) {
+      toast.error('Minimum deposit is ₦2,000')
       return
     }
 
@@ -394,13 +394,13 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
                     id="fiat-amount"
                     type="number"
                     placeholder="Enter amount in Naira"
-                    min="1000"
+                    min="2000"
                     step="100"
                     value={fiatAmount}
                     onChange={(e) => setFiatAmount(e.target.value)}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Minimum: ₦1,000 | Powered by Quidax
+                    Minimum: ₦2,000 | Maximum: ₦2,000,000 | Powered by Quidax
                   </p>
                 </div>
 
@@ -422,7 +422,7 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
                   </div>
                 )}
 
-{isLoadingQuote && fiatAmount && parseFloat(fiatAmount) >= 1000 && (
+{isLoadingQuote && fiatAmount && parseFloat(fiatAmount) >= 2000 && (
                   <div className="p-3 bg-muted rounded-lg">
                     <p className="text-xs text-muted-foreground">Fetching quote...</p>
                   </div>
@@ -442,7 +442,7 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
                   className="w-full gap-2"
                   size="lg"
                   onClick={handleBankDeposit}
-                  disabled={isProcessing || !fiatAmount || parseFloat(fiatAmount) < 1000 || !walletAddress}
+                  disabled={isProcessing || !fiatAmount || parseFloat(fiatAmount) < 2000 || !walletAddress}
                 >
                   <Send className="h-5 w-5" />
                   {isProcessing ? 'Processing...' : 'Continue with Bank Payment'}
