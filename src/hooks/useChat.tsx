@@ -10,6 +10,9 @@ interface BaseMessage {
   content: string
   created_at: string
   read_at: string | null
+  reply_to_id?: string | null
+  reply_to_content?: string | null
+  reply_to_sender?: string | null
 }
 
 interface Message extends BaseMessage {
@@ -179,10 +182,32 @@ export const useChat = (otherUserId: string) => {
     }
   }, [chat])
 
-  const sendMessage = async (content: string, mediaUrl?: string | null, mediaType?: string | null) => {
+  const sendMessage = async (
+    content: string, 
+    mediaUrl?: string | null, 
+    mediaType?: string | null,
+    replyToId?: string | null
+  ) => {
     if (!chat || !user) return
 
     try {
+      // If replying, get the original message details
+      let replyToContent = null
+      let replyToSender = null
+      
+      if (replyToId) {
+        const { data: replyMsg } = await supabase
+          .from('messages')
+          .select('content, sender_id')
+          .eq('id', replyToId)
+          .single()
+        
+        if (replyMsg) {
+          replyToContent = replyMsg.content
+          replyToSender = replyMsg.sender_id
+        }
+      }
+
       const { error } = await supabase
         .from('messages')
         .insert({
@@ -190,7 +215,10 @@ export const useChat = (otherUserId: string) => {
           sender_id: user.id,
           content,
           media_url: mediaUrl,
-          media_type: mediaType
+          media_type: mediaType,
+          reply_to_id: replyToId,
+          reply_to_content: replyToContent,
+          reply_to_sender: replyToSender
         })
 
       if (error) throw error
