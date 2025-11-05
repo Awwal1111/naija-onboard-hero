@@ -11,7 +11,7 @@ const MIN_WITHDRAWAL_NC = 100;
 
 // Token addresses on Celo mainnet (checksummed)
 const CUSD_ADDRESS = "0x765DE816845861e75A25fCA122bb6898B8B1282a";
-const USDT_ADDRESS = "0x88eeC49252c8cbc039DCdB394c0c2BA2f1637EA0"; // USDT on Celo Mainnet
+const USDT_ADDRESS = "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e"; // Tether USD on Celo Mainnet
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 

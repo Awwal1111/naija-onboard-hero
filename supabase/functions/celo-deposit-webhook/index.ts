@@ -74,13 +74,13 @@ serve(async (req) => {
       // Identify token by contract address for accuracy
       if (contractAddress === "0x765de816845861e75a25fca122bb6898b8b1282a") {
         asset = "cUSD"; // cUSD token
-      } else if (contractAddress === "0x88eec49252c8cbc039dcdb394c0c2ba2f1637ea0") {
-        asset = "USDT"; // USDT on Celo Mainnet
+      } else if (contractAddress === "0x48065fbbe25f71c9282ddf5e1cd6d6a887483d5e") {
+        asset = "USDT"; // Tether USD on Celo Mainnet (official)
       } else if (rawAsset === "ETH") {
         asset = "CELO"; // Native CELO (mapped as ETH by Alchemy)
       } else if (rawAsset === "USD₮" || rawAsset === "USDC") {
         // Fallback for other USD stablecoins
-        asset = contractAddress === "0x48065fbbe25f71c9282ddf5e1cd6d6a887483d5e" ? "USDT" : "cUSD";
+        asset = "cUSD";
       }
       
       console.log(`[CURRENCY] Raw asset: ${rawAsset}, Normalized to: ${asset}, Amount: ${cryptoAmount}`);
@@ -364,7 +364,7 @@ serve(async (req) => {
         if (asset === "cUSD" || asset === "USDT") {
           const tokenAddress = asset === "cUSD" 
             ? "0x765DE816845861e75A25fCA122bb6898B8B1282a" 
-            : "0x88eeC49252c8cbc039DCdB394c0c2BA2f1637EA0"; // USDT on Celo Mainnet
+            : "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e"; // Tether USD on Celo Mainnet
           
           console.log(`[RELAYER] Token contract: ${tokenAddress}`);
           console.log(`[RELAYER] Master wallet destination: ${masterAddress}`);
