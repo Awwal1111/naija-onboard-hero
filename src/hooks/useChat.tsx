@@ -188,7 +188,14 @@ export const useChat = (otherUserId: string) => {
     mediaType?: string | null,
     replyToId?: string | null
   ) => {
-    if (!chat || !user) return
+    if (!chat || !user) {
+      toast({
+        title: "Error",
+        description: "Chat not initialized",
+        variant: "destructive"
+      })
+      return
+    }
 
     try {
       // If replying, get the original message details
@@ -214,29 +221,62 @@ export const useChat = (otherUserId: string) => {
           chat_id: chat.id,
           sender_id: user.id,
           content,
-          media_url: mediaUrl,
-          media_type: mediaType,
-          reply_to_id: replyToId,
+          media_url: mediaUrl || null,
+          media_type: mediaType || null,
+          reply_to_id: replyToId || null,
           reply_to_content: replyToContent,
           reply_to_sender: replyToSender
         })
 
-      if (error) throw error
-    } catch (error) {
+      if (error) {
+        console.error('Message insert error:', error)
+        throw error
+      }
+    } catch (error: any) {
       console.error('Error sending message:', error)
       toast({
-        title: "Error",
-        description: "Failed to send message",
+        title: "Failed to send message",
+        description: error?.message || "Please try again",
         variant: "destructive"
       })
+      throw error
     }
   }
+
+  const markMessagesAsRead = async () => {
+    if (!chat || !user) return
+
+    try {
+      const unreadMessages = messages.filter(
+        msg => msg.sender_id !== user.id && !msg.read_at
+      )
+
+      if (unreadMessages.length === 0) return
+
+      const messageIds = unreadMessages.map(msg => msg.id)
+
+      await supabase
+        .from('messages')
+        .update({ read_at: new Date().toISOString() })
+        .in('id', messageIds)
+    } catch (error) {
+      console.error('Error marking messages as read:', error)
+    }
+  }
+
+  // Mark messages as read when viewing chat
+  useEffect(() => {
+    if (messages.length > 0 && chat && user) {
+      markMessagesAsRead()
+    }
+  }, [messages.length, chat?.id])
 
   return {
     messages,
     chat,
     otherUser,
     loading,
-    sendMessage
+    sendMessage,
+    markMessagesAsRead
   }
 }

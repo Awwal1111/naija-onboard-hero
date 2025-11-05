@@ -259,7 +259,7 @@ const Chat = () => {
                           </div>
                         )}
 
-                        <p className="text-sm break-words">{message.content}</p>
+                         <p className="text-sm break-words">{message.content}</p>
                         <div className="flex items-center gap-1 mt-1">
                           <p className="text-xs opacity-70">
                             {new Date(message.created_at).toLocaleTimeString([], {
@@ -268,7 +268,11 @@ const Chat = () => {
                             })}
                           </p>
                           {isOwn && (
-                            <CheckCheck className="h-3 w-3 opacity-70" />
+                            message.read_at ? (
+                              <CheckCheck className="h-3 w-3 opacity-70" />
+                            ) : (
+                              <Check className="h-3 w-3 opacity-70" />
+                            )
                           )}
                         </div>
                       </div>
