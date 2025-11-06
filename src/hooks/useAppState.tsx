@@ -10,31 +10,51 @@ export const useAppState = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Save current route and timestamp
-    const saveRoute = () => {
-      const routeData = {
-        path: location.pathname + location.search,
-        timestamp: Date.now()
-      };
-      sessionStorage.setItem('lastRoute', JSON.stringify(routeData));
-      localStorage.setItem('lastRoute', JSON.stringify(routeData)); // Backup in localStorage
+    // Save current route on every navigation
+    const routeData = {
+      path: location.pathname + location.search,
+      timestamp: Date.now()
+    };
+    sessionStorage.setItem('lastRoute', JSON.stringify(routeData));
+    localStorage.setItem('lastRoute', JSON.stringify(routeData));
+  }, [location]);
+
+  useEffect(() => {
+    // Restore last route on mount (if app was killed and restarted)
+    const restoreLastRoute = () => {
+      try {
+        const savedRoute = sessionStorage.getItem('lastRoute') || localStorage.getItem('lastRoute');
+        if (savedRoute) {
+          const routeData = JSON.parse(savedRoute);
+          const timeDiff = Date.now() - routeData.timestamp;
+          // Only restore if less than 30 minutes old and not already on that route
+          if (timeDiff < 30 * 60 * 1000 && routeData.path !== location.pathname + location.search) {
+            console.log('[AppState] Restoring last route:', routeData.path);
+            navigate(routeData.path, { replace: true });
+          }
+        }
+      } catch (error) {
+        console.error('[AppState] Error restoring route:', error);
+      }
     };
 
-    // Save route on every navigation
-    saveRoute();
-  }, [location]);
+    // Only restore on initial mount
+    const hasRestoredRef = sessionStorage.getItem('hasRestored');
+    if (!hasRestoredRef) {
+      restoreLastRoute();
+      sessionStorage.setItem('hasRestored', 'true');
+    }
+  }, []); // Only run once on mount
 
   useEffect(() => {
     // Handle page visibility changes (app minimize/resume)
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        // App is coming back to foreground
-        console.log('[AppState] App resumed from background');
-        // DO NOT navigate - just log the resume event
-        // This prevents the app from refreshing/reloading when minimized and reopened
+        // App is coming back to foreground - stay on current page
+        console.log('[AppState] App resumed - staying on current page');
       } else {
         // App is going to background - save state
-        console.log('[AppState] App going to background');
+        console.log('[AppState] App going to background, saving state');
         const routeData = {
           path: location.pathname + location.search,
           timestamp: Date.now()
@@ -44,9 +64,8 @@ export const useAppState = () => {
       }
     };
 
-    // Handle page focus/blur events (window switching)
+    // Handle focus/blur events
     const handleBlur = () => {
-      console.log('[AppState] App lost focus');
       const routeData = {
         path: location.pathname + location.search,
         timestamp: Date.now()
@@ -55,13 +74,8 @@ export const useAppState = () => {
       localStorage.setItem('lastRoute', JSON.stringify(routeData));
     };
 
-    const handleFocus = () => {
-      console.log('[AppState] App gained focus');
-    };
-
-    // Handle page freeze/resume (mobile specific)
+    // Handle freeze/resume (mobile specific)
     const handleFreeze = () => {
-      console.log('[AppState] App frozen');
       const routeData = {
         path: location.pathname + location.search,
         timestamp: Date.now()
@@ -70,26 +84,32 @@ export const useAppState = () => {
       localStorage.setItem('lastRoute', JSON.stringify(routeData));
     };
 
-    const handleResume = () => {
-      console.log('[AppState] App resumed from freeze');
+    // Save state before page unload
+    const handleBeforeUnload = () => {
+      const routeData = {
+        path: location.pathname + location.search,
+        timestamp: Date.now()
+      };
+      sessionStorage.setItem('lastRoute', JSON.stringify(routeData));
+      localStorage.setItem('lastRoute', JSON.stringify(routeData));
     };
 
     // Add all event listeners
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', handleFocus);
     window.addEventListener('blur', handleBlur);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('pagehide', handleBeforeUnload);
     document.addEventListener('freeze', handleFreeze);
-    document.addEventListener('resume', handleResume);
 
     // Cleanup
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', handleFocus);
       window.removeEventListener('blur', handleBlur);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('pagehide', handleBeforeUnload);
       document.removeEventListener('freeze', handleFreeze);
-      document.removeEventListener('resume', handleResume);
     };
-  }, [location, navigate]);
+  }, [location]);
 
   return null;
 };
