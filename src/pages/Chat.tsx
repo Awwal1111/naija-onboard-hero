@@ -218,7 +218,7 @@ const Chat = () => {
                     key={message.id}
                     className={`flex ${isOwn ? 'justify-end' : 'justify-start'} group`}
                   >
-                    <div className="flex items-end gap-2 max-w-[75%]">
+                    <div className="flex items-end gap-2 max-w-[85%] md:max-w-[75%]">
                       {!isOwn && (
                         <Popover>
                           <PopoverTrigger asChild>
@@ -321,7 +321,7 @@ const Chat = () => {
       <div className="border-t border-border bg-background">
         {/* Reply Preview */}
         {replyingTo && (
-          <div className="px-4 pt-3 pb-2 flex items-center gap-2 bg-muted/30">
+          <div className="px-3 md:px-4 pt-3 pb-2 flex items-center gap-2 bg-muted/30">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
                 <Reply className="h-3 w-3 text-primary" />
@@ -342,53 +342,44 @@ const Chat = () => {
           </div>
         )}
 
-        <div className="p-4">
+        <div className="p-3 md:p-4">
           {canSendMessage ? (
-            <form onSubmit={handleSendMessage} className="flex items-end gap-2">
-              <div className="flex flex-col gap-1">
-                <button
-                  type="button"
-                  className="p-2 hover:bg-accent rounded-full"
-                >
-                  <Paperclip className="h-5 w-5 text-muted-foreground" />
-                </button>
-                
-                <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
-                  <PopoverTrigger asChild>
-                    <button
-                      type="button"
-                      className="p-2 hover:bg-accent rounded-full"
-                    >
-                      <Smile className="h-5 w-5 text-muted-foreground" />
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-64 p-2" align="start" side="top">
-                    <div className="grid grid-cols-5 gap-2">
-                      {emojis.map((emoji, i) => (
-                        <button
-                          key={i}
-                          type="button"
-                          onClick={() => {
-                            setNewMessage(prev => prev + emoji)
-                            setShowEmojiPicker(false)
-                          }}
-                          className="text-2xl hover:bg-accent p-2 rounded"
-                        >
-                          {emoji}
-                        </button>
-                      ))}
-                    </div>
-                  </PopoverContent>
-                </Popover>
-              </div>
+            <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+              <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className="p-2 hover:bg-accent rounded-full flex-shrink-0"
+                  >
+                    <Smile className="h-5 w-5 text-muted-foreground" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-64 p-2" align="start" side="top">
+                  <div className="grid grid-cols-5 gap-2">
+                    {emojis.map((emoji, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => {
+                          setNewMessage(prev => prev + emoji)
+                          setShowEmojiPicker(false)
+                        }}
+                        className="text-2xl hover:bg-accent p-2 rounded"
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
               
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <BrandInput
                   ref={inputRef}
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   placeholder="Type a message..."
-                  className="border-0 bg-muted min-h-[40px] py-2"
+                  className="border-0 bg-muted min-h-[40px] py-2 w-full"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault()
@@ -402,7 +393,7 @@ const Chat = () => {
                 type="submit"
                 size="sm"
                 disabled={!newMessage.trim()}
-                className="rounded-full w-10 h-10 p-0"
+                className="rounded-full w-10 h-10 p-0 flex-shrink-0"
               >
                 <Send className="h-4 w-4" />
               </BrandButton>

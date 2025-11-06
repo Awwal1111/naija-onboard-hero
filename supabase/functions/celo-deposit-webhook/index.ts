@@ -381,7 +381,8 @@ serve(async (req) => {
           
           // Get token decimals
           const decimals = await tokenContract.decimals();
-          console.log(`[RELAYER] ${asset} decimals: ${decimals}`);
+          const decimalsNumber = Number(decimals);
+          console.log(`[RELAYER] ${asset} decimals: ${decimalsNumber}`);
           
           // Wait 10 seconds for deposit to fully settle on-chain
           console.log(`[RELAYER] Waiting 10 seconds for on-chain settlement...`);
@@ -393,10 +394,10 @@ serve(async (req) => {
           
           for (let i = 0; i < retries; i++) {
             userBalance = await tokenContract.balanceOf(toAddress);
-            const userBalanceFormatted = ethers.formatUnits(userBalance, decimals);
+            const userBalanceFormatted = ethers.formatUnits(userBalance, decimalsNumber);
             console.log(`[RELAYER] Attempt ${i + 1}/${retries} - User wallet ${asset} balance: ${userBalanceFormatted}`);
             
-            const amountInWei = ethers.parseUnits(cryptoAmount.toFixed(decimals), decimals);
+            const amountInWei = ethers.parseUnits(cryptoAmount.toFixed(decimalsNumber), decimalsNumber);
             
             // Check if balance is sufficient (with 1% tolerance for rounding)
             if (userBalance >= (amountInWei * BigInt(99) / BigInt(100))) {
