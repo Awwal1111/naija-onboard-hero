@@ -269,7 +269,7 @@ export const useChat = (otherUserId: string) => {
     if (messages.length > 0 && chat && user) {
       markMessagesAsRead()
     }
-  }, [messages.length, chat?.id])
+  }, [messages.length, chat?.id, user?.id])
 
   return {
     messages,

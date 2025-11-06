@@ -49,10 +49,15 @@ const Chat = () => {
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
     if (newMessage.trim() && userId && canSendMessage) {
-      await sendMessage(newMessage.trim(), null, null, replyingTo?.id)
-      setNewMessage('')
-      setReplyingTo(null)
-      inputRef.current?.focus()
+      try {
+        await sendMessage(newMessage.trim(), null, null, replyingTo?.id)
+        setNewMessage('')
+        setReplyingTo(null)
+        inputRef.current?.focus()
+      } catch (error) {
+        // Error already shown by useChat hook
+        console.error('Failed to send message:', error)
+      }
     }
   }
 

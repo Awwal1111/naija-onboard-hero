@@ -2048,6 +2048,9 @@ export type Database = {
           media_type: string | null
           media_url: string | null
           read_at: string | null
+          reply_to_content: string | null
+          reply_to_id: string | null
+          reply_to_sender: string | null
           sender_id: string
         }
         Insert: {
@@ -2058,6 +2061,9 @@ export type Database = {
           media_type?: string | null
           media_url?: string | null
           read_at?: string | null
+          reply_to_content?: string | null
+          reply_to_id?: string | null
+          reply_to_sender?: string | null
           sender_id: string
         }
         Update: {
@@ -2068,6 +2074,9 @@ export type Database = {
           media_type?: string | null
           media_url?: string | null
           read_at?: string | null
+          reply_to_content?: string | null
+          reply_to_id?: string | null
+          reply_to_sender?: string | null
           sender_id?: string
         }
         Relationships: [
@@ -2076,6 +2085,13 @@ export type Database = {
             columns: ["chat_id"]
             isOneToOne: false
             referencedRelation: "chats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_reply_to_id_fkey"
+            columns: ["reply_to_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
             referencedColumns: ["id"]
           },
         ]
