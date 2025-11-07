@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -18,8 +18,9 @@ export const AdminMasterWalletInfo = () => {
   const [loadingTx, setLoadingTx] = useState(false)
 
   const CELO_RPC = "https://forno.celo.org"
-  const CUSD_ADDRESS = ethers.getAddress("0x765DE816845861e75A25fCA122bb6898B8B1282a")
-  const USDT_ADDRESS = ethers.getAddress("0x48065fbBe25f71C9282ddf5e1cD6d6A887483D5e")
+  // Use useMemo to avoid recalculating checksummed addresses on every render
+  const CUSD_ADDRESS = useMemo(() => "0x765DE816845861e75A25fCA122bb6898B8B1282a", [])
+  const USDT_ADDRESS = useMemo(() => "0x48065fbBE25f71C9282ddf5e1cD6d6A887483D5e", []) // Correct checksum
 
   console.log('[ADMIN] 🔍 Current balance state:', balance)
 

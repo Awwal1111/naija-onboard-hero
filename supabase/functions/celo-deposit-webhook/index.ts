@@ -445,11 +445,11 @@ serve(async (req) => {
             }
           }
           
-          const userBalanceFormatted = ethers.formatUnits(userBalance, decimals);
+          const userBalanceFormatted = ethers.formatUnits(userBalance, decimalsNumber);
           console.log(`[RELAYER] Final check - User wallet ${asset} balance: ${userBalanceFormatted}`);
           console.log(`[RELAYER] Expected deposit amount: ${cryptoAmount}`);
           
-          const amountInWei = ethers.parseUnits(cryptoAmount.toFixed(decimals), decimals);
+          const amountInWei = ethers.parseUnits(cryptoAmount.toFixed(decimalsNumber), decimalsNumber);
           
           // Only sweep if user has enough balance (with 1% tolerance for rounding)
           if (userBalance < (amountInWei * BigInt(99) / BigInt(100))) {
@@ -460,12 +460,12 @@ serve(async (req) => {
           } else {
             // Sweep the actual balance (might be slightly less due to gas estimation)
             const sweepAmount = userBalance > amountInWei ? amountInWei : userBalance;
-            console.log(`[RELAYER] Attempting to sweep ${ethers.formatUnits(sweepAmount, decimals)} ${asset}...`);
+            console.log(`[RELAYER] Attempting to sweep ${ethers.formatUnits(sweepAmount, decimalsNumber)} ${asset}...`);
             
             const sweepTx = await tokenContract.transfer(masterAddress, sweepAmount);
             const sweepReceipt = await sweepTx.wait();
             sweepTxHash = sweepReceipt.hash;
-            console.log(`[RELAYER] ✅ ${asset} swept: ${sweepTxHash} (amount: ${ethers.formatUnits(sweepAmount, decimals)})`);
+            console.log(`[RELAYER] ✅ ${asset} swept: ${sweepTxHash} (amount: ${ethers.formatUnits(sweepAmount, decimalsNumber)})`);
           }
         } else if (asset === "CELO") {
           // For CELO, keep 0.001 for future gas
