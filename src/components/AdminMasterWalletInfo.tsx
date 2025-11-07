@@ -21,6 +21,8 @@ export const AdminMasterWalletInfo = () => {
   const CUSD_ADDRESS = "0x765DE816845861e75A25fCA122bb6898B8B1282a"
   const USDT_ADDRESS = "0x48065fbbE25f71C9282ddf5e1cD6d6A887483D5e"
 
+  console.log('[ADMIN] 🔍 Current balance state:', balance)
+
   useEffect(() => {
     fetchMasterWalletInfo()
   }, [])
@@ -88,9 +90,9 @@ export const AdminMasterWalletInfo = () => {
   }
 
   const fetchBalances = async (address: string) => {
+    console.log('[ADMIN] 🔍 fetchBalances called for:', address)
+    
     try {
-      console.log('[ADMIN] 🔍 Fetching balances for:', address)
-      
       // Use Forno RPC (official Celo RPC - most stable)
       const provider = new ethers.JsonRpcProvider(CELO_RPC)
       console.log('[ADMIN] ✅ Connected to Forno RPC')
@@ -100,14 +102,16 @@ export const AdminMasterWalletInfo = () => {
       for (let i = 0; i < 3; i++) {
         try {
           celoBalance = await provider.getBalance(address)
+          console.log(`[ADMIN] 💰 CELO balance raw (attempt ${i+1}):`, celoBalance.toString())
           break
         } catch (err) {
+          console.error(`[ADMIN] ❌ CELO fetch attempt ${i+1} failed:`, err)
           if (i === 2) throw err
           await new Promise(r => setTimeout(r, 1000))
         }
       }
       const celoFormatted = ethers.formatEther(celoBalance)
-      console.log('[ADMIN] 💰 CELO balance:', celoFormatted)
+      console.log('[ADMIN] 💰 CELO balance formatted:', celoFormatted)
       
       // Get cUSD balance with retries
       const tokenAbi = ["function balanceOf(address) view returns (uint256)", "function decimals() view returns (uint8)"]
@@ -120,7 +124,7 @@ export const AdminMasterWalletInfo = () => {
         try {
           cusdDecimals = await cUsdContract.decimals()
           cusdBalance = await cUsdContract.balanceOf(address)
-          console.log(`[ADMIN] 💵 cUSD balance (attempt ${i+1}):`, ethers.formatUnits(cusdBalance, cusdDecimals))
+          console.log(`[ADMIN] 💵 cUSD balance raw (attempt ${i+1}):`, cusdBalance.toString(), 'decimals:', cusdDecimals)
           break
         } catch (err) {
           console.error(`[ADMIN] ❌ cUSD fetch attempt ${i+1} failed:`, err)
@@ -129,7 +133,7 @@ export const AdminMasterWalletInfo = () => {
         }
       }
       const cusdFormatted = ethers.formatUnits(cusdBalance, cusdDecimals)
-      console.log('[ADMIN] 💵 Final cUSD balance:', cusdFormatted)
+      console.log('[ADMIN] 💵 cUSD balance formatted:', cusdFormatted)
       
       // Get USDT balance with retries
       let usdtBalance = BigInt(0)
@@ -138,7 +142,7 @@ export const AdminMasterWalletInfo = () => {
         try {
           usdtDecimals = await usdtContract.decimals()
           usdtBalance = await usdtContract.balanceOf(address)
-          console.log(`[ADMIN] 💵 USDT balance (attempt ${i+1}):`, ethers.formatUnits(usdtBalance, usdtDecimals))
+          console.log(`[ADMIN] 💵 USDT balance raw (attempt ${i+1}):`, usdtBalance.toString(), 'decimals:', usdtDecimals)
           break
         } catch (err) {
           console.error(`[ADMIN] ❌ USDT fetch attempt ${i+1} failed:`, err)
@@ -147,28 +151,29 @@ export const AdminMasterWalletInfo = () => {
         }
       }
       const usdtFormatted = ethers.formatUnits(usdtBalance, usdtDecimals)
-      console.log('[ADMIN] 💵 Final USDT balance:', usdtFormatted)
+      console.log('[ADMIN] 💵 USDT balance formatted:', usdtFormatted)
       
       const celoNum = parseFloat(celoFormatted)
       const cusdNum = parseFloat(cusdFormatted)
       const usdtNum = parseFloat(usdtFormatted)
       
-      console.log('[ADMIN] 🔄 Updating balance state:', { celoNum, cusdNum, usdtNum })
-      
-      // Force state update
-      setBalance({
+      const newBalance = {
         celo: celoNum.toFixed(4),
         cusd: cusdNum.toFixed(4),
         usdt: usdtNum.toFixed(4)
-      })
+      }
       
-      console.log('[ADMIN] ✅ Balance state updated')
+      console.log('[ADMIN] 🔄 Setting new balance state:', newBalance)
+      setBalance(newBalance)
+      console.log('[ADMIN] ✅ Balance state updated successfully')
       
       return { celoNum, cusdNum, usdtNum }
     } catch (error: any) {
       console.error('[ADMIN] ❌ Error fetching balances:', error)
       toast.error(`Failed to fetch balances: ${error.message}`)
-      setBalance({ celo: 'Error', cusd: 'Error', usdt: 'Error' })
+      const errorBalance = { celo: 'Error', cusd: 'Error', usdt: 'Error' }
+      console.log('[ADMIN] ⚠️ Setting error balance:', errorBalance)
+      setBalance(errorBalance)
       return null
     }
   }
@@ -316,15 +321,18 @@ export const AdminMasterWalletInfo = () => {
           <div className="grid grid-cols-3 gap-4">
             <div className="p-4 bg-accent/30 rounded-lg">
               <p className="text-xs text-muted-foreground mb-1">CELO Balance</p>
-              <p className="text-2xl font-bold text-primary">{balance.celo}</p>
+              <p className="text-2xl font-bold text-primary">{balance.celo || '0.0000'}</p>
+              <p className="text-xs text-muted-foreground mt-1">Native Token</p>
             </div>
             <div className="p-4 bg-accent/30 rounded-lg">
               <p className="text-xs text-muted-foreground mb-1">cUSD Balance</p>
-              <p className="text-2xl font-bold text-primary">{balance.cusd}</p>
+              <p className="text-2xl font-bold text-primary">{balance.cusd || '0.0000'}</p>
+              <p className="text-xs text-muted-foreground mt-1">Stablecoin</p>
             </div>
             <div className="p-4 bg-accent/30 rounded-lg">
               <p className="text-xs text-muted-foreground mb-1">USDT Balance</p>
-              <p className="text-2xl font-bold text-primary">{balance.usdt}</p>
+              <p className="text-2xl font-bold text-primary">{balance.usdt || '0.0000'}</p>
+              <p className="text-xs text-muted-foreground mt-1">Tether</p>
             </div>
           </div>
 
