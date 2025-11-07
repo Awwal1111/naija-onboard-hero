@@ -3856,6 +3856,15 @@ export type Database = {
         Args: { p_safepay_id: string }
         Returns: undefined
       }
+      check_is_admin: {
+        Args: never
+        Returns: {
+          email: string
+          has_role: boolean
+          is_admin: boolean
+          user_id: string
+        }[]
+      }
       check_rate_limit: {
         Args: {
           action_name: string
@@ -3922,6 +3931,7 @@ export type Database = {
         }[]
       }
       get_system_setting: { Args: { setting_key: string }; Returns: string }
+      grant_admin_role: { Args: { target_user_id: string }; Returns: boolean }
       has_purchased_product: {
         Args: { p_product_id: string; p_user_id: string }
         Returns: boolean

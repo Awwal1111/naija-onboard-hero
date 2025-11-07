@@ -54,9 +54,14 @@ export const useConnections = () => {
 
       if (error) throw error
       
+      // Filter out self-requests (where user sent request to themselves)
+      const validRequests = (data || []).filter(
+        request => request.requester_id !== request.requested_id
+      )
+      
       // Fetch profile data separately for each request
       const requestsWithProfiles = await Promise.all(
-        (data || []).map(async (request) => {
+        validRequests.map(async (request) => {
           const [requesterProfile, requestedProfile] = await Promise.all([
             supabase
               .from('profiles')
@@ -98,9 +103,14 @@ export const useConnections = () => {
 
       if (error) throw error
       
+      // Filter out self-connections (where user connected to themselves)
+      const validConnections = (data || []).filter(
+        connection => connection.user1_id !== connection.user2_id
+      )
+      
       // Fetch profile data for other users
       const connectionsWithProfiles = await Promise.all(
-        (data || []).map(async (conn) => {
+        validConnections.map(async (conn) => {
           const otherUserId = conn.user1_id === user.id ? conn.user2_id : conn.user1_id
           const { data: otherUserProfile } = await supabase
             .from('profiles')
