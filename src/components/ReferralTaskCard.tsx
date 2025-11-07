@@ -30,6 +30,7 @@ export const ReferralTaskCard = ({ task, hasSubmitted, submissionStatus, onSubmi
   })
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    event.preventDefault()
     const file = event.target.files?.[0]
     if (!file) return
 
@@ -39,8 +40,11 @@ export const ReferralTaskCard = ({ task, hasSubmitted, submissionStatus, onSubmi
     if (result.url) {
       console.log('Upload successful:', result.url)
       setProof(result.url)
+      // Clear the input to allow re-upload if needed
+      event.target.value = ''
     } else {
       console.error('Upload failed:', result.error)
+      setError(result.error || 'Upload failed')
     }
   }
 
