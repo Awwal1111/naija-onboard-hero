@@ -641,8 +641,10 @@ const Profile = () => {
             {!isOwnProfile && user && (
               <RatingDialog
                 onSubmit={async (rating, comment) => {
-                  await submitRating(rating, comment)
-                  refetchRatings()
+                  const result = await submitRating(rating, comment)
+                  if (result?.success) {
+                    await refetchRatings()
+                  }
                 }}
                 trigger={
                   <Button className="w-full" disabled={hasRated} size="lg">
