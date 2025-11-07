@@ -132,33 +132,75 @@ const Chat = () => {
     }
   }
 
-  const getImageUrl = async (mediaUrl: string) => {
-    const { data, error } = await supabase.storage
-      .from('chat-media')
-      .createSignedUrl(mediaUrl, 3600) // 1 hour expiry
-    
-    if (error) {
-      console.error('Error getting signed URL:', error)
+  const [imageUrls, setImageUrls] = useState<Record<string, string>>({})
+  const [loadingImages, setLoadingImages] = useState<Set<string>>(new Set())
+
+  const getImageUrl = async (mediaUrl: string): Promise<string> => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('chat-media')
+        .createSignedUrl(mediaUrl, 3600) // 1 hour expiry
+      
+      if (error) {
+        console.error('Error getting signed URL:', error)
+        toast({
+          title: "Image load failed",
+          description: "Could not load image",
+          variant: "destructive"
+        })
+        return ''
+      }
+      return data.signedUrl
+    } catch (error) {
+      console.error('Exception getting signed URL:', error)
       return ''
     }
-    return data.signedUrl
   }
-
-  const [imageUrls, setImageUrls] = useState<Record<string, string>>({})
 
   useEffect(() => {
     const loadImageUrls = async () => {
-      const urls: Record<string, string> = {}
+      const urlsToLoad: string[] = []
+      
+      // Find all images that need loading
       for (const message of messages) {
-        if (message.media_url && !imageUrls[message.media_url]) {
-          const url = await getImageUrl(message.media_url)
-          urls[message.media_url] = url
+        if (message.media_url && 
+            !imageUrls[message.media_url] && 
+            !loadingImages.has(message.media_url)) {
+          urlsToLoad.push(message.media_url)
         }
       }
+
+      if (urlsToLoad.length === 0) return
+
+      // Mark as loading
+      setLoadingImages(prev => {
+        const newSet = new Set(prev)
+        urlsToLoad.forEach(url => newSet.add(url))
+        return newSet
+      })
+
+      // Load all URLs
+      const urls: Record<string, string> = {}
+      await Promise.all(
+        urlsToLoad.map(async (mediaUrl) => {
+          const url = await getImageUrl(mediaUrl)
+          if (url) urls[mediaUrl] = url
+        })
+      )
+
+      // Update state
       if (Object.keys(urls).length > 0) {
         setImageUrls(prev => ({ ...prev, ...urls }))
       }
+      
+      // Clear loading state
+      setLoadingImages(prev => {
+        const newSet = new Set(prev)
+        urlsToLoad.forEach(url => newSet.delete(url))
+        return newSet
+      })
     }
+
     loadImageUrls()
   }, [messages])
 
@@ -365,16 +407,32 @@ const Chat = () => {
                           </div>
                         )}
 
-                        {message.media_url && imageUrls[message.media_url] && (
-                          <div 
-                            className="mb-2 cursor-pointer"
-                            onClick={() => setViewingImage(imageUrls[message.media_url!])}
-                          >
-                            <img 
-                              src={imageUrls[message.media_url]} 
-                              alt="Shared image"
-                              className="max-w-[250px] rounded-lg"
-                            />
+                        {message.media_url && (
+                          <div className="mb-2">
+                            {loadingImages.has(message.media_url) ? (
+                              <div className="max-w-[250px] h-32 bg-muted rounded-lg flex items-center justify-center">
+                                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                              </div>
+                            ) : imageUrls[message.media_url] ? (
+                              <div 
+                                className="cursor-pointer"
+                                onClick={() => setViewingImage(imageUrls[message.media_url!])}
+                              >
+                                <img 
+                                  src={imageUrls[message.media_url]} 
+                                  alt="Shared image"
+                                  className="max-w-[250px] rounded-lg"
+                                  onError={(e) => {
+                                    console.error('Image failed to load:', message.media_url)
+                                    e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="250" height="150"%3E%3Crect fill="%23ddd"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3EImage failed%3C/text%3E%3C/svg%3E'
+                                  }}
+                                />
+                              </div>
+                            ) : (
+                              <div className="max-w-[250px] h-32 bg-muted rounded-lg flex items-center justify-center text-muted-foreground text-sm">
+                                Failed to load image
+                              </div>
+                            )}
                           </div>
                         )}
 
