@@ -132,12 +132,35 @@ const Chat = () => {
     }
   }
 
-  const getImageUrl = (mediaUrl: string) => {
-    const { data } = supabase.storage
+  const getImageUrl = async (mediaUrl: string) => {
+    const { data, error } = await supabase.storage
       .from('chat-media')
-      .getPublicUrl(mediaUrl)
-    return data.publicUrl
+      .createSignedUrl(mediaUrl, 3600) // 1 hour expiry
+    
+    if (error) {
+      console.error('Error getting signed URL:', error)
+      return ''
+    }
+    return data.signedUrl
   }
+
+  const [imageUrls, setImageUrls] = useState<Record<string, string>>({})
+
+  useEffect(() => {
+    const loadImageUrls = async () => {
+      const urls: Record<string, string> = {}
+      for (const message of messages) {
+        if (message.media_url && !imageUrls[message.media_url]) {
+          const url = await getImageUrl(message.media_url)
+          urls[message.media_url] = url
+        }
+      }
+      if (Object.keys(urls).length > 0) {
+        setImageUrls(prev => ({ ...prev, ...urls }))
+      }
+    }
+    loadImageUrls()
+  }, [messages])
 
   const handleReply = (message: Message) => {
     setReplyingTo(message)
@@ -342,13 +365,13 @@ const Chat = () => {
                           </div>
                         )}
 
-                        {message.media_url && (
+                        {message.media_url && imageUrls[message.media_url] && (
                           <div 
                             className="mb-2 cursor-pointer"
-                            onClick={() => setViewingImage(getImageUrl(message.media_url!))}
+                            onClick={() => setViewingImage(imageUrls[message.media_url!])}
                           >
                             <img 
-                              src={getImageUrl(message.media_url)} 
+                              src={imageUrls[message.media_url]} 
                               alt="Shared image"
                               className="max-w-[250px] rounded-lg"
                             />
