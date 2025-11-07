@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { ArrowLeft, Paperclip, Smile, Send, UserX, UserCheck, Circle, Reply, X, MoreVertical, Copy, Trash2, Check, CheckCheck } from 'lucide-react'
+import { ArrowLeft, Paperclip, Smile, Send, UserX, UserCheck, Circle, Reply, X, MoreVertical, Copy, Trash2, Check, CheckCheck, Image as ImageIcon, Loader2 } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useChat } from '@/hooks/useChat'
@@ -9,9 +9,11 @@ import { BrandButton } from '@/components/ui/brand-button'
 import { BrandInput } from '@/components/ui/brand-input'
 import { Card } from '@/components/ui/card'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
 import SafePayDialog from '@/components/SafePayDialog'
 import BlockConfirmationDialog from '@/components/BlockConfirmationDialog'
 import { useToast } from '@/hooks/use-toast'
+import { supabase } from '@/integrations/supabase/client'
 
 interface Message {
   id: string
@@ -21,6 +23,8 @@ interface Message {
   reply_to_id?: string
   reply_to_content?: string
   reply_to_sender?: string
+  media_url?: string | null
+  media_type?: string | null
 }
 
 const Chat = () => {
@@ -35,8 +39,13 @@ const Chat = () => {
   const [showBlockDialog, setShowBlockDialog] = useState(false)
   const [replyingTo, setReplyingTo] = useState<Message | null>(null)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [uploading, setUploading] = useState(false)
+  const [viewingImage, setViewingImage] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -46,19 +55,88 @@ const Chat = () => {
     scrollToBottom()
   }, [messages])
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Invalid file",
+          description: "Please select an image file",
+          variant: "destructive"
+        })
+        return
+      }
+      
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        toast({
+          title: "File too large",
+          description: "Please select an image under 5MB",
+          variant: "destructive"
+        })
+        return
+      }
+      
+      setSelectedFile(file)
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (newMessage.trim() && userId && canSendMessage) {
-      try {
-        await sendMessage(newMessage.trim(), null, null, replyingTo?.id)
-        setNewMessage('')
-        setReplyingTo(null)
-        inputRef.current?.focus()
-      } catch (error) {
-        // Error already shown by useChat hook
-        console.error('Failed to send message:', error)
+    if ((!newMessage.trim() && !selectedFile) || !userId || !canSendMessage) return
+
+    setUploading(true)
+    try {
+      let mediaUrl = null
+      let mediaType = null
+
+      // Upload image if present
+      if (selectedFile) {
+        const fileExt = selectedFile.name.split('.').pop()
+        const fileName = `${user?.id}/${Date.now()}.${fileExt}`
+        
+        const { error: uploadError } = await supabase.storage
+          .from('chat-media')
+          .upload(fileName, selectedFile)
+
+        if (uploadError) throw uploadError
+
+        mediaUrl = fileName
+        mediaType = selectedFile.type
       }
+
+      await sendMessage(
+        newMessage.trim() || '📷 Image',
+        mediaUrl,
+        mediaType,
+        replyingTo?.id
+      )
+      
+      setNewMessage('')
+      setReplyingTo(null)
+      setSelectedFile(null)
+      setImagePreview(null)
+      inputRef.current?.focus()
+    } catch (error: any) {
+      toast({
+        title: "Failed to send",
+        description: error.message || "Please try again",
+        variant: "destructive"
+      })
+    } finally {
+      setUploading(false)
     }
+  }
+
+  const getImageUrl = (mediaUrl: string) => {
+    const { data } = supabase.storage
+      .from('chat-media')
+      .getPublicUrl(mediaUrl)
+    return data.publicUrl
   }
 
   const handleReply = (message: Message) => {
@@ -264,7 +342,22 @@ const Chat = () => {
                           </div>
                         )}
 
-                         <p className="text-sm break-words">{message.content}</p>
+                        {message.media_url && (
+                          <div 
+                            className="mb-2 cursor-pointer"
+                            onClick={() => setViewingImage(getImageUrl(message.media_url!))}
+                          >
+                            <img 
+                              src={getImageUrl(message.media_url)} 
+                              alt="Shared image"
+                              className="max-w-[250px] rounded-lg"
+                            />
+                          </div>
+                        )}
+
+                        {message.content && message.content !== '📷 Image' && (
+                          <p className="text-sm break-words">{message.content}</p>
+                        )}
                         <div className="flex items-center gap-1 mt-1">
                           <p className="text-xs opacity-70">
                             {new Date(message.created_at).toLocaleTimeString([], {
@@ -343,13 +436,52 @@ const Chat = () => {
         )}
 
         <div className="p-3 md:p-4">
+          {/* Image Preview */}
+          {imagePreview && (
+            <div className="mb-3 relative inline-block">
+              <img 
+                src={imagePreview} 
+                alt="Preview" 
+                className="max-h-32 rounded-lg"
+              />
+              <button
+                onClick={() => {
+                  setImagePreview(null)
+                  setSelectedFile(null)
+                  if (fileInputRef.current) fileInputRef.current.value = ''
+                }}
+                className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 hover:bg-destructive/90"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          )}
+
           {canSendMessage ? (
             <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+              
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="p-2 hover:bg-accent rounded-full flex-shrink-0"
+                disabled={uploading}
+              >
+                <ImageIcon className="h-5 w-5 text-muted-foreground" />
+              </button>
+
               <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
                 <PopoverTrigger asChild>
                   <button
                     type="button"
                     className="p-2 hover:bg-accent rounded-full flex-shrink-0"
+                    disabled={uploading}
                   >
                     <Smile className="h-5 w-5 text-muted-foreground" />
                   </button>
@@ -380,6 +512,7 @@ const Chat = () => {
                   onChange={(e) => setNewMessage(e.target.value)}
                   placeholder="Type a message..."
                   className="border-0 bg-muted min-h-[40px] py-2 w-full"
+                  disabled={uploading}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault()
@@ -392,10 +525,14 @@ const Chat = () => {
               <BrandButton
                 type="submit"
                 size="sm"
-                disabled={!newMessage.trim()}
+                disabled={(!newMessage.trim() && !selectedFile) || uploading}
                 className="rounded-full w-10 h-10 p-0 flex-shrink-0"
               >
-                <Send className="h-4 w-4" />
+                {uploading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
               </BrandButton>
             </form>
           ) : (
@@ -416,6 +553,27 @@ const Chat = () => {
         onConfirm={confirmBlock}
         loading={blockLoading}
       />
+
+      {/* Image Viewer Dialog */}
+      <Dialog open={!!viewingImage} onOpenChange={() => setViewingImage(null)}>
+        <DialogContent className="max-w-4xl p-0 bg-transparent border-0">
+          <div className="relative">
+            <button
+              onClick={() => setViewingImage(null)}
+              className="absolute top-2 right-2 bg-black/50 text-white rounded-full p-2 hover:bg-black/70 z-10"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            {viewingImage && (
+              <img 
+                src={viewingImage} 
+                alt="Full size" 
+                className="w-full h-auto max-h-[90vh] object-contain rounded-lg"
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
