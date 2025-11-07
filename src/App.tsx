@@ -57,6 +57,8 @@ import SpinWheelGame from "./components/SpinWheelGame";
 import NaijaPredictor from "./components/NaijaPredictor";
 import FAQ from "./pages/FAQ";
 import Index from "./pages/Index";
+import Achievements from "./pages/Achievements";
+import NotificationSettings from "./pages/NotificationSettings";
 
 // Component to handle app state persistence
 const AppStateManager = () => {
@@ -123,7 +125,9 @@ const App = () => (
           <Route path="/main-feed" element={<ProtectedRoute><MainFeed /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
           <Route path="/settings/pin" element={<ProtectedRoute><SetupPin /></ProtectedRoute>} />
+          <Route path="/settings/notifications" element={<ProtectedRoute><NotificationSettings /></ProtectedRoute>} />
           <Route path="/activity-log" element={<ProtectedRoute><ActivityLog /></ProtectedRoute>} />
+          <Route path="/achievements" element={<ProtectedRoute><Achievements /></ProtectedRoute>} />
           <Route path="/payment-success" element={<PaymentSuccess />} />
           <Route path="/payment-failed" element={<PaymentFailed />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
