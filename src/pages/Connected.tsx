@@ -179,10 +179,10 @@ export const Connected = () => {
                           <Button
                             size="sm"
                             onClick={() => handleStartChat(connection.other_user?.id || '')}
-                            className="ml-2"
+                            className="ml-2 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-sm hover:shadow-md transition-all duration-200 gap-1.5"
                           >
-                            <MessageCircle className="h-4 w-4 mr-1" />
-                            Chat Now
+                            <MessageCircle className="h-4 w-4" />
+                            Chat
                           </Button>
                         </div>
                       </CardContent>

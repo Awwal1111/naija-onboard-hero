@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { UserCheck, ArrowRight } from 'lucide-react'
+import { UserCheck, ArrowRight, Check, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useConnections } from '@/hooks/useConnections'
 
@@ -58,20 +58,22 @@ export const ConnectionRequestsPreview = () => {
                   <p className="text-xs text-text-secondary truncate">{profile.profession}</p>
                 )}
               </div>
-              <div className="flex gap-1 flex-shrink-0">
+              <div className="flex gap-1.5 flex-shrink-0">
                 <Button
                   size="sm"
                   onClick={() => respondToConnectionRequest(request.id, true)}
-                  className="h-7 px-3 text-xs"
+                  className="h-7 px-3 text-xs bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white shadow-sm transition-all duration-200"
                 >
+                  <Check className="h-3 w-3 mr-1" />
                   Accept
                 </Button>
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={() => respondToConnectionRequest(request.id, false)}
-                  className="h-7 px-3 text-xs"
+                  className="h-7 px-3 text-xs border-destructive/30 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-all duration-200"
                 >
+                  <X className="h-3 w-3 mr-1" />
                   Decline
                 </Button>
               </div>

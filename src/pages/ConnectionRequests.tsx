@@ -181,20 +181,20 @@ export const ConnectionRequests = () => {
                         </div>
                       </div>
 
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 flex-shrink-0">
                         <Button
                           size="default"
                           onClick={() => handleAcceptRequest(request)}
-                          className="gap-1.5"
+                          className="gap-1.5 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white shadow-sm hover:shadow-md transition-all duration-200"
                         >
                           <Check className="h-4 w-4" />
                           Accept
                         </Button>
                         <Button
-                          variant="ghost"
+                          variant="outline"
                           size="icon"
                           onClick={() => handleRejectRequest(request)}
-                          className="hover:bg-destructive/10 hover:text-destructive"
+                          className="border-destructive/30 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-all duration-200"
                         >
                           <X className="h-5 w-5" />
                         </Button>
