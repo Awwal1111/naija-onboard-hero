@@ -69,8 +69,8 @@ export const StarRating: React.FC<StarRatingProps> = ({
                 sizeClasses[size],
                 "transition-all duration-200",
                 star <= displayRating
-                  ? "text-yellow-500 fill-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.5)]"
-                  : "text-muted/30 fill-muted/10"
+                  ? "text-yellow-400 fill-yellow-400 drop-shadow-[0_0_12px_rgba(250,204,21,0.6)]"
+                  : "text-border fill-transparent"
               )}
             />
           </button>

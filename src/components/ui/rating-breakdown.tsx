@@ -39,8 +39,8 @@ export const RatingBreakdown: React.FC<RatingBreakdownProps> = ({
                 className={cn(
                   "h-5 w-5",
                   star <= Math.round(averageRating)
-                    ? "text-yellow-500 fill-yellow-500"
-                    : "text-muted/30 fill-muted/10"
+                    ? "text-yellow-400 fill-yellow-400"
+                    : "text-border fill-transparent"
                 )}
               />
             ))}
@@ -58,7 +58,7 @@ export const RatingBreakdown: React.FC<RatingBreakdownProps> = ({
               <div key={star} className="flex items-center gap-3">
                 <div className="flex items-center gap-1 w-12">
                   <span className="text-sm font-medium text-text-primary">{star}</span>
-                  <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
+                  <Star className="h-3 w-3 text-yellow-400 fill-yellow-400" />
                 </div>
                 <div className="flex-1 h-2 bg-muted/20 rounded-full overflow-hidden">
                   <div

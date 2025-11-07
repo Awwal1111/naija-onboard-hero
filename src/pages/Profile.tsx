@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useFileUpload } from '@/hooks/useFileUpload'
 import { useConnections } from '@/hooks/useConnections'
 import { useProfileCompletion } from '@/hooks/useProfileCompletion'
+import { useExpertRatings } from '@/hooks/useExpertRatings'
 import { supabase } from '@/integrations/supabase/client'
 import ImageViewer from '@/components/ImageViewer'
 import {
@@ -29,6 +30,9 @@ import PortfolioSection from '@/components/PortfolioSection'
 import SkillsSection from '@/components/SkillsSection'
 import TopBannerAd from '@/components/TopBannerAd'
 import { SavedPostsSection } from '@/components/SavedPostsSection'
+import { StarRating } from '@/components/ui/star-rating'
+import { RatingDialog } from '@/components/ui/rating-dialog'
+import { RatingBreakdown } from '@/components/ui/rating-breakdown'
 
 const Profile = () => {
   const navigate = useNavigate()
@@ -61,6 +65,9 @@ const Profile = () => {
   const isOwnProfile = !userId || userId === user?.id
   const profile = isOwnProfile ? currentUserProfile : viewedUserProfile
   const loading = isOwnProfile ? currentUserLoading : viewedUserLoading
+
+  // Expert ratings hook
+  const { ratings, loading: ratingsLoading, hasRated, submitRating, refetch: refetchRatings } = useExpertRatings(userId || user?.id)
 
   // Fetch user email for own profile
   useEffect(() => {
@@ -629,22 +636,92 @@ const Profile = () => {
             <PortfolioSection userId={profile?.user_id} isOwnProfile={isOwnProfile} />
           </TabsContent>
 
-          <TabsContent value="reviews" className="mt-6">
+          <TabsContent value="reviews" className="mt-6 space-y-4">
+            {/* Add Rating Button for others */}
+            {!isOwnProfile && user && (
+              <RatingDialog
+                onSubmit={async (rating, comment) => {
+                  await submitRating(rating, comment)
+                  refetchRatings()
+                }}
+                trigger={
+                  <Button className="w-full" disabled={hasRated} size="lg">
+                    <Star className="h-5 w-5 mr-2" />
+                    {hasRated ? 'Already Rated' : 'Rate This Expert'}
+                  </Button>
+                }
+                disabled={hasRated}
+              />
+            )}
+
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Star className="h-5 w-5" />
-                  Client Reviews
+                  <Star className="h-5 w-5 fill-yellow-500 text-yellow-500" />
+                  Expert Ratings & Reviews
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-8">
-                  <Star className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="font-semibold text-text-primary mb-2">No reviews yet</h3>
-                  <p className="text-text-secondary text-sm">
-                    Complete your first job to receive reviews from clients
-                  </p>
-                </div>
+                {ratingsLoading ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+                    <p className="text-text-secondary">Loading ratings...</p>
+                  </div>
+                ) : ratings.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Star className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="font-semibold text-text-primary mb-2">No ratings yet</h3>
+                    <p className="text-text-secondary text-sm">
+                      {isOwnProfile 
+                        ? 'You haven\'t received any ratings yet' 
+                        : 'Be the first to rate this expert!'}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {/* Rating Breakdown */}
+                    <RatingBreakdown
+                      ratings={[1, 2, 3, 4, 5].map(star => ({
+                        rating: star,
+                        count: ratings.filter((r: any) => r.rating === star).length
+                      }))}
+                      totalRatings={ratings.length}
+                      averageRating={profile?.average_rating || 0}
+                    />
+
+                    {/* Individual Ratings */}
+                    <div className="space-y-4 pt-4 border-t">
+                      <h4 className="font-semibold text-text-primary">Recent Reviews</h4>
+                      {ratings.map((rating: any) => (
+                        <div key={rating.id} className="p-4 bg-muted rounded-xl space-y-2">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-3">
+                              <Avatar className="h-10 w-10">
+                                <AvatarFallback className="bg-primary text-white">
+                                  {rating.profiles?.full_name?.charAt(0) || 'U'}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <p className="font-medium text-text-primary">
+                                  {rating.profiles?.full_name || 'Anonymous'}
+                                </p>
+                                <StarRating rating={rating.rating} readonly size="sm" />
+                              </div>
+                            </div>
+                            <span className="text-xs text-text-secondary">
+                              {new Date(rating.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                          {rating.comment && (
+                            <p className="text-sm text-text-secondary mt-2 pl-[52px]">
+                              {rating.comment}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
