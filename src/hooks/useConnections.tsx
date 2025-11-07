@@ -288,7 +288,7 @@ export const useConnections = () => {
         description: error.message || "Failed to respond to request",
         variant: "destructive"
       })
-      return { error: error.message }
+      return { success: false, error: error.message }
     }
   }
 

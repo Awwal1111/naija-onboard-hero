@@ -48,7 +48,7 @@ export const ConnectionRequests = () => {
 
   const handleAcceptRequest = async (request: any) => {
     const result = await respondToConnectionRequest(request.id, true)
-    if (result.success) {
+    if (result?.success) {
       toast({
         title: "Connection accepted",
         description: "You are now connected!",
@@ -60,18 +60,28 @@ export const ConnectionRequests = () => {
         `${request.requested_profile?.full_name || 'Someone'} accepted your connection request.`,
         { connectionId: request.id }
       )
-      // Don't manually refetch here - the hook already does it
+    } else if (result?.error) {
+      toast({
+        title: "Error",
+        description: result.error || "Failed to accept request",
+        variant: "destructive"
+      })
     }
   }
 
   const handleRejectRequest = async (request: any) => {
     const result = await respondToConnectionRequest(request.id, false)
-    if (result.success) {
+    if (result?.success) {
       toast({
         title: "Request declined",
         description: "Connection request has been declined.",
       })
-      // Don't manually refetch here - the hook already does it
+    } else if (result?.error) {
+      toast({
+        title: "Error",
+        description: result.error || "Failed to decline request",
+        variant: "destructive"
+      })
     }
   }
 

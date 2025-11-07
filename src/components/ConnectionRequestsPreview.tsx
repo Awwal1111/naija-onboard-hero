@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -6,14 +6,48 @@ import { Badge } from '@/components/ui/badge'
 import { UserCheck, ArrowRight, Check, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useConnections } from '@/hooks/useConnections'
+import { toast } from '@/hooks/use-toast'
 
 export const ConnectionRequestsPreview = () => {
   const navigate = useNavigate()
   const { connectionRequests, respondToConnectionRequest } = useConnections()
+  const [processingId, setProcessingId] = useState<string | null>(null)
   
   const pendingRequests = connectionRequests.filter(req => 
     req.status === 'pending'
   ).slice(0, 3) // Show max 3 requests
+
+  const handleAccept = async (requestId: string) => {
+    setProcessingId(requestId)
+    const result = await respondToConnectionRequest(requestId, true)
+    setProcessingId(null)
+    
+    if (result.success) {
+      toast({
+        title: "Connection Accepted",
+        description: "You are now connected!",
+      })
+    }
+  }
+
+  const handleDecline = async (requestId: string) => {
+    setProcessingId(requestId)
+    const result = await respondToConnectionRequest(requestId, false)
+    setProcessingId(null)
+    
+    if (result.success) {
+      toast({
+        title: "Request Declined",
+        description: "Connection request has been declined.",
+      })
+    } else if (result.error) {
+      toast({
+        title: "Error",
+        description: result.error || "Failed to decline request",
+        variant: "destructive"
+      })
+    }
+  }
 
   if (pendingRequests.length === 0) return null
 
@@ -61,7 +95,8 @@ export const ConnectionRequestsPreview = () => {
               <div className="flex gap-1.5 flex-shrink-0">
                 <Button
                   size="sm"
-                  onClick={() => respondToConnectionRequest(request.id, true)}
+                  onClick={() => handleAccept(request.id)}
+                  disabled={processingId === request.id}
                   className="h-7 px-3 text-xs bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white shadow-sm transition-all duration-200"
                 >
                   <Check className="h-3 w-3 mr-1" />
@@ -70,7 +105,8 @@ export const ConnectionRequestsPreview = () => {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => respondToConnectionRequest(request.id, false)}
+                  onClick={() => handleDecline(request.id)}
+                  disabled={processingId === request.id}
                   className="h-7 px-3 text-xs border-destructive/30 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-all duration-200"
                 >
                   <X className="h-3 w-3 mr-1" />
