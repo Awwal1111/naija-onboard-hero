@@ -1,7 +1,8 @@
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
-import { QueryProvider } from "./providers/QueryProvider";
+import { QueryProvider } from "./providers/QueryProvider"
+import { ThemeProvider } from "next-themes"
 
 // Register PWA service worker
 if ('serviceWorker' in navigator) {
@@ -40,6 +41,8 @@ document.addEventListener('visibilitychange', () => {
 
 createRoot(document.getElementById("root")!).render(
   <QueryProvider>
-    <App />
+    <ThemeProvider defaultTheme="system" storageKey="naijalancers-theme" attribute="class">
+      <App />
+    </ThemeProvider>
   </QueryProvider>
 );
