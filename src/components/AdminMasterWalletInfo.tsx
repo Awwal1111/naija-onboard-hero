@@ -153,27 +153,16 @@ export const AdminMasterWalletInfo = () => {
       const cusdNum = parseFloat(cusdFormatted)
       const usdtNum = parseFloat(usdtFormatted)
       
+      console.log('[ADMIN] 🔄 Updating balance state:', { celoNum, cusdNum, usdtNum })
+      
+      // Force state update
       setBalance({
         celo: celoNum.toFixed(4),
         cusd: cusdNum.toFixed(4),
         usdt: usdtNum.toFixed(4)
       })
       
-      // Show warnings
-      if (celoNum < 0.5) {
-        toast.warning(`⚠️ Master wallet CELO LOW: ${celoNum.toFixed(4)} CELO. Need 0.5+ for gas fees.`)
-      }
-      if (cusdNum < 10) {
-        toast.warning(`⚠️ Master wallet cUSD LOW: ${cusdNum.toFixed(4)} cUSD. Need 100+ for withdrawals.`)
-      }
-      if (usdtNum < 10) {
-        toast.warning(`⚠️ Master wallet USDT LOW: ${usdtNum.toFixed(4)} USDT. Need 100+ for withdrawals.`)
-      }
-      
-      // Show success
-      if (celoNum >= 0.5 && (cusdNum >= 10 || usdtNum >= 10)) {
-        toast.success(`✅ Master wallet funded: ${celoNum.toFixed(4)} CELO, ${cusdNum.toFixed(4)} cUSD, ${usdtNum.toFixed(4)} USDT`)
-      }
+      console.log('[ADMIN] ✅ Balance state updated')
       
       return { celoNum, cusdNum, usdtNum }
     } catch (error: any) {
@@ -210,10 +199,17 @@ export const AdminMasterWalletInfo = () => {
 
   const handleRefresh = async () => {
     setRefreshing(true)
-    await fetchBalances(masterAddress)
-    await fetchTransactions()
-    setRefreshing(false)
-    toast.success('Balances refreshed')
+    try {
+      console.log('[ADMIN] 🔄 Manual refresh triggered for:', masterAddress)
+      await fetchBalances(masterAddress)
+      await fetchTransactions()
+      toast.success('Balances refreshed successfully')
+    } catch (error: any) {
+      console.error('[ADMIN] ❌ Refresh failed:', error)
+      toast.error('Failed to refresh balances')
+    } finally {
+      setRefreshing(false)
+    }
   }
 
   const copyToClipboard = () => {
