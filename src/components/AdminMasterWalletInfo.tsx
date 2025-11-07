@@ -19,7 +19,7 @@ export const AdminMasterWalletInfo = () => {
 
   const CELO_RPC = "https://forno.celo.org"
   const CUSD_ADDRESS = "0x765DE816845861e75A25fCA122bb6898B8B1282a"
-  const USDT_ADDRESS = "0x48065fbBe25f71C9282ddf5e1cD6d6A887483D5e"
+  const USDT_ADDRESS = "0x48065fbbE25f71C9282ddf5e1cD6d6A887483D5e"
 
   useEffect(() => {
     fetchMasterWalletInfo()
@@ -191,7 +191,7 @@ export const AdminMasterWalletInfo = () => {
         .from('crypto_transactions')
         .select(`
           *,
-          profiles!crypto_transactions_user_id_fkey(full_name)
+          profiles(full_name)
         `)
         .order('created_at', { ascending: false })
         .limit(50)

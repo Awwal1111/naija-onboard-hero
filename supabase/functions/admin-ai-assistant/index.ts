@@ -35,8 +35,8 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    const { data: isAdmin } = await supabase.rpc('is_admin_user');
-    if (!isAdmin) {
+    const { data: adminCheck, error: adminError } = await supabase.rpc('check_is_admin');
+    if (adminError || !adminCheck || adminCheck.length === 0 || !adminCheck[0].is_admin) {
       throw new Error('Admin access required');
     }
 
