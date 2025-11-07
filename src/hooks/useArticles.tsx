@@ -21,6 +21,7 @@ export interface ArticleSubmission {
   article_id: string
   user_id: string
   short_note: string
+  screenshot_url?: string | null
   status: string
   reviewed_by?: string
   reviewed_at?: string
@@ -82,7 +83,7 @@ export const useArticles = () => {
     }
   }
 
-  const submitArticle = async (articleId: string, shortNote: string) => {
+  const submitArticle = async (articleId: string, shortNote: string, screenshotUrl?: string) => {
     if (!user) return { success: false, error: 'Not authenticated' }
 
     try {
@@ -92,6 +93,7 @@ export const useArticles = () => {
           article_id: articleId,
           user_id: user.id,
           short_note: shortNote,
+          screenshot_url: screenshotUrl || null,
           status: 'pending'
         })
 
@@ -145,6 +147,27 @@ export const useAdminArticles = () => {
   useEffect(() => {
     fetchAllArticles()
     fetchAllSubmissions()
+
+    // Set up real-time subscription for new submissions
+    const channel = supabase
+      .channel('article-submissions-admin')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'article_submissions'
+        },
+        (payload) => {
+          console.log('Article submission update:', payload)
+          fetchAllSubmissions()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [])
 
   const fetchAllArticles = async () => {

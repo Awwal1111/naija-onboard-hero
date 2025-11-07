@@ -180,6 +180,7 @@ export type Database = {
           id: string
           reviewed_at: string | null
           reviewed_by: string | null
+          screenshot_url: string | null
           short_note: string
           status: string
           user_id: string
@@ -190,6 +191,7 @@ export type Database = {
           id?: string
           reviewed_at?: string | null
           reviewed_by?: string | null
+          screenshot_url?: string | null
           short_note: string
           status?: string
           user_id: string
@@ -200,6 +202,7 @@ export type Database = {
           id?: string
           reviewed_at?: string | null
           reviewed_by?: string | null
+          screenshot_url?: string | null
           short_note?: string
           status?: string
           user_id?: string

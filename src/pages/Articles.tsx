@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { ArrowLeft, BookOpen, ExternalLink, CheckCircle } from 'lucide-react'
+import React, { useState, useRef } from 'react'
+import { ArrowLeft, BookOpen, ExternalLink, CheckCircle, Image as ImageIcon, Loader2, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -8,25 +8,84 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useArticles } from '@/hooks/useArticles'
+import { useAuth } from '@/hooks/useAuth'
 import { Logo } from '@/components/ui/logo'
+import { supabase } from '@/integrations/supabase/client'
+import { toast } from 'sonner'
 
 const Articles = () => {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const { articles, loading, submitArticle, hasSubmitted, getSubmissionStatus } = useArticles()
   const [selectedArticle, setSelectedArticle] = useState<string | null>(null)
   const [shortNote, setShortNote] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        toast.error("Please select an image file")
+        return
+      }
+      
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("Please select an image under 5MB")
+        return
+      }
+      
+      setSelectedFile(file)
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
 
   const handleSubmit = async (articleId: string) => {
-    if (!shortNote.trim()) return
+    if (!shortNote.trim() || shortNote.trim().length < 50) {
+      toast.error("Please write at least 50 characters")
+      return
+    }
 
     setSubmitting(true)
-    const result = await submitArticle(articleId, shortNote)
-    if (result.success) {
-      setSelectedArticle(null)
-      setShortNote('')
+    setUploading(true)
+    
+    try {
+      let screenshotUrl = null
+
+      // Upload image if present
+      if (selectedFile && user) {
+        const fileExt = selectedFile.name.split('.').pop()
+        const fileName = `${user.id}/${Date.now()}.${fileExt}`
+        
+        const { error: uploadError } = await supabase.storage
+          .from('article-submissions')
+          .upload(fileName, selectedFile)
+
+        if (uploadError) throw uploadError
+
+        screenshotUrl = fileName
+      }
+
+      const result = await submitArticle(articleId, shortNote, screenshotUrl || undefined)
+      if (result.success) {
+        setSelectedArticle(null)
+        setShortNote('')
+        setSelectedFile(null)
+        setImagePreview(null)
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Upload failed, please try again")
+    } finally {
+      setSubmitting(false)
+      setUploading(false)
     }
-    setSubmitting(false)
   }
 
   const getStatusBadge = (articleId: string) => {
@@ -143,12 +202,12 @@ const Articles = () => {
                           <DialogHeader>
                             <DialogTitle>Submit Your Note</DialogTitle>
                             <DialogDescription>
-                              Write a brief note about what you learned from the article
+                              Write a brief note and optionally attach a screenshot as proof
                             </DialogDescription>
                           </DialogHeader>
                           <div className="space-y-4">
                             <div>
-                              <Label htmlFor="shortNote">Your Note</Label>
+                              <Label htmlFor="shortNote">Your Note *</Label>
                               <Textarea
                                 id="shortNote"
                                 value={shortNote}
@@ -162,13 +221,62 @@ const Articles = () => {
                               </p>
                             </div>
 
+                            <div>
+                              <Label htmlFor="screenshot">Screenshot Proof (Optional)</Label>
+                              <input
+                                ref={fileInputRef}
+                                id="screenshot"
+                                type="file"
+                                accept="image/*"
+                                onChange={handleFileSelect}
+                                className="hidden"
+                              />
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => fileInputRef.current?.click()}
+                                disabled={uploading}
+                                className="w-full mt-2"
+                              >
+                                <ImageIcon className="h-4 w-4 mr-2" />
+                                {selectedFile ? 'Change Screenshot' : 'Add Screenshot'}
+                              </Button>
+                              
+                              {imagePreview && (
+                                <div className="mt-3 relative inline-block">
+                                  <img 
+                                    src={imagePreview} 
+                                    alt="Preview" 
+                                    className="max-h-32 rounded-lg"
+                                  />
+                                  <button
+                                    onClick={() => {
+                                      setImagePreview(null)
+                                      setSelectedFile(null)
+                                      if (fileInputRef.current) fileInputRef.current.value = ''
+                                    }}
+                                    className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 hover:bg-destructive/90"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+
                             <div className="flex gap-2">
                               <Button
                                 onClick={() => handleSubmit(article.id)}
-                                disabled={shortNote.trim().length < 50 || submitting}
+                                disabled={shortNote.trim().length < 50 || submitting || uploading}
                                 className="flex-1"
                               >
-                                {submitting ? 'Submitting...' : 'Submit Note'}
+                                {submitting || uploading ? (
+                                  <>
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    {uploading ? 'Uploading...' : 'Submitting...'}
+                                  </>
+                                ) : (
+                                  'Submit Note'
+                                )}
                               </Button>
                               <Button variant="outline" onClick={() => setSelectedArticle(null)}>
                                 Cancel
