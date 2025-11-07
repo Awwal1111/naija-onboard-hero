@@ -24,6 +24,7 @@ import { AdminWithdrawalsSection } from '@/components/AdminWithdrawalsSection'
 import { AdminDisputeManagement } from '@/components/AdminDisputeManagement'
 import { AdminManualDepositsSection } from '@/components/AdminManualDepositsSection'
 import { AdminAIAssistant } from '@/components/AdminAIAssistant'
+import { AdminSetup } from '@/components/AdminSetup'
 
 // Marketplace Section Components
 const DonationsSection = () => {
@@ -1012,6 +1013,11 @@ const EnhancedAdminDashboard = () => {
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
+            {/* Admin Setup Section - shows setup UI if not admin */}
+            <div className="mb-6">
+              <AdminSetup />
+            </div>
+            
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Recent Activity */}
               <Card>
