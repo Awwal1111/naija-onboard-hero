@@ -30,10 +30,77 @@ export const AdminReferralTasksSection = () => {
   const [submissions, setSubmissions] = useState<ReferralTaskSubmission[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
+  const [imageUrls, setImageUrls] = useState<Record<string, string>>({})
+  const [loadingImages, setLoadingImages] = useState<Set<string>>(new Set())
+
+  const getImageUrl = async (mediaUrl: string): Promise<string> => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('referral-tasks')
+        .createSignedUrl(mediaUrl, 3600) // 1 hour expiry
+      
+      if (error) {
+        console.error('Error getting signed URL:', error)
+        toast.error("Could not load image")
+        return ''
+      }
+      return data.signedUrl
+    } catch (error) {
+      console.error('Exception getting signed URL:', error)
+      return ''
+    }
+  }
 
   useEffect(() => {
     fetchSubmissions()
   }, [])
+
+  useEffect(() => {
+    const loadImageUrls = async () => {
+      const urlsToLoad: string[] = []
+      
+      // Find all images that need loading
+      for (const submission of submissions) {
+        if (submission.proof_url && 
+            !imageUrls[submission.proof_url] && 
+            !loadingImages.has(submission.proof_url)) {
+          urlsToLoad.push(submission.proof_url)
+        }
+      }
+
+      if (urlsToLoad.length === 0) return
+
+      // Mark as loading
+      setLoadingImages(prev => {
+        const newSet = new Set(prev)
+        urlsToLoad.forEach(url => newSet.add(url))
+        return newSet
+      })
+
+      // Load all URLs
+      const urls: Record<string, string> = {}
+      await Promise.all(
+        urlsToLoad.map(async (mediaUrl) => {
+          const url = await getImageUrl(mediaUrl)
+          if (url) urls[mediaUrl] = url
+        })
+      )
+
+      // Update state
+      if (Object.keys(urls).length > 0) {
+        setImageUrls(prev => ({ ...prev, ...urls }))
+      }
+      
+      // Clear loading state
+      setLoadingImages(prev => {
+        const newSet = new Set(prev)
+        urlsToLoad.forEach(url => newSet.delete(url))
+        return newSet
+      })
+    }
+
+    loadImageUrls()
+  }, [submissions])
 
   const fetchSubmissions = async () => {
     try {
@@ -172,12 +239,26 @@ export const AdminReferralTasksSection = () => {
               {submission.proof_url && (
                 <div className="mb-4">
                   <p className="text-xs text-muted-foreground mb-2">Screenshot Proof:</p>
-                  <img
-                    src={submission.proof_url}
-                    alt="Task proof"
-                    className="w-full max-h-48 object-cover rounded-lg cursor-pointer"
-                    onClick={() => setSelectedImage(submission.proof_url)}
-                  />
+                  {loadingImages.has(submission.proof_url) ? (
+                    <div className="w-full h-48 bg-muted rounded-lg flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-4 border-primary border-t-transparent"></div>
+                    </div>
+                  ) : imageUrls[submission.proof_url] ? (
+                    <img
+                      src={imageUrls[submission.proof_url]}
+                      alt="Task proof"
+                      className="w-full max-h-48 object-cover rounded-lg cursor-pointer"
+                      onClick={() => setSelectedImage(imageUrls[submission.proof_url])}
+                      onError={(e) => {
+                        console.error('Image failed to load:', submission.proof_url)
+                        e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="250" height="150"%3E%3Crect fill="%23ddd"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3EImage failed%3C/text%3E%3C/svg%3E'
+                      }}
+                    />
+                  ) : (
+                    <div className="w-full h-48 bg-muted rounded-lg flex items-center justify-center text-muted-foreground text-sm">
+                      Failed to load image
+                    </div>
+                  )}
                 </div>
               )}
 
