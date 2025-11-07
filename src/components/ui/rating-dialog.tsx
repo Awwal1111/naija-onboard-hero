@@ -9,17 +9,29 @@ interface RatingDialogProps {
   onSubmit: (rating: number, comment?: string) => Promise<void> | void
   trigger?: React.ReactNode
   disabled?: boolean
+  initialRating?: number
+  initialComment?: string
 }
 
 export const RatingDialog: React.FC<RatingDialogProps> = ({
   onSubmit,
   trigger,
-  disabled = false
+  disabled = false,
+  initialRating = 0,
+  initialComment = ''
 }) => {
-  const [rating, setRating] = useState(0)
-  const [comment, setComment] = useState('')
+  const [rating, setRating] = useState(initialRating)
+  const [comment, setComment] = useState(initialComment)
   const [open, setOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+
+  // Update when initial values change
+  React.useEffect(() => {
+    if (open) {
+      setRating(initialRating)
+      setComment(initialComment)
+    }
+  }, [open, initialRating, initialComment])
 
   const handleSubmit = async () => {
     if (rating === 0) return

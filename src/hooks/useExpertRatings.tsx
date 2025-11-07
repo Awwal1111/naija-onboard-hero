@@ -129,11 +129,91 @@ export const useExpertRatings = (expertId?: string) => {
     }
   }
 
+  const updateRating = async (ratingId: string, rating: number, comment?: string) => {
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "Please log in to update a rating",
+        variant: "destructive",
+      })
+      return { success: false, error: 'Not authenticated' }
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('expert_ratings' as any)
+        .update({
+          rating,
+          comment: comment || null
+        })
+        .eq('id', ratingId)
+        .select()
+        .single()
+
+      if (error) throw error
+
+      toast({
+        title: "Success",
+        description: "Rating updated successfully!",
+      })
+
+      fetchRatings()
+      return { success: true, data }
+    } catch (error: any) {
+      console.error('Error updating rating:', error)
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update rating. You can only edit within 24 hours.",
+        variant: "destructive",
+      })
+      return { success: false, error: error.message }
+    }
+  }
+
+  const deleteRating = async (ratingId: string) => {
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "Please log in to delete a rating",
+        variant: "destructive",
+      })
+      return { success: false, error: 'Not authenticated' }
+    }
+
+    try {
+      const { error } = await supabase
+        .from('expert_ratings' as any)
+        .delete()
+        .eq('id', ratingId)
+
+      if (error) throw error
+
+      toast({
+        title: "Success",
+        description: "Rating deleted successfully!",
+      })
+
+      setHasRated(false)
+      fetchRatings()
+      return { success: true }
+    } catch (error: any) {
+      console.error('Error deleting rating:', error)
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete rating. You can only delete within 24 hours.",
+        variant: "destructive",
+      })
+      return { success: false, error: error.message }
+    }
+  }
+
   return {
     ratings,
     loading,
     hasRated,
     submitRating,
+    updateRating,
+    deleteRating,
     refetch: fetchRatings
   }
 }

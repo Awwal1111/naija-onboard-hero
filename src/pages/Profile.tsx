@@ -67,7 +67,7 @@ const Profile = () => {
   const loading = isOwnProfile ? currentUserLoading : viewedUserLoading
 
   // Expert ratings hook
-  const { ratings, loading: ratingsLoading, hasRated, submitRating, refetch: refetchRatings } = useExpertRatings(userId || user?.id)
+  const { ratings, loading: ratingsLoading, hasRated, submitRating, updateRating, deleteRating, refetch: refetchRatings } = useExpertRatings(userId || user?.id)
 
   // Fetch user email for own profile
   useEffect(() => {
@@ -694,33 +694,76 @@ const Profile = () => {
                     {/* Individual Ratings */}
                     <div className="space-y-4 pt-4 border-t">
                       <h4 className="font-semibold text-text-primary">Recent Reviews</h4>
-                      {ratings.map((rating: any) => (
-                        <div key={rating.id} className="p-4 bg-muted rounded-xl space-y-2">
-                          <div className="flex items-start justify-between">
-                            <div className="flex items-center gap-3">
-                              <Avatar className="h-10 w-10">
-                                <AvatarFallback className="bg-primary text-white">
-                                  {rating.profiles?.full_name?.charAt(0) || 'U'}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <p className="font-medium text-text-primary">
-                                  {rating.profiles?.full_name || 'Anonymous'}
-                                </p>
-                                <StarRating rating={rating.rating} readonly size="sm" />
+                      {ratings.map((rating: any) => {
+                        const isOwnRating = rating.user_id === user?.id
+                        const createdAt = new Date(rating.created_at)
+                        const canEdit = isOwnRating && (Date.now() - createdAt.getTime()) < 24 * 60 * 60 * 1000
+                        
+                        return (
+                          <div key={rating.id} className="p-4 bg-muted rounded-xl space-y-2">
+                            <div className="flex items-start justify-between">
+                              <div className="flex items-center gap-3">
+                                <Avatar className="h-10 w-10">
+                                  <AvatarFallback className="bg-primary text-white">
+                                    {rating.profiles?.full_name?.charAt(0) || 'U'}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <p className="font-medium text-text-primary">
+                                    {rating.profiles?.full_name || 'Anonymous'}
+                                    {isOwnRating && <span className="text-xs text-primary ml-2">(You)</span>}
+                                  </p>
+                                  <StarRating rating={rating.rating} readonly size="sm" />
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-text-secondary">
+                                  {createdAt.toLocaleDateString()}
+                                </span>
+                                {canEdit && (
+                                  <div className="flex gap-1">
+                                    <RatingDialog
+                                      onSubmit={async (newRating, newComment) => {
+                                        const result = await updateRating(rating.id, newRating, newComment)
+                                        if (result?.success) {
+                                          await refetchRatings()
+                                        }
+                                      }}
+                                      trigger={
+                                        <Button variant="ghost" size="sm" className="h-7 text-xs">
+                                          Edit
+                                        </Button>
+                                      }
+                                      initialRating={rating.rating}
+                                      initialComment={rating.comment}
+                                    />
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      className="h-7 text-xs text-destructive hover:text-destructive"
+                                      onClick={async () => {
+                                        if (confirm('Are you sure you want to delete this rating?')) {
+                                          const result = await deleteRating(rating.id)
+                                          if (result?.success) {
+                                            await refetchRatings()
+                                          }
+                                        }
+                                      }}
+                                    >
+                                      Delete
+                                    </Button>
+                                  </div>
+                                )}
                               </div>
                             </div>
-                            <span className="text-xs text-text-secondary">
-                              {new Date(rating.created_at).toLocaleDateString()}
-                            </span>
+                            {rating.comment && (
+                              <p className="text-sm text-text-secondary mt-2 pl-[52px]">
+                                {rating.comment}
+                              </p>
+                            )}
                           </div>
-                          {rating.comment && (
-                            <p className="text-sm text-text-secondary mt-2 pl-[52px]">
-                              {rating.comment}
-                            </p>
-                          )}
-                        </div>
-                      ))}
+                        )
+                      })}
                     </div>
                   </div>
                 )}
