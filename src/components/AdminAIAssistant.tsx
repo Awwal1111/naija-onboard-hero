@@ -18,7 +18,23 @@ export const AdminAIAssistant = () => {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    checkAdminStatus();
+  }, []);
+
+  const checkAdminStatus = async () => {
+    try {
+      // @ts-ignore
+      const { data } = await supabase.rpc('check_is_admin');
+      setIsAdmin(data?.[0]?.is_admin || false);
+    } catch (error) {
+      console.error('Error checking admin status:', error);
+      setIsAdmin(false);
+    }
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -98,12 +114,30 @@ export const AdminAIAssistant = () => {
           <Sparkles className="h-5 w-5 text-primary" />
           Admin AI Assistant
         </CardTitle>
-        <Button variant="ghost" size="icon" onClick={() => setIsMinimized(true)}>
-          <Minimize2 className="h-4 w-4" />
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="ghost" size="icon" onClick={checkAdminStatus} title="Refresh admin status">
+            <Loader2 className={`h-4 w-4 ${isAdmin === null ? 'animate-spin' : ''}`} />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => setIsMinimized(true)}>
+            <Minimize2 className="h-4 w-4" />
+          </Button>
+        </div>
       </CardHeader>
       
       <CardContent className="flex-1 flex flex-col gap-4 overflow-hidden">
+        {/* Admin Status Check */}
+        {isAdmin === false && (
+          <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 text-sm">
+            <p className="font-medium text-yellow-700 dark:text-yellow-400 mb-1">Admin Access Required</p>
+            <p className="text-xs text-muted-foreground mb-2">
+              You need admin access to use the AI assistant. Click "Make Me Admin" in the setup section above.
+            </p>
+            <Button size="sm" variant="outline" onClick={checkAdminStatus}>
+              Recheck Status
+            </Button>
+          </div>
+        )}
+        
         {/* Messages */}
         <div className="flex-1 overflow-y-auto space-y-3 min-h-0">
           {messages.length === 0 && (
@@ -175,11 +209,11 @@ export const AdminAIAssistant = () => {
             }}
             placeholder="Ask about platform status, pending items, or suspicious activity..."
             className="min-h-[80px] resize-none"
-            disabled={isLoading}
+            disabled={isLoading || isAdmin === false}
           />
           <Button
             onClick={sendMessage}
-            disabled={!input.trim() || isLoading}
+            disabled={!input.trim() || isLoading || isAdmin === false}
             size="icon"
             className="shrink-0"
           >
