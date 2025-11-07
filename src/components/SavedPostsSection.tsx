@@ -34,7 +34,29 @@ export const SavedPostsSection = () => {
 
   useEffect(() => {
     fetchSavedPosts()
-  }, [])
+
+    // Set up real-time subscription for new saved posts
+    const channel = supabase
+      .channel('saved_posts_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'saved_posts',
+          filter: `user_id=eq.${user?.id}`
+        },
+        () => {
+          // Refetch when any change happens to user's saved posts
+          fetchSavedPosts()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user?.id])
 
   const fetchSavedPosts = async () => {
     if (!user?.id) return
