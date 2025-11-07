@@ -44,14 +44,19 @@ export const useSocialTasks = () => {
           submissions?.map(s => [s.task_id, { status: s.status, created_at: s.created_at }]) || []
         )
 
-        const tasksWithStatus = (tasksData as any[]).map((task: any) => ({
-          ...task,
-          userSubmission: submissionMap.get(task.id)
-        }))
+        // Filter out completed tasks (done_slots >= total_slots)
+        const activeTasks = (tasksData as any[])
+          .filter((task: any) => task.done_slots < task.total_slots)
+          .map((task: any) => ({
+            ...task,
+            userSubmission: submissionMap.get(task.id)
+          }))
 
-        setTasks(tasksWithStatus)
+        setTasks(activeTasks)
       } else {
-        setTasks((tasksData as any) || [])
+        // Filter tasks even when user is not logged in
+        const activeTasks = (tasksData as any[]).filter((task: any) => task.done_slots < task.total_slots)
+        setTasks(activeTasks || [])
       }
     } catch (error) {
       console.error('Error fetching social tasks:', error)
@@ -138,10 +143,14 @@ export const useSocialTasks = () => {
         .eq('earner_id', user.id)
         .maybeSingle()
 
-      if (existing && existing.status === 'pending') {
+      if (existing && (existing.status === 'pending' || existing.status === 'completed')) {
+        const statusMessage = existing.status === 'completed' 
+          ? 'Your submission has been approved. You cannot submit again.'
+          : 'Your submission is pending. Please wait for admin approval.'
+        
         toast({
           title: "Already Submitted",
-          description: "Your submission is pending. Please wait for admin approval.",
+          description: statusMessage,
           variant: "default",
         })
         return { success: false, error: 'Already submitted' }

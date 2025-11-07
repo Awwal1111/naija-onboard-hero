@@ -88,6 +88,15 @@ export const AdminSocialTasksSection = () => {
 
   const handleApprove = async (submissionId: number, earnerId: string, reward: number) => {
     try {
+      // Get the submission to find the task_id
+      const { data: submission } = await supabase
+        .from('social_tasks_progress')
+        .select('task_id')
+        .eq('id', submissionId)
+        .single()
+
+      if (!submission) throw new Error('Submission not found')
+
       // Update submission status
       const { error: updateError } = await supabase
         .from('social_tasks_progress')
@@ -95,6 +104,28 @@ export const AdminSocialTasksSection = () => {
         .eq('id', submissionId)
 
       if (updateError) throw updateError
+
+      // Increment done_slots in the social_tasks table
+      const { data: currentTask } = await supabase
+        .from('social_tasks')
+        .select('done_slots, total_slots')
+        .eq('id', submission.task_id)
+        .single()
+
+      if (currentTask) {
+        const newDoneSlots = (currentTask.done_slots || 0) + 1
+        
+        // Update done_slots and mark as finished if all slots are complete
+        const updateData: any = { done_slots: newDoneSlots }
+        if (newDoneSlots >= currentTask.total_slots) {
+          updateData.status = 'finished'
+        }
+
+        await supabase
+          .from('social_tasks')
+          .update(updateData)
+          .eq('id', submission.task_id)
+      }
 
       // Get current wallet balances
       const { data: currentProfile } = await supabase
