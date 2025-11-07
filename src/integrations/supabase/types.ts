@@ -2662,6 +2662,9 @@ export type Database = {
           connections_count: number | null
           created_at: string
           email_confirmed: boolean | null
+          email_verification_sent_at: string | null
+          email_verification_token: string | null
+          email_verified: boolean | null
           encrypted_wallet: string | null
           expert_verified_at: string | null
           full_name: string | null
@@ -2693,6 +2696,9 @@ export type Database = {
           connections_count?: number | null
           created_at?: string
           email_confirmed?: boolean | null
+          email_verification_sent_at?: string | null
+          email_verification_token?: string | null
+          email_verified?: boolean | null
           encrypted_wallet?: string | null
           expert_verified_at?: string | null
           full_name?: string | null
@@ -2724,6 +2730,9 @@ export type Database = {
           connections_count?: number | null
           created_at?: string
           email_confirmed?: boolean | null
+          email_verification_sent_at?: string | null
+          email_verification_token?: string | null
+          email_verified?: boolean | null
           encrypted_wallet?: string | null
           expert_verified_at?: string | null
           full_name?: string | null
@@ -3886,6 +3895,7 @@ export type Database = {
         Returns: undefined
       }
       generate_referral_code: { Args: never; Returns: string }
+      generate_verification_token: { Args: never; Returns: string }
       get_connected_profile_info: {
         Args: { target_user_id: string }
         Returns: {
