@@ -99,32 +99,66 @@ serve(async (req) => {
         continue;
       }
 
-      // Get exchange rate (USD to NGN)
-      const rateResponse = await fetch(EXCHANGE_RATE_API);
-      const rateData = await rateResponse.json();
-      const usdToNgn = rateData.conversion_rates?.NGN || 1600; // Fallback rate
-
-      console.log("Exchange rate USD -> NGN:", usdToNgn);
-
-      // Calculate Naira amount (assuming 1 cUSD = 1 USD, 1 USDT = 1 USD, 1 CELO = current market price)
-      let nairaAmount = 0;
-      if (asset === "cUSD" || asset === "USDT") {
-        nairaAmount = cryptoAmount * usdToNgn;
-      } else if (asset === "CELO") {
-        // Fetch real-time CELO price
-        try {
-          const celoResponse = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=celo&vs_currencies=usd");
-          const celoData = await celoResponse.json();
-          const celoUsdPrice = celoData.celo?.usd || 0.65; // Fallback to $0.65
-          console.log(`[CELO_PRICE] Current CELO price: $${celoUsdPrice}`);
-          nairaAmount = cryptoAmount * celoUsdPrice * usdToNgn;
-        } catch (priceError) {
-          console.error("[CELO_PRICE] Failed to fetch, using fallback $0.65");
-          nairaAmount = cryptoAmount * 0.65 * usdToNgn;
+      // Get exchange rate (USD to NGN) with retry logic
+      let usdToNgn = 1600; // Default fallback rate
+      let exchangeRateSource = "fallback";
+      
+      try {
+        const rateResponse = await fetch(EXCHANGE_RATE_API, { 
+          signal: AbortSignal.timeout(5000) // 5 second timeout
+        });
+        
+        if (rateResponse.ok) {
+          const rateData = await rateResponse.json();
+          if (rateData.conversion_rates?.NGN) {
+            usdToNgn = rateData.conversion_rates.NGN;
+            exchangeRateSource = "exchangerate-api.com";
+            console.log(`[EXCHANGE_RATE] ✅ Live rate from ${exchangeRateSource}: 1 USD = ${usdToNgn} NGN`);
+          }
         }
+      } catch (rateError) {
+        console.error(`[EXCHANGE_RATE] ⚠️ API failed, using fallback: ${rateError.message}`);
+      }
+      
+      console.log(`[EXCHANGE_RATE] Using rate: 1 USD = ${usdToNgn} NGN (source: ${exchangeRateSource})`);
+
+      // Calculate Naira amount with proper precision
+      // 1 cUSD = 1 USD, 1 USDT = 1 USD, 1 CELO = current market price
+      let nairaAmount = 0;
+      let usdValue = 0;
+      
+      if (asset === "cUSD" || asset === "USDT") {
+        usdValue = cryptoAmount; // 1:1 for stablecoins
+        nairaAmount = cryptoAmount * usdToNgn;
+        console.log(`[CONVERSION] ${cryptoAmount} ${asset} = ${usdValue} USD = ${nairaAmount.toFixed(2)} NGN`);
+      } else if (asset === "CELO") {
+        // Fetch real-time CELO price with timeout
+        let celoUsdPrice = 0.65; // Fallback
+        try {
+          const celoResponse = await fetch(
+            "https://api.coingecko.com/api/v3/simple/price?ids=celo&vs_currencies=usd",
+            { signal: AbortSignal.timeout(5000) }
+          );
+          
+          if (celoResponse.ok) {
+            const celoData = await celoResponse.json();
+            if (celoData.celo?.usd) {
+              celoUsdPrice = celoData.celo.usd;
+              console.log(`[CELO_PRICE] ✅ Live price: $${celoUsdPrice} USD`);
+            }
+          }
+        } catch (priceError) {
+          console.error(`[CELO_PRICE] ⚠️ API failed, using fallback $${celoUsdPrice}: ${priceError.message}`);
+        }
+        
+        usdValue = cryptoAmount * celoUsdPrice;
+        nairaAmount = usdValue * usdToNgn;
+        console.log(`[CONVERSION] ${cryptoAmount} CELO × $${celoUsdPrice} = ${usdValue.toFixed(2)} USD = ${nairaAmount.toFixed(2)} NGN`);
       }
 
-      const ncAmount = Math.floor(nairaAmount); // 1 NC = 1 Naira
+      // Round to 2 decimal places instead of flooring (preserves more value)
+      const ncAmount = Math.round(nairaAmount * 100) / 100; // 1 NC = 1 Naira with 2 decimal precision
+      console.log(`[NC_CREDIT] Final amount: ${ncAmount} NC (from ${nairaAmount.toFixed(2)} NGN)`);
 
       // Check if this is master wallet deposit (admin funding the system)
       const { data: masterWalletSettings } = await supabase

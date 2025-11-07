@@ -77,33 +77,64 @@ serve(async (req) => {
       throw new Error("Insufficient withdrawable balance");
     }
 
-    // Get exchange rate
-    const rateResponse = await fetch(EXCHANGE_RATE_API);
-    const rateData = await rateResponse.json();
-    const usdToNgn = rateData.conversion_rates?.NGN || 1600;
+    // Get exchange rate (USD to NGN) with retry logic
+    let usdToNgn = 1600; // Default fallback
+    let exchangeRateSource = "fallback";
+    
+    try {
+      const rateResponse = await fetch(EXCHANGE_RATE_API, {
+        signal: AbortSignal.timeout(5000) // 5 second timeout
+      });
+      
+      if (rateResponse.ok) {
+        const rateData = await rateResponse.json();
+        if (rateData.conversion_rates?.NGN) {
+          usdToNgn = rateData.conversion_rates.NGN;
+          exchangeRateSource = "exchangerate-api.com";
+          console.log(`[EXCHANGE_RATE] ✅ Live rate: 1 USD = ${usdToNgn} NGN (${exchangeRateSource})`);
+        }
+      }
+    } catch (rateError) {
+      console.error(`[EXCHANGE_RATE] ⚠️ API failed, using fallback: ${rateError.message}`);
+    }
 
     // Calculate crypto amount to send
     const nairaAmount = ncAmount;
     let cryptoAmount = 0;
+    let usdValue = 0;
+    
+    console.log(`[CONVERSION] Withdrawing ${nairaAmount} NC (NGN) to ${currency}`);
 
     if (currency === "cUSD" || currency === "USDT") {
-      cryptoAmount = nairaAmount / usdToNgn; // Convert NGN to USD (cUSD/USDT)
+      usdValue = nairaAmount / usdToNgn; // Convert NGN to USD
+      cryptoAmount = usdValue; // 1:1 for stablecoins
+      console.log(`[CONVERSION] ${nairaAmount} NGN ÷ ${usdToNgn} = ${usdValue.toFixed(2)} USD = ${cryptoAmount.toFixed(6)} ${currency}`);
     } else if (currency === "CELO") {
-      // Fetch real-time CELO price
+      // Fetch real-time CELO price with timeout
+      let celoUsdPrice = 0.65; // Fallback
       try {
-        const celoResponse = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=celo&vs_currencies=usd");
-        const celoData = await celoResponse.json();
-        const celoUsdPrice = celoData.celo?.usd || 0.65; // Fallback to $0.65
-        console.log(`[CELO_PRICE] Current CELO price: $${celoUsdPrice}`);
-        cryptoAmount = (nairaAmount / usdToNgn) / celoUsdPrice;
+        const celoResponse = await fetch(
+          "https://api.coingecko.com/api/v3/simple/price?ids=celo&vs_currencies=usd",
+          { signal: AbortSignal.timeout(5000) }
+        );
+        
+        if (celoResponse.ok) {
+          const celoData = await celoResponse.json();
+          if (celoData.celo?.usd) {
+            celoUsdPrice = celoData.celo.usd;
+            console.log(`[CELO_PRICE] ✅ Live price: $${celoUsdPrice} USD`);
+          }
+        }
       } catch (priceError) {
-        console.error("[CELO_PRICE] Failed to fetch, using fallback");
-        const celoUsdPrice = 0.65;
-        cryptoAmount = (nairaAmount / usdToNgn) / celoUsdPrice;
+        console.error(`[CELO_PRICE] ⚠️ API failed, using fallback $${celoUsdPrice}: ${priceError.message}`);
       }
+      
+      usdValue = nairaAmount / usdToNgn; // Convert NGN to USD first
+      cryptoAmount = usdValue / celoUsdPrice; // Then USD to CELO
+      console.log(`[CONVERSION] ${nairaAmount} NGN ÷ ${usdToNgn} = ${usdValue.toFixed(2)} USD ÷ $${celoUsdPrice} = ${cryptoAmount.toFixed(6)} CELO`);
     }
 
-    console.log(`Withdrawal: ${ncAmount} NC -> ${cryptoAmount} ${currency}`);
+    console.log(`[WITHDRAWAL] Final: ${ncAmount} NC → ${cryptoAmount.toFixed(6)} ${currency}`);
 
     // Create transaction record
     const { data: txRecord, error: txError } = await supabase
