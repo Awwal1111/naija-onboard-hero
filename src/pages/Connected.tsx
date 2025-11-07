@@ -57,144 +57,139 @@ export const Connected = () => {
 
   if (loading) {
     return (
-      <ResponsiveLayout>
-        <div className="container mx-auto px-4 py-6">
-          <div className="animate-pulse space-y-4">
-            {[1, 2, 3, 4].map((i) => (
-              <Card key={i}>
-                <CardContent className="p-4">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-gray-200 rounded-full" />
-                    <div className="flex-1 space-y-2">
-                      <div className="h-4 bg-gray-200 rounded w-3/4" />
-                      <div className="h-3 bg-gray-200 rounded w-1/2" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </ResponsiveLayout>
+      <div className="space-y-3">
+        {[1, 2, 3, 4].map((i) => (
+          <Card key={i}>
+            <CardContent className="p-3 md:p-4">
+              <div className="flex items-center space-x-3 md:space-x-4 animate-pulse">
+                <div className="w-10 h-10 md:w-12 md:h-12 bg-muted rounded-full flex-shrink-0" />
+                <div className="flex-1 space-y-2 min-w-0">
+                  <div className="h-4 bg-muted rounded w-3/4" />
+                  <div className="h-3 bg-muted rounded w-1/2" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     )
   }
 
   return (
-    <ResponsiveLayout>
-      <div className="container mx-auto px-4 py-6 max-w-4xl">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              Connected ({connections.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row gap-3">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search connections..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                <Select value={filterBy} onValueChange={setFilterBy}>
-                  <SelectTrigger className="w-full sm:w-[180px]">
-                    <Filter className="h-4 w-4 mr-2" />
-                    <SelectValue placeholder="Filter by..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Connections</SelectItem>
-                    <SelectItem value="online">Online Only</SelectItem>
-                    <SelectItem value="offline">Offline Only</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <Separator />
-
-              {filteredConnections.length === 0 ? (
-                <div className="text-center py-12">
-                  <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium mb-2">
-                    {searchQuery || filterBy !== 'all' ? 'No matching connections' : 'No connections yet'}
-                  </h3>
-                  <p className="text-muted-foreground">
-                    {searchQuery || filterBy !== 'all' 
-                      ? 'Try adjusting your search or filter criteria.'
-                      : 'Start connecting with other professionals to grow your network.'
-                    }
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {filteredConnections.map((connection) => (
-                    <Card key={connection.id} className="hover:shadow-md transition-shadow">
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
-                            <div className="relative">
-                              <Avatar className="h-12 w-12">
-                                <AvatarImage 
-                                  src={connection.other_user?.profile_picture_url} 
-                                  alt={connection.other_user?.full_name}
-                                />
-                                <AvatarFallback>
-                                  {connection.other_user?.full_name?.[0]?.toUpperCase() || 'U'}
-                                </AvatarFallback>
-                              </Avatar>
-                              {/* Online Status Indicator */}
-                              <div 
-                                className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${
-                                  isUserOnline(connection.other_user?.id || '') 
-                                    ? 'bg-green-500' 
-                                    : 'bg-gray-400'
-                                }`}
-                              />
-                            </div>
-                            <div className="flex-1">
-                              <h4 className="font-medium">
-                                {connection.other_user?.full_name || 'Unknown User'}
-                              </h4>
-                              <p className="text-sm text-muted-foreground">
-                                {connection.other_user?.profession || 'No profession listed'}
-                              </p>
-                              <div className="flex items-center gap-2 mt-1">
-                                <Badge 
-                                  variant={isUserOnline(connection.other_user?.id || '') ? "default" : "secondary"}
-                                  className="text-xs"
-                                >
-                                  {isUserOnline(connection.other_user?.id || '') ? 'Online' : 'Offline'}
-                                </Badge>
-                                <span className="text-xs text-muted-foreground">
-                                  Connected {new Date(connection.created_at).toLocaleDateString()}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-
-                          <Button
-                            size="sm"
-                            onClick={() => handleStartChat(connection.other_user?.id || '')}
-                            className="ml-2 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-sm hover:shadow-md transition-all duration-200 gap-1.5"
-                          >
-                            <MessageCircle className="h-4 w-4" />
-                            Chat
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+          <Users className="h-4 w-4 md:h-5 md:w-5" />
+          Connected ({connections.length})
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row gap-2 md:gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-2.5 md:top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search connections..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 md:pl-10 h-9 md:h-10 text-sm md:text-base"
+              />
             </div>
-          </CardContent>
-        </Card>
-      </div>
-    </ResponsiveLayout>
+            <Select value={filterBy} onValueChange={setFilterBy}>
+              <SelectTrigger className="w-full sm:w-[160px] md:w-[180px] h-9 md:h-10 text-sm md:text-base">
+                <Filter className="h-3.5 w-3.5 md:h-4 md:w-4 mr-1.5 md:mr-2" />
+                <SelectValue placeholder="Filter by..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Connections</SelectItem>
+                <SelectItem value="online">Online Only</SelectItem>
+                <SelectItem value="offline">Offline Only</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <Separator />
+
+          {filteredConnections.length === 0 ? (
+            <div className="text-center py-8 md:py-12">
+              <Users className="mx-auto h-10 w-10 md:h-12 md:w-12 text-muted-foreground mb-3 md:mb-4" />
+              <h3 className="text-base md:text-lg font-medium mb-2">
+                {searchQuery || filterBy !== 'all' ? 'No matching connections' : 'No connections yet'}
+              </h3>
+              <p className="text-sm md:text-base text-muted-foreground max-w-sm mx-auto px-4">
+                {searchQuery || filterBy !== 'all' 
+                  ? 'Try adjusting your search or filter criteria.'
+                  : 'Start connecting with other professionals to grow your network.'
+                }
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+              {filteredConnections.map((connection) => (
+                <Card key={connection.id} className="hover:shadow-md transition-shadow">
+                  <CardContent className="p-3 md:p-4">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center space-x-2.5 md:space-x-3 min-w-0 flex-1">
+                        <div className="relative flex-shrink-0">
+                          <Avatar className="h-10 w-10 md:h-12 md:w-12">
+                            <AvatarImage 
+                              src={connection.other_user?.profile_picture_url} 
+                              alt={connection.other_user?.full_name}
+                            />
+                            <AvatarFallback className="text-sm md:text-base">
+                              {connection.other_user?.full_name?.[0]?.toUpperCase() || 'U'}
+                            </AvatarFallback>
+                          </Avatar>
+                          {/* Online Status Indicator */}
+                          <div 
+                            className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 md:w-4 md:h-4 rounded-full border-2 border-white ${
+                              isUserOnline(connection.other_user?.id || '') 
+                                ? 'bg-green-500' 
+                                : 'bg-gray-400'
+                            }`}
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium text-sm md:text-base truncate">
+                            {connection.other_user?.full_name || 'Unknown User'}
+                          </h4>
+                          <p className="text-xs md:text-sm text-muted-foreground truncate">
+                            {connection.other_user?.profession || 'No profession listed'}
+                          </p>
+                          <div className="flex items-center gap-1.5 md:gap-2 mt-1">
+                            <Badge 
+                              variant={isUserOnline(connection.other_user?.id || '') ? "default" : "secondary"}
+                              className="text-xs h-4 md:h-5 px-1.5 md:px-2"
+                            >
+                              {isUserOnline(connection.other_user?.id || '') ? 'Online' : 'Offline'}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground hidden sm:inline">
+                              {new Date(connection.created_at).toLocaleDateString('en-US', { 
+                                month: 'short', 
+                                day: 'numeric' 
+                              })}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <Button
+                        size="sm"
+                        onClick={() => handleStartChat(connection.other_user?.id || '')}
+                        className="ml-1 md:ml-2 h-8 md:h-9 px-2.5 md:px-3 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-sm hover:shadow-md transition-all duration-200 gap-1 md:gap-1.5 flex-shrink-0"
+                      >
+                        <MessageCircle className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                        <span className="hidden xs:inline text-xs md:text-sm">Chat</span>
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   )
 }
 
