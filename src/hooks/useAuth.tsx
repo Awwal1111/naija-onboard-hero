@@ -71,6 +71,9 @@ export const useAuth = () => {
     let isInitialLoad = true
     let refreshTimer: NodeJS.Timeout | null = null
     
+    // Check if we've already done the initial auth redirect in this session
+    const hasInitialRedirect = sessionStorage.getItem('hasAuthRedirect') === 'true'
+    
     // Proactive session refresh - refresh token 5 minutes before expiry
     const scheduleTokenRefresh = (session: Session) => {
       if (refreshTimer) clearTimeout(refreshTimer)
@@ -155,8 +158,10 @@ export const useAuth = () => {
         scheduleTokenRefresh(session)
         
         // Redirect authenticated users away from welcome/auth pages
+        // But only on first load, not when app resumes from background
         const currentPath = window.location.pathname
-        if (currentPath === '/' || authPaths.includes(currentPath)) {
+        if (!hasInitialRedirect && (currentPath === '/' || authPaths.includes(currentPath))) {
+          sessionStorage.setItem('hasAuthRedirect', 'true')
           setTimeout(() => checkProfileAndRedirect(session.user), 100)
         }
       } else {
