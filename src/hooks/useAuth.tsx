@@ -117,8 +117,12 @@ export const useAuth = () => {
         }
 
         if (event === 'SIGNED_IN' && session?.user) {
-          // Redirect on sign in events (not initial load)
-          if (!isInitialLoad) {
+          // Only redirect if user is on auth/landing pages (not on main app pages)
+          const currentPath = window.location.pathname
+          const isOnAuthPage = currentPath === '/' || authPaths.includes(currentPath)
+          
+          // Redirect on sign in events (not initial load, only if on auth pages)
+          if (!isInitialLoad && isOnAuthPage) {
             setTimeout(() => checkProfileAndRedirect(session.user), 100)
           }
         } else if (event === 'SIGNED_OUT') {

@@ -3,6 +3,9 @@
 ## Overview
 This document explains the state persistence system that prevents the app from refreshing and redirecting to the dashboard when users minimize, switch apps, or return from background.
 
+## Root Cause Fixed
+The main issue was in `useAuth.tsx` where the `onAuthStateChange` listener would trigger redirects whenever auth events fired (including when app resumed from background). Fixed by only allowing redirects when users are actually on auth/landing pages, not when they're actively using main app pages.
+
 ## How It Works
 
 ### 1. Navigation State Persistence (`useAppState` hook)
