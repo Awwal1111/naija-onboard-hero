@@ -27,8 +27,8 @@ export const useAppState = () => {
         if (savedRoute) {
           const routeData = JSON.parse(savedRoute);
           const timeDiff = Date.now() - routeData.timestamp;
-          // Only restore if less than 30 minutes old and not already on that route
-          if (timeDiff < 30 * 60 * 1000 && routeData.path !== location.pathname + location.search) {
+          // Only restore if less than 1 hour old and not already on that route
+          if (timeDiff < 60 * 60 * 1000 && routeData.path !== location.pathname + location.search) {
             console.log('[AppState] Restoring last route:', routeData.path);
             navigate(routeData.path, { replace: true });
           }
@@ -38,7 +38,7 @@ export const useAppState = () => {
       }
     };
 
-    // Only restore on initial mount
+    // Only restore on initial mount (check if app was just launched)
     const hasRestoredRef = sessionStorage.getItem('hasRestored');
     if (!hasRestoredRef) {
       restoreLastRoute();
@@ -49,14 +49,35 @@ export const useAppState = () => {
   useEffect(() => {
     // Handle page visibility changes (app minimize/resume)
     const handleVisibilityChange = () => {
+      const currentPath = location.pathname + location.search;
+      
       if (!document.hidden) {
-        // App is coming back to foreground - stay on current page
-        console.log('[AppState] App resumed - staying on current page');
+        // App is coming back to foreground
+        console.log('[AppState] App resumed');
+        
+        // Check if we need to restore the saved route
+        try {
+          const savedRoute = sessionStorage.getItem('lastRoute') || localStorage.getItem('lastRoute');
+          if (savedRoute) {
+            const routeData = JSON.parse(savedRoute);
+            const timeDiff = Date.now() - routeData.timestamp;
+            
+            // Only restore if less than 1 hour old and not on the saved route
+            if (timeDiff < 60 * 60 * 1000 && routeData.path !== currentPath) {
+              console.log('[AppState] Restoring route from background:', routeData.path);
+              navigate(routeData.path, { replace: true });
+            } else {
+              console.log('[AppState] Already on correct page:', currentPath);
+            }
+          }
+        } catch (error) {
+          console.error('[AppState] Error restoring on resume:', error);
+        }
       } else {
-        // App is going to background - save state
-        console.log('[AppState] App going to background, saving state');
+        // App is going to background - save current state
+        console.log('[AppState] App going to background, saving state:', currentPath);
         const routeData = {
-          path: location.pathname + location.search,
+          path: currentPath,
           timestamp: Date.now()
         };
         sessionStorage.setItem('lastRoute', JSON.stringify(routeData));
