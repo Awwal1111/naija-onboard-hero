@@ -74,3 +74,9 @@ verify_jwt = false
 
 [functions.celo-withdrawal]
 verify_jwt = true
+
+[functions.admin-ai-assistant]
+verify_jwt = true
+
+[functions.ai-assistant]
+verify_jwt = false

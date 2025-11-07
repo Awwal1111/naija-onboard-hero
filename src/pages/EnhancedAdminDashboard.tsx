@@ -23,6 +23,7 @@ import { AdminSettingsTab } from '@/components/AdminSettingsTab'
 import { AdminWithdrawalsSection } from '@/components/AdminWithdrawalsSection'
 import { AdminDisputeManagement } from '@/components/AdminDisputeManagement'
 import { AdminManualDepositsSection } from '@/components/AdminManualDepositsSection'
+import { AdminAIAssistant } from '@/components/AdminAIAssistant'
 
 // Marketplace Section Components
 const DonationsSection = () => {
@@ -1558,6 +1559,8 @@ const EnhancedAdminDashboard = () => {
           )}
         </DialogContent>
       </Dialog>
+      
+      <AdminAIAssistant />
     </div>
   )
 }

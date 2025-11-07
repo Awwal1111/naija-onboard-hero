@@ -3910,6 +3910,17 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_suspicious_users: {
+        Args: never
+        Returns: {
+          email: string
+          full_name: string
+          last_activity: string
+          total_amount: number
+          transaction_count: number
+          user_id: string
+        }[]
+      }
       get_system_setting: { Args: { setting_key: string }; Returns: string }
       has_purchased_product: {
         Args: { p_product_id: string; p_user_id: string }
