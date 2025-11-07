@@ -59,7 +59,7 @@ const PortfolioSection: React.FC<PortfolioSectionProps> = ({ userId, isOwnProfil
       const fileExt = file.name.split('.').pop()
       const fileName = `${user.id}/portfolio-${Date.now()}.${fileExt}`
       
-      const { url, error } = await uploadFile(file, 'Portfolio', fileName)
+      const { url, error } = await uploadFile(file, 'portfolio', fileName)
       
       if (error || !url) {
         throw new Error(error || 'Upload failed')
@@ -125,8 +125,8 @@ const PortfolioSection: React.FC<PortfolioSectionProps> = ({ userId, isOwnProfil
       if (itemToDelete?.media_url) {
         try {
           const urlParts = itemToDelete.media_url.split('/')
-          const bucketPath = urlParts.slice(urlParts.indexOf('Portfolio') + 1).join('/')
-          await supabase.storage.from('Portfolio').remove([bucketPath])
+          const bucketPath = urlParts.slice(urlParts.indexOf('portfolio') + 1).join('/')
+          await supabase.storage.from('portfolio').remove([bucketPath])
         } catch (storageError) {
           console.error('Error deleting image from storage:', storageError)
         }

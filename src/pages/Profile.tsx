@@ -757,9 +757,11 @@ const Profile = () => {
                               </div>
                             </div>
                             {rating.comment && (
-                              <p className="text-sm text-text-secondary mt-2 pl-[52px]">
-                                {rating.comment}
-                              </p>
+                              <div className="mt-3 p-3 bg-background/50 rounded-lg border border-border/50">
+                                <p className="text-sm text-foreground leading-relaxed">
+                                  {rating.comment}
+                                </p>
+                              </div>
                             )}
                           </div>
                         )
