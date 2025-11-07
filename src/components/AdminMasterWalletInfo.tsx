@@ -18,8 +18,8 @@ export const AdminMasterWalletInfo = () => {
   const [loadingTx, setLoadingTx] = useState(false)
 
   const CELO_RPC = "https://forno.celo.org"
-  const CUSD_ADDRESS = "0x765DE816845861e75A25fCA122bb6898B8B1282a"
-  const USDT_ADDRESS = "0x48065fbbE25f71C9282ddf5e1cD6d6A887483D5e"
+  const CUSD_ADDRESS = ethers.getAddress("0x765DE816845861e75A25fCA122bb6898B8B1282a")
+  const USDT_ADDRESS = ethers.getAddress("0x48065fbBe25f71C9282ddf5e1cD6d6A887483D5e")
 
   console.log('[ADMIN] 🔍 Current balance state:', balance)
 
