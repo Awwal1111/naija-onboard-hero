@@ -189,10 +189,7 @@ export const AdminMasterWalletInfo = () => {
     try {
       const { data, error } = await supabase
         .from('crypto_transactions')
-        .select(`
-          *,
-          profiles(full_name)
-        `)
+        .select('*')
         .order('created_at', { ascending: false })
         .limit(50)
 
@@ -388,7 +385,7 @@ export const AdminMasterWalletInfo = () => {
                         {tx.transaction_type === 'deposit' ? '📥 Deposit' : '📤 Withdrawal'}: {tx.crypto_amount?.toFixed(4) || '0'} {tx.crypto_currency}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        User: {tx.profiles?.full_name || 'Unknown User'}
+                        User ID: {tx.user_id?.substring(0, 8)}...
                       </p>
                       <p className="text-xs text-muted-foreground font-mono truncate">
                         {tx.wallet_address}
