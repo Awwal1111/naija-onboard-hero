@@ -32,6 +32,7 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
   const [message, setMessage] = useState('')
   const [messages, setMessages] = useState<Message[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
   const [position, setPosition] = useState({ x: window.innerWidth - 380, y: 20 })
   const [isDragging, setIsDragging] = useState(false)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
@@ -61,6 +62,15 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
       setTimeout(scrollToBottom, 100)
     }
   }, [isOpen, isMinimized])
+
+  // Check if mobile on resize
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   useEffect(() => {
     // Add welcome message based on current page context - only when user opens it
@@ -198,6 +208,7 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
   }
 
   const handleMouseDown = (e: React.MouseEvent) => {
+    if (isMobile) return // Disable dragging on mobile
     if ((e.target as HTMLElement).closest('.drag-handle')) {
       setIsDragging(true)
       setDragOffset({
@@ -235,36 +246,46 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
     <>
       {/* Floating AI Button - positioned higher to avoid bottom nav */}
       {!isOpen && (
-        <div className="fixed bottom-24 right-6 z-50">
+        <div className="fixed bottom-20 md:bottom-6 right-4 md:right-6 z-50">
           <Button
             onClick={() => setIsOpen(true)}
-            className="w-14 h-14 rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl transition-all duration-300 group"
+            className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl transition-all duration-300 group"
           >
-            <Bot className="h-6 w-6 text-white group-hover:scale-110 transition-transform" />
-            <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full animate-pulse" />
+            <Bot className="h-5 w-5 md:h-6 md:w-6 text-white group-hover:scale-110 transition-transform" />
+            <div className="absolute -top-1 -right-1 w-3 h-3 md:w-4 md:h-4 bg-green-500 rounded-full animate-pulse" />
           </Button>
         </div>
       )}
 
-      {/* AI Chat Window - floating above content */}
+      {/* AI Chat Window - responsive positioning */}
       {isOpen && (
         <div 
           ref={dragRef}
-          className="fixed z-50"
-          style={{ 
+          className={`fixed z-50 ${
+            isMobile 
+              ? 'inset-x-4 bottom-16 top-20' // Mobile: full screen with padding
+              : ''
+          }`}
+          style={!isMobile ? { 
             left: `${position.x}px`, 
             top: `${position.y}px`,
             cursor: isDragging ? 'grabbing' : 'default'
-          }}
+          } : undefined}
           onMouseDown={handleMouseDown}
         >
-          <Card className={`w-80 shadow-2xl border-primary/20 ${isMinimized ? 'h-16' : 'h-96'} transition-all duration-300`}>
-        <CardHeader className="drag-handle py-3 px-4 bg-gradient-to-r from-primary to-primary/80 text-white cursor-grab active:cursor-grabbing select-none">
+          <Card className={`${
+            isMobile ? 'w-full h-full' : 'w-80'
+          } shadow-2xl border-primary/20 ${
+            isMinimized ? 'h-16' : isMobile ? 'h-full' : 'h-96'
+          } transition-all duration-300 flex flex-col`}>
+        <CardHeader className={`drag-handle py-3 px-4 bg-gradient-to-r from-primary to-primary/80 text-white ${
+          isMobile ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'
+        } select-none flex-shrink-0`}>
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <GripVertical className="h-4 w-4 opacity-70" />
+              {!isMobile && <GripVertical className="h-4 w-4 opacity-70" />}
               <Bot className="h-5 w-5" />
-              <CardTitle className="text-sm font-medium">NaijaLancers AI</CardTitle>
+              <CardTitle className="text-sm md:text-base font-medium">NaijaLancers AI</CardTitle>
             </div>
             <div className="flex items-center gap-1">
               <Button
@@ -288,9 +309,9 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
         </CardHeader>
 
         {!isMinimized && (
-          <CardContent className="p-0 flex flex-col h-80">
+          <CardContent className={`p-0 flex flex-col ${isMobile ? 'flex-1' : 'h-80'}`}>
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-muted/20">
+            <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3 bg-muted/20">
               {messages.length === 0 && (
                 <div className="text-center py-4">
                   <Sparkles className="h-8 w-8 text-primary mx-auto mb-2" />
@@ -300,12 +321,12 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
               
               {messages.map((msg) => (
                 <div key={msg.id} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
+                  <div className={`max-w-[85%] md:max-w-[80%] rounded-lg px-3 py-2 text-sm ${
                     msg.type === 'user'
                       ? 'bg-primary text-white'
                       : 'bg-white border border-border text-text-primary'
                   }`}>
-                    <div className="whitespace-pre-wrap">{msg.content}</div>
+                    <div className="whitespace-pre-wrap break-words">{msg.content}</div>
                     <div className={`text-xs mt-1 opacity-70 ${
                       msg.type === 'user' ? 'text-white' : 'text-text-secondary'
                     }`}>
@@ -334,10 +355,10 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
 
             {/* Quick Suggestions */}
             {messages.length <= 1 && (
-              <div className="px-4 py-2 border-t border-border">
+              <div className="px-3 md:px-4 py-2 border-t border-border flex-shrink-0">
                 <div className="text-xs text-text-secondary mb-2">Quick suggestions:</div>
                 <div className="flex flex-wrap gap-1">
-                  {suggestions.slice(0, 3).map((suggestion, index) => (
+                  {suggestions.slice(0, isMobile ? 2 : 3).map((suggestion, index) => (
                     <Badge
                       key={index}
                       variant="outline"
@@ -352,7 +373,7 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
             )}
 
             {/* Input Area */}
-            <div className="p-4 border-t border-border bg-background">
+            <div className="p-3 md:p-4 border-t border-border bg-background flex-shrink-0">
               <div className="flex items-center gap-2">
                 <BrandInput
                   ref={inputRef}
