@@ -22,8 +22,10 @@ export interface Post {
     full_name: string
     profession: string
     profile_picture_url?: string
+    is_expert?: boolean
   } | null
   user_liked?: boolean
+  user_saved?: boolean
 }
 
 export interface Story {
@@ -73,9 +75,25 @@ export const useFeed = () => {
 
   const fetchPosts = async () => {
     try {
+      // Optimized single query with joins
       const { data: postsData, error } = await supabase
         .from('posts')
-        .select('*')
+        .select(`
+          *,
+          profiles:user_id (
+            user_id,
+            full_name,
+            profession,
+            profile_picture_url,
+            is_expert
+          ),
+          post_likes!left (
+            user_id
+          ),
+          saved_posts!left (
+            user_id
+          )
+        `)
         .eq('status', 'active')
         .order('created_at', { ascending: false })
         .limit(20)
@@ -87,33 +105,12 @@ export const useFeed = () => {
         return
       }
 
-      // Get unique user IDs
-      const userIds = [...new Set(postsData.map(post => post.user_id))]
-      
-      // Fetch profiles for all users
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('user_id, full_name, profession, profile_picture_url')
-        .in('user_id', userIds)
-
-      const profilesMap = new Map(profiles?.map(p => [p.user_id, p]) || [])
-
-      // Check which posts the user has liked
-      let likedPostIds = new Set<string>()
-      if (user) {
-        const { data: userLikes } = await supabase
-          .from('post_likes')
-          .select('post_id')
-          .eq('user_id', user.id)
-          .in('post_id', postsData.map(p => p.id))
-
-        likedPostIds = new Set(userLikes?.map(like => like.post_id) || [])
-      }
-
+      // Efficiently check user interactions
       const enrichedPosts: Post[] = postsData.map(post => ({
         ...post,
-        profiles: profilesMap.get(post.user_id) || null,
-        user_liked: likedPostIds.has(post.id)
+        profiles: post.profiles || null,
+        user_liked: post.post_likes?.some((like: any) => like.user_id === user?.id) || false,
+        user_saved: post.saved_posts?.some((save: any) => save.user_id === user?.id) || false
       }))
 
       setPosts(enrichedPosts)
@@ -386,6 +383,53 @@ export const useFeed = () => {
     }
   }
 
+  const savePost = async (postId: string) => {
+    if (!user) return { error: 'User not authenticated' }
+
+    const post = posts.find(p => p.id === postId)
+    if (!post) return { error: 'Post not found' }
+
+    try {
+      if (post.user_saved) {
+        // Unsave
+        await supabase
+          .from('saved_posts')
+          .delete()
+          .eq('post_id', postId)
+          .eq('user_id', user.id)
+      } else {
+        // Save
+        await supabase
+          .from('saved_posts')
+          .insert({
+            post_id: postId,
+            user_id: user.id
+          })
+      }
+
+      // Optimistic update
+      setPosts(prev => prev.map(p => 
+        p.id === postId 
+          ? { ...p, user_saved: !p.user_saved }
+          : p
+      ))
+
+      toast({
+        title: post.user_saved ? "Post unsaved" : "Post saved",
+        description: post.user_saved ? "Removed from saved posts" : "Added to saved posts"
+      })
+
+      return { success: true }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save post",
+        variant: "destructive"
+      })
+      return { error: error.message }
+    }
+  }
+
   return {
     posts,
     stories,
@@ -395,6 +439,7 @@ export const useFeed = () => {
     toggleLike,
     addComment,
     viewStory,
+    savePost,
     refreshFeed: fetchFeedData
   }
 }
