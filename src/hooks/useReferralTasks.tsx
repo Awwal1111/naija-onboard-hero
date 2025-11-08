@@ -127,8 +127,8 @@ export const useReferralTasks = () => {
       }
 
       toast({
-        title: "Success",
-        description: "Task submitted successfully! Awaiting admin approval.",
+        title: "Referral Task Submitted",
+        description: "Your referral proof has been submitted and is awaiting admin approval. You'll be notified once reviewed.",
       })
 
       await fetchSubmissions()

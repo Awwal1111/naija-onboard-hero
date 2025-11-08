@@ -34,11 +34,11 @@ export const ReferralTaskCard = ({ task, hasSubmitted, submissionStatus, onSubmi
     const file = event.target.files?.[0]
     if (!file) return
 
-    console.log('Uploading file:', file.name, 'Type:', file.type, 'Size:', file.size)
+    console.log('Uploading referral task proof:', file.name)
     const result = await uploadFile(file, 'referral-tasks', undefined, 'image')
     
     if (result.url) {
-      console.log('Upload successful:', result.url)
+      console.log('Referral task proof uploaded:', result.url)
       setProof(result.url)
       // Clear the input to allow re-upload if needed
       event.target.value = ''
@@ -141,9 +141,9 @@ export const ReferralTaskCard = ({ task, hasSubmitted, submissionStatus, onSubmi
           </DialogTrigger>
           <DialogContent className="sm:max-w-md max-w-[95vw] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Submit Proof</DialogTitle>
+              <DialogTitle>Submit Referral Proof</DialogTitle>
               <DialogDescription>
-                Upload a screenshot OR provide a text explanation of how you completed this task.
+                Upload a screenshot OR provide a text explanation showing you completed this referral task.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
@@ -161,8 +161,8 @@ export const ReferralTaskCard = ({ task, hasSubmitted, submissionStatus, onSubmi
                     file:bg-primary file:text-primary-foreground
                     hover:file:bg-primary/90"
                 />
-                {uploadProgress.isUploading && <p className="text-sm text-muted-foreground mt-1">Uploading...</p>}
-                {proof && <p className="text-sm text-green-600 mt-1">✅ Screenshot uploaded</p>}
+                {uploadProgress.isUploading && <p className="text-sm text-muted-foreground mt-1">Uploading referral proof...</p>}
+                {proof && <p className="text-sm text-green-600 mt-1">✅ Referral proof uploaded successfully</p>}
               </div>
 
               <div className="relative">
@@ -184,6 +184,15 @@ export const ReferralTaskCard = ({ task, hasSubmitted, submissionStatus, onSubmi
                   rows={4}
                   className="mt-2"
                 />
+              </div>
+
+              <div className="bg-blue-50 dark:bg-blue-950 p-3 rounded-lg">
+                <p className="text-sm text-blue-800 dark:text-blue-200 font-medium">
+                  📋 Referral Task Submission
+                </p>
+                <p className="text-xs text-blue-600 dark:text-blue-300 mt-1">
+                  Your submission will be reviewed by admin. Status updates: Pending → Approved/Rejected
+                </p>
               </div>
 
               {error && (
