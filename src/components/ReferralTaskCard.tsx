@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -24,36 +24,35 @@ export const ReferralTaskCard = ({ task, hasSubmitted, submissionStatus, onSubmi
   const [error, setError] = useState<string | null>(null)
   const { uploadFile, uploadProgress } = useSecureFileUpload()
 
-  // Log state changes ONLY when dialog is open
-  if (open) {
-    console.log('🎨 ReferralTaskCard RENDER [Task:', task.id, ']:', { 
-      proof: proof ? 'HAS_PROOF ✅' : 'NO_PROOF ❌',
-      proofLength: proof?.length || 0,
-      proofUrl: proof,
-      uploadProgress: uploadProgress.isUploading,
-      open 
-    })
-  }
+  // Persist proof in session storage to survive re-renders
+  const storageKey = `referral-proof-${task.id}`
+  
+  useEffect(() => {
+    // Load saved proof on mount
+    const saved = sessionStorage.getItem(storageKey)
+    if (saved && !proof) {
+      setProof(saved)
+    }
+  }, [storageKey])
+  
+  useEffect(() => {
+    // Save proof whenever it changes
+    if (proof) {
+      sessionStorage.setItem(storageKey, proof)
+    }
+  }, [proof, storageKey])
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
 
-    console.log('🔵 [Task:', task.id, '] Starting upload:', file.name)
     setError(null)
-    
     const result = await uploadFile(file, 'referral-tasks', undefined, 'image')
     
     if (result.url) {
-      console.log('✅ [Task:', task.id, '] Upload success, setting proof:', result.url)
       setProof(result.url)
-      console.log('✅ [Task:', task.id, '] Proof state after update:', result.url)
-      // Force immediate log to verify state
-      setTimeout(() => {
-        console.log('🔍 [Task:', task.id, '] Proof state 100ms later:', proof)
-      }, 100)
+      sessionStorage.setItem(storageKey, result.url)
     } else {
-      console.error('❌ [Task:', task.id, '] Upload failed:', result.error)
       setError(result.error || 'Upload failed')
     }
   }
@@ -76,13 +75,12 @@ export const ReferralTaskCard = ({ task, hasSubmitted, submissionStatus, onSubmi
       console.log('📥 Submission result:', result)
       
       if (result.success) {
-        console.log('✅ Success - closing dialog')
         setOpen(false)
         setProof('')
         setTextExplanation('')
         setError(null)
+        sessionStorage.removeItem(storageKey) // Clear saved proof after successful submit
       } else {
-        console.error('❌ Submission failed:', result.error)
         setError(result.error || 'Submission failed')
       }
     } catch (error: any) {
