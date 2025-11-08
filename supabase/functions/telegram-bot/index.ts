@@ -20,7 +20,19 @@ interface TelegramUpdate {
 
 serve(async (req) => {
   try {
-    const update: TelegramUpdate = await req.json();
+    let update: TelegramUpdate;
+    try {
+      const text = await req.text();
+      if (!text || text.trim() === '') {
+        console.log("Empty request body");
+        return new Response("OK", { status: 200 });
+      }
+      update = JSON.parse(text);
+    } catch (parseError) {
+      console.error("JSON parse error:", parseError);
+      return new Response("OK", { status: 200 });
+    }
+
     console.log("Telegram update received:", JSON.stringify(update));
 
     const message = update.message;
@@ -54,7 +66,14 @@ serve(async (req) => {
           .from("profiles")
           .select("user_id, full_name, telegram_user_id, celo_wallet_address")
           .eq("referral_code", identifier.toUpperCase())
-          .single();
+          .maybeSingle();
+        
+        console.log("Lookup by referral code:", { 
+          found: !!profileByRef, 
+          refError, 
+          searchCode: identifier.toUpperCase(),
+          telegram_user_id: profileByRef?.telegram_user_id 
+        });
         
         if (profileByRef) {
           userData = profileByRef;
@@ -70,7 +89,7 @@ serve(async (req) => {
               .from("profiles")
               .select("user_id, full_name, telegram_user_id, celo_wallet_address")
               .eq("user_id", foundUser.id)
-              .single();
+              .maybeSingle();
             userData = profile;
             lookupMethod = "email";
           }
@@ -128,11 +147,13 @@ serve(async (req) => {
     }
 
     // Find user by telegram_user_id
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("user_id, full_name, wallet_balance, balance_withdrawable, celo_wallet_address, referral_code")
       .eq("telegram_user_id", userId?.toString())
-      .single();
+      .maybeSingle();
+
+    console.log("Profile lookup result:", { profile, profileError, telegram_user_id: userId?.toString() });
 
     if (!profile) {
       await sendTelegramMessage(
