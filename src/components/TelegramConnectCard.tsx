@@ -13,7 +13,7 @@ const TelegramConnectCard = () => {
   const [copied, setCopied] = useState(false)
   const [checking, setChecking] = useState(false)
   
-  const isConnected = !!(profile as any)?.telegram_user_id
+  const isConnected = !!profile?.telegram_user_id
   const referralCode = profile?.referral_code || user?.email || ''
   const telegramLink = `https://t.me/NaijaLancersBot?start=${referralCode}`
 

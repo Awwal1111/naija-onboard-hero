@@ -20,6 +20,9 @@ export interface Profile {
   is_expert: boolean
   expert_verified_at: string | null
   referral_code: string | null
+  telegram_user_id: string | null
+  telegram_username: string | null
+  celo_wallet_address?: string | null
   average_rating?: number
   rating_count?: number
   created_at: string

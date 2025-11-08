@@ -52,7 +52,7 @@ serve(async (req) => {
         
         const { data: profileByRef, error: refError } = await supabase
           .from("profiles")
-          .select("user_id, full_name, telegram_user_id, wallet_address")
+          .select("user_id, full_name, telegram_user_id, celo_wallet_address")
           .eq("referral_code", identifier.toUpperCase())
           .single();
         
@@ -68,7 +68,7 @@ serve(async (req) => {
           if (foundUser) {
             const { data: profile } = await supabase
               .from("profiles")
-              .select("user_id, full_name, telegram_user_id, wallet_address")
+              .select("user_id, full_name, telegram_user_id, celo_wallet_address")
               .eq("user_id", foundUser.id)
               .single();
             userData = profile;
@@ -130,7 +130,7 @@ serve(async (req) => {
     // Find user by telegram_user_id
     const { data: profile } = await supabase
       .from("profiles")
-      .select("user_id, full_name, wallet_balance, balance_withdrawable, wallet_address, referral_code")
+      .select("user_id, full_name, wallet_balance, balance_withdrawable, celo_wallet_address, referral_code")
       .eq("telegram_user_id", userId?.toString())
       .single();
 
@@ -148,7 +148,7 @@ serve(async (req) => {
         chatId,
         `💰 *Automated Deposit via Celo Blockchain*\n\n` +
         `*Your Personal Deposit Address:*\n` +
-        `\`${profile.wallet_address}\`\n\n` +
+        `\`${profile.celo_wallet_address}\`\n\n` +
         `📱 *How to Deposit:*\n` +
         `1. Open your Celo wallet (Valora, MetaMask, etc.)\n` +
         `2. Send cUSD or USDT to your address above\n` +
@@ -485,7 +485,7 @@ User Profile:
 - Name: ${profile.full_name}
 - Wallet Balance: ₦${profile.wallet_balance || 0} NC
 - Withdrawable Balance: ₦${profile.balance_withdrawable || 0} NC
-- Wallet Address: ${profile.wallet_address}
+- Wallet Address: ${profile.celo_wallet_address}
 - Referral Code: ${profile.referral_code}
 
 Recent Transactions: ${recentTx && recentTx.length > 0 
