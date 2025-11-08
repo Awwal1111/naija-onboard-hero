@@ -50,6 +50,7 @@ export const useConnections = () => {
         .from('connection_requests')
         .select('*')
         .or(`requester_id.eq.${user.id},requested_id.eq.${user.id}`)
+        .eq('status', 'pending')
         .order('created_at', { ascending: false })
 
       if (error) throw error
