@@ -57,6 +57,11 @@ import SpinWheelGame from "./components/SpinWheelGame";
 import NaijaPredictor from "./components/NaijaPredictor";
 import FAQ from "./pages/FAQ";
 import Index from "./pages/Index";
+import Search from "./pages/Search";
+import UserAnalytics from "./pages/UserAnalytics";
+import Leaderboard from "./pages/Leaderboard";
+import Collections from "./pages/Collections";
+import AdminReports from "./pages/AdminReports";
 
 // Component to handle app state persistence
 const AppStateManager = () => {
@@ -86,6 +91,11 @@ const App = () => (
           <Route path="/expert-application" element={<ProtectedRoute><ExpertApplication /></ProtectedRoute>} />
           <Route path="/admin/expert-applications" element={<ProtectedRoute><AdminExpertApplications /></ProtectedRoute>} />
           <Route path="/admin/dashboard" element={<ProtectedRoute><EnhancedAdminDashboard /></ProtectedRoute>} />
+          <Route path="/admin/reports" element={<ProtectedRoute><AdminReports /></ProtectedRoute>} />
+          <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
+          <Route path="/analytics" element={<ProtectedRoute><UserAnalytics /></ProtectedRoute>} />
+          <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
+          <Route path="/collections" element={<ProtectedRoute><Collections /></ProtectedRoute>} />
           <Route path="/post-job" element={<ProtectedRoute><PostJob /></ProtectedRoute>} />
           <Route path="/experts" element={<ProtectedRoute><Experts /></ProtectedRoute>} />
           <Route path="/jobs" element={<ProtectedRoute><Jobs /></ProtectedRoute>} />
