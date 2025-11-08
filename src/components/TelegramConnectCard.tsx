@@ -29,15 +29,15 @@ const TelegramConnectCard = () => {
   }
 
   return (
-    <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border-blue-200 dark:border-blue-800">
+    <Card className="bg-gradient-to-br from-accent to-muted border-border">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Send className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-            <span className="text-blue-900 dark:text-blue-100">Telegram Bot</span>
+            <Send className="h-5 w-5 text-primary" />
+            <span>Telegram Bot</span>
           </div>
           {isConnected && (
-            <Badge className="bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 border-green-300 dark:border-green-700">
+            <Badge className="bg-primary/10 text-primary border-primary/20">
               <CheckCircle2 className="h-3 w-3 mr-1" />
               Connected
             </Badge>
@@ -45,17 +45,17 @@ const TelegramConnectCard = () => {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <p className="text-sm text-blue-800 dark:text-blue-200">
+        <p className="text-sm text-muted-foreground">
           {isConnected 
             ? '✅ You\'re connected! Get instant notifications for jobs, tasks, and earnings.'
             : '🚀 Connect your Telegram to get real-time notifications and manage your account on-the-go!'}
         </p>
 
         {!isConnected && (
-          <div className="bg-white dark:bg-blue-950 rounded-lg p-3 border border-blue-200 dark:border-blue-800">
-            <p className="text-xs text-blue-700 dark:text-blue-300 mb-2 font-medium">Your Connection Code:</p>
+          <div className="bg-card rounded-lg p-3 border border-border">
+            <p className="text-xs text-muted-foreground mb-2 font-medium">Your Connection Code:</p>
             <div className="flex items-center gap-2">
-              <code className="flex-1 bg-blue-50 dark:bg-blue-900 text-blue-900 dark:text-blue-100 px-3 py-2 rounded text-sm font-mono">
+              <code className="flex-1 bg-muted text-foreground px-3 py-2 rounded text-sm font-mono">
                 {referralCode}
               </code>
               <Button
@@ -73,7 +73,7 @@ const TelegramConnectCard = () => {
         <div className="space-y-2">
           <Button
             onClick={handleConnectTelegram}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
           >
             <Send className="h-4 w-4 mr-2" />
             {isConnected ? 'Open Telegram Bot' : 'Connect to Telegram Bot'}
@@ -81,14 +81,14 @@ const TelegramConnectCard = () => {
           </Button>
           
           {!isConnected && (
-            <p className="text-xs text-center text-blue-700 dark:text-blue-300">
-              Click the button above and send <code className="bg-blue-100 dark:bg-blue-900 px-1 rounded">/start {referralCode}</code> to the bot
+            <p className="text-xs text-center text-muted-foreground">
+              Click the button above and send <code className="bg-muted px-1 rounded">/start {referralCode}</code> to the bot
             </p>
           )}
         </div>
 
         {isConnected && (
-          <div className="text-xs text-blue-700 dark:text-blue-300 space-y-1">
+          <div className="text-xs text-muted-foreground space-y-1">
             <p>💬 <strong>Features:</strong></p>
             <ul className="ml-4 space-y-1">
               <li>• Check balance & transactions</li>
