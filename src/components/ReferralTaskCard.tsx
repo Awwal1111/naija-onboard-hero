@@ -24,29 +24,36 @@ export const ReferralTaskCard = ({ task, hasSubmitted, submissionStatus, onSubmi
   const [error, setError] = useState<string | null>(null)
   const { uploadFile, uploadProgress } = useSecureFileUpload()
 
-  // Log state changes
-  console.log('ReferralTaskCard render:', { 
-    taskId: task.id, 
-    proof: proof ? 'HAS_PROOF' : 'NO_PROOF',
-    proofUrl: proof,
-    open 
-  })
+  // Log state changes ONLY when dialog is open
+  if (open) {
+    console.log('🎨 ReferralTaskCard RENDER [Task:', task.id, ']:', { 
+      proof: proof ? 'HAS_PROOF ✅' : 'NO_PROOF ❌',
+      proofLength: proof?.length || 0,
+      proofUrl: proof,
+      uploadProgress: uploadProgress.isUploading,
+      open 
+    })
+  }
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
 
-    console.log('🔵 Starting upload:', file.name)
+    console.log('🔵 [Task:', task.id, '] Starting upload:', file.name)
     setError(null)
     
     const result = await uploadFile(file, 'referral-tasks', undefined, 'image')
     
     if (result.url) {
-      console.log('✅ Upload success, setting proof:', result.url)
+      console.log('✅ [Task:', task.id, '] Upload success, setting proof:', result.url)
       setProof(result.url)
-      console.log('✅ Proof state updated')
+      console.log('✅ [Task:', task.id, '] Proof state after update:', result.url)
+      // Force immediate log to verify state
+      setTimeout(() => {
+        console.log('🔍 [Task:', task.id, '] Proof state 100ms later:', proof)
+      }, 100)
     } else {
-      console.error('❌ Upload failed:', result.error)
+      console.error('❌ [Task:', task.id, '] Upload failed:', result.error)
       setError(result.error || 'Upload failed')
     }
   }
@@ -173,7 +180,7 @@ export const ReferralTaskCard = ({ task, hasSubmitted, submissionStatus, onSubmi
                     </p>
                   </div>
                 )}
-                {proof && !uploadProgress.isUploading && (
+                {proof && (
                   <div className="mt-2 p-3 bg-green-50 dark:bg-green-950 rounded-md border border-green-200 dark:border-green-800">
                     <p className="text-sm text-green-800 dark:text-green-200 font-medium mb-2">
                       ✅ Screenshot uploaded successfully!
@@ -182,6 +189,10 @@ export const ReferralTaskCard = ({ task, hasSubmitted, submissionStatus, onSubmi
                       src={proof} 
                       alt="Uploaded proof" 
                       className="max-h-40 rounded border border-green-200 dark:border-green-700"
+                      onError={(e) => {
+                        console.error('❌ Image failed to load:', proof)
+                        e.currentTarget.style.display = 'none'
+                      }}
                     />
                     <p className="text-xs text-green-600 dark:text-green-400 mt-2 break-all">
                       {proof}
