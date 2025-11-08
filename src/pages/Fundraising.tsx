@@ -451,7 +451,7 @@ export default function Fundraising() {
                 : null;
               
               return (
-                <Card key={fundraising.id} className="hover:shadow-lg transition-shadow">
+                <Card key={fundraising.id} className={`hover:shadow-lg transition-shadow ${fundraising.is_demo ? "border-yellow-500/50 bg-yellow-50/50 dark:bg-yellow-950/20" : ""}`}>
                   {fundraising.featured_image_url && (
                     <div className="aspect-video overflow-hidden rounded-t-lg">
                       <img 
@@ -464,6 +464,11 @@ export default function Fundraising() {
                   <CardHeader className="p-3">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
+                        {fundraising.is_demo && (
+                          <Badge variant="outline" className="bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/50">
+                            DEMO
+                          </Badge>
+                        )}
                         <Badge className={`${progress >= 100 ? 'bg-green-500' : 'bg-primary'}`}>
                           {fundraising.category || 'general'}
                         </Badge>

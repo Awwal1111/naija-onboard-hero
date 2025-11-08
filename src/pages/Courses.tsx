@@ -38,7 +38,11 @@ export default function Courses() {
   });
 
   const enrollMutation = useMutation({
-    mutationFn: async ({ courseId, price }: { courseId: string; price: number }) => {
+    mutationFn: async ({ courseId, price, isDemo }: { courseId: string; price: number; isDemo: boolean }) => {
+      if (isDemo) {
+        throw new Error("This is a demo course and cannot be purchased. Only real courses can be enrolled in.");
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
@@ -125,9 +129,14 @@ export default function Courses() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {filteredCourses.map((course: any) => (
-              <Card key={course.id}>
+              <Card key={course.id} className={course.is_demo ? "border-yellow-500/50 bg-yellow-50/50 dark:bg-yellow-950/20" : ""}>
                 <CardHeader className="p-3">
                   <div className="flex items-center gap-2 mb-2">
+                    {course.is_demo && (
+                      <Badge variant="outline" className="bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/50">
+                        DEMO
+                      </Badge>
+                    )}
                     <Badge className="w-fit">
                       <Video className="h-3 w-3 mr-1" />
                       {course.course_urls?.length || 0} Videos
@@ -166,15 +175,26 @@ export default function Courses() {
                   )}
                 </CardContent>
                 <CardFooter className="p-3 pt-0">
-                  <Button
-                    size="sm"
-                    className="w-full"
-                    onClick={() => enrollMutation.mutate({ courseId: course.id, price: course.price })}
-                    disabled={enrollMutation.isPending}
-                  >
-                    <Award className="h-4 w-4 mr-1" />
-                    Enroll Now
-                  </Button>
+                  {course.is_demo ? (
+                    <Button
+                      size="sm"
+                      className="w-full"
+                      variant="outline"
+                      disabled
+                    >
+                      Demo Course - Not Purchasable
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      className="w-full"
+                      onClick={() => enrollMutation.mutate({ courseId: course.id, price: course.price, isDemo: course.is_demo })}
+                      disabled={enrollMutation.isPending}
+                    >
+                      <Award className="h-4 w-4 mr-1" />
+                      Enroll Now
+                    </Button>
+                  )}
                 </CardFooter>
               </Card>
             ))}

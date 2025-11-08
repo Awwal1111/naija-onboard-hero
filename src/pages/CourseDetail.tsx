@@ -85,6 +85,10 @@ export default function CourseDetail() {
   const enrollMutation = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error("Please log in to enroll");
+      
+      if (course?.is_demo) {
+        throw new Error("This is a demo course and cannot be purchased. Only real courses can be enrolled in.");
+      }
 
       // Check balance
       const { data: profile } = await supabase
@@ -324,12 +328,21 @@ export default function CourseDetail() {
           <div className="space-y-6">
             <Card className="p-6 sticky top-6">
               <div className="space-y-4">
+                {course.is_demo && (
+                  <Badge variant="outline" className="w-full justify-center bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/50">
+                    DEMO COURSE - NOT PURCHASABLE
+                  </Badge>
+                )}
                 <div className="text-3xl font-bold">₦{course.price?.toLocaleString()}NC</div>
 
                 {isEnrolled ? (
                   <Button className="w-full" size="lg">
                     <PlayCircle className="w-4 h-4 mr-2" />
                     Continue Learning
+                  </Button>
+                ) : course.is_demo ? (
+                  <Button className="w-full" size="lg" variant="outline" disabled>
+                    Demo Course - Not Purchasable
                   </Button>
                 ) : (
                   <Button onClick={() => setEnrollOpen(true)} className="w-full" size="lg">

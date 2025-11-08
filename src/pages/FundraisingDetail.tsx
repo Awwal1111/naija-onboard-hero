@@ -132,6 +132,10 @@ export default function FundraisingDetail() {
   const contributeMutation = useMutation({
     mutationFn: async (contributionAmount: number) => {
       if (!user) throw new Error("Please log in to contribute");
+      
+      if (campaign?.is_demo) {
+        throw new Error("This is a demo fundraising campaign and cannot accept real contributions.");
+      }
 
       const { data, error } = await supabase.rpc("contribute_to_fundraising", {
         p_fundraising_id: id,
@@ -203,6 +207,11 @@ export default function FundraisingDetail() {
                 <div>
                   <h1 className="text-3xl font-bold mb-2">{campaign.title}</h1>
                   <div className="flex items-center gap-2 text-muted-foreground">
+                    {campaign.is_demo && (
+                      <Badge variant="outline" className="bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/50">
+                        DEMO CAMPAIGN
+                      </Badge>
+                    )}
                     {campaign.category && <Badge variant="outline">{campaign.category}</Badge>}
                     {campaign.is_verified && (
                       <Badge variant="default">
@@ -344,7 +353,14 @@ export default function FundraisingDetail() {
                 )}
 
                 {/* Action Buttons */}
-                {isOwner && campaign.funds_held_by_admin && !campaign.funds_release_requested && (
+                {campaign.is_demo ? (
+                  <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-500/50 p-4 rounded-lg">
+                    <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200 mb-2">⚠️ Demo Campaign</p>
+                    <p className="text-xs text-muted-foreground">
+                      This is a demonstration campaign and cannot accept real contributions. Only real campaigns can receive funds.
+                    </p>
+                  </div>
+                ) : isOwner && campaign.funds_held_by_admin && !campaign.funds_release_requested ? (
                   <Button 
                     onClick={() => requestReleaseMutation.mutate()}
                     disabled={requestReleaseMutation.isPending}
@@ -355,19 +371,15 @@ export default function FundraisingDetail() {
                     <Send className="w-4 h-4 mr-2" />
                     {requestReleaseMutation.isPending ? "Requesting..." : "Request Fund Release"}
                   </Button>
-                )}
-
-                {!isOwner && progress < 100 && (
+                ) : !isOwner && progress < 100 ? (
                   <Button onClick={() => setContributeOpen(true)} className="w-full" size="lg">
                     Contribute Now
                   </Button>
-                )}
-
-                {!isOwner && progress >= 100 && (
+                ) : !isOwner && progress >= 100 ? (
                   <Button disabled className="w-full" size="lg">
                     Goal Reached
                   </Button>
-                )}
+                ) : null}
 
                 <Separator />
 

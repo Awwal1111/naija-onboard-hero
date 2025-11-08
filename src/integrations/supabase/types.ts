@@ -580,6 +580,7 @@ export type Database = {
           instructor_bio: string | null
           instructor_credentials: string | null
           instructor_name: string | null
+          is_demo: boolean | null
           language: string | null
           learning_objectives: Json | null
           level: string | null
@@ -611,6 +612,7 @@ export type Database = {
           instructor_bio?: string | null
           instructor_credentials?: string | null
           instructor_name?: string | null
+          is_demo?: boolean | null
           language?: string | null
           learning_objectives?: Json | null
           level?: string | null
@@ -642,6 +644,7 @@ export type Database = {
           instructor_bio?: string | null
           instructor_credentials?: string | null
           instructor_name?: string | null
+          is_demo?: boolean | null
           language?: string | null
           learning_objectives?: Json | null
           level?: string | null
@@ -792,6 +795,7 @@ export type Database = {
           file_url: string | null
           id: string
           instant_download: boolean | null
+          is_demo: boolean | null
           is_verified: boolean | null
           license_type: string | null
           preview_url: string | null
@@ -822,6 +826,7 @@ export type Database = {
           file_url?: string | null
           id?: string
           instant_download?: boolean | null
+          is_demo?: boolean | null
           is_verified?: boolean | null
           license_type?: string | null
           preview_url?: string | null
@@ -852,6 +857,7 @@ export type Database = {
           file_url?: string | null
           id?: string
           instant_download?: boolean | null
+          is_demo?: boolean | null
           is_verified?: boolean | null
           license_type?: string | null
           preview_url?: string | null
@@ -1247,6 +1253,7 @@ export type Database = {
           funds_released_at: string | null
           goal_amount: number
           id: string
+          is_demo: boolean | null
           is_verified: boolean | null
           location: string | null
           minimum_contribution: number | null
@@ -1277,6 +1284,7 @@ export type Database = {
           funds_released_at?: string | null
           goal_amount: number
           id?: string
+          is_demo?: boolean | null
           is_verified?: boolean | null
           location?: string | null
           minimum_contribution?: number | null
@@ -1307,6 +1315,7 @@ export type Database = {
           funds_released_at?: string | null
           goal_amount?: number
           id?: string
+          is_demo?: boolean | null
           is_verified?: boolean | null
           location?: string | null
           minimum_contribution?: number | null

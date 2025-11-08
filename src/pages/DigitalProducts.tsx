@@ -46,7 +46,11 @@ export default function DigitalProducts() {
   });
 
   const purchaseProductMutation = useMutation({
-    mutationFn: async ({ productId, price }: { productId: string; price: number }) => {
+    mutationFn: async ({ productId, price, isDemo }: { productId: string; price: number; isDemo: boolean }) => {
+      if (isDemo) {
+        throw new Error("This is a demo product and cannot be purchased. Only real products can be bought.");
+      }
+      
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
@@ -164,10 +168,17 @@ export default function DigitalProducts() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {filteredProducts.map((product: any) => (
-              <Card key={product.id}>
+              <Card key={product.id} className={product.is_demo ? "border-yellow-500/50 bg-yellow-50/50 dark:bg-yellow-950/20" : ""}>
                 <CardHeader className="p-3">
                   <div className="flex items-center justify-between mb-2">
-                    <Badge className="w-fit">{product.category}</Badge>
+                    <div className="flex items-center gap-2">
+                      {product.is_demo && (
+                        <Badge variant="outline" className="bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/50">
+                          DEMO
+                        </Badge>
+                      )}
+                      <Badge className="w-fit">{product.category}</Badge>
+                    </div>
                     {product.is_verified && (
                       <div className="flex items-center gap-1 text-xs text-green-600">
                         <CheckCircle className="h-3 w-3" />
@@ -207,15 +218,26 @@ export default function DigitalProducts() {
                   )}
                 </CardContent>
                 <CardFooter className="p-3 pt-0">
-                  <Button
-                    size="sm"
-                    className="w-full"
-                    onClick={() => purchaseProductMutation.mutate({ productId: product.id, price: product.price })}
-                    disabled={purchaseProductMutation.isPending}
-                  >
-                    <ShoppingCart className="h-4 w-4 mr-1" />
-                    Purchase
-                  </Button>
+                  {product.is_demo ? (
+                    <Button
+                      size="sm"
+                      className="w-full"
+                      variant="outline"
+                      disabled
+                    >
+                      Demo Product - Not Purchasable
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      className="w-full"
+                      onClick={() => purchaseProductMutation.mutate({ productId: product.id, price: product.price, isDemo: product.is_demo })}
+                      disabled={purchaseProductMutation.isPending}
+                    >
+                      <ShoppingCart className="h-4 w-4 mr-1" />
+                      Purchase
+                    </Button>
+                  )}
                 </CardFooter>
               </Card>
             ))}
