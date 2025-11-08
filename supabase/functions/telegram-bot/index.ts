@@ -146,22 +146,33 @@ serve(async (req) => {
       return new Response("OK", { status: 200 });
     }
 
-    // Find user by telegram_user_id
+    // Find user by telegram_user_id - try both string and number formats
+    const telegramUserId = userId?.toString();
+    console.log("Looking up profile with telegram_user_id:", telegramUserId);
+    
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
-      .select("user_id, full_name, wallet_balance, balance_withdrawable, celo_wallet_address, referral_code")
-      .eq("telegram_user_id", userId?.toString())
+      .select("user_id, full_name, wallet_balance, balance_withdrawable, celo_wallet_address, referral_code, telegram_user_id")
+      .eq("telegram_user_id", telegramUserId)
       .maybeSingle();
 
-    console.log("Profile lookup result:", { profile, profileError, telegram_user_id: userId?.toString() });
+    console.log("Profile lookup result:", { 
+      found: !!profile, 
+      profileError, 
+      searched_telegram_id: telegramUserId,
+      profile_telegram_id: profile?.telegram_user_id 
+    });
 
     if (!profile) {
+      console.log("User not linked - requesting account connection");
       await sendTelegramMessage(
         chatId,
-        `⚠️ Account not linked.\n\nPlease link your NaijaLancers account first using the link from the NaijaLancers app.`
+        `⚠️ Account not linked.\n\nPlease link your NaijaLancers account first.\n\nClick "Connect to Telegram Bot" in the NaijaLancers app and use the link provided.`
       );
       return new Response("OK", { status: 200 });
     }
+    
+    console.log(`User ${profile.full_name} (ID: ${profile.user_id}) is connected and authenticated`);
 
     // Command: /deposit - Show automated deposit instructions
     if (text === "/deposit" || text.toLowerCase().includes("how to deposit") || text.toLowerCase().includes("deposit money")) {
