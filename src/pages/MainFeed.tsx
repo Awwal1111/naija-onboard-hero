@@ -29,6 +29,7 @@ import { useProfileCompletion } from '@/hooks/useProfileCompletion'
 import PeopleYouMayKnow from '@/components/PeopleYouMayKnow'
 import { MoreMenuDrawer } from '@/components/MoreMenuDrawer'
 import { ConnectionRequestsPreview } from '@/components/ConnectionRequestsPreview'
+import TelegramConnectCard from '@/components/TelegramConnectCard'
 
 const MainFeed = () => {
   const navigate = useNavigate()
@@ -418,6 +419,11 @@ const MainFeed = () => {
           {/* Connection Requests Preview */}
           <div className="px-3 sm:px-6 py-3">
             <ConnectionRequestsPreview />
+          </div>
+
+          {/* Telegram Bot Connection */}
+          <div className="px-3 sm:px-6 py-3">
+            <TelegramConnectCard />
           </div>
 
           {/* Main Feed Content */}

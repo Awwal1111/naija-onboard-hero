@@ -33,6 +33,7 @@ import { SavedPostsSection } from '@/components/SavedPostsSection'
 import { StarRating } from '@/components/ui/star-rating'
 import { RatingDialog } from '@/components/ui/rating-dialog'
 import { RatingBreakdown } from '@/components/ui/rating-breakdown'
+import TelegramConnectCard from '@/components/TelegramConnectCard'
 
 const Profile = () => {
   const navigate = useNavigate()
@@ -560,26 +561,31 @@ const Profile = () => {
 
             {/* Professional Action Buttons - Only for own profile */}
             {isOwnProfile && (
-              <div className="grid grid-cols-2 gap-3 mb-6">
-                <BrandButton 
-                  className="flex items-center justify-center gap-2" 
-                  size="lg"
-                  onClick={() => navigate(profile?.is_expert ? '/admin/dashboard' : '/expert-application')}
-                >
-                  <Award className="h-4 w-4" />
-                  {profile?.is_expert ? 'Admin Dashboard' : 'Apply Expert'}
-                </BrandButton>
+              <>
+                {/* Telegram Connection Card */}
+                <TelegramConnectCard />
                 
-                <BrandButton 
-                  variant="outline"
-                  className="flex items-center justify-center gap-2" 
-                  size="lg"
-                  onClick={() => navigate('/post-job')}
-                >
-                  <Plus className="h-4 w-4" />
-                  Post Job
-                </BrandButton>
-              </div>
+                <div className="grid grid-cols-2 gap-3 mb-6">
+                  <BrandButton 
+                    className="flex items-center justify-center gap-2" 
+                    size="lg"
+                    onClick={() => navigate(profile?.is_expert ? '/admin/dashboard' : '/expert-application')}
+                  >
+                    <Award className="h-4 w-4" />
+                    {profile?.is_expert ? 'Admin Dashboard' : 'Apply Expert'}
+                  </BrandButton>
+                  
+                  <BrandButton 
+                    variant="outline"
+                    className="flex items-center justify-center gap-2" 
+                    size="lg"
+                    onClick={() => navigate('/post-job')}
+                  >
+                    <Plus className="h-4 w-4" />
+                    Post Job
+                  </BrandButton>
+                </div>
+              </>
             )}
 
             {/* Contact Information - Only visible to owner or connections */}

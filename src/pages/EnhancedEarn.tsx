@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import TelegramConnectCard from '@/components/TelegramConnectCard'
 import { Trophy, Zap, FileText, User, History, Users, ArrowUpRight, Phone, Wifi, TrendingUp, Home, MessageCircle, Briefcase, DollarSign, Menu, Tv } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useWallet } from '@/hooks/useWallet'
@@ -229,6 +230,9 @@ const EnhancedEarn = () => {
 
         {/* Daily Sign-In */}
         <DailySigninCard />
+
+        {/* Telegram Bot Connection */}
+        <TelegramConnectCard />
 
         {/* Earning Methods */}
         <div>
