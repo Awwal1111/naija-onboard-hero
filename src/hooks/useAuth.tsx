@@ -342,6 +342,13 @@ export const useAuth = () => {
         title: "Welcome back!",
         description: "You've been signed in successfully.",
       })
+      
+      // Send welcome notification via Telegram (non-blocking)
+      supabase.functions.invoke('send-welcome-notification').catch(err => {
+        console.error('Failed to send welcome notification:', err)
+        // Don't show error to user - this is non-critical
+      })
+      
       // Login redirects to main feed - no profile check needed
       // The auth state change will handle the redirect
     }

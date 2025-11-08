@@ -215,7 +215,7 @@ export const useChat = (otherUserId: string) => {
         }
       }
 
-      const { error } = await supabase
+      const { data: insertedMessage, error } = await supabase
         .from('messages')
         .insert({
           chat_id: chat.id,
@@ -227,11 +227,30 @@ export const useChat = (otherUserId: string) => {
           reply_to_content: replyToContent,
           reply_to_sender: replyToSender
         })
+        .select()
+        .single()
 
       if (error) {
         console.error('Message insert error:', error)
         throw error
       }
+
+      // Determine recipient (the other user in the chat)
+      const recipientId = chat.user1_id === user.id ? chat.user2_id : chat.user1_id
+
+      // Send Telegram notification to recipient in background (don't await)
+      supabase.functions.invoke('notify-message-received', {
+        body: {
+          message_id: insertedMessage.id,
+          sender_id: user.id,
+          recipient_id: recipientId,
+          content,
+          media_type: mediaType
+        }
+      }).catch(err => {
+        console.error('Failed to send message notification:', err)
+        // Don't throw - this is non-critical
+      })
     } catch (error: any) {
       console.error('Error sending message:', error)
       toast({
