@@ -9,16 +9,34 @@ import { toast } from 'sonner'
 
 const TelegramConnectCard = () => {
   const { user } = useAuth()
-  const { profile } = useProfile()
+  const { profile, refetch } = useProfile()
   const [copied, setCopied] = useState(false)
+  const [checking, setChecking] = useState(false)
   
   const isConnected = !!(profile as any)?.telegram_user_id
   const referralCode = profile?.referral_code || user?.email || ''
   const telegramLink = `https://t.me/NaijaLancersBot?start=${referralCode}`
 
   const handleConnectTelegram = () => {
+    // Open Telegram with deep link
     window.open(telegramLink, '_blank')
-    toast.success('Opening Telegram bot...')
+    toast.success('Opening Telegram bot... After you send /start, click "Check Connection" below.')
+  }
+
+  const handleCheckConnection = async () => {
+    setChecking(true)
+    
+    // Wait a moment then refetch profile
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    await refetch()
+    
+    setChecking(false)
+    
+    if ((profile as any)?.telegram_user_id) {
+      toast.success('✅ Successfully connected to Telegram!')
+    } else {
+      toast.error('Not connected yet. Make sure you sent /start to @NaijaLancersBot')
+    }
   }
 
   const handleCopyCode = () => {
@@ -81,9 +99,20 @@ const TelegramConnectCard = () => {
           </Button>
           
           {!isConnected && (
-            <p className="text-xs text-center text-muted-foreground">
-              Click the button above and send <code className="bg-muted px-1 rounded">/start {referralCode}</code> to the bot
-            </p>
+            <>
+              <p className="text-xs text-center text-muted-foreground">
+                After opening Telegram, the bot will automatically send you instructions
+              </p>
+              <Button
+                onClick={handleCheckConnection}
+                disabled={checking}
+                variant="outline"
+                className="w-full"
+              >
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+                {checking ? 'Checking...' : 'Check Connection Status'}
+              </Button>
+            </>
           )}
         </div>
 
