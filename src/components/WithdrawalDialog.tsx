@@ -11,6 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Coins, Send, AlertCircle, Wallet, Info } from 'lucide-react'
 import { useWallet } from '@/hooks/useWallet'
+import { useCeloWallet } from '@/hooks/useCeloWallet'
 import { supabase } from '@/integrations/supabase/client'
 import { toast } from 'sonner'
 
@@ -38,6 +39,7 @@ const nigerianBanks = [
 
 export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: WithdrawalDialogProps) => {
   const { initiateWithdrawal } = useWallet()
+  const { address: celoAddress, celoBalance, cUsdBalance, usdtBalance, loading: walletLoading } = useCeloWallet()
   
   // Bank withdrawal state (Quidax Off-Ramp)
   const [bankAmount, setBankAmount] = useState('')
@@ -243,10 +245,28 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
                   <AlertDescription className="text-xs">
                     <p className="font-medium mb-1">How it works:</p>
                     <p>• Your NC balance will be converted to crypto at current rates</p>
-                    <p>• Crypto will be sent from our master wallet to your address</p>
+                    <p>• If you have crypto in your personal wallet, it will be used first</p>
+                    <p>• Otherwise, funds will be sent from our master wallet</p>
                     <p>• Transaction is instant and final</p>
                   </AlertDescription>
                 </Alert>
+
+                {celoAddress && !walletLoading && (parseFloat(celoBalance) > 0 || parseFloat(cUsdBalance) > 0 || parseFloat(usdtBalance) > 0) && (
+                  <Alert className="bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800">
+                    <Wallet className="h-4 w-4 text-green-600 dark:text-green-400" />
+                    <AlertDescription className="text-xs">
+                      <p className="font-medium mb-1 text-green-800 dark:text-green-300">Your Personal Wallet Balance:</p>
+                      <div className="space-y-1 text-green-700 dark:text-green-400">
+                        {parseFloat(celoBalance) > 0 && <p>• CELO: {parseFloat(celoBalance).toFixed(4)}</p>}
+                        {parseFloat(cUsdBalance) > 0 && <p>• cUSD: {parseFloat(cUsdBalance).toFixed(4)}</p>}
+                        {parseFloat(usdtBalance) > 0 && <p>• USDT: {parseFloat(usdtBalance).toFixed(4)}</p>}
+                      </div>
+                      <p className="mt-2 text-green-600 dark:text-green-500">
+                        ✅ The system will use your personal wallet funds first if sufficient!
+                      </p>
+                    </AlertDescription>
+                  </Alert>
+                )}
 
                 <div className="p-4 bg-muted rounded-lg">
                   <p className="text-xs text-muted-foreground">Your Withdrawable Balance</p>

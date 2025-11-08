@@ -14,11 +14,14 @@ const cUSD_ADDRESS = USE_TESTNET
   ? '0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1' // Alfajores cUSD
   : '0x765DE816845861e75A25fCA122bb6898B8B1282a'; // Mainnet cUSD
 
+const USDT_ADDRESS = '0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e'; // Tether USD on Celo Mainnet
+
 export const useCeloWallet = () => {
   const [wallet, setWallet] = useState<ethers.HDNodeWallet | ethers.Wallet | null>(null);
   const [address, setAddress] = useState<string>('');
   const [celoBalance, setCeloBalance] = useState<string>('0');
   const [cUsdBalance, setCUsdBalance] = useState<string>('0');
+  const [usdtBalance, setUsdtBalance] = useState<string>('0');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -182,6 +185,17 @@ export const useCeloWallet = () => {
       
       const cUsdBalance = await cUsdContract.balanceOf(walletInstance.address);
       setCUsdBalance(ethers.formatEther(cUsdBalance));
+
+      // Get USDT balance
+      const usdtContract = new ethers.Contract(
+        USDT_ADDRESS,
+        ['function balanceOf(address) view returns (uint256)', 'function decimals() view returns (uint8)'],
+        walletInstance.provider
+      );
+      
+      const usdtDecimals = await usdtContract.decimals();
+      const usdtBalance = await usdtContract.balanceOf(walletInstance.address);
+      setUsdtBalance(ethers.formatUnits(usdtBalance, usdtDecimals));
     } catch (error) {
       console.error('Error updating balances:', error);
     }
@@ -267,6 +281,7 @@ export const useCeloWallet = () => {
     address,
     celoBalance,
     cUsdBalance,
+    usdtBalance,
     loading,
     sendCUSD,
     sendCELO,

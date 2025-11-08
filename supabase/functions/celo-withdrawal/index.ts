@@ -69,7 +69,7 @@ serve(async (req) => {
     // Get user profile and check balance
     const { data: profile } = await supabase
       .from("profiles")
-      .select("wallet_balance, balance_withdrawable, full_name, telegram_user_id")
+      .select("wallet_balance, balance_withdrawable, full_name, telegram_user_id, celo_wallet_address, encrypted_wallet")
       .eq("user_id", user.id)
       .single();
 
@@ -185,33 +185,106 @@ serve(async (req) => {
 
     // Send blockchain transaction
     try {
-      // Get master wallet encrypted key from database
-      const { data: masterWalletData, error: masterWalletError } = await supabase
-        .from("system_settings")
-        .select("value")
-        .eq("key", "master_wallet_encrypted")
-        .single();
-
-      if (masterWalletError || !masterWalletData) {
-        throw new Error("Master wallet not initialized. Contact admin.");
-      }
-
-      // Decrypt master wallet private key
-      const encryptionSecret = Deno.env.get("WALLET_ENCRYPTION_SECRET") || "default_secret_change_in_production";
-      const decryptedMasterKey = CryptoJS.AES.decrypt(
-        masterWalletData.value,
-        encryptionSecret
-      ).toString(CryptoJS.enc.Utf8);
-
-      if (!decryptedMasterKey) {
-        throw new Error("Failed to decrypt master wallet key");
-      }
-
       // Initialize provider with Forno (official Celo RPC)
       const provider = new ethers.JsonRpcProvider(CELO_RPC);
-      const wallet = new ethers.Wallet(decryptedMasterKey, provider);
+      const encryptionSecret = Deno.env.get("WALLET_ENCRYPTION_SECRET") || "default_secret_change_in_production";
       
-      console.log(`[WITHDRAWAL] Using master wallet: ${wallet.address}`);
+      let wallet: ethers.Wallet;
+      let walletSource = "master"; // "user" or "master"
+      
+      // STEP 1: Check if user has their own wallet with funds
+      if (profile.celo_wallet_address && profile.encrypted_wallet) {
+        try {
+          console.log(`[WITHDRAWAL] 🔍 User has personal wallet: ${profile.celo_wallet_address}`);
+          
+          // Decrypt user's private key
+          const decryptedUserKey = CryptoJS.AES.decrypt(
+            profile.encrypted_wallet,
+            encryptionSecret
+          ).toString(CryptoJS.enc.Utf8);
+          
+          if (decryptedUserKey) {
+            const userWallet = new ethers.Wallet(decryptedUserKey, provider);
+            console.log(`[WITHDRAWAL] 🔓 User wallet decrypted successfully`);
+            
+            // Check user's wallet balance for the requested currency
+            let userBalance = BigInt(0);
+            let hasEnough = false;
+            
+            if (currency === "cUSD" || currency === "USDT") {
+              const tokenAddress = currency === "cUSD" ? CUSD_ADDRESS : USDT_ADDRESS;
+              const tokenAbi = [
+                "function balanceOf(address account) view returns (uint256)",
+                "function decimals() view returns (uint8)"
+              ];
+              const tokenContract = new ethers.Contract(tokenAddress, tokenAbi, userWallet);
+              const decimals = await tokenContract.decimals();
+              userBalance = await tokenContract.balanceOf(userWallet.address);
+              
+              const amountString = toAmountString(cryptoAmount, Number(decimals));
+              const requiredAmount = ethers.parseUnits(amountString, decimals);
+              hasEnough = userBalance >= requiredAmount;
+              
+              console.log(`[WITHDRAWAL] 💰 User's ${currency} balance: ${formatBigInt(userBalance, Number(decimals))}`);
+              console.log(`[WITHDRAWAL] 📊 Required: ${cryptoAmount} ${currency}`);
+              console.log(`[WITHDRAWAL] ✅ Has enough: ${hasEnough}`);
+            } else {
+              // Native CELO
+              userBalance = await provider.getBalance(userWallet.address);
+              const amountString = toAmountString(cryptoAmount, 18);
+              const requiredAmount = ethers.parseEther(amountString);
+              hasEnough = userBalance >= requiredAmount;
+              
+              console.log(`[WITHDRAWAL] 💰 User's CELO balance: ${formatBigInt(userBalance, 18)}`);
+              console.log(`[WITHDRAWAL] 📊 Required: ${cryptoAmount} CELO`);
+              console.log(`[WITHDRAWAL] ✅ Has enough: ${hasEnough}`);
+            }
+            
+            // If user has enough, use their wallet
+            if (hasEnough) {
+              wallet = userWallet;
+              walletSource = "user";
+              console.log(`[WITHDRAWAL] ✅ Using USER'S personal wallet for withdrawal`);
+            } else {
+              console.log(`[WITHDRAWAL] ⚠️ User wallet has insufficient balance, falling back to master wallet`);
+              // Continue to master wallet below
+            }
+          }
+        } catch (userWalletError) {
+          console.error(`[WITHDRAWAL] ⚠️ Error checking user wallet:`, userWalletError);
+          console.log(`[WITHDRAWAL] 🔄 Falling back to master wallet`);
+          // Continue to master wallet below
+        }
+      } else {
+        console.log(`[WITHDRAWAL] ℹ️ User has no personal wallet, using master wallet`);
+      }
+      
+      // STEP 2: If not using user wallet, use master wallet
+      if (walletSource === "master") {
+        const { data: masterWalletData, error: masterWalletError } = await supabase
+          .from("system_settings")
+          .select("value")
+          .eq("key", "master_wallet_encrypted")
+          .single();
+
+        if (masterWalletError || !masterWalletData) {
+          throw new Error("Master wallet not initialized. Contact admin.");
+        }
+
+        // Decrypt master wallet private key
+        const decryptedMasterKey = CryptoJS.AES.decrypt(
+          masterWalletData.value,
+          encryptionSecret
+        ).toString(CryptoJS.enc.Utf8);
+
+        if (!decryptedMasterKey) {
+          throw new Error("Failed to decrypt master wallet key");
+        }
+
+        wallet = new ethers.Wallet(decryptedMasterKey, provider);
+        console.log(`[WITHDRAWAL] 🏦 Using MASTER wallet: ${wallet.address}`);
+      }
+      
       console.log(`[WITHDRAWAL] Amount to send: ${cryptoAmount} ${currency}`);
 
       let txHash = "";
@@ -332,6 +405,10 @@ serve(async (req) => {
         try {
           const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
           if (TELEGRAM_BOT_TOKEN) {
+            const sourceMessage = walletSource === "user" 
+              ? "🔑 *Source:* Your Personal Wallet" 
+              : "🏦 *Source:* Master Wallet";
+            
             await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -340,6 +417,7 @@ serve(async (req) => {
                 text: `✅ *Withdrawal Successful!*\n\n` +
                       `Amount: ${cryptoAmount.toFixed(4)} ${currency}\n` +
                       `Deducted: ₦${ncAmount} NC\n` +
+                      `${sourceMessage}\n` +
                       `To: ${walletAddress}\n` +
                       `Tx Hash: ${txHash}\n\n` +
                       `Funds should arrive shortly! 🎉`,
@@ -356,7 +434,8 @@ serve(async (req) => {
         success: true,
         txHash,
         cryptoAmount,
-        currency
+        currency,
+        source: walletSource // Indicate which wallet was used
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200
