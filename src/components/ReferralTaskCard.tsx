@@ -158,9 +158,9 @@ export const ReferralTaskCard = ({ task, hasSubmitted, submissionStatus, onSubmi
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="proof">Upload Screenshot Proof (Optional)</Label>
+                <Label htmlFor={`proof-${task.id}`}>Upload Screenshot Proof (Optional)</Label>
                 <input
-                  id="proof"
+                  id={`proof-${task.id}`}
                   type="file"
                   accept="image/*"
                   onChange={handleFileUpload}
@@ -211,9 +211,9 @@ export const ReferralTaskCard = ({ task, hasSubmitted, submissionStatus, onSubmi
               </div>
 
               <div>
-                <Label htmlFor="textExplanation">Text Explanation (Optional)</Label>
+                <Label htmlFor={`textExplanation-${task.id}`}>Text Explanation (Optional)</Label>
                 <Textarea
-                  id="textExplanation"
+                  id={`textExplanation-${task.id}`}
                   value={textExplanation}
                   onChange={(e) => setTextExplanation(e.target.value)}
                   placeholder="Describe how you completed the referral task..."
