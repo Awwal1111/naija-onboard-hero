@@ -4,14 +4,10 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN")!;
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
+const CELO_MASTER_WALLET = Deno.env.get("CELO_MASTER_WALLET_ADDRESS")!;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-
-const BANK_ACCOUNT = {
-  number: "8129002732",
-  bank: "Opay",
-  name: "Awwal Dayyabu"
-};
 
 interface TelegramUpdate {
   message?: {
@@ -41,38 +37,30 @@ serve(async (req) => {
     if (text.startsWith("/start")) {
       const parts = text.split(" ");
       if (parts.length > 1) {
-        let identifier = parts[1]; // Could be email or referral code
+        let identifier = parts[1];
         
         console.log("Received identifier:", identifier);
         
-        // Decode URL encoding if present
         try {
           identifier = decodeURIComponent(identifier);
         } catch (e) {
-          // Already decoded or invalid encoding
+          // Already decoded
         }
         
-        // Try to find user by referral code first (primary method), then email
         let userData = null;
         let lookupMethod = "";
         
-        // First, try referral code (case-insensitive)
         const { data: profileByRef, error: refError } = await supabase
           .from("profiles")
-          .select("user_id, full_name, telegram_user_id")
+          .select("user_id, full_name, telegram_user_id, wallet_address")
           .eq("referral_code", identifier.toUpperCase())
           .single();
-        
-        console.log("Lookup by referral code:", { profileByRef, refError });
         
         if (profileByRef) {
           userData = profileByRef;
           lookupMethod = "referral code";
         } else if (identifier.includes("@")) {
-          // Try email lookup
           const { data: authUser, error: emailError } = await supabase.auth.admin.listUsers();
-          console.log("Auth users count:", authUser?.users?.length);
-          
           const foundUser = authUser?.users?.find(u => 
             u.email?.toLowerCase() === identifier.toLowerCase()
           );
@@ -80,7 +68,7 @@ serve(async (req) => {
           if (foundUser) {
             const { data: profile } = await supabase
               .from("profiles")
-              .select("user_id, full_name, telegram_user_id")
+              .select("user_id, full_name, telegram_user_id, wallet_address")
               .eq("user_id", foundUser.id)
               .single();
             userData = profile;
@@ -89,7 +77,6 @@ serve(async (req) => {
         }
 
         if (userData) {
-          // Check if already linked to another Telegram account
           if (userData.telegram_user_id && userData.telegram_user_id !== userId?.toString()) {
             await sendTelegramMessage(
               chatId,
@@ -98,7 +85,6 @@ serve(async (req) => {
             return new Response("OK", { status: 200 });
           }
 
-          // Link Telegram account
           const { error: updateError } = await supabase
             .from("profiles")
             .update({
@@ -107,17 +93,28 @@ serve(async (req) => {
             })
             .eq("user_id", userData.user_id);
 
-          console.log("Update result:", { updateError });
+          const welcomeMsg = `✅ *Account Linked Successfully!*\n\n` +
+            `Hello ${userData.full_name || userName}! 👋\n\n` +
+            `Your NaijaLancers account is now connected.\n\n` +
+            `🤖 *I'm your AI assistant!* I can help you with:\n` +
+            `• 💰 Check balance & transactions\n` +
+            `• 📥 Deposit NaijaCoin (automated via Celo)\n` +
+            `• 📤 Withdraw to your bank account\n` +
+            `• 💸 Transfer NC to other users\n` +
+            `• 👥 View referral stats\n` +
+            `• 💬 Answer any questions\n\n` +
+            `Just type your question naturally, or use:\n` +
+            `/balance - Quick balance check\n` +
+            `/deposit - Deposit instructions\n` +
+            `/help - See all commands\n\n` +
+            `Try asking me something like:\n` +
+            `"How do I deposit money?" or "Show my balance"`;
 
-          await sendTelegramMessage(
-            chatId,
-            `✅ Account linked successfully via ${lookupMethod}!\n\nHello ${userData.full_name || userName}! 👋\n\nYour NaijaLancers account is now connected to this Telegram chat.\n\nYou can now:\n• Deposit NaijaCoin using /deposit\n• Check your balance using /balance\n• View help using /help\n\nType /deposit to get started!`
-          );
+          await sendTelegramMessage(chatId, welcomeMsg, true);
         } else {
-          console.log("No user found for identifier:", identifier);
           await sendTelegramMessage(
             chatId,
-            `❌ Account not found with identifier: ${identifier}\n\nPlease make sure you're using the correct link from the NaijaLancers app.\n\nThe link should look like:\nhttps://t.me/NaijaLancersBot?start=YOUR_REFERRAL_CODE`
+            `❌ Account not found.\n\nPlease use the correct link from the NaijaLancers app.\n\nThe link should look like:\nhttps://t.me/NaijaLancersBot?start=YOUR_REFERRAL_CODE`
           );
         }
         return new Response("OK", { status: 200 });
@@ -125,7 +122,7 @@ serve(async (req) => {
 
       await sendTelegramMessage(
         chatId,
-        `Welcome to NaijaLancers Bot! 👋\n\nTo link your account, please use the link provided in the NaijaLancers app (Wallet > Deposit > Telegram).`
+        `Welcome to NaijaLancers Bot! 👋\n\nTo link your account, use the connection link from the NaijaLancers app.`
       );
       return new Response("OK", { status: 200 });
     }
@@ -133,31 +130,33 @@ serve(async (req) => {
     // Find user by telegram_user_id
     const { data: profile } = await supabase
       .from("profiles")
-      .select("user_id, full_name, wallet_balance, balance_withdrawable")
+      .select("user_id, full_name, wallet_balance, balance_withdrawable, wallet_address, referral_code")
       .eq("telegram_user_id", userId?.toString())
       .single();
 
     if (!profile) {
       await sendTelegramMessage(
         chatId,
-        `⚠️ Account not linked.\n\nPlease link your NaijaLancers account first by clicking the Telegram deposit link in the app.`
+        `⚠️ Account not linked.\n\nPlease link your NaijaLancers account first using the link from the NaijaLancers app.`
       );
       return new Response("OK", { status: 200 });
     }
 
-    // Command: /deposit - Show deposit instructions
-    if (text === "/deposit") {
+    // Command: /deposit - Show automated deposit instructions
+    if (text === "/deposit" || text.toLowerCase().includes("how to deposit") || text.toLowerCase().includes("deposit money")) {
       await sendTelegramMessage(
         chatId,
-        `💰 *Deposit Instructions*\n\n` +
-        `Please transfer money to:\n\n` +
-        `*Bank:* ${BANK_ACCOUNT.bank}\n` +
-        `*Account Number:* ${BANK_ACCOUNT.number}\n` +
-        `*Account Name:* ${BANK_ACCOUNT.name}\n\n` +
-        `After making the transfer, send:\n` +
-        `1. A screenshot of your transaction\n` +
-        `2. The amount you deposited\n\n` +
-        `Example: "500" (send amount, then screenshot)`,
+        `💰 *Automated Deposit via Celo Blockchain*\n\n` +
+        `*Your Personal Deposit Address:*\n` +
+        `\`${profile.wallet_address}\`\n\n` +
+        `📱 *How to Deposit:*\n` +
+        `1. Open your Celo wallet (Valora, MetaMask, etc.)\n` +
+        `2. Send cUSD or USDT to your address above\n` +
+        `3. Your NaijaCoin balance updates automatically!\n\n` +
+        `⚡ *Processing Time:* Usually under 1 minute\n` +
+        `💵 *Exchange Rate:* 1 cUSD/USDT = 1 NaijaCoin\n\n` +
+        `🔒 Your wallet address is unique to you and secure.\n\n` +
+        `Need help? Just ask me: "How do I buy cUSD?" or "What is Celo?"`,
         true
       );
       return new Response("OK", { status: 200 });
@@ -179,20 +178,24 @@ serve(async (req) => {
     if (text === "/help") {
       await sendTelegramMessage(
         chatId,
-        `📋 *Available Commands*\n\n` +
-        `💰 *Wallet*\n` +
+        `🤖 *NaijaLancers AI Assistant*\n\n` +
+        `I'm your intelligent assistant! Ask me anything naturally, or use these quick commands:\n\n` +
+        `💰 *Wallet Commands*\n` +
         `/balance - Check your balance\n` +
-        `/deposit - Get deposit instructions\n` +
+        `/deposit - Automated deposit guide\n` +
         `/withdraw [amount] - Request withdrawal\n` +
-        `/transactions - View recent transactions\n` +
-        `/stats - View earnings statistics\n\n` +
-        `💸 *Transfers*\n` +
-        `/transfer [amount] [code] - Send NC to user\n\n` +
-        `📊 *Referrals*\n` +
-        `/referral - View referral dashboard\n\n` +
-        `💬 *Support*\n` +
-        `/support [message] - Contact admin team\n` +
-        `/help - Show this help message`,
+        `/transactions - Recent transactions\n` +
+        `/stats - Earnings statistics\n\n` +
+        `💸 *Other Commands*\n` +
+        `/transfer [amount] [code] - Send NC\n` +
+        `/referral - Referral dashboard\n\n` +
+        `💬 *Natural Conversations*\n` +
+        `Just ask me things like:\n` +
+        `• "How do I deposit money?"\n` +
+        `• "Show my wallet balance"\n` +
+        `• "How do withdrawals work?"\n` +
+        `• "What is Celo blockchain?"\n\n` +
+        `I remember your context and wallet info!`,
         true
       );
       return new Response("OK", { status: 200 });
@@ -462,6 +465,92 @@ serve(async (req) => {
       }
 
       return new Response("OK", { status: 200 });
+    }
+
+    // AI-Powered Natural Conversation Handler
+    // Handle any other message as a natural language query to AI
+    if (text && !text.startsWith("/")) {
+      try {
+        // Get recent transaction history for context
+        const { data: recentTx } = await supabase
+          .from("transactions")
+          .select("type, amount, created_at, status")
+          .eq("user_id", profile.user_id)
+          .order("created_at", { ascending: false })
+          .limit(5);
+
+        // Build context for AI
+        const userContext = `
+User Profile:
+- Name: ${profile.full_name}
+- Wallet Balance: ₦${profile.wallet_balance || 0} NC
+- Withdrawable Balance: ₦${profile.balance_withdrawable || 0} NC
+- Wallet Address: ${profile.wallet_address}
+- Referral Code: ${profile.referral_code}
+
+Recent Transactions: ${recentTx && recentTx.length > 0 
+  ? recentTx.map(tx => `${tx.type}: ₦${tx.amount} (${tx.status})`).join(", ")
+  : "No recent transactions"}
+
+Platform: NaijaLancers - Nigerian freelancing and earning platform
+Deposit Method: Automated via Celo blockchain (send cUSD/USDT to wallet address)
+Withdrawal: Request via /withdraw command, processed to Nigerian bank accounts
+`;
+
+        const systemPrompt = `You are the NaijaLancers AI assistant on Telegram. You help users with:
+- Wallet operations (deposits, withdrawals, transfers, balance checks)
+- Understanding Celo blockchain deposits (cUSD/USDT)
+- Referral program information
+- Platform guidance
+
+Key Information:
+- Deposits: Users send cUSD or USDT to their unique Celo wallet address - automatic & instant
+- Withdrawals: Minimum ₦100 NC, processed to Nigerian bank accounts by admin team
+- NaijaCoin (NC): Platform currency, 1:1 with Naira
+- No manual deposits - everything is automated via blockchain
+
+Be friendly, concise, and helpful. Use emojis appropriately. If asked about deposits, always mention their wallet address. If asked about balance, include both total and withdrawable amounts.
+
+User Context:
+${userContext}`;
+
+        const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash",
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: text }
+            ],
+          }),
+        });
+
+        if (aiResponse.ok) {
+          const aiData = await aiResponse.json();
+          const aiMessage = aiData.choices?.[0]?.message?.content || "I'm having trouble understanding. Please try again or use /help for available commands.";
+          
+          await sendTelegramMessage(chatId, aiMessage);
+        } else {
+          // Fallback if AI fails
+          await sendTelegramMessage(
+            chatId,
+            `I'm here to help! 🤖\n\nTry asking:\n• "How do I deposit?"\n• "What's my balance?"\n• "How do withdrawals work?"\n\nOr use /help for all commands.`
+          );
+        }
+        
+        return new Response("OK", { status: 200 });
+      } catch (error) {
+        console.error("AI conversation error:", error);
+        await sendTelegramMessage(
+          chatId,
+          `Sorry, I encountered an error. Please try /help for available commands.`
+        );
+        return new Response("OK", { status: 200 });
+      }
     }
 
     // Command: /support [message] - Contact admin
