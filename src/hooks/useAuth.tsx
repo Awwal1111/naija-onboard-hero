@@ -106,6 +106,17 @@ export const useAuth = () => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        // Ignore repeated INITIAL_SESSION events to prevent render loops
+        if (event === 'INITIAL_SESSION') {
+          setSession(session)
+          setUser(session?.user ?? null)
+          setLoading(false)
+          if (session) {
+            scheduleTokenRefresh(session)
+          }
+          return
+        }
+        
         console.log('Auth state change:', event, session?.user?.id)
         setSession(session)
         setUser(session?.user ?? null)
