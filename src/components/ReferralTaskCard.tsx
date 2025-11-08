@@ -24,26 +24,29 @@ export const ReferralTaskCard = ({ task, hasSubmitted, submissionStatus, onSubmi
   const [error, setError] = useState<string | null>(null)
   const { uploadFile, uploadProgress } = useSecureFileUpload()
 
-  // Debug: Log when component mounts
-  useState(() => {
-    console.log('ReferralTaskCard mounted for task:', task.id, task.title)
+  // Log state changes
+  console.log('ReferralTaskCard render:', { 
+    taskId: task.id, 
+    proof: proof ? 'HAS_PROOF' : 'NO_PROOF',
+    proofUrl: proof,
+    open 
   })
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    event.preventDefault()
     const file = event.target.files?.[0]
     if (!file) return
 
-    console.log('Uploading referral task proof:', file.name)
+    console.log('🔵 Starting upload:', file.name)
+    setError(null)
+    
     const result = await uploadFile(file, 'referral-tasks', undefined, 'image')
     
     if (result.url) {
-      console.log('Referral task proof uploaded:', result.url)
+      console.log('✅ Upload success, setting proof:', result.url)
       setProof(result.url)
-      // Clear the input to allow re-upload if needed
-      event.target.value = ''
+      console.log('✅ Proof state updated')
     } else {
-      console.error('Upload failed:', result.error)
+      console.error('❌ Upload failed:', result.error)
       setError(result.error || 'Upload failed')
     }
   }
@@ -154,15 +157,37 @@ export const ReferralTaskCard = ({ task, hasSubmitted, submissionStatus, onSubmi
                   type="file"
                   accept="image/*"
                   onChange={handleFileUpload}
+                  disabled={uploadProgress.isUploading}
                   className="mt-2 block w-full text-sm text-muted-foreground
                     file:mr-4 file:py-2 file:px-4
                     file:rounded-md file:border-0
                     file:text-sm file:font-medium
                     file:bg-primary file:text-primary-foreground
-                    hover:file:bg-primary/90"
+                    hover:file:bg-primary/90
+                    disabled:opacity-50 disabled:cursor-not-allowed"
                 />
-                {uploadProgress.isUploading && <p className="text-sm text-muted-foreground mt-1">Uploading referral proof...</p>}
-                {proof && <p className="text-sm text-green-600 mt-1">✅ Referral proof uploaded successfully</p>}
+                {uploadProgress.isUploading && (
+                  <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950 rounded-md">
+                    <p className="text-sm text-blue-800 dark:text-blue-200">
+                      ⏳ Uploading referral proof...
+                    </p>
+                  </div>
+                )}
+                {proof && !uploadProgress.isUploading && (
+                  <div className="mt-2 p-3 bg-green-50 dark:bg-green-950 rounded-md border border-green-200 dark:border-green-800">
+                    <p className="text-sm text-green-800 dark:text-green-200 font-medium mb-2">
+                      ✅ Screenshot uploaded successfully!
+                    </p>
+                    <img 
+                      src={proof} 
+                      alt="Uploaded proof" 
+                      className="max-h-40 rounded border border-green-200 dark:border-green-700"
+                    />
+                    <p className="text-xs text-green-600 dark:text-green-400 mt-2 break-all">
+                      {proof}
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className="relative">
