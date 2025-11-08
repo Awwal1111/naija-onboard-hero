@@ -131,11 +131,8 @@ export const useSecureFileUpload = () => {
 
       setUploadProgress({ progress: 100, isUploading: false, error: null })
       
-      toast({
-        title: "Upload successful",
-        description: "File uploaded successfully",
-        variant: "default"
-      })
+      // Don't show generic toast - let the calling component handle feedback
+      console.log('✅ File uploaded successfully:', publicUrl)
 
       return { url: publicUrl, error: null }
 
