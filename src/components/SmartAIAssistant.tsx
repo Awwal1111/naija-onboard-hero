@@ -315,7 +315,7 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
               {messages.length === 0 && (
                 <div className="text-center py-4">
                   <Sparkles className="h-8 w-8 text-primary mx-auto mb-2" />
-                  <p className="text-sm text-text-secondary">Start a conversation with your AI assistant!</p>
+                  <p className="text-sm text-muted-foreground">Start a conversation with your AI assistant!</p>
                 </div>
               )}
               
@@ -323,12 +323,12 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
                 <div key={msg.id} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[85%] md:max-w-[80%] rounded-lg px-3 py-2 text-sm ${
                     msg.type === 'user'
-                      ? 'bg-primary text-white'
-                      : 'bg-white border border-border text-text-primary'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-card border border-border text-foreground'
                   }`}>
                     <div className="whitespace-pre-wrap break-words">{msg.content}</div>
                     <div className={`text-xs mt-1 opacity-70 ${
-                      msg.type === 'user' ? 'text-white' : 'text-text-secondary'
+                      msg.type === 'user' ? 'text-primary-foreground' : 'text-muted-foreground'
                     }`}>
                       {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </div>
@@ -338,14 +338,14 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
               
               {isLoading && (
                 <div className="flex justify-start">
-                  <div className="bg-white border border-border rounded-lg px-3 py-2 text-sm">
+                  <div className="bg-card border border-border rounded-lg px-3 py-2 text-sm">
                     <div className="flex items-center gap-2">
                       <div className="flex space-x-1">
                         <div className="w-1 h-1 bg-primary rounded-full animate-bounce" />
                         <div className="w-1 h-1 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
                         <div className="w-1 h-1 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
                       </div>
-                      <span className="text-text-secondary">AI is thinking...</span>
+                      <span className="text-muted-foreground">AI is thinking...</span>
                     </div>
                   </div>
                 </div>
@@ -356,13 +356,13 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
             {/* Quick Suggestions */}
             {messages.length <= 1 && (
               <div className="px-3 md:px-4 py-2 border-t border-border flex-shrink-0">
-                <div className="text-xs text-text-secondary mb-2">Quick suggestions:</div>
+                <div className="text-xs text-muted-foreground mb-2">Quick suggestions:</div>
                 <div className="flex flex-wrap gap-1">
                   {suggestions.slice(0, isMobile ? 2 : 3).map((suggestion, index) => (
                     <Badge
                       key={index}
                       variant="outline"
-                      className="cursor-pointer text-xs py-1 px-2 hover:bg-primary hover:text-white transition-colors"
+                      className="cursor-pointer text-xs py-1 px-2 hover:bg-primary hover:text-primary-foreground transition-colors"
                       onClick={() => handleSuggestionClick(suggestion)}
                     >
                       {suggestion}
@@ -398,13 +398,13 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
                 <div className="flex justify-between items-center mt-2">
                   <button
                     onClick={clearChat}
-                    className="text-xs text-text-secondary hover:text-primary transition-colors"
+                    className="text-xs text-muted-foreground hover:text-primary transition-colors"
                   >
                     Clear chat
                   </button>
                   <div className="flex items-center gap-1">
                     <Zap className="h-3 w-3 text-green-500" />
-                    <span className="text-xs text-text-secondary">AI Online</span>
+                    <span className="text-xs text-muted-foreground">AI Online</span>
                   </div>
                 </div>
               )}
