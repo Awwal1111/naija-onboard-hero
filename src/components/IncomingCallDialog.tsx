@@ -37,48 +37,37 @@ const IncomingCallDialog: React.FC<IncomingCallDialogProps> = ({ onAnswer, onRej
   useEffect(() => {
     if (!user) return
 
-    // Listen for incoming calls via Supabase Realtime
-    const channels: any[] = []
+    // Listen for incoming calls via Supabase Realtime - using a global channel
+    const channel = supabase
+      .channel(`user-${user.id}-calls`)
+      .on('broadcast', { event: 'offer' }, async ({ payload }: any) => {
+        if (payload.to === user.id) {
+          console.log('Incoming call offer:', payload)
+          
+          // Fetch caller profile
+          const { data: callerProfile } = await supabase
+            .from('profiles')
+            .select('full_name, profile_picture_url')
+            .eq('user_id', payload.from)
+            .single()
 
-    // Subscribe to potential incoming calls
-    const setupCallListener = async () => {
-      // Get list of users who might call (connections, etc.)
-      // For now, we'll use a wildcard approach
-      const channel = supabase
-        .channel(`incoming-calls-${user.id}`)
-        .on('broadcast', { event: 'offer' }, async ({ payload }: any) => {
-          if (payload.to === user.id) {
-            console.log('Incoming call offer:', payload)
-            
-            // Fetch caller profile
-            const { data: callerProfile } = await supabase
-              .from('profiles')
-              .select('full_name, profile_picture_url')
-              .eq('user_id', payload.from)
-              .single()
+          setIncomingCall({
+            callId: payload.callId,
+            callerId: payload.from,
+            callerName: callerProfile?.full_name || 'Unknown',
+            callerAvatar: callerProfile?.profile_picture_url,
+            callType: payload.callType,
+            offer: payload.offer
+          })
 
-            setIncomingCall({
-              callId: payload.callId,
-              callerId: payload.from,
-              callerName: callerProfile?.full_name || 'Unknown',
-              callerAvatar: callerProfile?.profile_picture_url,
-              callType: payload.callType,
-              offer: payload.offer
-            })
-
-            // Play ringtone
-            ringtone.play().catch(console.error)
-          }
-        })
-        .subscribe()
-
-      channels.push(channel)
-    }
-
-    setupCallListener()
+          // Play ringtone
+          ringtone.play().catch(console.error)
+        }
+      })
+      .subscribe()
 
     return () => {
-      channels.forEach(channel => supabase.removeChannel(channel))
+      supabase.removeChannel(channel)
       ringtone.pause()
       ringtone.currentTime = 0
     }

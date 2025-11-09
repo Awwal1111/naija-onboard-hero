@@ -5,10 +5,13 @@ import { useAuth } from '@/hooks/useAuth'
 import { useChat } from '@/hooks/useChat'
 import { useBlockUser } from '@/hooks/useBlockUser'
 import { useSecureFileUpload } from '@/hooks/useSecureFileUpload'
+import { useWebRTC } from '@/hooks/useWebRTC'
 import { BrandButton } from '@/components/ui/brand-button'
 import { BrandInput } from '@/components/ui/brand-input'
 import { useToast } from '@/hooks/use-toast'
 import { Card } from '@/components/ui/card'
+import CallControls from '@/components/CallControls'
+import ActiveCallInterface from '@/components/ActiveCallInterface'
 
 // Simple emoji picker component
 const EmojiPicker = ({ onSelect, onClose }: { onSelect: (emoji: string) => void; onClose: () => void }) => {
@@ -77,6 +80,22 @@ const EnhancedChat = () => {
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // WebRTC for voice/video calls
+  const {
+    callState,
+    localStream,
+    remoteStream,
+    isMuted,
+    isVideoOff,
+    startCall,
+    answerCall,
+    rejectCall,
+    endCall,
+    toggleMute,
+    toggleVideo,
+    switchToAudioOnly
+  } = useWebRTC()
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -257,6 +276,26 @@ const EnhancedChat = () => {
     )
   }
 
+  // Show active call interface if in call
+  if (callState.isInCall) {
+    return (
+      <ActiveCallInterface
+        localStream={localStream}
+        remoteStream={remoteStream}
+        callType={callState.callType!}
+        isMuted={isMuted}
+        isVideoOff={isVideoOff}
+        remoteUserName={otherUser?.full_name || 'User'}
+        remoteUserAvatar={otherUser?.profile_picture_url}
+        onEndCall={endCall}
+        onToggleMute={toggleMute}
+        onToggleVideo={toggleVideo}
+        onSwitchToAudioOnly={switchToAudioOnly}
+        callStatus={callState.status}
+      />
+    )
+  }
+
   // Show blocked UI if either party has blocked the other
   if (isBlocked || isBlockedBy) {
     return (
@@ -311,6 +350,14 @@ const EnhancedChat = () => {
           </h1>
           <p className="text-sm text-primary">Online</p>
         </div>
+
+        {/* Call Controls */}
+        {userId && !isBlocked && !isBlockedBy && (
+          <CallControls
+            onStartVoiceCall={() => startCall(userId, 'voice')}
+            onStartVideoCall={() => startCall(userId, 'video')}
+          />
+        )}
       </header>
 
       {/* Messages Area */}

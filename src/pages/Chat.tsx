@@ -14,7 +14,6 @@ import { Dialog, DialogContent } from '@/components/ui/dialog'
 import SafePayDialog from '@/components/SafePayDialog'
 import BlockConfirmationDialog from '@/components/BlockConfirmationDialog'
 import CallControls from '@/components/CallControls'
-import IncomingCallDialog from '@/components/IncomingCallDialog'
 import ActiveCallInterface from '@/components/ActiveCallInterface'
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/integrations/supabase/client'
@@ -309,11 +308,6 @@ const Chat = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col max-h-screen">
-      {/* Incoming Call Dialog */}
-      <IncomingCallDialog
-        onAnswer={answerCall}
-        onReject={rejectCall}
-      />
       {/* Sticky Header */}
       <header className="bg-background border-b border-border px-4 py-3 flex items-center gap-3 sticky top-0 z-50 shadow-sm">
         <button 

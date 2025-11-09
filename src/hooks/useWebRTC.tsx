@@ -129,14 +129,13 @@ export const useWebRTC = () => {
       const offer = await peerConnection.current!.createOffer()
       await peerConnection.current!.setLocalDescription(offer)
 
-      // Setup signaling channel
-      const channelName = `call-${user.id}-${remoteUserId}`
-      signalingChannel.current = supabase.channel(channelName)
+      // Setup signaling channels - both specific call channel and receiver's listening channel
+      const callChannelName = `call-${callRecord.id}`
+      const receiverChannelName = `user-${remoteUserId}-calls`
+      
+      signalingChannel.current = supabase.channel(callChannelName)
 
       signalingChannel.current
-        .on('broadcast', { event: 'offer' }, async ({ payload }: any) => {
-          console.log('Received offer:', payload)
-        })
         .on('broadcast', { event: 'answer' }, async ({ payload }: any) => {
           if (payload.to === user.id && payload.answer) {
             console.log('Received answer:', payload.answer)
@@ -162,10 +161,13 @@ export const useWebRTC = () => {
             endCall()
           }
         })
-        .subscribe((status) => {
+        .subscribe(async (status) => {
           if (status === 'SUBSCRIBED') {
-            // Send offer
-            signalingChannel.current.send({
+            // Send offer to receiver's listening channel
+            const receiverChannel = supabase.channel(receiverChannelName)
+            await receiverChannel.subscribe()
+            
+            receiverChannel.send({
               type: 'broadcast',
               event: 'offer',
               payload: {
@@ -183,6 +185,11 @@ export const useWebRTC = () => {
               .update({ status: 'ringing' })
               .eq('id', callRecord.id)
               .then()
+            
+            // Clean up receiver channel after sending
+            setTimeout(() => {
+              supabase.removeChannel(receiverChannel)
+            }, 2000)
           }
         })
 
@@ -234,8 +241,8 @@ export const useWebRTC = () => {
       const answer = await peerConnection.current!.createAnswer()
       await peerConnection.current!.setLocalDescription(answer)
 
-      // Setup signaling channel
-      const channelName = `call-${callerId}-${user.id}`
+      // Setup signaling channel - use the same call channel
+      const channelName = `call-${callId}`
       signalingChannel.current = supabase.channel(channelName)
 
       signalingChannel.current
@@ -285,7 +292,7 @@ export const useWebRTC = () => {
   const rejectCall = async (callerId: string, callId: string) => {
     if (!user) return
 
-    const channelName = `call-${callerId}-${user.id}`
+    const channelName = `call-${callId}`
     const channel = supabase.channel(channelName)
 
     channel.subscribe((status) => {

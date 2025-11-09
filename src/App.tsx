@@ -5,6 +5,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import SmartAIAssistant from "@/components/SmartAIAssistant";
 import WalletInitializer from "@/components/WalletInitializer";
+import GlobalCallManager from "@/components/GlobalCallManager";
 import { useAppState } from "@/hooks/useAppState";
 import Welcome from "./pages/Welcome";
 import Login from "./pages/Login";
@@ -72,6 +73,7 @@ const App = () => (
       <BrowserRouter>
         <AppStateManager />
         <WalletInitializer />
+        <GlobalCallManager />
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/welcome" element={<Welcome />} />
