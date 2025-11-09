@@ -32,6 +32,7 @@ interface Profile {
   user_id: string
   full_name: string
   profession: string
+  profile_picture_url?: string
 }
 
 export const useChat = (otherUserId: string) => {
@@ -59,7 +60,7 @@ export const useChat = (otherUserId: string) => {
         // Fetch other user's profile
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
-          .select('user_id, full_name, profession')
+          .select('user_id, full_name, profession, profile_picture_url')
           .eq('user_id', otherUserId)
           .maybeSingle()
 

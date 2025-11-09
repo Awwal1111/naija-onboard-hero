@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useChat } from '@/hooks/useChat'
 import { useBlockUser } from '@/hooks/useBlockUser'
 import { useUserPresence } from '@/hooks/useUserPresence'
+import { useWebRTC } from '@/hooks/useWebRTC'
 import { BrandButton } from '@/components/ui/brand-button'
 import { BrandInput } from '@/components/ui/brand-input'
 import { Card } from '@/components/ui/card'
@@ -12,6 +13,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import SafePayDialog from '@/components/SafePayDialog'
 import BlockConfirmationDialog from '@/components/BlockConfirmationDialog'
+import CallControls from '@/components/CallControls'
+import IncomingCallDialog from '@/components/IncomingCallDialog'
+import ActiveCallInterface from '@/components/ActiveCallInterface'
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/integrations/supabase/client'
 
@@ -46,6 +50,22 @@ const Chat = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // WebRTC for voice/video calls
+  const {
+    callState,
+    localStream,
+    remoteStream,
+    isMuted,
+    isVideoOff,
+    startCall,
+    answerCall,
+    rejectCall,
+    endCall,
+    toggleMute,
+    toggleVideo,
+    switchToAudioOnly
+  } = useWebRTC()
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -267,8 +287,33 @@ const Chat = () => {
 
   const messageGroups = groupMessagesByDate(messages)
 
+  // Show active call interface if in call
+  if (callState.isInCall) {
+    return (
+      <ActiveCallInterface
+        localStream={localStream}
+        remoteStream={remoteStream}
+        callType={callState.callType!}
+        isMuted={isMuted}
+        isVideoOff={isVideoOff}
+        remoteUserName={otherUser?.full_name || 'User'}
+        remoteUserAvatar={otherUser?.profile_picture_url}
+        onEndCall={endCall}
+        onToggleMute={toggleMute}
+        onToggleVideo={toggleVideo}
+        onSwitchToAudioOnly={switchToAudioOnly}
+        callStatus={callState.status}
+      />
+    )
+  }
+
   return (
     <div className="min-h-screen bg-background flex flex-col max-h-screen">
+      {/* Incoming Call Dialog */}
+      <IncomingCallDialog
+        onAnswer={answerCall}
+        onReject={rejectCall}
+      />
       {/* Sticky Header */}
       <header className="bg-background border-b border-border px-4 py-3 flex items-center gap-3 sticky top-0 z-50 shadow-sm">
         <button 
@@ -291,6 +336,14 @@ const Chat = () => {
             </div>
           )}
         </div>
+
+        {/* Call Controls */}
+        {userId && !isBlocked && !isBlockedBy && (
+          <CallControls
+            onStartVoiceCall={() => startCall(userId, 'voice')}
+            onStartVideoCall={() => startCall(userId, 'video')}
+          />
+        )}
       </header>
 
       {/* SafePay and Block Actions */}
