@@ -1,5 +1,3 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.56.1';
-
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -15,19 +13,36 @@ interface JobFeed {
   source: string;
 }
 
+function extractTextBetween(text: string, start: string, end: string): string {
+  const startIndex = text.indexOf(start);
+  if (startIndex === -1) return '';
+  const contentStart = startIndex + start.length;
+  const endIndex = text.indexOf(end, contentStart);
+  if (endIndex === -1) return '';
+  return text.substring(contentStart, endIndex).trim();
+}
+
 function parseRSSFeed(xmlText: string, source: string): JobFeed[] {
-  const parser = new DOMParser();
-  const xmlDoc = parser.parseFromString(xmlText, 'application/xml');
-  
-  const items = xmlDoc.getElementsByTagName('item');
   const jobs: JobFeed[] = [];
   
-  for (let i = 0; i < items.length; i++) {
-    const item = items[i];
-    const title = item.getElementsByTagName('title')[0]?.textContent || '';
-    const link = item.getElementsByTagName('link')[0]?.textContent || '';
-    const pubDate = item.getElementsByTagName('pubDate')[0]?.textContent || '';
-    const description = item.getElementsByTagName('description')[0]?.textContent || '';
+  // Split by <item> tags to get individual job items
+  const itemMatches = xmlText.split('<item>').slice(1); // Skip first element (before first <item>)
+  
+  for (const itemText of itemMatches) {
+    // Extract fields using simple string parsing
+    let title = extractTextBetween(itemText, '<title>', '</title>');
+    const link = extractTextBetween(itemText, '<link>', '</link>');
+    const pubDate = extractTextBetween(itemText, '<pubDate>', '</pubDate>');
+    let description = extractTextBetween(itemText, '<description>', '</description>');
+    
+    // Handle CDATA sections
+    title = title.replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1');
+    description = description.replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1');
+    
+    // Remove HTML tags from description
+    description = description.replace(/<[^>]*>/g, '').trim();
+    
+    if (!title || !link) continue;
     
     // Extract company and location from title or description
     // Jobberman format is usually: "Job Title at Company Name"
@@ -37,21 +52,27 @@ function parseRSSFeed(xmlText: string, source: string): JobFeed[] {
     if (title.includes(' at ')) {
       const parts = title.split(' at ');
       company = parts[1] || company;
+      title = parts[0] || title;
+    } else if (title.includes(' - ')) {
+      const parts = title.split(' - ');
+      if (parts.length > 1) {
+        company = parts[parts.length - 1] || company;
+      }
     }
     
     // Try to extract location from description
-    const locationMatch = description.match(/Location[:\s]+([^<\n]+)/i);
+    const locationMatch = description.match(/Location[:\s]+([^\n,]+)/i);
     if (locationMatch) {
       location = locationMatch[1].trim();
     }
     
     jobs.push({
-      title,
-      company,
-      location,
-      link,
-      pubDate,
-      description: description.replace(/<[^>]*>/g, '').substring(0, 200),
+      title: title.trim(),
+      company: company.trim(),
+      location: location.trim(),
+      link: link.trim(),
+      pubDate: pubDate || new Date().toISOString(),
+      description: description.substring(0, 200),
       source,
     });
   }
