@@ -20,6 +20,7 @@ import AdminExpertApplications from "./pages/AdminExpertApplications";
 import PostJob from "./pages/PostJob";
 import Experts from "./pages/Experts";
 import Jobs from "./pages/Jobs";
+import ExternalJobs from "./pages/ExternalJobs";
 import Chat from './pages/Chat'
 import ChatPage from "./pages/ChatPage";
 import GroupChat from "./pages/GroupChat";
@@ -93,6 +94,7 @@ const App = () => (
           <Route path="/post-job" element={<ProtectedRoute><PostJob /></ProtectedRoute>} />
           <Route path="/experts" element={<ProtectedRoute><Experts /></ProtectedRoute>} />
           <Route path="/jobs" element={<ProtectedRoute><Jobs /></ProtectedRoute>} />
+          <Route path="/external-jobs" element={<ProtectedRoute><ExternalJobs /></ProtectedRoute>} />
           <Route path="/surveys" element={<ProtectedRoute><Surveys /></ProtectedRoute>} />
           <Route path="/cpx-surveys" element={<ProtectedRoute><CpxSurveys /></ProtectedRoute>} />
           <Route path="/games/guess-number" element={<ProtectedRoute><GuessNumberGame /></ProtectedRoute>} />
