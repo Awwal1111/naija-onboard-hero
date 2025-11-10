@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { ArrowLeft, Paperclip, Smile, Send, X, Image as ImageIcon, FileText, Video, ShieldOff } from 'lucide-react'
+import { ArrowLeft, Paperclip, Smile, Send, X, Image as ImageIcon, FileText, Video, ShieldOff, Mic } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useChat } from '@/hooks/useChat'
@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast'
 import { Card } from '@/components/ui/card'
 import CallControls from '@/components/CallControls'
 import ActiveCallInterface from '@/components/ActiveCallInterface'
+import VoiceRecorder from '@/components/VoiceRecorder'
 
 // Simple emoji picker component
 const EmojiPicker = ({ onSelect, onClose }: { onSelect: (emoji: string) => void; onClose: () => void }) => {
@@ -77,6 +78,7 @@ const EnhancedChat = () => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [previewUrls, setPreviewUrls] = useState<string[]>([])
   const [uploading, setUploading] = useState(false)
+  const [showVoiceRecorder, setShowVoiceRecorder] = useState(false)
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -204,6 +206,48 @@ const EnhancedChat = () => {
     setShowEmojiPicker(false)
   }
 
+  const handleSendVoiceMessage = async (audioBlob: Blob, duration: number) => {
+    setUploading(true)
+    
+    try {
+      // Upload audio file
+      const fileName = `voice-${Date.now()}.webm`
+      const uploadResult = await uploadFile(
+        new File([audioBlob], fileName, { type: 'audio/webm' }),
+        'chat-uploads',
+        `${user?.id}/${userId}/${fileName}`
+      )
+      
+      if (uploadResult.error) {
+        toast({
+          title: "Upload failed",
+          description: uploadResult.error,
+          variant: "destructive"
+        })
+        return
+      }
+      
+      // Send message with voice note
+      await sendMessage(
+        `🎤 Voice message (${Math.floor(duration / 60)}:${(duration % 60).toString().padStart(2, '0')})`,
+        uploadResult.url,
+        'audio/webm'
+      )
+      
+      setShowVoiceRecorder(false)
+      
+    } catch (error) {
+      console.error('Error sending voice message:', error)
+      toast({
+        title: "Error",
+        description: "Failed to send voice message",
+        variant: "destructive"
+      })
+    } finally {
+      setUploading(false)
+    }
+  }
+
   const renderMessage = (message: any) => {
     const isOwn = message.sender_id === user?.id
     
@@ -234,6 +278,12 @@ const EnhancedChat = () => {
                   src={message.media_url} 
                   className="max-w-full rounded-lg" 
                   controls 
+                />
+              ) : message.media_type?.startsWith('audio/') ? (
+                <audio 
+                  src={message.media_url} 
+                  controls 
+                  className="max-w-full"
                 />
               ) : (
                 <a 
@@ -372,6 +422,16 @@ const EnhancedChat = () => {
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Voice Recorder */}
+      {showVoiceRecorder && (
+        <div className="px-4 py-2 border-t border-border">
+          <VoiceRecorder
+            onSendVoiceMessage={handleSendVoiceMessage}
+            onCancel={() => setShowVoiceRecorder(false)}
+          />
+        </div>
+      )}
+
       {/* File Previews */}
       {selectedFiles.length > 0 && (
         <div className="px-4 py-2 border-t border-border bg-muted/20">
@@ -416,6 +476,15 @@ const EnhancedChat = () => {
               className="p-2 hover:bg-accent rounded-full"
             >
               <Smile className="h-5 w-5 text-text-secondary" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowVoiceRecorder(!showVoiceRecorder)}
+              className="p-2 hover:bg-accent rounded-full"
+              disabled={uploading || showVoiceRecorder}
+            >
+              <Mic className={`h-5 w-5 ${showVoiceRecorder ? 'text-destructive' : 'text-text-secondary'}`} />
             </button>
           </div>
           

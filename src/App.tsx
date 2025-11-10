@@ -22,6 +22,7 @@ import Experts from "./pages/Experts";
 import Jobs from "./pages/Jobs";
 import Chat from './pages/Chat'
 import ChatPage from "./pages/ChatPage";
+import CallHistoryPage from "./pages/CallHistoryPage";
 import GroupChat from "./pages/GroupChat";
 import Connections from "./pages/Connections";
 import EnhancedEarn from "./pages/EnhancedEarn";
@@ -120,6 +121,7 @@ const App = () => (
           <Route path="/earn/articles" element={<ProtectedRoute><Articles /></ProtectedRoute>} />
           <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
           <Route path="/chat/:userId" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+          <Route path="/call-history" element={<ProtectedRoute><CallHistoryPage /></ProtectedRoute>} />
           <Route path="/groups/:groupId" element={<ProtectedRoute><GroupChat /></ProtectedRoute>} />
           <Route path="/connections" element={<ProtectedRoute><Connections /></ProtectedRoute>} />
           <Route path="/terms-conditions" element={<TermsConditions />} />
