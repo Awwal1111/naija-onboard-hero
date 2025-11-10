@@ -86,6 +86,3 @@ verify_jwt = false
 
 [functions.daily-telegram-reminders]
 verify_jwt = false
-
-[functions.fetch-job-feeds]
-verify_jwt = true
