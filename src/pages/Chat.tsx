@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { ArrowLeft, Paperclip, Smile, Send, UserX, UserCheck, Circle, Reply, X, MoreVertical, Copy, Trash2, Check, CheckCheck, Image as ImageIcon, Loader2 } from 'lucide-react'
+import { ArrowLeft, Paperclip, Smile, Send, UserX, UserCheck, Circle, Reply, X, MoreVertical, Copy, Trash2, Check, CheckCheck, Image as ImageIcon, Loader2, Mic, Phone } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useChat } from '@/hooks/useChat'
@@ -10,11 +10,13 @@ import { BrandButton } from '@/components/ui/brand-button'
 import { BrandInput } from '@/components/ui/brand-input'
 import { Card } from '@/components/ui/card'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import SafePayDialog from '@/components/SafePayDialog'
 import BlockConfirmationDialog from '@/components/BlockConfirmationDialog'
 import CallControls from '@/components/CallControls'
 import ActiveCallInterface from '@/components/ActiveCallInterface'
+import CallHistory from '@/components/CallHistory'
+import VoiceRecorder from '@/components/VoiceRecorder'
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/integrations/supabase/client'
 
@@ -46,6 +48,8 @@ const Chat = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
   const [viewingImage, setViewingImage] = useState<string | null>(null)
+  const [showCallHistory, setShowCallHistory] = useState(false)
+  const [showVoiceRecorder, setShowVoiceRecorder] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -151,6 +155,42 @@ const Chat = () => {
     }
   }
 
+  const handleSendVoiceMessage = async (audioBlob: Blob, duration: number) => {
+    if (!userId || !canSendMessage) return
+
+    setUploading(true)
+    try {
+      const fileName = `${user?.id}/${Date.now()}.webm`
+      
+      const { error: uploadError } = await supabase.storage
+        .from('chat-uploads')
+        .upload(fileName, audioBlob, {
+          contentType: 'audio/webm'
+        })
+
+      if (uploadError) throw uploadError
+
+      await sendMessage(
+        `🎤 Voice message (${Math.floor(duration / 60)}:${(duration % 60).toString().padStart(2, '0')})`,
+        fileName,
+        'audio/webm'
+      )
+      
+      toast({
+        title: "Sent",
+        description: "Voice message sent successfully"
+      })
+    } catch (error: any) {
+      toast({
+        title: "Failed to send voice message",
+        description: error.message || "Please try again",
+        variant: "destructive"
+      })
+    } finally {
+      setUploading(false)
+    }
+  }
+
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({})
   const [loadingImages, setLoadingImages] = useState<Set<string>>(new Set())
 
@@ -177,10 +217,10 @@ const Chat = () => {
   }
 
   useEffect(() => {
-    const loadImageUrls = async () => {
+    const loadMediaUrls = async () => {
       const urlsToLoad: string[] = []
       
-      // Find all images that need loading
+      // Find all media that needs loading
       for (const message of messages) {
         if (message.media_url && 
             !imageUrls[message.media_url] && 
@@ -198,11 +238,28 @@ const Chat = () => {
         return newSet
       })
 
-      // Load all URLs
+      // Load all URLs from both buckets
       const urls: Record<string, string> = {}
       await Promise.all(
         urlsToLoad.map(async (mediaUrl) => {
-          const url = await getImageUrl(mediaUrl)
+          // Try chat-media bucket first
+          let url = await getImageUrl(mediaUrl)
+          
+          // If not found, try chat-uploads bucket (for voice messages)
+          if (!url) {
+            try {
+              const { data, error } = await supabase.storage
+                .from('chat-uploads')
+                .createSignedUrl(mediaUrl, 3600)
+              
+              if (!error && data) {
+                url = data.signedUrl
+              }
+            } catch (err) {
+              console.error('Error loading from chat-uploads:', err)
+            }
+          }
+          
           if (url) urls[mediaUrl] = url
         })
       )
@@ -220,7 +277,7 @@ const Chat = () => {
       })
     }
 
-    loadImageUrls()
+    loadMediaUrls()
   }, [messages])
 
   const handleReply = (message: Message) => {
@@ -331,12 +388,21 @@ const Chat = () => {
           )}
         </div>
 
-        {/* Call Controls */}
+        {/* Call Controls and History */}
         {userId && !isBlocked && !isBlockedBy && (
-          <CallControls
-            onStartVoiceCall={() => startCall(userId, 'voice')}
-            onStartVideoCall={() => startCall(userId, 'video')}
-          />
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setShowCallHistory(true)}
+              className="p-2 hover:bg-accent rounded-full"
+              title="Call history"
+            >
+              <Phone className="h-5 w-5 text-muted-foreground" />
+            </button>
+            <CallControls
+              onStartVoiceCall={() => startCall(userId, 'voice')}
+              onStartVideoCall={() => startCall(userId, 'video')}
+            />
+          </div>
         )}
       </header>
 
@@ -456,7 +522,16 @@ const Chat = () => {
 
                         {message.media_url && (
                           <div className="mb-2">
-                            {loadingImages.has(message.media_url) ? (
+                            {message.media_type?.startsWith('audio/') ? (
+                              <audio 
+                                controls 
+                                src={imageUrls[message.media_url] || ''} 
+                                className="max-w-[250px]"
+                                onError={(e) => {
+                                  console.error('Audio failed to load:', message.media_url)
+                                }}
+                              />
+                            ) : loadingImages.has(message.media_url) ? (
                               <div className="max-w-[250px] h-32 bg-muted rounded-lg flex items-center justify-center">
                                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                               </div>
@@ -540,6 +615,14 @@ const Chat = () => {
 
       {/* Message Input */}
       <div className="border-t border-border bg-background">
+        {/* Voice Recorder */}
+        {showVoiceRecorder && (
+          <VoiceRecorder
+            onSendVoiceMessage={handleSendVoiceMessage}
+            onCancel={() => setShowVoiceRecorder(false)}
+          />
+        )}
+
         {/* Reply Preview */}
         {replyingTo && (
           <div className="px-3 md:px-4 pt-3 pb-2 flex items-center gap-2 bg-muted/30">
@@ -597,9 +680,20 @@ const Chat = () => {
               
               <button
                 type="button"
+                onClick={() => setShowVoiceRecorder(!showVoiceRecorder)}
+                className="p-2 hover:bg-accent rounded-full flex-shrink-0"
+                disabled={uploading}
+                title="Voice message"
+              >
+                <Mic className={`h-5 w-5 ${showVoiceRecorder ? 'text-destructive' : 'text-muted-foreground'}`} />
+              </button>
+
+              <button
+                type="button"
                 onClick={() => fileInputRef.current?.click()}
                 className="p-2 hover:bg-accent rounded-full flex-shrink-0"
                 disabled={uploading}
+                title="Send image"
               >
                 <ImageIcon className="h-5 w-5 text-muted-foreground" />
               </button>
@@ -681,6 +775,16 @@ const Chat = () => {
         onConfirm={confirmBlock}
         loading={blockLoading}
       />
+
+      {/* Call History Dialog */}
+      <Dialog open={showCallHistory} onOpenChange={setShowCallHistory}>
+        <DialogContent className="max-w-2xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>Call History</DialogTitle>
+          </DialogHeader>
+          <CallHistory />
+        </DialogContent>
+      </Dialog>
 
       {/* Image Viewer Dialog */}
       <Dialog open={!!viewingImage} onOpenChange={() => setViewingImage(null)}>

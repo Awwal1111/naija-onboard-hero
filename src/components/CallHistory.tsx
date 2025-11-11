@@ -35,43 +35,62 @@ const CallHistory: React.FC = () => {
     if (!user) return
 
     const fetchCallHistory = async () => {
-      const { data: callData, error } = await supabase
-        .from('call_history')
-        .select('*')
-        .or(`caller_id.eq.${user.id},receiver_id.eq.${user.id}`)
-        .order('created_at', { ascending: false })
-        .limit(50)
+      try {
+        const { data: callData, error } = await supabase
+          .from('call_history')
+          .select('*')
+          .or(`caller_id.eq.${user.id},receiver_id.eq.${user.id}`)
+          .order('created_at', { ascending: false })
+          .limit(50)
 
-      if (error) {
-        console.error('Error fetching call history:', error)
+        if (error) {
+          console.error('Error fetching call history:', error)
+          setLoading(false)
+          return
+        }
+
+        if (!callData || callData.length === 0) {
+          setCalls([])
+          setLoading(false)
+          return
+        }
+
+        // Fetch user profiles separately
+        const userIds = Array.from(new Set<string>(
+          callData.flatMap(call => [call.caller_id, call.receiver_id])
+        ))
+
+        const { data: profiles, error: profileError } = await supabase
+          .from('profiles')
+          .select('id, full_name, profile_picture_url')
+          .in('id', userIds)
+
+        if (profileError) {
+          console.error('Error fetching profiles:', profileError)
+        }
+
+        // Map profiles to calls
+        const profileMap = new Map((profiles || []).map(p => [p.id, p]))
+        
+        const enrichedCalls = callData.map(call => ({
+          ...call,
+          call_type: call.call_type as 'voice' | 'video',
+          caller: profileMap.get(call.caller_id) || { 
+            full_name: 'Unknown User', 
+            profile_picture_url: null 
+          },
+          receiver: profileMap.get(call.receiver_id) || { 
+            full_name: 'Unknown User', 
+            profile_picture_url: null 
+          }
+        }))
+
+        setCalls(enrichedCalls)
         setLoading(false)
-        return
+      } catch (err) {
+        console.error('Exception in fetchCallHistory:', err)
+        setLoading(false)
       }
-
-      // Fetch user profiles separately
-      const userIds = new Set<string>()
-      callData?.forEach(call => {
-        userIds.add(call.caller_id)
-        userIds.add(call.receiver_id)
-      })
-
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, full_name, profile_picture_url')
-        .in('id', Array.from(userIds))
-
-      // Map profiles to calls
-      const profileMap = new Map(profiles?.map(p => [p.id, p]))
-      
-      const enrichedCalls = callData?.map(call => ({
-        ...call,
-        call_type: call.call_type as 'voice' | 'video',
-        caller: profileMap.get(call.caller_id),
-        receiver: profileMap.get(call.receiver_id)
-      })) || []
-
-      setCalls(enrichedCalls)
-      setLoading(false)
     }
 
     fetchCallHistory()
