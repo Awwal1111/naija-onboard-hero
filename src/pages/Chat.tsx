@@ -680,12 +680,13 @@ const Chat = () => {
               
               <button
                 type="button"
-                onClick={() => setShowVoiceRecorder(!showVoiceRecorder)}
-                className="p-2 hover:bg-accent rounded-full flex-shrink-0"
+                onMouseDown={() => setShowVoiceRecorder(true)}
+                onTouchStart={() => setShowVoiceRecorder(true)}
+                className="p-2 hover:bg-accent rounded-full flex-shrink-0 active:scale-95 transition-transform"
                 disabled={uploading}
-                title="Voice message"
+                title="Hold to record voice message"
               >
-                <Mic className={`h-5 w-5 ${showVoiceRecorder ? 'text-destructive' : 'text-muted-foreground'}`} />
+                <Mic className="h-5 w-5 text-muted-foreground" />
               </button>
 
               <button

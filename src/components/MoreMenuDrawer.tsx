@@ -1,6 +1,6 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useNavigate } from "react-router-dom";
-import { User, Briefcase, FileText, GraduationCap, Heart, AlertCircle, Banknote, Gift, Phone } from "lucide-react";
+import { User, Briefcase, FileText, GraduationCap, Heart, AlertCircle, Banknote, Gift } from "lucide-react";
 
 interface MoreMenuDrawerProps {
   open: boolean;
@@ -13,7 +13,6 @@ export const MoreMenuDrawer = ({ open, onOpenChange }: MoreMenuDrawerProps) => {
   const menuItems = [
     { icon: User, label: "Profile", path: "/profile", color: "text-blue-500" },
     { icon: Briefcase, label: "Jobs", path: "/jobs-enhanced", color: "text-purple-500" },
-    { icon: Phone, label: "Call History", path: "/call-history", color: "text-green-500" },
     { icon: FileText, label: "Digital Products", path: "/digital-products", color: "text-green-500" },
     { icon: GraduationCap, label: "Courses", path: "/courses", color: "text-orange-500" },
     { icon: Heart, label: "Fundraising", path: "/fundraising", color: "text-red-500" },
