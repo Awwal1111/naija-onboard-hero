@@ -1,13 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { Mic, X, Lock } from 'lucide-react'
+import { Mic, X, Lock, Send } from 'lucide-react'
 import { useVoiceRecorder } from '@/hooks/useVoiceRecorder'
+import { Button } from '@/components/ui/button'
 
 interface VoiceRecorderProps {
   onSendVoiceMessage: (audioBlob: Blob, duration: number) => Promise<void>
   onCancel: () => void
+  autoStart?: boolean
 }
 
-const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onSendVoiceMessage, onCancel }) => {
+const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onSendVoiceMessage, onCancel, autoStart = false }) => {
   const {
     isRecording,
     recordingDuration,
@@ -24,23 +26,34 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onSendVoiceMessage, onCan
   const [isCancelled, setIsCancelled] = useState(false)
   const buttonRef = useRef<HTMLButtonElement>(null)
 
+  // Auto-start recording when component mounts
+  useEffect(() => {
+    if (autoStart) {
+      startRecording()
+    }
+  }, [autoStart])
+
   const handleTouchStart = async (e: React.TouchEvent) => {
     e.preventDefault()
-    const touch = e.touches[0]
-    setTouchStart({ x: touch.clientX, y: touch.clientY })
-    setCurrentTouch({ x: touch.clientX, y: touch.clientY })
-    setIsLocked(false)
-    setIsCancelled(false)
-    await startRecording()
+    if (!isRecording) {
+      const touch = e.touches[0]
+      setTouchStart({ x: touch.clientX, y: touch.clientY })
+      setCurrentTouch({ x: touch.clientX, y: touch.clientY })
+      setIsLocked(false)
+      setIsCancelled(false)
+      await startRecording()
+    }
   }
 
   const handleMouseDown = async (e: React.MouseEvent) => {
     e.preventDefault()
-    setTouchStart({ x: e.clientX, y: e.clientY })
-    setCurrentTouch({ x: e.clientX, y: e.clientY })
-    setIsLocked(false)
-    setIsCancelled(false)
-    await startRecording()
+    if (!isRecording) {
+      setTouchStart({ x: e.clientX, y: e.clientY })
+      setCurrentTouch({ x: e.clientX, y: e.clientY })
+      setIsLocked(false)
+      setIsCancelled(false)
+      await startRecording()
+    }
   }
 
   const handleTouchMove = (e: React.TouchEvent) => {
@@ -87,54 +100,38 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onSendVoiceMessage, onCan
   }
 
   const handleTouchEnd = async () => {
-    if (!isRecording || isCancelled) return
-
-    if (isLocked) {
-      // Recording is locked, don't stop
-      return
-    }
+    if (!isRecording || isCancelled || isLocked) return
 
     // Release to send
     stopRecording()
-    
-    // Wait a bit for audioBlob to be ready
-    setTimeout(async () => {
-      if (audioBlob) {
-        await onSendVoiceMessage(audioBlob, recordingDuration)
-        onCancel()
-      }
-    }, 100)
   }
 
   const handleMouseUp = async () => {
-    if (!isRecording || isCancelled) return
-
-    if (isLocked) {
-      // Recording is locked, don't stop
-      return
-    }
+    if (!isRecording || isCancelled || isLocked) return
 
     // Release to send
     stopRecording()
-    
-    // Wait a bit for audioBlob to be ready
-    setTimeout(async () => {
-      if (audioBlob) {
-        await onSendVoiceMessage(audioBlob, recordingDuration)
-        onCancel()
-      }
-    }, 100)
   }
 
   const handleLockedSend = async () => {
     stopRecording()
-    setTimeout(async () => {
-      if (audioBlob) {
-        await onSendVoiceMessage(audioBlob, recordingDuration)
-        onCancel()
-      }
-    }, 100)
   }
+
+  // Watch for audioBlob changes and send immediately
+  useEffect(() => {
+    if (audioBlob && !isRecording && !isCancelled) {
+      const sendMessage = async () => {
+        try {
+          await onSendVoiceMessage(audioBlob, recordingDuration)
+          onCancel()
+        } catch (error) {
+          console.error('Failed to send voice message:', error)
+          onCancel()
+        }
+      }
+      sendMessage()
+    }
+  }, [audioBlob, isRecording, isCancelled])
 
   const handleLockedCancel = () => {
     cancelRecording()

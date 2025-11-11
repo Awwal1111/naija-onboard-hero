@@ -1,12 +1,5 @@
 import React from 'react'
-import { Button } from '@/components/ui/button'
 import { Phone, Video } from 'lucide-react'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 
 interface CallControlsProps {
   onStartVoiceCall: () => void
@@ -18,23 +11,22 @@ const CallControls: React.FC<CallControlsProps> = ({
   onStartVideoCall
 }) => {
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon">
-          <Phone className="h-5 w-5" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={onStartVoiceCall}>
-          <Phone className="mr-2 h-4 w-4" />
-          Voice Call
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={onStartVideoCall}>
-          <Video className="mr-2 h-4 w-4" />
-          Video Call
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <div className="flex items-center gap-1">
+      <button
+        onClick={onStartVoiceCall}
+        className="p-2 hover:bg-green-500/10 rounded-full transition-colors group"
+        title="Start voice call"
+      >
+        <Phone className="h-5 w-5 text-green-600 group-hover:text-green-700" />
+      </button>
+      <button
+        onClick={onStartVideoCall}
+        className="p-2 hover:bg-blue-500/10 rounded-full transition-colors group"
+        title="Start video call"
+      >
+        <Video className="h-5 w-5 text-blue-600 group-hover:text-blue-700" />
+      </button>
+    </div>
   )
 }
 

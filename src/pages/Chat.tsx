@@ -388,16 +388,17 @@ const Chat = () => {
           )}
         </div>
 
-        {/* Call Controls and History */}
+        {/* Call Controls */}
         {userId && !isBlocked && !isBlockedBy && (
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => setShowCallHistory(true)}
-              className="p-2 hover:bg-accent rounded-full"
-              title="Call history"
+              className="p-2 hover:bg-accent rounded-full transition-colors"
+              title="View call history"
             >
-              <Phone className="h-5 w-5 text-muted-foreground" />
+              <Phone className="h-5 w-5 text-primary" />
             </button>
+            <div className="h-6 w-px bg-border" />
             <CallControls
               onStartVoiceCall={() => startCall(userId, 'voice')}
               onStartVideoCall={() => startCall(userId, 'video')}
@@ -613,16 +614,17 @@ const Chat = () => {
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Voice Recorder Overlay */}
+      {showVoiceRecorder && (
+        <VoiceRecorder
+          onSendVoiceMessage={handleSendVoiceMessage}
+          onCancel={() => setShowVoiceRecorder(false)}
+          autoStart={true}
+        />
+      )}
+
       {/* Message Input */}
       <div className="border-t border-border bg-background">
-        {/* Voice Recorder */}
-        {showVoiceRecorder && (
-          <VoiceRecorder
-            onSendVoiceMessage={handleSendVoiceMessage}
-            onCancel={() => setShowVoiceRecorder(false)}
-          />
-        )}
-
         {/* Reply Preview */}
         {replyingTo && (
           <div className="px-3 md:px-4 pt-3 pb-2 flex items-center gap-2 bg-muted/30">
@@ -680,13 +682,12 @@ const Chat = () => {
               
               <button
                 type="button"
-                onMouseDown={() => setShowVoiceRecorder(true)}
-                onTouchStart={() => setShowVoiceRecorder(true)}
-                className="p-2 hover:bg-accent rounded-full flex-shrink-0 active:scale-95 transition-transform"
+                onClick={() => setShowVoiceRecorder(true)}
+                className="p-2 hover:bg-destructive/10 rounded-full flex-shrink-0 active:scale-95 transition-all group"
                 disabled={uploading}
-                title="Hold to record voice message"
+                title="Record voice message"
               >
-                <Mic className="h-5 w-5 text-muted-foreground" />
+                <Mic className="h-5 w-5 text-destructive group-hover:text-destructive/90" />
               </button>
 
               <button
