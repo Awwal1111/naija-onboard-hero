@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { ArrowLeft, Paperclip, Smile, Send, UserX, UserCheck, Circle, Reply, X, MoreVertical, Copy, Trash2, Check, CheckCheck, Image as ImageIcon, Loader2, Mic, Phone, Lock, Play, Pause } from 'lucide-react'
+import { ArrowLeft, Smile, Send, UserX, UserCheck, Circle, X, Check, CheckCheck, Image as ImageIcon, Loader2, Mic, Phone, Lock, Play, Pause, Video } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useChat } from '@/hooks/useChat'
@@ -8,12 +8,8 @@ import { useUserPresence } from '@/hooks/useUserPresence'
 import { useWebRTC } from '@/hooks/useWebRTC'
 import { BrandButton } from '@/components/ui/brand-button'
 import { BrandInput } from '@/components/ui/brand-input'
-import { Card } from '@/components/ui/card'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import SafePayDialog from '@/components/SafePayDialog'
-import BlockConfirmationDialog from '@/components/BlockConfirmationDialog'
-import CallControls from '@/components/CallControls'
 import ActiveCallInterface from '@/components/ActiveCallInterface'
 import CallHistory from '@/components/CallHistory'
 import VoiceRecorder from '@/components/VoiceRecorder'
@@ -41,8 +37,6 @@ const Chat = () => {
   const { getOnlineStatus } = useUserPresence()
   const { toast } = useToast()
   const [newMessage, setNewMessage] = useState('')
-  const [showBlockDialog, setShowBlockDialog] = useState(false)
-  const [replyingTo, setReplyingTo] = useState<Message | null>(null)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -53,9 +47,8 @@ const Chat = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [isTyping, setIsTyping] = useState(false)
   const [playingAudio, setPlayingAudio] = useState<string | null>(null)
-  const [playbackSpeed, setPlaybackSpeed] = useState(1)
+  const audioRefs = useRef<{ [key: string]: HTMLAudioElement }>({})
 
   // WebRTC for voice/video calls
   const {
@@ -138,12 +131,10 @@ const Chat = () => {
       await sendMessage(
         newMessage.trim() || '📷 Image',
         mediaUrl,
-        mediaType,
-        replyingTo?.id
+        mediaType
       )
       
       setNewMessage('')
-      setReplyingTo(null)
       setSelectedFile(null)
       setImagePreview(null)
       inputRef.current?.focus()
@@ -163,27 +154,31 @@ const Chat = () => {
 
     setUploading(true)
     try {
-      const fileName = `${user?.id}/${Date.now()}.webm`
+      // Convert to MP3 format for better compatibility
+      const fileName = `voice-${user?.id}-${Date.now()}.webm`
       
       const { error: uploadError } = await supabase.storage
-        .from('chat-uploads')
+        .from('chat-media')
         .upload(fileName, audioBlob, {
-          contentType: 'audio/webm'
+          contentType: 'audio/webm',
+          cacheControl: '3600',
+          upsert: false
         })
 
-      if (uploadError) throw uploadError
+      if (uploadError) {
+        console.error('Voice upload error:', uploadError)
+        throw uploadError
+      }
 
       await sendMessage(
-        `🎤 Voice message (${Math.floor(duration / 60)}:${(duration % 60).toString().padStart(2, '0')})`,
+        `🎤 Voice message`,
         fileName,
         'audio/webm'
       )
       
-      toast({
-        title: "Sent",
-        description: "Voice message sent successfully"
-      })
+      setShowVoiceRecorder(false)
     } catch (error: any) {
+      console.error('Voice message error:', error)
       toast({
         title: "Failed to send voice message",
         description: error.message || "Please try again",
@@ -197,19 +192,14 @@ const Chat = () => {
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({})
   const [loadingImages, setLoadingImages] = useState<Set<string>>(new Set())
 
-  const getImageUrl = async (mediaUrl: string): Promise<string> => {
+  const getMediaUrl = async (mediaUrl: string, isAudio: boolean = false): Promise<string> => {
     try {
       const { data, error } = await supabase.storage
         .from('chat-media')
-        .createSignedUrl(mediaUrl, 3600) // 1 hour expiry
+        .createSignedUrl(mediaUrl, 3600)
       
       if (error) {
         console.error('Error getting signed URL:', error)
-        toast({
-          title: "Image load failed",
-          description: "Could not load image",
-          variant: "destructive"
-        })
         return ''
       }
       return data.signedUrl
@@ -223,7 +213,6 @@ const Chat = () => {
     const loadMediaUrls = async () => {
       const urlsToLoad: string[] = []
       
-      // Find all media that needs loading
       for (const message of messages) {
         if (message.media_url && 
             !imageUrls[message.media_url] && 
@@ -234,45 +223,24 @@ const Chat = () => {
 
       if (urlsToLoad.length === 0) return
 
-      // Mark as loading
       setLoadingImages(prev => {
         const newSet = new Set(prev)
         urlsToLoad.forEach(url => newSet.add(url))
         return newSet
       })
 
-      // Load all URLs from both buckets
       const urls: Record<string, string> = {}
       await Promise.all(
         urlsToLoad.map(async (mediaUrl) => {
-          // Try chat-media bucket first
-          let url = await getImageUrl(mediaUrl)
-          
-          // If not found, try chat-uploads bucket (for voice messages)
-          if (!url) {
-            try {
-              const { data, error } = await supabase.storage
-                .from('chat-uploads')
-                .createSignedUrl(mediaUrl, 3600)
-              
-              if (!error && data) {
-                url = data.signedUrl
-              }
-            } catch (err) {
-              console.error('Error loading from chat-uploads:', err)
-            }
-          }
-          
+          const url = await getMediaUrl(mediaUrl, mediaUrl.includes('voice-'))
           if (url) urls[mediaUrl] = url
         })
       )
 
-      // Update state
       if (Object.keys(urls).length > 0) {
         setImageUrls(prev => ({ ...prev, ...urls }))
       }
       
-      // Clear loading state
       setLoadingImages(prev => {
         const newSet = new Set(prev)
         urlsToLoad.forEach(url => newSet.delete(url))
@@ -283,28 +251,30 @@ const Chat = () => {
     loadMediaUrls()
   }, [messages])
 
-  const handleReply = (message: Message) => {
-    setReplyingTo(message)
-    inputRef.current?.focus()
-  }
-
-  const handleCopyMessage = (content: string) => {
-    navigator.clipboard.writeText(content)
-    toast({
-      title: "Copied",
-      description: "Message copied to clipboard",
-    })
-  }
-
   const emojis = ['😀', '😂', '😍', '🤔', '😊', '👍', '👎', '❤️', '🔥', '💯']
 
-  const handleBlockUser = () => {
-    setShowBlockDialog(true)
+  const playAudio = (messageId: string, audioUrl: string) => {
+    // Pause all other audio
+    Object.keys(audioRefs.current).forEach(id => {
+      if (id !== messageId && audioRefs.current[id]) {
+        audioRefs.current[id].pause()
+      }
+    })
+
+    const audio = audioRefs.current[messageId]
+    if (audio) {
+      if (playingAudio === messageId) {
+        audio.pause()
+        setPlayingAudio(null)
+      } else {
+        audio.play()
+        setPlayingAudio(messageId)
+      }
+    }
   }
 
-  const confirmBlock = async () => {
+  const handleBlockUser = async () => {
     await blockUser()
-    setShowBlockDialog(false)
   }
 
   const getStatusColor = (status: 'online' | 'offline' | 'recently_active') => {
@@ -367,348 +337,212 @@ const Chat = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col max-h-screen">
-      {/* Sticky Header */}
-      <header className="bg-background border-b border-border px-4 py-3 flex items-center gap-3 sticky top-0 z-50 shadow-sm">
+    <div className="min-h-screen bg-muted/30 flex flex-col max-h-screen">
+      {/* WhatsApp-style Header */}
+      <header className="bg-background px-4 py-2.5 flex items-center gap-3 shadow-sm">
         <button 
           onClick={() => navigate(-1)}
-          className="p-2 hover:bg-accent rounded-full"
+          className="p-1.5 hover:bg-muted rounded-full transition-colors"
         >
-          <ArrowLeft className="h-5 w-5 text-text-secondary" />
+          <ArrowLeft className="h-5 w-5" />
         </button>
         
-        <div className="flex-1">
-          <h1 className="font-semibold text-text-primary">
-            {otherUser?.full_name || 'Loading...'}
-          </h1>
-          {userId && (
-            <div className="flex items-center gap-1">
-              {isTyping ? (
-                <>
-                  <div className="flex items-center gap-1">
-                    <span className="text-sm text-primary font-medium">Typing</span>
-                    <span className="flex gap-0.5">
-                      <span className="animate-bounce" style={{ animationDelay: '0ms' }}>.</span>
-                      <span className="animate-bounce" style={{ animationDelay: '150ms' }}>.</span>
-                      <span className="animate-bounce" style={{ animationDelay: '300ms' }}>.</span>
-                    </span>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <Circle className={`h-2 w-2 fill-current ${getStatusColor(getOnlineStatus(userId))}`} />
-                  <p className={`text-sm ${getStatusColor(getOnlineStatus(userId))}`}>
-                    {getStatusText(getOnlineStatus(userId))}
-                  </p>
-                </>
-              )}
+        {/* User Avatar & Info */}
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          {otherUser?.profile_picture_url ? (
+            <img 
+              src={otherUser.profile_picture_url} 
+              alt={otherUser.full_name}
+              className="w-10 h-10 rounded-full object-cover"
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold">
+              {otherUser?.full_name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'U'}
             </div>
           )}
+          
+          <div className="flex-1 min-w-0">
+            <h1 className="font-medium text-foreground truncate">
+              {otherUser?.full_name || 'Loading...'}
+            </h1>
+            {userId && (
+              <p className={`text-xs ${getStatusColor(getOnlineStatus(userId))}`}>
+                {getStatusText(getOnlineStatus(userId))}
+              </p>
+            )}
+          </div>
         </div>
 
-        {/* Call Controls */}
+        {/* Action Buttons */}
         {userId && !isBlocked && !isBlockedBy && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <button
-              onClick={() => setShowCallHistory(true)}
-              className="p-2 hover:bg-accent rounded-full transition-colors"
-              title="View call history"
+              onClick={() => startCall(userId, 'video')}
+              className="p-2 hover:bg-muted rounded-full transition-colors"
+              title="Video call"
             >
-              <Phone className="h-5 w-5 text-primary" />
+              <Video className="h-5 w-5 text-foreground" />
             </button>
-            <div className="h-6 w-px bg-border" />
-            <CallControls
-              onStartVoiceCall={() => startCall(userId, 'voice')}
-              onStartVideoCall={() => startCall(userId, 'video')}
-            />
+            <button
+              onClick={() => startCall(userId, 'voice')}
+              className="p-2 hover:bg-muted rounded-full transition-colors"
+              title="Voice call"
+            >
+              <Phone className="h-5 w-5 text-foreground" />
+            </button>
           </div>
         )}
       </header>
 
-      {/* SafePay and Block Actions */}
-      {otherUser && (
-        <div className="border-b border-border px-4 py-2 flex justify-between items-center bg-muted/30">
-          <SafePayDialog 
-            otherUserId={userId!} 
-            otherUserName={otherUser.full_name} 
-          />
-          
-          <BrandButton
-            variant="outline"
-            size="sm"
-            onClick={isBlocked ? unblockUser : handleBlockUser}
-            disabled={blockLoading}
-            className="flex items-center gap-2"
-          >
-            {isBlocked ? (
-              <>
-                <UserCheck className="h-4 w-4" />
-                Unblock
-              </>
-            ) : (
-              <>
-                <UserX className="h-4 w-4" />
-                Block
-              </>
-            )}
-          </BrandButton>
-        </div>
-      )}
-
-      {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto px-4 py-4">
+      {/* WhatsApp-style Messages Area */}
+      <div className="flex-1 overflow-y-auto px-3 py-2" style={{ 
+        backgroundImage: 'linear-gradient(to bottom, rgba(0,0,0,0.02) 1px, transparent 1px)',
+        backgroundSize: '100% 20px'
+      }}>
         {isBlockedBy && (
-          <div className="text-center text-text-secondary py-8">
-            <UserX className="h-8 w-8 mx-auto mb-2 text-red-500" />
+          <div className="text-center text-muted-foreground py-12">
+            <UserX className="h-10 w-10 mx-auto mb-3 opacity-50" />
             <p>You cannot send messages to this user.</p>
           </div>
         )}
         {isBlocked && (
-          <div className="text-center text-text-secondary py-8">
-            <UserX className="h-8 w-8 mx-auto mb-2 text-red-500" />
-            <p>You have blocked this user. They cannot message you.</p>
+          <div className="text-center text-muted-foreground py-12">
+            <UserX className="h-10 w-10 mx-auto mb-3 opacity-50" />
+            <p>You have blocked this user.</p>
           </div>
         )}
         {!isBlockedBy && !isBlocked && messages.length === 0 ? (
-          <div className="text-center text-text-secondary py-8">
-            <p>Start a conversation!</p>
+          <div className="text-center text-muted-foreground py-12">
+            <p>Send a message to start chatting</p>
           </div>
         ) : (!isBlockedBy && !isBlocked &&
           Object.entries(messageGroups).map(([date, msgs]) => (
-            <div key={date} className="space-y-3 mb-6">
-              {/* Date Separator */}
-              <div className="flex items-center justify-center my-4">
-                <div className="bg-muted px-3 py-1 rounded-full">
-                  <span className="text-xs text-muted-foreground">
-                    {date === new Date().toLocaleDateString() ? 'Today' : date}
+            <div key={date} className="space-y-1 mb-4">
+              {/* Date Divider */}
+              <div className="flex justify-center my-3">
+                <div className="bg-background/90 px-3 py-1 rounded-md shadow-sm">
+                  <span className="text-xs text-muted-foreground font-medium">
+                    {date === new Date().toLocaleDateString() ? 'TODAY' : date.toUpperCase()}
                   </span>
                 </div>
               </div>
 
               {msgs.map((message) => {
                 const isOwn = message.sender_id === user?.id
-                const userInitials = isOwn 
-                  ? (user?.user_metadata?.full_name || 'U').split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
-                  : (otherUser?.full_name || 'U').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-                const userAvatar = isOwn ? user?.user_metadata?.profile_picture_url : otherUser?.profile_picture_url
+                const hasMedia = Boolean(message.media_url)
+                const isAudio = message.media_type?.startsWith('audio/')
+                const isImage = message.media_type?.startsWith('image/')
                 
                 return (
                   <div
                     key={message.id}
-                    className={`flex ${isOwn ? 'justify-end' : 'justify-start'} group`}
+                    className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-1`}
                   >
-                    <div className="flex items-end gap-2 max-w-[85%] md:max-w-[75%]">
-                      {/* Avatar on left for received messages */}
-                      {!isOwn && (
-                        <div className="flex-shrink-0 mb-1">
-                          {userAvatar ? (
-                            <img 
-                              src={userAvatar} 
-                              alt={otherUser?.full_name}
-                              className="w-8 h-8 rounded-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-semibold">
-                              {userInitials}
-                            </div>
-                          )}
-                        </div>
-                      )}
+                    <div className={`relative max-w-[75%] sm:max-w-[65%] ${
+                      isOwn 
+                        ? 'bg-[#dcf8c6] rounded-tl-lg rounded-tr-lg rounded-bl-lg' 
+                        : 'bg-background rounded-tl-lg rounded-tr-lg rounded-br-lg'
+                    } shadow-sm`}>
                       
-                      {!isOwn && (
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <button className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-accent rounded">
-                              <MoreVertical className="h-4 w-4 text-muted-foreground" />
-                            </button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-40 p-1" align="start">
-                            <button
-                              onClick={() => handleReply(message)}
-                              className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-accent rounded"
-                            >
-                              <Reply className="h-4 w-4" />
-                              Reply
-                            </button>
-                            <button
-                              onClick={() => handleCopyMessage(message.content)}
-                              className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-accent rounded"
-                            >
-                              <Copy className="h-4 w-4" />
-                              Copy
-                            </button>
-                          </PopoverContent>
-                        </Popover>
-                      )}
-
-                      <div
-                        className={`px-4 py-2 rounded-2xl ${
-                          isOwn
-                            ? 'bg-primary text-primary-foreground rounded-br-sm'
-                            : 'bg-muted text-foreground rounded-bl-sm'
-                        }`}
-                      >
-                        {/* Reply Preview */}
-                        {message.reply_to_content && (
-                          <div className={`mb-2 pb-2 border-l-2 pl-2 ${isOwn ? 'border-primary-foreground/30' : 'border-border'}`}>
-                            <p className="text-xs opacity-70 font-medium">
-                              {message.reply_to_sender === user?.id ? 'You' : otherUser?.full_name}
-                            </p>
-                            <p className="text-xs opacity-60 truncate">
-                              {message.reply_to_content}
-                            </p>
-                          </div>
-                        )}
-
-                        {message.media_url && (
-                          <div className="mb-2">
-                            {message.media_type?.startsWith('audio/') ? (
-                              <div className="bg-background/10 rounded-lg p-3 min-w-[250px]">
-                                <div className="flex items-center gap-3">
-                                  <button
-                                    onClick={() => {
-                                      const audio = document.getElementById(`audio-${message.id}`) as HTMLAudioElement
-                                      if (audio) {
-                                        if (playingAudio === message.id) {
-                                          audio.pause()
-                                          setPlayingAudio(null)
-                                        } else {
-                                          audio.play()
-                                          setPlayingAudio(message.id)
-                                        }
-                                      }
-                                    }}
-                                    className="w-10 h-10 rounded-full bg-primary/20 hover:bg-primary/30 flex items-center justify-center flex-shrink-0"
-                                  >
-                                    {playingAudio === message.id ? (
-                                      <Pause className="h-5 w-5" />
-                                    ) : (
-                                      <Play className="h-5 w-5" />
-                                    )}
-                                  </button>
-                                  <div className="flex-1 flex items-center gap-2">
-                                    <div className="flex-1 h-8 flex items-center gap-0.5">
-                                      {Array.from({ length: 30 }).map((_, i) => (
-                                        <div 
-                                          key={i}
-                                          className={`w-0.5 rounded-full ${isOwn ? 'bg-primary-foreground/40' : 'bg-foreground/40'}`}
-                                          style={{ height: `${Math.random() * 100}%` }}
-                                        />
-                                      ))}
-                                    </div>
-                                    <button
-                                      onClick={() => {
-                                        const audio = document.getElementById(`audio-${message.id}`) as HTMLAudioElement
-                                        if (audio) {
-                                          const newSpeed = playbackSpeed === 1 ? 1.5 : playbackSpeed === 1.5 ? 2 : 1
-                                          audio.playbackRate = newSpeed
-                                          setPlaybackSpeed(newSpeed)
-                                        }
-                                      }}
-                                      className="text-xs px-2 py-1 rounded bg-background/20 hover:bg-background/30"
-                                    >
-                                      {playbackSpeed}x
-                                    </button>
-                                  </div>
-                                  <audio 
-                                    id={`audio-${message.id}`}
-                                    src={imageUrls[message.media_url] || ''} 
-                                    onEnded={() => setPlayingAudio(null)}
-                                    onError={(e) => {
-                                      console.error('Audio failed to load:', message.media_url)
-                                    }}
-                                  />
-                                </div>
-                              </div>
-                            ) : loadingImages.has(message.media_url) ? (
-                              <div className="max-w-[250px] h-32 bg-muted rounded-lg flex items-center justify-center">
-                                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                              </div>
-                            ) : imageUrls[message.media_url] ? (
-                              <div 
-                                className="cursor-pointer"
-                                onClick={() => setViewingImage(imageUrls[message.media_url!])}
+                      {/* Media Content */}
+                      {hasMedia && (
+                        <div className={message.content && message.content !== '🎤 Voice message' ? 'mb-1' : ''}>
+                          {isAudio ? (
+                            // Voice Message Player
+                            <div className="p-2 flex items-center gap-2 min-w-[200px]">
+                              <button
+                                onClick={() => playAudio(message.id, imageUrls[message.media_url!] || '')}
+                                className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                                  isOwn ? 'bg-[#128c7e] hover:bg-[#0f7a6c]' : 'bg-primary hover:bg-primary/90'
+                                } text-white transition-colors`}
                               >
+                                {playingAudio === message.id ? (
+                                  <Pause className="h-5 w-5" />
+                                ) : (
+                                  <Play className="h-5 w-5 ml-0.5" />
+                                )}
+                              </button>
+                              
+                              {/* Waveform */}
+                              <div className="flex-1 h-8 flex items-center gap-px">
+                                {Array.from({ length: 25 }).map((_, i) => (
+                                  <div 
+                                    key={i}
+                                    className={`w-1 rounded-full ${
+                                      isOwn ? 'bg-[#128c7e]' : 'bg-primary'
+                                    } opacity-60`}
+                                    style={{ height: `${20 + Math.random() * 60}%` }}
+                                  />
+                                ))}
+                              </div>
+                              
+                              {/* Hidden audio element */}
+                              <audio 
+                                ref={(el) => {
+                                  if (el) audioRefs.current[message.id] = el
+                                }}
+                                src={imageUrls[message.media_url!] || ''} 
+                                onEnded={() => setPlayingAudio(null)}
+                                onError={(e) => {
+                                  console.error('Audio playback error:', message.media_url, e)
+                                }}
+                                preload="metadata"
+                              />
+                            </div>
+                          ) : isImage ? (
+                            // Image Message
+                            <div 
+                              className="cursor-pointer rounded-t-lg overflow-hidden"
+                              onClick={() => setViewingImage(imageUrls[message.media_url!])}
+                            >
+                              {loadingImages.has(message.media_url!) ? (
+                                <div className="w-[200px] h-[150px] flex items-center justify-center bg-muted">
+                                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                                </div>
+                              ) : imageUrls[message.media_url!] ? (
                                 <img 
-                                  src={imageUrls[message.media_url]} 
-                                  alt="Shared image"
-                                  className="max-w-[250px] rounded-lg"
+                                  src={imageUrls[message.media_url!]} 
+                                  alt="Shared"
+                                  className="max-w-[250px] max-h-[250px] object-cover"
                                   onError={(e) => {
-                                    console.error('Image failed to load:', message.media_url)
-                                    e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="250" height="150"%3E%3Crect fill="%23ddd"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3EImage failed%3C/text%3E%3C/svg%3E'
+                                    console.error('Image load error:', message.media_url)
                                   }}
                                 />
-                              </div>
-                            ) : (
-                              <div className="max-w-[250px] h-32 bg-muted rounded-lg flex items-center justify-center text-muted-foreground text-sm">
-                                Failed to load image
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {message.content && message.content !== '📷 Image' && (
-                          <p className="text-sm break-words">{message.content}</p>
-                        )}
-                        <div className="flex items-center gap-1 mt-1">
-                          <p className="text-xs opacity-70">
-                            {new Date(message.created_at).toLocaleTimeString([], {
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </p>
-                          {isOwn && (
-                            message.read_at ? (
-                              <CheckCheck className="h-3 w-3 text-blue-500" />
-                            ) : (
-                              <Check className="h-3 w-3 opacity-70" />
-                            )
-                          )}
+                              ) : (
+                                <div className="w-[200px] h-[150px] flex items-center justify-center bg-muted text-muted-foreground text-xs">
+                                  Failed to load
+                                </div>
+                              )}
+                            </div>
+                          ) : null}
                         </div>
-                      </div>
-
-                      {isOwn && (
-                        <>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <button className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-accent rounded">
-                                <MoreVertical className="h-4 w-4 text-muted-foreground" />
-                              </button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-40 p-1" align="end">
-                              <button
-                                onClick={() => handleReply(message)}
-                                className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-accent rounded"
-                              >
-                                <Reply className="h-4 w-4" />
-                                Reply
-                              </button>
-                              <button
-                                onClick={() => handleCopyMessage(message.content)}
-                                className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-accent rounded"
-                              >
-                                <Copy className="h-4 w-4" />
-                                Copy
-                              </button>
-                            </PopoverContent>
-                          </Popover>
-                          
-                          {/* Avatar on right for sent messages */}
-                          <div className="flex-shrink-0 mb-1">
-                            {userAvatar ? (
-                              <img 
-                                src={userAvatar} 
-                                alt="You"
-                                className="w-8 h-8 rounded-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-semibold">
-                                {userInitials}
-                              </div>
-                            )}
-                          </div>
-                        </>
                       )}
+
+                      {/* Text Content */}
+                      {message.content && message.content !== '📷 Image' && message.content !== '🎤 Voice message' && (
+                        <div className="px-3 py-2">
+                          <p className={`text-[15px] break-words ${isOwn ? 'text-gray-900' : 'text-foreground'}`}>
+                            {message.content}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Timestamp & Status */}
+                      <div className={`flex items-center justify-end gap-1 px-3 pb-1.5 ${!message.content || message.content === '🎤 Voice message' ? 'pt-1' : ''}`}>
+                        <span className={`text-[11px] ${isOwn ? 'text-gray-600' : 'text-muted-foreground'}`}>
+                          {new Date(message.created_at).toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </span>
+                        {isOwn && (
+                          message.read_at ? (
+                            <CheckCheck className="h-4 w-4 text-blue-500" />
+                          ) : (
+                            <Check className="h-4 w-4 text-gray-600" />
+                          )
+                        )}
+                      </div>
                     </div>
                   </div>
                 )
@@ -728,47 +562,24 @@ const Chat = () => {
         />
       )}
 
-      {/* End-to-End Encryption Note */}
-      <div className="border-t border-border bg-muted/20 px-4 py-2 flex items-center justify-center gap-2">
+      {/* End-to-End Encryption Footer */}
+      <div className="bg-muted/30 px-3 py-1.5 flex items-center justify-center gap-1.5">
         <Lock className="h-3 w-3 text-muted-foreground" />
-        <p className="text-xs text-muted-foreground">
-          Messages are end-to-end encrypted. No one outside this chat can read them.
+        <p className="text-[11px] text-muted-foreground">
+          Messages are end-to-end encrypted
         </p>
       </div>
 
-      {/* Message Input */}
-      <div className="border-t border-border bg-background">
-        {/* Reply Preview */}
-        {replyingTo && (
-          <div className="px-3 md:px-4 pt-3 pb-2 flex items-center gap-2 bg-muted/30">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <Reply className="h-3 w-3 text-primary" />
-                <span className="text-xs font-medium text-primary">
-                  Replying to {replyingTo.sender_id === user?.id ? 'yourself' : otherUser?.full_name}
-                </span>
-              </div>
-              <p className="text-sm text-muted-foreground truncate">
-                {replyingTo.content}
-              </p>
-            </div>
-            <button
-              onClick={() => setReplyingTo(null)}
-              className="p-1 hover:bg-accent rounded"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-        )}
-
-        <div className="p-3 md:p-4">
-          {/* Image Preview */}
-          {imagePreview && (
-            <div className="mb-3 relative inline-block">
+      {/* WhatsApp-style Message Input */}
+      <div className="bg-background border-t border-border">
+        {/* Image Preview */}
+        {imagePreview && (
+          <div className="px-3 pt-3 pb-2">
+            <div className="relative inline-block">
               <img 
                 src={imagePreview} 
                 alt="Preview" 
-                className="max-h-32 rounded-lg"
+                className="max-h-24 rounded-lg"
               />
               <button
                 onClick={() => {
@@ -776,151 +587,158 @@ const Chat = () => {
                   setSelectedFile(null)
                   if (fileInputRef.current) fileInputRef.current.value = ''
                 }}
-                className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 hover:bg-destructive/90"
+                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 hover:bg-red-600"
               >
                 <X className="h-3 w-3" />
               </button>
             </div>
-          )}
+          </div>
+        )}
 
-          {canSendMessage ? (
-            <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+        {canSendMessage ? (
+          <form onSubmit={handleSendMessage} className="p-2 flex items-center gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+            
+            {/* Emoji Picker */}
+            <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="p-2 hover:bg-muted rounded-full transition-colors flex-shrink-0"
+                  disabled={uploading}
+                >
+                  <Smile className="h-6 w-6 text-muted-foreground" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-64 p-2" align="start" side="top">
+                <div className="grid grid-cols-5 gap-1">
+                  {emojis.map((emoji, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => {
+                        setNewMessage(prev => prev + emoji)
+                        setShowEmojiPicker(false)
+                      }}
+                      className="text-2xl hover:bg-muted p-2 rounded"
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
+            
+            {/* Message Input */}
+            <div className="flex-1 min-w-0 bg-background rounded-full border border-border px-4 py-1.5">
               <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleFileSelect}
-                className="hidden"
+                ref={inputRef}
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                placeholder="Message"
+                className="w-full bg-transparent border-none outline-none text-sm"
+                disabled={uploading}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault()
+                    handleSendMessage(e)
+                  }
+                }}
               />
-              
+            </div>
+
+            {/* Action Buttons */}
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="p-2 hover:bg-muted rounded-full transition-colors flex-shrink-0"
+              disabled={uploading}
+              title="Attach image"
+            >
+              <ImageIcon className="h-6 w-6 text-muted-foreground" />
+            </button>
+
+            {newMessage.trim() || selectedFile ? (
+              <button
+                type="submit"
+                disabled={uploading}
+                className="p-2.5 bg-primary hover:bg-primary/90 rounded-full transition-colors flex-shrink-0"
+              >
+                {uploading ? (
+                  <Loader2 className="h-5 w-5 text-primary-foreground animate-spin" />
+                ) : (
+                  <Send className="h-5 w-5 text-primary-foreground" />
+                )}
+              </button>
+            ) : (
               <button
                 type="button"
                 onClick={() => setShowVoiceRecorder(true)}
-                className="p-2 hover:bg-destructive/10 rounded-full flex-shrink-0 active:scale-95 transition-all group"
+                className="p-2.5 bg-primary hover:bg-primary/90 rounded-full transition-colors flex-shrink-0"
                 disabled={uploading}
                 title="Record voice message"
               >
-                <Mic className="h-5 w-5 text-destructive group-hover:text-destructive/90" />
+                <Mic className="h-5 w-5 text-primary-foreground" />
               </button>
-
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="p-2 hover:bg-accent rounded-full flex-shrink-0"
-                disabled={uploading}
-                title="Send image"
-              >
-                <ImageIcon className="h-5 w-5 text-muted-foreground" />
-              </button>
-
-              <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
-                <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    className="p-2 hover:bg-accent rounded-full flex-shrink-0"
-                    disabled={uploading}
-                  >
-                    <Smile className="h-5 w-5 text-muted-foreground" />
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent className="w-64 p-2" align="start" side="top">
-                  <div className="grid grid-cols-5 gap-2">
-                    {emojis.map((emoji, i) => (
-                      <button
-                        key={i}
-                        type="button"
-                        onClick={() => {
-                          setNewMessage(prev => prev + emoji)
-                          setShowEmojiPicker(false)
-                        }}
-                        className="text-2xl hover:bg-accent p-2 rounded"
-                      >
-                        {emoji}
-                      </button>
-                    ))}
-                  </div>
-                </PopoverContent>
-              </Popover>
-              
-              <div className="flex-1 min-w-0">
-                <BrandInput
-                  ref={inputRef}
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Type a message..."
-                  className="border-0 bg-muted min-h-[40px] py-2 w-full"
-                  disabled={uploading}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault()
-                      handleSendMessage(e)
-                    }
-                  }}
-                />
-              </div>
-              
-              <BrandButton
-                type="submit"
-                size="sm"
-                disabled={(!newMessage.trim() && !selectedFile) || uploading}
-                className="rounded-full w-10 h-10 p-0 flex-shrink-0"
-              >
-                {uploading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="h-4 w-4" />
-                )}
-              </BrandButton>
-            </form>
-          ) : (
-            <div className="text-center py-4">
-              <p className="text-text-secondary">
-                {isBlocked ? "You have blocked this user" : "You cannot send messages to this user"}
-              </p>
-            </div>
-          )}
-        </div>
+            )}
+          </form>
+        ) : (
+          <div className="text-center text-muted-foreground py-6">
+            <p className="text-sm">
+              {isBlockedBy 
+                ? "You cannot send messages to this user" 
+                : "You have blocked this user"}
+            </p>
+          </div>
+        )}
       </div>
 
-      {/* Block Confirmation Dialog */}
-      <BlockConfirmationDialog
-        open={showBlockDialog}
-        onOpenChange={setShowBlockDialog}
-        userName={otherUser?.full_name || 'User'}
-        onConfirm={confirmBlock}
-        loading={blockLoading}
-      />
+      {/* Image Viewer */}
+      {viewingImage && (
+        <div 
+          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+          onClick={() => setViewingImage(null)}
+        >
+          <button
+            onClick={() => setViewingImage(null)}
+            className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full"
+          >
+            <X className="h-6 w-6 text-white" />
+          </button>
+          <img 
+            src={viewingImage} 
+            alt="Full size" 
+            className="max-w-full max-h-full object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
 
-      {/* Call History Dialog */}
-      <Dialog open={showCallHistory} onOpenChange={setShowCallHistory}>
-        <DialogContent className="max-w-2xl max-h-[80vh]">
-          <DialogHeader>
-            <DialogTitle>Call History</DialogTitle>
-          </DialogHeader>
-          <CallHistory />
-        </DialogContent>
-      </Dialog>
-
-      {/* Image Viewer Dialog */}
-      <Dialog open={!!viewingImage} onOpenChange={() => setViewingImage(null)}>
-        <DialogContent className="max-w-4xl p-0 bg-transparent border-0">
-          <div className="relative">
-            <button
-              onClick={() => setViewingImage(null)}
-              className="absolute top-2 right-2 bg-black/50 text-white rounded-full p-2 hover:bg-black/70 z-10"
-            >
-              <X className="h-5 w-5" />
-            </button>
-            {viewingImage && (
-              <img 
-                src={viewingImage} 
-                alt="Full size" 
-                className="w-full h-auto max-h-[90vh] object-contain rounded-lg"
-              />
-            )}
+      {/* Call History Modal */}
+      {showCallHistory && userId && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-background rounded-lg max-w-2xl w-full max-h-[80vh] overflow-hidden">
+            <div className="p-4 border-b border-border flex items-center justify-between">
+              <h2 className="font-semibold text-lg">Call History</h2>
+              <button
+                onClick={() => setShowCallHistory(false)}
+                className="p-1 hover:bg-muted rounded-full"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="overflow-y-auto max-h-[calc(80vh-64px)]">
+              <CallHistory />
+            </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
     </div>
   )
 }
