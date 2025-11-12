@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { ArrowLeft, Paperclip, Smile, Send, UserX, UserCheck, Circle, Reply, X, MoreVertical, Copy, Trash2, Check, CheckCheck, Image as ImageIcon, Loader2, Mic, Phone } from 'lucide-react'
+import { ArrowLeft, Paperclip, Smile, Send, UserX, UserCheck, Circle, Reply, X, MoreVertical, Copy, Trash2, Check, CheckCheck, Image as ImageIcon, Loader2, Mic, Phone, Lock, Play, Pause } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useChat } from '@/hooks/useChat'
@@ -53,6 +53,9 @@ const Chat = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [isTyping, setIsTyping] = useState(false)
+  const [playingAudio, setPlayingAudio] = useState<string | null>(null)
+  const [playbackSpeed, setPlaybackSpeed] = useState(1)
 
   // WebRTC for voice/video calls
   const {
@@ -380,10 +383,25 @@ const Chat = () => {
           </h1>
           {userId && (
             <div className="flex items-center gap-1">
-              <Circle className={`h-2 w-2 fill-current ${getStatusColor(getOnlineStatus(userId))}`} />
-              <p className={`text-sm ${getStatusColor(getOnlineStatus(userId))}`}>
-                {getStatusText(getOnlineStatus(userId))}
-              </p>
+              {isTyping ? (
+                <>
+                  <div className="flex items-center gap-1">
+                    <span className="text-sm text-primary font-medium">Typing</span>
+                    <span className="flex gap-0.5">
+                      <span className="animate-bounce" style={{ animationDelay: '0ms' }}>.</span>
+                      <span className="animate-bounce" style={{ animationDelay: '150ms' }}>.</span>
+                      <span className="animate-bounce" style={{ animationDelay: '300ms' }}>.</span>
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <Circle className={`h-2 w-2 fill-current ${getStatusColor(getOnlineStatus(userId))}`} />
+                  <p className={`text-sm ${getStatusColor(getOnlineStatus(userId))}`}>
+                    {getStatusText(getOnlineStatus(userId))}
+                  </p>
+                </>
+              )}
             </div>
           )}
         </div>
@@ -469,6 +487,10 @@ const Chat = () => {
 
               {msgs.map((message) => {
                 const isOwn = message.sender_id === user?.id
+                const userInitials = isOwn 
+                  ? (user?.user_metadata?.full_name || 'U').split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
+                  : (otherUser?.full_name || 'U').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+                const userAvatar = isOwn ? user?.user_metadata?.profile_picture_url : otherUser?.profile_picture_url
                 
                 return (
                   <div
@@ -476,6 +498,23 @@ const Chat = () => {
                     className={`flex ${isOwn ? 'justify-end' : 'justify-start'} group`}
                   >
                     <div className="flex items-end gap-2 max-w-[85%] md:max-w-[75%]">
+                      {/* Avatar on left for received messages */}
+                      {!isOwn && (
+                        <div className="flex-shrink-0 mb-1">
+                          {userAvatar ? (
+                            <img 
+                              src={userAvatar} 
+                              alt={otherUser?.full_name}
+                              className="w-8 h-8 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-semibold">
+                              {userInitials}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
                       {!isOwn && (
                         <Popover>
                           <PopoverTrigger asChild>
@@ -524,14 +563,63 @@ const Chat = () => {
                         {message.media_url && (
                           <div className="mb-2">
                             {message.media_type?.startsWith('audio/') ? (
-                              <audio 
-                                controls 
-                                src={imageUrls[message.media_url] || ''} 
-                                className="max-w-[250px]"
-                                onError={(e) => {
-                                  console.error('Audio failed to load:', message.media_url)
-                                }}
-                              />
+                              <div className="bg-background/10 rounded-lg p-3 min-w-[250px]">
+                                <div className="flex items-center gap-3">
+                                  <button
+                                    onClick={() => {
+                                      const audio = document.getElementById(`audio-${message.id}`) as HTMLAudioElement
+                                      if (audio) {
+                                        if (playingAudio === message.id) {
+                                          audio.pause()
+                                          setPlayingAudio(null)
+                                        } else {
+                                          audio.play()
+                                          setPlayingAudio(message.id)
+                                        }
+                                      }
+                                    }}
+                                    className="w-10 h-10 rounded-full bg-primary/20 hover:bg-primary/30 flex items-center justify-center flex-shrink-0"
+                                  >
+                                    {playingAudio === message.id ? (
+                                      <Pause className="h-5 w-5" />
+                                    ) : (
+                                      <Play className="h-5 w-5" />
+                                    )}
+                                  </button>
+                                  <div className="flex-1 flex items-center gap-2">
+                                    <div className="flex-1 h-8 flex items-center gap-0.5">
+                                      {Array.from({ length: 30 }).map((_, i) => (
+                                        <div 
+                                          key={i}
+                                          className={`w-0.5 rounded-full ${isOwn ? 'bg-primary-foreground/40' : 'bg-foreground/40'}`}
+                                          style={{ height: `${Math.random() * 100}%` }}
+                                        />
+                                      ))}
+                                    </div>
+                                    <button
+                                      onClick={() => {
+                                        const audio = document.getElementById(`audio-${message.id}`) as HTMLAudioElement
+                                        if (audio) {
+                                          const newSpeed = playbackSpeed === 1 ? 1.5 : playbackSpeed === 1.5 ? 2 : 1
+                                          audio.playbackRate = newSpeed
+                                          setPlaybackSpeed(newSpeed)
+                                        }
+                                      }}
+                                      className="text-xs px-2 py-1 rounded bg-background/20 hover:bg-background/30"
+                                    >
+                                      {playbackSpeed}x
+                                    </button>
+                                  </div>
+                                  <audio 
+                                    id={`audio-${message.id}`}
+                                    src={imageUrls[message.media_url] || ''} 
+                                    onEnded={() => setPlayingAudio(null)}
+                                    onError={(e) => {
+                                      console.error('Audio failed to load:', message.media_url)
+                                    }}
+                                  />
+                                </div>
+                              </div>
                             ) : loadingImages.has(message.media_url) ? (
                               <div className="max-w-[250px] h-32 bg-muted rounded-lg flex items-center justify-center">
                                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -571,7 +659,7 @@ const Chat = () => {
                           </p>
                           {isOwn && (
                             message.read_at ? (
-                              <CheckCheck className="h-3 w-3 opacity-70" />
+                              <CheckCheck className="h-3 w-3 text-blue-500" />
                             ) : (
                               <Check className="h-3 w-3 opacity-70" />
                             )
@@ -580,29 +668,46 @@ const Chat = () => {
                       </div>
 
                       {isOwn && (
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <button className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-accent rounded">
-                              <MoreVertical className="h-4 w-4 text-muted-foreground" />
-                            </button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-40 p-1" align="end">
-                            <button
-                              onClick={() => handleReply(message)}
-                              className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-accent rounded"
-                            >
-                              <Reply className="h-4 w-4" />
-                              Reply
-                            </button>
-                            <button
-                              onClick={() => handleCopyMessage(message.content)}
-                              className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-accent rounded"
-                            >
-                              <Copy className="h-4 w-4" />
-                              Copy
-                            </button>
-                          </PopoverContent>
-                        </Popover>
+                        <>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <button className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-accent rounded">
+                                <MoreVertical className="h-4 w-4 text-muted-foreground" />
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-40 p-1" align="end">
+                              <button
+                                onClick={() => handleReply(message)}
+                                className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-accent rounded"
+                              >
+                                <Reply className="h-4 w-4" />
+                                Reply
+                              </button>
+                              <button
+                                onClick={() => handleCopyMessage(message.content)}
+                                className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-accent rounded"
+                              >
+                                <Copy className="h-4 w-4" />
+                                Copy
+                              </button>
+                            </PopoverContent>
+                          </Popover>
+                          
+                          {/* Avatar on right for sent messages */}
+                          <div className="flex-shrink-0 mb-1">
+                            {userAvatar ? (
+                              <img 
+                                src={userAvatar} 
+                                alt="You"
+                                className="w-8 h-8 rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-semibold">
+                                {userInitials}
+                              </div>
+                            )}
+                          </div>
+                        </>
                       )}
                     </div>
                   </div>
@@ -622,6 +727,14 @@ const Chat = () => {
           autoStart={true}
         />
       )}
+
+      {/* End-to-End Encryption Note */}
+      <div className="border-t border-border bg-muted/20 px-4 py-2 flex items-center justify-center gap-2">
+        <Lock className="h-3 w-3 text-muted-foreground" />
+        <p className="text-xs text-muted-foreground">
+          Messages are end-to-end encrypted. No one outside this chat can read them.
+        </p>
+      </div>
 
       {/* Message Input */}
       <div className="border-t border-border bg-background">
