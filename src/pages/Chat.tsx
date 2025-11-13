@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { ArrowLeft, Smile, Send, UserX, UserCheck, Circle, X, Check, CheckCheck, Image as ImageIcon, Loader2, Mic, Phone, Lock, Play, Pause, Video } from 'lucide-react'
+import { ArrowLeft, Smile, Send, UserX, UserCheck, Circle, X, Check, CheckCheck, Image as ImageIcon, Loader2, Mic, Phone, Lock, Play, Pause, Video, ShieldCheck } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useChat } from '@/hooks/useChat'
@@ -9,6 +9,7 @@ import { useWebRTC } from '@/hooks/useWebRTC'
 import { BrandButton } from '@/components/ui/brand-button'
 import { BrandInput } from '@/components/ui/brand-input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import SafePayDialog from '@/components/SafePayDialog'
 import ActiveCallInterface from '@/components/ActiveCallInterface'
 import CallHistory from '@/components/CallHistory'
@@ -45,6 +46,7 @@ const Chat = () => {
   const [showCallHistory, setShowCallHistory] = useState(false)
   const [showVoiceRecorder, setShowVoiceRecorder] = useState(false)
   const [replyTo, setReplyTo] = useState<Message | null>(null)
+  const [showBlockDialog, setShowBlockDialog] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -163,8 +165,8 @@ const Chat = () => {
         duration
       })
 
-      // Ensure blob has proper type
-      const voiceBlob = new Blob([audioBlob], { type: 'audio/webm;codecs=opus' })
+      // Create proper audio blob with correct MIME type
+      const voiceBlob = new Blob([audioBlob], { type: 'audio/webm' })
       const fileName = `${user?.id}/voice-${Date.now()}.webm`
       
       console.log('Uploading voice message:', fileName)
@@ -172,7 +174,7 @@ const Chat = () => {
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('chat-media')
         .upload(fileName, voiceBlob, {
-          contentType: 'audio/webm;codecs=opus',
+          contentType: 'audio/webm',
           cacheControl: '3600',
           upsert: false
         })
@@ -293,7 +295,36 @@ const Chat = () => {
   }
 
   const handleBlockUser = async () => {
-    await blockUser()
+    try {
+      await blockUser()
+      setShowBlockDialog(false)
+      toast({
+        title: "User blocked",
+        description: "You have blocked this user"
+      })
+    } catch (error) {
+      toast({
+        title: "Failed to block user",
+        description: "Please try again",
+        variant: "destructive"
+      })
+    }
+  }
+
+  const handleUnblockUser = async () => {
+    try {
+      await unblockUser()
+      toast({
+        title: "User unblocked",
+        description: "You have unblocked this user"
+      })
+    } catch (error) {
+      toast({
+        title: "Failed to unblock user",
+        description: "Please try again",
+        variant: "destructive"
+      })
+    }
   }
 
   const getStatusColor = (status: 'online' | 'offline' | 'recently_active') => {
@@ -417,38 +448,43 @@ const Chat = () => {
             >
               <Video className="h-5 w-5 text-blue-600" />
             </button>
-            {otherUser && (
-              <>
-                <SafePayDialog 
-                  otherUserId={userId}
-                  otherUserName={otherUser.full_name || 'User'}
-                />
-                {isBlocked ? (
-                  <BrandButton
-                    variant="outline"
-                    size="sm"
-                    onClick={unblockUser}
-                    disabled={blockLoading}
-                  >
-                    <UserCheck className="h-4 w-4 mr-1" />
-                    Unblock
-                  </BrandButton>
-                ) : (
-                  <BrandButton
-                    variant="outline"
-                    size="sm"
-                    onClick={handleBlockUser}
-                    disabled={blockLoading}
-                  >
-                    <UserX className="h-4 w-4 mr-1" />
-                    Block
-                  </BrandButton>
-                )}
-              </>
-            )}
           </div>
         )}
       </header>
+
+      {/* SafePay and Block/Unblock Bar (Below Header) */}
+      {userId && otherUser && !isBlockedBy && (
+        <div className="bg-background border-b border-border px-4 py-2 flex items-center justify-between shadow-sm">
+          <SafePayDialog 
+            otherUserId={userId}
+            otherUserName={otherUser.full_name || 'User'}
+          />
+          
+          {isBlocked ? (
+            <BrandButton
+              variant="outline"
+              size="sm"
+              onClick={handleUnblockUser}
+              disabled={blockLoading}
+              className="gap-2"
+            >
+              <UserCheck className="h-4 w-4" />
+              Unblock User
+            </BrandButton>
+          ) : (
+            <BrandButton
+              variant="outline"
+              size="sm"
+              onClick={() => setShowBlockDialog(true)}
+              disabled={blockLoading}
+              className="gap-2"
+            >
+              <UserX className="h-4 w-4" />
+              Block User
+            </BrandButton>
+          )}
+        </div>
+      )}
 
       {/* WhatsApp-style Messages Area */}
       <div className="flex-1 overflow-y-auto px-3 py-2" style={{ 
@@ -550,7 +586,7 @@ const Chat = () => {
                                 ))}
                               </div>
                               
-                              {/* Hidden audio element */}
+                               {/* Hidden audio element */}
                               <audio 
                                 ref={(el) => {
                                   if (el) {
@@ -576,8 +612,7 @@ const Chat = () => {
                                     variant: "destructive"
                                   })
                                 }}
-                                preload="auto"
-                                crossOrigin="anonymous"
+                                preload="metadata"
                               />
                             </div>
                           ) : isImage ? (
@@ -852,6 +887,24 @@ const Chat = () => {
           </div>
         </div>
       )}
+
+      {/* Block Confirmation Dialog */}
+      <AlertDialog open={showBlockDialog} onOpenChange={setShowBlockDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Block this user?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Blocked users cannot send you messages or call you. You can unblock them later.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBlockUser} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Block User
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
