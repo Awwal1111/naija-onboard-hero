@@ -44,6 +44,7 @@ const Chat = () => {
   const [viewingImage, setViewingImage] = useState<string | null>(null)
   const [showCallHistory, setShowCallHistory] = useState(false)
   const [showVoiceRecorder, setShowVoiceRecorder] = useState(false)
+  const [replyTo, setReplyTo] = useState<Message | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -131,12 +132,14 @@ const Chat = () => {
       await sendMessage(
         newMessage.trim() || '📷 Image',
         mediaUrl,
-        mediaType
+        mediaType,
+        replyTo?.id
       )
       
       setNewMessage('')
       setSelectedFile(null)
       setImagePreview(null)
+      setReplyTo(null)
       inputRef.current?.focus()
     } catch (error: any) {
       toast({
@@ -154,34 +157,50 @@ const Chat = () => {
 
     setUploading(true)
     try {
-      // Convert to MP3 format for better compatibility
-      const fileName = `voice-${user?.id}-${Date.now()}.webm`
+      console.log('Voice recording details:', {
+        size: audioBlob.size,
+        type: audioBlob.type,
+        duration
+      })
+
+      // Ensure blob has proper type
+      const voiceBlob = new Blob([audioBlob], { type: 'audio/webm;codecs=opus' })
+      const fileName = `${user?.id}/voice-${Date.now()}.webm`
       
-      const { error: uploadError } = await supabase.storage
+      console.log('Uploading voice message:', fileName)
+      
+      const { data: uploadData, error: uploadError } = await supabase.storage
         .from('chat-media')
-        .upload(fileName, audioBlob, {
-          contentType: 'audio/webm',
+        .upload(fileName, voiceBlob, {
+          contentType: 'audio/webm;codecs=opus',
           cacheControl: '3600',
           upsert: false
         })
 
       if (uploadError) {
         console.error('Voice upload error:', uploadError)
-        throw uploadError
+        throw new Error(`Upload failed: ${uploadError.message}`)
       }
 
+      console.log('Voice uploaded successfully:', uploadData)
+
       await sendMessage(
-        `🎤 Voice message`,
+        `🎤 Voice message (${Math.floor(duration)}s)`,
         fileName,
         'audio/webm'
       )
       
       setShowVoiceRecorder(false)
+      
+      toast({
+        title: "Voice message sent",
+        description: "Your voice message has been delivered"
+      })
     } catch (error: any) {
       console.error('Voice message error:', error)
       toast({
         title: "Failed to send voice message",
-        description: error.message || "Please try again",
+        description: error.message || "Please check your microphone permissions",
         variant: "destructive"
       })
     } finally {
@@ -375,21 +394,58 @@ const Chat = () => {
 
         {/* Action Buttons */}
         {userId && !isBlocked && !isBlockedBy && (
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             <button
-              onClick={() => startCall(userId, 'video')}
+              onClick={() => setShowCallHistory(true)}
               className="p-2 hover:bg-muted rounded-full transition-colors"
-              title="Video call"
+              title="Call history"
             >
-              <Video className="h-5 w-5 text-foreground" />
+              <Phone className="h-5 w-5 text-primary" />
             </button>
+            <div className="h-6 w-px bg-border" />
             <button
               onClick={() => startCall(userId, 'voice')}
               className="p-2 hover:bg-muted rounded-full transition-colors"
               title="Voice call"
             >
-              <Phone className="h-5 w-5 text-foreground" />
+              <Phone className="h-5 w-5 text-green-600" />
             </button>
+            <button
+              onClick={() => startCall(userId, 'video')}
+              className="p-2 hover:bg-muted rounded-full transition-colors"
+              title="Video call"
+            >
+              <Video className="h-5 w-5 text-blue-600" />
+            </button>
+            {otherUser && (
+              <>
+                <SafePayDialog 
+                  otherUserId={userId}
+                  otherUserName={otherUser.full_name || 'User'}
+                />
+                {isBlocked ? (
+                  <BrandButton
+                    variant="outline"
+                    size="sm"
+                    onClick={unblockUser}
+                    disabled={blockLoading}
+                  >
+                    <UserCheck className="h-4 w-4 mr-1" />
+                    Unblock
+                  </BrandButton>
+                ) : (
+                  <BrandButton
+                    variant="outline"
+                    size="sm"
+                    onClick={handleBlockUser}
+                    disabled={blockLoading}
+                  >
+                    <UserX className="h-4 w-4 mr-1" />
+                    Block
+                  </BrandButton>
+                )}
+              </>
+            )}
           </div>
         )}
       </header>
@@ -436,13 +492,31 @@ const Chat = () => {
                 return (
                   <div
                     key={message.id}
-                    className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-1`}
+                    className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-1 group`}
+                    onContextMenu={(e) => {
+                      e.preventDefault()
+                      setReplyTo(message)
+                    }}
                   >
                     <div className={`relative max-w-[75%] sm:max-w-[65%] ${
                       isOwn 
                         ? 'bg-[#dcf8c6] rounded-tl-lg rounded-tr-lg rounded-bl-lg' 
                         : 'bg-background rounded-tl-lg rounded-tr-lg rounded-br-lg'
                     } shadow-sm`}>
+                      
+                      {/* Reply preview */}
+                      {message.reply_to_id && message.reply_to_content && (
+                        <div className={`mx-2 mt-2 px-2 py-1.5 rounded border-l-4 ${
+                          isOwn ? 'bg-white/50 border-green-600' : 'bg-muted/50 border-primary'
+                        }`}>
+                          <p className="text-xs font-medium text-muted-foreground">
+                            {message.reply_to_sender}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {message.reply_to_content}
+                          </p>
+                        </div>
+                      )}
                       
                       {/* Media Content */}
                       {hasMedia && (
@@ -479,14 +553,31 @@ const Chat = () => {
                               {/* Hidden audio element */}
                               <audio 
                                 ref={(el) => {
-                                  if (el) audioRefs.current[message.id] = el
+                                  if (el) {
+                                    audioRefs.current[message.id] = el
+                                    console.log('Audio element created for:', message.id, imageUrls[message.media_url!])
+                                  }
                                 }}
                                 src={imageUrls[message.media_url!] || ''} 
                                 onEnded={() => setPlayingAudio(null)}
-                                onError={(e) => {
-                                  console.error('Audio playback error:', message.media_url, e)
+                                onLoadedMetadata={(e) => {
+                                  console.log('Audio loaded successfully:', message.id)
                                 }}
-                                preload="metadata"
+                                onError={(e) => {
+                                  console.error('Audio playback error:', {
+                                    messageId: message.id,
+                                    mediaUrl: message.media_url,
+                                    signedUrl: imageUrls[message.media_url!],
+                                    error: e
+                                  })
+                                  toast({
+                                    title: "Audio playback error",
+                                    description: "Could not play voice message",
+                                    variant: "destructive"
+                                  })
+                                }}
+                                preload="auto"
+                                crossOrigin="anonymous"
                               />
                             </div>
                           ) : isImage ? (
@@ -572,6 +663,28 @@ const Chat = () => {
 
       {/* WhatsApp-style Message Input */}
       <div className="bg-background border-t border-border">
+        {/* Reply Preview */}
+        {replyTo && (
+          <div className="px-3 pt-2 pb-1 border-b border-border bg-muted/30">
+            <div className="flex items-center justify-between">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-primary">
+                  Replying to {replyTo.sender_id === user?.id ? 'yourself' : otherUser?.full_name}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {replyTo.content}
+                </p>
+              </div>
+              <button
+                onClick={() => setReplyTo(null)}
+                className="p-1 hover:bg-muted rounded-full ml-2"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        )}
+        
         {/* Image Preview */}
         {imagePreview && (
           <div className="px-3 pt-3 pb-2">
