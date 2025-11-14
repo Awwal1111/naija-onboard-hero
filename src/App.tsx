@@ -6,6 +6,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import SmartAIAssistant from "@/components/SmartAIAssistant";
 import WalletInitializer from "@/components/WalletInitializer";
 import GlobalCallManager from "@/components/GlobalCallManager";
+import { QuidaxRampManager } from "@/components/QuidaxRampManager";
 import { useAppState } from "@/hooks/useAppState";
 import Welcome from "./pages/Welcome";
 import Login from "./pages/Login";
@@ -75,6 +76,7 @@ const App = () => (
         <AppStateManager />
         <WalletInitializer />
         <GlobalCallManager />
+        <QuidaxRampManager />
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/welcome" element={<Welcome />} />
