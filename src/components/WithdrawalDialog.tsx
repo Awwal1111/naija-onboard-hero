@@ -118,7 +118,7 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
             </TabsTrigger>
             <TabsTrigger value="ramp" className="gap-1 sm:gap-2 text-xs sm:text-sm py-2">
               <ArrowDownUp className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span>Sell USDT</span>
+              <span>Bank Transfer</span>
             </TabsTrigger>
           </TabsList>
 
@@ -211,7 +211,7 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
             <Alert>
               <Info className="h-4 w-4" />
               <AlertDescription>
-                Sell USDT and receive Naira directly to your bank account via Quidax Ramp.
+                Withdraw to your bank account securely. Minimum withdrawal: $2 USD (3,000 NC).
               </AlertDescription>
             </Alert>
 
@@ -219,10 +219,10 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
                   <ArrowDownUp className="h-5 w-5" />
-                  Quick Sell with Quidax
+                  Bank Withdrawal
                 </CardTitle>
                 <CardDescription>
-                  Convert USDT to Naira instantly
+                  Fast withdrawal to your bank account (Min: $2 / 3,000 NC)
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -231,7 +231,7 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
                   className="w-full"
                 >
                   <Coins className="mr-2 h-4 w-4" />
-                  Open Quidax Widget
+                  Proceed to Withdrawal
                 </BrandButton>
               </CardContent>
             </Card>

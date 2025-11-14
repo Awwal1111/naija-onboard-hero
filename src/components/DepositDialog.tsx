@@ -139,8 +139,7 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
             <Alert>
               <Info className="h-4 w-4" />
               <AlertDescription>
-                Use Quidax Ramp to instantly buy USDT on Celo network with your Naira. 
-                Fast, secure, and reliable.
+                Fund your account securely through our banking partner. Minimum deposit: 3,000 NC (₦3,000).
               </AlertDescription>
             </Alert>
 
@@ -148,10 +147,10 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
                   <ArrowDownUp className="h-5 w-5" />
-                  Quick Buy with Quidax
+                  Bank Deposit
                 </CardTitle>
                 <CardDescription>
-                  Purchase USDT directly to your wallet
+                  Instant funding via secure banking partner (Min: 3,000 NC)
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -160,7 +159,7 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
                   className="w-full"
                 >
                   <Send className="mr-2 h-4 w-4" />
-                  Open Quidax Widget
+                  Proceed to Deposit
                 </BrandButton>
               </CardContent>
             </Card>
