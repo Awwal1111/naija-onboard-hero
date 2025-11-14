@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
-import { Coins, Send, AlertCircle, Wallet, Info } from 'lucide-react'
+import { Coins, Send, AlertCircle, Wallet, Info, ArrowDownUp } from 'lucide-react'
 import { useWallet } from '@/hooks/useWallet'
 import { useCeloWallet } from '@/hooks/useCeloWallet'
 import { supabase } from '@/integrations/supabase/client'
@@ -21,34 +21,9 @@ interface WithdrawalDialogProps {
   currentBalance: number
 }
 
-const nigerianBanks = [
-  { code: "044", name: "Access Bank" },
-  { code: "014", name: "Afribank Nigeria Plc" },
-  { code: "050", name: "Ecobank Nigeria" },
-  { code: "070", name: "Fidelity Bank" },
-  { code: "011", name: "First Bank of Nigeria" },
-  { code: "214", name: "First City Monument Bank" },
-  { code: "058", name: "Guaranty Trust Bank" },
-  { code: "030", name: "Heritage Bank" },
-  { code: "032", name: "Union Bank" },
-  { code: "033", name: "United Bank for Africa" },
-  { code: "215", name: "Unity Bank" },
-  { code: "035", name: "Wema Bank" },
-  { code: "057", name: "Zenith Bank" }
-]
-
 export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: WithdrawalDialogProps) => {
   const { initiateWithdrawal } = useWallet()
   const { address: celoAddress, celoBalance, cUsdBalance, usdtBalance, loading: walletLoading } = useCeloWallet()
-  
-  // Bank withdrawal state (Quidax Off-Ramp)
-  const [bankAmount, setBankAmount] = useState('')
-  const [bankAccountNumber, setBankAccountNumber] = useState('')
-  const [bankAccountName, setBankAccountName] = useState('')
-  const [selectedBankCode, setSelectedBankCode] = useState('')
-  const [bankLoading, setBankLoading] = useState(false)
-  const [offRampQuote, setOffRampQuote] = useState<any>(null)
-  const [isLoadingOffRampQuote, setIsLoadingOffRampQuote] = useState(false)
 
   // Crypto withdrawal state
   const [cryptoWalletAddress, setCryptoWalletAddress] = useState('')
@@ -56,95 +31,9 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
   const [cryptoAmount, setCryptoAmount] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
-  React.useEffect(() => {
-    if (bankAmount && parseFloat(bankAmount) >= 100) {
-      fetchOffRampQuote()
-    } else {
-      setOffRampQuote(null)
-    }
-  }, [bankAmount])
-
-  const fetchOffRampQuote = async () => {
-    if (!bankAmount || parseFloat(bankAmount) < 100) return
-    
-    const ncAmount = parseFloat(bankAmount)
-    // Convert NC to USDT (assuming 1 NC ≈ 1 NGN ≈ 0.000625 USDT at ₦1600/USD)
-    const usdtAmount = ncAmount / 1600
-
-    setIsLoadingOffRampQuote(true)
-    try {
-      const { data, error } = await supabase.functions.invoke('quidax-off-ramp', {
-        body: { 
-          action: 'get_quote',
-          tokenAmount: usdtAmount
-        }
-      })
-      
-      if (error) throw error
-      if (data?.data) {
-        setOffRampQuote(data.data)
-      }
-    } catch (error: any) {
-      console.error('Error fetching off-ramp quote:', error)
-    } finally {
-      setIsLoadingOffRampQuote(false)
-    }
-  }
-
-  const handleBankWithdrawal = async () => {
-    const withdrawAmount = parseFloat(bankAmount)
-    if (!withdrawAmount || withdrawAmount < 100) {
-      toast.error("Minimum withdrawal is NC 100")
-      return
-    }
-    
-    if (withdrawAmount > currentBalance) {
-      toast.error(`You only have NC ${currentBalance.toLocaleString()} withdrawable balance`)
-      return
-    }
-    
-    if (!bankAccountNumber || !bankAccountName || !selectedBankCode) {
-      toast.error("Please fill in all bank details")
-      return
-    }
-
-    setBankLoading(true)
-    try {
-      const bankDetails = {
-        account_number: bankAccountNumber,
-        account_name: bankAccountName,
-        bank_code: selectedBankCode
-      }
-
-      const { data, error } = await supabase.functions.invoke('quidax-off-ramp', {
-        body: {
-          action: 'initiate_withdrawal',
-          ncAmount: withdrawAmount,
-          bankDetails
-        }
-      })
-
-      if (error) throw error
-
-      if (data?.success) {
-        toast.success('Withdrawal initiated! Funds will arrive in your bank account shortly.')
-        onOpenChange(false)
-        setBankAmount('')
-        setBankAccountNumber('')
-        setBankAccountName('')
-        setSelectedBankCode('')
-      }
-    } catch (error: any) {
-      console.error('Bank withdrawal error:', error)
-      toast.error(error.message || 'Withdrawal failed. Please try again.')
-    } finally {
-      setBankLoading(false)
-    }
-  }
-
   const handleCryptoWithdraw = async () => {
-    if (!cryptoWalletAddress.trim()) {
-      toast.error("Please enter recipient wallet address")
+    if (!cryptoWalletAddress) {
+      toast.error("Please enter a valid wallet address")
       return
     }
 
@@ -202,6 +91,12 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
     }
   }
 
+  const handleOpenQuidaxWidget = () => {
+    onOpenChange(false)
+    const event = new CustomEvent('open-quidax-widget', { detail: { mode: 'sell' } })
+    window.dispatchEvent(event)
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
@@ -215,19 +110,19 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
           </DialogDescription>
         </DialogHeader>
         
-        <Tabs defaultValue="automatic" className="w-full">
+        <Tabs defaultValue="crypto" className="w-full">
           <TabsList className="grid w-full grid-cols-2 h-auto">
-            <TabsTrigger value="automatic" className="gap-1 sm:gap-2 text-xs sm:text-sm py-2">
+            <TabsTrigger value="crypto" className="gap-1 sm:gap-2 text-xs sm:text-sm py-2">
               <Coins className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span>Automatic</span>
+              <span>Crypto</span>
             </TabsTrigger>
-            <TabsTrigger value="manual" className="gap-1 sm:gap-2 text-xs sm:text-sm py-2">
-              <Send className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span>Bank</span>
+            <TabsTrigger value="ramp" className="gap-1 sm:gap-2 text-xs sm:text-sm py-2">
+              <ArrowDownUp className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span>Sell USDT</span>
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="automatic" className="space-y-4">
+          <TabsContent value="crypto" className="space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -251,204 +146,93 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
                   </AlertDescription>
                 </Alert>
 
-                {celoAddress && !walletLoading && (parseFloat(celoBalance) > 0 || parseFloat(cUsdBalance) > 0 || parseFloat(usdtBalance) > 0) && (
-                  <Alert className="bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800">
-                    <Wallet className="h-4 w-4 text-green-600 dark:text-green-400" />
-                    <AlertDescription className="text-xs">
-                      <p className="font-medium mb-1 text-green-800 dark:text-green-300">Your Personal Wallet Balance:</p>
-                      <div className="space-y-1 text-green-700 dark:text-green-400">
-                        {parseFloat(celoBalance) > 0 && <p>• CELO: {parseFloat(celoBalance).toFixed(4)}</p>}
-                        {parseFloat(cUsdBalance) > 0 && <p>• cUSD: {parseFloat(cUsdBalance).toFixed(4)}</p>}
-                        {parseFloat(usdtBalance) > 0 && <p>• USDT: {parseFloat(usdtBalance).toFixed(4)}</p>}
-                      </div>
-                      <p className="mt-2 text-green-600 dark:text-green-500">
-                        ✅ The system will use your personal wallet funds first if sufficient!
-                      </p>
-                    </AlertDescription>
-                  </Alert>
-                )}
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Available Balance</Label>
+                    <div className="text-2xl font-bold text-primary">
+                      NC {currentBalance.toLocaleString()}
+                    </div>
+                  </div>
 
-                <div className="p-4 bg-muted rounded-lg">
-                  <p className="text-xs text-muted-foreground">Your Withdrawable Balance</p>
-                  <p className="text-2xl font-bold">NC {currentBalance.toLocaleString()}</p>
+                  <div className="space-y-2">
+                    <Label htmlFor="crypto-currency">Currency</Label>
+                    <Select value={cryptoCurrency} onValueChange={(value: any) => setCryptoCurrency(value)}>
+                      <SelectTrigger id="crypto-currency">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="cUSD">cUSD</SelectItem>
+                        <SelectItem value="USDT">USDT (Celo)</SelectItem>
+                        <SelectItem value="CELO">CELO</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="crypto-amount">Amount (NC)</Label>
+                    <BrandInput
+                      id="crypto-amount"
+                      type="number"
+                      placeholder="Enter amount to withdraw"
+                      value={cryptoAmount}
+                      onChange={(e) => setCryptoAmount(e.target.value)}
+                      min="100"
+                    />
+                    <p className="text-xs text-muted-foreground">Minimum: NC 100</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="crypto-address">Recipient Wallet Address</Label>
+                    <BrandInput
+                      id="crypto-address"
+                      placeholder="0x..."
+                      value={cryptoWalletAddress}
+                      onChange={(e) => setCryptoWalletAddress(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Enter a valid Celo network wallet address
+                    </p>
+                  </div>
+
+                  <BrandButton
+                    onClick={handleCryptoWithdraw}
+                    disabled={isLoading}
+                    className="w-full"
+                  >
+                    {isLoading ? 'Processing...' : `Withdraw ${cryptoCurrency}`}
+                  </BrandButton>
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="crypto-currency">Currency</Label>
-                  <Select value={cryptoCurrency} onValueChange={(v) => setCryptoCurrency(v as 'cUSD' | 'CELO' | 'USDT')}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="cUSD">cUSD (Stable)</SelectItem>
-                      <SelectItem value="USDT">USDT (Stable)</SelectItem>
-                      <SelectItem value="CELO">CELO</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="crypto-wallet">Recipient Wallet Address</Label>
-                  <Input
-                    id="crypto-wallet"
-                    placeholder="0x..."
-                    value={cryptoWalletAddress}
-                    onChange={(e) => setCryptoWalletAddress(e.target.value)}
-                    onPaste={(e) => {
-                      e.preventDefault()
-                      const pastedText = e.clipboardData.getData('text')
-                      setCryptoWalletAddress(pastedText.trim())
-                    }}
-                    autoComplete="off"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="crypto-amount">Amount (NC)</Label>
-                  <Input
-                    id="crypto-amount"
-                    type="number"
-                    step="100"
-                    min="100"
-                    placeholder="Enter NC amount"
-                    value={cryptoAmount}
-                    onChange={(e) => setCryptoAmount(e.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Min: NC 100 | Available: NC {currentBalance.toLocaleString()}
-                  </p>
-                </div>
-
-                <Alert>
-                  <Info className="h-4 w-4" />
-                  <AlertDescription className="text-xs space-y-1">
-                    <p>• Minimum: NC 100</p>
-                    <p>• Network: Celo Mainnet</p>
-                    <p>• Current Rate: ~₦1,600/USD</p>
-                    <p>• Gas fees covered by us</p>
-                  </AlertDescription>
-                </Alert>
-
-                <BrandButton 
-                  onClick={handleCryptoWithdraw} 
-                  className="w-full"
-                  disabled={isLoading || !cryptoAmount || parseFloat(cryptoAmount) < 100}
-                >
-                  {isLoading ? "Processing..." : `Withdraw as ${cryptoCurrency}`}
-                </BrandButton>
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="manual" className="space-y-4">
-            <Card className="bg-green-500/5 border-green-500/20">
+          {/* Quidax Ramp Sell Tab */}
+          <TabsContent value="ramp" className="space-y-4">
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertDescription>
+                Sell USDT and receive Naira directly to your bank account via Quidax Ramp.
+              </AlertDescription>
+            </Alert>
+
+            <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Send className="h-5 w-5 text-green-500" />
-                  Cash Out to Bank
-                  <Badge variant="default" className="bg-green-500">Direct</Badge>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <ArrowDownUp className="h-5 w-5" />
+                  Quick Sell with Quidax
                 </CardTitle>
                 <CardDescription>
-                  Convert NC to Naira and receive directly in your bank account
+                  Convert USDT to Naira instantly
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <Alert>
-                  <Info className="h-4 w-4" />
-                  <AlertDescription className="text-xs">
-                    <p className="font-medium mb-1">How it works:</p>
-                    <p>• Your NC is converted to USDT</p>
-                    <p>• USDT is sold for Naira via Quidax</p>
-                    <p>• Naira is sent directly to your bank account</p>
-                    <p>• Usually completes within 5-10 minutes</p>
-                  </AlertDescription>
-                </Alert>
-
-                <div className="p-4 bg-muted rounded-lg">
-                  <p className="text-xs text-muted-foreground">Your Withdrawable Balance</p>
-                  <p className="text-2xl font-bold">NC {currentBalance.toLocaleString()}</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="bank-amount">Amount (NC)</Label>
-                  <Input
-                    id="bank-amount"
-                    type="number"
-                    placeholder="Enter NC amount"
-                    min="100"
-                    step="100"
-                    value={bankAmount}
-                    onChange={(e) => setBankAmount(e.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Min: NC 100 | Available: NC {currentBalance.toLocaleString()}
-                  </p>
-                </div>
-
-                {offRampQuote && (
-                  <div className="p-3 bg-muted rounded-lg space-y-1">
-                    <p className="text-xs text-muted-foreground">You will receive approximately:</p>
-                    <p className="text-lg font-bold">₦{offRampQuote.fiat_amount?.toLocaleString()}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Rate: ₦{offRampQuote.rate} per USDT
-                    </p>
-                  </div>
-                )}
-
-                <div className="space-y-2">
-                  <Label htmlFor="bank-account">Bank Account Number</Label>
-                  <Input
-                    id="bank-account"
-                    placeholder="0123456789"
-                    maxLength={10}
-                    value={bankAccountNumber}
-                    onChange={(e) => setBankAccountNumber(e.target.value)}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="bank-name">Bank</Label>
-                  <Select value={selectedBankCode} onValueChange={setSelectedBankCode}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select your bank" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {nigerianBanks.map((bank) => (
-                        <SelectItem key={bank.code} value={bank.code}>
-                          {bank.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="account-name">Account Name</Label>
-                  <Input
-                    id="account-name"
-                    placeholder="Enter account name as shown on bank"
-                    value={bankAccountName}
-                    onChange={(e) => setBankAccountName(e.target.value)}
-                  />
-                </div>
-
-                <BrandButton 
+              <CardContent>
+                <BrandButton
+                  onClick={handleOpenQuidaxWidget}
                   className="w-full"
-                  onClick={handleBankWithdrawal}
-                  disabled={bankLoading || !bankAmount || parseFloat(bankAmount) < 100 || !bankAccountNumber || !bankAccountName || !selectedBankCode}
                 >
-                  {bankLoading ? 'Processing...' : 'Withdraw to Bank Account'}
+                  <Coins className="mr-2 h-4 w-4" />
+                  Open Quidax Widget
                 </BrandButton>
-
-                <div className="text-xs text-muted-foreground space-y-1 border-t pt-4">
-                  <p className="font-medium">Benefits:</p>
-                  <ul className="list-disc list-inside space-y-1">
-                    <li>No manual approval needed</li>
-                    <li>Direct to your bank account</li>
-                    <li>Secure automated processing</li>
-                    <li>Real-time status updates</li>
-                  </ul>
-                </div>
               </CardContent>
             </Card>
           </TabsContent>
