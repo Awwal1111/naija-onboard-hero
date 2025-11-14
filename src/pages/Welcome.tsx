@@ -103,6 +103,120 @@ const Welcome = () => {
         </div>
       </section>
 
+      {/* Trust & Verification Section */}
+      <section className="py-16 bg-background">
+        <div className="container mx-auto px-6">
+          <div className="max-w-4xl mx-auto text-center space-y-8">
+            <div>
+              <Badge variant="secondary" className="mb-4">
+                <Shield className="w-4 h-4 mr-2" />
+                Verified & Trusted
+              </Badge>
+              <h2 className="text-3xl font-bold mb-4 text-text-primary">Registered & Regulated</h2>
+              <p className="text-text-secondary mb-2">
+                Corporate Affairs Commission (CAC) Registration Number
+              </p>
+              <p className="text-2xl font-bold text-primary">BN8870047</p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-8 pt-8">
+              <div className="flex flex-col items-center">
+                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                  <Shield className="w-8 h-8 text-primary" />
+                </div>
+                <h3 className="font-semibold mb-2">Legally Registered</h3>
+                <p className="text-sm text-text-secondary text-center">
+                  Fully registered with the Corporate Affairs Commission of Nigeria
+                </p>
+              </div>
+              <div className="flex flex-col items-center">
+                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                  <CheckCircle className="w-8 h-8 text-primary" />
+                </div>
+                <h3 className="font-semibold mb-2">Secure Payments</h3>
+                <p className="text-sm text-text-secondary text-center">
+                  Bank-grade security for all transactions through verified partners
+                </p>
+              </div>
+              <div className="flex flex-col items-center">
+                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                  <Users className="w-8 h-8 text-primary" />
+                </div>
+                <h3 className="font-semibold mb-2">Trusted Community</h3>
+                <p className="text-sm text-text-secondary text-center">
+                  Thousands of verified Nigerian freelancers and businesses
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Partners Section */}
+      <section className="py-16 bg-gradient-to-br from-primary/5 to-accent/5">
+        <div className="container mx-auto px-6">
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-12">
+              <Badge variant="secondary" className="mb-4">
+                <Users className="w-4 h-4 mr-2" />
+                Our Partners
+              </Badge>
+              <h2 className="text-3xl font-bold text-text-primary mb-4">Trusted by Leading Organizations</h2>
+              <p className="text-text-secondary">
+                We partner with top financial institutions and platforms to provide you with the best service
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-8">
+              <Card className="border-2 hover:shadow-lg transition-shadow">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <DollarSign className="w-5 h-5 text-primary" />
+                    Quidax
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-text-secondary">
+                    Secure banking and crypto services provider powering our instant deposits and withdrawals
+                  </p>
+                  <Badge className="mt-4">Financial Partner</Badge>
+                </CardContent>
+              </Card>
+
+              <Card className="border-2 hover:shadow-lg transition-shadow">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Shield className="w-5 h-5 text-primary" />
+                    Celo Network
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-text-secondary">
+                    Blockchain infrastructure ensuring secure and transparent transactions
+                  </p>
+                  <Badge className="mt-4">Technology Partner</Badge>
+                </CardContent>
+              </Card>
+
+              <Card className="border-2 hover:shadow-lg transition-shadow">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <CheckCircle className="w-5 h-5 text-primary" />
+                    CAC Nigeria
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-text-secondary">
+                    Officially registered and regulated by the Corporate Affairs Commission
+                  </p>
+                  <Badge className="mt-4">Regulatory Body</Badge>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Features Section */}
       <section className="py-16 bg-background">
         <div className="container mx-auto px-6">

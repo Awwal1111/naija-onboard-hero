@@ -43,6 +43,12 @@ export const QuidaxRampWidget = ({ open, onOpenChange, mode }: QuidaxRampWidgetP
       return
     }
 
+    const minAmount = mode === 'buy' ? 3000 : 2
+    if (parseFloat(amount) < minAmount) {
+      toast.error(`Minimum ${mode === 'buy' ? 'deposit' : 'withdrawal'} is ${mode === 'buy' ? '3,000 NC (₦3,000)' : '$2 USD (3,000 NC)'}`)
+      return
+    }
+
     setLoading(true)
 
     try {
@@ -75,16 +81,17 @@ export const QuidaxRampWidget = ({ open, onOpenChange, mode }: QuidaxRampWidgetP
 
       // Initialize Quidax Ramp Widget
       if (window.ramp) {
-        const config: any = {
-          public_key: keysData.publicKey,
-          reference: reference,
-          mode: mode,
-          network: 'CELO',
-          onClose: function(ref: string) {
-            console.log('Quidax modal closed:', ref)
-            setLoading(false)
-            onOpenChange(false)
-          },
+      const config: any = {
+        public_key: keysData.publicKey,
+        reference: reference,
+        mode: mode,
+        network: 'CELO',
+        onClose: function(ref: string) {
+          console.log('Quidax modal closed:', ref)
+          // Prevent closing by reopening the widget
+          toast.info('Please complete the transaction')
+          return false
+        },
           onSuccess: async function(transaction: any) {
             console.log('Transaction successful:', transaction)
             
@@ -163,12 +170,12 @@ export const QuidaxRampWidget = ({ open, onOpenChange, mode }: QuidaxRampWidgetP
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ArrowDownUp className="h-5 w-5" />
-            {mode === 'buy' ? 'Buy USDT' : 'Sell USDT'}
+            {mode === 'buy' ? 'Bank Deposit' : 'Bank Withdrawal'}
           </DialogTitle>
           <DialogDescription>
             {mode === 'buy' 
-              ? 'Purchase USDT on Celo network using Naira' 
-              : 'Sell USDT and receive Naira to your bank account'}
+              ? 'Fund your account with Naira - Instant & Secure' 
+              : 'Withdraw to your bank account - Fast & Reliable'}
           </DialogDescription>
         </DialogHeader>
 
@@ -176,7 +183,7 @@ export const QuidaxRampWidget = ({ open, onOpenChange, mode }: QuidaxRampWidgetP
           <CardHeader>
             <CardTitle className="text-base">Transaction Details</CardTitle>
             <CardDescription>
-              Powered by Quidax Ramp - Secure & Fast
+              Secure Banking Transaction - Protected & Instant
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -187,15 +194,15 @@ export const QuidaxRampWidget = ({ open, onOpenChange, mode }: QuidaxRampWidgetP
               <Input
                 id="amount"
                 type="number"
-                placeholder={mode === 'buy' ? 'Enter amount in Naira' : 'Enter USDT amount'}
+                placeholder={mode === 'buy' ? 'Enter amount (min 3,000 NC / ₦3,000)' : 'Enter amount (min $2 / 3,000 NC)'}
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                min={mode === 'buy' ? '1000' : '10'}
+                min={mode === 'buy' ? '3000' : '2'}
               />
               <p className="text-xs text-muted-foreground">
                 {mode === 'buy' 
-                  ? 'Minimum: ₦1,000' 
-                  : 'Minimum: 10 USDT'}
+                  ? 'Minimum deposit: 3,000 NC (₦3,000)' 
+                  : 'Minimum withdrawal: $2 USD (3,000 NC)'}
               </p>
             </div>
 
@@ -204,13 +211,13 @@ export const QuidaxRampWidget = ({ open, onOpenChange, mode }: QuidaxRampWidgetP
               <AlertDescription className="text-xs">
                 {mode === 'buy' ? (
                   <>
-                    You will receive USDT directly to your Celo wallet. 
-                    The widget will guide you through the payment process.
+                    Complete your payment through our secure banking partner. 
+                    Your account will be credited instantly upon confirmation.
                   </>
                 ) : (
                   <>
-                    USDT will be sent from our master wallet to Quidax.
-                    You'll receive Naira in your bank account after confirmation.
+                    Your withdrawal will be processed securely through our banking partner.
+                    Funds will arrive in your bank account within minutes.
                   </>
                 )}
               </AlertDescription>
@@ -221,7 +228,7 @@ export const QuidaxRampWidget = ({ open, onOpenChange, mode }: QuidaxRampWidgetP
               disabled={loading || !amount || parseFloat(amount) <= 0}
               className="w-full"
             >
-              {loading ? 'Processing...' : `Continue to ${mode === 'buy' ? 'Buy' : 'Sell'}`}
+              {loading ? 'Processing...' : `Proceed to ${mode === 'buy' ? 'Deposit' : 'Withdrawal'}`}
             </BrandButton>
           </CardContent>
         </Card>
