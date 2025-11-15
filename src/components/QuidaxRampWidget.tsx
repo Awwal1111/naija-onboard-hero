@@ -83,7 +83,7 @@ export const QuidaxRampWidget = ({ open, onOpenChange, mode }: QuidaxRampWidgetP
       if (window.ramp) {
       const config: any = {
         public_key: keysData.publicKey,
-        reference: reference,
+        reference: reference, // CRITICAL: Pass reference to Quidax
         mode: mode,
         network: 'CELO',
         onClose: function(ref: string) {

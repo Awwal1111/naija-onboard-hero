@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 import { ethers } from 'https://esm.sh/ethers@6.13.4'
+import CryptoJS from "https://esm.sh/crypto-js@4.1.1"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -46,7 +47,7 @@ serve(async (req) => {
     // Get user profile to verify and deduct balance
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('wallet_balance, balance_withdrawable')
+      .select('wallet_balance, balance_withdrawable, celo_wallet_address, encrypted_wallet')
       .eq('user_id', user.id)
       .single()
 
@@ -83,19 +84,50 @@ serve(async (req) => {
       throw new Error('Quidax deposit address not provided')
     }
 
-    // Send USDT from master wallet to Quidax
+    // DUAL WALLET SYSTEM: Try user wallet first, then master wallet
     const provider = new ethers.JsonRpcProvider(CELO_RPC)
-    const masterWallet = new ethers.Wallet(masterWalletPrivateKey!, provider)
-    const usdtContract = new ethers.Contract(USDT_ADDRESS, USDT_ABI, masterWallet)
+    const encryptionSecret = Deno.env.get('WALLET_ENCRYPTION_SECRET') || 'default_secret_change_in_production'
+    
+    let senderWallet: any
+    let walletSource = 'master'
+    
+    // Check if user has their own wallet with USDT
+    if (profile.celo_wallet_address && profile.encrypted_wallet) {
+      try {
+        const decryptedUserKey = CryptoJS.AES.decrypt(profile.encrypted_wallet, encryptionSecret).toString(CryptoJS.enc.Utf8)
+        if (decryptedUserKey) {
+          const userWallet = new ethers.Wallet(decryptedUserKey, provider)
+          const usdtContract = new ethers.Contract(USDT_ADDRESS, USDT_ABI, userWallet)
+          const userBalance = await usdtContract.balanceOf(userWallet.address)
+          const requiredAmount = ethers.parseUnits(usdtAmount.toString(), 6)
+          
+          if (userBalance >= requiredAmount) {
+            senderWallet = userWallet
+            walletSource = 'user'
+            console.log(`[QUIDAX SELL] Using USER wallet: ${userWallet.address}`)
+          }
+        }
+      } catch (err) {
+        console.log(`[QUIDAX SELL] User wallet check failed, using master wallet`)
+      }
+    }
+    
+    // Use master wallet if user wallet not available or insufficient
+    if (walletSource === 'master') {
+      senderWallet = new ethers.Wallet(masterWalletPrivateKey!, provider)
+      console.log(`[QUIDAX SELL] Using MASTER wallet`)
+    }
+    
+    const usdtContract = new ethers.Contract(USDT_ADDRESS, USDT_ABI, senderWallet)
 
-    // Check master wallet USDT balance
-    const masterBalance = await usdtContract.balanceOf(masterWallet.address)
+    // Check sender wallet USDT balance
+    const senderBalance = await usdtContract.balanceOf(senderWallet.address)
     const usdtAmountWei = ethers.parseUnits(usdtAmount.toString(), 6) // USDT has 6 decimals
 
-    console.log(`[QUIDAX SELL] Master wallet USDT balance: ${ethers.formatUnits(masterBalance, 6)}`)
+    console.log(`[QUIDAX SELL] ${walletSource} wallet USDT balance: ${ethers.formatUnits(senderBalance, 6)}`)
     console.log(`[QUIDAX SELL] Sending ${usdtAmount} USDT to ${quidaxDepositAddress}`)
 
-    if (masterBalance < usdtAmountWei) {
+    if (senderBalance < usdtAmountWei) {
       // Refund user
       await supabase
         .from('profiles')
@@ -105,7 +137,7 @@ serve(async (req) => {
         })
         .eq('user_id', user.id)
 
-      throw new Error('Insufficient USDT in master wallet')
+      throw new Error('Insufficient USDT in sender wallet')
     }
 
     // Send USDT
@@ -115,14 +147,14 @@ serve(async (req) => {
     const receipt = await tx.wait()
     console.log(`[QUIDAX SELL] Transaction confirmed: ${receipt.hash}`)
 
-    // Log transaction
+    // Log transaction with wallet source
     await supabase
       .from('wallet_transactions')
       .insert({
         user_id: user.id,
         amount: -ncAmount,
         type: 'quidax_sell_pending',
-        description: `Sell ${usdtAmount} USDT via Quidax Ramp (pending confirmation)`,
+        description: `Sell ${usdtAmount} USDT via Quidax Ramp (${walletSource} wallet, pending confirmation)`,
         status: 'pending',
         reference: reference,
         tx_hash: receipt.hash
