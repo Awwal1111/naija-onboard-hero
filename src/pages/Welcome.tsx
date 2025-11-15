@@ -2,9 +2,10 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 import { Logo } from '@/components/ui/logo'
 import { BrandButton } from '@/components/ui/brand-button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Facebook, Youtube, Linkedin, MessageSquare, Mail, MapPin, Phone, Users, Target, Shield, Zap, TrendingUp, CheckCircle, Star, ArrowRight, Briefcase, DollarSign, Clock } from 'lucide-react'
+import { Separator } from '@/components/ui/separator'
+import { Facebook, Youtube, Linkedin, MessageSquare, Mail, MapPin, Phone, Users, Target, Shield, Zap, TrendingUp, CheckCircle, Star, ArrowRight, Briefcase, DollarSign, Clock, Award, Lock, FileCheck, Wallet, CreditCard, UserCheck, CheckCircle2, Building2, Network } from 'lucide-react'
 import heroImage from '@/assets/hero-image.jpg'
 
 const Welcome = () => {
@@ -34,33 +35,50 @@ const Welcome = () => {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-primary/5 to-accent/5 py-20">
-        <div className="container mx-auto px-6">
+      <section className="relative overflow-hidden py-20 bg-gradient-to-br from-primary/10 via-background to-accent/5">
+        <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
+        <div className="container mx-auto px-6 relative">
           <div className="max-w-6xl mx-auto">
             <div className="grid lg:grid-cols-2 gap-12 items-center">
               {/* Text Content */}
-              <div className="space-y-6">
-                <Badge variant="secondary" className="w-fit">
-                  <Target className="w-4 h-4 mr-2" />
-                  Nigerian Freelancing Platform
+              <div className="space-y-8">
+                <Badge variant="secondary" className="w-fit bg-primary/10 text-primary border-primary/20">
+                  <Award className="w-4 h-4 mr-2" />
+                  CAC Registered • BN8870047
                 </Badge>
                 
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-text-primary leading-tight">
-                  Connect with Experts
-                  <span className="block text-primary mt-2">
-                    Get Work Done
-                  </span>
+                <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight">
+                  <span className="text-foreground">Nigeria's Trusted</span>
+                  <span className="block text-primary mt-2">Freelance Marketplace</span>
                 </h1>
                 
-                <p className="text-lg text-text-secondary leading-relaxed">
-                  A platform connecting Nigerian freelancers with clients. Find skilled professionals or discover opportunities that match your expertise.
+                <p className="text-xl text-muted-foreground leading-relaxed">
+                  Connect with vetted professionals, secure payments through our banking partners, and grow your business with confidence on Nigeria's premier freelancing platform.
                 </p>
 
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <BrandButton asChild size="lg" className="px-8">
-                    <Link to="/signup">Get Started</Link>
+                <div className="flex flex-wrap gap-6 pt-4">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-primary" />
+                    <span className="text-sm font-medium text-foreground">Legally Registered</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Shield className="w-5 h-5 text-primary" />
+                    <span className="text-sm font-medium text-foreground">Secure Payments</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Users className="w-5 h-5 text-primary" />
+                    <span className="text-sm font-medium text-foreground">10,000+ Users</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                  <BrandButton asChild size="lg" className="text-lg px-8 py-6">
+                    <Link to="/signup">
+                      Start Earning Today
+                      <ArrowRight className="ml-2 w-5 h-5" />
+                    </Link>
                   </BrandButton>
-                  <BrandButton variant="outline" asChild size="lg" className="px-8">
+                  <BrandButton variant="outline" asChild size="lg" className="text-lg px-8 py-6">
                     <Link to="/login">Sign In</Link>
                   </BrandButton>
                 </div>
@@ -68,11 +86,11 @@ const Welcome = () => {
 
               {/* Hero Image */}
               <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-accent/10 rounded-2xl transform rotate-3"></div>
+                <div className="absolute inset-0 bg-primary/20 rounded-3xl transform rotate-3 blur-xl"></div>
                 <img 
                   src={heroImage} 
                   alt="NaijaLancers Platform" 
-                  className="relative w-full rounded-2xl shadow-xl object-cover aspect-[4/3]"
+                  className="relative w-full rounded-3xl shadow-2xl object-cover aspect-[4/3] border-4 border-background"
                 />
               </div>
             </div>
@@ -80,14 +98,154 @@ const Welcome = () => {
         </div>
       </section>
 
-      {/* Promotional Video Section */}
-      <section className="py-16 bg-gradient-to-br from-primary/5 to-accent/5">
+      {/* Trust & Verification Section */}
+      <section className="py-16 bg-muted/50 border-y border-border">
+        <div className="container mx-auto px-6">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-12">
+              <Badge variant="secondary" className="mb-4">
+                <Shield className="w-4 h-4 mr-2" />
+                Licensed & Verified
+              </Badge>
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+                Built on Trust & Security
+              </h2>
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                Officially registered with the Corporate Affairs Commission (CAC) and partnered with leading financial institutions
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-8">
+              <Card className="border-primary/20 bg-card hover:shadow-lg transition-shadow">
+                <CardHeader className="text-center pb-4">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Building2 className="w-8 h-8 text-primary" />
+                  </div>
+                  <CardTitle className="text-xl">CAC Registered</CardTitle>
+                  <CardDescription className="text-base">Registration No: BN8870047</CardDescription>
+                </CardHeader>
+                <CardContent className="text-center">
+                  <p className="text-sm text-muted-foreground">
+                    Legally registered business entity with the Corporate Affairs Commission of Nigeria
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-primary/20 bg-card hover:shadow-lg transition-shadow">
+                <CardHeader className="text-center pb-4">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Lock className="w-8 h-8 text-primary" />
+                  </div>
+                  <CardTitle className="text-xl">Secure Banking</CardTitle>
+                  <CardDescription className="text-base">Powered by Quidax</CardDescription>
+                </CardHeader>
+                <CardContent className="text-center">
+                  <p className="text-sm text-muted-foreground">
+                    Bank-grade security with licensed financial partners for all transactions
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-primary/20 bg-card hover:shadow-lg transition-shadow">
+                <CardHeader className="text-center pb-4">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
+                    <UserCheck className="w-8 h-8 text-primary" />
+                  </div>
+                  <CardTitle className="text-xl">Trusted Community</CardTitle>
+                  <CardDescription className="text-base">10,000+ Verified Users</CardDescription>
+                </CardHeader>
+                <CardContent className="text-center">
+                  <p className="text-sm text-muted-foreground">
+                    Join thousands of Nigerian professionals and businesses transacting safely
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Partners Section */}
+      <section className="py-20 bg-background">
+        <div className="container mx-auto px-6">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-12">
+              <Badge variant="secondary" className="mb-4">
+                <Network className="w-4 h-4 mr-2" />
+                Strategic Partners
+              </Badge>
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+                Powered by Industry Leaders
+              </h2>
+              <p className="text-lg text-muted-foreground">
+                Partnering with trusted names in finance, blockchain, and regulatory compliance
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-8">
+              <Card className="bg-card hover:shadow-xl transition-all hover:scale-105">
+                <CardHeader className="text-center">
+                  <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
+                    <CreditCard className="w-10 h-10 text-primary" />
+                  </div>
+                  <CardTitle className="text-2xl">Quidax</CardTitle>
+                  <CardDescription className="text-base">Payment Processing Partner</CardDescription>
+                </CardHeader>
+                <CardContent className="text-center space-y-2">
+                  <p className="text-sm text-muted-foreground">
+                    Licensed cryptocurrency exchange providing secure bank deposit and withdrawal services
+                  </p>
+                  <Badge variant="secondary" className="mt-2">Financial Services</Badge>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-card hover:shadow-xl transition-all hover:scale-105">
+                <CardHeader className="text-center">
+                  <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
+                    <Wallet className="w-10 h-10 text-primary" />
+                  </div>
+                  <CardTitle className="text-2xl">Celo Network</CardTitle>
+                  <CardDescription className="text-base">Blockchain Infrastructure</CardDescription>
+                </CardHeader>
+                <CardContent className="text-center space-y-2">
+                  <p className="text-sm text-muted-foreground">
+                    Mobile-first blockchain platform ensuring fast, secure, and low-cost transactions
+                  </p>
+                  <Badge variant="secondary" className="mt-2">Technology</Badge>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-card hover:shadow-xl transition-all hover:scale-105">
+                <CardHeader className="text-center">
+                  <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
+                    <FileCheck className="w-10 h-10 text-primary" />
+                  </div>
+                  <CardTitle className="text-2xl">CAC Nigeria</CardTitle>
+                  <CardDescription className="text-base">Regulatory Compliance</CardDescription>
+                </CardHeader>
+                <CardContent className="text-center space-y-2">
+                  <p className="text-sm text-muted-foreground">
+                    Officially registered and compliant with Nigerian corporate regulations (BN8870047)
+                  </p>
+                  <Badge variant="secondary" className="mt-2">Government</Badge>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Video Section */}
+      <section className="py-20 bg-muted/30">
         <div className="container mx-auto px-6">
           <div className="max-w-5xl mx-auto">
-            <h2 className="text-3xl font-bold text-center text-text-primary mb-8">Platform Overview</h2>
-            <div className="relative rounded-2xl overflow-hidden shadow-xl">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">See How It Works</h2>
+              <p className="text-lg text-muted-foreground">Watch our platform overview and start your journey today</p>
+            </div>
+            <div className="relative rounded-3xl overflow-hidden shadow-2xl border-4 border-background">
               <div className="relative" style={{ height: 0, paddingBottom: 'calc(56.25%)', position: 'relative', width: '100%' }}>
-                <iframe 
+                <iframe
                   allow="autoplay; gyroscope;" 
                   allowFullScreen 
                   height="100%" 
