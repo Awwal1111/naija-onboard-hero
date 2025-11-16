@@ -135,19 +135,40 @@ export const QuidaxRampWidget = ({ open, onOpenChange, mode }: QuidaxRampWidgetP
           config.to_currency = 'ngn'
           config.from_amount = amount
           config.onReceiveWalletDetails = async function(details: any) {
-            console.log('Receive wallet details for sell:', details)
-            // Backend will handle sending USDT from master wallet to Quidax address
+            console.log('Quidax provided wallet details:', details)
+            
+            // Extract deposit address from various possible keys
+            const depositAddress = details.walletAddress || details.wallet_address || details.address || details.depositAddress
+            
+            if (!depositAddress) {
+              console.error('No deposit address found in wallet details:', details)
+              toast.error('Failed to get deposit address from Quidax')
+              return
+            }
+            
+            console.log('Extracted deposit address:', depositAddress)
+            
+            // Backend will handle sending USDT to Quidax deposit address
             try {
-              await supabase.functions.invoke('process-quidax-sell', {
+              const { data, error } = await supabase.functions.invoke('process-quidax-sell', {
                 body: {
                   reference: reference,
-                  details: details,
-                  amount: amount
+                  amount: amount,
+                  details: {
+                    deposit_address: depositAddress,
+                    ...details
+                  }
                 }
               })
-            } catch (err) {
+              
+              if (error) throw error
+              
+              if (data?.success) {
+                toast.success('USDT sent to Quidax successfully')
+              }
+            } catch (err: any) {
               console.error('Failed to process sell:', err)
-              toast.error('Failed to initiate sell transaction')
+              toast.error(err.message || 'Failed to initiate sell transaction')
             }
           }
         }
