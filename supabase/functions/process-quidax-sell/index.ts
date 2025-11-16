@@ -77,11 +77,15 @@ serve(async (req) => {
 
     console.log(`[QUIDAX SELL] Deducted ${ncAmount} NC from user ${user.id}`)
 
-    // Get Quidax deposit address from details
-    const quidaxDepositAddress = details.address || details.wallet_address
+    // Get Quidax deposit address from details (check multiple possible keys)
+    const quidaxDepositAddress = details.deposit_address || details.walletAddress || details.wallet_address || details.address || details.depositAddress
+    
+    console.log(`[QUIDAX SELL] Received details:`, JSON.stringify(details))
+    console.log(`[QUIDAX SELL] Extracted deposit address: ${quidaxDepositAddress}`)
 
     if (!quidaxDepositAddress) {
-      throw new Error('Quidax deposit address not provided')
+      console.error('[QUIDAX SELL] No deposit address found in details:', details)
+      throw new Error('Quidax deposit address not provided. Please try again.')
     }
 
     // DUAL WALLET SYSTEM: Try user wallet first, then master wallet
