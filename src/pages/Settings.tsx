@@ -11,6 +11,7 @@ import { useProfile } from '@/hooks/useProfile'
 import { supabase } from '@/integrations/supabase/client'
 import { Logo } from '@/components/ui/logo'
 import { Separator } from '@/components/ui/separator'
+import { PushNotificationToggle } from '@/components/PushNotificationToggle'
 
 interface NotificationPreferences {
   chats: boolean
@@ -280,6 +281,9 @@ const Settings = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Push Notifications */}
+        <PushNotificationToggle />
 
         {/* Privacy & Security */}
         <Card>
