@@ -61,6 +61,12 @@ import NaijaPredictor from "./components/NaijaPredictor";
 import FAQ from "./pages/FAQ";
 import Index from "./pages/Index";
 import Search from "./pages/Search";
+import PublicExpert from "./pages/PublicExpert";
+import PublicGig from "./pages/PublicGig";
+import PublicJob from "./pages/PublicJob";
+import PublicCourse from "./pages/PublicCourse";
+import PublicCampaign from "./pages/PublicCampaign";
+import Sitemap from "./pages/Sitemap";
 
 // Component to handle app state persistence
 const AppStateManager = () => {
@@ -134,6 +140,15 @@ const App = () => (
           <Route path="/activity-log" element={<ProtectedRoute><ActivityLog /></ProtectedRoute>} />
           <Route path="/payment-success" element={<PaymentSuccess />} />
           <Route path="/payment-failed" element={<PaymentFailed />} />
+          
+          {/* Public SEO pages */}
+          <Route path="/expert/:userId" element={<PublicExpert />} />
+          <Route path="/gig/:gigId" element={<PublicGig />} />
+          <Route path="/job/:jobId" element={<PublicJob />} />
+          <Route path="/course/:courseId" element={<PublicCourse />} />
+          <Route path="/campaign/:campaignId" element={<PublicCampaign />} />
+          <Route path="/sitemap" element={<Sitemap />} />
+          
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

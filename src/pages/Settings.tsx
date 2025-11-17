@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client'
 import { Logo } from '@/components/ui/logo'
 import { Separator } from '@/components/ui/separator'
 import { PushNotificationToggle } from '@/components/PushNotificationToggle'
+import { Label } from '@/components/ui/label'
 
 interface NotificationPreferences {
   chats: boolean
@@ -324,6 +325,25 @@ const Settings = () => {
                   </SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            <Separator />
+            
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="font-medium text-text-primary">Public on Google</h4>
+                <p className="text-sm text-text-secondary">Allow your profile to appear in Google search results</p>
+              </div>
+              <Switch 
+                checked={(profile as any)?.public_on_google ?? true}
+                onCheckedChange={async (checked) => {
+                  await updateProfile({ public_on_google: checked } as any);
+                  toast({
+                    title: "SEO Settings Updated",
+                    description: checked ? "Your profile will appear in search results" : "Your profile is hidden from search engines"
+                  });
+                }}
+              />
             </div>
 
             <Separator />

@@ -1,4 +1,5 @@
 import { createRoot } from 'react-dom/client'
+import { HelmetProvider } from 'react-helmet-async'
 import App from './App.tsx'
 import './index.css'
 import { QueryProvider } from "./providers/QueryProvider"
@@ -40,9 +41,11 @@ document.addEventListener('visibilitychange', () => {
 });
 
 createRoot(document.getElementById("root")!).render(
-  <QueryProvider>
-    <ThemeProvider defaultTheme="system" storageKey="naijalancers-theme" attribute="class">
-      <App />
-    </ThemeProvider>
-  </QueryProvider>
+  <HelmetProvider>
+    <QueryProvider>
+      <ThemeProvider defaultTheme="system" storageKey="naijalancers-theme" attribute="class">
+        <App />
+      </ThemeProvider>
+    </QueryProvider>
+  </HelmetProvider>
 );
