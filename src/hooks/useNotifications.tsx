@@ -20,13 +20,156 @@ export const useNotifications = () => {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [pushEnabled, setPushEnabled] = useState(false)
+  const [pushSubscription, setPushSubscription] = useState<PushSubscription | null>(null)
 
   useEffect(() => {
     if (user) {
       fetchNotifications()
       subscribeToNotifications()
+      checkPushPermission()
     }
   }, [user])
+
+  const checkPushPermission = async () => {
+    if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+      console.log('Push notifications not supported')
+      return
+    }
+
+    const permission = Notification.permission
+    setPushEnabled(permission === 'granted')
+
+    if (permission === 'granted') {
+      try {
+        const registration = await navigator.serviceWorker.ready
+        const subscription = await registration.pushManager.getSubscription()
+        setPushSubscription(subscription)
+      } catch (error) {
+        console.error('Error checking push subscription:', error)
+      }
+    }
+  }
+
+  const requestPushPermission = async () => {
+    if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+      toast({
+        title: 'Not Supported',
+        description: 'Push notifications are not supported on this device',
+        variant: 'destructive',
+      })
+      return false
+    }
+
+    try {
+      // Register service worker
+      const registration = await navigator.serviceWorker.register('/service-worker.js')
+      console.log('Service Worker registered:', registration)
+
+      // Request notification permission
+      const permission = await Notification.requestPermission()
+      
+      if (permission === 'granted') {
+        setPushEnabled(true)
+        
+        // Subscribe to push notifications
+        const subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(
+            // VAPID public key - you'll need to generate this
+            'BEl62iUYgUivxIkv69yViEuiBIa-Ib37gp65ImqH8IaG_d5zGW3TpUY0Dh3TGX2hP_mMLpYXLvJ4WdE_kCDZiQ8'
+          ),
+        })
+        
+        setPushSubscription(subscription)
+        
+        // Save subscription to backend
+        await savePushSubscription(subscription)
+        
+        toast({
+          title: 'Success',
+          description: 'Push notifications enabled successfully',
+        })
+        
+        return true
+      } else {
+        toast({
+          title: 'Permission Denied',
+          description: 'Please enable notifications in your browser settings',
+          variant: 'destructive',
+        })
+        return false
+      }
+    } catch (error) {
+      console.error('Error requesting push permission:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to enable push notifications',
+        variant: 'destructive',
+      })
+      return false
+    }
+  }
+
+  const savePushSubscription = async (subscription: PushSubscription) => {
+    if (!user) return
+
+    try {
+      const { error } = await supabase
+        .from('push_subscriptions')
+        .upsert({
+          user_id: user.id,
+          subscription: subscription.toJSON() as any,
+          updated_at: new Date().toISOString(),
+        } as any)
+
+      if (error) throw error
+    } catch (error) {
+      console.error('Error saving push subscription:', error)
+    }
+  }
+
+  const disablePushNotifications = async () => {
+    if (!pushSubscription) return
+
+    try {
+      await pushSubscription.unsubscribe()
+      setPushSubscription(null)
+      setPushEnabled(false)
+      
+      // Remove subscription from backend
+      if (user) {
+        await (supabase as any)
+          .from('push_subscriptions')
+          .delete()
+          .eq('user_id', user.id)
+      }
+      
+      toast({
+        title: 'Disabled',
+        description: 'Push notifications have been disabled',
+      })
+    } catch (error) {
+      console.error('Error disabling push notifications:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to disable push notifications',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  // Helper function to convert VAPID key
+  const urlBase64ToUint8Array = (base64String: string) => {
+    const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
+    const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/')
+    const rawData = window.atob(base64)
+    const outputArray = new Uint8Array(rawData.length)
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i)
+    }
+    return outputArray
+  }
 
   const fetchNotifications = async () => {
     if (!user) return
@@ -156,6 +299,9 @@ export const useNotifications = () => {
     markAsRead,
     markAllAsRead,
     createNotification,
-    refetch: fetchNotifications
+    refetch: fetchNotifications,
+    pushEnabled,
+    requestPushPermission,
+    disablePushNotifications,
   }
 }

@@ -1,4 +1,13 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { Resend } from 'npm:resend@4.0.0'
+import { renderAsync } from 'npm:@react-email/components@0.0.22'
+import { renderToBuffer } from 'npm:@react-pdf/renderer@3.4.4'
+import * as React from 'npm:react@18.3.1'
+import { TransactionReceipt } from './_templates/transaction-receipt.tsx'
+import { GeneralNotification } from './_templates/general-notification.tsx'
+import { TransactionReceiptPDF } from './_utils/pdf-generator.ts'
+
+const resend = new Resend(Deno.env.get('RESEND_API_KEY') as string)
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,6 +20,9 @@ interface NotificationRequest {
   title: string
   message: string
   metadata?: any
+  sendEmail?: boolean
+  emailTemplate?: 'transaction' | 'general'
+  attachPDF?: boolean
 }
 
 Deno.serve(async (req) => {
@@ -25,11 +37,27 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const { userId, type, title, message, metadata } = await req.json() as NotificationRequest
+    const { 
+      userId, 
+      type, 
+      title, 
+      message, 
+      metadata,
+      sendEmail = false,
+      emailTemplate = 'general',
+      attachPDF = false
+    } = await req.json() as NotificationRequest
 
-    console.log('Creating notification:', { userId, type, title })
+    console.log('Creating notification:', { userId, type, title, sendEmail })
 
-    // Insert notification
+    // Get user profile for email
+    const { data: profile } = await supabaseClient
+      .from('profiles')
+      .select('email, full_name')
+      .eq('user_id', userId)
+      .single()
+
+    // Insert notification in database
     const { data, error } = await supabaseClient
       .from('notifications')
       .insert({
@@ -48,6 +76,84 @@ Deno.serve(async (req) => {
     }
 
     console.log('Notification created successfully:', data.id)
+
+    // Send email if requested and user has email
+    if (sendEmail && profile?.email) {
+      try {
+        console.log('Sending email notification to:', profile.email)
+        
+        let html = ''
+        let pdfAttachment = null
+
+        // Generate email HTML based on template
+        if (emailTemplate === 'transaction' && metadata) {
+          html = await renderAsync(
+            React.createElement(TransactionReceipt, {
+              userName: profile.full_name || 'User',
+              transactionType: metadata.transactionType || type,
+              amount: metadata.amount || 'N/A',
+              reference: metadata.reference || 'N/A',
+              date: new Date(data.created_at).toLocaleString(),
+              status: metadata.status || 'Completed',
+              description: message,
+            })
+          )
+
+          // Generate PDF if requested
+          if (attachPDF) {
+            console.log('Generating PDF receipt...')
+            const pdfDoc = React.createElement(TransactionReceiptPDF, {
+              userName: profile.full_name || 'User',
+              transactionType: metadata.transactionType || type,
+              amount: metadata.amount || 'N/A',
+              reference: metadata.reference || 'N/A',
+              date: new Date(data.created_at).toLocaleString(),
+              status: metadata.status || 'Completed',
+              description: message,
+            })
+            
+            const pdfBuffer = await renderToBuffer(pdfDoc)
+            pdfAttachment = {
+              filename: `receipt-${metadata.reference || data.id}.pdf`,
+              content: Array.from(new Uint8Array(pdfBuffer))
+            }
+          }
+        } else {
+          html = await renderAsync(
+            React.createElement(GeneralNotification, {
+              userName: profile.full_name || 'User',
+              title,
+              message,
+              actionUrl: metadata?.actionUrl,
+              actionText: metadata?.actionText,
+            })
+          )
+        }
+
+        // Send email via Resend
+        const emailData: any = {
+          from: 'NaijaLancers <notifications@naijalancers.com>',
+          to: [profile.email],
+          subject: title,
+          html,
+        }
+
+        if (pdfAttachment) {
+          emailData.attachments = [pdfAttachment]
+        }
+
+        const { error: emailError } = await resend.emails.send(emailData)
+
+        if (emailError) {
+          console.error('Error sending email:', emailError)
+        } else {
+          console.log('Email sent successfully to:', profile.email)
+        }
+      } catch (emailError) {
+        console.error('Error in email sending process:', emailError)
+        // Don't fail the notification if email fails
+      }
+    }
 
     return new Response(
       JSON.stringify({ success: true, notification: data }),
