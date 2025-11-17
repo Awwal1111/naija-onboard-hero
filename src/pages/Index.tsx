@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { UnifiedSearchBar } from '@/components/UnifiedSearchBar'
 import { Logo } from '@/components/ui/logo'
 import { BrandButton } from '@/components/ui/brand-button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -66,6 +67,10 @@ const Index = () => {
                     <Users className="w-5 h-5 text-primary" />
                     <span className="text-sm font-medium">10,000+ Users</span>
                   </div>
+                </div>
+
+                <div className="max-w-2xl mb-6">
+                  <UnifiedSearchBar />
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-4 pt-4">
