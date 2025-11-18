@@ -5,6 +5,19 @@ import './index.css'
 import { QueryProvider } from "./providers/QueryProvider"
 import { ThemeProvider } from "next-themes"
 
+// Register service worker for push notifications
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
+      .then((registration) => {
+        console.log('[Push] Service Worker registered successfully:', registration.scope);
+      })
+      .catch((error) => {
+        console.error('[Push] Service Worker registration failed:', error);
+      });
+  });
+}
+
 // Register PWA service worker
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {

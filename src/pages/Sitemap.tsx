@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useEffect } from 'react';
 
 export default function Sitemap() {
   const { data: urls } = useQuery({
@@ -91,10 +90,17 @@ export default function Sitemap() {
     },
   });
 
-  useEffect(() => {
-    if (urls) {
-      const baseUrl = window.location.origin;
-      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+  const baseUrl = 'https://naijalancers.com';
+
+  if (!urls) {
+    return (
+      <div className="container max-w-4xl mx-auto py-8 px-4">
+        <p className="text-muted-foreground">Loading sitemap...</p>
+      </div>
+    );
+  }
+
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${urls.map(url => `  <url>
     <loc>${baseUrl}${url.loc}</loc>
@@ -103,30 +109,19 @@ ${urls.map(url => `  <url>
   </url>`).join('\n')}
 </urlset>`;
 
-      const blob = new Blob([xml], { type: 'application/xml' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = 'sitemap.xml';
-      link.click();
-    }
-  }, [urls]);
-
   return (
     <div className="container max-w-4xl mx-auto py-8 px-4">
-      <h1 className="text-2xl font-bold mb-4">Sitemap</h1>
-      <p className="text-muted-foreground mb-4">Generating sitemap.xml...</p>
-      {urls && (
-        <div className="space-y-2">
-          <p className="text-sm text-muted-foreground">Total URLs: {urls.length}</p>
-          <div className="max-h-96 overflow-y-auto border rounded-lg p-4">
-            {urls.map((url, index) => (
-              <div key={index} className="text-sm py-1">
-                {url.loc}
-              </div>
-            ))}
-          </div>
+      <h1 className="text-2xl font-bold mb-4">Sitemap Generated</h1>
+      <div className="space-y-4">
+        <p className="text-sm text-muted-foreground">Total URLs: {urls.length}</p>
+        <div className="bg-muted p-4 rounded-lg">
+          <p className="text-sm mb-2 font-medium">Public sitemap.xml is available at:</p>
+          <a href="/sitemap.xml" className="text-primary hover:underline">{baseUrl}/sitemap.xml</a>
         </div>
-      )}
+        <div className="max-h-96 overflow-y-auto border rounded-lg p-4">
+          <pre className="text-xs">{xml}</pre>
+        </div>
+      </div>
     </div>
   );
 }
