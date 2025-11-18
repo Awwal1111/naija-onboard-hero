@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client'
 import { Logo } from '@/components/ui/logo'
 import { Separator } from '@/components/ui/separator'
 import { PushNotificationToggle } from '@/components/PushNotificationToggle'
+import { TestNotifications } from '@/components/TestNotifications'
 import { Label } from '@/components/ui/label'
 
 interface NotificationPreferences {
@@ -285,6 +286,9 @@ const Settings = () => {
 
         {/* Push Notifications */}
         <PushNotificationToggle />
+
+        {/* Test Notifications */}
+        <TestNotifications />
 
         {/* Privacy & Security */}
         <Card>
