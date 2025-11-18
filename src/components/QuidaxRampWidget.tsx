@@ -1,13 +1,15 @@
 import { useState } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { BrandButton } from '@/components/ui/brand-button'
-import { BrandInput } from '@/components/ui/brand-input'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { ArrowUpDown, AlertCircle, Wallet, Info, Copy } from 'lucide-react'
-import { toast } from 'sonner'
+import { ArrowDownUp, Info } from 'lucide-react'
+import { useAuth } from '@/hooks/useAuth'
+import { useProfile } from '@/hooks/useProfile'
 import { supabase } from '@/integrations/supabase/client'
-import { useCeloWallet } from '@/hooks/useCeloWallet'
+import { toast } from 'sonner'
 
 interface QuidaxRampWidgetProps {
   open: boolean
@@ -15,63 +17,170 @@ interface QuidaxRampWidgetProps {
   mode: 'buy' | 'sell'
 }
 
+declare global {
+  interface Window {
+    ramp?: {
+      initialize: (config: any) => void
+    }
+  }
+}
+
 export const QuidaxRampWidget = ({ open, onOpenChange, mode }: QuidaxRampWidgetProps) => {
+  const { user } = useAuth()
+  const { profile } = useProfile()
   const [amount, setAmount] = useState('')
   const [loading, setLoading] = useState(false)
-  const { address: celoAddress, usdtBalance } = useCeloWallet()
+  const [walletAddress, setWalletAddress] = useState<string>('')
 
-  const handleCopyWalletAddress = () => {
-    if (!celoAddress) {
-      toast.error('Wallet not initialized')
+  const handleInitializeWidget = async () => {
+    if (!user || !profile) {
+      toast.error('Please log in first')
       return
     }
-    navigator.clipboard.writeText(celoAddress)
-    toast.success('Wallet address copied!', {
-      description: 'Send USDT (Celo network) to this address. You\'ll get ₦1,600 NC per 1 USDT automatically.'
-    })
-  }
 
-  const handleWithdrawToBank = async () => {
     if (!amount || parseFloat(amount) <= 0) {
-      toast.error('Please enter a valid NC amount to withdraw')
+      toast.error('Please enter a valid amount')
       return
     }
 
-    const ncAmount = parseFloat(amount)
-
-    if (ncAmount < 1600) {
-      toast.error('Minimum withdrawal is ₦1,600 NC (1 USDT)')
+    const minAmount = mode === 'buy' ? 3000 : 2
+    if (parseFloat(amount) < minAmount) {
+      toast.error(`Minimum ${mode === 'buy' ? 'deposit' : 'withdrawal'} is ${mode === 'buy' ? '3,000 NC (₦3,000)' : '$2 USD (3,000 NC)'}`)
       return
     }
 
     setLoading(true)
 
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        toast.error('Please login to continue')
-        return
+      // Get wallet address from profile
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('celo_wallet_address')
+        .eq('user_id', user.id)
+        .single()
+
+      if (profileError) throw profileError
+
+      if (!profileData?.celo_wallet_address) {
+        // Create wallet if not exists
+        const { data: walletData, error: walletError } = await supabase.functions.invoke('create-user-wallet')
+        if (walletError) throw walletError
+        if (!walletData?.address) throw new Error('Failed to create wallet')
+        setWalletAddress(walletData.address)
+      } else {
+        setWalletAddress(profileData.celo_wallet_address)
       }
 
-      // Calculate USDT amount (1 USDT = 1600 NC)
-      const usdtAmount = (ncAmount / 1600).toFixed(2)
+      // Get public key from edge function
+      const { data: keysData, error: keysError } = await supabase.functions.invoke('get-quidax-public-key')
+      
+      if (keysError) throw keysError
+      if (!keysData?.publicKey) throw new Error('Failed to get public key')
 
-      // Call the withdrawal edge function
-      const { data, error } = await supabase.functions.invoke('quidax-bank-withdrawal', {
-        body: {
-          ncAmount,
-          usdtAmount: parseFloat(usdtAmount)
+      const reference = `ref_${Date.now()}_${user.id}`
+
+      // Initialize Quidax Ramp Widget
+      if (window.ramp) {
+      const config: any = {
+        public_key: keysData.publicKey,
+        reference: reference, // CRITICAL: Pass reference to Quidax
+        mode: mode,
+        network: 'CELO',
+        onClose: function(ref: string) {
+          console.log('Quidax modal closed:', ref)
+          // Prevent closing by reopening the widget
+          toast.info('Please complete the transaction')
+          return false
+        },
+          onSuccess: async function(transaction: any) {
+            console.log('Transaction successful:', transaction)
+            
+            // Send transaction details to backend for verification
+            try {
+              const { data, error } = await supabase.functions.invoke('verify-quidax-ramp-transaction', {
+                body: {
+                  reference: reference,
+                  transaction: transaction,
+                  mode: mode
+                }
+              })
+
+              if (error) throw error
+
+              if (data?.success) {
+                toast.success(`${mode === 'buy' ? 'Purchase' : 'Sale'} successful! Balance updated.`)
+              } else {
+                toast.error('Transaction verification failed. Please contact support.')
+              }
+            } catch (err: any) {
+              console.error('Verification error:', err)
+              toast.error('Failed to verify transaction. Please contact support.')
+            }
+
+            setLoading(false)
+            onOpenChange(false)
+          }
         }
-      })
 
-      if (error) throw error
+        if (mode === 'buy') {
+          config.from_currency = 'ngn'
+          config.to_currency = 'usdt'
+          config.from_amount = amount
+          config.address = profileData?.celo_wallet_address || walletAddress
+          config.onReceiveWalletDetails = function(details: any) {
+            console.log('Wallet details:', details)
+          }
+        } else {
+          config.from_currency = 'usdt'
+          config.to_currency = 'ngn'
+          config.from_amount = amount
+          config.onReceiveWalletDetails = async function(details: any) {
+            console.log('Quidax provided wallet details:', details)
+            
+            // Extract deposit address from various possible keys
+            const depositAddress = details.walletAddress || details.wallet_address || details.address || details.depositAddress
+            
+            if (!depositAddress) {
+              console.error('No deposit address found in wallet details:', details)
+              toast.error('Failed to get deposit address from Quidax')
+              return
+            }
+            
+            console.log('Extracted deposit address:', depositAddress)
+            
+            // Backend will handle sending USDT to Quidax deposit address
+            try {
+              const { data, error } = await supabase.functions.invoke('process-quidax-sell', {
+                body: {
+                  reference: reference,
+                  amount: amount,
+                  details: {
+                    deposit_address: depositAddress,
+                    ...details
+                  }
+                }
+              })
+              
+              if (error) throw error
+              
+              if (data?.success) {
+                toast.success('USDT sent to Quidax successfully')
+              }
+            } catch (err: any) {
+              console.error('Failed to process sell:', err)
+              toast.error(err.message || 'Failed to initiate sell transaction')
+            }
+          }
+        }
 
-      toast.success(`Withdrawal initiated! ${usdtAmount} USDT will be converted to NGN and sent to your bank`)
-      onOpenChange(false)
+        window.ramp.initialize(config)
+      } else {
+        toast.error('Quidax Ramp widget not loaded. Please refresh the page.')
+        setLoading(false)
+      }
     } catch (error: any) {
-      console.error('[QUIDAX] Withdrawal error:', error)
-      toast.error(error.message || 'Withdrawal failed. Please try again.')
-    } finally {
+      console.error('Error initializing widget:', error)
+      toast.error(error.message || 'Failed to initialize widget')
       setLoading(false)
     }
   }
@@ -81,121 +190,69 @@ export const QuidaxRampWidget = ({ open, onOpenChange, mode }: QuidaxRampWidgetP
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <ArrowUpDown className="h-5 w-5" />
-            {mode === 'buy' ? 'Buy NC with USDT' : 'Withdraw NC to Bank'}
+            <ArrowDownUp className="h-5 w-5" />
+            {mode === 'buy' ? 'Bank Deposit' : 'Bank Withdrawal'}
           </DialogTitle>
           <DialogDescription>
             {mode === 'buy' 
-              ? 'Send USDT to your wallet address to get NC instantly'
-              : 'Convert your NC to Naira via USDT and receive in your bank account'}
+              ? 'Fund your account with Naira - Instant & Secure' 
+              : 'Withdraw to your bank account - Fast & Reliable'}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
-          {mode === 'buy' ? (
-            <>
-              <Alert>
-                <Wallet className="h-4 w-4" />
-                <AlertDescription className="space-y-2">
-                  <p className="font-semibold">Your USDT Deposit Address (Celo Network):</p>
-                  <div className="flex items-center gap-2">
-                    <code className="flex-1 p-2 bg-muted rounded text-xs break-all">
-                      {celoAddress || 'Loading...'}
-                    </code>
-                    <BrandButton
-                      size="sm"
-                      variant="outline"
-                      onClick={handleCopyWalletAddress}
-                      disabled={!celoAddress}
-                    >
-                      <Copy className="h-3 w-3" />
-                    </BrandButton>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Send USDT on the <strong>Celo network</strong> to this address. 
-                    Your NC balance will update automatically when the transaction confirms.
-                  </p>
-                </AlertDescription>
-              </Alert>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Transaction Details</CardTitle>
+            <CardDescription>
+              Secure Banking Transaction - Protected & Instant
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="amount">
+                Amount in {mode === 'buy' ? 'NGN' : 'USDT'}
+              </Label>
+              <Input
+                id="amount"
+                type="number"
+                placeholder={mode === 'buy' ? 'Enter amount (min 3,000 NC / ₦3,000)' : 'Enter amount (min $2 / 3,000 NC)'}
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                min={mode === 'buy' ? '3000' : '2'}
+              />
+              <p className="text-xs text-muted-foreground">
+                {mode === 'buy' 
+                  ? 'Minimum deposit: 3,000 NC (₦3,000)' 
+                  : 'Minimum withdrawal: $2 USD (3,000 NC)'}
+              </p>
+            </div>
 
-              <Alert>
-                <Info className="h-4 w-4" />
-                <AlertDescription className="text-xs space-y-1">
-                  <div><strong>Current Balance:</strong> {parseFloat(usdtBalance || '0').toFixed(4)} USDT</div>
-                  <div><strong>Exchange Rate:</strong> 1 USDT = ₦1,600 NC</div>
-                  <div><strong>Example:</strong> Send 5 USDT → Receive ₦8,000 NC</div>
-                </AlertDescription>
-              </Alert>
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertDescription className="text-xs">
+                {mode === 'buy' ? (
+                  <>
+                    Complete your payment through our secure banking partner. 
+                    Your account will be credited instantly upon confirmation.
+                  </>
+                ) : (
+                  <>
+                    Your withdrawal will be processed securely through our banking partner.
+                    Funds will arrive in your bank account within minutes.
+                  </>
+                )}
+              </AlertDescription>
+            </Alert>
 
-              <div className="bg-yellow-50 dark:bg-yellow-950 p-3 rounded-lg border border-yellow-200 dark:border-yellow-800">
-                <p className="text-xs font-semibold text-yellow-800 dark:text-yellow-200 mb-1">⚠️ Important:</p>
-                <ul className="text-xs text-yellow-700 dark:text-yellow-300 space-y-1 list-disc list-inside">
-                  <li>Only send USDT on the <strong>Celo network</strong></li>
-                  <li>Sending on other networks (ETH, BSC, TRC20) will result in loss of funds</li>
-                  <li>Credits appear automatically within 2-5 minutes</li>
-                </ul>
-              </div>
-
-              <BrandButton
-                onClick={handleCopyWalletAddress}
-                disabled={!celoAddress}
-                className="w-full"
-              >
-                <Copy className="h-4 w-4 mr-2" />
-                Copy Wallet Address
-              </BrandButton>
-            </>
-          ) : (
-            <>
-              <div className="space-y-2">
-                <Label htmlFor="amount">Amount in NC to Withdraw</Label>
-                <BrandInput
-                  id="amount"
-                  type="number"
-                  placeholder="Enter NC amount (minimum ₦1,600)"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  disabled={loading}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Minimum withdrawal: ₦1,600 NC (1 USDT)
-                </p>
-              </div>
-
-              <Alert>
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription className="text-xs space-y-1">
-                  <div><strong>Withdrawal Process:</strong></div>
-                  <ol className="list-decimal list-inside space-y-1 ml-2">
-                    <li>Your NC is converted to USDT (₦1,600 NC = 1 USDT)</li>
-                    <li>USDT is sent to Quidax exchange</li>
-                    <li>Quidax converts USDT to NGN</li>
-                    <li>NGN is sent to your bank account</li>
-                  </ol>
-                  <div className="mt-2 pt-2 border-t border-border">
-                    <strong>Example:</strong> ₦16,000 NC → 10 USDT → ~₦15,500 NGN in bank
-                  </div>
-                </AlertDescription>
-              </Alert>
-
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription className="text-xs">
-                  Make sure your bank details are updated in Settings. 
-                  Withdrawals typically take 10-30 minutes to complete.
-                </AlertDescription>
-              </Alert>
-
-              <BrandButton
-                onClick={handleWithdrawToBank}
-                disabled={loading || !amount}
-                className="w-full"
-              >
-                {loading ? 'Processing Withdrawal...' : 'Withdraw to Bank Account'}
-              </BrandButton>
-            </>
-          )}
-        </div>
+            <BrandButton
+              onClick={handleInitializeWidget}
+              disabled={loading || !amount || parseFloat(amount) <= 0}
+              className="w-full"
+            >
+              {loading ? 'Processing...' : `Proceed to ${mode === 'buy' ? 'Deposit' : 'Withdrawal'}`}
+            </BrandButton>
+          </CardContent>
+        </Card>
       </DialogContent>
     </Dialog>
   )
