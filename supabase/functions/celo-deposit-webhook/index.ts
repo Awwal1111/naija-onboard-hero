@@ -100,87 +100,108 @@ serve(async (req) => {
         continue;
       }
 
-      // ===== ALCHEMY VERIFICATION: Verify transaction before crediting =====
-      console.log(`[ALCHEMY] Verifying transaction with Alchemy API: ${txHash}`);
+      // ===== VERIFICATION LAYER: Verify transaction before crediting =====
+      console.log(`[VERIFICATION] Starting transaction verification: ${txHash}`);
       
-      try {
-        const alchemyResponse = await fetch(
-          `https://celo-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              jsonrpc: '2.0',
-              id: 1,
-              method: 'eth_getTransactionReceipt',
-              params: [txHash]
-            })
+      let verificationSuccess = false;
+      let receipt: any = null;
+      
+      // Try Alchemy first if API key is available
+      if (ALCHEMY_API_KEY) {
+        try {
+          console.log(`[ALCHEMY] Attempting Alchemy verification...`);
+          const alchemyResponse = await fetch(
+            `https://celo-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                jsonrpc: '2.0',
+                id: 1,
+                method: 'eth_getTransactionReceipt',
+                params: [txHash]
+              })
+            }
+          );
+
+          const alchemyData = await alchemyResponse.json();
+          
+          if (alchemyData.result) {
+            receipt = alchemyData.result;
+            verificationSuccess = true;
+            console.log(`[ALCHEMY] ✅ Verification successful`);
+          } else {
+            console.log(`[ALCHEMY] ⚠️ No result from Alchemy, will try Forno`);
           }
-        );
-
-        const alchemyData = await alchemyResponse.json();
-        console.log(`[ALCHEMY] Response:`, JSON.stringify(alchemyData));
-
-        if (!alchemyData.result) {
-          console.log(`[ALCHEMY] ❌ Transaction not found or not confirmed yet: ${txHash}`);
-          continue;
+        } catch (alchemyError: any) {
+          console.log(`[ALCHEMY] ⚠️ Failed: ${alchemyError.message}, trying Forno...`);
         }
+      }
+      
+      // Fallback to Forno if Alchemy failed or unavailable
+      if (!verificationSuccess) {
+        try {
+          console.log(`[FORNO] Using Forno RPC for verification...`);
+          const fornoResponse = await fetch(
+            'https://forno.celo.org',
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                jsonrpc: '2.0',
+                id: 1,
+                method: 'eth_getTransactionReceipt',
+                params: [txHash]
+              })
+            }
+          );
 
-        const receipt = alchemyData.result;
-        
-        // Check transaction status (0x0 = failed, 0x1 = success)
-        if (receipt.status !== '0x1') {
-          console.log(`[ALCHEMY] ❌ Transaction failed on blockchain: ${txHash}`);
-          await supabase.from("crypto_transactions").insert({
-            user_id: "00000000-0000-0000-0000-000000000000",
-            transaction_type: "deposit",
-            crypto_amount: cryptoAmount,
-            crypto_currency: asset,
-            naira_amount: 0,
-            nc_amount: 0,
-            exchange_rate: usdToNgn,
-            wallet_address: toAddress,
-            tx_hash: txHash,
-            status: "failed",
-            error_message: `Transaction failed on blockchain (Alchemy verified)`
-          });
-          continue;
-        }
-
-        // Verify confirmations (at least 1 confirmation)
-        const blockNumber = parseInt(receipt.blockNumber, 16);
-        const latestBlockResponse = await fetch(
-          `https://celo-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              jsonrpc: '2.0',
-              id: 2,
-              method: 'eth_blockNumber',
-              params: []
-            })
+          const fornoData = await fornoResponse.json();
+          
+          if (fornoData.result) {
+            receipt = fornoData.result;
+            verificationSuccess = true;
+            console.log(`[FORNO] ✅ Verification successful via Forno`);
+          } else {
+            console.log(`[FORNO] ⚠️ Transaction not found yet: ${txHash}`);
           }
-        );
-
-        const latestBlockData = await latestBlockResponse.json();
-        const latestBlock = parseInt(latestBlockData.result, 16);
-        const confirmations = latestBlock - blockNumber;
-
-        console.log(`[ALCHEMY] ✅ Transaction confirmed with ${confirmations} confirmations`);
-        console.log(`[ALCHEMY] Status: SUCCESS, To: ${receipt.to}, From: ${receipt.from}`);
-
-        // Verify recipient address matches
-        if (receipt.to && receipt.to.toLowerCase() !== toAddress.toLowerCase()) {
-          console.log(`[ALCHEMY] ⚠️ Recipient address mismatch. Expected: ${toAddress}, Got: ${receipt.to}`);
+        } catch (fornoError: any) {
+          console.error(`[FORNO] ❌ Verification failed: ${fornoError.message}`);
         }
-
-        console.log(`[ALCHEMY] ✅ Verification passed for ${cryptoAmount} ${asset}`);
-
-      } catch (alchemyError: any) {
-        console.error(`[ALCHEMY] ❌ Verification failed: ${alchemyError.message}`);
-        console.error(`[ALCHEMY] Skipping credit for safety. Transaction: ${txHash}`);
+      }
+      
+      // If both verification attempts failed, skip this transaction
+      if (!verificationSuccess || !receipt) {
+        console.log(`[VERIFICATION] ❌ All verification methods failed for: ${txHash}`);
+        console.log(`[VERIFICATION] Transaction will be retried on next webhook trigger`);
         continue;
+      }
+      
+      // Check transaction status (0x0 = failed, 0x1 = success)
+      if (receipt.status !== '0x1') {
+        console.log(`[VERIFICATION] ❌ Transaction failed on blockchain: ${txHash}`);
+        await supabase.from("crypto_transactions").insert({
+          user_id: "00000000-0000-0000-0000-000000000000",
+          transaction_type: "deposit",
+          crypto_amount: cryptoAmount,
+          crypto_currency: asset,
+          naira_amount: 0,
+          nc_amount: 0,
+          exchange_rate: 1600,
+          wallet_address: toAddress,
+          tx_hash: txHash,
+          status: "failed",
+          error_message: `Transaction failed on blockchain (status: ${receipt.status})`
+        });
+        continue;
+      }
+
+      console.log(`[VERIFICATION] ✅ Transaction confirmed and successful`);
+      console.log(`[VERIFICATION] From: ${receipt.from}, To: ${receipt.to}`);
+      
+      // Verify recipient address matches
+      if (receipt.to && receipt.to.toLowerCase() !== toAddress.toLowerCase()) {
+        console.log(`[VERIFICATION] ⚠️ Recipient address mismatch. Expected: ${toAddress}, Got: ${receipt.to}`);
       }
 
       // Get exchange rate (USD to NGN) with retry logic
