@@ -34,12 +34,13 @@ serve(async (req) => {
 
     console.log(`[QUIDAX RAMP] Verifying ${mode} transaction:`, reference)
 
-    // Verify transaction with Quidax API
-    const verifyResponse = await fetch(`https://www.quidax.com/api/v1/ramp/transactions/${reference}`, {
+    // Verify transaction with Quidax API - FIXED URL
+    const verifyResponse = await fetch(`https://ramp-be.quidax.io/api/v1/merchants/on_ramp_transaction/${reference}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${quidaxPrivateKey}`,
         'Content-Type': 'application/json',
+        'Accept': 'application/json'
       }
     })
 
