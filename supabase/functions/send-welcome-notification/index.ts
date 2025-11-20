@@ -47,6 +47,27 @@ serve(async (req) => {
       );
     }
 
+    // THROTTLE: Only send welcome notification once per 24 hours
+    const oneDayAgo = new Date();
+    oneDayAgo.setHours(oneDayAgo.getHours() - 24);
+
+    const { data: recentSignin } = await supabase
+      .from("daily_signins")
+      .select("created_at")
+      .eq("user_id", user.id)
+      .gte("created_at", oneDayAgo.toISOString())
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (recentSignin) {
+      console.log(`[WELCOME] User ${user.id} already received welcome notification in last 24h, skipping`);
+      return new Response(
+        JSON.stringify({ success: false, reason: "Already notified in last 24 hours" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Customize welcome message based on user role
     let welcomeMessage = `🎉 *Welcome back, ${profile.full_name}!*\n\n`;
     
