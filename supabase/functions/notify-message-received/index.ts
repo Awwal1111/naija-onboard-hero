@@ -52,15 +52,15 @@ serve(async (req) => {
       );
     }
 
-    // Check if user is online by checking recent activity (last 5 minutes)
-    const fiveMinutesAgo = new Date();
-    fiveMinutesAgo.setMinutes(fiveMinutesAgo.getMinutes() - 5);
+    // Check if user is online by checking recent activity (last 10 minutes)
+    const tenMinutesAgo = new Date();
+    tenMinutesAgo.setMinutes(tenMinutesAgo.getMinutes() - 10);
 
     const { data: recentActivity } = await supabase
       .from("user_presence")
       .select("last_seen")
       .eq("user_id", recipient_id)
-      .gte("last_seen", fiveMinutesAgo.toISOString())
+      .gte("last_seen", tenMinutesAgo.toISOString())
       .maybeSingle();
 
     // Don't send notification if user is currently online/active
@@ -68,6 +68,25 @@ serve(async (req) => {
       console.log(`[MSG_NOTIFY] User ${recipient_id} is currently active, skipping notification`);
       return new Response(
         JSON.stringify({ success: false, reason: "User is currently active" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ANTI-SPAM: Check if we already sent a notification to this user in the last 5 minutes
+    const { data: recentNotifications } = await supabase
+      .from("notifications")
+      .select("created_at")
+      .eq("user_id", recipient_id)
+      .eq("type", "message")
+      .gte("created_at", new Date(Date.now() - 5 * 60 * 1000).toISOString())
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (recentNotifications) {
+      console.log(`[MSG_NOTIFY] User ${recipient_id} was notified recently, skipping to prevent spam`);
+      return new Response(
+        JSON.stringify({ success: false, reason: "Already notified recently" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
