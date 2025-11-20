@@ -56,17 +56,67 @@ serve(async (req) => {
       if (status === 'completed' || status === 'success') {
         console.log(`[QUIDAX_WEBHOOK] On-ramp completed: ${fiat_amount} NGN → ${token_amount} USDT`);
         
-        // The USDT will arrive at user's wallet automatically
-        // Our existing celo-deposit-webhook will detect it and credit NC
-        console.log(`[QUIDAX_WEBHOOK] USDT will be detected by deposit webhook at: ${transaction.wallet_address}`);
+        // Calculate NC amount (1 USDT = ~1600 NC)
+        const usdtAmount = parseFloat(token_amount || 0);
+        const ncAmount = Math.floor(usdtAmount * 1600);
+        
+        console.log(`[QUIDAX_WEBHOOK] Crediting ${ncAmount} NC to user ${transaction.user_id}`);
+        
+        // Get user profile
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('wallet_balance, balance_withdrawable')
+          .eq('user_id', transaction.user_id)
+          .single();
+        
+        if (!profileError && profile) {
+          // Credit user balance
+          await supabase
+            .from('profiles')
+            .update({
+              wallet_balance: profile.wallet_balance + ncAmount,
+              balance_withdrawable: profile.balance_withdrawable + ncAmount,
+              updated_at: new Date().toISOString()
+            })
+            .eq('user_id', transaction.user_id);
+          
+          // Log wallet transaction
+          await supabase
+            .from('wallet_transactions')
+            .insert({
+              user_id: transaction.user_id,
+              amount: ncAmount,
+              kind: 'quidax_deposit',
+              description: `Quidax Ramp deposit: ${usdtAmount} USDT`,
+              status: 'completed',
+              reference: reference
+            });
+          
+          // Log crypto transaction
+          await supabase
+            .from('crypto_transactions')
+            .insert({
+              user_id: transaction.user_id,
+              transaction_type: 'deposit',
+              crypto_amount: usdtAmount,
+              crypto_currency: 'USDT',
+              naira_amount: fiat_amount || 0,
+              nc_amount: ncAmount,
+              exchange_rate: 1600,
+              wallet_address: transaction.wallet_address || '',
+              status: 'completed'
+            });
+          
+          console.log(`[QUIDAX_WEBHOOK] ✅ Successfully credited ${ncAmount} NC to user`);
+        }
 
         // Send notification
         await supabase.from('notifications').insert({
           user_id: transaction.user_id,
           type: 'transaction',
           title: 'Deposit Successful! 🎉',
-          message: `Your deposit of ₦${fiat_amount} is complete. USDT is being sent to your wallet and will be converted to NC shortly.`,
-          metadata: { reference, fiat_amount, token_amount }
+          message: `Your deposit of ₦${fiat_amount} (${usdtAmount} USDT) has been credited. You received ${ncAmount} NC!`,
+          metadata: { reference, fiat_amount, token_amount, nc_amount: ncAmount }
         });
       } else if (status === 'failed' || status === 'cancelled') {
         console.log(`[QUIDAX_WEBHOOK] On-ramp failed: ${reference}`);
