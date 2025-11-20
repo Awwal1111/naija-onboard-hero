@@ -204,6 +204,20 @@ serve(async (req) => {
         console.log(`[VERIFICATION] ⚠️ Recipient mismatch. Expected: ${toAddress}, Got: ${receipt.to}`);
       }
 
+      // Check if this is from a pending Quidax transaction
+      const { data: quidaxTx } = await supabase
+        .from('quidax_transactions')
+        .select('*')
+        .eq('wallet_address', toAddress.toLowerCase())
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (quidaxTx) {
+        console.log(`[QUIDAX MATCH] Found pending Quidax transaction: ${quidaxTx.reference}`);
+      }
+
       // Get exchange rate (USD to NGN) with retry logic
       let usdToNgn = 1600; // Default fallback rate
       let exchangeRateSource = "fallback";
@@ -379,6 +393,43 @@ serve(async (req) => {
         continue;
       }
 
+      // Check if this deposit matches a pending Quidax Ramp transaction
+      console.log(`[QUIDAX CHECK] Looking for pending Quidax transaction for wallet: ${toAddress}`);
+      const { data: quidaxTx } = await supabase
+        .from('quidax_transactions')
+        .select('*')
+        .ilike('wallet_address', toAddress)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (quidaxTx) {
+        console.log(`[QUIDAX MATCH] ✅ Found pending Quidax Ramp transaction!`);
+        console.log(`[QUIDAX MATCH] Reference: ${quidaxTx.reference}`);
+        console.log(`[QUIDAX MATCH] Type: ${quidaxTx.transaction_type}`);
+        console.log(`[QUIDAX MATCH] Fiat Amount: ${quidaxTx.fiat_amount} ${quidaxTx.fiat_currency}`);
+        
+        // Update Quidax transaction to completed
+        await supabase
+          .from('quidax_transactions')
+          .update({
+            status: 'completed',
+            token_amount: cryptoAmount,
+            tx_hash: txHash,
+            quidax_data: { 
+              ...(quidaxTx.quidax_data as any || {}), 
+              completed_via: 'webhook_detection',
+              webhook_detected_at: new Date().toISOString(),
+              blockchain_verified: true
+            }
+          })
+          .eq('id', quidaxTx.id);
+        console.log(`[QUIDAX MATCH] ✅ Updated Quidax transaction to completed`);
+      } else {
+        console.log(`[QUIDAX CHECK] No pending Quidax transaction found (regular deposit)`);
+      }
+
       // Credit user wallet
       console.log(`[CREDIT] Current balance: ${currentProfile.wallet_balance}, Adding: ${ncAmount}`);
       const { error: walletError } = await supabase
@@ -397,10 +448,12 @@ serve(async (req) => {
       // Log wallet transaction
       const { error: wtError } = await supabase.from("wallet_transactions").insert({
         user_id: profile.user_id,
-        kind: "deposit",
+        kind: quidaxTx ? "quidax_deposit" : "deposit",
         amount: ncAmount,
         status: "completed",
-        reference: `Crypto deposit: ${cryptoAmount} ${asset} (Tx: ${txHash})`
+        reference: quidaxTx 
+          ? `Quidax Ramp: ${cryptoAmount} ${asset} (${quidaxTx.fiat_amount} ${quidaxTx.fiat_currency})`
+          : `Crypto deposit: ${cryptoAmount} ${asset} (Tx: ${txHash})`
       });
 
       if (wtError) {

@@ -79,6 +79,21 @@ export const QuidaxRampWidget = ({ open, onOpenChange, mode }: QuidaxRampWidgetP
 
       const reference = `ref_${Date.now()}_${user.id}`
 
+      // Pre-create transaction record for tracking
+      console.log(`[QUIDAX] Creating pending transaction: ${reference}`)
+      await supabase.from('quidax_transactions').insert({
+        user_id: user.id,
+        reference: reference,
+        transaction_type: mode === 'buy' ? 'on_ramp' : 'off_ramp',
+        status: 'pending',
+        fiat_amount: mode === 'buy' ? parseFloat(amount) : 0,
+        token_amount: mode === 'sell' ? parseFloat(amount) / 1600 : null,
+        token: 'USDT',
+        fiat_currency: 'NGN',
+        wallet_address: profileData?.celo_wallet_address || walletAddress,
+        quidax_data: { initiated_at: new Date().toISOString() }
+      })
+
       // Initialize Quidax Ramp Widget
       if (window.ramp) {
       const config: any = {
