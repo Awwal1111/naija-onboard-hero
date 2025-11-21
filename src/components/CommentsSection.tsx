@@ -8,6 +8,7 @@ import { useEnhancedFeed, Comment } from '@/hooks/useEnhancedFeed'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
+import ProfilePreview from '@/components/ProfilePreview'
 
 interface CommentsSectionProps {
   postId: string
@@ -29,6 +30,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
   const [replyingTo, setReplyingTo] = useState<string | null>(null)
   const [replyText, setReplyText] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [profilePreview, setProfilePreview] = useState<{ isOpen: boolean; userId: string | null }>({ isOpen: false, userId: null })
 
   const loadComments = async () => {
     if (!isOpen) return
@@ -151,7 +153,10 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
             <div key={comment.id} className="space-y-3">
               {/* Main Comment */}
               <div className="flex gap-3">
-                <Avatar className="h-8 w-8">
+                <Avatar 
+                  className="h-8 w-8 cursor-pointer hover:opacity-80 transition-opacity"
+                  onClick={() => setProfilePreview({ isOpen: true, userId: comment.user_id })}
+                >
                   <AvatarImage src={comment.profiles?.profile_picture_url} />
                   <AvatarFallback className="text-sm">
                     {comment.profiles?.full_name?.charAt(0) || 'U'}
@@ -161,7 +166,10 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
                 <div className="flex-1 min-w-0">
                   <div className="bg-muted rounded-xl px-3 py-2">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="font-semibold text-sm text-text-primary">
+                      <span 
+                        className="font-semibold text-sm text-text-primary cursor-pointer hover:text-primary transition-colors"
+                        onClick={() => setProfilePreview({ isOpen: true, userId: comment.user_id })}
+                      >
                         {comment.profiles?.full_name || 'Anonymous'}
                       </span>
                       <span className="text-xs text-text-secondary">
@@ -296,6 +304,13 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
           ))
         )}
       </div>
+
+      {/* Profile Preview Dialog */}
+      <ProfilePreview
+        isOpen={profilePreview.isOpen}
+        onClose={() => setProfilePreview({ isOpen: false, userId: null })}
+        profileId={profilePreview.userId || ''}
+      />
     </div>
   )
 }

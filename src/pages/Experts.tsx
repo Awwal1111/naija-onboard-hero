@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/useAuth'
 import TopBannerAd from '@/components/TopBannerAd'
+import ProfilePreview from '@/components/ProfilePreview'
 
 interface Expert {
   id: string
@@ -44,6 +45,7 @@ const Experts = () => {
   const [stateFilter, setStateFilter] = useState('all')
   const [skillFilter, setSkillFilter] = useState('all')
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
+  const [profilePreview, setProfilePreview] = useState<{ isOpen: boolean; userId: string | null }>({ isOpen: false, userId: null })
 
   const bottomNavItems = [
     { icon: Home, label: 'Feed', path: '/feed' },
@@ -302,13 +304,19 @@ const Experts = () => {
               >
                 <div className="flex items-start gap-4">
                   {/* Profile Picture */}
-                  <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center text-white text-xl font-bold shrink-0">
+                  <div 
+                    className="w-16 h-16 bg-primary rounded-full flex items-center justify-center text-white text-xl font-bold shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={() => setProfilePreview({ isOpen: true, userId: expert.user_id })}
+                  >
                     {expert.profiles?.full_name?.charAt(0) || expert.full_name.charAt(0)}
                   </div>
                   
                   {/* Expert Info */}
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-semibold text-text-primary truncate">
+                    <h3 
+                      className="text-lg font-semibold text-text-primary truncate cursor-pointer hover:text-primary transition-colors"
+                      onClick={() => setProfilePreview({ isOpen: true, userId: expert.user_id })}
+                    >
                       {expert.profiles?.full_name || expert.full_name}
                     </h3>
                     <p className="text-primary font-medium text-sm mb-2">
@@ -410,6 +418,13 @@ const Experts = () => {
         </div>
       </div>
       <MoreMenuDrawer open={moreMenuOpen} onOpenChange={setMoreMenuOpen} />
+
+      {/* Profile Preview Dialog */}
+      <ProfilePreview
+        isOpen={profilePreview.isOpen}
+        onClose={() => setProfilePreview({ isOpen: false, userId: null })}
+        profileId={profilePreview.userId || ''}
+      />
     </div>
   )
 }

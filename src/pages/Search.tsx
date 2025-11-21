@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { useNigerianStates } from "@/hooks/useNigerianStates";
 import { useSavedSearches } from "@/hooks/useSavedSearches";
 import { Separator } from "@/components/ui/separator";
+import ProfilePreview from "@/components/ProfilePreview";
 
 const Search = () => {
   const [query, setQuery] = useState("");
@@ -34,6 +35,7 @@ const Search = () => {
   const [selectedLGA, setSelectedLGA] = useState("");
   const [minRating, setMinRating] = useState<number>(0);
   const [skillInput, setSkillInput] = useState("");
+  const [profilePreview, setProfilePreview] = useState<{ isOpen: boolean; userId: string | null }>({ isOpen: false, userId: null });
   
   const { states, lgas, fetchLGAs } = useNigerianStates();
   const { savedSearches, saveSearch, deleteSearch } = useSavedSearches();
@@ -482,7 +484,11 @@ const Search = () => {
           <TabsContent value={activeTab} className="space-y-4">
             {/* Users Results */}
             {(activeTab === "all" || activeTab === "users") && searchResults?.users.map((user) => (
-              <Card key={user.user_id} className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate(`/profile/${user.user_id}`)}>
+              <Card 
+                key={user.user_id} 
+                className="cursor-pointer hover:shadow-lg transition-shadow" 
+                onClick={() => setProfilePreview({ isOpen: true, userId: user.user_id })}
+              >
                 <CardContent className="p-4">
                   <div className="flex items-center gap-4">
                     <Avatar className="h-12 w-12">
@@ -596,6 +602,13 @@ const Search = () => {
           </TabsContent>
         </Tabs>
       </div>
+      
+      {/* Profile Preview Dialog */}
+      <ProfilePreview
+        isOpen={profilePreview.isOpen}
+        onClose={() => setProfilePreview({ isOpen: false, userId: null })}
+        profileId={profilePreview.userId || ''}
+      />
     </ResponsiveLayout>
   );
 };
