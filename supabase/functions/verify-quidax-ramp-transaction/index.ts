@@ -34,11 +34,11 @@ serve(async (req) => {
 
     console.log(`[QUIDAX RAMP] Verifying ${mode} transaction:`, reference)
 
-    // Verify transaction with Quidax API - FIXED URL
+    // Verify transaction with Quidax API - Using correct authentication
     const verifyResponse = await fetch(`https://ramp-be.quidax.io/api/v1/merchants/on_ramp_transaction/${reference}`, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${quidaxPrivateKey}`,
+        'x-private-key': quidaxPrivateKey,
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       }
@@ -112,7 +112,7 @@ serve(async (req) => {
       .insert({
         user_id: user.id,
         amount: updateAmount,
-        type: transactionType,
+        kind: transactionType,
         description: description,
         status: 'completed',
         reference: reference
