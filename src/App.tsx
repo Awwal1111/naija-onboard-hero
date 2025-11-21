@@ -7,6 +7,7 @@ import SmartAIAssistant from "@/components/SmartAIAssistant";
 import WalletInitializer from "@/components/WalletInitializer";
 import GlobalCallManager from "@/components/GlobalCallManager";
 import { QuidaxRampManager } from "@/components/QuidaxRampManager";
+import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { useAppState } from "@/hooks/useAppState";
 import Welcome from "./pages/Welcome";
 import Login from "./pages/Login";
@@ -67,6 +68,7 @@ import PublicJob from "./pages/PublicJob";
 import PublicCourse from "./pages/PublicCourse";
 import PublicCampaign from "./pages/PublicCampaign";
 import Sitemap from "./pages/Sitemap";
+import InstallApp from "./pages/InstallApp";
 
 // Component to handle app state persistence
 const AppStateManager = () => {
@@ -83,8 +85,10 @@ const App = () => (
         <WalletInitializer />
         <GlobalCallManager />
         <QuidaxRampManager />
+        <PWAInstallPrompt />
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/install" element={<InstallApp />} />
           <Route path="/welcome" element={<Welcome />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<SignUp />} />
