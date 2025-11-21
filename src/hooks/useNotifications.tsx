@@ -273,20 +273,50 @@ export const useNotifications = () => {
     type: string,
     title: string,
     message: string,
-    metadata?: any
+    metadata?: any,
+    sendEmail: boolean = false
   ) => {
     try {
-      const { error } = await supabase
-        .from('notifications')
-        .insert({
-          user_id: userId,
-          type,
-          title,
-          message,
-          metadata
+      // For transaction and important notifications, send via edge function with email
+      if (sendEmail || type === 'transaction' || type === 'withdrawal' || type === 'deposit' || type === 'payment') {
+        const { error } = await supabase.functions.invoke('send-notification', {
+          body: {
+            userId,
+            type,
+            title,
+            message,
+            metadata,
+            sendEmail: true,
+            emailTemplate: type.includes('transaction') || type.includes('payment') || type.includes('withdrawal') || type.includes('deposit') ? 'transaction' : 'general',
+            attachPDF: type === 'transaction' || type === 'payment'
+          }
         })
 
-      if (error) throw error
+        if (error) {
+          console.error('Error sending notification with email:', error)
+          // Fallback to database insert
+          await supabase.from('notifications').insert({
+            user_id: userId,
+            type,
+            title,
+            message,
+            metadata
+          })
+        }
+      } else {
+        // Regular notification without email
+        const { error } = await supabase
+          .from('notifications')
+          .insert({
+            user_id: userId,
+            type,
+            title,
+            message,
+            metadata
+          })
+
+        if (error) throw error
+      }
     } catch (error) {
       console.error('Error creating notification:', error)
     }
