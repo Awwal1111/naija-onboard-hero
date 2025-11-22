@@ -10,7 +10,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Coins, Send, AlertCircle, Wallet, Info, ArrowDownUp } from 'lucide-react'
+import { SecurePinInput } from './SecurePinInput'
 import { useWallet } from '@/hooks/useWallet'
+import { useProfile } from '@/hooks/useProfile'
 import { useCeloWallet } from '@/hooks/useCeloWallet'
 import { supabase } from '@/integrations/supabase/client'
 import { toast } from 'sonner'
@@ -23,6 +25,7 @@ interface WithdrawalDialogProps {
 
 export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: WithdrawalDialogProps) => {
   const { initiateWithdrawal } = useWallet()
+  const { profile } = useProfile()
   const { address: celoAddress, celoBalance, cUsdBalance, usdtBalance, loading: walletLoading } = useCeloWallet()
 
   // Crypto withdrawal state
@@ -30,8 +33,9 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
   const [cryptoCurrency, setCryptoCurrency] = useState<'cUSD' | 'CELO' | 'USDT'>('cUSD')
   const [cryptoAmount, setCryptoAmount] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [showPinInput, setShowPinInput] = useState(false)
 
-  const handleCryptoWithdraw = async () => {
+  const handleContinueToPIN = () => {
     if (!cryptoWalletAddress) {
       toast.error("Please enter a valid wallet address")
       return
@@ -60,6 +64,22 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
       return
     }
 
+    setShowPinInput(true)
+  }
+
+  const handlePinVerified = async (pin: string) => {
+    // Verify PIN
+    if (pin !== (profile as any)?.transaction_pin) {
+      toast.error('Incorrect PIN')
+      return
+    }
+
+    setShowPinInput(false)
+    await handleCryptoWithdraw()
+  }
+
+  const handleCryptoWithdraw = async () => {
+    const ncAmount = parseFloat(cryptoAmount)
     setIsLoading(true)
 
     try {
@@ -194,13 +214,22 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
                     </p>
                   </div>
 
-                  <BrandButton
-                    onClick={handleCryptoWithdraw}
-                    disabled={isLoading}
-                    className="w-full"
-                  >
-                    {isLoading ? 'Processing...' : `Withdraw ${cryptoCurrency}`}
-                  </BrandButton>
+                  {showPinInput ? (
+                    <SecurePinInput
+                      onVerified={handlePinVerified}
+                      onCancel={() => setShowPinInput(false)}
+                      title="Confirm Withdrawal"
+                      description={`Withdraw ${cryptoAmount} NC as ${cryptoCurrency}`}
+                    />
+                  ) : (
+                    <BrandButton
+                      onClick={handleContinueToPIN}
+                      disabled={isLoading}
+                      className="w-full"
+                    >
+                      Continue to PIN
+                    </BrandButton>
+                  )}
                 </div>
               </CardContent>
             </Card>

@@ -13,6 +13,7 @@ import { Logo } from '@/components/ui/logo'
 import { Separator } from '@/components/ui/separator'
 import { PushNotificationToggle } from '@/components/PushNotificationToggle'
 import { TestNotifications } from '@/components/TestNotifications'
+import { TwoFactorSetup } from '@/components/TwoFactorSetup'
 import { Label } from '@/components/ui/label'
 
 interface NotificationPreferences {
@@ -355,7 +356,7 @@ const Settings = () => {
             <div>
               <h4 className="font-medium text-text-primary mb-3">Transaction PIN</h4>
               <p className="text-sm text-text-secondary mb-4">
-                Set a 4-digit PIN to secure your money transfers
+                Set a 4-digit PIN to secure your money transfers and withdrawals
               </p>
               <Button variant="outline" onClick={() => navigate('/settings/pin')}>
                 <Lock className="h-4 w-4 mr-2" />
@@ -364,6 +365,9 @@ const Settings = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Two-Factor Authentication */}
+        <TwoFactorSetup />
 
         {/* About Section */}
         <Card>

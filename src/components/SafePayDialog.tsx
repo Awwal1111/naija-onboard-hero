@@ -4,9 +4,12 @@ import { BrandButton } from '@/components/ui/brand-button'
 import { BrandInput } from '@/components/ui/brand-input'
 import { Textarea } from '@/components/ui/textarea'
 import { Shield, Clock, CheckCircle, AlertTriangle, XCircle } from 'lucide-react'
+import { SecurePinInput } from './SecurePinInput'
 import { useSafePay } from '@/hooks/useSafePay'
 import { useAuth } from '@/hooks/useAuth'
+import { useProfile } from '@/hooks/useProfile'
 import { useWallet } from '@/hooks/useWallet'
+import { toast } from 'sonner'
 
 interface SafePayDialogProps {
   otherUserId: string
@@ -15,6 +18,7 @@ interface SafePayDialogProps {
 
 const SafePayDialog: React.FC<SafePayDialogProps> = ({ otherUserId, otherUserName }) => {
   const { user } = useAuth()
+  const { profile } = useProfile()
   const { 
     activeTransaction, 
     loading, 
@@ -27,16 +31,69 @@ const SafePayDialog: React.FC<SafePayDialogProps> = ({ otherUserId, otherUserNam
   const { balance } = useWallet()
   const [amount, setAmount] = useState('')
   const [open, setOpen] = useState(false)
+  const [showPinInput, setShowPinInput] = useState(false)
+  const [pendingAction, setPendingAction] = useState<'propose' | 'accept' | 'release' | null>(null)
 
-  const handlePropose = async () => {
+  const handlePropose = () => {
     const amountNum = parseInt(amount)
-    if (amountNum > 0) {
-      await proposeSafePay(amountNum)
-      setAmount('')
+    if (amountNum > 0 && amountNum <= balance.withdrawable) {
+      setPendingAction('propose')
+      setShowPinInput(true)
     }
   }
 
+  const handleAccept = () => {
+    setPendingAction('accept')
+    setShowPinInput(true)
+  }
+
+  const handleRelease = () => {
+    setPendingAction('release')
+    setShowPinInput(true)
+  }
+
+  const handlePinVerified = async (pin: string) => {
+    // Verify PIN
+    if (pin !== (profile as any)?.transaction_pin) {
+      toast.error('Incorrect PIN')
+      return
+    }
+
+    setShowPinInput(false)
+
+    // Execute pending action
+    if (pendingAction === 'propose') {
+      await proposeSafePay(parseInt(amount))
+      setAmount('')
+    } else if (pendingAction === 'accept') {
+      await acceptSafePay()
+    } else if (pendingAction === 'release') {
+      await releaseFunds()
+    }
+
+    setPendingAction(null)
+  }
+
   const renderTransactionStatus = () => {
+    if (showPinInput) {
+      return (
+        <SecurePinInput
+          onVerified={handlePinVerified}
+          onCancel={() => {
+            setShowPinInput(false)
+            setPendingAction(null)
+          }}
+          title="Confirm SafePay Action"
+          description={
+            pendingAction === 'propose' ? `Lock ${amount} NC in escrow` :
+            pendingAction === 'accept' ? 'Accept SafePay proposal' :
+            pendingAction === 'release' ? 'Release funds to seller' :
+            'Confirm action'
+          }
+        />
+      )
+    }
+
     if (!activeTransaction) {
       return (
         <div className="space-y-4">
@@ -115,7 +172,7 @@ const SafePayDialog: React.FC<SafePayDialogProps> = ({ otherUserId, otherUserNam
             <div className="flex gap-2">
               {isSeller && (
                 <BrandButton 
-                  onClick={acceptSafePay}
+                  onClick={handleAccept}
                   disabled={loading}
                   className="flex-1"
                 >
@@ -188,7 +245,7 @@ const SafePayDialog: React.FC<SafePayDialogProps> = ({ otherUserId, otherUserNam
 
             {isBuyer && (
               <BrandButton 
-                onClick={releaseFunds}
+                onClick={handleRelease}
                 disabled={loading}
                 className="w-full"
               >

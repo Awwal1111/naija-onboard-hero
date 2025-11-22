@@ -2700,12 +2700,15 @@ export type Database = {
         Row: {
           area: string | null
           average_rating: number | null
+          backup_codes: string[] | null
           balance_non_withdrawable: number | null
           balance_withdrawable: number
           bio: string | null
+          biometric_enabled: boolean | null
           celo_wallet_address: string | null
           connections_count: number | null
           created_at: string
+          email_2fa_enabled: boolean | null
           email_confirmed: boolean | null
           email_verification_sent_at: string | null
           email_verification_token: string | null
@@ -2726,6 +2729,8 @@ export type Database = {
           state_name: string | null
           telegram_user_id: string | null
           telegram_username: string | null
+          totp_enabled: boolean | null
+          totp_secret: string | null
           transaction_pin: string | null
           updated_at: string
           user_id: string
@@ -2734,12 +2739,15 @@ export type Database = {
         Insert: {
           area?: string | null
           average_rating?: number | null
+          backup_codes?: string[] | null
           balance_non_withdrawable?: number | null
           balance_withdrawable?: number
           bio?: string | null
+          biometric_enabled?: boolean | null
           celo_wallet_address?: string | null
           connections_count?: number | null
           created_at?: string
+          email_2fa_enabled?: boolean | null
           email_confirmed?: boolean | null
           email_verification_sent_at?: string | null
           email_verification_token?: string | null
@@ -2760,6 +2768,8 @@ export type Database = {
           state_name?: string | null
           telegram_user_id?: string | null
           telegram_username?: string | null
+          totp_enabled?: boolean | null
+          totp_secret?: string | null
           transaction_pin?: string | null
           updated_at?: string
           user_id: string
@@ -2768,12 +2778,15 @@ export type Database = {
         Update: {
           area?: string | null
           average_rating?: number | null
+          backup_codes?: string[] | null
           balance_non_withdrawable?: number | null
           balance_withdrawable?: number
           bio?: string | null
+          biometric_enabled?: boolean | null
           celo_wallet_address?: string | null
           connections_count?: number | null
           created_at?: string
+          email_2fa_enabled?: boolean | null
           email_confirmed?: boolean | null
           email_verification_sent_at?: string | null
           email_verification_token?: string | null
@@ -2794,6 +2807,8 @@ export type Database = {
           state_name?: string | null
           telegram_user_id?: string | null
           telegram_username?: string | null
+          totp_enabled?: boolean | null
+          totp_secret?: string | null
           transaction_pin?: string | null
           updated_at?: string
           user_id?: string
@@ -3750,6 +3765,36 @@ export type Database = {
         }
         Relationships: []
       }
+      two_factor_codes: {
+        Row: {
+          code: string
+          created_at: string | null
+          expires_at: string
+          id: string
+          type: string
+          used: boolean | null
+          user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          type: string
+          used?: boolean | null
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          type?: string
+          used?: boolean | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_presence: {
         Row: {
           is_online: boolean
@@ -3978,6 +4023,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      cleanup_expired_2fa_codes: { Args: never; Returns: undefined }
       contribute_to_fundraising: {
         Args: {
           p_amount: number
