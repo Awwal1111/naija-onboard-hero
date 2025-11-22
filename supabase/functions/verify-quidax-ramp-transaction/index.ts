@@ -74,34 +74,71 @@ serve(async (req) => {
     let description = ''
 
     if (mode === 'buy') {
-      // For buy transactions, credit user's balance
-      // Convert USDT to NC (assuming 1 USDT ≈ ₦1600 ≈ 1600 NC)
-      const usdtAmount = parseFloat(verifiedTransaction.data?.crypto_amount || transaction.crypto_amount || 0)
-      updateAmount = Math.floor(usdtAmount * 1600)
+      // Extract amounts from correct Quidax payload paths
+      const cryptoAmount = parseFloat(verifiedTransaction.data?.crypto_payout?.amount || '0')
+      const fiatAmount = parseFloat(verifiedTransaction.data?.fiat_deposit?.amount || '0')
+
+      console.log('[QUIDAX RAMP] Extracted amounts:', {
+        cryptoAmount,
+        fiatAmount,
+        userId: user.id,
+        reference,
+        fullData: verifiedTransaction.data
+      })
+
+      // Validate amounts
+      if (fiatAmount <= 0 || cryptoAmount <= 0) {
+        console.error('[QUIDAX RAMP] Invalid amounts:', { fiatAmount, cryptoAmount })
+        throw new Error('Invalid fiat or crypto amount in Quidax payload')
+      }
+
+      // Calculate NC dynamically based on actual transaction rate
+      const ncPerUSDT = fiatAmount / cryptoAmount
+      updateAmount = Math.floor(cryptoAmount * ncPerUSDT)
       transactionType = 'quidax_buy'
-      description = `Bought ${usdtAmount} USDT via Quidax Ramp`
+      description = `Bought ${cryptoAmount.toFixed(4)} USDT via Quidax Ramp (₦${fiatAmount.toFixed(2)})`
+
+      const previousWallet = profile.wallet_balance || 0
+      const previousWithdrawable = profile.balance_withdrawable || 0
+
+      console.log('[QUIDAX RAMP] NC Calculation:', {
+        userId: user.id,
+        cryptoAmount,
+        fiatAmount,
+        ncPerUSDT: ncPerUSDT.toFixed(2),
+        updateAmount,
+        previousWallet
+      })
 
       // Update user balance
       const { error: updateError } = await supabase
         .from('profiles')
         .update({
-          wallet_balance: profile.wallet_balance + updateAmount,
-          balance_withdrawable: profile.balance_withdrawable + updateAmount
+          wallet_balance: previousWallet + updateAmount,
+          balance_withdrawable: previousWithdrawable + updateAmount
         })
         .eq('user_id', user.id)
 
       if (updateError) {
-        console.error('Balance update error:', updateError)
+        console.error('[QUIDAX RAMP] Balance update error:', updateError)
         throw new Error('Failed to update balance')
       }
 
-      console.log(`[QUIDAX RAMP] Credited ${updateAmount} NC to user ${user.id}`)
+      console.log(`[QUIDAX RAMP] ✅ Credited ${updateAmount} NC to user ${user.id}`)
     } else if (mode === 'sell') {
       // For sell transactions, deduct user's balance (already done before initiating)
-      const usdtAmount = parseFloat(verifiedTransaction.data?.crypto_amount || transaction.crypto_amount || 0)
-      updateAmount = Math.floor(usdtAmount * 1600)
+      const cryptoAmount = parseFloat(verifiedTransaction.data?.crypto_payout?.amount || '0')
+      const fiatAmount = parseFloat(verifiedTransaction.data?.fiat_deposit?.amount || '0')
+      
+      if (fiatAmount > 0 && cryptoAmount > 0) {
+        const ncPerUSDT = fiatAmount / cryptoAmount
+        updateAmount = Math.floor(cryptoAmount * ncPerUSDT)
+      } else {
+        updateAmount = 0
+      }
+      
       transactionType = 'quidax_sell'
-      description = `Sold ${usdtAmount} USDT via Quidax Ramp`
+      description = `Sold ${cryptoAmount.toFixed(4)} USDT via Quidax Ramp`
 
       console.log(`[QUIDAX RAMP] Confirmed sell of ${updateAmount} NC for user ${user.id}`)
     }
