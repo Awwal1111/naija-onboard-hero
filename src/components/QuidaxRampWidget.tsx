@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { ArrowDownUp, Info } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
+import { SecurePinInput } from './SecurePinInput'
 import { supabase } from '@/integrations/supabase/client'
 import { toast } from 'sonner'
 
@@ -31,8 +32,10 @@ export const QuidaxRampWidget = ({ open, onOpenChange, mode }: QuidaxRampWidgetP
   const [amount, setAmount] = useState('')
   const [loading, setLoading] = useState(false)
   const [walletAddress, setWalletAddress] = useState<string>('')
+  const [showPinInput, setShowPinInput] = useState(false)
+  const [pendingAmount, setPendingAmount] = useState('')
 
-  const handleInitializeWidget = async () => {
+  const handleContinue = () => {
     if (!user || !profile) {
       toast.error('Please log in first')
       return
@@ -49,6 +52,29 @@ export const QuidaxRampWidget = ({ open, onOpenChange, mode }: QuidaxRampWidgetP
       return
     }
 
+    // For sell (withdrawal), require PIN
+    if (mode === 'sell') {
+      setPendingAmount(amount)
+      setShowPinInput(true)
+      return
+    }
+
+    // For buy (deposit), no PIN needed
+    handleInitializeWidget(amount)
+  }
+
+  const handlePinVerified = (pin: string) => {
+    // Verify PIN
+    if (pin !== (profile as any)?.transaction_pin) {
+      toast.error('Incorrect PIN')
+      return
+    }
+
+    setShowPinInput(false)
+    handleInitializeWidget(pendingAmount)
+  }
+
+  const handleInitializeWidget = async (amountToProcess: string) => {
     setLoading(true)
 
     try {
@@ -140,7 +166,7 @@ export const QuidaxRampWidget = ({ open, onOpenChange, mode }: QuidaxRampWidgetP
         if (mode === 'buy') {
           config.from_currency = 'ngn'
           config.to_currency = 'usdt'
-          config.from_amount = amount
+          config.from_amount = amountToProcess
           config.address = profileData?.celo_wallet_address || walletAddress
           config.onReceiveWalletDetails = function(details: any) {
             console.log('Wallet details:', details)
@@ -148,7 +174,7 @@ export const QuidaxRampWidget = ({ open, onOpenChange, mode }: QuidaxRampWidgetP
         } else {
           config.from_currency = 'usdt'
           config.to_currency = 'ngn'
-          config.from_amount = amount
+          config.from_amount = amountToProcess
           config.onReceiveWalletDetails = async function(details: any) {
             console.log('Quidax provided wallet details:', details)
             
@@ -259,13 +285,22 @@ export const QuidaxRampWidget = ({ open, onOpenChange, mode }: QuidaxRampWidgetP
               </AlertDescription>
             </Alert>
 
-            <BrandButton
-              onClick={handleInitializeWidget}
-              disabled={loading || !amount || parseFloat(amount) <= 0}
-              className="w-full"
-            >
-              {loading ? 'Processing...' : `Proceed to ${mode === 'buy' ? 'Deposit' : 'Withdrawal'}`}
-            </BrandButton>
+            {showPinInput ? (
+              <SecurePinInput
+                onVerified={handlePinVerified}
+                onCancel={() => setShowPinInput(false)}
+                title="Confirm Withdrawal"
+                description={`Enter PIN to withdraw ${mode === 'sell' ? `$${amount}` : amount}`}
+              />
+            ) : (
+              <BrandButton
+                onClick={handleContinue}
+                disabled={loading || !amount || parseFloat(amount) <= 0}
+                className="w-full"
+              >
+                {loading ? 'Processing...' : mode === 'sell' ? 'Continue to PIN' : `Proceed to Deposit`}
+              </BrandButton>
+            )}
           </CardContent>
         </Card>
       </DialogContent>
