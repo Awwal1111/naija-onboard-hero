@@ -29,10 +29,7 @@ export const useUnifiedSearch = () => {
         .from('profiles')
         .select('user_id, full_name, profession, bio, profile_picture_url, average_rating')
         .eq('is_expert', true)
-        .textSearch('search_vector', searchTerm, {
-          type: 'websearch',
-          config: 'english'
-        })
+        .or(`full_name.ilike.%${searchTerm}%,profession.ilike.%${searchTerm}%,bio.ilike.%${searchTerm}%`)
         .limit(5);
 
       if (experts) {
@@ -55,10 +52,7 @@ export const useUnifiedSearch = () => {
         .from('jobs_services')
         .select('id, title, description, category, price, photo_urls')
         .eq('status', 'active')
-        .textSearch('search_vector', searchTerm, {
-          type: 'websearch',
-          config: 'english'
-        })
+        .or(`title.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,category.ilike.%${searchTerm}%`)
         .limit(5);
 
       if (gigs) {
@@ -81,10 +75,7 @@ export const useUnifiedSearch = () => {
         .from('job_posts')
         .select('id, title, description, location, budget_min, budget_max, company_name')
         .eq('status', 'active')
-        .textSearch('search_vector', searchTerm, {
-          type: 'websearch',
-          config: 'english'
-        })
+        .or(`title.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,company_name.ilike.%${searchTerm}%`)
         .limit(5);
 
       if (jobs) {
@@ -106,10 +97,7 @@ export const useUnifiedSearch = () => {
         .from('courses')
         .select('id, title, description, instructor_name, price, thumbnail_url, average_rating')
         .eq('status', 'active')
-        .textSearch('search_vector', searchTerm, {
-          type: 'websearch',
-          config: 'english'
-        })
+        .or(`title.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,instructor_name.ilike.%${searchTerm}%`)
         .limit(5);
 
       if (courses) {
@@ -132,10 +120,7 @@ export const useUnifiedSearch = () => {
         .from('fundraisings')
         .select('id, title, description, goal_amount, raised_amount, featured_image_url')
         .eq('status', 'approved' as any)
-        .textSearch('search_vector', searchTerm, {
-          type: 'websearch',
-          config: 'english'
-        })
+        .or(`title.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`)
         .limit(5);
 
       if (campaigns) {
