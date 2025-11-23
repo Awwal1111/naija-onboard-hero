@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
+import { sendAllNotifications } from '../_shared/notification-helper.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -125,6 +126,21 @@ serve(async (req) => {
       }
 
       console.log(`[QUIDAX RAMP] ✅ Credited ${updateAmount} NC to user ${user.id}`)
+
+      // Send all notifications for deposit
+      await sendAllNotifications(supabase, {
+        userId: user.id,
+        type: 'deposit_completed',
+        title: '💰 Deposit Successful',
+        message: `Your account has been credited with ${updateAmount.toLocaleString()} NC (${cryptoAmount.toFixed(4)} USDT)`,
+        amount: updateAmount,
+        metadata: {
+          reference,
+          cryptoAmount,
+          fiatAmount,
+          transactionType: 'quidax_buy'
+        }
+      })
     } else if (mode === 'sell') {
       // For sell transactions, deduct user's balance (already done before initiating)
       const cryptoAmount = parseFloat(verifiedTransaction.data?.crypto_payout?.amount || '0')
@@ -141,6 +157,21 @@ serve(async (req) => {
       description = `Sold ${cryptoAmount.toFixed(4)} USDT via Quidax Ramp`
 
       console.log(`[QUIDAX RAMP] Confirmed sell of ${updateAmount} NC for user ${user.id}`)
+
+      // Send all notifications for withdrawal
+      await sendAllNotifications(supabase, {
+        userId: user.id,
+        type: 'withdrawal_completed',
+        title: '✅ Withdrawal Successful',
+        message: `Your withdrawal of ${updateAmount.toLocaleString()} NC (${cryptoAmount.toFixed(4)} USDT) has been completed`,
+        amount: updateAmount,
+        metadata: {
+          reference,
+          cryptoAmount,
+          fiatAmount,
+          transactionType: 'quidax_sell'
+        }
+      })
     }
 
     // Log transaction
