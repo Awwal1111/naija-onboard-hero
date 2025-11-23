@@ -14,7 +14,6 @@ import { Separator } from '@/components/ui/separator'
 import { PushNotificationToggle } from '@/components/PushNotificationToggle'
 import { TestNotifications } from '@/components/TestNotifications'
 import { TwoFactorSetup } from '@/components/TwoFactorSetup'
-import { Label } from '@/components/ui/label'
 
 interface NotificationPreferences {
   chats: boolean
@@ -350,24 +349,38 @@ const Settings = () => {
                 }}
               />
             </div>
-
-            <Separator />
-
-            <div>
-              <h4 className="font-medium text-text-primary mb-3">Transaction PIN</h4>
-              <p className="text-sm text-text-secondary mb-4">
-                Set a 4-digit PIN to secure your money transfers and withdrawals
-              </p>
-              <Button variant="outline" onClick={() => navigate('/settings/pin')}>
-                <Lock className="h-4 w-4 mr-2" />
-                {(profile as any)?.transaction_pin ? 'Change PIN' : 'Set Up PIN'}
-              </Button>
-            </div>
           </CardContent>
         </Card>
 
-        {/* Two-Factor Authentication */}
-        <TwoFactorSetup />
+        {/* Security Features Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5" />
+              Security Features
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Transaction PIN */}
+            <div className="flex items-center justify-between p-4 border rounded-lg">
+              <div className="flex-1">
+                <h4 className="font-medium text-text-primary">Transaction PIN</h4>
+                <p className="text-xs text-text-secondary mt-1">
+                  Secure payments & withdrawals with 4-digit PIN
+                </p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => navigate('/settings/pin')}>
+                <Lock className="h-4 w-4 mr-2" />
+                {(profile as any)?.transaction_pin ? 'Change' : 'Set Up'}
+              </Button>
+            </div>
+
+            <Separator />
+
+            {/* Two-Factor Authentication */}
+            <TwoFactorSetup />
+          </CardContent>
+        </Card>
 
         {/* About Section */}
         <Card>

@@ -2,16 +2,15 @@ import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { BrandButton } from '@/components/ui/brand-button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Send, Wallet, Copy, Info, AlertCircle, ArrowDownUp } from 'lucide-react'
+import { Send, Wallet, Copy, Info, AlertCircle, ArrowLeft } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
 import { supabase } from '@/integrations/supabase/client'
 import { toast } from 'sonner'
+import { DepositMethods } from './DepositMethods'
 
 interface DepositDialogProps {
   open: boolean
@@ -24,6 +23,7 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
   const [walletAddress, setWalletAddress] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [creatingWallet, setCreatingWallet] = useState(false)
+  const [selectedMethod, setSelectedMethod] = useState<'main' | 'ramp' | 'crypto' | 'telegram'>('main')
 
   useEffect(() => {
     console.log('[DEPOSIT] 🎯 Effect triggered. User:', !!user, 'Profile:', !!profile)
@@ -114,59 +114,53 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
     window.dispatchEvent(event)
   }
 
+  const handleMethodSelect = (method: 'ramp' | 'crypto' | 'telegram') => {
+    if (method === 'ramp') {
+      handleOpenQuidaxWidget()
+    } else {
+      setSelectedMethod(method)
+    }
+  }
+
+  const handleBack = () => {
+    setSelectedMethod('main')
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(open) => {
+      onOpenChange(open)
+      if (!open) setSelectedMethod('main')
+    }}>
       <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Wallet className="h-5 w-5 text-primary" />
-            Add Funds
-          </DialogTitle>
-          <DialogDescription>
-            Choose your preferred deposit method
-          </DialogDescription>
+          <div className="flex items-center gap-2">
+            {selectedMethod !== 'main' && (
+              <button onClick={handleBack} className="hover:bg-accent rounded-lg p-1">
+                <ArrowLeft className="h-5 w-5" />
+              </button>
+            )}
+            <div>
+              <DialogTitle className="flex items-center gap-2">
+                <Wallet className="h-5 w-5 text-primary" />
+                {selectedMethod === 'main' ? 'Add Funds' : 
+                 selectedMethod === 'crypto' ? 'Crypto Deposit' : 
+                 'Telegram Bot'}
+              </DialogTitle>
+              <DialogDescription>
+                {selectedMethod === 'main' ? 'Choose your preferred deposit method' :
+                 selectedMethod === 'crypto' ? 'Send crypto to your wallet address' :
+                 'Deposit via Telegram bot'}
+              </DialogDescription>
+            </div>
+          </div>
         </DialogHeader>
 
-        <Tabs defaultValue="ramp" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="ramp">Buy USDT</TabsTrigger>
-            <TabsTrigger value="crypto">Crypto</TabsTrigger>
-            <TabsTrigger value="telegram">Telegram</TabsTrigger>
-          </TabsList>
+        {selectedMethod === 'main' && (
+          <DepositMethods onSelectMethod={handleMethodSelect} />
+        )}
 
-          {/* Quidax Ramp Widget Tab */}
-          <TabsContent value="ramp" className="space-y-4">
-            <Alert>
-              <Info className="h-4 w-4" />
-              <AlertDescription>
-                Fund your account securely through our banking partner. Minimum deposit: 3,000 NC (₦3,000).
-              </AlertDescription>
-            </Alert>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <ArrowDownUp className="h-5 w-5" />
-                  Bank Deposit
-                </CardTitle>
-                <CardDescription>
-                  Instant funding via secure banking partner (Min: 3,000 NC)
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <BrandButton
-                  onClick={handleOpenQuidaxWidget}
-                  className="w-full"
-                >
-                  <Send className="mr-2 h-4 w-4" />
-                  Proceed to Deposit
-                </BrandButton>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Crypto Deposit Tab */}
-          <TabsContent value="crypto" className="space-y-4">
+        {selectedMethod === 'crypto' && (
+          <div className="space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -238,16 +232,16 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
                 </ul>
               </AlertDescription>
             </Alert>
-          </TabsContent>
+          </div>
+        )}
 
-          {/* Telegram Deposit Tab */}
-          <TabsContent value="telegram" className="space-y-4">
+        {selectedMethod === 'telegram' && (
+          <div className="space-y-4">
             <Card className="bg-blue-500/5 border-blue-500/20">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Send className="h-5 w-5 text-blue-500" />
                   Deposit via Telegram Bot
-                  <Badge variant="default" className="bg-blue-500">24/7 Support</Badge>
                 </CardTitle>
                 <CardDescription>
                   Chat with our bot to deposit funds securely
@@ -276,8 +270,8 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
                 </BrandButton>
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   )
