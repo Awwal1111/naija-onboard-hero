@@ -43,8 +43,10 @@ export async function sendAllNotifications(
           type,
           title,
           message,
-          amount,
-          metadata
+          metadata,
+          sendEmail: true,
+          emailTemplate: type.includes('transaction') || type.includes('payment') || type.includes('withdrawal') || type.includes('deposit') ? 'transaction' : 'general',
+          attachPDF: type === 'transaction' || type === 'payment'
         }
       })
 
@@ -57,7 +59,28 @@ export async function sendAllNotifications(
       console.error('[NOTIFICATION] Email notification failed:', emailErr)
     }
 
-    // 3. Send Telegram notification
+    // 3. Send push notification to browser
+    try {
+      const { error: pushError } = await supabase.functions.invoke('send-push-notification', {
+        body: {
+          userId,
+          title,
+          body: message,
+          data: metadata,
+          url: metadata?.actionUrl || '/'
+        }
+      })
+
+      if (pushError) {
+        console.error('[NOTIFICATION] Push notification error:', pushError)
+      } else {
+        console.log('[NOTIFICATION] ✅ Push notification sent')
+      }
+    } catch (pushErr) {
+      console.error('[NOTIFICATION] Push notification failed:', pushErr)
+    }
+
+    // 4. Send Telegram notification
     try {
       const { error: telegramError } = await supabase.functions.invoke('send-telegram-notification', {
         body: {

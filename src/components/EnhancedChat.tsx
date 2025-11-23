@@ -234,6 +234,12 @@ const EnhancedChat = () => {
         'audio/webm'
       )
       
+      // Show success message
+      toast({
+        title: "Voice message sent",
+        description: "Your voice message was sent successfully"
+      })
+      
       setShowVoiceRecorder(false)
       
     } catch (error) {

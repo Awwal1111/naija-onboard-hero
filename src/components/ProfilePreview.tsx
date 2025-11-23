@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { User, Briefcase, MapPin, Eye, MessageCircle, UserPlus, CheckCircle } from 'lucide-react'
+import { User, Briefcase, MapPin, Eye, MessageCircle, UserPlus, CheckCircle, Star } from 'lucide-react'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/integrations/supabase/client'
 import { useNavigate } from 'react-router-dom'
+import { useExpertRatings } from '@/hooks/useExpertRatings'
 
 interface ProfileInfo {
   id: string
@@ -45,6 +46,7 @@ const ProfilePreview: React.FC<ProfilePreviewProps> = ({
   const [loading, setLoading] = useState(true)
   const [connecting, setConnecting] = useState(false)
   const [isConnected, setIsConnected] = useState(false)
+  const { ratings, loading: ratingsLoading } = useExpertRatings(profileId)
 
   React.useEffect(() => {
     if (isOpen && profileId) {
@@ -208,6 +210,55 @@ const ProfilePreview: React.FC<ProfilePreviewProps> = ({
                   <p className="text-sm text-text-primary leading-relaxed">
                     {profile.bio}
                   </p>
+                </div>
+              )}
+
+              {/* Expert Ratings */}
+              {profile.is_expert && ratings.length > 0 && (
+                <div className="mb-4 p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                    <span className="text-sm font-semibold">
+                      {(ratings.reduce((acc, r) => acc + r.rating, 0) / ratings.length).toFixed(1)}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      ({ratings.length} {ratings.length === 1 ? 'review' : 'reviews'})
+                    </span>
+                  </div>
+                  
+                  {/* Show first 2 ratings */}
+                  <div className="space-y-2">
+                    {ratings.slice(0, 2).map((rating: any) => (
+                      <div key={rating.id} className="border-l-2 border-primary/30 pl-2">
+                        <div className="flex items-center gap-1 mb-1">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`h-3 w-3 ${
+                                i < rating.rating
+                                  ? 'text-yellow-500 fill-yellow-500'
+                                  : 'text-gray-300'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                        {rating.comment && (
+                          <p className="text-xs text-muted-foreground line-clamp-2">
+                            {rating.comment}
+                          </p>
+                        )}
+                        <p className="text-xs text-muted-foreground mt-1">
+                          - {rating.profiles?.full_name || 'Anonymous'}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {ratings.length > 2 && (
+                    <p className="text-xs text-primary mt-2">
+                      +{ratings.length - 2} more reviews
+                    </p>
+                  )}
                 </div>
               )}
 
