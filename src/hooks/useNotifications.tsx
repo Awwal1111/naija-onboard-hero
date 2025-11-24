@@ -115,17 +115,23 @@ export const useNotifications = () => {
     if (!user) return
 
     try {
-      const { error } = await supabase
-        .from('push_subscriptions')
-        .upsert({
-          user_id: user.id,
-          subscription: subscription.toJSON() as any,
-          updated_at: new Date().toISOString(),
-        } as any)
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) throw new Error('No session')
+
+      const { error } = await supabase.functions.invoke('save-push-subscription', {
+        body: {
+          subscription: subscription.toJSON()
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      })
 
       if (error) throw error
+      console.log('Push subscription saved successfully')
     } catch (error) {
       console.error('Error saving push subscription:', error)
+      throw error
     }
   }
 
