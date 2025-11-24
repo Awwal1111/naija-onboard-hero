@@ -54,17 +54,21 @@ const InfiniteScrollFeed: React.FC<InfiniteScrollFeedProps> = ({
   }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
   return (
-    <div className="space-y-3 sm:space-y-6">
+    <div className="space-y-6 px-6">
       {posts.map((post, index) => (
         <React.Fragment key={`post-${post.id}-${index}`}>
           {/* Insert "People You May Know" only once at the second block (after first post) */}
           {index === 1 && (
-            <PeopleYouMayKnow onProfileClick={onProfileClick} />
+            <div className="my-8">
+              <PeopleYouMayKnow onProfileClick={onProfileClick} />
+            </div>
           )}
           
           {/* Insert ad at positions 3, 5, and every 7 posts after that */}
           {(index === 2 || index === 4 || (index > 4 && (index - 4) % 7 === 0)) && (
-            <InFeedAd index={index} />
+            <div className="my-8">
+              <InFeedAd index={index} />
+            </div>
           )}
           
           <div className={`${index === 0 ? 'animate-fade-in' : ''}`}>
@@ -82,14 +86,14 @@ const InfiniteScrollFeed: React.FC<InfiniteScrollFeedProps> = ({
       ))}
       
       {hasNextPage && (
-        <div ref={loadingRef} className="flex justify-center py-4 sm:py-8">
+        <div ref={loadingRef} className="flex justify-center py-8">
           {isFetchingNextPage ? (
-            <div className="flex items-center gap-2 text-text-secondary bg-muted/50 rounded-full px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm">
-              <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
+            <div className="flex items-center gap-3 text-muted-foreground bg-muted/50 rounded-full px-6 py-3 text-base">
+              <Loader2 className="h-5 w-5 animate-spin" />
               <span>Loading more...</span>
             </div>
           ) : (
-            <div className="text-text-secondary text-xs sm:text-sm bg-muted/30 rounded-full px-2.5 sm:px-3 py-0.5 sm:py-1">
+            <div className="text-muted-foreground text-base bg-muted/30 rounded-full px-4 py-2">
               Scroll for more
             </div>
           )}

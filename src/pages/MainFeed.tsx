@@ -186,9 +186,9 @@ const MainFeed = () => {
     <ResponsiveLayout className="pb-20">
       {/* Pull to Refresh Indicator */}
       {isRefreshing && (
-        <div className="fixed top-16 left-1/2 transform -translate-x-1/2 z-50 bg-primary text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 animate-in slide-in-from-top">
-          <RefreshCw className="h-4 w-4 animate-spin" />
-          <span className="text-sm font-medium">Refreshing...</span>
+        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 bg-primary text-primary-foreground px-6 py-3 rounded-full shadow-lg flex items-center gap-2 animate-in slide-in-from-top">
+          <RefreshCw className="h-5 w-5 animate-spin" />
+          <span className="text-base font-medium">Refreshing...</span>
         </div>
       )}
       
@@ -202,107 +202,105 @@ const MainFeed = () => {
       >
       {/* Main Content */}
         <div className="flex-1 max-w-4xl mx-auto w-full">
-          {/* Header */}
-          <header className="bg-background/95 backdrop-blur-sm border-b border-border px-3 sm:px-6 py-3 sm:py-4 sticky top-0 sm:top-[60px] z-10">
-            <div className="flex items-center justify-between mb-3 sm:mb-4">
-              <div className="scale-90 sm:scale-100 origin-left">
-                <Logo />
-              </div>
-              <div className="flex items-center gap-1 sm:gap-2">
+          {/* Header - Clean and Spacious */}
+          <header className="bg-background/95 backdrop-blur-sm border-b border-border px-6 py-5 sticky top-0 z-10">
+            <div className="flex items-center justify-between mb-6">
+              <Logo />
+              <div className="flex items-center gap-3">
                 <NotificationBell />
                 
                 {/* Profile Menu */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
+                    <Button variant="ghost" size="icon" className="h-10 w-10">
                       <MoreVertical className="h-5 w-5" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuContent align="end" className="w-64">
                     {!isComplete && (
-                      <DropdownMenuItem onClick={() => navigate('/profile')} className="bg-orange-50 dark:bg-orange-950">
-                        <User className="mr-2 h-4 w-4 text-orange-600" />
+                      <DropdownMenuItem onClick={() => navigate('/profile')} className="bg-orange-50 dark:bg-orange-950 py-3">
+                        <User className="mr-3 h-5 w-5 text-orange-600" />
                         <div className="flex-1">
                           <div className="font-medium text-orange-600">Complete Profile</div>
-                          <div className="text-xs text-orange-600/70">{missingFields.length} fields missing</div>
+                          <div className="text-sm text-orange-600/70">{missingFields.length} fields missing</div>
                         </div>
                       </DropdownMenuItem>
                     )}
-                    <DropdownMenuItem onClick={() => navigate('/profile')}>
-                      <User className="mr-2 h-4 w-4" />
-                      My Profile
+                    <DropdownMenuItem onClick={() => navigate('/profile')} className="py-3">
+                      <User className="mr-3 h-5 w-5" />
+                      <span className="text-base">My Profile</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate('/settings')}>
-                      <Settings className="mr-2 h-4 w-4" />
-                      Settings
+                    <DropdownMenuItem onClick={() => navigate('/settings')} className="py-3">
+                      <Settings className="mr-3 h-5 w-5" />
+                      <span className="text-base">Settings</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate('/earn')}>
-                      <Wallet className="mr-2 h-4 w-4" />
-                      Wallet & Earnings
+                    <DropdownMenuItem onClick={() => navigate('/earn')} className="py-3">
+                      <Wallet className="mr-3 h-5 w-5" />
+                      <span className="text-base">Wallet & Earnings</span>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
             </div>
             
-            {/* Feed Toggle */}
-            <div className="flex bg-muted p-0.5 sm:p-1 rounded-full mb-3 sm:mb-4">
+            {/* Feed Toggle - Prominent */}
+            <div className="flex bg-muted p-1 rounded-full mb-6">
               <button
                 onClick={() => setFeedType('for-you')}
-                className={`flex-1 py-1.5 sm:py-2 px-2 sm:px-4 rounded-full text-xs sm:text-sm font-medium transition-colors ${
+                className={`flex-1 py-3 px-6 rounded-full text-base font-medium transition-all ${
                   feedType === 'for-you' 
-                    ? 'bg-primary text-white' 
-                    : 'text-text-secondary hover:text-primary'
+                    ? 'bg-primary text-primary-foreground shadow-md' 
+                    : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
                 Recommended
               </button>
               <button
                 onClick={() => setFeedType('following')}
-                className={`flex-1 py-1.5 sm:py-2 px-2 sm:px-4 rounded-full text-xs sm:text-sm font-medium transition-colors ${
+                className={`flex-1 py-3 px-6 rounded-full text-base font-medium transition-all ${
                   feedType === 'following' 
-                    ? 'bg-primary text-white' 
-                    : 'text-text-secondary hover:text-primary'
+                    ? 'bg-primary text-primary-foreground shadow-md' 
+                    : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
                 Suggestions
               </button>
             </div>
 
-            {/* Search Bar */}
-            <div className="relative mb-3 sm:mb-4">
-              <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-text-secondary" />
+            {/* Search Bar - Clean */}
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <BrandInput
-                placeholder="Search..."
+                placeholder="Search posts, people, or hashtags..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 sm:pl-10 pr-10 sm:pr-12 h-10 sm:h-12 text-sm"
+                className="pl-12 pr-14 h-14 text-base"
               />
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowFilters(!showFilters)}
-                className="absolute right-1 sm:right-2 top-1/2 transform -translate-y-1/2 p-1.5 sm:p-2 h-7 w-7 sm:h-8 sm:w-8"
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 h-10 w-10"
               >
-                <Filter className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <Filter className="h-5 w-5" />
               </Button>
             </div>
 
-            {/* Filters */}
+            {/* Filters - Collapsible */}
             {showFilters && (
-              <div className="mt-2 sm:mt-3 p-2 sm:p-3 bg-muted rounded-xl space-y-2 sm:space-y-3">
+              <div className="mt-4 p-4 bg-muted/50 rounded-xl space-y-4 animate-in slide-in-from-top">
                 <div>
-                  <h4 className="text-xs sm:text-sm font-medium text-text-primary mb-1.5 sm:mb-2">Sort by</h4>
-                  <div className="flex gap-1.5 sm:gap-2">
+                  <h4 className="text-sm font-semibold text-foreground mb-3">Sort by</h4>
+                  <div className="flex gap-2">
                     {(['recent', 'trending', 'popular'] as const).map((sort) => (
                       <Button
                         key={sort}
                         variant={sortBy === sort ? 'default' : 'outline'}
-                        size="sm"
+                        size="default"
                         onClick={() => setSortBy(sort)}
-                        className="capitalize text-xs h-7 sm:h-8 px-2 sm:px-3"
+                        className="capitalize text-sm"
                       >
-                        {sort === 'trending' && <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 mr-0.5 sm:mr-1" />}
+                        {sort === 'trending' && <TrendingUp className="h-4 w-4 mr-2" />}
                         {sort}
                       </Button>
                     ))}
@@ -310,17 +308,17 @@ const MainFeed = () => {
                 </div>
                 
                 <div>
-                  <h4 className="text-xs sm:text-sm font-medium text-text-primary mb-1.5 sm:mb-2">Categories</h4>
-                  <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                  <h4 className="text-sm font-semibold text-foreground mb-3">Categories</h4>
+                  <div className="flex flex-wrap gap-2">
                     {postCategories.map((category) => (
                       <Button
                         key={category.id}
                         variant={selectedCategory === category.id ? 'default' : 'outline'}
-                        size="sm"
+                        size="default"
                         onClick={() => setSelectedCategory(category.id)}
-                        className="text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3"
+                        className="text-sm"
                       >
-                        <category.icon className="h-3 w-3 sm:h-4 sm:w-4 mr-0.5 sm:mr-1" />
+                        <category.icon className="h-4 w-4 mr-2" />
                         {category.label}
                       </Button>
                     ))}
@@ -329,83 +327,88 @@ const MainFeed = () => {
               </div>
             )}
 
-            {/* Trending Hashtags */}
-            <div className="mt-2 sm:mt-3">
-              <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
-                <Hash className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
-                <span className="text-xs sm:text-sm font-medium text-text-primary">Trending</span>
+            {/* Trending Hashtags - Clean Display */}
+            {!showFilters && (
+              <div className="mt-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Hash className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-semibold text-foreground">Trending Now</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {trendingHashtags.map((tag) => (
+                    <Badge 
+                      key={tag}
+                      variant="secondary"
+                      className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-all text-sm px-3 py-1.5"
+                      onClick={() => setSearchQuery(tag)}
+                    >
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
               </div>
-              <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                {trendingHashtags.map((tag) => (
-                  <Badge 
-                    key={tag}
-                    variant="secondary"
-                    className="cursor-pointer hover:bg-primary hover:text-white transition-colors text-[10px] sm:text-xs px-2 py-0.5 sm:py-1"
-                    onClick={() => setSearchQuery(tag)}
-                  >
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-            </div>
+            )}
           </header>
 
           {/* Stories Section */}
-          <div className="border-b border-border">
+          <div className="border-b border-border mb-6">
             <StoriesCarousel onCreateStory={handleCreateStory} />
           </div>
 
-          {/* Post Creation Bar */}
-          <div className="px-3 sm:px-6 py-3 sm:py-6 border-b border-border bg-card">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary rounded-full flex items-center justify-center text-white font-bold text-xs sm:text-sm flex-shrink-0">
-                {profile?.full_name?.charAt(0) || 'U'}
-              </div>
+          {/* Post Creation Bar - Improved */}
+          <div className="px-6 py-6 mb-6 border-b border-border bg-card">
+            <div className="flex items-center gap-4">
+              <Avatar className="h-12 w-12">
+                <AvatarImage src={profile?.profile_picture_url} />
+                <AvatarFallback className="bg-primary text-primary-foreground text-base font-bold">
+                  {profile?.full_name?.charAt(0) || 'U'}
+                </AvatarFallback>
+              </Avatar>
               <button
                 onClick={() => setShowCreatePost(true)}
-                className="flex-1 text-left px-3 sm:px-4 py-2 sm:py-3 bg-muted rounded-full text-text-secondary hover:bg-accent transition-colors text-xs sm:text-sm border border-transparent hover:border-border"
+                className="flex-1 text-left px-5 py-4 bg-muted rounded-full text-muted-foreground hover:bg-accent hover:text-foreground transition-all text-base border border-transparent hover:border-border"
               >
                 Share your thoughts...
               </button>
             </div>
             
-            {/* Quick Action Buttons - Hidden on mobile to save space */}
-            <div className="hidden sm:flex justify-around mt-4 pt-4 border-t border-border">
+            {/* Quick Action Buttons */}
+            <div className="hidden sm:flex justify-around mt-6 pt-6 border-t border-border">
               <button
                 onClick={() => setShowCreatePost(true)}
-                className="flex items-center gap-2 px-4 py-2 text-text-secondary hover:text-primary hover:bg-primary/10 rounded-xl transition-colors"
+                className="flex items-center gap-3 px-5 py-3 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-xl transition-all"
               >
-                <Image className="h-5 w-5" />
-                <span className="font-medium">Photo/Video</span>
+                <Image className="h-6 w-6" />
+                <span className="font-medium text-base">Photo/Video</span>
               </button>
               
               <button
                 onClick={() => setShowCreatePost(true)}
-                className="flex items-center gap-2 px-4 py-2 text-text-secondary hover:text-primary hover:bg-primary/10 rounded-xl transition-colors"
+                className="flex items-center gap-3 px-5 py-3 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-xl transition-all"
               >
-                <FileText className="h-5 w-5" />
-                <span className="font-medium">Document</span>
+                <FileText className="h-6 w-6" />
+                <span className="font-medium text-base">Document</span>
               </button>
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-2 px-4 py-2 text-text-secondary hover:text-primary hover:bg-primary/10 rounded-xl transition-colors">
-                    <Plus className="h-5 w-5" />
-                    <span className="font-medium">More</span>
+                  <button className="flex items-center gap-3 px-5 py-3 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-xl transition-all">
+                    <Plus className="h-6 w-6" />
+                    <span className="font-medium text-base">More</span>
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem onClick={() => navigate('/post-job')}>
-                    <Briefcase className="h-4 w-4 mr-2" />
-                    Post Job
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem onClick={() => navigate('/post-job')} className="py-3">
+                    <Briefcase className="h-5 w-5 mr-3" />
+                    <span className="text-base">Post Job</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setShowCreatePost(true)}>
-                    <Award className="h-4 w-4 mr-2" />
-                    Share Achievement
+                  <DropdownMenuItem onClick={() => setShowCreatePost(true)} className="py-3">
+                    <Award className="h-5 w-5 mr-3" />
+                    <span className="text-base">Share Achievement</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setShowCreatePost(true)}>
-                    <Calendar className="h-4 w-4 mr-2" />
-                    Create Event
+                  <DropdownMenuItem onClick={() => setShowCreatePost(true)} className="py-3">
+                    <Calendar className="h-5 w-5 mr-3" />
+                    <span className="text-base">Create Event</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setShowCreatePost(true)}>
                     <Vote className="h-4 w-4 mr-2" />
