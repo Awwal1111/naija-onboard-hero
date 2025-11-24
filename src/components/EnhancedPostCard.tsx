@@ -303,24 +303,24 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
     const truncatedContent = content.substring(0, maxLength) + '...'
     
     return (
-    <div className="space-y-2 sm:space-y-3">
-      <p className="text-text-primary whitespace-pre-wrap leading-relaxed text-sm sm:text-base">
+    <div className="space-y-4">
+      <p className="text-foreground whitespace-pre-wrap leading-relaxed text-base">
         {renderContentWithHashtags(isExpanded ? content : truncatedContent)}
       </p>
       
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center gap-0.5 sm:gap-1 text-xs sm:text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+        className="flex items-center gap-2 text-base font-medium text-primary hover:text-primary/80 transition-colors"
       >
         {isExpanded ? (
           <>
             <span>Show Less</span>
-            <ChevronUp className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            <ChevronUp className="h-5 w-5" />
           </>
         ) : (
           <>
             <span>Read More</span>
-            <ChevronDown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            <ChevronDown className="h-5 w-5" />
           </>
         )}
       </button>
@@ -386,13 +386,13 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
   }
 
   return (
-    <Card id={`post-${post.id}`} className={`mb-4 overflow-hidden ${postTypeInfo?.borderColor || ''} transition-all duration-300 hover:shadow-lg`}>
-      <CardContent className="p-3 sm:p-6">
+    <Card id={`post-${post.id}`} className={`mb-6 overflow-hidden ${postTypeInfo?.borderColor || ''} transition-all duration-300 hover:shadow-lg`}>
+      <CardContent className="p-6">
         {/* Privacy indicator */}
         {post.visibility !== 'public' && (
-          <div className="mb-3 sm:mb-4">
-            <Badge variant="outline" className="text-[10px] sm:text-xs px-1.5 sm:px-2">
-              <Users className="h-3 w-3 mr-0.5 sm:mr-1" />
+          <div className="mb-4">
+            <Badge variant="outline" className="text-sm px-3 py-1">
+              <Users className="h-4 w-4 mr-2" />
               {post.visibility === 'connections' ? 'Connections only' : 'Private'}
             </Badge>
           </div>
@@ -400,30 +400,30 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
 
         {/* Post Type Badge */}
         {postTypeInfo && (
-          <div className="mb-3 sm:mb-4">
-            <Badge className={`${postTypeInfo.color} text-[10px] sm:text-xs px-1.5 sm:px-2`}>
-              <postTypeInfo.icon className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+          <div className="mb-4">
+            <Badge className={`${postTypeInfo.color} text-sm px-3 py-1.5`}>
+              <postTypeInfo.icon className="h-5 w-5 mr-2" />
               {postTypeInfo.label}
             </Badge>
           </div>
         )}
 
         {/* Post Header */}
-        <div className="flex items-start gap-2 sm:gap-4 mb-3 sm:mb-4">
+        <div className="flex items-start gap-4 mb-5">
           <button onClick={() => onProfileClick?.(post.user_id)}>
-            <Avatar className="h-10 w-10 sm:h-12 sm:w-12 hover:ring-2 hover:ring-primary/50 transition-all">
+            <Avatar className="h-14 w-14 hover:ring-2 hover:ring-primary/50 transition-all">
               <AvatarImage src={post.profiles?.profile_picture_url} />
-              <AvatarFallback className="text-xs sm:text-sm">
+              <AvatarFallback className="text-base font-semibold">
                 {post.profiles?.full_name?.charAt(0) || 'U'}
               </AvatarFallback>
             </Avatar>
           </button>
           
           <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between mb-0.5 sm:mb-1">
+            <div className="flex items-center justify-between mb-1">
               <button 
                 onClick={() => onProfileClick?.(post.user_id)}
-                className="font-semibold text-text-primary truncate hover:text-primary transition-colors text-sm sm:text-base"
+                className="font-semibold text-foreground truncate hover:text-primary transition-colors text-lg"
               >
                 {post.profiles?.full_name || 'Anonymous User'}
               </button>
@@ -439,22 +439,22 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
               />
             </div>
             
-            <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
-              {post.profiles?.profession && (
-                <span className="text-text-secondary">{post.profiles.profession}</span>
-              )}
-            </div>
+            {post.profiles?.profession && (
+              <p className="text-muted-foreground text-base mb-1">
+                {post.profiles.profession}
+              </p>
+            )}
             
-            <span className="text-xs text-text-secondary">
+            <span className="text-sm text-muted-foreground">
               {formatTimeAgo(post.created_at)}
             </span>
           </div>
         </div>
 
         {/* Post Content */}
-        <div className="mb-3 sm:mb-4">
+        <div className="mb-5">
           {post.title && (
-            <h4 className="text-base sm:text-lg font-semibold text-text-primary mb-1.5 sm:mb-2">
+            <h4 className="text-xl font-bold text-foreground mb-3">
               {post.title}
             </h4>
           )}
@@ -463,18 +463,20 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
 
         {/* Media */}
         {post.media_urls && post.media_urls.length > 0 && (
-          <MediaGallery media={post.media_urls} />
+          <div className="mb-5">
+            <MediaGallery media={post.media_urls} />
+          </div>
         )}
 
         {/* Engagement Stats */}
-        <div className="flex items-center justify-between py-2 sm:py-3 border-t border-b border-border mb-3 sm:mb-4">
-          <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm">
+        <div className="flex items-center justify-between py-4 border-t border-b border-border mb-4">
+          <div className="flex items-center gap-6 text-base">
             {getTotalReactions() > 0 && (
-              <button className="text-text-secondary hover:text-primary transition-colors hover:bg-primary/10 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-lg font-medium">
-                <div className="flex items-center gap-0.5 sm:gap-1">
-                  <div className="flex -space-x-0.5">
+              <button className="text-muted-foreground hover:text-primary transition-colors hover:bg-primary/10 px-3 py-2 rounded-lg font-medium">
+                <div className="flex items-center gap-2">
+                  <div className="flex -space-x-1">
                     {getTopReactions().map(([reaction], index) => (
-                      <span key={reaction} className="text-[10px] sm:text-xs">
+                      <span key={reaction} className="text-base">
                         {reaction === 'like' && '👍'}
                         {reaction === 'love' && '❤️'}
                         {reaction === 'laugh' && '😂'}
@@ -485,14 +487,14 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
                       </span>
                     ))}
                   </div>
-                  <span className="text-xs sm:text-sm">{getTotalReactions()}</span>
+                  <span>{getTotalReactions()}</span>
                 </div>
               </button>
             )}
             
             <button 
               onClick={() => setShowComments(!showComments)}
-              className="text-text-secondary hover:text-primary transition-colors hover:bg-primary/10 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-lg font-medium"
+              className="text-muted-foreground hover:text-primary transition-colors hover:bg-primary/10 px-3 py-2 rounded-lg font-medium"
             >
               {post.comments_count || 0} comments
             </button>

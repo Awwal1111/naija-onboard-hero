@@ -308,183 +308,184 @@ const Profile = () => {
       <TopBannerAd />
       
       {/* Header */}
-      <header className="bg-background border-b border-border px-6 py-4 flex items-center justify-between">
-        <button onClick={() => navigate('/feed')} className="flex items-center gap-2">
-          <ArrowLeft className="h-5 w-5 text-text-secondary" />
+      <header className="bg-background border-b border-border px-6 py-5 flex items-center justify-between sticky top-0 z-10 backdrop-blur-sm bg-background/95">
+        <button onClick={() => navigate('/feed')} className="p-2 hover:bg-accent rounded-full transition-colors">
+          <ArrowLeft className="h-6 w-6 text-muted-foreground" />
         </button>
         <Logo />
-        <div className="w-5" /> {/* Spacer */}
+        <div className="w-10" /> {/* Spacer */}
       </header>
 
-      <div className="px-6 py-6">
+      <div className="max-w-5xl mx-auto px-6 py-8">
         {/* Enhanced User Section with Stats */}
-        <div className="bg-card border border-border rounded-2xl p-6 mb-6">
-          <div className="flex items-start gap-4 mb-6">
+        <div className="bg-card border border-border rounded-3xl p-8 mb-8 shadow-sm">
+          <div className="flex items-start gap-6 mb-8">
             <div className="relative">
               <button
                 onClick={() => profile?.profile_picture_url && setIsImageViewerOpen(true)}
-                className={`w-24 h-24 rounded-full p-[3px] transition-all ${
+                className={`w-32 h-32 rounded-full p-1 transition-all ${
                   profile?.profile_picture_url 
-                    ? 'bg-gradient-to-r from-pink-500 via-purple-500 to-orange-500 hover:scale-105' 
+                    ? 'bg-gradient-to-r from-primary via-primary/80 to-primary hover:scale-105' 
                     : 'bg-muted'
                 }`}
               >
-                <Avatar className="w-full h-full border-[3px] border-background">
+                <Avatar className="w-full h-full border-4 border-background">
                   <AvatarImage 
                     src={profile?.profile_picture_url} 
                     alt={profile?.full_name || 'Profile'}
                     className="object-cover"
                   />
-                  <AvatarFallback className="bg-primary text-white text-2xl font-bold">
+                  <AvatarFallback className="bg-primary text-primary-foreground text-3xl font-bold">
                     {profile?.full_name?.charAt(0) || 'U'}
                   </AvatarFallback>
                 </Avatar>
               </button>
               
               {isOwnProfile && (
-                <label className="absolute bottom-0 right-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white cursor-pointer hover:bg-primary/90 transition-colors shadow-lg border-2 border-background z-10">
+                <label className="absolute bottom-0 right-0 w-10 h-10 bg-primary rounded-full flex items-center justify-center text-primary-foreground cursor-pointer hover:bg-primary/90 transition-colors shadow-lg border-4 border-background z-10">
                   <input
                     type="file"
                     accept="image/*"
                     className="hidden"
                     onChange={handleProfilePictureUpload}
                   />
-                  <Camera className="h-4 w-4" />
+                  <Camera className="h-5 w-5" />
                 </label>
               )}
             </div>
             
             <div className="flex-1">
-              <div className="flex items-center justify-between mb-2">
-                <h1 className="text-xl font-bold text-text-primary">
+              <div className="flex items-center justify-between mb-3">
+                <h1 className="text-3xl font-bold text-foreground">
                   {profile?.full_name || 'Add your name'}
                 </h1>
                 {isOwnProfile ? (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <button className="p-2 hover:bg-accent rounded-full">
-                        <MoreVertical className="h-5 w-5 text-text-secondary" />
+                      <button className="p-2 hover:bg-accent rounded-full transition-colors">
+                        <MoreVertical className="h-6 w-6 text-muted-foreground" />
                       </button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuContent align="end" className="w-64">
                       {!isComplete && (
-                        <DropdownMenuItem onClick={handleEditProfile} className="bg-orange-50 dark:bg-orange-950">
-                          <Edit className="mr-2 h-4 w-4 text-orange-600" />
+                        <DropdownMenuItem onClick={handleEditProfile} className="bg-orange-50 dark:bg-orange-950 py-3">
+                          <Edit className="mr-3 h-5 w-5 text-orange-600" />
                           <div className="flex-1">
                             <div className="font-medium text-orange-600">Complete Profile</div>
-                            <div className="text-xs text-orange-600/70">{missingFields.length} fields missing</div>
+                            <div className="text-sm text-orange-600/70">{missingFields.length} fields missing</div>
                           </div>
                         </DropdownMenuItem>
                       )}
-                    <DropdownMenuItem onClick={handleEditProfile}>
-                      <Edit className="mr-2 h-4 w-4" />
-                      Edit Profile
+                    <DropdownMenuItem onClick={handleEditProfile} className="py-3">
+                      <Edit className="mr-3 h-5 w-5" />
+                      <span className="text-base">Edit Profile</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate('/earn')}>
-                      <Wallet className="mr-2 h-4 w-4" />
-                      Wallet & Transactions
+                    <DropdownMenuItem onClick={() => navigate('/earn')} className="py-3">
+                      <Wallet className="mr-3 h-5 w-5" />
+                      <span className="text-base">Wallet & Transactions</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleShare}>
-                      <Share className="mr-2 h-4 w-4" />
-                      Share Profile
+                    <DropdownMenuItem onClick={handleShare} className="py-3">
+                      <Share className="mr-3 h-5 w-5" />
+                      <span className="text-base">Share Profile</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate('/settings')}>
-                      <Settings className="mr-2 h-4 w-4" />
-                      App Settings
+                    <DropdownMenuItem onClick={() => navigate('/settings')} className="py-3">
+                      <Settings className="mr-3 h-5 w-5" />
+                      <span className="text-base">App Settings</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleLogout} className="text-destructive">
-                      <LogOut className="mr-2 h-4 w-4" />
-                      Log Out
+                    <DropdownMenuItem onClick={handleLogout} className="text-destructive py-3">
+                      <LogOut className="mr-3 h-5 w-5" />
+                      <span className="text-base">Log Out</span>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
                 ) : (
-                  <div className="flex gap-2">
+                  <div className="flex gap-3">
                     {!isConnected ? (
-                      <Button onClick={handleConnectUser} size="sm">
-                        <UserPlus className="h-4 w-4 mr-2" />
+                      <Button onClick={handleConnectUser} size="default">
+                        <UserPlus className="h-5 w-5 mr-2" />
                         Connect
                       </Button>
                     ) : (
-                      <Button variant="secondary" size="sm" disabled>
+                      <Button variant="secondary" size="default" disabled>
+                        <Users className="h-5 w-5 mr-2" />
                         Connected
                       </Button>
                     )}
-                    <Button onClick={() => navigate(`/chat/${userId}`)} size="sm" variant="outline">
-                      <MessageCircle className="h-4 w-4 mr-2" />
+                    <Button onClick={() => navigate(`/chat/${userId}`)} size="default" variant="outline">
+                      <MessageCircle className="h-5 w-5 mr-2" />
                       Message
                     </Button>
                   </div>
                 )}
               </div>
               
-              <div className="flex items-center gap-2 mb-2">
-                <p className="text-text-secondary text-sm">
+              <div className="flex items-center gap-3 mb-3">
+                <p className="text-muted-foreground text-lg">
                   {profile?.profession || 'Add your profession'}
                 </p>
                 {profile?.is_expert && (
-                  <Badge className="bg-primary/10 text-primary border-primary/20">
-                    <Award className="h-3 w-3 mr-1" />
+                  <Badge className="bg-primary/10 text-primary border-primary/20 text-sm px-3 py-1">
+                    <Award className="h-4 w-4 mr-2" />
                     Expert
                   </Badge>
                 )}
               </div>
               
-              <p className="text-text-secondary text-xs mb-3">
+              <p className="text-muted-foreground text-base leading-relaxed mb-4">
                 {profile?.bio || 'Tell us about yourself'}
               </p>
               
               {/* Location */}
               {(profile?.state_name || profile?.lga_name) && (
-                <div className="flex items-center gap-1 mb-2 text-xs text-text-secondary">
-                  <MapPin className="h-3 w-3" />
+                <div className="flex items-center gap-2 text-base text-muted-foreground">
+                  <MapPin className="h-5 w-5" />
                   <span>{profile.lga_name}{profile.state_name && `, ${profile.state_name}`}</span>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Stats Row */}
-          <div className="grid grid-cols-4 gap-4 pt-4 border-t border-border">
+          {/* Stats Row - Enhanced */}
+          <div className="grid grid-cols-4 gap-6 pt-6 border-t border-border">
             <button 
               onClick={() => navigate('/connections')}
-              className="text-center hover:bg-accent/50 rounded-lg p-2 transition-colors"
+              className="text-center hover:bg-accent/50 rounded-xl p-4 transition-all hover:scale-105"
             >
-              <div className="text-lg font-bold text-primary">{profile?.connections_count || 0}</div>
-              <div className="text-xs text-text-secondary">Connections</div>
+              <div className="text-2xl font-bold text-primary mb-1">{profile?.connections_count || 0}</div>
+              <div className="text-sm text-muted-foreground font-medium">Connections</div>
             </button>
-            <div className="text-center">
-              <div className="text-lg font-bold text-primary">
+            <div className="text-center p-4">
+              <div className="text-2xl font-bold text-primary mb-1">
                 {profile?.average_rating ? profile.average_rating.toFixed(1) : '0.0'}
               </div>
-              <div className="text-xs text-text-secondary flex items-center justify-center gap-1">
-                <Star className="h-3 w-3 fill-current" />
+              <div className="text-sm text-muted-foreground font-medium flex items-center justify-center gap-1">
+                <Star className="h-4 w-4 fill-current" />
                 Rating
               </div>
             </div>
             {isOwnProfile && (
               <>
-                <div className="text-center">
-                  <div className="text-lg font-bold text-primary">NC {profile?.wallet_balance?.toFixed(0) || '0'}</div>
-                  <div className="text-xs text-text-secondary">Balance</div>
+                <div className="text-center p-4">
+                  <div className="text-2xl font-bold text-primary mb-1">NC {profile?.wallet_balance?.toFixed(0) || '0'}</div>
+                  <div className="text-sm text-muted-foreground font-medium">Balance</div>
                 </div>
-                <div className="text-center">
-                  <div className="text-lg font-bold text-primary">{postsCount}</div>
-                  <div className="text-xs text-text-secondary">Posts</div>
+                <div className="text-center p-4">
+                  <div className="text-2xl font-bold text-primary mb-1">{postsCount}</div>
+                  <div className="text-sm text-muted-foreground font-medium">Posts</div>
                 </div>
               </>
             )}
             {!isOwnProfile && (
               <>
-                <div className="text-center">
-                  <div className="text-lg font-bold text-primary">{profile?.rating_count || 0}</div>
-                  <div className="text-xs text-text-secondary">Reviews</div>
+                <div className="text-center p-4">
+                  <div className="text-2xl font-bold text-primary mb-1">{profile?.rating_count || 0}</div>
+                  <div className="text-sm text-muted-foreground font-medium">Reviews</div>
                 </div>
-                <div className="text-center">
-                  <div className="text-lg font-bold text-primary">
+                <div className="text-center p-4">
+                  <div className="text-2xl font-bold text-primary mb-1">
                     {profile?.is_expert ? 'Yes' : 'No'}
                   </div>
-                  <div className="text-xs text-text-secondary">Expert</div>
+                  <div className="text-sm text-muted-foreground font-medium">Expert</div>
                 </div>
               </>
             )}
@@ -493,48 +494,48 @@ const Profile = () => {
 
         {/* Enhanced Tabs Section */}
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            {isOwnProfile && <TabsTrigger value="saved">Saved</TabsTrigger>}
-            <TabsTrigger value="skills">Skills</TabsTrigger>
-            <TabsTrigger value="portfolio">Portfolio</TabsTrigger>
-            {!isOwnProfile && <TabsTrigger value="reviews">Reviews</TabsTrigger>}
+          <TabsList className="grid w-full grid-cols-4 h-14 p-1 bg-muted rounded-xl mb-8">
+            <TabsTrigger value="overview" className="text-base">Overview</TabsTrigger>
+            {isOwnProfile && <TabsTrigger value="saved" className="text-base">Saved</TabsTrigger>}
+            <TabsTrigger value="skills" className="text-base">Skills</TabsTrigger>
+            <TabsTrigger value="portfolio" className="text-base">Portfolio</TabsTrigger>
+            {!isOwnProfile && <TabsTrigger value="reviews" className="text-base">Reviews</TabsTrigger>}
           </TabsList>
           
-          <TabsContent value="overview" className="space-y-4 mt-6">
+          <TabsContent value="overview" className="space-y-6">
             {/* Connection Requests Section - Only show on own profile */}
             {isOwnProfile && connectionRequests.filter(req => req.requested_id === profile?.user_id && req.status === 'pending').length > 0 && (
-              <Card className="mb-4">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <UserPlus className="h-5 w-5" />
+              <Card className="border-border">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-3 text-xl">
+                    <UserPlus className="h-6 w-6 text-primary" />
                     Connection Requests
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3">
+                <CardContent className="space-y-4">
                   {connectionRequests
                     .filter(req => req.requested_id === profile?.user_id && req.status === 'pending')
                     .map(request => (
-                      <div key={request.id} className="flex items-center justify-between p-3 bg-muted rounded-xl">
-                        <div className="flex items-center gap-3">
-                          <Avatar>
+                      <div key={request.id} className="flex items-center justify-between p-4 bg-muted/50 rounded-xl hover:bg-muted transition-colors">
+                        <div className="flex items-center gap-4">
+                          <Avatar className="h-12 w-12">
                             <AvatarImage src={request.requester_profile?.profile_picture_url} />
-                            <AvatarFallback>
+                            <AvatarFallback className="text-base">
                               {request.requester_profile?.full_name?.charAt(0) || 'U'}
                             </AvatarFallback>
                           </Avatar>
                           <div>
-                            <p className="text-sm font-medium text-text-primary">
+                            <p className="text-base font-semibold text-foreground">
                               {request.requester_profile?.full_name || 'User'}
                             </p>
-                            <p className="text-xs text-text-secondary">
+                            <p className="text-sm text-muted-foreground">
                               {request.requester_profile?.profession || 'Professional'}
                             </p>
                           </div>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-3">
                           <Button
-                            size="sm"
+                            size="default"
                             onClick={async () => {
                               await respondToConnectionRequest(request.id, true)
                               fetchConnectionRequests()
@@ -543,7 +544,7 @@ const Profile = () => {
                             Accept
                           </Button>
                           <Button
-                            size="sm"
+                            size="default"
                             variant="outline"
                             onClick={async () => {
                               await respondToConnectionRequest(request.id, false)
