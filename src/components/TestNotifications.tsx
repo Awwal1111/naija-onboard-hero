@@ -53,39 +53,76 @@ export const TestNotifications = () => {
   };
 
   const testPushNotification = async () => {
-    if (!('Notification' in window)) {
+    setLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      // Check if push notifications are enabled
+      if (!('Notification' in window)) {
+        throw new Error('Push notifications not supported in this browser');
+      }
+
+      if (Notification.permission !== 'granted') {
+        toast({
+          title: 'Not Enabled',
+          description: 'Please enable push notifications in Settings first',
+          variant: 'destructive',
+        });
+        setLoading(false);
+        return;
+      }
+
+      // Check if service worker is registered
+      const registration = await navigator.serviceWorker.getRegistration();
+      if (!registration) {
+        throw new Error('Service worker not registered');
+      }
+
+      // Check if user has a push subscription
+      const subscription = await registration.pushManager.getSubscription();
+      if (!subscription) {
+        toast({
+          title: 'Not Subscribed',
+          description: 'Please click "Enable Push Notifications" in Settings first',
+          variant: 'destructive',
+        });
+        setLoading(false);
+        return;
+      }
+
+      // Call the edge function to send push notification
+      const { data, error } = await supabase.functions.invoke('send-push-notification', {
+        body: {
+          userId: user.id,
+          title: 'Test Push Notification',
+          body: 'This is a test push notification from NaijaLancers via Edge Function',
+          icon: '/logo.png',
+          badge: '/logo.png',
+          url: '/',
+          data: {
+            test: true,
+            timestamp: new Date().toISOString()
+          }
+        }
+      });
+
+      if (error) throw error;
+
       toast({
-        title: 'Not Supported',
-        description: 'Push notifications are not supported in this browser',
+        title: 'Push Sent!',
+        description: `Sent to ${data?.sent || 0} device(s). Check your browser for the notification.`,
+      });
+    } catch (error: any) {
+      console.error('Push notification test error:', error);
+      toast({
+        title: 'Error',
+        description: error.message,
         variant: 'destructive',
       });
-      return;
+    } finally {
+      setLoading(false);
     }
-
-    if (Notification.permission === 'denied') {
-      toast({
-        title: 'Permission Denied',
-        description: 'Please enable notifications in Settings',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (Notification.permission !== 'granted') {
-      const permission = await Notification.requestPermission();
-      if (permission !== 'granted') return;
-    }
-
-    new Notification('Test Notification', {
-      body: 'This is a test push notification from NaijaLancers',
-      icon: '/logo.png',
-      badge: '/logo.png',
-    });
-
-    toast({
-      title: 'Push Sent!',
-      description: 'You should see a browser notification',
-    });
   };
 
   const testInAppNotification = async () => {
@@ -142,11 +179,12 @@ export const TestNotifications = () => {
         
         <Button
           onClick={testPushNotification}
+          disabled={loading}
           className="w-full"
           variant="outline"
         >
           <Bell className="mr-2 h-4 w-4" />
-          Test Push Notification
+          Test Push Notification (Edge Function)
         </Button>
         
         <Button
@@ -163,7 +201,8 @@ export const TestNotifications = () => {
           <p><strong>Note:</strong></p>
           <ul className="list-disc list-inside space-y-1">
             <li>Email requires RESEND_API_KEY to be configured</li>
-            <li>Push notifications require browser permission</li>
+            <li>Push notifications require VAPID_PRIVATE_KEY secret and browser permission</li>
+            <li>You must enable push notifications in Settings before testing</li>
             <li>In-app notifications appear in the bell icon</li>
           </ul>
         </div>
