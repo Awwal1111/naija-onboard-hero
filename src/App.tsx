@@ -17,8 +17,6 @@ import ResetPassword from "./pages/ResetPassword";
 import Onboarding from "./pages/Onboarding";
 import MainFeed from "./pages/MainFeed";
 import Profile from "./pages/Profile";
-import ExpertApplication from "./pages/ExpertApplication";
-import AdminExpertApplications from "./pages/AdminExpertApplications";
 import PostJob from "./pages/PostJob";
 import Experts from "./pages/Experts";
 import Jobs from "./pages/Jobs";
@@ -44,6 +42,10 @@ import Loan from "./pages/Loan";
 import Donations from "./pages/Donations";
 import JobsEnhanced from "./pages/JobsEnhanced";
 import ExpertProfile from "./pages/ExpertProfile";
+import ExpertApplication from "./pages/ExpertApplication";
+import AdminExpertApplications from "./pages/AdminExpertApplications";
+import ExpertClass from "./pages/ExpertClass";
+import ClassRoom from "./pages/ClassRoom";
 import TermsConditions from "./pages/TermsConditions";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Settings from "./pages/Settings";
@@ -105,6 +107,8 @@ const App = () => (
           <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
           <Route path="/post-job" element={<ProtectedRoute><PostJob /></ProtectedRoute>} />
           <Route path="/experts" element={<ProtectedRoute><Experts /></ProtectedRoute>} />
+          <Route path="/expert-class" element={<ProtectedRoute><ExpertClass /></ProtectedRoute>} />
+          <Route path="/expert-class/room/:classId" element={<ProtectedRoute><ClassRoom /></ProtectedRoute>} />
           <Route path="/jobs" element={<ProtectedRoute><Jobs /></ProtectedRoute>} />
           <Route path="/surveys" element={<ProtectedRoute><Surveys /></ProtectedRoute>} />
           <Route path="/cpx-surveys" element={<ProtectedRoute><CpxSurveys /></ProtectedRoute>} />

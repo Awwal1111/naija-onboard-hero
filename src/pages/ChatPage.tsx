@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
-import { Plus, Home, MessageCircle, Users as UsersIcon, Briefcase, DollarSign, Menu } from 'lucide-react'
+import { Plus, Home, MessageCircle, Users as UsersIcon, Briefcase, DollarSign, Menu, Video } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import MessagesTab from '@/components/MessagesTab'
 import GroupMessagesTab from '@/components/GroupMessagesTab'
@@ -22,6 +22,7 @@ const ChatPage: React.FC = () => {
     { icon: Home, label: 'Feed', path: '/feed' },
     { icon: MessageCircle, label: 'Chat', path: '/chat' },
     { icon: UsersIcon, label: 'Expert', path: '/experts' },
+    { icon: Video, label: 'Class', path: '/expert-class' },
     { icon: Briefcase, label: 'Gig', path: '/jobs' },
     { icon: DollarSign, label: 'Earn', path: '/earn' }
   ]
