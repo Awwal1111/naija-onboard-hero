@@ -376,6 +376,41 @@ export type Database = {
         }
         Relationships: []
       }
+      class_participants: {
+        Row: {
+          class_id: string
+          id: string
+          is_active: boolean | null
+          joined_at: string | null
+          left_at: string | null
+          user_id: string
+        }
+        Insert: {
+          class_id: string
+          id?: string
+          is_active?: boolean | null
+          joined_at?: string | null
+          left_at?: string | null
+          user_id: string
+        }
+        Update: {
+          class_id?: string
+          id?: string
+          is_active?: boolean | null
+          joined_at?: string | null
+          left_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_participants_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "expert_classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comment_views: {
         Row: {
           comment_id: string
@@ -1134,6 +1169,78 @@ export type Database = {
           user_id?: string
           work_samples_urls?: string[] | null
           years_experience?: number
+        }
+        Relationships: []
+      }
+      expert_classes: {
+        Row: {
+          actual_end: string | null
+          actual_start: string | null
+          category: string | null
+          class_type: string
+          created_at: string
+          current_participants: number | null
+          description: string | null
+          duration_minutes: number | null
+          expert_id: string
+          id: string
+          is_free: boolean | null
+          max_participants: number | null
+          price: number | null
+          recording_url: string | null
+          room_code: string
+          scheduled_end: string | null
+          scheduled_start: string | null
+          status: string
+          thumbnail_url: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          actual_end?: string | null
+          actual_start?: string | null
+          category?: string | null
+          class_type?: string
+          created_at?: string
+          current_participants?: number | null
+          description?: string | null
+          duration_minutes?: number | null
+          expert_id: string
+          id?: string
+          is_free?: boolean | null
+          max_participants?: number | null
+          price?: number | null
+          recording_url?: string | null
+          room_code: string
+          scheduled_end?: string | null
+          scheduled_start?: string | null
+          status?: string
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          actual_end?: string | null
+          actual_start?: string | null
+          category?: string | null
+          class_type?: string
+          created_at?: string
+          current_participants?: number | null
+          description?: string | null
+          duration_minutes?: number | null
+          expert_id?: string
+          id?: string
+          is_free?: boolean | null
+          max_participants?: number | null
+          price?: number | null
+          recording_url?: string | null
+          room_code?: string
+          scheduled_end?: string | null
+          scheduled_start?: string | null
+          status?: string
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }
