@@ -58,15 +58,18 @@ export const TestNotifications = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // Check if push notifications are enabled
+      // Check browser support
       if (!('Notification' in window)) {
         throw new Error('Push notifications not supported in this browser');
       }
 
+      console.log('Current notification permission:', Notification.permission);
+
+      // Check permission
       if (Notification.permission !== 'granted') {
         toast({
-          title: 'Not Enabled',
-          description: 'Please enable push notifications in Settings first',
+          title: 'Permission Required',
+          description: 'Click "Enable Push Notifications" in Settings to grant permission first',
           variant: 'destructive',
         });
         setLoading(false);
@@ -75,28 +78,40 @@ export const TestNotifications = () => {
 
       // Check if service worker is registered
       const registration = await navigator.serviceWorker.getRegistration();
+      console.log('Service worker registration:', registration);
+      
       if (!registration) {
-        throw new Error('Service worker not registered');
-      }
-
-      // Check if user has a push subscription
-      const subscription = await registration.pushManager.getSubscription();
-      if (!subscription) {
         toast({
-          title: 'Not Subscribed',
-          description: 'Please click "Enable Push Notifications" in Settings first',
+          title: 'Setup Required',
+          description: 'Service worker not found. Please refresh the page and enable push notifications in Settings.',
           variant: 'destructive',
         });
         setLoading(false);
         return;
       }
 
+      // Check if user has a push subscription
+      const subscription = await registration.pushManager.getSubscription();
+      console.log('Current push subscription:', subscription);
+      
+      if (!subscription) {
+        toast({
+          title: 'Subscription Required',
+          description: 'No active subscription found. Please click "Enable Push Notifications" in Settings to subscribe.',
+          variant: 'destructive',
+        });
+        setLoading(false);
+        return;
+      }
+
+      console.log('Sending push notification via edge function...');
+
       // Call the edge function to send push notification
       const { data, error } = await supabase.functions.invoke('send-push-notification', {
         body: {
           userId: user.id,
           title: 'Test Push Notification',
-          body: 'This is a test push notification from NaijaLancers via Edge Function',
+          body: 'This is a test push notification from NaijaLancers!',
           icon: '/logo.png',
           badge: '/logo.png',
           url: '/',
@@ -107,7 +122,12 @@ export const TestNotifications = () => {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Edge function error:', error);
+        throw error;
+      }
+
+      console.log('Push notification sent:', data);
 
       toast({
         title: 'Push Sent!',
@@ -198,12 +218,13 @@ export const TestNotifications = () => {
         </Button>
 
         <div className="text-xs text-muted-foreground mt-4 space-y-2">
-          <p><strong>Note:</strong></p>
+          <p><strong>Troubleshooting Steps:</strong></p>
           <ul className="list-disc list-inside space-y-1">
-            <li>Email requires RESEND_API_KEY to be configured</li>
-            <li>Push notifications require VAPID_PRIVATE_KEY secret and browser permission</li>
-            <li>You must enable push notifications in Settings before testing</li>
-            <li>In-app notifications appear in the bell icon</li>
+            <li>First, go to Settings and click "Enable Push Notifications"</li>
+            <li>Check browser console for detailed logs during setup</li>
+            <li>If already enabled, try disabling and re-enabling to create a fresh subscription</li>
+            <li>Push notifications require VAPID_PRIVATE_KEY secret to be configured</li>
+            <li>After enabling, use the "Test Push Notification" button above</li>
           </ul>
         </div>
       </CardContent>
