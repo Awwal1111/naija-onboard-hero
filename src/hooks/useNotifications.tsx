@@ -62,37 +62,52 @@ export const useNotifications = () => {
     }
 
     try {
+      console.log('Starting push notification setup...')
+      
       // Register service worker
       const registration = await navigator.serviceWorker.register('/service-worker.js')
-      console.log('Service Worker registered:', registration)
+      await navigator.serviceWorker.ready
+      console.log('Service Worker registered and ready:', registration)
 
       // Request notification permission
       const permission = await Notification.requestPermission()
+      console.log('Notification permission result:', permission)
       
       if (permission === 'granted') {
-        setPushEnabled(true)
+        // Check if already subscribed
+        let subscription = await registration.pushManager.getSubscription()
+        
+        if (subscription) {
+          console.log('Existing subscription found, unsubscribing first...')
+          await subscription.unsubscribe()
+        }
         
         // Subscribe to push notifications
-        const subscription = await registration.pushManager.subscribe({
+        console.log('Creating new push subscription...')
+        subscription = await registration.pushManager.subscribe({
           userVisibleOnly: true,
           applicationServerKey: urlBase64ToUint8Array(
-            // VAPID public key - you'll need to generate this
             'BEl62iUYgUivxIkv69yViEuiBIa-Ib37gp65ImqH8IaG_d5zGW3TpUY0Dh3TGX2hP_mMLpYXLvJ4WdE_kCDZiQ8'
           ),
         })
         
+        console.log('Push subscription created:', subscription)
         setPushSubscription(subscription)
         
         // Save subscription to backend
+        console.log('Saving subscription to backend...')
         await savePushSubscription(subscription)
+        
+        setPushEnabled(true)
         
         toast({
           title: 'Success',
-          description: 'Push notifications enabled successfully',
+          description: 'Push notifications enabled successfully! You can now test them.',
         })
         
         return true
       } else {
+        console.log('Permission denied by user')
         toast({
           title: 'Permission Denied',
           description: 'Please enable notifications in your browser settings',
@@ -100,11 +115,11 @@ export const useNotifications = () => {
         })
         return false
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error requesting push permission:', error)
       toast({
         title: 'Error',
-        description: 'Failed to enable push notifications',
+        description: `Failed to enable push notifications: ${error.message}`,
         variant: 'destructive',
       })
       return false
