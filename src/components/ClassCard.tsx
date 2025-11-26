@@ -39,7 +39,7 @@ export const ClassCard: React.FC<ClassCardProps> = ({ classItem }) => {
     if (classItem.status === 'scheduled') {
       return (
         <Button 
-          onClick={() => navigate(`/expert-class/${classItem.id}`)}
+          onClick={() => navigate('/experts')}
           variant="secondary"
           className="w-full"
         >
@@ -49,7 +49,7 @@ export const ClassCard: React.FC<ClassCardProps> = ({ classItem }) => {
     }
     return (
       <Button 
-        onClick={() => navigate(`/expert-class/${classItem.id}`)}
+        onClick={() => navigate('/experts')}
         variant="outline"
         className="w-full"
       >

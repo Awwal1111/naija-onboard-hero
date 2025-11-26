@@ -44,7 +44,6 @@ import JobsEnhanced from "./pages/JobsEnhanced";
 import ExpertProfile from "./pages/ExpertProfile";
 import ExpertApplication from "./pages/ExpertApplication";
 import AdminExpertApplications from "./pages/AdminExpertApplications";
-import ExpertClass from "./pages/ExpertClass";
 import ClassRoom from "./pages/ClassRoom";
 import TermsConditions from "./pages/TermsConditions";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
@@ -107,7 +106,6 @@ const App = () => (
           <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
           <Route path="/post-job" element={<ProtectedRoute><PostJob /></ProtectedRoute>} />
           <Route path="/experts" element={<ProtectedRoute><Experts /></ProtectedRoute>} />
-          <Route path="/expert-class" element={<ProtectedRoute><ExpertClass /></ProtectedRoute>} />
           <Route path="/expert-class/room/:classId" element={<ProtectedRoute><ClassRoom /></ProtectedRoute>} />
           <Route path="/jobs" element={<ProtectedRoute><Jobs /></ProtectedRoute>} />
           <Route path="/surveys" element={<ProtectedRoute><Surveys /></ProtectedRoute>} />
