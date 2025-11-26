@@ -117,6 +117,11 @@ export const useNotifications = () => {
       }
     } catch (error: any) {
       console.error('Error requesting push permission:', error)
+      console.error('Error details:', {
+        name: error.name,
+        message: error.message
+      })
+      
       toast({
         title: 'Error',
         description: `Failed to enable push notifications: ${error.message}`,
@@ -130,10 +135,17 @@ export const useNotifications = () => {
     if (!user) return
 
     try {
+      console.log('Saving push subscription for user:', user.id)
+      console.log('Subscription details:', {
+        endpoint: subscription.endpoint,
+        expirationTime: subscription.expirationTime,
+        hasKeys: !!subscription.toJSON().keys
+      })
+
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) throw new Error('No session')
 
-      const { error } = await supabase.functions.invoke('save-push-subscription', {
+      const { data, error } = await supabase.functions.invoke('save-push-subscription', {
         body: {
           subscription: subscription.toJSON()
         },
@@ -142,10 +154,17 @@ export const useNotifications = () => {
         }
       })
 
-      if (error) throw error
-      console.log('Push subscription saved successfully')
-    } catch (error) {
-      console.error('Error saving push subscription:', error)
+      if (error) {
+        console.error('Error response from save-push-subscription:', error)
+        throw new Error(error.message || 'Failed to save subscription')
+      }
+
+      console.log('Push subscription saved successfully:', data)
+    } catch (error: any) {
+      console.error('Error saving push subscription:', {
+        message: error.message,
+        details: error,
+      })
       throw error
     }
   }
