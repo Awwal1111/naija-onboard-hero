@@ -20,6 +20,7 @@ export interface ExpertClass {
   is_free: boolean
   price: number
   room_code: string
+  expert_pass: string | null
   category: string | null
   thumbnail_url: string | null
   recording_url: string | null
@@ -87,6 +88,7 @@ export const useExpertClasses = () => {
       if (!user) throw new Error('Must be logged in')
 
       const roomCode = `class-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      const expertPass = Math.random().toString(36).substring(2, 14)
 
       const { data, error } = await supabase
         .from('expert_classes')
@@ -98,12 +100,13 @@ export const useExpertClasses = () => {
           scheduled_start: classData.scheduled_start,
           scheduled_end: classData.scheduled_end,
           duration_minutes: classData.duration_minutes,
-          max_participants: classData.max_participants,
+          max_participants: classData.max_participants || 50,
           is_free: classData.is_free,
           price: classData.price,
           category: classData.category,
           expert_id: user.id,
           room_code: roomCode,
+          expert_pass: expertPass,
         }])
         .select()
         .single()

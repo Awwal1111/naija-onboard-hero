@@ -1183,6 +1183,7 @@ export type Database = {
           description: string | null
           duration_minutes: number | null
           expert_id: string
+          expert_pass: string | null
           id: string
           is_free: boolean | null
           max_participants: number | null
@@ -1206,6 +1207,7 @@ export type Database = {
           description?: string | null
           duration_minutes?: number | null
           expert_id: string
+          expert_pass?: string | null
           id?: string
           is_free?: boolean | null
           max_participants?: number | null
@@ -1229,6 +1231,7 @@ export type Database = {
           description?: string | null
           duration_minutes?: number | null
           expert_id?: string
+          expert_pass?: string | null
           id?: string
           is_free?: boolean | null
           max_participants?: number | null

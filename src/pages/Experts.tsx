@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Search, Filter, Star, MapPin, MessageCircle, Home, Users, DollarSign, Briefcase, Menu } from 'lucide-react'
+import { Search, Filter, Star, MapPin, MessageCircle, Home, Users, DollarSign, Briefcase, Menu, Video, Plus } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { MoreMenuDrawer } from '@/components/MoreMenuDrawer'
 import { BrandInput } from '@/components/ui/brand-input'
@@ -13,6 +13,11 @@ import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/useAuth'
 import TopBannerAd from '@/components/TopBannerAd'
 import ProfilePreview from '@/components/ProfilePreview'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { ClassCard } from '@/components/ClassCard'
+import { CreateClassDialog } from '@/components/CreateClassDialog'
+import { useExpertClasses } from '@/hooks/useExpertClasses'
+import { Skeleton } from '@/components/ui/skeleton'
 
 interface Expert {
   id: string
@@ -46,6 +51,9 @@ const Experts = () => {
   const [skillFilter, setSkillFilter] = useState('all')
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
   const [profilePreview, setProfilePreview] = useState<{ isOpen: boolean; userId: string | null }>({ isOpen: false, userId: null })
+  const [showCreateDialog, setShowCreateDialog] = useState(false)
+  const [userProfile, setUserProfile] = useState<any>(null)
+  const { liveClasses, upcomingClasses, featuredClasses, isLoading: classesLoading } = useExpertClasses()
 
   const bottomNavItems = [
     { icon: Home, label: 'Feed', path: '/feed' },
@@ -91,7 +99,15 @@ const Experts = () => {
 
   useEffect(() => {
     fetchExperts()
-  }, [])
+    if (user) {
+      supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single()
+        .then(({ data }) => setUserProfile(data))
+    }
+  }, [user])
 
   const fetchExperts = async () => {
     try {
@@ -229,13 +245,18 @@ const Experts = () => {
       
       {/* Header */}
       <header className="bg-background border-b border-border px-6 py-4 sticky top-0 z-10">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-primary">Experts Directory</h1>
-          <div className="text-sm text-text-secondary">{filteredExperts.length} experts</div>
-        </div>
+        <h1 className="text-2xl font-bold text-primary">Experts</h1>
       </header>
 
       <div className="px-6 py-4">
+        <Tabs defaultValue="experts" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsTrigger value="experts">Expert List</TabsTrigger>
+            <TabsTrigger value="classes">ExpertClass</TabsTrigger>
+          </TabsList>
+
+          {/* Expert List Tab */}
+          <TabsContent value="experts" className="space-y-4">
         {/* Search and Filters */}
         <div className="space-y-4 mb-6">
           <div className="relative">
@@ -389,6 +410,89 @@ const Experts = () => {
             ))}
           </div>
         )}
+          </TabsContent>
+
+          {/* ExpertClass Tab */}
+          <TabsContent value="classes" className="space-y-4">
+            {/* Create Class Button for Experts */}
+            {userProfile?.user_type === 'expert' && (
+              <div className="flex justify-end mb-4">
+                <BrandButton onClick={() => setShowCreateDialog(true)}>
+                  <Plus className="h-5 w-5 mr-2" />
+                  Create Class
+                </BrandButton>
+              </div>
+            )}
+
+            {/* Live Classes */}
+            <div className="mb-8">
+              <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                <Video className="h-5 w-5 text-red-500" />
+                Live Now
+              </h2>
+              {classesLoading ? (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  <Skeleton className="h-48 w-full rounded-lg" />
+                  <Skeleton className="h-48 w-full rounded-lg" />
+                </div>
+              ) : liveClasses.length === 0 ? (
+                <div className="text-center py-8 bg-card rounded-lg border border-border">
+                  <Video className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
+                  <p className="text-muted-foreground">No live classes right now</p>
+                </div>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {liveClasses.map((classItem) => (
+                    <ClassCard key={classItem.id} classItem={classItem} />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Upcoming Classes */}
+            <div className="mb-8">
+              <h2 className="text-xl font-bold mb-4">Upcoming Classes</h2>
+              {classesLoading ? (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  <Skeleton className="h-48 w-full rounded-lg" />
+                </div>
+              ) : upcomingClasses.length === 0 ? (
+                <div className="text-center py-8 bg-card rounded-lg border border-border">
+                  <p className="text-muted-foreground">No upcoming classes scheduled</p>
+                </div>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {upcomingClasses.map((classItem) => (
+                    <ClassCard key={classItem.id} classItem={classItem} />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Featured Classes */}
+            <div>
+              <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                <Star className="h-5 w-5 text-yellow-500" />
+                Featured Classes
+              </h2>
+              {classesLoading ? (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  <Skeleton className="h-48 w-full rounded-lg" />
+                </div>
+              ) : featuredClasses.length === 0 ? (
+                <div className="text-center py-8 bg-card rounded-lg border border-border">
+                  <p className="text-muted-foreground">No featured classes available</p>
+                </div>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {featuredClasses.map((classItem) => (
+                    <ClassCard key={classItem.id} classItem={classItem} />
+                  ))}
+                </div>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Bottom Navigation */}
@@ -424,6 +528,12 @@ const Experts = () => {
         isOpen={profilePreview.isOpen}
         onClose={() => setProfilePreview({ isOpen: false, userId: null })}
         profileId={profilePreview.userId || ''}
+      />
+
+      {/* Create Class Dialog */}
+      <CreateClassDialog
+        open={showCreateDialog}
+        onOpenChange={setShowCreateDialog}
       />
     </div>
   )

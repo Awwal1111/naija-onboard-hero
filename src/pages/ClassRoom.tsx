@@ -51,7 +51,7 @@ const ClassRoom = () => {
           description: 'Could not load class',
           variant: 'destructive',
         })
-        navigate('/expert-class')
+        navigate('/experts')
         return
       }
 
@@ -87,8 +87,10 @@ const ClassRoom = () => {
     script.async = true
     script.onload = () => {
       const domain = 'meet.jit.si'
+      const isExpert = classData?.expert_id === user?.id
+      
       const options = {
-        roomName: roomCode,
+        roomName: `naijalancers_${roomCode}`,
         width: '100%',
         height: '100%',
         parentNode: jitsiContainerRef.current,
@@ -101,24 +103,59 @@ const ClassRoom = () => {
           startWithVideoMuted: false,
           enableWelcomePage: false,
           prejoinPageEnabled: false,
+          // Only expert can start the meeting
+          enableUserRolesBasedOnToken: isExpert,
+          // Recording settings
+          recording: {
+            enabled: isExpert,
+          },
+          // Lobby mode
+          enableLobbyChat: false,
+          // Max participants
+          maxParticipants: classData?.max_participants || 50,
+          // Disable moderator features for non-experts
+          disableModeratorIndicator: !isExpert,
         },
         interfaceConfigOverwrite: {
-          TOOLBAR_BUTTONS: [
-            'microphone',
-            'camera',
-            'hangup',
-            'chat',
-            'raisehand',
-            'participants-pane',
-            'tileview',
-          ],
+          TOOLBAR_BUTTONS: isExpert 
+            ? [
+                'microphone',
+                'camera',
+                'desktop',
+                'hangup',
+                'chat',
+                'raisehand',
+                'participants-pane',
+                'tileview',
+                'recording',
+                'livestreaming',
+                'security',
+                'settings',
+              ]
+            : [
+                'microphone',
+                'camera',
+                'hangup',
+                'chat',
+                'raisehand',
+                'participants-pane',
+                'tileview',
+                'settings',
+              ],
           SHOW_JITSI_WATERMARK: false,
           SHOW_WATERMARK_FOR_GUESTS: false,
+          DISABLE_VIDEO_BACKGROUND: false,
+          SETTINGS_SECTIONS: ['devices', 'language'],
         },
       }
 
       const api = new (window as any).JitsiMeetExternalAPI(domain, options)
       jitsiApiRef.current = api
+
+      // Grant moderator rights to expert
+      if (isExpert) {
+        api.executeCommand('toggleLobby', true)
+      }
 
       // Listen to events
       api.addEventListener('participantJoined', () => {
@@ -131,6 +168,19 @@ const ClassRoom = () => {
 
       api.addEventListener('videoConferenceLeft', () => {
         handleLeaveClass()
+      })
+
+      api.addEventListener('videoConferenceJoined', async () => {
+        // Update class status to live when expert joins
+        if (isExpert && classData?.status === 'scheduled') {
+          await supabase
+            .from('expert_classes')
+            .update({ 
+              status: 'live',
+              actual_start: new Date().toISOString()
+            })
+            .eq('id', classId)
+        }
       })
     }
 
@@ -154,11 +204,23 @@ const ClassRoom = () => {
     }
   }
 
-  const handleLeaveClass = () => {
+  const handleLeaveClass = async () => {
     if (classId) {
       leaveClass(classId)
+      
+      // Update class status to ended if expert is leaving
+      const isExpert = classData?.expert_id === user?.id
+      if (isExpert) {
+        await supabase
+          .from('expert_classes')
+          .update({ 
+            status: 'ended',
+            actual_end: new Date().toISOString()
+          })
+          .eq('id', classId)
+      }
     }
-    navigate('/expert-class')
+    navigate('/experts')
   }
 
   const toggleMute = () => {
