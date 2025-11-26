@@ -53,20 +53,26 @@ Deno.serve(async (req) => {
     // Use web-push library to send notifications
     const webpush = await import('npm:web-push@3.6.7')
     
-    // VAPID keys
-    const vapidPublicKey = 'BEl62iUYgUivxIkv69yViEuiBIa-Ib37gp65ImqH8IaG_d5zGW3TpUY0Dh3TGX2hP_mMLpYXLvJ4WdE_kCDZiQ8'
+    // VAPID keys - these should be configured in Supabase secrets
+    const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY') || 'BEl62iUYgUivxIkv69yViEuiBIa-Ib37gp65ImqH8IaG_d5zGW3TpUY0Dh3TGX2hP_mMLpYXLvJ4WdE_kCDZiQ8'
     const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY') || ''
     
     if (!vapidPrivateKey) {
-      console.error('VAPID_PRIVATE_KEY not configured')
+      console.error('VAPID_PRIVATE_KEY not configured in Supabase secrets')
       return new Response(
-        JSON.stringify({ success: false, error: 'VAPID keys not configured' }),
+        JSON.stringify({ 
+          success: false, 
+          error: 'VAPID keys not configured. Please add VAPID_PRIVATE_KEY to Supabase secrets.' 
+        }),
         { 
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       )
     }
+    
+    console.log('Using VAPID public key:', vapidPublicKey.substring(0, 20) + '...')
+    console.log('VAPID private key configured:', !!vapidPrivateKey)
 
     webpush.setVapidDetails(
       'mailto:support@naijalancers.com',
@@ -86,14 +92,25 @@ Deno.serve(async (req) => {
     // Send to all user's subscriptions
     const sendPromises = subscriptions.map(async (sub) => {
       try {
+        console.log('Sending notification to subscription:', {
+          id: sub.id,
+          endpoint: sub.endpoint?.substring(0, 50) + '...',
+          hasSubscription: !!sub.subscription
+        })
+        
         await webpush.sendNotification(sub.subscription, payload)
-        console.log('Push notification sent successfully to subscription')
+        console.log('Push notification sent successfully to subscription:', sub.id)
         return { success: true, subscriptionId: sub.id }
       } catch (error: any) {
-        console.error('Error sending push notification:', error)
+        console.error('Error sending push notification:', {
+          subscriptionId: sub.id,
+          statusCode: error.statusCode,
+          message: error.message,
+          body: error.body
+        })
         
-        // If subscription is invalid (410 Gone), remove it from database
-        if (error.statusCode === 410) {
+        // If subscription is invalid (410 Gone or 404 Not Found), remove it from database
+        if (error.statusCode === 410 || error.statusCode === 404) {
           console.log('Removing invalid subscription:', sub.id)
           await supabaseClient
             .from('push_subscriptions')
@@ -101,7 +118,12 @@ Deno.serve(async (req) => {
             .eq('id', sub.id)
         }
         
-        return { success: false, error: error.message, subscriptionId: sub.id }
+        return { 
+          success: false, 
+          error: error.message, 
+          statusCode: error.statusCode,
+          subscriptionId: sub.id 
+        }
       }
     })
 

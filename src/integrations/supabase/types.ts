@@ -2928,22 +2928,34 @@ export type Database = {
       }
       push_subscriptions: {
         Row: {
+          auth: string | null
           created_at: string
+          endpoint: string
+          expiration_time: string | null
           id: string
+          p256dh: string | null
           subscription: Json
           updated_at: string
           user_id: string
         }
         Insert: {
+          auth?: string | null
           created_at?: string
+          endpoint: string
+          expiration_time?: string | null
           id?: string
+          p256dh?: string | null
           subscription: Json
           updated_at?: string
           user_id: string
         }
         Update: {
+          auth?: string | null
           created_at?: string
+          endpoint?: string
+          expiration_time?: string | null
           id?: string
+          p256dh?: string | null
           subscription?: Json
           updated_at?: string
           user_id?: string
