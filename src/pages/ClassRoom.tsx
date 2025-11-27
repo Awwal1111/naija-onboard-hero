@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Mic, MicOff, Video, VideoOff, PhoneOff, Users } from 'lucide-react'
+import { Mic, MicOff, Video, VideoOff, PhoneOff, Users, Share2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { useAuth } from '@/hooks/useAuth'
 import { useExpertClasses } from '@/hooks/useExpertClasses'
 import { supabase } from '@/integrations/supabase/client'
@@ -245,21 +246,44 @@ const ClassRoom = () => {
     )
   }
 
+  const isExpert = classData?.expert_id === user?.id
+  const canStart = isExpert || classData?.status === 'live'
+
   return (
     <div className="fixed inset-0 bg-background flex flex-col">
       {/* Header */}
       <div className="bg-card border-b p-4 flex items-center justify-between">
-        <div>
+        <div className="flex-1">
           <h1 className="font-semibold">{classData.title}</h1>
           <p className="text-sm text-muted-foreground flex items-center gap-2">
             <Users className="h-4 w-4" />
             {participants.length} participants
+            {isExpert && (
+              <Badge variant="secondary" className="ml-2">Moderator</Badge>
+            )}
           </p>
         </div>
-        <Button variant="destructive" onClick={handleLeaveClass}>
-          <PhoneOff className="h-4 w-4 mr-2" />
-          Leave Class
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => {
+              const classUrl = `${window.location.origin}/expert-class/room/${classId}`
+              navigator.clipboard.writeText(classUrl)
+              toast({
+                title: 'Link Copied!',
+                description: 'Share this link with participants',
+              })
+            }}
+          >
+            <Share2 className="h-4 w-4 mr-2" />
+            Share
+          </Button>
+          <Button variant="destructive" onClick={handleLeaveClass}>
+            <PhoneOff className="h-4 w-4 mr-2" />
+            Leave
+          </Button>
+        </div>
       </div>
 
       {/* Video Container */}
