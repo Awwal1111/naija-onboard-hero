@@ -1,6 +1,8 @@
 import React, { useEffect, useRef } from 'react'
 import { Loader2 } from 'lucide-react'
 import EnhancedPostCard from './EnhancedPostCard'
+import InFeedAd from './InFeedAd'
+import PeopleYouMayKnow from './PeopleYouMayKnow'
 import { EnhancedPost } from '@/hooks/useEnhancedFeed'
 
 interface InfiniteScrollFeedProps {
@@ -55,6 +57,20 @@ const InfiniteScrollFeed: React.FC<InfiniteScrollFeedProps> = ({
     <div className="space-y-6 px-6">
       {posts.map((post, index) => (
         <React.Fragment key={`post-${post.id}-${index}`}>
+          {/* Insert "People You May Know" only once at the second block (after first post) */}
+          {index === 1 && (
+            <div className="my-8">
+              <PeopleYouMayKnow onProfileClick={onProfileClick} />
+            </div>
+          )}
+          
+          {/* Insert ad at positions 3, 5, and every 7 posts after that */}
+          {(index === 2 || index === 4 || (index > 4 && (index - 4) % 7 === 0)) && (
+            <div className="my-8">
+              <InFeedAd index={index} />
+            </div>
+          )}
+          
           <div className={`${index === 0 ? 'animate-fade-in' : ''}`}>
             <EnhancedPostCard
               post={post}

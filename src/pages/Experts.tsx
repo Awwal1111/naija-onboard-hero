@@ -412,28 +412,17 @@ const Experts = () => {
         )}
           </TabsContent>
 
-            {/* ExpertClass Tab */}
-            <TabsContent value="classes" className="space-y-4">
-              {/* Create Class Button for Experts */}
-              {userProfile?.user_type === 'expert' && (
-                <div className="flex justify-end mb-4">
-                  <BrandButton onClick={() => setShowCreateDialog(true)}>
-                    <Plus className="h-5 w-5 mr-2" />
-                    Create Class
-                  </BrandButton>
-                </div>
-              )}
-
-              {/* Explanation for regular users */}
-              {userProfile?.user_type !== 'expert' && (
-                <div className="bg-muted/50 rounded-lg p-6 mb-6 border border-border">
-                  <h3 className="font-semibold text-lg mb-2">About ExpertClass</h3>
-                  <p className="text-muted-foreground">
-                    ExpertClass is a live video classroom where verified experts can host sessions, workshops, and training.
-                    Only approved experts can create classes. To become an expert, apply through the Expert Application page.
-                  </p>
-                </div>
-              )}
+          {/* ExpertClass Tab */}
+          <TabsContent value="classes" className="space-y-4">
+            {/* Create Class Button for Experts */}
+            {userProfile?.user_type === 'expert' && (
+              <div className="flex justify-end mb-4">
+                <BrandButton onClick={() => setShowCreateDialog(true)}>
+                  <Plus className="h-5 w-5 mr-2" />
+                  Create Class
+                </BrandButton>
+              </div>
+            )}
 
             {/* Live Classes */}
             <div className="mb-8">
