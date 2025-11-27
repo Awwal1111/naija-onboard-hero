@@ -40,14 +40,32 @@ export const useExpertClasses = () => {
   const { data: liveClasses = [], isLoading: isLoadingLive } = useQuery({
     queryKey: ['expert-classes', 'live'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: classes, error } = await supabase
         .from('expert_classes')
         .select('*')
         .eq('status', 'live')
         .order('actual_start', { ascending: false })
 
       if (error) throw error
-      return data as ExpertClass[]
+      if (!classes || classes.length === 0) return []
+
+      // Fetch expert profiles
+      const expertIds = [...new Set(classes.map(c => c.expert_id))]
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, profile_picture_url')
+        .in('user_id', expertIds)
+
+      // Combine data
+      return classes.map(classItem => ({
+        ...classItem,
+        expert: profiles?.find(p => p.user_id === classItem.expert_id) 
+          ? {
+              full_name: profiles.find(p => p.user_id === classItem.expert_id)!.full_name || '',
+              avatar_url: profiles.find(p => p.user_id === classItem.expert_id)!.profile_picture_url || ''
+            }
+          : undefined
+      })) as ExpertClass[]
     },
   })
 
@@ -55,14 +73,32 @@ export const useExpertClasses = () => {
   const { data: upcomingClasses = [], isLoading: isLoadingUpcoming } = useQuery({
     queryKey: ['expert-classes', 'upcoming'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: classes, error } = await supabase
         .from('expert_classes')
         .select('*')
         .eq('status', 'scheduled')
         .order('scheduled_start', { ascending: true })
 
       if (error) throw error
-      return data as ExpertClass[]
+      if (!classes || classes.length === 0) return []
+
+      // Fetch expert profiles
+      const expertIds = [...new Set(classes.map(c => c.expert_id))]
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, profile_picture_url')
+        .in('user_id', expertIds)
+
+      // Combine data
+      return classes.map(classItem => ({
+        ...classItem,
+        expert: profiles?.find(p => p.user_id === classItem.expert_id) 
+          ? {
+              full_name: profiles.find(p => p.user_id === classItem.expert_id)!.full_name || '',
+              avatar_url: profiles.find(p => p.user_id === classItem.expert_id)!.profile_picture_url || ''
+            }
+          : undefined
+      })) as ExpertClass[]
     },
   })
 
@@ -70,7 +106,7 @@ export const useExpertClasses = () => {
   const { data: featuredClasses = [], isLoading: isLoadingFeatured } = useQuery({
     queryKey: ['expert-classes', 'featured'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: classes, error } = await supabase
         .from('expert_classes')
         .select('*')
         .in('status', ['scheduled', 'live'])
@@ -78,7 +114,25 @@ export const useExpertClasses = () => {
         .limit(6)
 
       if (error) throw error
-      return data as ExpertClass[]
+      if (!classes || classes.length === 0) return []
+
+      // Fetch expert profiles
+      const expertIds = [...new Set(classes.map(c => c.expert_id))]
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, profile_picture_url')
+        .in('user_id', expertIds)
+
+      // Combine data
+      return classes.map(classItem => ({
+        ...classItem,
+        expert: profiles?.find(p => p.user_id === classItem.expert_id) 
+          ? {
+              full_name: profiles.find(p => p.user_id === classItem.expert_id)!.full_name || '',
+              avatar_url: profiles.find(p => p.user_id === classItem.expert_id)!.profile_picture_url || ''
+            }
+          : undefined
+      })) as ExpertClass[]
     },
   })
 
