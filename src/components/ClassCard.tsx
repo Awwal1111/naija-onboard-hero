@@ -1,12 +1,14 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Calendar, Clock, Users, DollarSign } from 'lucide-react'
+import { Calendar, Clock, Users, DollarSign, Share2, Video } from 'lucide-react'
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ExpertClass } from '@/hooks/useExpertClasses'
 import { format } from 'date-fns'
+import { useAuth } from '@/hooks/useAuth'
+import { useToast } from '@/hooks/use-toast'
 
 interface ClassCardProps {
   classItem: ExpertClass
@@ -14,6 +16,18 @@ interface ClassCardProps {
 
 export const ClassCard: React.FC<ClassCardProps> = ({ classItem }) => {
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const { toast } = useToast()
+  const isExpert = classItem.expert_id === user?.id
+
+  const handleShareClass = () => {
+    const classUrl = `${window.location.origin}/expert-class/room/${classItem.id}`
+    navigator.clipboard.writeText(classUrl)
+    toast({
+      title: 'Link Copied!',
+      description: 'Class link copied to clipboard',
+    })
+  }
 
   const getStatusBadge = () => {
     if (classItem.status === 'live') {
@@ -25,36 +39,74 @@ export const ClassCard: React.FC<ClassCardProps> = ({ classItem }) => {
     return <Badge variant="outline">Completed</Badge>
   }
 
-  const getActionButton = () => {
+  const getActionButtons = () => {
     if (classItem.status === 'live') {
       return (
-        <Button 
-          onClick={() => navigate(`/expert-class/room/${classItem.id}`)}
-          className="w-full bg-red-500 hover:bg-red-600 text-white"
-        >
-          Join Live Class
-        </Button>
+        <div className="space-y-2">
+          <Button 
+            onClick={() => navigate(`/expert-class/room/${classItem.id}`)}
+            className="w-full bg-red-500 hover:bg-red-600 text-white"
+          >
+            <Video className="h-4 w-4 mr-2" />
+            {isExpert ? 'Enter Class' : 'Join Live Class'}
+          </Button>
+          <Button 
+            onClick={handleShareClass}
+            variant="outline"
+            size="sm"
+            className="w-full"
+          >
+            <Share2 className="h-4 w-4 mr-2" />
+            Share Link
+          </Button>
+        </div>
       )
     }
+    
     if (classItem.status === 'scheduled') {
       return (
-        <Button 
-          onClick={() => navigate('/experts')}
-          variant="secondary"
-          className="w-full"
-        >
-          View Details
-        </Button>
+        <div className="space-y-2">
+          <Button 
+            onClick={() => navigate(`/expert-class/room/${classItem.id}`)}
+            className="w-full"
+          >
+            <Video className="h-4 w-4 mr-2" />
+            {isExpert ? 'Start Class' : 'Join Waiting Room'}
+          </Button>
+          <Button 
+            onClick={handleShareClass}
+            variant="outline"
+            size="sm"
+            className="w-full"
+          >
+            <Share2 className="h-4 w-4 mr-2" />
+            Share Link
+          </Button>
+        </div>
       )
     }
+    
     return (
-      <Button 
-        onClick={() => navigate('/experts')}
-        variant="outline"
-        className="w-full"
-      >
-        View Recording
-      </Button>
+      <div className="space-y-2">
+        {classItem.recording_url && (
+          <Button 
+            onClick={() => window.open(classItem.recording_url, '_blank')}
+            variant="secondary"
+            className="w-full"
+          >
+            View Recording
+          </Button>
+        )}
+        <Button 
+          onClick={handleShareClass}
+          variant="outline"
+          size="sm"
+          className="w-full"
+        >
+          <Share2 className="h-4 w-4 mr-2" />
+          Share Link
+        </Button>
+      </div>
     )
   }
 
@@ -134,7 +186,7 @@ export const ClassCard: React.FC<ClassCardProps> = ({ classItem }) => {
       </CardContent>
 
       <CardFooter>
-        {getActionButton()}
+        {getActionButtons()}
       </CardFooter>
     </Card>
   )
