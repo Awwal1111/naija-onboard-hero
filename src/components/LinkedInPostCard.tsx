@@ -83,6 +83,8 @@ const LinkedInPostCard: React.FC<LinkedInPostCardProps> = ({
   const renderContentType = () => {
     switch (post.content_type) {
       case 'job':
+        const jobLocation = post.metadata?.job?.location
+        const jobBudget = post.metadata?.job?.budget
         return (
           <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mt-3">
             <div className="flex items-start gap-3">
@@ -91,15 +93,15 @@ const LinkedInPostCard: React.FC<LinkedInPostCardProps> = ({
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold text-foreground">{post.title}</h3>
-                {post.location && (
+                {jobLocation && (
                   <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
                     <MapPin className="h-3 w-3" />
-                    {post.location}
+                    {jobLocation}
                   </p>
                 )}
-                {(post.budget_min || post.budget_max) && (
+                {jobBudget && (
                   <p className="text-sm text-muted-foreground mt-1">
-                    Budget: ₦{post.budget_min?.toLocaleString()} - ₦{post.budget_max?.toLocaleString()}
+                    Budget: {jobBudget}
                   </p>
                 )}
               </div>
@@ -170,18 +172,16 @@ const LinkedInPostCard: React.FC<LinkedInPostCardProps> = ({
                 {post.profiles?.full_name || 'User'}
               </h3>
               <p className="text-sm text-muted-foreground line-clamp-1">
-                {post.profiles?.skills?.join(', ') || 'NaijaLancers Member'}
+                {post.profiles?.profession || 'NaijaLancers Member'}
               </p>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
               </p>
             </div>
           </div>
-          <PostOptionsMenu
-            postId={post.id}
-            postAuthorId={post.user_id}
-            currentUserId={currentUserId}
-          />
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+            <MoreVertical className="h-4 w-4" />
+          </Button>
         </div>
 
         {/* Content */}
@@ -191,7 +191,7 @@ const LinkedInPostCard: React.FC<LinkedInPostCardProps> = ({
           )}
           <div className="text-foreground whitespace-pre-wrap">
             {showFullText ? (
-              <span dangerouslySetInnerHTML={{ __html: sanitizeText(renderHashtags(post.content || '')) }} />
+              renderHashtags(post.content || '')
             ) : (
               <>
                 {renderHashtags(contentPreview)}
@@ -212,7 +212,7 @@ const LinkedInPostCard: React.FC<LinkedInPostCardProps> = ({
 
         {/* Media */}
         {post.media_urls && post.media_urls.length > 0 && (
-          <MediaGallery mediaUrls={post.media_urls} />
+          <MediaGallery media={post.media_urls} />
         )}
 
         {/* Engagement Stats */}
@@ -234,24 +234,13 @@ const LinkedInPostCard: React.FC<LinkedInPostCardProps> = ({
 
         {/* Action Buttons */}
         <div className="px-2 py-2 flex items-center justify-around">
-          <ReactionPicker
-            postId={post.id}
-            currentReaction={post.user_reaction}
-            onReact={onReact}
-            onRemoveReaction={onRemoveReaction}
-            trigger={
-              <Button
-                variant="ghost"
-                size="sm"
-                className={`flex-1 gap-2 hover:bg-primary/10 ${
-                  post.user_reaction ? 'text-primary font-medium' : ''
-                }`}
-              >
-                <ThumbsUp className="h-5 w-5" />
-                <span className="hidden sm:inline">Like</span>
-              </Button>
-            }
-          />
+          <div className="flex-1 flex justify-center">
+            <ReactionPicker
+              currentReaction={post.user_reaction}
+              onReact={(reactionType) => onReact(post.id, reactionType)}
+              className="w-full"
+            />
+          </div>
           
           <Button
             variant="ghost"
@@ -281,8 +270,8 @@ const LinkedInPostCard: React.FC<LinkedInPostCardProps> = ({
             <div className="p-4">
               <CommentsSection
                 postId={post.id}
-                onComment={onComment}
-                currentUserId={currentUserId}
+                isOpen={showComments}
+                onClose={() => setShowComments(false)}
               />
             </div>
           </>
