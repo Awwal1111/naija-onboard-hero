@@ -13,7 +13,9 @@ import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
 import { useEnhancedFeed } from '@/hooks/useEnhancedFeed'
 import { useSuggestions } from '@/hooks/useSuggestions'
-import InfiniteScrollFeed from '@/components/InfiniteScrollFeed'
+import PaginatedFeed from '@/components/PaginatedFeed'
+import StoriesSection from '@/components/StoriesSection'
+import { useFeed } from '@/hooks/useFeed'
 import EnhancedCreatePostDialog from '@/components/EnhancedCreatePostDialog'
 import CreateStoryDialog from '@/components/CreateStoryDialog'
 import TrendingSection from '@/components/TrendingSection'
@@ -33,24 +35,17 @@ const MainFeed = () => {
   const { user } = useAuth()
   const { profile } = useProfile()
   const { isComplete, missingFields, shouldShowDialog } = useProfileCompletion()
-  const [moreMenuOpen, setMoreMenuOpen] = useState(false)
   const { 
     posts, 
+    stories,
     loading, 
-    searchQuery,
-    setSearchQuery,
     createPost, 
-    addReaction,
-    removeReaction,
+    toggleLike,
     addComment,
+    viewStory,
     refetch: refetchFeed
-  } = useEnhancedFeed()
-  const { 
-    groupSuggestions, 
-    expertSuggestions,
-    loading: suggestionsLoading,
-    refreshSuggestions 
-  } = useSuggestions()
+  } = useFeed()
+  const [searchQuery, setSearchQuery] = useState('')
   const [showCreatePost, setShowCreatePost] = useState(false)
   const [showCreateStory, setShowCreateStory] = useState(false)
   const [feedType, setFeedType] = useState<'for-you' | 'following'>('for-you')
@@ -162,8 +157,16 @@ const MainFeed = () => {
 
   const handleRefresh = async () => {
     setIsRefreshing(true)
-    await Promise.all([refetchFeed(), refreshSuggestions()])
+    await refetchFeed()
     setTimeout(() => setIsRefreshing(false), 500)
+  }
+
+  const handleReact = (postId: string, reactionType: string) => {
+    toggleLike(postId)
+  }
+
+  const handleRemoveReaction = (postId: string) => {
+    toggleLike(postId)
   }
 
   if (loading) {
@@ -343,120 +346,93 @@ const MainFeed = () => {
             )}
           </header>
 
-          {/* Stories Section */}
-          <div className="border-b border-border mb-6">
-            <StoriesCarousel onCreateStory={handleCreateStory} />
-          </div>
+          {/* Stories Section - Horizontal Only */}
+          <StoriesSection
+            stories={stories}
+            onCreateStory={handleCreateStory}
+            onViewStory={viewStory}
+            currentUserId={user?.id}
+          />
 
-          {/* Post Creation Bar - Improved */}
-          <div className="px-6 py-6 mb-6 border-b border-border bg-card">
-            <div className="flex items-center gap-4">
+          {/* Share Box */}
+          <div className="bg-card p-4 mb-2 border-b border-border">
+            <div className="flex items-center gap-3">
               <Avatar className="h-12 w-12">
                 <AvatarImage src={profile?.profile_picture_url} />
-                <AvatarFallback className="bg-primary text-primary-foreground text-base font-bold">
+                <AvatarFallback className="bg-primary text-primary-foreground font-bold text-base">
                   {profile?.full_name?.charAt(0) || 'U'}
                 </AvatarFallback>
               </Avatar>
               <button
                 onClick={() => setShowCreatePost(true)}
-                className="flex-1 text-left px-5 py-4 bg-muted rounded-full text-muted-foreground hover:bg-accent hover:text-foreground transition-all text-base border border-transparent hover:border-border"
+                className="flex-1 text-left px-5 py-3 bg-muted rounded-full text-muted-foreground hover:bg-muted/80 transition-colors text-base border border-border"
               >
                 Share your thoughts...
               </button>
             </div>
-            
-            {/* Quick Action Buttons */}
-            <div className="hidden sm:flex justify-around mt-6 pt-6 border-t border-border">
-              <button
-                onClick={() => setShowCreatePost(true)}
-                className="flex items-center gap-3 px-5 py-3 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-xl transition-all"
-              >
-                <Image className="h-6 w-6" />
-                <span className="font-medium text-base">Photo/Video</span>
-              </button>
-              
-              <button
-                onClick={() => setShowCreatePost(true)}
-                className="flex items-center gap-3 px-5 py-3 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-xl transition-all"
-              >
-                <FileText className="h-6 w-6" />
-                <span className="font-medium text-base">Document</span>
-              </button>
-              
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-3 px-5 py-3 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-xl transition-all">
-                    <Plus className="h-6 w-6" />
-                    <span className="font-medium text-base">More</span>
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuItem onClick={() => navigate('/post-job')} className="py-3">
-                    <Briefcase className="h-5 w-5 mr-3" />
-                    <span className="text-base">Post Job</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setShowCreatePost(true)} className="py-3">
-                    <Award className="h-5 w-5 mr-3" />
-                    <span className="text-base">Share Achievement</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setShowCreatePost(true)} className="py-3">
-                    <Calendar className="h-5 w-5 mr-3" />
-                    <span className="text-base">Create Event</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setShowCreatePost(true)}>
-                    <Vote className="h-4 w-4 mr-2" />
-                    Start Poll
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+          </div>
+
+          {/* Trending Hashtags Tabs */}
+          <div className="bg-card p-4 mb-2">
+            <div className="flex items-center gap-2 mb-3">
+              <Hash className="h-4 w-4 text-primary" />
+              <span className="text-sm font-semibold text-foreground">Trending Now</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {trendingHashtags.map((tag) => (
+                <Badge 
+                  key={tag}
+                  variant="secondary"
+                  className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-all text-sm px-3 py-1.5"
+                  onClick={() => setSearchQuery(tag)}
+                >
+                  {tag}
+                </Badge>
+              ))}
             </div>
           </div>
 
-          {/* Main Feed Content */}
-          <div className="px-2 sm:px-6 py-3 sm:py-6 space-y-3 sm:space-y-6">
-            {feedType === 'following' ? (
-              <SuggestionsTab />
-            ) : (
-              <>
-
-                {filteredAndSortedPosts.length === 0 && !loading ? (
-                  <div className="text-center py-16">
-                    <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-6">
-                      <FileText className="h-10 w-10 text-text-secondary" />
-                    </div>
-                    <h3 className="text-xl font-semibold text-text-primary mb-3">
-                      {searchQuery ? 'No matching posts' : 'Welcome to your feed!'}
-                    </h3>
-                    <p className="text-text-secondary mb-6 max-w-md mx-auto">
-                      {searchQuery 
-                        ? 'Try adjusting your search terms or browse different categories'
-                        : 'Start by creating your first post or connecting with other professionals'
-                      }
-                    </p>
-                    {!searchQuery && (
-                      <BrandButton onClick={() => setShowCreatePost(true)} size="lg">
-                        <Plus className="h-5 w-5 mr-2" />
-                        Create Your First Post
-                      </BrandButton>
-                    )}
+          {/* Main Feed - LinkedIn Style with Pagination */}
+          {feedType === 'for-you' ? (
+            <div className="px-4">
+              {filteredAndSortedPosts.length === 0 ? (
+                <div className="text-center py-16">
+                  <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-6">
+                    <FileText className="h-10 w-10 text-muted-foreground" />
                   </div>
-                ) : (
-                  <InfiniteScrollFeed
-                      posts={filteredAndSortedPosts}
-                      hasNextPage={false}
-                      isFetchingNextPage={false}
-                      fetchNextPage={() => {}}
-                      onReact={addReaction}
-                      onRemoveReaction={removeReaction}
-                      onComment={addComment}
-                      currentUserId={user?.id}
-                      onJobApply={handleJobApply}
-                      onProfileClick={handleProfileClick}
-                    />
-                )}
-              </>
-            )}
-          </div>
+                  <h3 className="text-xl font-semibold text-foreground mb-3">
+                    {searchQuery ? 'No matching posts' : 'Welcome to your feed!'}
+                  </h3>
+                  <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                    {searchQuery 
+                      ? 'Try adjusting your search terms or browse different categories'
+                      : 'Start by creating your first post or connecting with other professionals'
+                    }
+                  </p>
+                  {!searchQuery && (
+                    <BrandButton onClick={() => setShowCreatePost(true)} size="lg">
+                      <Plus className="h-5 w-5 mr-2" />
+                      Create Your First Post
+                    </BrandButton>
+                  )}
+                </div>
+              ) : (
+                <PaginatedFeed
+                  posts={filteredAndSortedPosts}
+                  onReact={handleReact}
+                  onRemoveReaction={handleRemoveReaction}
+                  onComment={addComment}
+                  onJobApply={handleJobApply}
+                  onProfileClick={handleProfileClick}
+                  currentUserId={user?.id}
+                />
+              )}
+            </div>
+          ) : (
+            <div className="px-4">
+              <SuggestionsTab />
+            </div>
+          )}
         </div>
 
         {/* Trending Sidebar - Hidden on smaller screens */}
