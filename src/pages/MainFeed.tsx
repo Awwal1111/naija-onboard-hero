@@ -43,9 +43,10 @@ const MainFeed = () => {
     toggleLike,
     addComment,
     viewStory,
-    refetch: refetchFeed
+    refreshFeed
   } = useFeed()
   const [searchQuery, setSearchQuery] = useState('')
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false)
   const [showCreatePost, setShowCreatePost] = useState(false)
   const [showCreateStory, setShowCreateStory] = useState(false)
   const [feedType, setFeedType] = useState<'for-you' | 'following'>('for-you')
@@ -130,7 +131,7 @@ const MainFeed = () => {
 
   const handleStoryCreated = () => {
     // Refresh feed when a new story is created
-    refetchFeed()
+    refreshFeed()
   }
 
   const handleJobApply = (jobPost: any) => {
@@ -157,7 +158,7 @@ const MainFeed = () => {
 
   const handleRefresh = async () => {
     setIsRefreshing(true)
-    await refetchFeed()
+    await refreshFeed()
     setTimeout(() => setIsRefreshing(false), 500)
   }
 
@@ -418,7 +419,7 @@ const MainFeed = () => {
                 </div>
               ) : (
                 <PaginatedFeed
-                  posts={filteredAndSortedPosts}
+                  posts={filteredAndSortedPosts as any}
                   onReact={handleReact}
                   onRemoveReaction={handleRemoveReaction}
                   onComment={addComment}
@@ -450,9 +451,10 @@ const MainFeed = () => {
       <EnhancedCreatePostDialog
         isOpen={showCreatePost}
         onClose={() => setShowCreatePost(false)}
-        onCreatePost={(content, contentType, visibility, title, mediaUrls) => 
-          createPost(content, contentType, visibility, title, mediaUrls)
-        }
+        onCreatePost={(content, contentType, title, mediaUrls) => {
+          const urlsArray = typeof mediaUrls === 'string' ? [mediaUrls] : mediaUrls
+          return createPost(content, contentType, title, urlsArray)
+        }}
         userProfile={profile}
       />
 
