@@ -177,6 +177,23 @@ const ChatList = () => {
           </div>
         </div>
 
+        {/* AI Assistant - Special Chat Option */}
+        <div
+          onClick={() => navigate('/chat/ai')}
+          className="bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 rounded-xl p-4 cursor-pointer hover:shadow-md transition-all flex items-center gap-4 mb-6"
+        >
+          <div className="w-14 h-14 bg-gradient-to-br from-primary to-primary/60 rounded-full flex items-center justify-center">
+            <MessageCircle className="h-7 w-7 text-primary-foreground" />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-semibold text-foreground">AI Assistant</h3>
+            <p className="text-sm text-muted-foreground">Chat & Generate Images • Powered by Gemini</p>
+          </div>
+          <div className="bg-primary/20 text-primary text-xs font-medium px-2 py-1 rounded-full">
+            NEW
+          </div>
+        </div>
+
         {/* Conversations List */}
         {filteredChats.length === 0 ? (
           <div className="text-center py-12">
