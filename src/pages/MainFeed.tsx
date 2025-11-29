@@ -199,9 +199,9 @@ const MainFeed = () => {
       >
       {/* Main Content */}
         <div className="flex-1 max-w-4xl mx-auto w-full">
-          {/* Header - Clean and Spacious */}
+          {/* Header - Fixed at Top */}
           <header className="bg-background/95 backdrop-blur-sm border-b border-border px-6 py-5 sticky top-0 z-10">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between">
               <Logo />
               <div className="flex items-center gap-3">
                 <NotificationBell />
@@ -239,9 +239,29 @@ const MainFeed = () => {
                 </DropdownMenu>
               </div>
             </div>
-            
-            {/* Feed Toggle - Prominent */}
-            <div className="flex bg-muted p-1 rounded-full mb-6">
+          </header>
+
+          {/* Share Box - At Top */}
+          <div className="bg-card p-6 border-b border-border">
+            <div className="flex items-center gap-3">
+              <Avatar className="h-12 w-12">
+                <AvatarImage src={profile?.profile_picture_url} />
+                <AvatarFallback className="bg-primary text-primary-foreground font-bold text-base">
+                  {profile?.full_name?.charAt(0) || 'U'}
+                </AvatarFallback>
+              </Avatar>
+              <button
+                onClick={() => setShowCreatePost(true)}
+                className="flex-1 text-left px-5 py-3 bg-muted rounded-full text-muted-foreground hover:bg-muted/80 transition-colors text-base border border-border"
+              >
+                Share your thoughts...
+              </button>
+            </div>
+          </div>
+
+          {/* Feed Toggle - Below Share Box */}
+          <div className="bg-card p-4 border-b border-border">
+            <div className="flex bg-muted p-1 rounded-full">
               <button
                 onClick={() => setFeedType('for-you')}
                 className={`flex-1 py-3 px-6 rounded-full text-base font-medium transition-all ${
@@ -263,128 +283,30 @@ const MainFeed = () => {
                 Suggestions
               </button>
             </div>
-
-            {/* Search Bar - Clean */}
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <BrandInput
-                placeholder="Search posts, people, or hashtags..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-12 pr-14 h-14 text-base"
-              />
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowFilters(!showFilters)}
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 h-10 w-10"
-              >
-                <Filter className="h-5 w-5" />
-              </Button>
-            </div>
-
-            {/* Filters - Collapsible */}
-            {showFilters && (
-              <div className="mt-4 p-4 bg-muted/50 rounded-xl space-y-4 animate-in slide-in-from-top">
-                <div>
-                  <h4 className="text-sm font-semibold text-foreground mb-3">Sort by</h4>
-                  <div className="flex gap-2">
-                    {(['recent', 'trending', 'popular'] as const).map((sort) => (
-                      <Button
-                        key={sort}
-                        variant={sortBy === sort ? 'default' : 'outline'}
-                        size="default"
-                        onClick={() => setSortBy(sort)}
-                        className="capitalize text-sm"
-                      >
-                        {sort === 'trending' && <TrendingUp className="h-4 w-4 mr-2" />}
-                        {sort}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-                
-                <div>
-                  <h4 className="text-sm font-semibold text-foreground mb-3">Categories</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {postCategories.map((category) => (
-                      <Button
-                        key={category.id}
-                        variant={selectedCategory === category.id ? 'default' : 'outline'}
-                        size="default"
-                        onClick={() => setSelectedCategory(category.id)}
-                        className="text-sm"
-                      >
-                        <category.icon className="h-4 w-4 mr-2" />
-                        {category.label}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Trending Hashtags - Clean Display */}
-            {!showFilters && (
-              <div className="mt-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <Hash className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-semibold text-foreground">Trending Now</span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {trendingHashtags.map((tag) => (
-                    <Badge 
-                      key={tag}
-                      variant="secondary"
-                      className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-all text-sm px-3 py-1.5"
-                      onClick={() => setSearchQuery(tag)}
-                    >
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-          </header>
-
-          {/* Stories Section - Horizontal Only */}
-          <StoriesSection
-            stories={stories}
-            onCreateStory={handleCreateStory}
-            onViewStory={viewStory}
-            currentUserId={user?.id}
-          />
-
-          {/* Share Box */}
-          <div className="bg-card p-4 mb-2 border-b border-border">
-            <div className="flex items-center gap-3">
-              <Avatar className="h-12 w-12">
-                <AvatarImage src={profile?.profile_picture_url} />
-                <AvatarFallback className="bg-primary text-primary-foreground font-bold text-base">
-                  {profile?.full_name?.charAt(0) || 'U'}
-                </AvatarFallback>
-              </Avatar>
-              <button
-                onClick={() => setShowCreatePost(true)}
-                className="flex-1 text-left px-5 py-3 bg-muted rounded-full text-muted-foreground hover:bg-muted/80 transition-colors text-base border border-border"
-              >
-                Share your thoughts...
-              </button>
-            </div>
           </div>
 
-          {/* Trending Hashtags Tabs */}
-          <div className="bg-card p-4 mb-2">
-            <div className="flex items-center gap-2 mb-3">
-              <Hash className="h-4 w-4 text-primary" />
-              <span className="text-sm font-semibold text-foreground">Trending Now</span>
+          {/* Stories Section - Horizontal Only */}
+          <div className="bg-card border-b border-border">
+            <StoriesSection
+              stories={stories}
+              onCreateStory={handleCreateStory}
+              onViewStory={viewStory}
+              currentUserId={user?.id}
+            />
+          </div>
+
+          {/* Trending Hashtags */}
+          <div className="bg-card p-6 border-b border-border">
+            <div className="flex items-center gap-2 mb-4">
+              <Hash className="h-5 w-5 text-primary" />
+              <span className="text-base font-semibold text-foreground">Trending Now</span>
             </div>
             <div className="flex flex-wrap gap-2">
               {trendingHashtags.map((tag) => (
                 <Badge 
                   key={tag}
                   variant="secondary"
-                  className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-all text-sm px-3 py-1.5"
+                  className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-all text-sm px-3 py-2"
                   onClick={() => setSearchQuery(tag)}
                 >
                   {tag}
