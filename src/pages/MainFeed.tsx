@@ -259,33 +259,7 @@ const MainFeed = () => {
             </div>
           </div>
 
-          {/* Feed Toggle - Below Share Box */}
-          <div className="bg-card p-4 border-b border-border">
-            <div className="flex bg-muted p-1 rounded-full">
-              <button
-                onClick={() => setFeedType('for-you')}
-                className={`flex-1 py-3 px-6 rounded-full text-base font-medium transition-all ${
-                  feedType === 'for-you' 
-                    ? 'bg-primary text-primary-foreground shadow-md' 
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                Recommended
-              </button>
-              <button
-                onClick={() => setFeedType('following')}
-                className={`flex-1 py-3 px-6 rounded-full text-base font-medium transition-all ${
-                  feedType === 'following' 
-                    ? 'bg-primary text-primary-foreground shadow-md' 
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                Suggestions
-              </button>
-            </div>
-          </div>
-
-          {/* Stories Section - Horizontal Only */}
+          {/* Stories Section - After Share Box */}
           <div className="bg-card border-b border-border">
             <StoriesSection
               stories={stories}
@@ -312,6 +286,32 @@ const MainFeed = () => {
                   {tag}
                 </Badge>
               ))}
+            </div>
+          </div>
+
+          {/* Feed Toggle - After Trending */}
+          <div className="bg-card p-4 border-b border-border">
+            <div className="flex bg-muted p-1 rounded-full">
+              <button
+                onClick={() => setFeedType('for-you')}
+                className={`flex-1 py-3 px-6 rounded-full text-base font-medium transition-all ${
+                  feedType === 'for-you' 
+                    ? 'bg-primary text-primary-foreground shadow-md' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Recommended
+              </button>
+              <button
+                onClick={() => setFeedType('following')}
+                className={`flex-1 py-3 px-6 rounded-full text-base font-medium transition-all ${
+                  feedType === 'following' 
+                    ? 'bg-primary text-primary-foreground shadow-md' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Suggestions
+              </button>
             </div>
           </div>
 
