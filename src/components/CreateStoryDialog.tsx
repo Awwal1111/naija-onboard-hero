@@ -4,7 +4,7 @@ import { BrandButton } from '@/components/ui/brand-button'
 import { BrandInput } from '@/components/ui/brand-input'
 import { Camera, Video, X, FileText, Music } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import { useFileUpload } from '@/hooks/useFileUpload'
+import { uploadToCatbox, formatFileSize } from '@/lib/catbox'
 import { supabase } from '@/integrations/supabase/client'
 
 interface CreateStoryDialogProps {
@@ -24,8 +24,9 @@ const CreateStoryDialog: React.FC<CreateStoryDialogProps> = ({
   const [mediaType, setMediaType] = useState<'image' | 'video' | 'audio' | 'document' | 'text'>('text')
   const [storyType, setStoryType] = useState<'text' | 'media'>('text')
   const [backgroundColor, setBackgroundColor] = useState('gradient-primary')
+  const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
   const { toast } = useToast()
-  const { uploadFile, uploadProgress } = useFileUpload()
 
   // Facebook/Instagram style background options
   const backgroundOptions = [
@@ -88,19 +89,35 @@ const CreateStoryDialog: React.FC<CreateStoryDialogProps> = ({
 
       let mediaUrl = null
 
-      // Upload media if provided
+      // Upload media if provided (using Catbox.moe for images/videos)
       if (mediaFile) {
-        // Upload file with user folder structure (like Instagram)
-        const fileExt = mediaFile.name.split('.').pop()
-        const fileName = `${user.user.id}/story-${Date.now()}.${fileExt}`
+        // Check if it's an image or video
+        const isImageOrVideo = mediaFile.type.startsWith('image/') || mediaFile.type.startsWith('video/')
         
-        const { url, error } = await uploadFile(mediaFile, 'stories', fileName)
-        
-        if (error || !url) {
-          throw new Error(error || 'Upload failed')
+        if (isImageOrVideo) {
+          // Upload to Catbox.moe (free hosting)
+          setUploading(true)
+          setUploadProgress(50) // Show progress
+          
+          const { url, error } = await uploadToCatbox(mediaFile)
+          
+          setUploadProgress(100)
+          setUploading(false)
+          
+          if (error || !url) {
+            throw new Error(error || 'Upload to Catbox failed')
+          }
+          
+          mediaUrl = url
+          
+          toast({
+            title: "Uploaded successfully",
+            description: "Your media is hosted on Catbox.moe"
+          })
+        } else {
+          // For other file types, show error (stories should only be images/videos)
+          throw new Error('Only images and videos are supported for stories')
         }
-        
-        mediaUrl = url
       }
 
       // Create story record (expires in 24 hours like Instagram/Facebook)
@@ -130,10 +147,13 @@ const CreateStoryDialog: React.FC<CreateStoryDialogProps> = ({
       removeMedia()
       setStoryType('text')
       setBackgroundColor('gradient-primary')
+      setUploadProgress(0)
       onStoryCreated()
       onClose()
     } catch (error: any) {
       console.error('Error creating story:', error)
+      setUploading(false)
+      setUploadProgress(0)
       toast({
         title: "Error",
         description: error.message || "Failed to create story",
@@ -347,16 +367,16 @@ const CreateStoryDialog: React.FC<CreateStoryDialogProps> = ({
             )}
 
             {/* Upload Progress */}
-            {uploadProgress.isUploading && (
+            {uploading && (
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span>Uploading...</span>
-                  <span>{uploadProgress.progress}%</span>
+                  <span>Uploading to Catbox.moe...</span>
+                  <span>{uploadProgress}%</span>
                 </div>
                 <div className="w-full bg-muted rounded-full h-2">
                   <div 
                     className="bg-primary h-2 rounded-full transition-all"
-                    style={{ width: `${uploadProgress.progress}%` }}
+                    style={{ width: `${uploadProgress}%` }}
                   />
                 </div>
               </div>
@@ -370,7 +390,7 @@ const CreateStoryDialog: React.FC<CreateStoryDialogProps> = ({
               variant="outline" 
               className="flex-1"
               onClick={onClose}
-              disabled={uploadProgress.isUploading}
+              disabled={uploading}
             >
               Cancel
             </BrandButton>
@@ -378,11 +398,11 @@ const CreateStoryDialog: React.FC<CreateStoryDialogProps> = ({
               className="flex-1"
               onClick={handleSubmit}
               disabled={
-                uploadProgress.isUploading || 
+                uploading || 
                 (storyType === 'text' ? !content.trim() : !mediaFile)
               }
             >
-              {uploadProgress.isUploading ? 'Posting...' : 'Post Story'}
+              {uploading ? 'Uploading...' : 'Post Story'}
             </BrandButton>
           </div>
         </div>

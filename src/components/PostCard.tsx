@@ -127,18 +127,26 @@ const PostCard: React.FC<PostCardProps> = ({ post, onLike, onComment, onSave, cu
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="p-1 hover:bg-accent rounded-full transition-colors">
+                <button 
+                  className="p-1.5 hover:bg-accent rounded-full transition-colors shrink-0"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <MoreVertical className="h-4 w-4 text-text-secondary" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="z-50">
                 {onSave && (
-                  <DropdownMenuItem onClick={() => onSave(post.id)}>
+                  <DropdownMenuItem 
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onSave(post.id)
+                    }}
+                  >
                     <Bookmark className={`h-4 w-4 mr-2 ${post.user_saved ? 'fill-current' : ''}`} />
                     {post.user_saved ? 'Unsave' : 'Save'} Post
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
                   <Flag className="h-4 w-4 mr-2" />
                   Report Post
                 </DropdownMenuItem>

@@ -234,11 +234,13 @@ const StoriesCarousel: React.FC<StoriesCarouselProps> = ({ onCreateStory }) => {
         {Object.entries(groupedStories).map(([userId, userStories]) => {
           const latestStory = userStories[0]
           const hasUnviewedStories = userStories.some(story => !story.is_viewed && story.user_id !== user?.id)
+          // Find the correct index in the full stories array
+          const storyIndex = stories.findIndex(s => s.id === latestStory.id)
           
           return (
             <button
               key={userId}
-              onClick={() => handleStoryClick(latestStory, 0)}
+              onClick={() => handleStoryClick(latestStory, storyIndex)}
               className="flex-shrink-0 flex flex-col items-center gap-1.5 group"
             >
               <div className={`relative w-14 h-14 rounded-full p-[2px] group-hover:scale-105 transition-transform shadow-sm ${
