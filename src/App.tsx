@@ -22,7 +22,6 @@ import Experts from "./pages/Experts";
 import Jobs from "./pages/Jobs";
 import Chat from './pages/Chat'
 import ChatPage from "./pages/ChatPage";
-import AIChat from "./pages/AIChat";
 import CallHistoryPage from "./pages/CallHistoryPage";
 import GroupChat from "./pages/GroupChat";
 import Connections from "./pages/Connections";
@@ -71,6 +70,8 @@ import PublicCourse from "./pages/PublicCourse";
 import PublicCampaign from "./pages/PublicCampaign";
 import Sitemap from "./pages/Sitemap";
 import InstallApp from "./pages/InstallApp";
+import AIChat from "./pages/AIChat";
+import Analytics from "./pages/Analytics";
 
 // Component to handle app state persistence
 const AppStateManager = () => {
@@ -143,6 +144,7 @@ const App = () => (
           <Route path="/terms-conditions" element={<TermsConditions />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/main-feed" element={<ProtectedRoute><MainFeed /></ProtectedRoute>} />
+          <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
           <Route path="/settings/pin" element={<ProtectedRoute><SetupPin /></ProtectedRoute>} />
           <Route path="/activity-log" element={<ProtectedRoute><ActivityLog /></ProtectedRoute>} />
