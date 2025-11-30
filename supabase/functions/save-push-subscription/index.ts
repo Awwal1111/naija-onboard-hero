@@ -78,12 +78,12 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Check if subscription already exists
+    // Check if subscription already exists for this user (by user_id only)
+    // This allows updating when user switches devices/browsers (different endpoints)
     const { data: existing } = await supabaseClient
       .from('push_subscriptions')
       .select('id')
       .eq('user_id', user.id)
-      .eq('endpoint', subscription.endpoint)
       .maybeSingle()
 
     const expirationTime = subscription.expirationTime 
