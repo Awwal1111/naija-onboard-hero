@@ -54,7 +54,8 @@ Deno.serve(async (req) => {
     const webpush = await import('npm:web-push@3.6.7')
     
     // VAPID keys - these should be configured in Supabase secrets
-    const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY') || 'BEl62iUYgUivxIkv69yViEuiBIa-Ib37gp65ImqH8IaG_d5zGW3TpUY0Dh3TGX2hP_mMLpYXLvJ4WdE_kCDZiQ8'
+    // Using correct VAPID public key that matches the private key
+    const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY') || 'BLpOlYmZrInf0zI1oSxqhGvAhSm3HEqVALjIvZtgoCXU-N59AX0SbjhLL3RF5aX-eG4A31uBFM2gkGYpVEtQdbw'
     const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY') || ''
     
     if (!vapidPrivateKey) {
