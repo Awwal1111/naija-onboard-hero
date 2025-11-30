@@ -415,7 +415,7 @@ const Experts = () => {
             {/* ExpertClass Tab */}
             <TabsContent value="classes" className="space-y-4">
               {/* Create Class Button for Experts */}
-              {userProfile?.user_type === 'expert' && (
+              {userProfile?.is_expert === true && (
                 <div className="flex justify-end mb-4">
                   <BrandButton onClick={() => setShowCreateDialog(true)}>
                     <Plus className="h-5 w-5 mr-2" />
@@ -425,7 +425,7 @@ const Experts = () => {
               )}
 
               {/* Explanation for regular users */}
-              {userProfile?.user_type !== 'expert' && (
+              {userProfile?.is_expert !== true && (
                 <div className="bg-muted/50 rounded-lg p-6 mb-6 border border-border">
                   <h3 className="font-semibold text-lg mb-2">About ExpertClass</h3>
                   <p className="text-muted-foreground">

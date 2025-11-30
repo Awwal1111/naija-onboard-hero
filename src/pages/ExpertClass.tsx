@@ -21,15 +21,38 @@ const ExpertClass = () => {
   useEffect(() => {
     if (!user) return
     
-    supabase
-      .from('profiles')
-      .select('*')
-      .eq('user_id', user.id)
-      .single()
-      .then(({ data }) => setUserProfile(data))
+    const fetchProfile = async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single()
+      
+      if (error) {
+        console.error('Error fetching profile:', error)
+        return
+      }
+      
+      console.log('Profile loaded:', {
+        is_expert: data?.is_expert,
+        expert_verified_at: data?.expert_verified_at,
+        full_name: data?.full_name
+      })
+      
+      setUserProfile(data)
+    }
+    
+    fetchProfile()
   }, [user])
 
-  const isExpert = userProfile?.user_type === 'expert'
+  // Check if user is an expert based on is_expert field
+  const isExpert = Boolean(userProfile?.is_expert === true)
+  
+  console.log('isExpert check:', {
+    isExpert,
+    is_expert: userProfile?.is_expert,
+    hasProfile: !!userProfile
+  })
 
   return (
     <div className="min-h-screen bg-background pb-20">
