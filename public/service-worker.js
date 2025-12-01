@@ -20,6 +20,7 @@ self.addEventListener('push', (event) => {
     badge: '/logo.png',
     tag: 'naijalancers-notification',
     requireInteraction: false,
+    url: '/main-feed'
   }
 
   if (event.data) {
@@ -27,11 +28,12 @@ self.addEventListener('push', (event) => {
       const data = event.data.json()
       notificationData = {
         title: data.title || notificationData.title,
-        body: data.message || data.body || notificationData.body,
+        body: data.body || notificationData.body,
         icon: data.icon || notificationData.icon,
         badge: data.badge || notificationData.badge,
         tag: data.tag || notificationData.tag,
-        data: data.metadata || data.data,
+        data: data.data || {},
+        url: data.url || notificationData.url,
         requireInteraction: data.requireInteraction || false,
       }
     } catch (error) {
@@ -45,7 +47,7 @@ self.addEventListener('push', (event) => {
       icon: notificationData.icon,
       badge: notificationData.badge,
       tag: notificationData.tag,
-      data: notificationData.data,
+      data: { ...notificationData.data, url: notificationData.url },
       requireInteraction: notificationData.requireInteraction,
     })
   )
