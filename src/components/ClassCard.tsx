@@ -36,10 +36,25 @@ export const ClassCard: React.FC<ClassCardProps> = ({ classItem }) => {
     if (classItem.status === 'scheduled') {
       return <Badge variant="secondary">Upcoming</Badge>
     }
+    if (classItem.status === 'ended') {
+      return <Badge variant="outline" className="text-muted-foreground">Ended</Badge>
+    }
     return <Badge variant="outline">Completed</Badge>
   }
 
   const getActionButtons = () => {
+    if (!user) {
+      return (
+        <Button 
+          onClick={() => navigate('/login')}
+          variant="outline"
+          className="w-full"
+        >
+          Login to Join
+        </Button>
+      )
+    }
+
     if (classItem.status === 'live') {
       return (
         <div className="space-y-2">
@@ -64,14 +79,19 @@ export const ClassCard: React.FC<ClassCardProps> = ({ classItem }) => {
     }
     
     if (classItem.status === 'scheduled') {
+      const now = new Date()
+      const scheduledStart = classItem.scheduled_start ? new Date(classItem.scheduled_start) : null
+      const canJoin = scheduledStart && (now >= new Date(scheduledStart.getTime() - 10 * 60 * 1000)) // 10 min before
+      
       return (
         <div className="space-y-2">
           <Button 
             onClick={() => navigate(`/expert-class/room/${classItem.id}`)}
             className="w-full"
+            disabled={!isExpert && !canJoin}
           >
             <Video className="h-4 w-4 mr-2" />
-            {isExpert ? 'Start Class' : 'Join Waiting Room'}
+            {isExpert ? 'Start Class' : canJoin ? 'Join Waiting Room' : 'Not Yet Available'}
           </Button>
           <Button 
             onClick={handleShareClass}
@@ -86,15 +106,25 @@ export const ClassCard: React.FC<ClassCardProps> = ({ classItem }) => {
       )
     }
     
+    // Ended classes
     return (
       <div className="space-y-2">
-        {classItem.recording_url && (
+        {classItem.recording_url ? (
           <Button 
             onClick={() => window.open(classItem.recording_url, '_blank')}
             variant="secondary"
             className="w-full"
           >
+            <Video className="h-4 w-4 mr-2" />
             View Recording
+          </Button>
+        ) : (
+          <Button 
+            variant="outline"
+            className="w-full"
+            disabled
+          >
+            Recording Unavailable
           </Button>
         )}
         <Button 
@@ -104,7 +134,7 @@ export const ClassCard: React.FC<ClassCardProps> = ({ classItem }) => {
           className="w-full"
         >
           <Share2 className="h-4 w-4 mr-2" />
-          Share Link
+          Share
         </Button>
       </div>
     )

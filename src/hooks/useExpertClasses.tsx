@@ -102,7 +102,7 @@ export const useExpertClasses = () => {
     },
   })
 
-  // Fetch featured classes (for now, just recent completed classes)
+  // Fetch featured classes (popular and highly rated)
   const { data: featuredClasses = [], isLoading: isLoadingFeatured } = useQuery({
     queryKey: ['expert-classes', 'featured'],
     queryFn: async () => {
@@ -110,8 +110,42 @@ export const useExpertClasses = () => {
         .from('expert_classes')
         .select('*')
         .in('status', ['scheduled', 'live'])
-        .order('created_at', { ascending: false })
+        .order('current_participants', { ascending: false })
         .limit(6)
+
+      if (error) throw error
+      if (!classes || classes.length === 0) return []
+
+      // Fetch expert profiles
+      const expertIds = [...new Set(classes.map(c => c.expert_id))]
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, profile_picture_url')
+        .in('user_id', expertIds)
+
+      // Combine data
+      return classes.map(classItem => ({
+        ...classItem,
+        expert: profiles?.find(p => p.user_id === classItem.expert_id) 
+          ? {
+              full_name: profiles.find(p => p.user_id === classItem.expert_id)!.full_name || '',
+              avatar_url: profiles.find(p => p.user_id === classItem.expert_id)!.profile_picture_url || ''
+            }
+          : undefined
+      })) as ExpertClass[]
+    },
+  })
+
+  // Fetch past/ended classes
+  const { data: pastClasses = [], isLoading: isLoadingPast } = useQuery({
+    queryKey: ['expert-classes', 'past'],
+    queryFn: async () => {
+      const { data: classes, error } = await supabase
+        .from('expert_classes')
+        .select('*')
+        .eq('status', 'ended')
+        .order('actual_end', { ascending: false })
+        .limit(20)
 
       if (error) throw error
       if (!classes || classes.length === 0) return []
@@ -144,6 +178,14 @@ export const useExpertClasses = () => {
       const roomCode = `class-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
       const expertPass = Math.random().toString(36).substring(2, 14)
 
+      // Calculate scheduled_end based on scheduled_start + duration
+      let scheduledEnd = null
+      if (classData.scheduled_start && classData.duration_minutes) {
+        const startDate = new Date(classData.scheduled_start)
+        startDate.setMinutes(startDate.getMinutes() + classData.duration_minutes)
+        scheduledEnd = startDate.toISOString()
+      }
+
       const { data, error } = await supabase
         .from('expert_classes')
         .insert([{
@@ -152,9 +194,10 @@ export const useExpertClasses = () => {
           class_type: classData.class_type || 'live',
           status: classData.status || 'scheduled',
           scheduled_start: classData.scheduled_start,
-          scheduled_end: classData.scheduled_end,
+          scheduled_end: scheduledEnd,
           duration_minutes: classData.duration_minutes,
           max_participants: classData.max_participants || 50,
+          current_participants: 0,
           is_free: classData.is_free,
           price: classData.price,
           category: classData.category,
@@ -271,7 +314,8 @@ export const useExpertClasses = () => {
     liveClasses,
     upcomingClasses,
     featuredClasses,
-    isLoading: isLoadingLive || isLoadingUpcoming || isLoadingFeatured,
+    pastClasses,
+    isLoading: isLoadingLive || isLoadingUpcoming || isLoadingFeatured || isLoadingPast,
     createClass: createClassMutation.mutate,
     joinClass: joinClassMutation.mutate,
     leaveClass: leaveClassMutation.mutate,

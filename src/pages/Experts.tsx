@@ -53,7 +53,7 @@ const Experts = () => {
   const [profilePreview, setProfilePreview] = useState<{ isOpen: boolean; userId: string | null }>({ isOpen: false, userId: null })
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [userProfile, setUserProfile] = useState<any>(null)
-  const { liveClasses, upcomingClasses, featuredClasses, isLoading: classesLoading } = useExpertClasses()
+  const { liveClasses, upcomingClasses, featuredClasses, pastClasses, isLoading: classesLoading } = useExpertClasses()
 
   const bottomNavItems = [
     { icon: Home, label: 'Feed', path: '/feed' },
@@ -481,7 +481,7 @@ const Experts = () => {
             </div>
 
             {/* Featured Classes */}
-            <div>
+            <div className="mb-8">
               <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
                 <Star className="h-5 w-5 text-yellow-500" />
                 Featured Classes
@@ -497,6 +497,29 @@ const Experts = () => {
               ) : (
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   {featuredClasses.map((classItem) => (
+                    <ClassCard key={classItem.id} classItem={classItem} />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Past Classes (History) */}
+            <div>
+              <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                <Video className="h-5 w-5 text-muted-foreground" />
+                Class History
+              </h2>
+              {classesLoading ? (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  <Skeleton className="h-48 w-full rounded-lg" />
+                </div>
+              ) : pastClasses.length === 0 ? (
+                <div className="text-center py-8 bg-card rounded-lg border border-border">
+                  <p className="text-muted-foreground">No past classes yet</p>
+                </div>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {pastClasses.map((classItem) => (
                     <ClassCard key={classItem.id} classItem={classItem} />
                   ))}
                 </div>
