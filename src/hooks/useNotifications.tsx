@@ -317,7 +317,7 @@ export const useNotifications = () => {
     sendEmail: boolean = false
   ) => {
     try {
-      // For transaction and important notifications, send via edge function with email
+      // For transaction and important notifications, send via edge function with email and push
       if (sendEmail || type === 'transaction' || type === 'withdrawal' || type === 'deposit' || type === 'payment') {
         const { error } = await supabase.functions.invoke('send-notification', {
           body: {
@@ -343,8 +343,18 @@ export const useNotifications = () => {
             metadata
           })
         }
+        
+        // Also send push notification
+        await supabase.functions.invoke('send-push-notification', {
+          body: {
+            userId,
+            title,
+            body: message,
+            data: { type, ...metadata }
+          }
+        })
       } else {
-        // Regular notification without email
+        // Regular notification without email but with push
         const { error } = await supabase
           .from('notifications')
           .insert({
@@ -356,6 +366,16 @@ export const useNotifications = () => {
           })
 
         if (error) throw error
+        
+        // Send push notification for all notifications
+        await supabase.functions.invoke('send-push-notification', {
+          body: {
+            userId,
+            title,
+            body: message,
+            data: { type, ...metadata }
+          }
+        })
       }
     } catch (error) {
       console.error('Error creating notification:', error)

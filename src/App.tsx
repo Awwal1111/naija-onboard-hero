@@ -8,6 +8,7 @@ import WalletInitializer from "@/components/WalletInitializer";
 import GlobalCallManager from "@/components/GlobalCallManager";
 import { QuidaxRampManager } from "@/components/QuidaxRampManager";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
+import { PushNotificationManager } from "@/components/PushNotificationManager";
 import { useAppState } from "@/hooks/useAppState";
 import Welcome from "./pages/Welcome";
 import Login from "./pages/Login";
@@ -89,6 +90,7 @@ const App = () => (
         <GlobalCallManager />
         <QuidaxRampManager />
         <PWAInstallPrompt />
+        <PushNotificationManager />
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/install" element={<InstallApp />} />
