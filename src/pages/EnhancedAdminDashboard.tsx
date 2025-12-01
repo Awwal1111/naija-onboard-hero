@@ -25,6 +25,7 @@ import { AdminDisputeManagement } from '@/components/AdminDisputeManagement'
 import { AdminManualDepositsSection } from '@/components/AdminManualDepositsSection'
 import { AdminAIAssistant } from '@/components/AdminAIAssistant'
 import { AdminSetup } from '@/components/AdminSetup'
+import { AdminAnalyticsCharts } from '@/components/AdminAnalyticsCharts'
 
 // Marketplace Section Components
 const DonationsSection = () => {
@@ -644,6 +645,128 @@ const EmergencySection = () => {
         </Card>
       ))}
     </div>
+  )
+}
+
+// Analytics Content Component
+const AnalyticsContent = ({ dashboardStats }: { dashboardStats: any }) => {
+  const [analyticsData, setAnalyticsData] = useState<any>({
+    userGrowthData: [],
+    revenueData: [],
+    activityBreakdown: [],
+    platformHealth: {
+      activeUsers: 0,
+      totalRevenue: 0,
+      totalJobs: 0,
+      totalExperts: 0
+    }
+  })
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchAnalyticsData()
+  }, [dashboardStats])
+
+  const fetchAnalyticsData = async () => {
+    try {
+      // Fetch user growth data (last 30 days)
+      const userGrowthData = []
+      for (let i = 29; i >= 0; i--) {
+        const date = new Date()
+        date.setDate(date.getDate() - i)
+        const dateStr = date.toISOString().split('T')[0]
+        
+        const { data: signups } = await supabase
+          .from('profiles')
+          .select('id')
+          .gte('created_at', `${dateStr}T00:00:00`)
+          .lt('created_at', `${dateStr}T23:59:59`)
+        
+        const { data: activeUsers } = await supabase
+          .from('profiles')
+          .select('id')
+          .gte('last_seen_at', `${dateStr}T00:00:00`)
+          .lt('last_seen_at', `${dateStr}T23:59:59`)
+        
+        if (i % 3 === 0) { // Show every 3rd day
+          userGrowthData.push({
+            date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+            signups: signups?.length || 0,
+            active: activeUsers?.length || 0
+          })
+        }
+      }
+
+      // Fetch revenue data (last 30 days)
+      const revenueData = []
+      for (let i = 29; i >= 0; i--) {
+        const date = new Date()
+        date.setDate(date.getDate() - i)
+        const dateStr = date.toISOString().split('T')[0]
+        
+        const { data: transactions } = await supabase
+          .from('wallet_transactions')
+          .select('amount')
+          .gte('created_at', `${dateStr}T00:00:00`)
+          .lt('created_at', `${dateStr}T23:59:59`)
+        
+        const revenue = transactions?.reduce((sum, t) => sum + (t.amount > 0 ? t.amount : 0), 0) || 0
+        
+        if (i % 3 === 0) { // Show every 3rd day
+          revenueData.push({
+            date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+            revenue: revenue
+          })
+        }
+      }
+
+      // Activity breakdown
+      const [posts, jobs, courses, products, fundraisings] = await Promise.all([
+        supabase.from('posts').select('id', { count: 'exact', head: true }),
+        supabase.from('job_posts').select('id', { count: 'exact', head: true }),
+        supabase.from('courses').select('id', { count: 'exact', head: true }),
+        supabase.from('digital_products').select('id', { count: 'exact', head: true }),
+        supabase.from('fundraisings').select('id', { count: 'exact', head: true })
+      ])
+
+      const activityBreakdown = [
+        { name: 'Posts', value: posts.count || 0 },
+        { name: 'Jobs', value: jobs.count || 0 },
+        { name: 'Courses', value: courses.count || 0 },
+        { name: 'Products', value: products.count || 0 },
+        { name: 'Fundraising', value: fundraisings.count || 0 }
+      ]
+
+      setAnalyticsData({
+        userGrowthData,
+        revenueData,
+        activityBreakdown,
+        platformHealth: {
+          activeUsers: dashboardStats.activeUsers,
+          totalRevenue: dashboardStats.totalRevenue,
+          totalJobs: dashboardStats.totalJobs,
+          totalExperts: dashboardStats.totalExperts
+        }
+      })
+      
+      setLoading(false)
+    } catch (error) {
+      console.error('Error fetching analytics:', error)
+      setLoading(false)
+    }
+  }
+
+  if (loading) {
+    return <div className="text-center py-8">Loading analytics...</div>
+  }
+
+  return (
+    <AdminAnalyticsCharts
+      userGrowthData={analyticsData.userGrowthData}
+      revenueData={analyticsData.revenueData}
+      activityBreakdown={analyticsData.activityBreakdown}
+      platformHealth={analyticsData.platformHealth}
+    />
   )
 }
 
@@ -1433,64 +1556,7 @@ const EnhancedAdminDashboard = () => {
 
           {/* Analytics Tab */}
           <TabsContent value="analytics" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5" />
-                    User Growth
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-text-secondary">This Month</span>
-                      <span className="font-semibold text-green-600">+{dashboardStats.recentSignups}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-text-secondary">Total Active</span>
-                      <span className="font-semibold">{dashboardStats.activeUsers}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-text-secondary">Retention Rate</span>
-                      <span className="font-semibold text-blue-600">78%</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <PieChart className="h-5 w-5" />
-                    Content Analytics
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-text-secondary">Total Posts</span>
-                      <span className="font-semibold">{dashboardStats.totalPosts}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-text-secondary">Job Posts</span>
-                      <span className="font-semibold">{dashboardStats.totalJobs}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-text-secondary">Engagement Rate</span>
-                      <span className="font-semibold text-purple-600">64%</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <Alert>
-              <TrendingUp className="h-4 w-4" />
-              <AlertDescription>
-                Platform growth is up 23% this month with increased user engagement and expert applications.
-              </AlertDescription>
-            </Alert>
+            <AnalyticsContent dashboardStats={dashboardStats} />
           </TabsContent>
 
         </Tabs>

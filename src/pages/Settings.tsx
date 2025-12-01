@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { ArrowLeft, Trash2, Eye, Globe, Users, Lock, Moon, Sun, Bell, Languages, Shield, HelpCircle, FileText, User, Activity } from 'lucide-react'
+import { ArrowLeft, Trash2, Eye, Globe, Users, Lock, Moon, Sun, Bell, Languages, Shield, HelpCircle, FileText, User, Activity, TrendingUp } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -189,6 +189,19 @@ const Settings = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="font-medium text-text-primary">Analytics</h4>
+                <p className="text-sm text-text-secondary">View your performance metrics</p>
+              </div>
+              <Button variant="outline" onClick={() => navigate('/analytics')}>
+                <TrendingUp className="h-4 w-4 mr-2" />
+                View Analytics
+              </Button>
+            </div>
+            
+            <Separator />
+            
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="font-medium text-text-primary">Activity Log</h4>
