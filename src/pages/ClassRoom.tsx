@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useExpertClasses } from '@/hooks/useExpertClasses'
 import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
+import { format } from 'date-fns'
 
 const ClassRoom = () => {
   const { classId } = useParams()
@@ -16,27 +17,38 @@ const ClassRoom = () => {
   const { joinClass, leaveClass } = useExpertClasses()
   const { toast } = useToast()
 
-  // Fetch user profile
+  // Check authentication first
   useEffect(() => {
-    if (!user) return
+    if (!user) {
+      toast({
+        title: 'Authentication Required',
+        description: 'Please log in to join classes',
+        variant: 'destructive',
+      })
+      navigate('/login')
+      return
+    }
     
+    // Fetch user profile
     supabase
       .from('profiles')
       .select('*')
       .eq('user_id', user.id)
       .single()
       .then(({ data }) => setUserProfile(data))
-  }, [user])
+  }, [user, navigate])
   
   const [isMuted, setIsMuted] = useState(false)
   const [isVideoOff, setIsVideoOff] = useState(false)
   const [participants, setParticipants] = useState<any[]>([])
   const [classData, setClassData] = useState<any>(null)
+  const [expertJoined, setExpertJoined] = useState(false)
+  const [waitingForExpert, setWaitingForExpert] = useState(false)
   const jitsiContainerRef = useRef<HTMLDivElement>(null)
   const jitsiApiRef = useRef<any>(null)
 
   useEffect(() => {
-    if (!classId || !user) return
+    if (!classId || !user || !userProfile) return
 
     // Fetch class data
     const fetchClassData = async () => {
@@ -58,28 +70,70 @@ const ClassRoom = () => {
 
       setClassData(data)
 
-      // Join the class
-      joinClass(classId)
+      // Check if this is a participant and class is scheduled (not live yet)
+      const isParticipant = data.expert_id !== user.id
+      if (isParticipant && data.status === 'scheduled') {
+        setWaitingForExpert(true)
+      } else {
+        setWaitingForExpert(false)
+      }
 
-      // Initialize Jitsi
-      initJitsi(data.room_code)
+      // Join the class (only for non-expert participants)
+      if (isParticipant) {
+        joinClass(classId)
+      }
+
+      // Initialize Jitsi only if expert OR class is live
+      if (!isParticipant || data.status === 'live') {
+        initJitsi(data)
+      }
     }
 
     fetchClassData()
 
+    // Listen for status changes if waiting for expert
+    const classChannel = supabase
+      .channel(`class-${classId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'expert_classes',
+          filter: `id=eq.${classId}`
+        },
+        (payload) => {
+          const updatedClass = payload.new
+          if (updatedClass.status === 'live' && waitingForExpert) {
+            setWaitingForExpert(false)
+            setExpertJoined(true)
+            // Initialize Jitsi when class goes live
+            initJitsi(updatedClass)
+          }
+          setClassData(updatedClass)
+        }
+      )
+      .subscribe()
+
     return () => {
-      // Leave class on unmount
+      // Remove channel subscription
       if (classId) {
+        supabase.removeChannel(supabase.channel(`class-${classId}`))
+      }
+      
+      // Leave class on unmount (only for non-expert participants)
+      if (classId && classData && classData.expert_id !== user?.id) {
         leaveClass(classId)
       }
       // Dispose Jitsi
       if (jitsiApiRef.current) {
         jitsiApiRef.current.dispose()
+        jitsiApiRef.current = null
       }
     }
-  }, [classId, user])
+  }, [classId, user, userProfile])
 
-  const initJitsi = (roomCode: string) => {
+  const initJitsi = (classDataParam: any) => {
     if (!jitsiContainerRef.current) return
 
     // Load Jitsi Meet External API
@@ -88,10 +142,10 @@ const ClassRoom = () => {
     script.async = true
     script.onload = () => {
       const domain = 'meet.jit.si'
-      const isExpert = classData?.expert_id === user?.id
+      const isExpert = classDataParam?.expert_id === user?.id
       
       const options = {
-        roomName: `naijalancers_${roomCode}`,
+        roomName: `naijalancers_${classDataParam.room_code}`,
         width: '100%',
         height: '100%',
         parentNode: jitsiContainerRef.current,
@@ -113,7 +167,7 @@ const ClassRoom = () => {
           // Lobby mode
           enableLobbyChat: false,
           // Max participants
-          maxParticipants: classData?.max_participants || 50,
+          maxParticipants: classDataParam?.max_participants || 50,
           // Disable moderator features for non-experts
           disableModeratorIndicator: !isExpert,
         },
@@ -241,7 +295,46 @@ const ClassRoom = () => {
   if (!classData) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Loading class...</p>
+        <div className="text-center">
+          <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading class...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Show waiting room for participants when class is scheduled
+  if (waitingForExpert) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <div className="bg-card border-b p-4 flex items-center justify-between">
+          <div className="flex-1">
+            <h1 className="font-semibold">{classData.title}</h1>
+            <p className="text-sm text-muted-foreground">
+              Scheduled: {classData.scheduled_start ? format(new Date(classData.scheduled_start), 'MMM dd, yyyy • h:mm a') : 'TBA'}
+            </p>
+          </div>
+          <Button variant="outline" onClick={() => navigate('/experts')}>
+            Back
+          </Button>
+        </div>
+
+        <div className="flex-1 flex items-center justify-center p-6">
+          <div className="text-center max-w-md">
+            <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Video className="h-10 w-10 text-primary animate-pulse" />
+            </div>
+            <h2 className="text-2xl font-bold mb-3">Waiting for Expert to Start</h2>
+            <p className="text-muted-foreground mb-6">
+              The expert hasn't started the class yet. You'll be automatically connected when they join.
+            </p>
+            <div className="bg-muted/50 rounded-lg p-4">
+              <p className="text-sm text-muted-foreground">
+                Class will begin at: <span className="font-semibold text-foreground">{format(new Date(classData.scheduled_start), 'h:mm a')}</span>
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
