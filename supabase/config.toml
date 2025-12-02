@@ -89,3 +89,18 @@ verify_jwt = false
 
 [functions.daily-telegram-reminders]
 verify_jwt = false
+
+[functions.send-push-notification]
+verify_jwt = false
+
+[functions.save-push-subscription]
+verify_jwt = true
+
+[functions.send-notification]
+verify_jwt = false
+
+[functions.send-welcome-notification]
+verify_jwt = true
+
+[functions.notify-message-received]
+verify_jwt = false
