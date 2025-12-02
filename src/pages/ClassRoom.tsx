@@ -12,32 +12,12 @@ import { format } from 'date-fns'
 const ClassRoom = () => {
   const { classId } = useParams()
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const [userProfile, setUserProfile] = useState<any>(null)
   const { joinClass, leaveClass } = useExpertClasses()
   const { toast } = useToast()
-
-  // Check authentication first
-  useEffect(() => {
-    if (!user) {
-      toast({
-        title: 'Authentication Required',
-        description: 'Please log in to join classes',
-        variant: 'destructive',
-      })
-      navigate('/login')
-      return
-    }
-    
-    // Fetch user profile
-    supabase
-      .from('profiles')
-      .select('*')
-      .eq('user_id', user.id)
-      .single()
-      .then(({ data }) => setUserProfile(data))
-  }, [user, navigate])
   
+  // All hooks must be declared before any conditional returns
   const [isMuted, setIsMuted] = useState(false)
   const [isVideoOff, setIsVideoOff] = useState(false)
   const [participants, setParticipants] = useState<any[]>([])
@@ -47,8 +27,20 @@ const ClassRoom = () => {
   const jitsiContainerRef = useRef<HTMLDivElement>(null)
   const jitsiApiRef = useRef<any>(null)
 
+  // Fetch user profile when user is available
   useEffect(() => {
-    if (!classId || !user || !userProfile) return
+    if (user) {
+      supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single()
+        .then(({ data }) => setUserProfile(data))
+    }
+  }, [user])
+
+  useEffect(() => {
+    if (!classId || !user) return
 
     // Fetch class data
     const fetchClassData = async () => {
@@ -131,7 +123,25 @@ const ClassRoom = () => {
         jitsiApiRef.current = null
       }
     }
-  }, [classId, user, userProfile])
+  }, [classId, user])
+
+  // Show loading while auth is being checked
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Redirect to login if not authenticated (after loading is done)
+  if (!user) {
+    navigate('/login')
+    return null
+  }
 
   const initJitsi = (classDataParam: any) => {
     if (!jitsiContainerRef.current) return
