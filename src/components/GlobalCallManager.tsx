@@ -20,14 +20,18 @@ const GlobalCallManager = () => {
     callState,
     localStream,
     remoteStream,
+    screenStream,
     isMuted,
     isVideoOff,
+    isScreenSharing,
     answerCall,
     rejectCall,
     endCall,
     toggleMute,
     toggleVideo,
-    switchToAudioOnly
+    switchToAudioOnly,
+    startScreenShare,
+    stopScreenShare
   } = useWebRTC()
 
   const [remoteUserName, setRemoteUserName] = React.useState<string>('User')
@@ -63,15 +67,19 @@ const GlobalCallManager = () => {
       <ActiveCallInterface
         localStream={localStream}
         remoteStream={remoteStream}
+        screenStream={screenStream}
         callType={callState.callType!}
         isMuted={isMuted}
         isVideoOff={isVideoOff}
+        isScreenSharing={isScreenSharing}
         remoteUserName={remoteUserName}
         remoteUserAvatar={remoteUserAvatar}
         onEndCall={endCall}
         onToggleMute={toggleMute}
         onToggleVideo={toggleVideo}
         onSwitchToAudioOnly={switchToAudioOnly}
+        onStartScreenShare={startScreenShare}
+        onStopScreenShare={stopScreenShare}
         callStatus={callState.status}
       />
     )
