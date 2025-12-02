@@ -58,15 +58,19 @@ const Chat = () => {
     callState,
     localStream,
     remoteStream,
+    screenStream,
     isMuted,
     isVideoOff,
+    isScreenSharing,
     startCall,
     answerCall,
     rejectCall,
     endCall,
     toggleMute,
     toggleVideo,
-    switchToAudioOnly
+    switchToAudioOnly,
+    startScreenShare,
+    stopScreenShare
   } = useWebRTC()
 
   const scrollToBottom = () => {
@@ -372,15 +376,19 @@ const Chat = () => {
       <ActiveCallInterface
         localStream={localStream}
         remoteStream={remoteStream}
+        screenStream={screenStream}
         callType={callState.callType!}
         isMuted={isMuted}
         isVideoOff={isVideoOff}
+        isScreenSharing={isScreenSharing}
         remoteUserName={otherUser?.full_name || 'User'}
         remoteUserAvatar={otherUser?.profile_picture_url}
         onEndCall={endCall}
         onToggleMute={toggleMute}
         onToggleVideo={toggleVideo}
         onSwitchToAudioOnly={switchToAudioOnly}
+        onStartScreenShare={startScreenShare}
+        onStopScreenShare={stopScreenShare}
         callStatus={callState.status}
       />
     )

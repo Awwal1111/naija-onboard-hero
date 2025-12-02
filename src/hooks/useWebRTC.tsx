@@ -4,21 +4,15 @@ import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/use-toast'
 
 // ICE servers configuration with STUN and TURN support
-// For production, add your TURN server credentials here
 const ICE_SERVERS = {
   iceServers: [
-    // Google's public STUN servers
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
     { urls: 'stun:stun2.l.google.com:19302' },
-    // Add TURN server for production (uncomment and configure)
-    // {
-    //   urls: 'turn:your-turn-server.com:3478',
-    //   username: 'your-username',
-    //   credential: 'your-password'
-    // }
+    { urls: 'stun:stun3.l.google.com:19302' },
+    { urls: 'stun:stun4.l.google.com:19302' },
   ],
-  iceCandidatePoolSize: 10 // Pre-gather ICE candidates for faster connection
+  iceCandidatePoolSize: 10
 }
 
 interface CallState {
@@ -45,22 +39,28 @@ export const useWebRTC = () => {
   
   const [localStream, setLocalStream] = useState<MediaStream | null>(null)
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null)
+  const [screenStream, setScreenStream] = useState<MediaStream | null>(null)
   const [isMuted, setIsMuted] = useState(false)
   const [isVideoOff, setIsVideoOff] = useState(false)
+  const [isScreenSharing, setIsScreenSharing] = useState(false)
   
   const peerConnection = useRef<RTCPeerConnection | null>(null)
   const signalingChannel = useRef<any>(null)
   const callStartTime = useRef<Date | null>(null)
+  const originalVideoTrack = useRef<MediaStreamTrack | null>(null)
 
   // Initialize peer connection
   const initializePeerConnection = useCallback(() => {
-    if (peerConnection.current) return
+    if (peerConnection.current) {
+      peerConnection.current.close()
+    }
 
     peerConnection.current = new RTCPeerConnection(ICE_SERVERS)
 
     // Handle ICE candidates
     peerConnection.current.onicecandidate = (event) => {
       if (event.candidate && signalingChannel.current) {
+        console.log('Sending ICE candidate')
         signalingChannel.current.send({
           type: 'broadcast',
           event: 'ice-candidate',
@@ -75,33 +75,105 @@ export const useWebRTC = () => {
 
     // Handle remote stream
     peerConnection.current.ontrack = (event) => {
-      console.log('Received remote track:', event.streams[0])
-      setRemoteStream(event.streams[0])
+      console.log('Received remote track:', event.track.kind)
+      if (event.streams && event.streams[0]) {
+        setRemoteStream(event.streams[0])
+      }
     }
 
     // Handle connection state changes
     peerConnection.current.onconnectionstatechange = () => {
-      console.log('Connection state:', peerConnection.current?.connectionState)
-      if (peerConnection.current?.connectionState === 'connected') {
+      const state = peerConnection.current?.connectionState
+      console.log('Connection state:', state)
+      
+      if (state === 'connected') {
         setCallState(prev => ({ ...prev, status: 'connected' }))
         callStartTime.current = new Date()
-      } else if (peerConnection.current?.connectionState === 'disconnected' || 
-                 peerConnection.current?.connectionState === 'failed') {
+        toast({
+          title: "Call Connected",
+          description: "You are now connected"
+        })
+      } else if (state === 'disconnected' || state === 'failed') {
+        toast({
+          title: "Call Disconnected",
+          description: "The call has ended",
+          variant: "destructive"
+        })
         endCall()
       }
     }
+
+    // Handle ICE connection state
+    peerConnection.current.oniceconnectionstatechange = () => {
+      console.log('ICE connection state:', peerConnection.current?.iceConnectionState)
+    }
   }, [user?.id, callState.remoteUserId])
+
+  // Request media permissions with proper error handling
+  const getMediaStream = async (callType: 'voice' | 'video'): Promise<MediaStream | null> => {
+    try {
+      const constraints = {
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        },
+        video: callType === 'video' ? {
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          facingMode: 'user'
+        } : false
+      }
+      
+      const stream = await navigator.mediaDevices.getUserMedia(constraints)
+      return stream
+    } catch (error: any) {
+      console.error('Media error:', error)
+      
+      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+        toast({
+          title: "Permission Denied",
+          description: "Please allow camera/microphone access in your browser settings",
+          variant: "destructive"
+        })
+      } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+        toast({
+          title: "Device Not Found",
+          description: "No camera or microphone found on your device",
+          variant: "destructive"
+        })
+      } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
+        toast({
+          title: "Device Busy",
+          description: "Your camera or microphone is being used by another app",
+          variant: "destructive"
+        })
+      } else {
+        toast({
+          title: "Media Error",
+          description: error.message || "Failed to access media devices",
+          variant: "destructive"
+        })
+      }
+      return null
+    }
+  }
 
   // Start a call
   const startCall = async (remoteUserId: string, callType: 'voice' | 'video') => {
-    if (!user) return
+    if (!user) {
+      toast({
+        title: "Not Logged In",
+        description: "Please log in to make calls",
+        variant: "destructive"
+      })
+      return
+    }
 
     try {
-      // Get user media
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
-        video: callType === 'video'
-      })
+      // Get user media first
+      const stream = await getMediaStream(callType)
+      if (!stream) return
       
       setLocalStream(stream)
 
@@ -117,7 +189,15 @@ export const useWebRTC = () => {
         .select()
         .single()
 
-      if (error) throw error
+      if (error) {
+        toast({
+          title: "Call Failed",
+          description: "Failed to initiate call. Please try again.",
+          variant: "destructive"
+        })
+        stream.getTracks().forEach(track => track.stop())
+        return
+      }
 
       setCallState({
         isInCall: true,
@@ -133,14 +213,18 @@ export const useWebRTC = () => {
 
       // Add tracks to peer connection
       stream.getTracks().forEach(track => {
+        console.log('Adding local track:', track.kind)
         peerConnection.current?.addTrack(track, stream)
       })
 
       // Create offer
-      const offer = await peerConnection.current!.createOffer()
+      const offer = await peerConnection.current!.createOffer({
+        offerToReceiveAudio: true,
+        offerToReceiveVideo: callType === 'video'
+      })
       await peerConnection.current!.setLocalDescription(offer)
 
-      // Setup signaling channels - both specific call channel and receiver's listening channel
+      // Setup signaling channels
       const callChannelName = `call-${callRecord.id}`
       const receiverChannelName = `user-${remoteUserId}-calls`
       
@@ -149,25 +233,41 @@ export const useWebRTC = () => {
       signalingChannel.current
         .on('broadcast', { event: 'answer' }, async ({ payload }: any) => {
           if (payload.to === user.id && payload.answer) {
-            console.log('Received answer:', payload.answer)
-            await peerConnection.current?.setRemoteDescription(
-              new RTCSessionDescription(payload.answer)
-            )
+            console.log('Received answer')
+            try {
+              await peerConnection.current?.setRemoteDescription(
+                new RTCSessionDescription(payload.answer)
+              )
+            } catch (err) {
+              console.error('Error setting remote description:', err)
+            }
           }
         })
         .on('broadcast', { event: 'ice-candidate' }, async ({ payload }: any) => {
           if (payload.to === user.id && payload.candidate) {
-            await peerConnection.current?.addIceCandidate(
-              new RTCIceCandidate(payload.candidate)
-            )
+            try {
+              await peerConnection.current?.addIceCandidate(
+                new RTCIceCandidate(payload.candidate)
+              )
+            } catch (err) {
+              console.error('Error adding ICE candidate:', err)
+            }
           }
         })
         .on('broadcast', { event: 'call-rejected' }, ({ payload }: any) => {
           if (payload.to === user.id) {
             toast({
-              title: "Call Rejected",
-              description: "The user declined your call",
-              variant: "destructive"
+              title: "Call Declined",
+              description: "The user declined your call"
+            })
+            endCall()
+          }
+        })
+        .on('broadcast', { event: 'call-ended' }, ({ payload }: any) => {
+          if (payload.to === user.id) {
+            toast({
+              title: "Call Ended",
+              description: "The other user ended the call"
             })
             endCall()
           }
@@ -191,11 +291,12 @@ export const useWebRTC = () => {
             })
 
             // Update call status
-            supabase
+            await supabase
               .from('call_history')
               .update({ status: 'ringing' })
               .eq('id', callRecord.id)
-              .then()
+            
+            setCallState(prev => ({ ...prev, status: 'ringing' }))
             
             // Clean up receiver channel after sending
             setTimeout(() => {
@@ -221,10 +322,8 @@ export const useWebRTC = () => {
 
     try {
       // Get user media
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
-        video: callType === 'video'
-      })
+      const stream = await getMediaStream(callType)
+      if (!stream) return
       
       setLocalStream(stream)
 
@@ -242,6 +341,7 @@ export const useWebRTC = () => {
 
       // Add tracks
       stream.getTracks().forEach(track => {
+        console.log('Adding local track:', track.kind)
         peerConnection.current?.addTrack(track, stream)
       })
 
@@ -252,16 +352,29 @@ export const useWebRTC = () => {
       const answer = await peerConnection.current!.createAnswer()
       await peerConnection.current!.setLocalDescription(answer)
 
-      // Setup signaling channel - use the same call channel
+      // Setup signaling channel
       const channelName = `call-${callId}`
       signalingChannel.current = supabase.channel(channelName)
 
       signalingChannel.current
         .on('broadcast', { event: 'ice-candidate' }, async ({ payload }: any) => {
           if (payload.to === user.id && payload.candidate) {
-            await peerConnection.current?.addIceCandidate(
-              new RTCIceCandidate(payload.candidate)
-            )
+            try {
+              await peerConnection.current?.addIceCandidate(
+                new RTCIceCandidate(payload.candidate)
+              )
+            } catch (err) {
+              console.error('Error adding ICE candidate:', err)
+            }
+          }
+        })
+        .on('broadcast', { event: 'call-ended' }, ({ payload }: any) => {
+          if (payload.to === user.id) {
+            toast({
+              title: "Call Ended",
+              description: "The other user ended the call"
+            })
+            endCall()
           }
         })
         .subscribe((status) => {
@@ -280,9 +393,8 @@ export const useWebRTC = () => {
             // Update call status
             supabase
               .from('call_history')
-              .update({ status: 'accepted' })
+              .update({ status: 'accepted', started_at: new Date().toISOString() })
               .eq('id', callId)
-              .then()
 
             callStartTime.current = new Date()
           }
@@ -334,11 +446,117 @@ export const useWebRTC = () => {
     })
   }
 
+  // Start screen sharing
+  const startScreenShare = async () => {
+    if (!peerConnection.current || !localStream) {
+      toast({
+        title: "Cannot Share Screen",
+        description: "No active call to share screen on",
+        variant: "destructive"
+      })
+      return
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: true,
+        audio: false
+      })
+
+      setScreenStream(stream)
+      setIsScreenSharing(true)
+
+      // Get the video track from screen share
+      const screenTrack = stream.getVideoTracks()[0]
+      
+      // Find and replace the video sender
+      const senders = peerConnection.current.getSenders()
+      const videoSender = senders.find(sender => sender.track?.kind === 'video')
+      
+      if (videoSender && localStream) {
+        // Save original video track
+        originalVideoTrack.current = videoSender.track
+        
+        // Replace with screen track
+        await videoSender.replaceTrack(screenTrack)
+      }
+
+      // Handle when user stops sharing via browser UI
+      screenTrack.onended = () => {
+        stopScreenShare()
+      }
+
+      toast({
+        title: "Screen Sharing Started",
+        description: "You are now sharing your screen"
+      })
+    } catch (error: any) {
+      console.error('Screen share error:', error)
+      
+      if (error.name === 'NotAllowedError') {
+        toast({
+          title: "Permission Denied",
+          description: "Screen sharing was cancelled or denied",
+          variant: "destructive"
+        })
+      } else {
+        toast({
+          title: "Screen Share Failed",
+          description: error.message || "Failed to start screen sharing",
+          variant: "destructive"
+        })
+      }
+    }
+  }
+
+  // Stop screen sharing
+  const stopScreenShare = async () => {
+    if (!screenStream || !peerConnection.current) return
+
+    try {
+      // Stop screen stream tracks
+      screenStream.getTracks().forEach(track => track.stop())
+      setScreenStream(null)
+      setIsScreenSharing(false)
+
+      // Restore original video track
+      if (originalVideoTrack.current) {
+        const senders = peerConnection.current.getSenders()
+        const videoSender = senders.find(sender => sender.track?.kind === 'video')
+        
+        if (videoSender) {
+          await videoSender.replaceTrack(originalVideoTrack.current)
+        }
+        originalVideoTrack.current = null
+      }
+
+      toast({
+        title: "Screen Sharing Stopped",
+        description: "Returned to camera view"
+      })
+    } catch (error) {
+      console.error('Error stopping screen share:', error)
+    }
+  }
+
   // End call
   const endCall = useCallback(async () => {
+    // Notify the other party
+    if (signalingChannel.current && callState.remoteUserId && user) {
+      signalingChannel.current.send({
+        type: 'broadcast',
+        event: 'call-ended',
+        payload: {
+          from: user.id,
+          to: callState.remoteUserId
+        }
+      })
+    }
+
     // Stop all tracks
     localStream?.getTracks().forEach(track => track.stop())
     remoteStream?.getTracks().forEach(track => track.stop())
+    screenStream?.getTracks().forEach(track => track.stop())
 
     // Close peer connection
     peerConnection.current?.close()
@@ -363,11 +581,21 @@ export const useWebRTC = () => {
           duration_seconds: duration
         })
         .eq('id', callState.callId)
+    } else if (callState.callId) {
+      // Call never connected
+      await supabase
+        .from('call_history')
+        .update({ 
+          status: 'missed',
+          ended_at: new Date().toISOString()
+        })
+        .eq('id', callState.callId)
     }
 
     // Reset state
     setLocalStream(null)
     setRemoteStream(null)
+    setScreenStream(null)
     setCallState({
       isInCall: false,
       callType: null,
@@ -378,8 +606,10 @@ export const useWebRTC = () => {
     })
     setIsMuted(false)
     setIsVideoOff(false)
+    setIsScreenSharing(false)
     callStartTime.current = null
-  }, [callState.callId, localStream, remoteStream])
+    originalVideoTrack.current = null
+  }, [callState.callId, callState.remoteUserId, localStream, remoteStream, screenStream, user])
 
   // Toggle mute
   const toggleMute = () => {
@@ -426,14 +656,18 @@ export const useWebRTC = () => {
     callState,
     localStream,
     remoteStream,
+    screenStream,
     isMuted,
     isVideoOff,
+    isScreenSharing,
     startCall,
     answerCall,
     rejectCall,
     endCall,
     toggleMute,
     toggleVideo,
-    switchToAudioOnly
+    switchToAudioOnly,
+    startScreenShare,
+    stopScreenShare
   }
 }
