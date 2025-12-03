@@ -43,21 +43,33 @@ const ActiveCallInterface: React.FC<ActiveCallInterfaceProps> = ({
 }) => {
   const localVideoRef = useRef<HTMLVideoElement>(null)
   const remoteVideoRef = useRef<HTMLVideoElement>(null)
+  const remoteAudioRef = useRef<HTMLAudioElement>(null)
   const screenVideoRef = useRef<HTMLVideoElement>(null)
   const [callDuration, setCallDuration] = useState(0)
 
-  // Setup video streams
+  // Setup local video stream
   useEffect(() => {
     if (localVideoRef.current && localStream) {
       localVideoRef.current.srcObject = localStream
     }
   }, [localStream])
 
+  // Setup remote video/audio stream
   useEffect(() => {
-    if (remoteVideoRef.current && remoteStream) {
-      remoteVideoRef.current.srcObject = remoteStream
+    if (remoteStream) {
+      // For video calls, use video element
+      if (remoteVideoRef.current && callType === 'video') {
+        remoteVideoRef.current.srcObject = remoteStream
+      }
+      // For voice calls or as backup, use audio element
+      if (remoteAudioRef.current) {
+        remoteAudioRef.current.srcObject = remoteStream
+        remoteAudioRef.current.play().catch(err => {
+          console.error('Audio playback error:', err)
+        })
+      }
     }
-  }, [remoteStream])
+  }, [remoteStream, callType])
 
   useEffect(() => {
     if (screenVideoRef.current && screenStream) {
@@ -83,6 +95,8 @@ const ActiveCallInterface: React.FC<ActiveCallInterfaceProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-background flex flex-col">
+      {/* Hidden audio element for remote audio playback */}
+      <audio ref={remoteAudioRef} autoPlay playsInline />
       {/* Remote Video/Avatar */}
       <div className="flex-1 relative bg-muted">
         {callType === 'video' && remoteStream ? (

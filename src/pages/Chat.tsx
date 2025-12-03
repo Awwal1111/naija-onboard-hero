@@ -595,30 +595,19 @@ const Chat = () => {
                               </div>
                               
                                {/* Hidden audio element */}
-                              <audio 
+                               <audio 
                                 ref={(el) => {
                                   if (el) {
                                     audioRefs.current[message.id] = el
-                                    console.log('Audio element created for:', message.id, imageUrls[message.media_url!])
                                   }
                                 }}
                                 src={imageUrls[message.media_url!] || ''} 
                                 onEnded={() => setPlayingAudio(null)}
-                                onLoadedMetadata={(e) => {
-                                  console.log('Audio loaded successfully:', message.id)
-                                }}
                                 onError={(e) => {
-                                  console.error('Audio playback error:', {
-                                    messageId: message.id,
-                                    mediaUrl: message.media_url,
-                                    signedUrl: imageUrls[message.media_url!],
-                                    error: e
-                                  })
-                                  toast({
-                                    title: "Audio playback error",
-                                    description: "Could not play voice message",
-                                    variant: "destructive"
-                                  })
+                                  // Only show error if we actually have a URL (not empty src)
+                                  if (imageUrls[message.media_url!]) {
+                                    console.error('Audio playback error:', message.id)
+                                  }
                                 }}
                                 preload="metadata"
                               />
