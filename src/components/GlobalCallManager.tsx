@@ -90,6 +90,7 @@ const GlobalCallManager = () => {
     <IncomingCallDialog
       onAnswer={answerCall}
       onReject={rejectCall}
+      isInCall={callState.isInCall}
     />
   )
 }
