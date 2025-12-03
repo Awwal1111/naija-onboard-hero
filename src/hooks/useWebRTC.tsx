@@ -15,6 +15,9 @@ const ICE_SERVERS = {
   iceCandidatePoolSize: 10
 }
 
+// Call timeout in milliseconds (30 seconds)
+const CALL_TIMEOUT = 30000
+
 interface CallState {
   isInCall: boolean
   callType: 'voice' | 'video' | null
@@ -48,6 +51,15 @@ export const useWebRTC = () => {
   const signalingChannel = useRef<any>(null)
   const callStartTime = useRef<Date | null>(null)
   const originalVideoTrack = useRef<MediaStreamTrack | null>(null)
+  const callTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Clear call timeout
+  const clearCallTimeout = () => {
+    if (callTimeoutRef.current) {
+      clearTimeout(callTimeoutRef.current)
+      callTimeoutRef.current = null
+    }
+  }
 
   // Initialize peer connection
   const initializePeerConnection = useCallback(() => {
@@ -87,6 +99,7 @@ export const useWebRTC = () => {
       console.log('Connection state:', state)
       
       if (state === 'connected') {
+        clearCallTimeout()
         setCallState(prev => ({ ...prev, status: 'connected' }))
         callStartTime.current = new Date()
         toast({
@@ -159,12 +172,25 @@ export const useWebRTC = () => {
     }
   }
 
+  // Note: Online check would require a last_seen column in profiles
+  // For now, we rely on the call timeout to handle offline users
+
   // Start a call
   const startCall = async (remoteUserId: string, callType: 'voice' | 'video') => {
     if (!user) {
       toast({
         title: "Not Logged In",
         description: "Please log in to make calls",
+        variant: "destructive"
+      })
+      return
+    }
+
+    // Check if already in a call
+    if (callState.isInCall) {
+      toast({
+        title: "Already in Call",
+        description: "Please end your current call first",
         variant: "destructive"
       })
       return
@@ -208,6 +234,16 @@ export const useWebRTC = () => {
         status: 'calling'
       })
 
+      // Set call timeout - end call if no answer
+      callTimeoutRef.current = setTimeout(() => {
+        toast({
+          title: "No Answer",
+          description: "The user did not answer your call",
+          variant: "destructive"
+        })
+        endCall()
+      }, CALL_TIMEOUT)
+
       // Initialize peer connection
       initializePeerConnection()
 
@@ -234,6 +270,7 @@ export const useWebRTC = () => {
         .on('broadcast', { event: 'answer' }, async ({ payload }: any) => {
           if (payload.to === user.id && payload.answer) {
             console.log('Received answer')
+            clearCallTimeout()
             try {
               await peerConnection.current?.setRemoteDescription(
                 new RTCSessionDescription(payload.answer)
@@ -256,6 +293,7 @@ export const useWebRTC = () => {
         })
         .on('broadcast', { event: 'call-rejected' }, ({ payload }: any) => {
           if (payload.to === user.id) {
+            clearCallTimeout()
             toast({
               title: "Call Declined",
               description: "The user declined your call"
@@ -265,6 +303,7 @@ export const useWebRTC = () => {
         })
         .on('broadcast', { event: 'call-ended' }, ({ payload }: any) => {
           if (payload.to === user.id) {
+            clearCallTimeout()
             toast({
               title: "Call Ended",
               description: "The other user ended the call"
@@ -277,6 +316,9 @@ export const useWebRTC = () => {
             // Send offer to receiver's listening channel
             const receiverChannel = supabase.channel(receiverChannelName)
             await receiverChannel.subscribe()
+            
+            // Small delay to ensure channel is ready
+            await new Promise(resolve => setTimeout(resolve, 500))
             
             receiverChannel.send({
               type: 'broadcast',
@@ -307,6 +349,7 @@ export const useWebRTC = () => {
 
     } catch (error: any) {
       console.error('Error starting call:', error)
+      clearCallTimeout()
       toast({
         title: "Call Failed",
         description: error.message || "Failed to start call",
@@ -319,6 +362,18 @@ export const useWebRTC = () => {
   // Answer incoming call
   const answerCall = async (offer: RTCSessionDescriptionInit, callerId: string, callId: string, callType: 'voice' | 'video') => {
     if (!user) return
+
+    // Check if already in a call
+    if (callState.isInCall) {
+      toast({
+        title: "Already in Call",
+        description: "You're already in another call",
+        variant: "destructive"
+      })
+      // Auto-reject the incoming call
+      rejectCall(callerId, callId)
+      return
+    }
 
     try {
       // Get user media
@@ -377,8 +432,11 @@ export const useWebRTC = () => {
             endCall()
           }
         })
-        .subscribe((status) => {
+        .subscribe(async (status) => {
           if (status === 'SUBSCRIBED') {
+            // Small delay to ensure channel is fully ready
+            await new Promise(resolve => setTimeout(resolve, 300))
+            
             // Send answer
             signalingChannel.current.send({
               type: 'broadcast',
@@ -391,7 +449,7 @@ export const useWebRTC = () => {
             })
 
             // Update call status
-            supabase
+            await supabase
               .from('call_history')
               .update({ status: 'accepted', started_at: new Date().toISOString() })
               .eq('id', callId)
@@ -448,10 +506,20 @@ export const useWebRTC = () => {
 
   // Start screen sharing
   const startScreenShare = async () => {
-    if (!peerConnection.current || !localStream) {
+    if (!peerConnection.current) {
       toast({
         title: "Cannot Share Screen",
         description: "No active call to share screen on",
+        variant: "destructive"
+      })
+      return
+    }
+
+    // Check if this is a voice call - screen share requires video
+    if (callState.callType === 'voice') {
+      toast({
+        title: "Cannot Share Screen",
+        description: "Screen sharing is only available for video calls",
         variant: "destructive"
       })
       return
@@ -475,10 +543,13 @@ export const useWebRTC = () => {
       
       if (videoSender && localStream) {
         // Save original video track
-        originalVideoTrack.current = videoSender.track
+        originalVideoTrack.current = localStream.getVideoTracks()[0] || null
         
         // Replace with screen track
         await videoSender.replaceTrack(screenTrack)
+      } else {
+        // No video sender found - add screen track as new
+        peerConnection.current.addTrack(screenTrack, stream)
       }
 
       // Handle when user stops sharing via browser UI
@@ -541,6 +612,8 @@ export const useWebRTC = () => {
 
   // End call
   const endCall = useCallback(async () => {
+    clearCallTimeout()
+    
     // Notify the other party
     if (signalingChannel.current && callState.remoteUserId && user) {
       signalingChannel.current.send({
@@ -646,6 +719,7 @@ export const useWebRTC = () => {
   // Cleanup on unmount
   useEffect(() => {
     return () => {
+      clearCallTimeout()
       if (callState.isInCall) {
         endCall()
       }

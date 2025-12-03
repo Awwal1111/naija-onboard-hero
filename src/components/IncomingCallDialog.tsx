@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import {
@@ -9,7 +10,7 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Phone, PhoneOff, Video } from 'lucide-react'
+import { Phone, PhoneOff, Video, History } from 'lucide-react'
 
 interface IncomingCall {
   callId: string
@@ -23,10 +24,12 @@ interface IncomingCall {
 interface IncomingCallDialogProps {
   onAnswer: (offer: RTCSessionDescriptionInit, callerId: string, callId: string, callType: 'voice' | 'video') => void
   onReject: (callerId: string, callId: string) => void
+  isInCall?: boolean
 }
 
-const IncomingCallDialog: React.FC<IncomingCallDialogProps> = ({ onAnswer, onReject }) => {
+const IncomingCallDialog: React.FC<IncomingCallDialogProps> = ({ onAnswer, onReject, isInCall = false }) => {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [incomingCall, setIncomingCall] = useState<IncomingCall | null>(null)
   const [ringtone] = useState(() => {
     const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBCuFzfLaizsIGGS56+OYSg==')
@@ -43,6 +46,30 @@ const IncomingCallDialog: React.FC<IncomingCallDialogProps> = ({ onAnswer, onRej
       .on('broadcast', { event: 'offer' }, async ({ payload }: any) => {
         if (payload.to === user.id) {
           console.log('Incoming call offer:', payload)
+          
+          // If already in a call, auto-reject
+          if (isInCall) {
+            console.log('Auto-rejecting call - already in call')
+            // Send rejection
+            const rejectChannel = supabase.channel(`call-${payload.callId}`)
+            await rejectChannel.subscribe()
+            rejectChannel.send({
+              type: 'broadcast',
+              event: 'call-rejected',
+              payload: {
+                from: user.id,
+                to: payload.from,
+                reason: 'busy'
+              }
+            })
+            // Update call status
+            await supabase
+              .from('call_history')
+              .update({ status: 'rejected', ended_at: new Date().toISOString() })
+              .eq('id', payload.callId)
+            setTimeout(() => supabase.removeChannel(rejectChannel), 1000)
+            return
+          }
           
           // Fetch caller profile
           const { data: callerProfile } = await supabase
@@ -71,7 +98,7 @@ const IncomingCallDialog: React.FC<IncomingCallDialogProps> = ({ onAnswer, onRej
       ringtone.pause()
       ringtone.currentTime = 0
     }
-  }, [user, ringtone])
+  }, [user, ringtone, isInCall])
 
   const handleAnswer = () => {
     if (incomingCall) {
@@ -89,6 +116,16 @@ const IncomingCallDialog: React.FC<IncomingCallDialogProps> = ({ onAnswer, onRej
       onReject(incomingCall.callerId, incomingCall.callId)
       setIncomingCall(null)
     }
+  }
+
+  const goToCallHistory = () => {
+    ringtone.pause()
+    ringtone.currentTime = 0
+    if (incomingCall) {
+      onReject(incomingCall.callerId, incomingCall.callId)
+    }
+    setIncomingCall(null)
+    navigate('/call-history')
   }
 
   return (
@@ -141,6 +178,17 @@ const IncomingCallDialog: React.FC<IncomingCallDialogProps> = ({ onAnswer, onRej
               )}
             </Button>
           </div>
+
+          {/* Call History Button */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={goToCallHistory}
+            className="text-muted-foreground"
+          >
+            <History className="h-4 w-4 mr-2" />
+            View Call History
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
