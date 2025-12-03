@@ -50,27 +50,45 @@ const ActiveCallInterface: React.FC<ActiveCallInterfaceProps> = ({
   // Setup local video stream
   useEffect(() => {
     if (localVideoRef.current && localStream) {
+      console.log('Setting local video stream')
       localVideoRef.current.srcObject = localStream
     }
   }, [localStream])
 
-  // Setup remote video/audio stream
+  // Setup remote video/audio stream - CRITICAL for hearing audio
   useEffect(() => {
-    if (remoteStream) {
-      // For video calls, use video element
-      if (remoteVideoRef.current && callType === 'video') {
-        remoteVideoRef.current.srcObject = remoteStream
+    if (!remoteStream) return
+    
+    console.log('Setting up remote stream with tracks:', 
+      remoteStream.getTracks().map(t => `${t.kind}:${t.enabled}`).join(', ')
+    )
+
+    // Always set up audio element for remote audio playback
+    if (remoteAudioRef.current) {
+      remoteAudioRef.current.srcObject = remoteStream
+      // Ensure audio plays
+      const playAudio = async () => {
+        try {
+          await remoteAudioRef.current?.play()
+          console.log('Remote audio playing')
+        } catch (err) {
+          console.error('Audio play failed:', err)
+          // Try again on user interaction
+          document.addEventListener('click', () => {
+            remoteAudioRef.current?.play().catch(console.error)
+          }, { once: true })
+        }
       }
-      // For voice calls or as backup, use audio element
-      if (remoteAudioRef.current) {
-        remoteAudioRef.current.srcObject = remoteStream
-        remoteAudioRef.current.play().catch(err => {
-          console.error('Audio playback error:', err)
-        })
-      }
+      playAudio()
+    }
+
+    // Set up video element for video calls
+    if (remoteVideoRef.current && callType === 'video') {
+      remoteVideoRef.current.srcObject = remoteStream
     }
   }, [remoteStream, callType])
 
+  // Setup screen share preview
   useEffect(() => {
     if (screenVideoRef.current && screenStream) {
       screenVideoRef.current.srcObject = screenStream
@@ -84,6 +102,8 @@ const ActiveCallInterface: React.FC<ActiveCallInterfaceProps> = ({
         setCallDuration(prev => prev + 1)
       }, 1000)
       return () => clearInterval(interval)
+    } else {
+      setCallDuration(0)
     }
   }, [callStatus])
 
@@ -95,8 +115,14 @@ const ActiveCallInterface: React.FC<ActiveCallInterfaceProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-background flex flex-col">
-      {/* Hidden audio element for remote audio playback */}
-      <audio ref={remoteAudioRef} autoPlay playsInline />
+      {/* CRITICAL: Hidden audio element for remote audio playback - MUST have autoPlay and playsInline */}
+      <audio 
+        ref={remoteAudioRef} 
+        autoPlay 
+        playsInline 
+        style={{ display: 'none' }}
+      />
+      
       {/* Remote Video/Avatar */}
       <div className="flex-1 relative bg-muted">
         {callType === 'video' && remoteStream ? (
@@ -176,7 +202,7 @@ const ActiveCallInterface: React.FC<ActiveCallInterfaceProps> = ({
           </div>
         )}
 
-        {/* Connection Quality Indicator */}
+        {/* Switch to Audio Button */}
         {callStatus === 'connected' && callType === 'video' && !isScreenSharing && (
           <div className="absolute top-4 left-4">
             <Button
