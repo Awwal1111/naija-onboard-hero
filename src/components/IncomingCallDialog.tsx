@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
@@ -31,6 +31,13 @@ const IncomingCallDialog: React.FC<IncomingCallDialogProps> = ({ onAnswer, onRej
   const { user } = useAuth()
   const navigate = useNavigate()
   const [incomingCall, setIncomingCall] = useState<IncomingCall | null>(null)
+  const isInCallRef = useRef(isInCall)
+  
+  // Keep ref in sync with prop
+  useEffect(() => {
+    isInCallRef.current = isInCall
+  }, [isInCall])
+
   const [ringtone] = useState(() => {
     const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBCuFzfLaizsIGGS56+OYSg==')
     audio.loop = true
@@ -40,17 +47,18 @@ const IncomingCallDialog: React.FC<IncomingCallDialogProps> = ({ onAnswer, onRej
   useEffect(() => {
     if (!user) return
 
-    // Listen for incoming calls via Supabase Realtime - using a global channel
+    console.log('Setting up incoming call listener for user:', user.id)
+
+    // Listen for incoming calls via Supabase Realtime
     const channel = supabase
       .channel(`user-${user.id}-calls`)
       .on('broadcast', { event: 'offer' }, async ({ payload }: any) => {
         if (payload.to === user.id) {
-          console.log('Incoming call offer:', payload)
+          console.log('Incoming call offer received:', payload.callType, 'from', payload.from)
           
-          // If already in a call, auto-reject
-          if (isInCall) {
+          // If already in a call, auto-reject using ref for immediate value
+          if (isInCallRef.current) {
             console.log('Auto-rejecting call - already in call')
-            // Send rejection
             const rejectChannel = supabase.channel(`call-${payload.callId}`)
             await rejectChannel.subscribe()
             rejectChannel.send({
@@ -88,17 +96,19 @@ const IncomingCallDialog: React.FC<IncomingCallDialogProps> = ({ onAnswer, onRej
           })
 
           // Play ringtone
-          ringtone.play().catch(console.error)
+          ringtone.play().catch(err => console.error('Ringtone play error:', err))
         }
       })
-      .subscribe()
+      .subscribe((status) => {
+        console.log('Incoming call channel status:', status)
+      })
 
     return () => {
       supabase.removeChannel(channel)
       ringtone.pause()
       ringtone.currentTime = 0
     }
-  }, [user, ringtone, isInCall])
+  }, [user, ringtone])
 
   const handleAnswer = () => {
     if (incomingCall) {
