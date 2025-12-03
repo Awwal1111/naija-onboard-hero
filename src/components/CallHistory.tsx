@@ -57,22 +57,22 @@ const CallHistory: React.FC = () => {
           return
         }
 
-        // Fetch user profiles separately
+        // Fetch user profiles separately - use user_id field
         const userIds = Array.from(new Set<string>(
           callData.flatMap(call => [call.caller_id, call.receiver_id])
         ))
 
         const { data: profiles, error: profileError } = await supabase
           .from('profiles')
-          .select('id, full_name, profile_picture_url')
-          .in('id', userIds)
+          .select('user_id, full_name, profile_picture_url')
+          .in('user_id', userIds)
 
         if (profileError) {
           console.error('Error fetching profiles:', profileError)
         }
 
-        // Map profiles to calls
-        const profileMap = new Map((profiles || []).map(p => [p.id, p]))
+        // Map profiles to calls using user_id as key
+        const profileMap = new Map((profiles || []).map(p => [p.user_id, p]))
         
         const enrichedCalls = callData.map(call => ({
           ...call,
