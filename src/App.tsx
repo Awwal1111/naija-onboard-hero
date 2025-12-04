@@ -10,6 +10,7 @@ import { QuidaxRampManager } from "@/components/QuidaxRampManager";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { PushNotificationManager } from "@/components/PushNotificationManager";
 import { useAppState } from "@/hooks/useAppState";
+import { WebRTCProvider } from "@/contexts/WebRTCContext";
 import Welcome from "./pages/Welcome";
 import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
@@ -85,14 +86,15 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <AppStateManager />
-        <WalletInitializer />
-        <GlobalCallManager />
-        <QuidaxRampManager />
-        <PWAInstallPrompt />
-        <PushNotificationManager />
-        <Routes>
-          <Route path="/" element={<Index />} />
+        <WebRTCProvider>
+          <AppStateManager />
+          <WalletInitializer />
+          <GlobalCallManager />
+          <QuidaxRampManager />
+          <PWAInstallPrompt />
+          <PushNotificationManager />
+          <Routes>
+            <Route path="/" element={<Index />} />
           <Route path="/install" element={<InstallApp />} />
           <Route path="/welcome" element={<Welcome />} />
           <Route path="/login" element={<Login />} />
@@ -161,11 +163,12 @@ const App = () => (
           <Route path="/campaign/:campaignId" element={<PublicCampaign />} />
           <Route path="/sitemap" element={<Sitemap />} />
           
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-        {/* AI Assistant - Available on all protected routes */}
-        <SmartAIAssistant />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+          {/* AI Assistant - Available on all protected routes */}
+          <SmartAIAssistant />
+        </WebRTCProvider>
       </BrowserRouter>
     </TooltipProvider>
 );
