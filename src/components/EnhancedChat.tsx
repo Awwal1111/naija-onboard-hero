@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useChat } from '@/hooks/useChat'
 import { useBlockUser } from '@/hooks/useBlockUser'
 import { useSecureFileUpload } from '@/hooks/useSecureFileUpload'
-import { useWebRTC } from '@/hooks/useWebRTC'
+import { useWebRTCContext } from '@/contexts/WebRTCContext'
 import { BrandButton } from '@/components/ui/brand-button'
 import { BrandInput } from '@/components/ui/brand-input'
 import { useToast } from '@/hooks/use-toast'
@@ -83,21 +83,26 @@ const EnhancedChat = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // WebRTC for voice/video calls
+  // WebRTC for voice/video calls - use shared context
   const {
     callState,
     localStream,
     remoteStream,
+    screenStream,
     isMuted,
     isVideoOff,
+    isScreenSharing,
     startCall,
     answerCall,
     rejectCall,
     endCall,
     toggleMute,
     toggleVideo,
-    switchToAudioOnly
-  } = useWebRTC()
+    switchToAudioOnly,
+    startScreenShare,
+    stopScreenShare,
+    canScreenShare
+  } = useWebRTCContext()
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -338,15 +343,19 @@ const EnhancedChat = () => {
       <ActiveCallInterface
         localStream={localStream}
         remoteStream={remoteStream}
+        screenStream={screenStream}
         callType={callState.callType!}
         isMuted={isMuted}
         isVideoOff={isVideoOff}
+        isScreenSharing={isScreenSharing}
         remoteUserName={otherUser?.full_name || 'User'}
         remoteUserAvatar={otherUser?.profile_picture_url}
         onEndCall={endCall}
         onToggleMute={toggleMute}
         onToggleVideo={toggleVideo}
         onSwitchToAudioOnly={switchToAudioOnly}
+        onStartScreenShare={canScreenShare ? startScreenShare : undefined}
+        onStopScreenShare={stopScreenShare}
         callStatus={callState.status}
       />
     )
