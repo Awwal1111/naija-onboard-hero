@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { useWebRTC } from '@/hooks/useWebRTC'
+import { useWebRTCContext } from '@/contexts/WebRTCContext'
 import IncomingCallDialog from '@/components/IncomingCallDialog'
 import ActiveCallInterface from '@/components/ActiveCallInterface'
 import { useAuth } from '@/hooks/useAuth'
@@ -31,8 +31,9 @@ const GlobalCallManager = () => {
     toggleVideo,
     switchToAudioOnly,
     startScreenShare,
-    stopScreenShare
-  } = useWebRTC()
+    stopScreenShare,
+    canScreenShare
+  } = useWebRTCContext()
 
   const [remoteUserName, setRemoteUserName] = React.useState<string>('User')
   const [remoteUserAvatar, setRemoteUserAvatar] = React.useState<string | undefined>(undefined)
@@ -78,7 +79,7 @@ const GlobalCallManager = () => {
         onToggleMute={toggleMute}
         onToggleVideo={toggleVideo}
         onSwitchToAudioOnly={switchToAudioOnly}
-        onStartScreenShare={startScreenShare}
+        onStartScreenShare={canScreenShare ? startScreenShare : undefined}
         onStopScreenShare={stopScreenShare}
         callStatus={callState.status}
       />

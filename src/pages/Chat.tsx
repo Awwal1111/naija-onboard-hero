@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useChat } from '@/hooks/useChat'
 import { useBlockUser } from '@/hooks/useBlockUser'
 import { useUserPresence } from '@/hooks/useUserPresence'
-import { useWebRTC } from '@/hooks/useWebRTC'
+import { useWebRTCContext } from '@/contexts/WebRTCContext'
 import { BrandButton } from '@/components/ui/brand-button'
 import { BrandInput } from '@/components/ui/brand-input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -53,7 +53,7 @@ const Chat = () => {
   const [playingAudio, setPlayingAudio] = useState<string | null>(null)
   const audioRefs = useRef<{ [key: string]: HTMLAudioElement }>({})
 
-  // WebRTC for voice/video calls
+  // WebRTC for voice/video calls - use shared context
   const {
     callState,
     localStream,
@@ -70,8 +70,9 @@ const Chat = () => {
     toggleVideo,
     switchToAudioOnly,
     startScreenShare,
-    stopScreenShare
-  } = useWebRTC()
+    stopScreenShare,
+    canScreenShare
+  } = useWebRTCContext()
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -387,7 +388,7 @@ const Chat = () => {
         onToggleMute={toggleMute}
         onToggleVideo={toggleVideo}
         onSwitchToAudioOnly={switchToAudioOnly}
-        onStartScreenShare={startScreenShare}
+        onStartScreenShare={canScreenShare ? startScreenShare : undefined}
         onStopScreenShare={stopScreenShare}
         callStatus={callState.status}
       />
