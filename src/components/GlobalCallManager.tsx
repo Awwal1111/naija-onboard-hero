@@ -87,13 +87,7 @@ const GlobalCallManager = () => {
   }
 
   // Always show incoming call dialog (it only shows when there's an incoming call)
-  return (
-    <IncomingCallDialog
-      onAnswer={answerCall}
-      onReject={rejectCall}
-      isInCall={callState.isInCall}
-    />
-  )
+  return <IncomingCallDialog />
 }
 
 export default GlobalCallManager

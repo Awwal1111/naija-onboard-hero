@@ -1,6 +1,6 @@
-import React, { useEffect, useState, useRef } from 'react'
+import React from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase } from '@/integrations/supabase/client'
+import { useWebRTCContext } from '@/contexts/WebRTCContext'
 import { useAuth } from '@/hooks/useAuth'
 import {
   Dialog,
@@ -12,131 +12,36 @@ import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Phone, PhoneOff, Video, History } from 'lucide-react'
 
-interface IncomingCall {
-  callId: string
-  callerId: string
-  callerName: string
-  callerAvatar?: string
-  callType: 'voice' | 'video'
-  offer: RTCSessionDescriptionInit
-}
-
-interface IncomingCallDialogProps {
-  onAnswer: (offer: RTCSessionDescriptionInit, callerId: string, callId: string, callType: 'voice' | 'video') => void
-  onReject: (callerId: string, callId: string) => void
-  isInCall?: boolean
-}
-
-const IncomingCallDialog: React.FC<IncomingCallDialogProps> = ({ onAnswer, onReject, isInCall = false }) => {
+/**
+ * IncomingCallDialog - Uses WebRTCContext for all incoming call handling
+ * The context manages the actual WebRTC signaling and state
+ */
+const IncomingCallDialog: React.FC = () => {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const [incomingCall, setIncomingCall] = useState<IncomingCall | null>(null)
-  const isInCallRef = useRef(isInCall)
   
-  // Keep ref in sync with prop
-  useEffect(() => {
-    isInCallRef.current = isInCall
-  }, [isInCall])
-
-  const [ringtone] = useState(() => {
-    const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBCuFzfLaizsIGGS56+OYSg==')
-    audio.loop = true
-    return audio
-  })
-
-  useEffect(() => {
-    if (!user) return
-
-    console.log('Setting up incoming call listener for user:', user.id)
-
-    // Listen for incoming calls via Supabase Realtime
-    const channel = supabase
-      .channel(`user-${user.id}-calls`)
-      .on('broadcast', { event: 'offer' }, async ({ payload }: any) => {
-        if (payload.to === user.id) {
-          console.log('Incoming call offer received:', payload.callType, 'from', payload.from)
-          
-          // If already in a call, auto-reject using ref for immediate value
-          if (isInCallRef.current) {
-            console.log('Auto-rejecting call - already in call')
-            const rejectChannel = supabase.channel(`call-${payload.callId}`)
-            await rejectChannel.subscribe()
-            rejectChannel.send({
-              type: 'broadcast',
-              event: 'call-rejected',
-              payload: {
-                from: user.id,
-                to: payload.from,
-                reason: 'busy'
-              }
-            })
-            // Update call status
-            await supabase
-              .from('call_history')
-              .update({ status: 'rejected', ended_at: new Date().toISOString() })
-              .eq('id', payload.callId)
-            setTimeout(() => supabase.removeChannel(rejectChannel), 1000)
-            return
-          }
-          
-          // Fetch caller profile
-          const { data: callerProfile } = await supabase
-            .from('profiles')
-            .select('full_name, profile_picture_url')
-            .eq('user_id', payload.from)
-            .single()
-
-          setIncomingCall({
-            callId: payload.callId,
-            callerId: payload.from,
-            callerName: callerProfile?.full_name || 'Unknown',
-            callerAvatar: callerProfile?.profile_picture_url,
-            callType: payload.callType,
-            offer: payload.offer
-          })
-
-          // Play ringtone
-          ringtone.play().catch(err => console.error('Ringtone play error:', err))
-        }
-      })
-      .subscribe((status) => {
-        console.log('Incoming call channel status:', status)
-      })
-
-    return () => {
-      supabase.removeChannel(channel)
-      ringtone.pause()
-      ringtone.currentTime = 0
-    }
-  }, [user, ringtone])
+  const {
+    incomingCall,
+    answerCall,
+    rejectCall,
+    dismissIncomingCall
+  } = useWebRTCContext()
 
   const handleAnswer = () => {
-    if (incomingCall) {
-      ringtone.pause()
-      ringtone.currentTime = 0
-      onAnswer(incomingCall.offer, incomingCall.callerId, incomingCall.callId, incomingCall.callType)
-      setIncomingCall(null)
-    }
+    answerCall()
   }
 
   const handleReject = () => {
-    if (incomingCall) {
-      ringtone.pause()
-      ringtone.currentTime = 0
-      onReject(incomingCall.callerId, incomingCall.callId)
-      setIncomingCall(null)
-    }
+    rejectCall()
   }
 
   const goToCallHistory = () => {
-    ringtone.pause()
-    ringtone.currentTime = 0
-    if (incomingCall) {
-      onReject(incomingCall.callerId, incomingCall.callId)
-    }
-    setIncomingCall(null)
+    rejectCall()
     navigate('/call-history')
   }
+
+  // Don't render if no user or no incoming call
+  if (!user || !incomingCall) return null
 
   return (
     <Dialog open={!!incomingCall} onOpenChange={(open) => {
