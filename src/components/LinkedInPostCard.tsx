@@ -35,8 +35,36 @@ const LinkedInPostCard: React.FC<LinkedInPostCardProps> = ({
 }) => {
   const [showFullText, setShowFullText] = useState(false)
   const [showComments, setShowComments] = useState(false)
+  const [isSaved, setIsSaved] = useState(false)
   const viewTracked = useRef(false)
   const { trackPostView } = usePostViews()
+
+  const isOwnPost = currentUserId === post.user_id
+
+  const handleEdit = () => {
+    console.log('Edit post:', post.id)
+    // TODO: Implement edit functionality
+  }
+
+  const handleDelete = () => {
+    console.log('Delete post:', post.id)
+    // TODO: Implement delete functionality
+  }
+
+  const handleSave = () => {
+    setIsSaved(!isSaved)
+    // TODO: Implement save to backend
+  }
+
+  const handleReport = () => {
+    console.log('Report post:', post.id)
+    // TODO: Implement report functionality
+  }
+
+  const handleCopyLink = () => {
+    const shareUrl = `${window.location.origin}/post/${post.id}`
+    navigator.clipboard.writeText(shareUrl)
+  }
 
   // Track post view
   useEffect(() => {
@@ -179,9 +207,16 @@ const LinkedInPostCard: React.FC<LinkedInPostCardProps> = ({
               </p>
             </div>
           </div>
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-            <MoreVertical className="h-4 w-4" />
-          </Button>
+          <PostOptionsMenu
+            isOwnPost={isOwnPost}
+            postId={post.id}
+            isSaved={isSaved}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            onSave={handleSave}
+            onReport={handleReport}
+            onCopyLink={handleCopyLink}
+          />
         </div>
 
         {/* Content */}
