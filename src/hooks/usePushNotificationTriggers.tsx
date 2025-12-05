@@ -63,7 +63,7 @@ export const usePushNotificationTriggers = () => {
         },
         async (payload) => {
           const message = payload.new as any
-          console.log('[Push] New message detected:', message.id)
+          console.log('[Push] New message detected:', message.id, 'sender:', message.sender_id)
           
           // Skip if I sent this message
           if (message.sender_id === user.id) {
@@ -72,14 +72,14 @@ export const usePushNotificationTriggers = () => {
           }
 
           // Check if this message is in one of my chats
-          const { data: chat } = await supabase
+          const { data: chat, error: chatError } = await supabase
             .from('chats')
             .select('user1_id, user2_id')
             .eq('id', message.chat_id)
             .single()
 
-          if (!chat) {
-            console.log('[Push] Chat not found')
+          if (chatError || !chat) {
+            console.log('[Push] Chat not found:', chatError?.message)
             return
           }
 
@@ -90,7 +90,7 @@ export const usePushNotificationTriggers = () => {
             return
           }
 
-          console.log('[Push] This is my chat, sending notification')
+          console.log('[Push] This is my chat, sending notification to user:', user.id)
           
           // Get sender info
           const { data: sender } = await supabase
@@ -99,7 +99,7 @@ export const usePushNotificationTriggers = () => {
             .eq('user_id', message.sender_id)
             .single()
 
-          await sendPush({
+          const result = await sendPush({
             userId: user.id,
             title: `New message from ${sender?.full_name || 'Someone'}`,
             body: message.content?.substring(0, 100) || 'Sent you a message',
@@ -107,10 +107,11 @@ export const usePushNotificationTriggers = () => {
             url: `/chat/${message.sender_id}`,
             data: { type: 'message', messageId: message.id }
           })
+          console.log('[Push] Message notification result:', result)
         }
       )
-      .subscribe((status) => {
-        console.log('[Push] Messages channel status:', status)
+      .subscribe((status, err) => {
+        console.log('[Push] Messages channel status:', status, err ? `Error: ${err.message}` : '')
       })
 
     // Listen for new connection requests
