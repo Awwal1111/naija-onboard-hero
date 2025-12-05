@@ -5,7 +5,7 @@ import { BrandButton } from '@/components/ui/brand-button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { Facebook, Youtube, Linkedin, MessageSquare, Phone, Users, Shield, ArrowRight, Briefcase, DollarSign, Clock, Award, Wallet, CreditCard, UserCheck, CheckCircle2, Building2, Network } from 'lucide-react'
+import { Facebook, Youtube, Linkedin, MessageSquare, Phone, Users, Shield, ArrowRight, Briefcase, DollarSign, Clock, Award, Wallet, CreditCard, UserCheck, CheckCircle2, Building2, Network, Download } from 'lucide-react'
 import heroImage from '@/assets/hero-image.jpg'
 
 const Index = () => {
@@ -82,6 +82,15 @@ const Index = () => {
                   </BrandButton>
                   <BrandButton variant="outline" asChild size="lg" className="text-lg px-8 py-6">
                     <Link to="/login">Sign In</Link>
+                  </BrandButton>
+                  <BrandButton 
+                    variant="secondary" 
+                    size="lg" 
+                    className="text-lg px-8 py-6"
+                    onClick={() => window.open('https://apkpure.com/naijalancers/co.median.android.mbbeeqr', '_blank')}
+                  >
+                    <Download className="mr-2 w-5 h-5" />
+                    Download App
                   </BrandButton>
                 </div>
               </div>
