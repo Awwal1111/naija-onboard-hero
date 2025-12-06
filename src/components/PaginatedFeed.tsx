@@ -11,6 +11,7 @@ interface PaginatedFeedProps {
   onComment: (postId: string, content: string) => Promise<{ success?: boolean; error?: string }>
   onJobApply?: (jobPost: EnhancedPost) => void
   onProfileClick?: (userId: string) => void
+  onSave?: (postId: string) => void
   currentUserId?: string
 }
 
@@ -23,6 +24,7 @@ const PaginatedFeed: React.FC<PaginatedFeedProps> = ({
   onComment,
   onJobApply,
   onProfileClick,
+  onSave,
   currentUserId
 }) => {
   const [currentPage, setCurrentPage] = useState(1)
@@ -55,6 +57,7 @@ const PaginatedFeed: React.FC<PaginatedFeedProps> = ({
           onComment={onComment}
           onJobApply={onJobApply}
           onProfileClick={onProfileClick}
+          onSave={onSave}
           currentUserId={currentUserId}
         />
       ))}
