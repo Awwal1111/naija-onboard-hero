@@ -2,11 +2,16 @@ import React, { useState } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ArrowUpRight, ArrowDownLeft, Filter, Calendar, ChevronRight } from 'lucide-react'
+import { ArrowUpRight, ArrowDownLeft, Filter, Calendar, ChevronRight, Download, FileText, FileSpreadsheet } from 'lucide-react'
 import { useWallet, WalletTransaction } from '@/hooks/useWallet'
 import { TransactionDetailDialog } from './TransactionDetailDialog'
 import { BrandButton } from './ui/brand-button'
+import { Button } from './ui/button'
 import { format, startOfMonth, endOfMonth, startOfYear, subMonths, isWithinInterval } from 'date-fns'
+import { exportToCSV, generatePDFData } from '@/lib/exportTransactions'
+import { pdf } from '@react-pdf/renderer'
+import TransactionsPDFDocument from './TransactionsPDFDocument'
+import { useToast } from '@/hooks/use-toast'
 
 interface AllTransactionsDialogProps {
   open: boolean
@@ -17,11 +22,13 @@ export const AllTransactionsDialog: React.FC<AllTransactionsDialogProps> = ({
   open,
   onOpenChange
 }) => {
+  const { toast } = useToast()
   const { transactions, loading } = useWallet()
   const [selectedTransaction, setSelectedTransaction] = useState<WalletTransaction | null>(null)
   const [detailDialogOpen, setDetailDialogOpen] = useState(false)
   const [filterPeriod, setFilterPeriod] = useState<string>('all')
   const [filterType, setFilterType] = useState<string>('all')
+  const [isExporting, setIsExporting] = useState(false)
 
   const handleTransactionClick = (transaction: WalletTransaction) => {
     setSelectedTransaction(transaction)
@@ -136,15 +143,73 @@ export const AllTransactionsDialog: React.FC<AllTransactionsDialogProps> = ({
 
   const totals = calculateTotals()
 
+  const handleExportCSV = () => {
+    if (filteredTransactions.length === 0) {
+      toast({ title: 'No transactions to export', variant: 'destructive' })
+      return
+    }
+    exportToCSV(filteredTransactions, 'naijalancers_transactions')
+    toast({ title: 'CSV exported successfully' })
+  }
+
+  const handleExportPDF = async () => {
+    if (filteredTransactions.length === 0) {
+      toast({ title: 'No transactions to export', variant: 'destructive' })
+      return
+    }
+    
+    setIsExporting(true)
+    try {
+      const pdfData = generatePDFData(filteredTransactions)
+      const blob = await pdf(<TransactionsPDFDocument data={pdfData} />).toBlob()
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `naijalancers_transactions_${format(new Date(), 'yyyy-MM-dd')}.pdf`
+      link.click()
+      URL.revokeObjectURL(url)
+      toast({ title: 'PDF exported successfully' })
+    } catch (error) {
+      console.error('PDF export error:', error)
+      toast({ title: 'Failed to export PDF', variant: 'destructive' })
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-2xl max-h-[85vh] bg-card border-border">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-primary" />
-              All Transactions
-            </DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-primary" />
+                All Transactions
+              </DialogTitle>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportCSV}
+                  disabled={filteredTransactions.length === 0}
+                  className="gap-1"
+                >
+                  <FileSpreadsheet className="h-4 w-4" />
+                  CSV
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportPDF}
+                  disabled={filteredTransactions.length === 0 || isExporting}
+                  className="gap-1"
+                >
+                  <FileText className="h-4 w-4" />
+                  {isExporting ? 'Exporting...' : 'PDF'}
+                </Button>
+              </div>
+            </div>
           </DialogHeader>
 
           <div className="space-y-4">
