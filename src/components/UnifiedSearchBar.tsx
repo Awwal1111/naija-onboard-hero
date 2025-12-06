@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, Users, Briefcase, GraduationCap, Heart, Package, FileText, User } from 'lucide-react';
+import { Search, Users, Briefcase, GraduationCap, Heart, Package } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { useUnifiedSearch } from '@/hooks/useUnifiedSearch';
@@ -7,8 +7,6 @@ import { useNavigate } from 'react-router-dom';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 const categoryIcons = {
-  user: User,
-  post: FileText,
   expert: Users,
   gig: Package,
   job: Briefcase,
@@ -17,8 +15,6 @@ const categoryIcons = {
 };
 
 const categoryLabels = {
-  user: '👤 People',
-  post: '📝 Posts',
   expert: '👥 Experts',
   gig: '💼 Gigs',
   job: '📋 Jobs',
