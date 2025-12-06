@@ -28,6 +28,8 @@ import ProfilePreview from '@/components/ProfilePreview'
 import ProfileCompletionDialog from '@/components/ProfileCompletionDialog'
 import { useProfileCompletion } from '@/hooks/useProfileCompletion'
 import { MoreMenuDrawer } from '@/components/MoreMenuDrawer'
+import { UnifiedSearchBar } from '@/components/UnifiedSearchBar'
+import { NCConverter } from '@/components/NCConverter'
 
 const MainFeed = () => {
   const navigate = useNavigate()
@@ -201,10 +203,14 @@ const MainFeed = () => {
       {/* Main Content */}
         <div className="flex-1 max-w-4xl mx-auto w-full">
           {/* Header - Fixed at Top */}
-          <header className="bg-background/95 backdrop-blur-sm border-b border-border px-6 py-5 sticky top-0 z-10">
-            <div className="flex items-center justify-between">
+          <header className="bg-background/95 backdrop-blur-sm border-b border-border px-4 py-3 sticky top-0 z-10">
+            <div className="flex items-center justify-between gap-3">
               <Logo />
-              <div className="flex items-center gap-3">
+              <div className="flex-1 max-w-md hidden sm:block">
+                <UnifiedSearchBar />
+              </div>
+              <div className="flex items-center gap-1">
+                <NCConverter />
                 <NotificationBell />
                 
                 {/* Profile Menu */}
@@ -239,6 +245,10 @@ const MainFeed = () => {
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
+            </div>
+            {/* Mobile Search */}
+            <div className="mt-3 sm:hidden">
+              <UnifiedSearchBar />
             </div>
           </header>
 
