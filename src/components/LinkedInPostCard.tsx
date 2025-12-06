@@ -15,12 +15,13 @@ import { formatDistanceToNow } from 'date-fns'
 import { sanitizeText } from '@/lib/security'
 
 interface LinkedInPostCardProps {
-  post: EnhancedPost
+  post: EnhancedPost & { user_saved?: boolean }
   onReact: (postId: string, reactionType: string) => void
   onRemoveReaction: (postId: string) => void
   onComment: (postId: string, content: string) => Promise<{ success?: boolean; error?: string }>
   onJobApply?: (jobPost: EnhancedPost) => void
   onProfileClick?: (userId: string) => void
+  onSave?: (postId: string) => void
   currentUserId?: string
 }
 
@@ -31,11 +32,12 @@ const LinkedInPostCard: React.FC<LinkedInPostCardProps> = ({
   onComment,
   onJobApply,
   onProfileClick,
+  onSave,
   currentUserId
 }) => {
   const [showFullText, setShowFullText] = useState(false)
   const [showComments, setShowComments] = useState(false)
-  const [isSaved, setIsSaved] = useState(false)
+  const [isSaved, setIsSaved] = useState(post.user_saved || false)
   const viewTracked = useRef(false)
   const { trackPostView } = usePostViews()
 
@@ -53,7 +55,7 @@ const LinkedInPostCard: React.FC<LinkedInPostCardProps> = ({
 
   const handleSave = () => {
     setIsSaved(!isSaved)
-    // TODO: Implement save to backend
+    onSave?.(post.id)
   }
 
   const handleReport = () => {

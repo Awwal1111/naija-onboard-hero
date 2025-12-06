@@ -43,6 +43,7 @@ const MainFeed = () => {
     toggleLike,
     addComment,
     viewStory,
+    savePost,
     refreshFeed
   } = useFeed()
   const [searchQuery, setSearchQuery] = useState('')
@@ -347,6 +348,7 @@ const MainFeed = () => {
                   onComment={addComment}
                   onJobApply={handleJobApply}
                   onProfileClick={handleProfileClick}
+                  onSave={savePost}
                   currentUserId={user?.id}
                 />
               )}
