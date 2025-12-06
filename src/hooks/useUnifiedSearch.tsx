@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export interface SearchResult {
   id: string;
-  type: 'expert' | 'gig' | 'job' | 'course' | 'campaign';
+  type: 'expert' | 'gig' | 'job' | 'course' | 'campaign' | 'user' | 'post';
   title: string;
   subtitle: string;
   description: string;
@@ -23,6 +23,49 @@ export const useUnifiedSearch = () => {
 
       const searchTerm = searchQuery.trim();
       const allResults: SearchResult[] = [];
+
+      // Search users (all profiles)
+      const { data: users } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, profession, bio, profile_picture_url')
+        .or(`full_name.ilike.%${searchTerm}%,profession.ilike.%${searchTerm}%`)
+        .limit(5);
+
+      if (users) {
+        users.forEach(user => {
+          allResults.push({
+            id: user.user_id,
+            type: 'user',
+            title: user.full_name || 'User',
+            subtitle: user.profession || 'NaijaLancers Member',
+            description: user.bio || '',
+            image: user.profile_picture_url || undefined,
+            url: `/profile/${user.user_id}`,
+          });
+        });
+      }
+
+      // Search posts
+      const { data: posts } = await supabase
+        .from('posts')
+        .select('id, content, title, user_id, created_at, profiles:user_id(full_name, profile_picture_url)')
+        .eq('status', 'active')
+        .or(`content.ilike.%${searchTerm}%,title.ilike.%${searchTerm}%`)
+        .limit(5);
+
+      if (posts) {
+        posts.forEach((post: any) => {
+          allResults.push({
+            id: post.id,
+            type: 'post',
+            title: post.title || post.content?.substring(0, 60) + '...' || 'Post',
+            subtitle: `by ${post.profiles?.full_name || 'User'}`,
+            description: post.content?.substring(0, 100) || '',
+            image: post.profiles?.profile_picture_url,
+            url: `/feed#post-${post.id}`,
+          });
+        });
+      }
 
       // Search experts (profiles with is_expert = true)
       const { data: experts } = await supabase
