@@ -41,9 +41,10 @@ export interface Post {
 export interface Story {
   id: string
   user_id: string
-  media_url: string
+  media_url: string | null
   media_type: string
   content?: string
+  background_color?: string
   expires_at: string
   views_count: number
   created_at: string
