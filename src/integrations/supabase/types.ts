@@ -4191,6 +4191,20 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_personalized_connections: {
+        Args: { p_limit?: number; p_offset?: number; p_user_id: string }
+        Returns: {
+          average_rating: number
+          full_name: string
+          is_expert: boolean
+          lga_name: string
+          profession: string
+          profile_picture_url: string
+          relevance_score: number
+          state_name: string
+          user_id: string
+        }[]
+      }
       get_personalized_courses: {
         Args: { p_limit?: number; p_offset?: number; p_user_id: string }
         Returns: {
@@ -4298,6 +4312,32 @@ export type Database = {
           seller_rating: number
           status: string
           title: string
+        }[]
+      }
+      get_personalized_job_posts: {
+        Args: { p_limit?: number; p_offset?: number; p_user_id: string }
+        Returns: {
+          application_deadline: string
+          applications_count: number
+          budget_max: number
+          budget_min: number
+          company_logo_url: string
+          company_name: string
+          created_at: string
+          description: string
+          experience_level: string
+          id: string
+          is_remote: boolean
+          job_type: string
+          location: string
+          poster_name: string
+          poster_picture: string
+          poster_profession: string
+          relevance_score: number
+          required_skills: string[]
+          title: string
+          user_id: string
+          views_count: number
         }[]
       }
       get_personalized_jobs: {

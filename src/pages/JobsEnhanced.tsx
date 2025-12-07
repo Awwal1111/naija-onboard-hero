@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Search, Briefcase, MapPin, Clock, Bookmark, Star, TrendingUp, Plus } from "lucide-react";
+import { ArrowLeft, Search, Briefcase, MapPin, Clock, Bookmark, TrendingUp, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
@@ -8,8 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNigerianStates } from "@/hooks/useNigerianStates";
+import { usePersonalizedJobPosts } from "@/hooks/usePersonalizedDiscovery";
 import JobApplicationDialog from "@/components/JobApplicationDialog";
 import EnhancedJobPostingDialog from "@/components/EnhancedJobPostingDialog";
 import { format } from "date-fns";
@@ -27,6 +28,9 @@ export default function JobsEnhanced() {
 
   const { states, lgas, fetchLGAs } = useNigerianStates();
   
+  // Use personalized algorithm
+  const { jobPosts: jobs, loading: isLoading } = usePersonalizedJobPosts(50);
+  
   const handleStateChange = async (value: string) => {
     setSelectedState(value);
     setSelectedLGA("all");
@@ -34,23 +38,6 @@ export default function JobsEnhanced() {
       await fetchLGAs(value);
     }
   };
-
-  const { data: jobs = [], isLoading } = useQuery({
-    queryKey: ["jobs-enhanced"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("job_posts")
-        .select(`
-          *,
-          profiles!job_posts_user_id_fkey(full_name, profile_picture_url, profession)
-        `)
-        .eq("status", "open")
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      return data;
-    },
-  });
 
   const saveJobMutation = useMutation({
     mutationFn: async (jobId: string) => {
@@ -83,8 +70,6 @@ export default function JobsEnhanced() {
     "Customer Service",
     "Other"
   ];
-
-  
 
   const filteredJobs = jobs.filter(job => {
     const matchesSearch = 
@@ -191,7 +176,7 @@ export default function JobsEnhanced() {
           <div className="text-center py-8 text-muted-foreground">No jobs found</div>
         ) : (
           <div className="space-y-3">
-            {filteredJobs.map((job: any) => (
+            {filteredJobs.map((job) => (
               <Card key={job.id}>
                 <CardHeader className="p-3">
                   <div className="flex items-start justify-between gap-2">
@@ -200,7 +185,7 @@ export default function JobsEnhanced() {
                         <h3 className="font-semibold text-sm">{job.title}</h3>
                         {job.is_remote && <Badge variant="secondary" className="text-xs">Remote</Badge>}
                       </div>
-                      <p className="text-xs text-muted-foreground">{job.company_name || "Company"}</p>
+                      <p className="text-xs text-muted-foreground">{job.company_name || job.poster_name || "Company"}</p>
                     </div>
                     <div className="flex gap-1">
                       <Button 

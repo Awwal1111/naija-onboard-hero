@@ -5,14 +5,10 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { BrandInput } from '@/components/ui/brand-input'
-import { useJobs } from '@/hooks/useJobs'
 import { useAuth } from '@/hooks/useAuth'
-import { useNigerianStates } from '@/hooks/useNigerianStates'
+import { usePersonalizedJobs, PersonalizedJob } from '@/hooks/usePersonalizedDiscovery'
 import JobPostingDialog from '@/components/JobPostingDialog'
 import TopBannerAd from '@/components/TopBannerAd'
 import { MoreMenuDrawer } from '@/components/MoreMenuDrawer'
@@ -21,25 +17,11 @@ const Jobs = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { user } = useAuth()
-  const { jobs, loading, applyToJob } = useJobs()
+  const { jobs, loading } = usePersonalizedJobs(50)
   const [searchQuery, setSearchQuery] = useState('')
   const [stateFilter, setStateFilter] = useState('all')
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
-  const [selectedJob, setSelectedJob] = useState<string | null>(null)
-  const [coverLetter, setCoverLetter] = useState('')
-  const [applying, setApplying] = useState(false)
-  const { states } = useNigerianStates()
-
-  const handleApply = async (jobId: string) => {
-    setApplying(true)
-    const { error } = await applyToJob(jobId, coverLetter)
-    if (!error) {
-      setSelectedJob(null)
-      setCoverLetter('')
-    }
-    setApplying(false)
-  }
 
   const formatBudget = (min?: number, max?: number) => {
     if (!min && !max) return 'Budget not specified'
@@ -193,7 +175,7 @@ const Jobs = () => {
         ) : (
           <>
             <div className="space-y-4">
-              {filteredJobs.map((job) => (
+              {filteredJobs.map((job: PersonalizedJob) => (
               <Card key={job.id} className="hover:shadow-md transition-shadow">
                 <CardHeader>
                   <div className="flex items-start justify-between">
@@ -201,17 +183,17 @@ const Jobs = () => {
                       <CardTitle className="text-xl mb-2">{job.title}</CardTitle>
                       
                       <div className="flex items-center gap-4 text-sm text-text-secondary mb-3">
-                        {job.poster_profile && (
+                        {job.poster_name && (
                           <div className="flex items-center gap-2">
                             <Avatar className="h-6 w-6">
-                              <AvatarImage src={job.poster_profile.profile_picture_url} />
+                              <AvatarImage src={job.poster_picture || undefined} />
                               <AvatarFallback className="text-xs">
-                                {job.poster_profile.full_name?.charAt(0)}
+                                {job.poster_name?.charAt(0)}
                               </AvatarFallback>
                             </Avatar>
-                            <span>{job.poster_profile.full_name}</span>
-                            {job.poster_profile.profession && (
-                              <span className="text-text-tertiary">• {job.poster_profile.profession}</span>
+                            <span>{job.poster_name}</span>
+                            {job.poster_profession && (
+                              <span className="text-text-tertiary">• {job.poster_profession}</span>
                             )}
                           </div>
                         )}
@@ -220,7 +202,7 @@ const Jobs = () => {
                       <div className="flex flex-wrap items-center gap-4 text-sm text-text-secondary">
                         <div className="flex items-center gap-1">
                           <DollarSign className="h-4 w-4" />
-                          {formatBudget(job.budget_min, job.budget_max)}
+                          {formatBudget(job.budget_min || undefined, job.budget_max || undefined)}
                         </div>
                         
                         {job.location && (
@@ -243,11 +225,11 @@ const Jobs = () => {
                       </div>
                     </div>
                     
-                    {user?.id !== job.user_id && (
+                    {user?.id !== job.poster_id && (
                       <Button 
                         size="sm"
                         onClick={() => {
-                          navigate(`/chat/${job.user_id}`)
+                          navigate(`/chat/${job.poster_id}`)
                         }}
                       >
                         Chat Me Now
