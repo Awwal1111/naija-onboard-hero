@@ -10,6 +10,8 @@ import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/integrations/supabase/client'
 import { useNavigate } from 'react-router-dom'
 import { useExpertRatings } from '@/hooks/useExpertRatings'
+import { calculateTrustScore } from '@/hooks/useTrustScore'
+import { TrustScoreBadge } from '@/components/TrustScoreDisplay'
 
 interface ProfileInfo {
   id: string
@@ -24,6 +26,13 @@ interface ProfileInfo {
   location?: string
   state_name?: string
   lga_name?: string
+  email_confirmed?: boolean
+  phone_verified?: boolean
+  face_verified?: boolean
+  average_rating?: number
+  rating_count?: number
+  created_at?: string
+  avg_response_time_seconds?: number
 }
 
 interface ProfilePreviewProps {
@@ -71,7 +80,14 @@ const ProfilePreview: React.FC<ProfilePreviewProps> = ({
           is_expert,
           expert_verified_at,
           state_name,
-          lga_name
+          lga_name,
+          email_confirmed,
+          phone_verified,
+          face_verified,
+          average_rating,
+          rating_count,
+          created_at,
+          avg_response_time_seconds
         `)
         .eq('user_id', profileId)
         .single()
@@ -169,7 +185,7 @@ const ProfilePreview: React.FC<ProfilePreviewProps> = ({
                 </Avatar>
                 
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <DialogTitle className="text-lg font-bold text-text-primary truncate">
                       {profile.full_name}
                     </DialogTitle>
@@ -179,6 +195,26 @@ const ProfilePreview: React.FC<ProfilePreviewProps> = ({
                         Expert
                       </Badge>
                     )}
+                    {(() => {
+                      const trustScore = calculateTrustScore({
+                        emailVerified: profile.email_confirmed,
+                        phoneVerified: profile.phone_verified,
+                        faceVerified: profile.face_verified,
+                        averageRating: profile.average_rating,
+                        ratingCount: profile.rating_count,
+                        createdAt: profile.created_at,
+                        avgResponseTimeSeconds: profile.avg_response_time_seconds,
+                        connectionsCount: profile.connections_count,
+                        isExpert: profile.is_expert,
+                      });
+                      return (
+                        <TrustScoreBadge
+                          score={trustScore.score}
+                          level={trustScore.level}
+                          size="sm"
+                        />
+                      );
+                    })()}
                   </div>
                   
                   {profile.profession && (

@@ -36,6 +36,8 @@ import { RatingBreakdown } from '@/components/ui/rating-breakdown'
 import TelegramConnectCard from '@/components/TelegramConnectCard'
 import { UserBadges } from '@/components/UserBadges'
 import { EmailVerificationBanner } from '@/components/EmailVerificationBanner'
+import { TrustScoreCard } from '@/components/TrustScoreDisplay'
+import { calculateTrustScore } from '@/hooks/useTrustScore'
 
 const Profile = () => {
   const navigate = useNavigate()
@@ -528,6 +530,24 @@ const Profile = () => {
           </TabsList>
           
           <TabsContent value="overview" className="space-y-6">
+            {/* Trust Score Card */}
+            {profile && (
+              <TrustScoreCard
+                trustScore={calculateTrustScore({
+                  emailVerified: (profile as any)?.email_confirmed,
+                  phoneVerified: (profile as any)?.phone_verified,
+                  faceVerified: (profile as any)?.face_verified,
+                  averageRating: profile?.average_rating,
+                  ratingCount: profile?.rating_count,
+                  createdAt: profile?.created_at,
+                  avgResponseTimeSeconds: (profile as any)?.avg_response_time_seconds,
+                  connectionsCount: profile?.connections_count,
+                  isExpert: profile?.is_expert,
+                })}
+                showBreakdown={isOwnProfile}
+              />
+            )}
+            
             {/* Connection Requests Section - Only show on own profile */}
             {isOwnProfile && connectionRequests.filter(req => req.requested_id === profile?.user_id && req.status === 'pending').length > 0 && (
               <Card className="border-border">
