@@ -1,19 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { MessageCircle, Share2, ThumbsUp, Eye, MoreVertical, MapPin, Briefcase, Award, Calendar, ExternalLink } from 'lucide-react'
+import { MessageCircle, Share2, Heart, Eye, MoreHorizontal, MapPin, Briefcase, Award, Calendar, Send, Bookmark, BookmarkCheck } from 'lucide-react'
 import { EnhancedPost } from '@/hooks/useEnhancedFeed'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
-import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
-import ReactionPicker from './ReactionPicker'
-import CommentsSection from './CommentsSection'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'
 import MediaGallery from './MediaGallery'
-import PostOptionsMenu from './PostOptionsMenu'
 import { UserBadges } from './UserBadges'
 import { usePostViews } from '@/hooks/usePostViews'
 import { formatDistanceToNow } from 'date-fns'
-import { sanitizeText } from '@/lib/security'
+import { cn } from '@/lib/utils'
 
 interface LinkedInPostCardProps {
   post: EnhancedPost & { user_saved?: boolean }
@@ -37,21 +32,27 @@ const LinkedInPostCard: React.FC<LinkedInPostCardProps> = ({
   currentUserId
 }) => {
   const [showFullText, setShowFullText] = useState(false)
-  const [showComments, setShowComments] = useState(false)
+  const [showCommentInput, setShowCommentInput] = useState(false)
+  const [commentText, setCommentText] = useState('')
+  const [isLiked, setIsLiked] = useState(!!post.user_reaction)
+  const [likesCount, setLikesCount] = useState(post.likes_count || 0)
   const [isSaved, setIsSaved] = useState(post.user_saved || false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const viewTracked = useRef(false)
   const { trackPostView } = usePostViews()
 
   const isOwnPost = currentUserId === post.user_id
 
-  const handleEdit = () => {
-    console.log('Edit post:', post.id)
-    // TODO: Implement edit functionality
-  }
-
-  const handleDelete = () => {
-    console.log('Delete post:', post.id)
-    // TODO: Implement delete functionality
+  const handleLike = () => {
+    if (isLiked) {
+      setIsLiked(false)
+      setLikesCount(prev => Math.max(0, prev - 1))
+      onRemoveReaction(post.id)
+    } else {
+      setIsLiked(true)
+      setLikesCount(prev => prev + 1)
+      onReact(post.id, 'like')
+    }
   }
 
   const handleSave = () => {
@@ -59,14 +60,33 @@ const LinkedInPostCard: React.FC<LinkedInPostCardProps> = ({
     onSave?.(post.id)
   }
 
-  const handleReport = () => {
-    console.log('Report post:', post.id)
-    // TODO: Implement report functionality
+  const handleSubmitComment = async () => {
+    if (!commentText.trim() || isSubmitting) return
+    setIsSubmitting(true)
+    try {
+      await onComment(post.id, commentText.trim())
+      setCommentText('')
+      setShowCommentInput(false)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
-  const handleCopyLink = () => {
+  const handleShare = async () => {
     const shareUrl = `${window.location.origin}/post/${post.id}`
-    navigator.clipboard.writeText(shareUrl)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: post.title || 'Check out this post',
+          text: post.content?.slice(0, 100),
+          url: shareUrl
+        })
+      } catch (err) {
+        console.log('Share cancelled')
+      }
+    } else {
+      navigator.clipboard.writeText(shareUrl)
+    }
   }
 
   // Track post view
@@ -91,25 +111,8 @@ const LinkedInPostCard: React.FC<LinkedInPostCardProps> = ({
     }
   }, [post.id, currentUserId])
 
-  const contentPreview = post.content?.slice(0, 180) || ''
-  const needsTruncation = (post.content?.length || 0) > 180
-
-  const handleShare = async () => {
-    const shareUrl = `${window.location.origin}/post/${post.id}`
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: post.title || 'Check out this post',
-          text: contentPreview,
-          url: shareUrl
-        })
-      } catch (err) {
-        console.log('Share cancelled')
-      }
-    } else {
-      navigator.clipboard.writeText(shareUrl)
-    }
-  }
+  const contentPreview = post.content?.slice(0, 200) || ''
+  const needsTruncation = (post.content?.length || 0) > 200
 
   const renderContentType = () => {
     switch (post.content_type) {
@@ -117,28 +120,26 @@ const LinkedInPostCard: React.FC<LinkedInPostCardProps> = ({
         const jobLocation = post.metadata?.job?.location
         const jobBudget = post.metadata?.job?.budget
         return (
-          <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mt-3">
+          <div className="mx-4 mb-3 p-4 bg-primary/5 border border-primary/10 rounded-xl">
             <div className="flex items-start gap-3">
-              <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                <Briefcase className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <div className="p-2.5 bg-primary/10 rounded-xl">
+                <Briefcase className="h-5 w-5 text-primary" />
               </div>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-foreground">{post.title}</h3>
                 {jobLocation && (
                   <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
-                    <MapPin className="h-3 w-3" />
+                    <MapPin className="h-3.5 w-3.5" />
                     {jobLocation}
                   </p>
                 )}
                 {jobBudget && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Budget: {jobBudget}
-                  </p>
+                  <p className="text-sm font-medium text-primary mt-1">{jobBudget}</p>
                 )}
               </div>
             </div>
             {onJobApply && (
-              <Button onClick={() => onJobApply(post)} className="w-full mt-3">
+              <Button onClick={() => onJobApply(post)} size="sm" className="w-full mt-3">
                 Apply Now
               </Button>
             )}
@@ -146,21 +147,25 @@ const LinkedInPostCard: React.FC<LinkedInPostCardProps> = ({
         )
       case 'achievement':
         return (
-          <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 mt-3 flex items-center gap-3">
-            <Award className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+          <div className="mx-4 mb-3 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center gap-3">
+            <div className="p-2 bg-amber-500/20 rounded-full">
+              <Award className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+            </div>
             <div>
               <p className="font-semibold text-foreground">{post.title}</p>
-              <p className="text-sm text-muted-foreground">Celebrated an achievement</p>
+              <p className="text-sm text-muted-foreground">Achievement unlocked</p>
             </div>
           </div>
         )
       case 'event':
         return (
-          <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4 mt-3 flex items-center gap-3">
-            <Calendar className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+          <div className="mx-4 mb-3 p-4 bg-purple-500/10 border border-purple-500/20 rounded-xl flex items-center gap-3">
+            <div className="p-2 bg-purple-500/20 rounded-full">
+              <Calendar className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+            </div>
             <div>
               <p className="font-semibold text-foreground">{post.title}</p>
-              <p className="text-sm text-muted-foreground">Event announcement</p>
+              <p className="text-sm text-muted-foreground">Event</p>
             </div>
           </div>
         )
@@ -169,167 +174,180 @@ const LinkedInPostCard: React.FC<LinkedInPostCardProps> = ({
     }
   }
 
-  const renderHashtags = (text: string) => {
-    const parts = text.split(/(#\w+)/g)
-    return parts.map((part, index) => {
-      if (part.startsWith('#')) {
-        return (
-          <span key={index} className="text-primary font-medium cursor-pointer hover:underline">
-            {part}
-          </span>
-        )
-      }
-      return part
-    })
-  }
-
   return (
-    <Card id={`post-${post.id}`} className="shadow-sm hover:shadow-md transition-shadow">
-      <CardContent className="p-0">
-        {/* Header */}
-        <div className="p-4 flex items-start justify-between">
-          <div 
-            className="flex items-start gap-3 flex-1 cursor-pointer"
-            onClick={() => onProfileClick?.(post.user_id)}
-          >
-            <Avatar className="h-12 w-12">
-              <AvatarImage src={post.profiles?.profile_picture_url} />
-              <AvatarFallback className="bg-primary text-primary-foreground font-bold">
-                {post.profiles?.full_name?.charAt(0) || 'U'}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5">
-                <h3 className="font-semibold text-foreground text-base">
-                  {post.profiles?.full_name || 'User'}
-                </h3>
-                <UserBadges 
-                  badges={{
-                    isExpert: post.profiles?.is_expert,
-                    emailVerified: post.profiles?.email_verified,
-                    phoneVerified: post.profiles?.phone_verified,
-                    faceVerified: post.profiles?.face_verified,
-                    averageRating: post.profiles?.average_rating,
-                    ratingCount: post.profiles?.rating_count,
-                    avgResponseTimeSeconds: post.profiles?.avg_response_time_seconds
-                  }}
-                  size="sm"
-                />
-              </div>
-              <p className="text-sm text-muted-foreground line-clamp-1">
-                {post.profiles?.profession || 'NaijaLancers Member'}
-              </p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
-              </p>
+    <article id={`post-${post.id}`} className="bg-card">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 pb-3">
+        <div 
+          className="flex items-center gap-3 flex-1 cursor-pointer"
+          onClick={() => onProfileClick?.(post.user_id)}
+        >
+          <Avatar className="h-11 w-11 ring-2 ring-border">
+            <AvatarImage src={post.profiles?.profile_picture_url} />
+            <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
+              {post.profiles?.full_name?.charAt(0) || 'U'}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="font-semibold text-foreground">
+                {post.profiles?.full_name || 'User'}
+              </span>
+              <UserBadges 
+                badges={{
+                  isExpert: post.profiles?.is_expert,
+                  emailVerified: post.profiles?.email_verified,
+                  phoneVerified: post.profiles?.phone_verified,
+                  faceVerified: post.profiles?.face_verified,
+                  averageRating: post.profiles?.average_rating,
+                  ratingCount: post.profiles?.rating_count,
+                  avgResponseTimeSeconds: post.profiles?.avg_response_time_seconds
+                }}
+                size="sm"
+              />
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <span>{post.profiles?.profession || 'Member'}</span>
+              <span>·</span>
+              <span>{formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}</span>
             </div>
           </div>
-          <PostOptionsMenu
-            isOwnPost={isOwnPost}
-            postId={post.id}
-            isSaved={isSaved}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            onSave={handleSave}
-            onReport={handleReport}
-            onCopyLink={handleCopyLink}
-          />
         </div>
 
-        {/* Content */}
-        <div className="px-4 pb-3">
-          {post.title && (
-            <h2 className="text-lg font-bold text-foreground mb-2">{post.title}</h2>
-          )}
-          <div className="text-foreground whitespace-pre-wrap">
-            {showFullText ? (
-              renderHashtags(post.content || '')
-            ) : (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground">
+              <MoreHorizontal className="h-5 w-5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem onClick={handleSave}>
+              {isSaved ? <BookmarkCheck className="mr-2 h-4 w-4" /> : <Bookmark className="mr-2 h-4 w-4" />}
+              {isSaved ? 'Unsave' : 'Save post'}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigator.clipboard.writeText(`${window.location.origin}/post/${post.id}`)}>
+              Copy link
+            </DropdownMenuItem>
+            {!isOwnPost && (
               <>
-                {renderHashtags(contentPreview)}
-                {needsTruncation && '...'}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="text-destructive">Report</DropdownMenuItem>
               </>
             )}
-          </div>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      {/* Content */}
+      {post.content && (
+        <div className="px-4 pb-3">
+          {post.title && !['job', 'achievement', 'event'].includes(post.content_type || '') && (
+            <h2 className="text-base font-bold text-foreground mb-1.5">{post.title}</h2>
+          )}
+          <p className="text-foreground text-[15px] leading-relaxed whitespace-pre-wrap">
+            {showFullText ? post.content : contentPreview}
+            {needsTruncation && !showFullText && '...'}
+          </p>
           {needsTruncation && (
             <button
               onClick={() => setShowFullText(!showFullText)}
-              className="text-primary text-sm font-medium mt-2 hover:underline"
+              className="text-muted-foreground text-sm font-medium mt-1 hover:text-foreground"
             >
-              {showFullText ? 'See less' : 'See more'}
+              {showFullText ? 'less' : 'more'}
             </button>
           )}
-          {renderContentType()}
         </div>
+      )}
 
-        {/* Media */}
-        {post.media_urls && post.media_urls.length > 0 && (
-          <MediaGallery media={post.media_urls} />
-        )}
+      {/* Content Type Cards */}
+      {renderContentType()}
 
-        {/* Engagement Stats */}
-        <div className="px-4 py-3 flex items-center justify-between text-sm text-muted-foreground">
-          <div className="flex items-center gap-4">
+      {/* Media */}
+      {post.media_urls && post.media_urls.length > 0 && (
+        <MediaGallery media={post.media_urls} />
+      )}
+
+      {/* Engagement Stats */}
+      <div className="px-4 py-2 flex items-center justify-between text-sm text-muted-foreground">
+        <div className="flex items-center gap-1">
+          {likesCount > 0 && (
             <span className="flex items-center gap-1">
-              <ThumbsUp className="h-4 w-4" />
-              {post.likes_count || 0}
+              <span className="flex items-center justify-center w-5 h-5 bg-red-500 rounded-full">
+                <Heart className="h-3 w-3 text-white fill-white" />
+              </span>
+              <span>{likesCount}</span>
             </span>
-            <span>{post.comments_count || 0} comments</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Eye className="h-4 w-4" />
-            {post.views_count || 0} views
-          </div>
+          )}
         </div>
+        <div className="flex items-center gap-3">
+          {(post.comments_count || 0) > 0 && (
+            <span>{post.comments_count} comments</span>
+          )}
+          {(post.views_count || 0) > 0 && (
+            <span className="flex items-center gap-1">
+              <Eye className="h-3.5 w-3.5" />
+              {post.views_count}
+            </span>
+          )}
+        </div>
+      </div>
 
-        <Separator />
+      {/* Action Buttons */}
+      <div className="px-2 py-1 border-t border-border flex items-center">
+        <button
+          onClick={handleLike}
+          className={cn(
+            "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg transition-colors",
+            isLiked ? "text-red-500" : "text-muted-foreground hover:bg-muted"
+          )}
+        >
+          <Heart className={cn("h-5 w-5", isLiked && "fill-current")} />
+          <span className="text-sm font-medium">Like</span>
+        </button>
+        
+        <button
+          onClick={() => setShowCommentInput(!showCommentInput)}
+          className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-muted-foreground hover:bg-muted transition-colors"
+        >
+          <MessageCircle className="h-5 w-5" />
+          <span className="text-sm font-medium">Comment</span>
+        </button>
 
-        {/* Action Buttons */}
-        <div className="px-2 py-2 flex items-center justify-around">
-          <div className="flex-1 flex justify-center">
-            <ReactionPicker
-              currentReaction={post.user_reaction}
-              onReact={(reactionType) => onReact(post.id, reactionType)}
-              className="w-full"
+        <button
+          onClick={handleShare}
+          className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-muted-foreground hover:bg-muted transition-colors"
+        >
+          <Share2 className="h-5 w-5" />
+          <span className="text-sm font-medium">Share</span>
+        </button>
+      </div>
+
+      {/* Quick Comment Input */}
+      {showCommentInput && (
+        <div className="px-4 py-3 border-t border-border flex items-center gap-3">
+          <Avatar className="h-8 w-8">
+            <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">U</AvatarFallback>
+          </Avatar>
+          <div className="flex-1 flex items-center gap-2 bg-muted rounded-full px-4 py-2">
+            <input
+              type="text"
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+              placeholder="Write a comment..."
+              className="flex-1 bg-transparent text-sm outline-none"
+              onKeyDown={(e) => e.key === 'Enter' && handleSubmitComment()}
             />
+            <button
+              onClick={handleSubmitComment}
+              disabled={!commentText.trim() || isSubmitting}
+              className="text-primary disabled:opacity-50"
+            >
+              <Send className="h-4 w-4" />
+            </button>
           </div>
-          
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowComments(!showComments)}
-            className="flex-1 gap-2 hover:bg-primary/10"
-          >
-            <MessageCircle className="h-5 w-5" />
-            <span className="hidden sm:inline">Comment</span>
-          </Button>
-
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleShare}
-            className="flex-1 gap-2 hover:bg-primary/10"
-          >
-            <Share2 className="h-5 w-5" />
-            <span className="hidden sm:inline">Share</span>
-          </Button>
         </div>
-
-        {/* Comments Section */}
-        {showComments && (
-          <>
-            <Separator />
-            <div className="p-4">
-              <CommentsSection
-                postId={post.id}
-                isOpen={showComments}
-                onClose={() => setShowComments(false)}
-              />
-            </div>
-          </>
-        )}
-      </CardContent>
-    </Card>
+      )}
+    </article>
   )
 }
 
