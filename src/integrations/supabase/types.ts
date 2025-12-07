@@ -4186,7 +4186,6 @@ export type Database = {
           content: string
           content_type: string
           created_at: string
-          hashtags: string[]
           id: string
           likes_count: number
           media_urls: Json

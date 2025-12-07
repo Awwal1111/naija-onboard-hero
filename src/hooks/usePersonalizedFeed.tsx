@@ -12,7 +12,7 @@ export interface Post {
   content: string
   media_urls?: string[]
   metadata?: any
-  hashtags?: string[]
+  visibility?: string
   likes_count: number
   comments_count: number
   shares_count: number
@@ -199,8 +199,7 @@ export const usePersonalizedFeed = () => {
     return posts.filter(post => 
       post.content?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       post.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      post.profiles?.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      post.hashtags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+      post.profiles?.full_name?.toLowerCase().includes(searchQuery.toLowerCase())
     )
   }, [posts, searchQuery])
 
