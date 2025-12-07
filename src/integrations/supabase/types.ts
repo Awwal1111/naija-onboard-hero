@@ -4240,19 +4240,24 @@ export type Database = {
         Returns: {
           comments_count: number
           content: string
-          content_type: string
           created_at: string
-          id: string
+          full_name: string
+          hashtags: string[]
+          is_pinned: boolean
           likes_count: number
           media_urls: string[]
-          metadata: Json
+          mentions: string[]
+          post_id: string
+          post_type: string
+          profession: string
+          profile_picture_url: string
           relevance_score: number
           shares_count: number
-          status: string
-          title: string
           updated_at: string
           user_id: string
+          user_reaction: string
           views_count: number
+          visibility: string
         }[]
       }
       get_personalized_fundraisings: {
