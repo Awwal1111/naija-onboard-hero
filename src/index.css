@@ -46,6 +46,11 @@ All colors MUST be HSL.
     --text-secondary: 0 0% 45%;
     --surface-light: 0 0% 96%;
 
+    /* Social Feed tokens */
+    --social-like: 0 84% 60%; /* Red for likes */
+    --social-gradient-start: 142 76% 36%;
+    --social-gradient-end: 340 75% 55%;
+
     --radius: 0.5rem;
     --button-radius: 8px;
 
