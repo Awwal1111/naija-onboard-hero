@@ -252,7 +252,12 @@ const MainFeed = () => {
             </div>
           </header>
 
-          {/* Share Box - At Top */}
+          {/* Search Bar - Above Share Box */}
+          <div className="bg-card p-4 border-b border-border">
+            <UnifiedSearchBar />
+          </div>
+
+          {/* Share Box */}
           <div className="bg-card p-6 border-b border-border">
             <div className="flex items-center gap-3">
               <Avatar className="h-12 w-12">
