@@ -10,6 +10,7 @@ import ReactionPicker from './ReactionPicker'
 import CommentsSection from './CommentsSection'
 import MediaGallery from './MediaGallery'
 import PostOptionsMenu from './PostOptionsMenu'
+import { UserBadges } from './UserBadges'
 import { usePostViews } from '@/hooks/usePostViews'
 import { formatDistanceToNow } from 'date-fns'
 import { sanitizeText } from '@/lib/security'
@@ -198,9 +199,23 @@ const LinkedInPostCard: React.FC<LinkedInPostCardProps> = ({
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-foreground text-base">
-                {post.profiles?.full_name || 'User'}
-              </h3>
+              <div className="flex items-center gap-1.5">
+                <h3 className="font-semibold text-foreground text-base">
+                  {post.profiles?.full_name || 'User'}
+                </h3>
+                <UserBadges 
+                  badges={{
+                    isExpert: post.profiles?.is_expert,
+                    emailVerified: post.profiles?.email_verified,
+                    phoneVerified: post.profiles?.phone_verified,
+                    faceVerified: post.profiles?.face_verified,
+                    averageRating: post.profiles?.average_rating,
+                    ratingCount: post.profiles?.rating_count,
+                    avgResponseTimeSeconds: post.profiles?.avg_response_time_seconds
+                  }}
+                  size="sm"
+                />
+              </div>
               <p className="text-sm text-muted-foreground line-clamp-1">
                 {post.profiles?.profession || 'NaijaLancers Member'}
               </p>

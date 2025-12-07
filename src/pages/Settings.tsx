@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { ArrowLeft, Trash2, Eye, Globe, Users, Lock, Moon, Sun, Bell, Languages, Shield, HelpCircle, FileText, User, Activity, TrendingUp } from 'lucide-react'
+import { ArrowLeft, Trash2, Eye, Globe, Users, Lock, Moon, Sun, Bell, Languages, Shield, HelpCircle, FileText, User, Activity, TrendingUp, CheckCircle, ShieldCheck, Phone, Mail, Camera } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -14,6 +14,8 @@ import { Separator } from '@/components/ui/separator'
 import { PushNotificationToggle } from '@/components/PushNotificationToggle'
 import { TestNotifications } from '@/components/TestNotifications'
 import { TwoFactorSetup } from '@/components/TwoFactorSetup'
+import { EmailVerificationStatus } from '@/components/EmailVerificationBanner'
+import { UserBadges } from '@/components/UserBadges'
 
 interface NotificationPreferences {
   chats: boolean
@@ -361,6 +363,106 @@ const Settings = () => {
                   });
                 }}
               />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Verification Status Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ShieldCheck className="h-5 w-5" />
+              Verification Status
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Current Badges */}
+            <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+              <div>
+                <h4 className="font-medium text-foreground">Your Badges</h4>
+                <p className="text-xs text-muted-foreground mt-1">Earned verification badges</p>
+              </div>
+              <UserBadges 
+                badges={{
+                  isExpert: profile?.is_expert,
+                  emailVerified: (profile as any)?.email_verified,
+                  phoneVerified: (profile as any)?.phone_verified,
+                  faceVerified: (profile as any)?.face_verified,
+                  averageRating: profile?.average_rating,
+                  ratingCount: profile?.rating_count,
+                  avgResponseTimeSeconds: (profile as any)?.avg_response_time_seconds
+                }}
+                size="md"
+              />
+            </div>
+
+            <Separator />
+
+            {/* Email Verification */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-full ${(profile as any)?.email_verified ? 'bg-green-100 dark:bg-green-900/30' : 'bg-amber-100 dark:bg-amber-900/30'}`}>
+                  <Mail className={`h-4 w-4 ${(profile as any)?.email_verified ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`} />
+                </div>
+                <div>
+                  <h4 className="font-medium text-foreground">Email</h4>
+                  <p className="text-xs text-muted-foreground">{user?.email}</p>
+                </div>
+              </div>
+              <EmailVerificationStatus 
+                email={user?.email}
+                isVerified={(profile as any)?.email_verified}
+              />
+            </div>
+
+            <Separator />
+
+            {/* Phone Verification */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-full ${(profile as any)?.phone_verified ? 'bg-green-100 dark:bg-green-900/30' : 'bg-muted'}`}>
+                  <Phone className={`h-4 w-4 ${(profile as any)?.phone_verified ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`} />
+                </div>
+                <div>
+                  <h4 className="font-medium text-foreground">Phone Number</h4>
+                  <p className="text-xs text-muted-foreground">Verify via Telegram bot</p>
+                </div>
+              </div>
+              {(profile as any)?.phone_verified ? (
+                <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                  <CheckCircle className="h-4 w-4" />
+                  <span className="text-sm font-medium">Verified</span>
+                </div>
+              ) : (
+                <Button variant="outline" size="sm" onClick={() => window.open('https://t.me/NaijaLancersBot', '_blank')}>
+                  Verify via Telegram
+                </Button>
+              )}
+            </div>
+
+            <Separator />
+
+            {/* Face Verification */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-full ${(profile as any)?.face_verified ? 'bg-green-100 dark:bg-green-900/30' : 'bg-muted'}`}>
+                  <Camera className={`h-4 w-4 ${(profile as any)?.face_verified ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`} />
+                </div>
+                <div>
+                  <h4 className="font-medium text-foreground">Identity</h4>
+                  <p className="text-xs text-muted-foreground">Face verification</p>
+                </div>
+              </div>
+              {(profile as any)?.face_verified ? (
+                <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                  <CheckCircle className="h-4 w-4" />
+                  <span className="text-sm font-medium">Verified</span>
+                </div>
+              ) : (
+                <Button variant="outline" size="sm" disabled>
+                  Coming Soon
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>
