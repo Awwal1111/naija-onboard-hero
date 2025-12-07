@@ -4191,6 +4191,50 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_personalized_courses: {
+        Args: { p_limit?: number; p_offset?: number; p_user_id: string }
+        Returns: {
+          average_rating: number
+          course_category: string
+          created_at: string
+          description: string
+          duration_hours: number
+          enrollment_count: number
+          id: string
+          instructor_name: string
+          is_demo: boolean
+          level: string
+          price: number
+          relevance_score: number
+          review_count: number
+          thumbnail_url: string
+          title: string
+        }[]
+      }
+      get_personalized_experts: {
+        Args: { p_limit?: number; p_offset?: number; p_user_id: string }
+        Returns: {
+          average_rating: number
+          bio: string
+          email_verified: boolean
+          face_verified: boolean
+          full_name: string
+          id: string
+          is_expert: boolean
+          location_area: string
+          location_lga: string
+          location_state: string
+          phone_verified: boolean
+          profession: string
+          profile_picture_url: string
+          rating_count: number
+          relevance_score: number
+          skill_category: string
+          status: string
+          user_id: string
+          years_experience: number
+        }[]
+      }
       get_personalized_feed: {
         Args: { p_limit?: number; p_offset?: number; p_user_id: string }
         Returns: {
@@ -4209,6 +4253,85 @@ export type Database = {
           updated_at: string
           user_id: string
           views_count: number
+        }[]
+      }
+      get_personalized_fundraisings: {
+        Args: { p_limit?: number; p_offset?: number; p_user_id: string }
+        Returns: {
+          backer_count: number
+          category: string
+          creator_id: string
+          creator_name: string
+          creator_picture: string
+          deadline: string
+          description: string
+          featured_image_url: string
+          goal_amount: number
+          id: string
+          is_verified: boolean
+          location: string
+          progress_percent: number
+          raised_amount: number
+          relevance_score: number
+          title: string
+        }[]
+      }
+      get_personalized_gigs: {
+        Args: { p_limit?: number; p_offset?: number; p_user_id: string }
+        Returns: {
+          category: string
+          created_at: string
+          description: string
+          id: string
+          photo_urls: string[]
+          price: number
+          relevance_score: number
+          seller_id: string
+          seller_is_expert: boolean
+          seller_name: string
+          seller_picture: string
+          seller_rating: number
+          status: string
+          title: string
+        }[]
+      }
+      get_personalized_jobs: {
+        Args: { p_limit?: number; p_offset?: number; p_user_id: string }
+        Returns: {
+          budget_max: number
+          budget_min: number
+          created_at: string
+          description: string
+          id: string
+          job_type: string
+          location: string
+          poster_id: string
+          poster_name: string
+          poster_picture: string
+          poster_profession: string
+          relevance_score: number
+          required_skills: string[]
+          status: string
+          title: string
+        }[]
+      }
+      get_personalized_products: {
+        Args: { p_limit?: number; p_offset?: number; p_user_id: string }
+        Returns: {
+          average_rating: number
+          category: string
+          description: string
+          download_count: number
+          id: string
+          is_demo: boolean
+          is_verified: boolean
+          preview_url: string
+          price: number
+          relevance_score: number
+          review_count: number
+          seller_name: string
+          seller_picture: string
+          title: string
         }[]
       }
       get_public_profile_info: {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Search, Filter, Star, MapPin, MessageCircle, Home, Users, DollarSign, Briefcase, Menu, Video, Plus } from 'lucide-react'
+import { Search, Filter, Star, MapPin, MessageCircle, Home, Users, DollarSign, Briefcase, Menu, Video, Plus, TrendingUp } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { MoreMenuDrawer } from '@/components/MoreMenuDrawer'
 import { BrandInput } from '@/components/ui/brand-input'
@@ -18,6 +18,8 @@ import { ClassCard } from '@/components/ClassCard'
 import { CreateClassDialog } from '@/components/CreateClassDialog'
 import { useExpertClasses } from '@/hooks/useExpertClasses'
 import { Skeleton } from '@/components/ui/skeleton'
+import { usePersonalizedExperts, PersonalizedExpert } from '@/hooks/usePersonalizedDiscovery'
+import { Badge } from '@/components/ui/badge'
 
 interface Expert {
   id: string
@@ -43,8 +45,6 @@ const Experts = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { toast } = useToast()
-  const [experts, setExperts] = useState<Expert[]>([])
-  const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const location = useLocation()
   const [stateFilter, setStateFilter] = useState('all')
@@ -54,6 +54,9 @@ const Experts = () => {
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [userProfile, setUserProfile] = useState<any>(null)
   const { liveClasses, upcomingClasses, featuredClasses, pastClasses, isLoading: classesLoading } = useExpertClasses()
+  
+  // Use personalized experts algorithm
+  const { experts: personalizedExperts, loading } = usePersonalizedExperts(50)
 
   const bottomNavItems = [
     { icon: Home, label: 'Feed', path: '/feed' },
@@ -98,7 +101,6 @@ const Experts = () => {
   ]
 
   useEffect(() => {
-    fetchExperts()
     if (user) {
       supabase
         .from('profiles')
@@ -109,46 +111,27 @@ const Experts = () => {
     }
   }, [user])
 
-  const fetchExperts = async () => {
-    try {
-      // Fetch expert applications first
-      const { data: expertApps, error: appsError } = await supabase
-        .from('expert_applications')
-        .select('*')
-        .eq('status', 'approved')
-        .order('submitted_at', { ascending: false })
-      
-      if (appsError) throw appsError
-
-      // Fetch corresponding profiles
-      const userIds = expertApps?.map(app => app.user_id) || []
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('user_id, full_name, bio, profession, profile_picture_url, average_rating, rating_count')
-        .in('user_id', userIds)
-      
-      if (profilesError) console.warn('Profile fetch error:', profilesError)
-
-      // Combine the data and filter out experts without profiles
-      const expertsWithProfiles = expertApps
-        ?.map(app => ({
-          ...app,
-          profiles: profiles?.find(p => p.user_id === app.user_id) || null
-        }))
-        .filter(expert => expert.profiles !== null) || [] // Only show experts with valid profiles
-      
-      setExperts(expertsWithProfiles)
-    } catch (error) {
-      console.error('Error fetching experts:', error)
-      toast({
-        title: "Error",
-        description: `Failed to load experts directory: ${error.message}`,
-        variant: "destructive"
-      })
-    } finally {
-      setLoading(false)
+  // Transform personalized experts to match expected format
+  const experts = personalizedExperts.map((expert: PersonalizedExpert) => ({
+    id: expert.id,
+    user_id: expert.user_id,
+    full_name: expert.full_name,
+    skill_category: expert.skill_category,
+    years_experience: expert.years_experience,
+    location_state: expert.location_state,
+    location_lga: expert.location_lga,
+    location_area: expert.location_area,
+    status: expert.status,
+    relevance_score: expert.relevance_score,
+    profiles: {
+      full_name: expert.full_name,
+      bio: expert.bio || '',
+      profession: expert.profession || expert.skill_category,
+      profile_picture_url: expert.profile_picture_url || '',
+      average_rating: expert.average_rating,
+      rating_count: expert.rating_count
     }
-  }
+  }))
 
   const handleRatingSubmit = async (expertUserId: string, rating: number, comment?: string) => {
     if (!user) {
@@ -205,9 +188,6 @@ const Experts = () => {
         title: "Success",
         description: "Rating submitted successfully!",
       })
-
-      // Refresh the experts list to show updated ratings
-      await fetchExperts()
     } catch (error: any) {
       console.error('Error submitting rating:', error)
       toast({
