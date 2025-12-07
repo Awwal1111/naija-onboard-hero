@@ -11,11 +11,10 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
-import { useEnhancedFeed } from '@/hooks/useEnhancedFeed'
 import { useSuggestions } from '@/hooks/useSuggestions'
 import PaginatedFeed from '@/components/PaginatedFeed'
 import StoriesSection from '@/components/StoriesSection'
-import { useFeed } from '@/hooks/useFeed'
+import { usePersonalizedFeed } from '@/hooks/usePersonalizedFeed'
 import EnhancedCreatePostDialog from '@/components/EnhancedCreatePostDialog'
 import CreateStoryDialog from '@/components/CreateStoryDialog'
 import TrendingSection from '@/components/TrendingSection'
@@ -47,7 +46,7 @@ const MainFeed = () => {
     viewStory,
     savePost,
     refreshFeed
-  } = useFeed()
+  } = usePersonalizedFeed()
   const [searchQuery, setSearchQuery] = useState('')
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
   const [showCreatePost, setShowCreatePost] = useState(false)

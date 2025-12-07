@@ -4179,6 +4179,28 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_personalized_feed: {
+        Args: { p_limit?: number; p_offset?: number; p_user_id: string }
+        Returns: {
+          comments_count: number
+          content: string
+          content_type: string
+          created_at: string
+          hashtags: string[]
+          id: string
+          likes_count: number
+          media_urls: Json
+          metadata: Json
+          relevance_score: number
+          shares_count: number
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+          views_count: number
+          visibility: string
+        }[]
+      }
       get_public_profile_info: {
         Args: { target_user_id: string }
         Returns: {
