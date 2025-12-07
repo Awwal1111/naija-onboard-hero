@@ -1,7 +1,12 @@
-import React from 'react';
-import { Star, ShieldCheck, Crown, Zap } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import React, { useState } from 'react';
+import { Star, ShieldCheck, Crown, Zap, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 export interface BadgeData {
   isExpert?: boolean;
@@ -18,6 +23,16 @@ interface UserBadgesProps {
   size?: 'sm' | 'md' | 'lg';
   showLabels?: boolean;
   className?: string;
+}
+
+interface BadgeInfo {
+  key: string;
+  icon: React.ElementType;
+  color: string;
+  bgColor: string;
+  label: string;
+  description: string;
+  details: string;
 }
 
 const sizeClasses = {
@@ -38,12 +53,14 @@ export const UserBadges: React.FC<UserBadgesProps> = ({
   showLabels = false,
   className 
 }) => {
+  const [selectedBadge, setSelectedBadge] = useState<BadgeInfo | null>(null);
+
   const isVerified = badges.emailVerified && badges.phoneVerified && badges.faceVerified;
   const isPartiallyVerified = badges.emailVerified || badges.phoneVerified || badges.faceVerified;
   const isTopRated = (badges.averageRating ?? 0) >= 4.5 && (badges.ratingCount ?? 0) >= 5;
   const isFastResponder = (badges.avgResponseTimeSeconds ?? Infinity) < 180;
 
-  const badgeItems = [];
+  const badgeItems: BadgeInfo[] = [];
 
   // Expert Badge - Gold star
   if (badges.isExpert) {
@@ -53,7 +70,8 @@ export const UserBadges: React.FC<UserBadgesProps> = ({
       color: 'text-amber-500',
       bgColor: 'bg-amber-500/10',
       label: 'Expert',
-      tooltip: 'Verified Expert - Skilled professional in their category'
+      description: 'Verified Expert',
+      details: 'This user is a verified expert in their professional category. They have demonstrated skills and experience in their field.'
     });
   }
 
@@ -65,10 +83,10 @@ export const UserBadges: React.FC<UserBadgesProps> = ({
       color: 'text-blue-500',
       bgColor: 'bg-blue-500/10',
       label: 'Verified',
-      tooltip: 'Fully Verified - Email, Phone & Identity confirmed'
+      description: 'Fully Verified',
+      details: 'This user has completed full verification: Email confirmed, Phone verified via Telegram, and Identity verified through face recognition.'
     });
   } else if (isPartiallyVerified) {
-    // Partial verification indicator
     const verifiedParts = [];
     if (badges.emailVerified) verifiedParts.push('Email');
     if (badges.phoneVerified) verifiedParts.push('Phone');
@@ -80,7 +98,8 @@ export const UserBadges: React.FC<UserBadgesProps> = ({
       color: 'text-blue-400/70',
       bgColor: 'bg-blue-400/5',
       label: 'Partially Verified',
-      tooltip: `Verified: ${verifiedParts.join(', ')}`
+      description: `Verified: ${verifiedParts.join(', ')}`,
+      details: `This user has partially verified their account. Completed: ${verifiedParts.join(', ')}. Full verification requires email, phone, and face verification.`
     });
   }
 
@@ -92,7 +111,8 @@ export const UserBadges: React.FC<UserBadgesProps> = ({
       color: 'text-purple-500',
       bgColor: 'bg-purple-500/10',
       label: 'Top Rated',
-      tooltip: `Top Rated - ${badges.averageRating?.toFixed(1)}★ from ${badges.ratingCount} reviews`
+      description: `${badges.averageRating?.toFixed(1)}★ Rating`,
+      details: `This user has an excellent rating of ${badges.averageRating?.toFixed(1)} stars from ${badges.ratingCount} reviews. Top Rated status is earned with 4.5+ stars and at least 5 reviews.`
     });
   }
 
@@ -105,39 +125,65 @@ export const UserBadges: React.FC<UserBadgesProps> = ({
       color: 'text-green-500',
       bgColor: 'bg-green-500/10',
       label: 'Fast Responder',
-      tooltip: `Fast Responder - Replies in ~${minutes} min on average`
+      description: `~${minutes} min response`,
+      details: `This user typically responds within ${minutes} minutes on average. Fast Responder status is earned by maintaining an average response time under 3 minutes.`
     });
   }
 
   if (badgeItems.length === 0) return null;
 
   return (
-    <TooltipProvider>
+    <>
       <div className={cn('flex items-center', containerSizeClasses[size], className)}>
-        {badgeItems.map(({ key, icon: Icon, color, bgColor, label, tooltip }) => (
-          <Tooltip key={key}>
-            <TooltipTrigger asChild>
-              <div 
-                className={cn(
-                  'flex items-center rounded-full p-0.5',
-                  bgColor
-                )}
-              >
-                <Icon className={cn(sizeClasses[size], color, 'fill-current')} />
-                {showLabels && (
-                  <span className={cn('ml-1 text-xs font-medium', color)}>
-                    {label}
-                  </span>
-                )}
-              </div>
-            </TooltipTrigger>
-            <TooltipContent side="top" className="text-xs">
-              {tooltip}
-            </TooltipContent>
-          </Tooltip>
-        ))}
+        {badgeItems.map((badge) => {
+          const Icon = badge.icon;
+          return (
+            <button
+              key={badge.key}
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedBadge(badge);
+              }}
+              className={cn(
+                'flex items-center rounded-full p-0.5 transition-transform hover:scale-110 active:scale-95',
+                badge.bgColor
+              )}
+            >
+              <Icon className={cn(sizeClasses[size], badge.color, 'fill-current')} />
+              {showLabels && (
+                <span className={cn('ml-1 text-xs font-medium', badge.color)}>
+                  {badge.label}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
-    </TooltipProvider>
+
+      {/* Badge Info Dialog */}
+      <Dialog open={!!selectedBadge} onOpenChange={() => setSelectedBadge(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3">
+              {selectedBadge && (
+                <>
+                  <div className={cn('p-2 rounded-full', selectedBadge.bgColor)}>
+                    <selectedBadge.icon className={cn('h-6 w-6', selectedBadge.color, 'fill-current')} />
+                  </div>
+                  <div>
+                    <div className="font-semibold">{selectedBadge.label}</div>
+                    <div className="text-sm font-normal text-muted-foreground">{selectedBadge.description}</div>
+                  </div>
+                </>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="text-sm text-muted-foreground leading-relaxed">
+            {selectedBadge?.details}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
@@ -149,34 +195,40 @@ interface SingleBadgeProps {
 }
 
 export const SingleBadge: React.FC<SingleBadgeProps> = ({ type, size = 'sm', showLabel = false }) => {
+  const [showInfo, setShowInfo] = useState(false);
+
   const badgeConfig = {
     expert: {
       icon: Star,
       color: 'text-amber-500',
       bgColor: 'bg-amber-500/10',
       label: 'Expert',
-      tooltip: 'Verified Expert'
+      description: 'Verified Expert',
+      details: 'This user is a verified expert in their professional category.'
     },
     verified: {
       icon: ShieldCheck,
       color: 'text-blue-500',
       bgColor: 'bg-blue-500/10',
       label: 'Verified',
-      tooltip: 'Fully Verified'
+      description: 'Fully Verified',
+      details: 'This user has completed full verification including email, phone, and identity.'
     },
     'top-rated': {
       icon: Crown,
       color: 'text-purple-500',
       bgColor: 'bg-purple-500/10',
       label: 'Top Rated',
-      tooltip: 'Top Rated Professional'
+      description: 'Excellent Rating',
+      details: 'This user has earned an excellent rating from multiple reviews.'
     },
     'fast-responder': {
       icon: Zap,
       color: 'text-green-500',
       bgColor: 'bg-green-500/10',
       label: 'Fast Responder',
-      tooltip: 'Responds Quickly'
+      description: 'Quick Responses',
+      details: 'This user typically responds quickly to messages.'
     }
   };
 
@@ -184,23 +236,41 @@ export const SingleBadge: React.FC<SingleBadgeProps> = ({ type, size = 'sm', sho
   const Icon = config.icon;
 
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <div className={cn('flex items-center rounded-full p-0.5', config.bgColor)}>
-            <Icon className={cn(sizeClasses[size], config.color, 'fill-current')} />
-            {showLabel && (
-              <span className={cn('ml-1 text-xs font-medium', config.color)}>
-                {config.label}
-              </span>
-            )}
+    <>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          setShowInfo(true);
+        }}
+        className={cn('flex items-center rounded-full p-0.5 transition-transform hover:scale-110', config.bgColor)}
+      >
+        <Icon className={cn(sizeClasses[size], config.color, 'fill-current')} />
+        {showLabel && (
+          <span className={cn('ml-1 text-xs font-medium', config.color)}>
+            {config.label}
+          </span>
+        )}
+      </button>
+
+      <Dialog open={showInfo} onOpenChange={setShowInfo}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3">
+              <div className={cn('p-2 rounded-full', config.bgColor)}>
+                <Icon className={cn('h-6 w-6', config.color, 'fill-current')} />
+              </div>
+              <div>
+                <div className="font-semibold">{config.label}</div>
+                <div className="text-sm font-normal text-muted-foreground">{config.description}</div>
+              </div>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="text-sm text-muted-foreground leading-relaxed">
+            {config.details}
           </div>
-        </TooltipTrigger>
-        <TooltipContent side="top" className="text-xs">
-          {config.tooltip}
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
