@@ -1,262 +1,165 @@
-import { useState, useEffect } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '@/hooks/useAuth'
-import { useProfile } from '@/hooks/useProfile'
 import { supabase } from '@/integrations/supabase/client'
 
-interface ConnectionSuggestion {
-  id: string
+export interface ConnectionSuggestion {
+  user_id: string
   full_name: string
-  profession?: string
-  profile_picture_url?: string
-  suggestion_type: string
-  score: number
-  state_name?: string
-  lga_name?: string
-  mutual_connections?: number
+  profession?: string | null
+  profile_picture_url?: string | null
+  state_name?: string | null
+  lga_name?: string | null
+  is_expert: boolean
+  average_rating: number
+  relevance_score: number
 }
 
-interface GroupSuggestion {
+export interface GroupSuggestion {
   id: string
   name: string
+  description?: string | null
   category: string
-  description?: string
-  lga_name: string
   state_name: string
+  lga_name: string
+  area: string
   member_count: number
-  suggestion_type: string
-  score: number
+  group_lead_id: string
+  group_lead_name?: string | null
+  relevance_score: number
 }
 
-interface JobSuggestion {
+export interface JobSuggestion {
   id: string
   title: string
   description: string
-  budget_min?: number
-  budget_max?: number
-  required_skills?: string[]
-  location?: string
+  budget_min?: number | null
+  budget_max?: number | null
+  location?: string | null
+  job_type?: string | null
+  required_skills?: string[] | null
   created_at: string
-  score: number
+  poster_id: string
+  poster_name?: string | null
+  relevance_score: number
 }
 
-interface ExpertSuggestion {
+export interface ExpertSuggestion {
   id: string
+  user_id: string
   full_name: string
-  profession?: string
-  profile_picture_url?: string
+  skill_category: string
+  years_experience: number
+  location_state: string
+  profile_picture_url?: string | null
+  profession?: string | null
   average_rating: number
   rating_count: number
   is_expert: boolean
-  score: number
+  relevance_score: number
 }
 
 export const useSuggestions = () => {
   const { user } = useAuth()
-  const { profile } = useProfile()
-  const [connectionSuggestions, setConnectionSuggestions] = useState<ConnectionSuggestion[]>([])
-  const [groupSuggestions, setGroupSuggestions] = useState<GroupSuggestion[]>([])
-  const [jobSuggestions, setJobSuggestions] = useState<JobSuggestion[]>([])
-  const [expertSuggestions, setExpertSuggestions] = useState<ExpertSuggestion[]>([])
-  const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    if (user && profile) {
-      fetchAllSuggestions()
-    }
-  }, [user, profile])
+  // Connection suggestions using personalized algorithm
+  const { data: connectionSuggestions = [], isLoading: loadingConnections } = useQuery({
+    queryKey: ['suggestions-connections', user?.id],
+    queryFn: async () => {
+      if (!user) return []
 
-  const fetchAllSuggestions = async () => {
-    if (!user || !profile) return
+      const { data, error } = await supabase.rpc('get_personalized_connections', {
+        p_user_id: user.id,
+        p_limit: 10,
+        p_offset: 0
+      })
 
-    try {
-      setLoading(true)
-      await Promise.all([
-        fetchConnectionSuggestions(),
-        fetchGroupSuggestions(),
-        fetchJobSuggestions(),
-        fetchExpertSuggestions()
-      ])
-    } catch (error) {
-      console.error('Error fetching suggestions:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const fetchConnectionSuggestions = async () => {
-    if (!user || !profile) return
-
-    try {
-      // Basic connection suggestions without RPC
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, user_id, full_name, profession, profile_picture_url, state_name, lga_name')
-        .neq('user_id', user.id)
-        .or(`state_name.eq.${profile.state_name || 'Lagos'},lga_name.eq.${profile.lga_name || 'Ikeja'},profession.eq.${profile.profession || 'Developer'}`)
-        .limit(10)
-
-      if (error) throw error
-
-      const suggestions = (data || []).map((profileData: any, index: number) => ({
-        ...profileData,
-        id: profileData.user_id,
-        suggestion_type: profileData.state_name === profile.state_name ? 'location' : 'profession',
-        score: 10 - index,
-        mutual_connections: 0
-      }))
-
-      setConnectionSuggestions(suggestions)
-    } catch (error) {
-      console.error('Error in fetchConnectionSuggestions:', error)
-      setConnectionSuggestions([])
-    }
-  }
-
-  const fetchGroupSuggestions = async () => {
-    if (!user || !profile) return
-
-    try {
-      // NaijaLancers Calculation for group suggestions
-      let query = supabase
-        .from('groups')
-        .select('id, name, category, description, state_name, lga_name, member_count')
-        .eq('is_active', true)
-        .order('member_count', { ascending: false })
-        .limit(10)
-
-      // Only add filters if values exist
-      if (profile.lga_name) {
-        query = query.eq('lga_name', profile.lga_name)
+      if (error) {
+        console.error('[Suggestions] Connection suggestions error:', error)
+        return []
       }
 
-      const { data, error } = await query
+      return (data || []) as ConnectionSuggestion[]
+    },
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000,
+  })
 
-      if (error) throw error
+  // Group suggestions using personalized algorithm
+  const { data: groupSuggestions = [], isLoading: loadingGroups } = useQuery({
+    queryKey: ['suggestions-groups', user?.id],
+    queryFn: async () => {
+      if (!user) return []
 
-      const suggestions = (data || []).map((group: any, index: number) => ({
-        ...group,
-        suggestion_type: group.category === profile.profession ? 'category' : 'location',
-        score: (group.category === profile.profession ? 5 : 0) +
-               (group.lga_name === profile.lga_name ? 3 : 0) +
-               Math.floor(group.member_count / 10) +
-               (10 - index)
-      }))
-
-      setGroupSuggestions(suggestions)
-    } catch (error) {
-      console.error('Error fetching group suggestions:', error)
-    }
-  }
-
-  const fetchJobSuggestions = async () => {
-    if (!user || !profile || !profile.is_expert) return
-
-    try {
-      // NaijaLancers Calculation for job suggestions
-      const { data, error } = await supabase
-        .from('job_posts')
-        .select('id, title, description, budget_min, budget_max, required_skills, location, created_at')
-        .eq('status', 'open')
-        .neq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(20)
-
-      if (error) throw error
-
-      const suggestions = (data || []).map((job: any) => {
-        let score = 0
-        
-        // Skill match scoring
-        if (job.required_skills && profile.profession) {
-          const hasSkillMatch = job.required_skills.some((skill: string) => 
-            skill.toLowerCase().includes(profile.profession.toLowerCase()) ||
-            profile.profession.toLowerCase().includes(skill.toLowerCase())
-          )
-          if (hasSkillMatch) score += 5
-        }
-
-        // Location match scoring
-        if (job.location && profile.lga_name && 
-            job.location.toLowerCase().includes(profile.lga_name.toLowerCase())) {
-          score += 3
-        }
-
-        // Pay scoring (higher pay = higher score)
-        if (job.budget_min) {
-          score += Math.floor(job.budget_min / 1000)
-        }
-
-        // Recency scoring (newer jobs get higher score)
-        const daysSincePosted = Math.floor((Date.now() - new Date(job.created_at).getTime()) / (1000 * 60 * 60 * 24))
-        score += Math.max(0, 7 - daysSincePosted)
-
-        return { ...job, score }
+      const { data, error } = await supabase.rpc('get_personalized_groups', {
+        p_user_id: user.id,
+        p_limit: 10,
+        p_offset: 0
       })
 
-      // Sort by score and take top suggestions
-      suggestions.sort((a, b) => b.score - a.score)
-      setJobSuggestions(suggestions.slice(0, 10))
-    } catch (error) {
-      console.error('Error fetching job suggestions:', error)
-    }
-  }
+      if (error) {
+        console.error('[Suggestions] Group suggestions error:', error)
+        return []
+      }
 
-  const fetchExpertSuggestions = async () => {
-    if (!user || !profile) return
+      return (data || []) as GroupSuggestion[]
+    },
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000,
+  })
 
-    try {
-      // NaijaLancers Calculation for expert suggestions
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, user_id, full_name, profession, profile_picture_url, average_rating, rating_count, is_expert')
-        .eq('is_expert', true)
-        .neq('user_id', user.id)
-        .limit(20)
+  // Job suggestions using personalized algorithm
+  const { data: jobSuggestions = [], isLoading: loadingJobs } = useQuery({
+    queryKey: ['suggestions-jobs', user?.id],
+    queryFn: async () => {
+      if (!user) return []
 
-      if (error) throw error
-
-      const suggestions = (data || []).map((expert: any) => {
-        let score = 0
-
-        // Skill match scoring
-        if (expert.profession && profile.profession) {
-          if (expert.profession.toLowerCase().includes(profile.profession.toLowerCase()) ||
-              profile.profession.toLowerCase().includes(expert.profession.toLowerCase())) {
-            score += 5
-          }
-        }
-
-        // Rating scoring (higher rating = higher score)
-        if (expert.average_rating) {
-          score += expert.average_rating * 2
-        }
-
-        // Activity scoring (more ratings = more active)
-        if (expert.rating_count) {
-          score += expert.rating_count > 10 ? 3 : (expert.rating_count > 5 ? 2 : 1)
-        }
-
-        return { ...expert, id: expert.user_id, score }
+      const { data, error } = await supabase.rpc('get_personalized_jobs', {
+        p_user_id: user.id,
+        p_limit: 10,
+        p_offset: 0
       })
 
-      // Sort by score and take top suggestions
-      suggestions.sort((a, b) => b.score - a.score)
-      setExpertSuggestions(suggestions.slice(0, 10))
-    } catch (error) {
-      console.error('Error fetching expert suggestions:', error)
-    }
-  }
+      if (error) {
+        console.error('[Suggestions] Job suggestions error:', error)
+        return []
+      }
 
-  const refreshSuggestions = () => {
-    fetchAllSuggestions()
-  }
+      return (data || []) as JobSuggestion[]
+    },
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000,
+  })
+
+  // Expert suggestions using personalized algorithm
+  const { data: expertSuggestions = [], isLoading: loadingExperts } = useQuery({
+    queryKey: ['suggestions-experts', user?.id],
+    queryFn: async () => {
+      if (!user) return []
+
+      const { data, error } = await supabase.rpc('get_personalized_experts', {
+        p_user_id: user.id,
+        p_limit: 10,
+        p_offset: 0
+      })
+
+      if (error) {
+        console.error('[Suggestions] Expert suggestions error:', error)
+        return []
+      }
+
+      return (data || []) as ExpertSuggestion[]
+    },
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const loading = loadingConnections || loadingGroups || loadingJobs || loadingExperts
 
   return {
     connectionSuggestions,
     groupSuggestions,
     jobSuggestions,
     expertSuggestions,
-    loading,
-    refreshSuggestions
+    loading
   }
 }

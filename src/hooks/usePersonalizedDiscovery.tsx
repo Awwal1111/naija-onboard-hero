@@ -531,3 +531,65 @@ export const usePersonalizedGigs = (limit = 20, offset = 0) => {
     refetch
   }
 }
+
+// Personalized Groups Discovery
+export interface PersonalizedGroup {
+  id: string
+  name: string
+  description: string | null
+  category: string
+  state_name: string
+  lga_name: string
+  area: string
+  member_count: number
+  group_lead_id: string
+  group_lead_name: string | null
+  relevance_score: number
+}
+
+export const usePersonalizedGroups = (limit = 20, offset = 0) => {
+  const { user } = useAuth()
+
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ['personalized-groups', user?.id, limit, offset],
+    queryFn: async () => {
+      if (!user) {
+        const { data: basic } = await supabase
+          .from('groups')
+          .select('*')
+          .eq('is_active', true)
+          .order('member_count', { ascending: false })
+          .limit(limit)
+        return basic || []
+      }
+
+      const { data: groups, error } = await supabase
+        .rpc('get_personalized_groups', {
+          p_user_id: user.id,
+          p_limit: limit,
+          p_offset: offset
+        })
+
+      if (error) {
+        console.error('[Groups] Personalized fetch error:', error)
+        const { data: fallback } = await supabase
+          .from('groups')
+          .select('*')
+          .eq('is_active', true)
+          .order('member_count', { ascending: false })
+          .limit(limit)
+        return fallback || []
+      }
+
+      console.log('[Groups] Personalized results:', groups?.length || 0)
+      return groups || []
+    },
+    staleTime: 5 * 60 * 1000,
+  })
+
+  return {
+    groups: data || [],
+    loading: isLoading,
+    refetch
+  }
+}
