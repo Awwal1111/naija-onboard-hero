@@ -1,19 +1,16 @@
 import React, { useState, useEffect } from 'react'
-import { Plus, Search, Filter, TrendingUp, Home, MessageCircle, Users, DollarSign, User, Image, FileText, Briefcase, Award, Calendar, Vote, Hash, RefreshCw, ArrowRight, Star, MapPin, MoreVertical, Settings, Wallet } from 'lucide-react'
-import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { Plus, Home, MessageCircle, Users, DollarSign, User, FileText, Briefcase, Award, Calendar, Vote, Hash, RefreshCw, MoreVertical, Settings, Wallet, Camera } from 'lucide-react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { Logo } from '@/components/ui/logo'
-import { BrandInput } from '@/components/ui/brand-input'
 import { BrandButton } from '@/components/ui/brand-button'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { Card, CardContent } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
-import { useSuggestions } from '@/hooks/useSuggestions'
-import PaginatedFeed from '@/components/PaginatedFeed'
-import StoriesSection from '@/components/StoriesSection'
+import SocialFeed from '@/components/SocialFeed'
+import SocialStoriesRow from '@/components/SocialStoriesRow'
 import { usePersonalizedFeed } from '@/hooks/usePersonalizedFeed'
 import EnhancedCreatePostDialog from '@/components/EnhancedCreatePostDialog'
 import CreateStoryDialog from '@/components/CreateStoryDialog'
@@ -21,7 +18,6 @@ import TrendingSection from '@/components/TrendingSection'
 import ResponsiveLayout from '@/components/ResponsiveLayout'
 import NotificationBell from '@/components/NotificationBell'
 import SuggestionsTab from '@/components/SuggestionsTab'
-import StoriesCarousel from '@/components/StoriesCarousel'
 import JobApplicationDialog from '@/components/JobApplicationDialog'
 import ProfilePreview from '@/components/ProfilePreview'
 import ProfileCompletionDialog from '@/components/ProfileCompletionDialog'
@@ -251,119 +247,72 @@ const MainFeed = () => {
             </div>
           </header>
 
-          {/* Share Box */}
-          <div className="bg-card p-6 border-b border-border">
-            <div className="flex items-center gap-3">
-              <Avatar className="h-12 w-12">
+          {/* Stories Row - Instagram Style */}
+          <SocialStoriesRow
+            stories={stories}
+            onCreateStory={handleCreateStory}
+            onViewStory={viewStory}
+            currentUserId={user?.id}
+            currentUserAvatar={profile?.profile_picture_url}
+            currentUserName={profile?.full_name}
+          />
+
+          {/* Create Post Bar - Minimal */}
+          <div className="bg-card px-4 py-3 border-b border-border">
+            <button
+              onClick={() => setShowCreatePost(true)}
+              className="w-full flex items-center gap-3 py-2.5 px-4 bg-muted rounded-full hover:bg-muted/80 transition-colors"
+            >
+              <Avatar className="h-8 w-8">
                 <AvatarImage src={profile?.profile_picture_url} />
-                <AvatarFallback className="bg-primary text-primary-foreground font-bold text-base">
+                <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
                   {profile?.full_name?.charAt(0) || 'U'}
                 </AvatarFallback>
               </Avatar>
-              <button
-                onClick={() => setShowCreatePost(true)}
-                className="flex-1 text-left px-5 py-3 bg-muted rounded-full text-muted-foreground hover:bg-muted/80 transition-colors text-base border border-border"
-              >
-                Share your thoughts...
-              </button>
-            </div>
+              <span className="text-sm text-muted-foreground flex-1 text-left">What's on your mind?</span>
+              <Camera className="h-5 w-5 text-primary" />
+            </button>
           </div>
 
-          {/* Stories Section - After Share Box */}
-          <div className="bg-card border-b border-border">
-            <StoriesSection
-              stories={stories}
-              onCreateStory={handleCreateStory}
-              onViewStory={viewStory}
-              currentUserId={user?.id}
-            />
-          </div>
-
-          {/* Trending Hashtags */}
-          <div className="bg-card p-6 border-b border-border">
-            <div className="flex items-center gap-2 mb-4">
-              <Hash className="h-5 w-5 text-primary" />
-              <span className="text-base font-semibold text-foreground">Trending Now</span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {trendingHashtags.map((tag) => (
-                <Badge 
-                  key={tag}
-                  variant="secondary"
-                  className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-all text-sm px-3 py-2"
-                  onClick={() => setSearchQuery(tag)}
-                >
-                  {tag}
-                </Badge>
-              ))}
-            </div>
-          </div>
-
-          {/* Feed Toggle - After Trending */}
-          <div className="bg-card p-4 border-b border-border">
-            <div className="flex bg-muted p-1 rounded-full">
+          {/* Feed Toggle */}
+          <div className="bg-card px-4 py-2 border-b border-border">
+            <div className="flex gap-1">
               <button
                 onClick={() => setFeedType('for-you')}
-                className={`flex-1 py-3 px-6 rounded-full text-base font-medium transition-all ${
+                className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all ${
                   feedType === 'for-you' 
-                    ? 'bg-primary text-primary-foreground shadow-md' 
-                    : 'text-muted-foreground hover:text-foreground'
+                    ? 'bg-primary/10 text-primary' 
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                 }`}
               >
-                Recommended
+                For You
               </button>
               <button
                 onClick={() => setFeedType('following')}
-                className={`flex-1 py-3 px-6 rounded-full text-base font-medium transition-all ${
+                className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all ${
                   feedType === 'following' 
-                    ? 'bg-primary text-primary-foreground shadow-md' 
-                    : 'text-muted-foreground hover:text-foreground'
+                    ? 'bg-primary/10 text-primary' 
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                 }`}
               >
-                Suggestions
+                Discover
               </button>
             </div>
           </div>
 
-          {/* Main Feed - LinkedIn Style with Pagination */}
+          {/* Main Feed - Instagram/Facebook Style */}
           {feedType === 'for-you' ? (
-            <div className="px-4">
-              {filteredAndSortedPosts.length === 0 ? (
-                <div className="text-center py-16">
-                  <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-6">
-                    <FileText className="h-10 w-10 text-muted-foreground" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-foreground mb-3">
-                    {searchQuery ? 'No matching posts' : 'Welcome to your feed!'}
-                  </h3>
-                  <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                    {searchQuery 
-                      ? 'Try adjusting your search terms or browse different categories'
-                      : 'Start by creating your first post or connecting with other professionals'
-                    }
-                  </p>
-                  {!searchQuery && (
-                    <BrandButton onClick={() => setShowCreatePost(true)} size="lg">
-                      <Plus className="h-5 w-5 mr-2" />
-                      Create Your First Post
-                    </BrandButton>
-                  )}
-                </div>
-              ) : (
-                <PaginatedFeed
-                  posts={filteredAndSortedPosts as any}
-                  onReact={handleReact}
-                  onRemoveReaction={handleRemoveReaction}
-                  onComment={addComment}
-                  onJobApply={handleJobApply}
-                  onProfileClick={handleProfileClick}
-                  onSave={savePost}
-                  currentUserId={user?.id}
-                />
-              )}
-            </div>
+            <SocialFeed
+              posts={filteredAndSortedPosts as any}
+              onLike={(postId) => toggleLike(postId)}
+              onComment={addComment}
+              onProfileClick={handleProfileClick}
+              currentUserId={user?.id}
+              onRefresh={handleRefresh}
+              isRefreshing={isRefreshing}
+            />
           ) : (
-            <div className="px-4">
+            <div className="px-4 py-4">
               <SuggestionsTab />
             </div>
           )}
