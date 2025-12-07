@@ -2,6 +2,118 @@ import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 
+// Personalized Connection Suggestions
+export interface PersonalizedConnection {
+  user_id: string
+  full_name: string
+  profession: string | null
+  profile_picture_url: string | null
+  state_name: string | null
+  lga_name: string | null
+  is_expert: boolean
+  average_rating: number | null
+  relevance_score: number
+}
+
+export const usePersonalizedConnections = (limit = 20, offset = 0) => {
+  const { user } = useAuth()
+
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ['personalized-connections', user?.id, limit, offset],
+    queryFn: async () => {
+      if (!user) return []
+
+      const { data: connections, error } = await supabase.rpc('get_personalized_connections', {
+        p_user_id: user.id,
+        p_limit: limit,
+        p_offset: offset
+      })
+
+      if (error) {
+        console.error('[Discovery] Personalized connections error:', error)
+        const { data: fallback } = await supabase
+          .from('profiles')
+          .select('user_id, full_name, profession, profile_picture_url, state_name, lga_name, is_expert, average_rating')
+          .neq('user_id', user.id)
+          .limit(limit)
+        return (fallback || []).map(c => ({ ...c, relevance_score: 0 }))
+      }
+
+      return connections || []
+    },
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000,
+  })
+
+  return { connections: data || [], loading: isLoading, refetch }
+}
+
+// Personalized Job Posts (for JobsEnhanced)
+export interface PersonalizedJobPost {
+  id: string
+  title: string
+  description: string
+  company_name: string | null
+  location: string | null
+  budget_min: number | null
+  budget_max: number | null
+  job_type: string | null
+  experience_level: string | null
+  required_skills: string[] | null
+  is_remote: boolean
+  application_deadline: string | null
+  applications_count: number
+  views_count: number
+  created_at: string
+  user_id: string
+  poster_name: string | null
+  poster_picture: string | null
+  poster_profession: string | null
+  relevance_score: number
+}
+
+export const usePersonalizedJobPosts = (limit = 20, offset = 0) => {
+  const { user } = useAuth()
+
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ['personalized-job-posts', user?.id, limit, offset],
+    queryFn: async () => {
+      if (user?.id) {
+        const { data: jobPosts, error } = await supabase.rpc('get_personalized_job_posts', {
+          p_user_id: user.id,
+          p_limit: limit,
+          p_offset: offset
+        })
+
+        if (error) {
+          console.error('[Discovery] Personalized job posts error:', error)
+        } else {
+          return jobPosts || []
+        }
+      }
+
+      // Fallback
+      const { data: fallback } = await supabase
+        .from('job_posts')
+        .select('*, profiles!job_posts_user_id_fkey(full_name, profile_picture_url, profession)')
+        .eq('status', 'open')
+        .order('created_at', { ascending: false })
+        .limit(limit)
+
+      return (fallback || []).map((j: any) => ({
+        ...j,
+        poster_name: j.profiles?.full_name,
+        poster_picture: j.profiles?.profile_picture_url,
+        poster_profession: j.profiles?.profession,
+        relevance_score: 0
+      }))
+    },
+    staleTime: 5 * 60 * 1000,
+  })
+
+  return { jobPosts: data || [], loading: isLoading, refetch }
+}
+
 // Personalized Experts Discovery
 export interface PersonalizedExpert {
   id: string
@@ -208,22 +320,23 @@ export const usePersonalizedProducts = (limit = 20, offset = 0) => {
   }
 }
 
-// Personalized Jobs Discovery
+// Personalized Jobs Discovery (for jobs table)
 export interface PersonalizedJob {
   id: string
   title: string
   description: string
-  budget_min?: number
-  budget_max?: number
-  location?: string
-  job_type?: string
-  required_skills?: string[]
+  budget_min?: number | null
+  budget_max?: number | null
+  location?: string | null
+  job_type?: string | null
+  required_skills?: string[] | null
   status: string
   created_at: string
+  user_id?: string
   poster_id: string
-  poster_name?: string
-  poster_picture?: string
-  poster_profession?: string
+  poster_name?: string | null
+  poster_picture?: string | null
+  poster_profession?: string | null
   relevance_score: number
 }
 
@@ -254,11 +367,18 @@ export const usePersonalizedJobs = (limit = 20, offset = 0) => {
         console.error('[Jobs] Personalized fetch error:', error)
         const { data: fallback } = await supabase
           .from('jobs')
-          .select('*')
+          .select('*, profiles!jobs_user_id_fkey(full_name, profile_picture_url, profession)')
           .eq('status', 'open')
           .order('created_at', { ascending: false })
           .limit(limit)
-        return fallback || []
+        return (fallback || []).map((j: any) => ({
+          ...j,
+          poster_id: j.user_id,
+          poster_name: j.profiles?.full_name,
+          poster_picture: j.profiles?.profile_picture_url,
+          poster_profession: j.profiles?.profession,
+          relevance_score: 0
+        }))
       }
 
       console.log('[Jobs] Personalized results:', jobs?.length || 0)
