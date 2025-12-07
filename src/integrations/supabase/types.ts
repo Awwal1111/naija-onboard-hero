@@ -4256,9 +4256,8 @@ export type Database = {
           content: string
           content_type: string
           created_at: string
-          is_pinned: boolean
           likes_count: number
-          media_urls: string[]
+          media_urls: Json
           metadata: Json
           post_id: string
           relevance_score: number
