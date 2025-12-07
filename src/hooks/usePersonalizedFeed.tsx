@@ -108,7 +108,7 @@ export const usePersonalizedFeed = () => {
     isLoading: postsLoading,
     refetch: refetchPosts
   } = useInfiniteQuery({
-    queryKey: ['personalized-posts', user?.id],
+    queryKey: ['personalized-posts-v2', user?.id],
     queryFn: async ({ pageParam = 0 }) => {
       if (!user) return { posts: [], nextPage: null }
 
@@ -222,7 +222,7 @@ export const usePersonalizedFeed = () => {
 
       if (error) throw error
 
-      queryClient.invalidateQueries({ queryKey: ['personalized-posts'] })
+      queryClient.invalidateQueries({ queryKey: ['personalized-posts-v2'] })
 
       toast({
         title: "Post created",
@@ -286,7 +286,7 @@ export const usePersonalizedFeed = () => {
     if (!post) return
 
     // Optimistic update
-    queryClient.setQueryData(['personalized-posts', user.id], (oldData: any) => {
+      queryClient.setQueryData(['personalized-posts-v2', user.id], (oldData: any) => {
       if (!oldData) return oldData
 
       return {
@@ -322,7 +322,7 @@ export const usePersonalizedFeed = () => {
           })
       }
     } catch (error) {
-      queryClient.invalidateQueries({ queryKey: ['personalized-posts'] })
+      queryClient.invalidateQueries({ queryKey: ['personalized-posts-v2'] })
       console.error('Error toggling like:', error)
     }
   }, [user, posts, queryClient])
@@ -335,7 +335,7 @@ export const usePersonalizedFeed = () => {
     if (!post) return { error: 'Post not found' }
 
     // Optimistic update
-    queryClient.setQueryData(['personalized-posts', user.id], (oldData: any) => {
+    queryClient.setQueryData(['personalized-posts-v2', user.id], (oldData: any) => {
       if (!oldData) return oldData
 
       return {
@@ -372,7 +372,7 @@ export const usePersonalizedFeed = () => {
 
       return { success: true }
     } catch (error: any) {
-      queryClient.invalidateQueries({ queryKey: ['personalized-posts'] })
+      queryClient.invalidateQueries({ queryKey: ['personalized-posts-v2'] })
       toast({
         title: "Error",
         description: error.message || "Failed to save post",
@@ -451,7 +451,7 @@ export const usePersonalizedFeed = () => {
     viewStory,
     savePost,
     refreshFeed: () => {
-      queryClient.invalidateQueries({ queryKey: ['personalized-posts'] })
+      queryClient.invalidateQueries({ queryKey: ['personalized-posts-v2'] })
       queryClient.invalidateQueries({ queryKey: ['stories'] })
     }
   }
