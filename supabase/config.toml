@@ -104,3 +104,6 @@ verify_jwt = true
 
 [functions.notify-message-received]
 verify_jwt = false
+
+[functions.verify-face]
+verify_jwt = true

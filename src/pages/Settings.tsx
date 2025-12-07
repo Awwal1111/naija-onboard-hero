@@ -16,6 +16,7 @@ import { TestNotifications } from '@/components/TestNotifications'
 import { TwoFactorSetup } from '@/components/TwoFactorSetup'
 import { EmailVerificationStatus } from '@/components/EmailVerificationBanner'
 import { UserBadges } from '@/components/UserBadges'
+import { FaceVerificationDialog } from '@/components/FaceVerificationDialog'
 
 interface NotificationPreferences {
   chats: boolean
@@ -453,16 +454,15 @@ const Settings = () => {
                   <p className="text-xs text-muted-foreground">Face verification</p>
                 </div>
               </div>
-              {(profile as any)?.face_verified ? (
-                <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
-                  <CheckCircle className="h-4 w-4" />
-                  <span className="text-sm font-medium">Verified</span>
-                </div>
-              ) : (
-                <Button variant="outline" size="sm" disabled>
-                  Coming Soon
-                </Button>
-              )}
+              <FaceVerificationDialog 
+                isVerified={(profile as any)?.face_verified}
+                onVerified={() => {
+                  toast({
+                    title: "Identity Verified",
+                    description: "Your face has been verified successfully!",
+                  });
+                }}
+              />
             </div>
           </CardContent>
         </Card>

@@ -15,6 +15,12 @@ interface TelegramUpdate {
     from?: { first_name?: string; username?: string; id: number };
     text?: string;
     photo?: Array<{ file_id: string }>;
+    contact?: {
+      phone_number: string;
+      first_name?: string;
+      last_name?: string;
+      user_id?: number;
+    };
   };
 }
 
@@ -142,6 +148,102 @@ serve(async (req) => {
       await sendTelegramMessage(
         chatId,
         `Welcome to NaijaLancers Bot! 👋\n\nTo link your account, use the connection link from the NaijaLancers app.`
+      );
+      return new Response("OK", { status: 200 });
+    }
+
+    // Handle contact sharing for phone verification
+    if (message.contact) {
+      const phoneNumber = message.contact.phone_number;
+      const contactUserId = message.contact.user_id;
+      
+      // Verify the contact is the user's own phone number
+      if (contactUserId !== userId) {
+        await sendTelegramMessage(
+          chatId,
+          `❌ Please share your own phone number, not a contact's.`
+        );
+        return new Response("OK", { status: 200 });
+      }
+
+      console.log(`Phone verification for telegram user ${userId}: ${phoneNumber}`);
+
+      // Find user by telegram_user_id
+      const { data: profileData, error: lookupError } = await supabase
+        .from("profiles")
+        .select("user_id, full_name, phone_verified")
+        .eq("telegram_user_id", userId?.toString())
+        .maybeSingle();
+
+      if (!profileData) {
+        await sendTelegramMessage(
+          chatId,
+          `⚠️ Account not linked.\n\nPlease link your NaijaLancers account first using the connection link from the app.`
+        );
+        return new Response("OK", { status: 200 });
+      }
+
+      if (profileData.phone_verified) {
+        await sendTelegramMessage(
+          chatId,
+          `✅ Your phone number is already verified!`
+        );
+        return new Response("OK", { status: 200 });
+      }
+
+      // Update profile with phone verification
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({
+          phone_verified: true,
+          phone_number: phoneNumber,
+          updated_at: new Date().toISOString()
+        })
+        .eq("user_id", profileData.user_id);
+
+      if (updateError) {
+        console.error("Phone verification update error:", updateError);
+        await sendTelegramMessage(
+          chatId,
+          `❌ Failed to verify phone number. Please try again later.`
+        );
+        return new Response("OK", { status: 200 });
+      }
+
+      await sendTelegramMessage(
+        chatId,
+        `✅ *Phone Verified Successfully!*\n\n` +
+        `📱 Phone: ${phoneNumber}\n\n` +
+        `You've earned the phone verification badge! 🎉\n\n` +
+        `This helps build trust on the platform.`,
+        true
+      );
+      return new Response("OK", { status: 200 });
+    }
+
+    // Command: /phone - Request phone verification
+    if (text === "/phone" || text.toLowerCase().includes("verify phone") || text.toLowerCase().includes("verify my phone")) {
+      // Check if already linked
+      const { data: existingProfile } = await supabase
+        .from("profiles")
+        .select("phone_verified")
+        .eq("telegram_user_id", userId?.toString())
+        .maybeSingle();
+
+      if (existingProfile?.phone_verified) {
+        await sendTelegramMessage(
+          chatId,
+          `✅ Your phone number is already verified!`
+        );
+        return new Response("OK", { status: 200 });
+      }
+
+      // Send request for phone number with a keyboard button
+      await sendTelegramMessageWithPhoneRequest(
+        chatId,
+        `📱 *Phone Verification*\n\n` +
+        `To verify your phone number and earn the Verified badge, please share your phone number using the button below.\n\n` +
+        `🔒 Your phone number will only be used for verification purposes.`
       );
       return new Response("OK", { status: 200 });
     }
@@ -975,5 +1077,28 @@ async function sendTelegramMessage(chatId: number, text: string, markdown = fals
     });
   } catch (error) {
     console.error("Error sending Telegram message:", error);
+  }
+}
+
+async function sendTelegramMessageWithPhoneRequest(chatId: number, text: string) {
+  try {
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text,
+        parse_mode: "Markdown",
+        reply_markup: {
+          keyboard: [
+            [{ text: "📱 Share Phone Number", request_contact: true }]
+          ],
+          resize_keyboard: true,
+          one_time_keyboard: true
+        }
+      })
+    });
+  } catch (error) {
+    console.error("Error sending Telegram phone request message:", error);
   }
 }
