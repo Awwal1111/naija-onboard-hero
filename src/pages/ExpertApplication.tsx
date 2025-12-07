@@ -17,11 +17,13 @@ const ExpertApplication = () => {
   const { states, lgas, loadingStates, loadingLGAs, fetchLGAs } = useNigerianStates()
   
   const [loading, setLoading] = useState(false)
+  const [showCustomSkill, setShowCustomSkill] = useState(false)
   const [formData, setFormData] = useState({
     full_name: '',
     phone_number: '',
     email: user?.email || '',
     skill_category: '',
+    custom_skill: '',
     years_experience: '',
     portfolio_link: '',
     location_state: '',
@@ -80,6 +82,16 @@ const ExpertApplication = () => {
     const requiredFields = ['full_name', 'phone_number', 'skill_category', 'years_experience', 'location_state', 'location_lga', 'location_area']
     const missingFields = requiredFields.filter(field => !formData[field as keyof typeof formData])
     
+    // Check if "Other" is selected but no custom skill provided
+    if (formData.skill_category === 'Other' && !formData.custom_skill.trim()) {
+      toast({
+        title: "Incomplete Form",
+        description: "Please enter your custom skill/profession",
+        variant: "destructive"
+      })
+      return
+    }
+    
     if (missingFields.length > 0) {
       toast({
         title: "Incomplete Form",
@@ -103,7 +115,7 @@ const ExpertApplication = () => {
             full_name: formData.full_name,
             phone_number: formData.phone_number,
             email: formData.email,
-            skill_category: formData.skill_category,
+            skill_category: formData.skill_category === 'Other' ? formData.custom_skill : formData.skill_category,
             years_experience: parseInt(formData.years_experience),
             portfolio_link: formData.portfolio_link || null,
             location_state: selectedStateName || formData.location_state,
@@ -135,6 +147,10 @@ const ExpertApplication = () => {
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
+    // Show custom skill input when "Other" is selected
+    if (field === 'skill_category') {
+      setShowCustomSkill(value === 'Other')
+    }
   }
 
   return (
@@ -209,6 +225,17 @@ const ExpertApplication = () => {
                 </SelectContent>
               </Select>
             </div>
+
+            {showCustomSkill && (
+              <SecureInput
+                label="Your Custom Skill/Profession *"
+                value={formData.custom_skill}
+                onChange={(e) => handleInputChange('custom_skill', e.target.value)}
+                placeholder="Enter your skill or profession"
+                validation="text"
+                required
+              />
+            )}
 
             <SecureInput
               label="Years of Experience *"
