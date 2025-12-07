@@ -142,10 +142,10 @@ export const usePersonalizedFeed = () => {
       // Get user IDs for profile fetching
       const userIds = [...new Set(personalizedPosts.map((post: any) => post.user_id))]
       
-      // Fetch profiles
+      // Fetch profiles with badge fields
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('user_id, full_name, profession, profile_picture_url, is_expert')
+        .select('user_id, full_name, profession, profile_picture_url, is_expert, average_rating, rating_count, email_verified, phone_verified, face_verified, avg_response_time_seconds')
         .in('user_id', userIds)
 
       const profilesMap = new Map(profiles?.map(p => [p.user_id, p]) || [])

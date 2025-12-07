@@ -55,6 +55,13 @@ export interface EnhancedPost {
     full_name: string
     profile_picture_url?: string
     profession?: string
+    is_expert?: boolean
+    average_rating?: number
+    rating_count?: number
+    email_verified?: boolean
+    phone_verified?: boolean
+    face_verified?: boolean
+    avg_response_time_seconds?: number
   }
 }
 

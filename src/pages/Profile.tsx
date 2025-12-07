@@ -34,6 +34,8 @@ import { StarRating } from '@/components/ui/star-rating'
 import { RatingDialog } from '@/components/ui/rating-dialog'
 import { RatingBreakdown } from '@/components/ui/rating-breakdown'
 import TelegramConnectCard from '@/components/TelegramConnectCard'
+import { UserBadges } from '@/components/UserBadges'
+import { EmailVerificationBanner } from '@/components/EmailVerificationBanner'
 
 const Profile = () => {
   const navigate = useNavigate()
@@ -317,6 +319,15 @@ const Profile = () => {
       </header>
 
       <div className="max-w-5xl mx-auto px-6 py-8">
+        {/* Email Verification Banner for own profile */}
+        {isOwnProfile && !(profile as any)?.email_verified && (
+          <EmailVerificationBanner 
+            email={userEmail || undefined}
+            isVerified={(profile as any)?.email_verified}
+            className="mb-4"
+          />
+        )}
+        
         {/* Enhanced User Section with Stats */}
         <div className="bg-card border border-border rounded-3xl p-8 mb-8 shadow-sm">
           <div className="flex items-start gap-6 mb-8">
@@ -356,9 +367,23 @@ const Profile = () => {
             
             <div className="flex-1">
               <div className="flex items-center justify-between mb-3">
-                <h1 className="text-3xl font-bold text-foreground">
-                  {profile?.full_name || 'Add your name'}
-                </h1>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-3xl font-bold text-foreground">
+                    {profile?.full_name || 'Add your name'}
+                  </h1>
+                  <UserBadges 
+                    badges={{
+                      isExpert: profile?.is_expert,
+                      emailVerified: (profile as any)?.email_verified,
+                      phoneVerified: (profile as any)?.phone_verified,
+                      faceVerified: (profile as any)?.face_verified,
+                      averageRating: profile?.average_rating,
+                      ratingCount: profile?.rating_count,
+                      avgResponseTimeSeconds: (profile as any)?.avg_response_time_seconds
+                    }}
+                    size="md"
+                  />
+                </div>
                 {isOwnProfile ? (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>

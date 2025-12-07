@@ -2810,6 +2810,7 @@ export type Database = {
         Row: {
           area: string | null
           average_rating: number | null
+          avg_response_time_seconds: number | null
           backup_codes: string[] | null
           balance_non_withdrawable: number | null
           balance_withdrawable: number
@@ -2825,12 +2826,15 @@ export type Database = {
           email_verified: boolean | null
           encrypted_wallet: string | null
           expert_verified_at: string | null
+          face_verified: boolean | null
+          face_verified_at: string | null
           full_name: string | null
           id: string
           is_expert: boolean | null
           lga_name: string | null
           open_to_work: boolean | null
           phone_number: string | null
+          phone_verified: boolean | null
           profession: string | null
           profile_picture_url: string | null
           rating_count: number | null
@@ -2849,6 +2853,7 @@ export type Database = {
         Insert: {
           area?: string | null
           average_rating?: number | null
+          avg_response_time_seconds?: number | null
           backup_codes?: string[] | null
           balance_non_withdrawable?: number | null
           balance_withdrawable?: number
@@ -2864,12 +2869,15 @@ export type Database = {
           email_verified?: boolean | null
           encrypted_wallet?: string | null
           expert_verified_at?: string | null
+          face_verified?: boolean | null
+          face_verified_at?: string | null
           full_name?: string | null
           id?: string
           is_expert?: boolean | null
           lga_name?: string | null
           open_to_work?: boolean | null
           phone_number?: string | null
+          phone_verified?: boolean | null
           profession?: string | null
           profile_picture_url?: string | null
           rating_count?: number | null
@@ -2888,6 +2896,7 @@ export type Database = {
         Update: {
           area?: string | null
           average_rating?: number | null
+          avg_response_time_seconds?: number | null
           backup_codes?: string[] | null
           balance_non_withdrawable?: number | null
           balance_withdrawable?: number
@@ -2903,12 +2912,15 @@ export type Database = {
           email_verified?: boolean | null
           encrypted_wallet?: string | null
           expert_verified_at?: string | null
+          face_verified?: boolean | null
+          face_verified_at?: string | null
           full_name?: string | null
           id?: string
           is_expert?: boolean | null
           lga_name?: string | null
           open_to_work?: boolean | null
           phone_number?: string | null
+          phone_verified?: boolean | null
           profession?: string | null
           profile_picture_url?: string | null
           rating_count?: number | null
