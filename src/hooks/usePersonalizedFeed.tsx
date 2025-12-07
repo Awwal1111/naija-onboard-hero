@@ -175,7 +175,7 @@ export const usePersonalizedFeed = () => {
       // Log first post to debug
       if (personalizedPosts.length > 0) {
         console.log('[Feed] First post from RPC:', {
-          id: personalizedPosts[0].id,
+          id: personalizedPosts[0].post_id,
           user_id: personalizedPosts[0].user_id,
           relevance_score: personalizedPosts[0].relevance_score
         })
@@ -204,7 +204,7 @@ export const usePersonalizedFeed = () => {
         .from('post_likes')
         .select('post_id')
         .eq('user_id', user.id)
-        .in('post_id', personalizedPosts.map((p: any) => p.id))
+        .in('post_id', personalizedPosts.map((p: any) => p.post_id))
 
       const likedPostIds = new Set(userLikes?.map(like => like.post_id) || [])
 
@@ -213,7 +213,7 @@ export const usePersonalizedFeed = () => {
         .from('saved_posts')
         .select('post_id')
         .eq('user_id', user.id)
-        .in('post_id', personalizedPosts.map((p: any) => p.id))
+        .in('post_id', personalizedPosts.map((p: any) => p.post_id))
 
       const savedPostIds = new Set(savedPosts?.map(save => save.post_id) || [])
 
@@ -221,10 +221,11 @@ export const usePersonalizedFeed = () => {
         const profile = profilesMap.get(post.user_id)
         return {
           ...post,
+          id: post.post_id, // Map post_id to id for consistency
           profiles: profile || null,
-          user_liked: likedPostIds.has(post.id),
-          user_saved: savedPostIds.has(post.id),
-          user_reaction: likedPostIds.has(post.id) ? 'like' : undefined
+          user_liked: likedPostIds.has(post.post_id),
+          user_saved: savedPostIds.has(post.post_id),
+          user_reaction: likedPostIds.has(post.post_id) ? 'like' : undefined
         }
       })
       
