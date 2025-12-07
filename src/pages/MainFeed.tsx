@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Plus, Home, MessageCircle, Users, DollarSign, User, FileText, Briefcase, Award, Calendar, Vote, Hash, RefreshCw, MoreVertical, Settings, Wallet, Camera } from 'lucide-react'
+import { Plus, Home, MessageCircle, Users, DollarSign, User, FileText, Briefcase, Award, Calendar, Vote, Hash, RefreshCw, MoreVertical, Settings, Wallet, Camera, Loader2 } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Logo } from '@/components/ui/logo'
 import { BrandButton } from '@/components/ui/brand-button'
@@ -9,8 +9,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
-import SocialFeed from '@/components/SocialFeed'
-import SocialStoriesRow from '@/components/SocialStoriesRow'
+import LinkedInPostCard from '@/components/LinkedInPostCard'
+import StoriesSection from '@/components/StoriesSection'
 import { usePersonalizedFeed } from '@/hooks/usePersonalizedFeed'
 import EnhancedCreatePostDialog from '@/components/EnhancedCreatePostDialog'
 import CreateStoryDialog from '@/components/CreateStoryDialog'
@@ -247,52 +247,54 @@ const MainFeed = () => {
             </div>
           </header>
 
-          {/* Stories Row - Instagram Style */}
-          <SocialStoriesRow
+          {/* Stories Section */}
+          <StoriesSection
             stories={stories}
             onCreateStory={handleCreateStory}
             onViewStory={viewStory}
             currentUserId={user?.id}
-            currentUserAvatar={profile?.profile_picture_url}
-            currentUserName={profile?.full_name}
           />
 
-          {/* Create Post Bar - Minimal */}
-          <div className="bg-card px-4 py-3 border-b border-border">
-            <button
+          {/* Create Post Bar */}
+          <div className="bg-card p-4 border-b border-border">
+            <div 
               onClick={() => setShowCreatePost(true)}
-              className="w-full flex items-center gap-3 py-2.5 px-4 bg-muted rounded-full hover:bg-muted/80 transition-colors"
+              className="flex items-center gap-3 cursor-pointer"
             >
-              <Avatar className="h-8 w-8">
+              <Avatar className="h-10 w-10 ring-2 ring-primary/20">
                 <AvatarImage src={profile?.profile_picture_url} />
-                <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
+                <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
                   {profile?.full_name?.charAt(0) || 'U'}
                 </AvatarFallback>
               </Avatar>
-              <span className="text-sm text-muted-foreground flex-1 text-left">What's on your mind?</span>
-              <Camera className="h-5 w-5 text-primary" />
-            </button>
+              <div className="flex-1 py-2.5 px-4 bg-muted/50 hover:bg-muted rounded-full transition-colors">
+                <span className="text-muted-foreground">What's on your mind?</span>
+              </div>
+              <Button size="icon" variant="ghost" className="text-primary">
+                <Camera className="h-5 w-5" />
+              </Button>
+            </div>
           </div>
 
           {/* Feed Toggle */}
-          <div className="bg-card px-4 py-2 border-b border-border">
-            <div className="flex gap-1">
+          <div className="bg-card border-b border-border">
+            <div className="flex">
               <button
                 onClick={() => setFeedType('for-you')}
-                className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all ${
+                className={`flex-1 py-3 text-sm font-medium transition-all border-b-2 ${
                   feedType === 'for-you' 
-                    ? 'bg-primary/10 text-primary' 
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                    ? 'border-primary text-primary' 
+                    : 'border-transparent text-muted-foreground hover:text-foreground'
                 }`}
               >
                 For You
               </button>
               <button
                 onClick={() => setFeedType('following')}
-                className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all ${
+                className={`flex-1 py-3 text-sm font-medium transition-all border-b-2 ${
                   feedType === 'following' 
-                    ? 'bg-primary/10 text-primary' 
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                    ? 'border-primary text-primary' 
+                    : 'border-transparent text-muted-foreground hover:text-foreground'
                 }`}
               >
                 Discover
@@ -300,19 +302,39 @@ const MainFeed = () => {
             </div>
           </div>
 
-          {/* Main Feed - Instagram/Facebook Style */}
+          {/* Main Feed */}
           {feedType === 'for-you' ? (
-            <SocialFeed
-              posts={filteredAndSortedPosts as any}
-              onLike={(postId) => toggleLike(postId)}
-              onComment={addComment}
-              onProfileClick={handleProfileClick}
-              currentUserId={user?.id}
-              onRefresh={handleRefresh}
-              isRefreshing={isRefreshing}
-            />
+            <div className="divide-y divide-border">
+              {filteredAndSortedPosts.length === 0 ? (
+                <div className="py-16 text-center">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
+                    <FileText className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">No posts yet</h3>
+                  <p className="text-muted-foreground text-sm">Be the first to share something!</p>
+                </div>
+              ) : (
+                <>
+                  {filteredAndSortedPosts.map((post) => (
+                    <LinkedInPostCard
+                      key={post.id}
+                      post={post as any}
+                      onReact={handleReact}
+                      onRemoveReaction={handleRemoveReaction}
+                      onComment={addComment}
+                      onJobApply={handleJobApply}
+                      onProfileClick={handleProfileClick}
+                      currentUserId={user?.id}
+                    />
+                  ))}
+                  <div className="py-8 text-center bg-muted/30">
+                    <span className="text-sm text-muted-foreground">You're all caught up!</span>
+                  </div>
+                </>
+              )}
+            </div>
           ) : (
-            <div className="px-4 py-4">
+            <div className="p-4">
               <SuggestionsTab />
             </div>
           )}
