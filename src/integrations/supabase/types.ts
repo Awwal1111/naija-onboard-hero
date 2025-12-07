@@ -4188,7 +4188,7 @@ export type Database = {
           created_at: string
           id: string
           likes_count: number
-          media_urls: Json
+          media_urls: string[]
           metadata: Json
           relevance_score: number
           shares_count: number
@@ -4197,7 +4197,6 @@ export type Database = {
           updated_at: string
           user_id: string
           views_count: number
-          visibility: string
         }[]
       }
       get_public_profile_info: {
