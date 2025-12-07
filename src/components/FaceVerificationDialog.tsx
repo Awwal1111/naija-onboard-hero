@@ -46,19 +46,8 @@ export const FaceVerificationDialog: React.FC<FaceVerificationDialogProps> = ({
       });
       
       console.log('[FaceVerification] Got media stream:', stream.getTracks());
-      
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        streamRef.current = stream;
-        
-        // Wait for video to be ready
-        videoRef.current.onloadedmetadata = () => {
-          console.log('[FaceVerification] Video metadata loaded');
-          videoRef.current?.play().catch(e => console.error('[FaceVerification] Play error:', e));
-        };
-        
-        setIsCapturing(true);
-      }
+      streamRef.current = stream;
+      setIsCapturing(true);
     } catch (err: any) {
       console.error('[FaceVerification] Camera error:', err);
       if (err.name === 'NotAllowedError') {
@@ -72,6 +61,15 @@ export const FaceVerificationDialog: React.FC<FaceVerificationDialogProps> = ({
       }
     }
   }, []);
+
+  // Attach stream to video element when capturing starts
+  useEffect(() => {
+    if (isCapturing && videoRef.current && streamRef.current) {
+      console.log('[FaceVerification] Attaching stream to video element');
+      videoRef.current.srcObject = streamRef.current;
+      videoRef.current.play().catch(e => console.error('[FaceVerification] Play error:', e));
+    }
+  }, [isCapturing]);
 
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
