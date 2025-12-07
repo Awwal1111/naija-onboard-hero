@@ -1,8 +1,8 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Camera, CheckCircle, RefreshCw, X, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useProfile } from '@/hooks/useProfile';
@@ -29,6 +29,14 @@ export const FaceVerificationDialog: React.FC<FaceVerificationDialogProps> = ({
   const startCamera = useCallback(async () => {
     try {
       setError(null);
+      console.log('[FaceVerification] Starting camera...');
+      
+      // Check if mediaDevices is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setError('Camera access is not supported in this browser. Please use a modern browser.');
+        return;
+      }
+      
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { 
           facingMode: 'user',
@@ -37,14 +45,31 @@ export const FaceVerificationDialog: React.FC<FaceVerificationDialogProps> = ({
         } 
       });
       
+      console.log('[FaceVerification] Got media stream:', stream.getTracks());
+      
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         streamRef.current = stream;
+        
+        // Wait for video to be ready
+        videoRef.current.onloadedmetadata = () => {
+          console.log('[FaceVerification] Video metadata loaded');
+          videoRef.current?.play().catch(e => console.error('[FaceVerification] Play error:', e));
+        };
+        
         setIsCapturing(true);
       }
-    } catch (err) {
-      console.error('Camera error:', err);
-      setError('Could not access camera. Please ensure camera permissions are granted.');
+    } catch (err: any) {
+      console.error('[FaceVerification] Camera error:', err);
+      if (err.name === 'NotAllowedError') {
+        setError('Camera permission denied. Please allow camera access in your browser settings.');
+      } else if (err.name === 'NotFoundError') {
+        setError('No camera found. Please ensure your device has a working camera.');
+      } else if (err.name === 'NotReadableError') {
+        setError('Camera is being used by another application. Please close other apps using the camera.');
+      } else {
+        setError(`Could not access camera: ${err.message || 'Unknown error'}`);
+      }
     }
   }, []);
 
@@ -143,6 +168,9 @@ export const FaceVerificationDialog: React.FC<FaceVerificationDialogProps> = ({
             <Camera className="h-5 w-5" />
             Face Verification
           </DialogTitle>
+          <DialogDescription>
+            Take a selfie to verify your identity. Ensure good lighting and look directly at the camera.
+          </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-4">
