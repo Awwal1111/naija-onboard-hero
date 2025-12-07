@@ -251,11 +251,6 @@ const MainFeed = () => {
             </div>
           </header>
 
-          {/* Search Bar - Above Share Box */}
-          <div className="bg-card p-4 border-b border-border">
-            <UnifiedSearchBar />
-          </div>
-
           {/* Share Box */}
           <div className="bg-card p-6 border-b border-border">
             <div className="flex items-center gap-3">
