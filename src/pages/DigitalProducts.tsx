@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Search, ShoppingCart, Star, Eye, CheckCircle } from "lucide-react";
+import { ArrowLeft, Plus, Search, ShoppingCart, Star, Eye, CheckCircle, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
@@ -11,8 +11,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import EnhancedProductDialog from "@/components/EnhancedProductDialog";
+import { usePersonalizedProducts } from "@/hooks/usePersonalizedDiscovery";
 
 const categories: Array<"document" | "ebook" | "pdf" | "template" | "audio" | "video" | "other"> = ["document", "ebook", "pdf", "template", "audio", "video", "other"];
 
@@ -23,27 +24,13 @@ export default function DigitalProducts() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<"all" | "document" | "ebook" | "pdf" | "template" | "audio" | "video" | "other">("all");
 
-  const { data: products = [], isLoading } = useQuery({
-    queryKey: ["digital-products", selectedCategory],
-    queryFn: async () => {
-      let query = supabase
-        .from("digital_products")
-        .select(`
-          *,
-          profiles!digital_products_user_id_fkey(full_name, profile_picture_url)
-        `)
-        .eq("status", "active")
-        .order("average_rating", { ascending: false });
+  // Use personalized products algorithm
+  const { products: allProducts, loading: isLoading } = usePersonalizedProducts(50);
 
-      if (selectedCategory !== "all") {
-        query = query.eq("category", selectedCategory);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      return data;
-    },
-  });
+  // Filter by category if selected
+  const products = selectedCategory === "all" 
+    ? allProducts 
+    : allProducts.filter((p: any) => p.category === selectedCategory);
 
   const purchaseProductMutation = useMutation({
     mutationFn: async ({ productId, price, isDemo }: { productId: string; price: number; isDemo: boolean }) => {

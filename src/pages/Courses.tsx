@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Search, Video, Star, Clock, Users, Award } from "lucide-react";
+import { ArrowLeft, Plus, Search, Video, Star, Clock, Users, Award, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
@@ -11,8 +11,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import EnhancedCourseDialog from "@/components/EnhancedCourseDialog";
+import { usePersonalizedCourses } from "@/hooks/usePersonalizedDiscovery";
 
 export default function Courses() {
   const navigate = useNavigate();
@@ -20,22 +21,8 @@ export default function Courses() {
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
 
-  const { data: courses = [], isLoading } = useQuery({
-    queryKey: ["courses"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("courses")
-        .select(`
-          *,
-          profiles!courses_user_id_fkey(full_name, profile_picture_url)
-        `)
-        .eq("status", "active")
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      return data;
-    },
-  });
+  // Use personalized courses algorithm
+  const { courses, loading: isLoading } = usePersonalizedCourses(50);
 
   const enrollMutation = useMutation({
     mutationFn: async ({ courseId, price, isDemo }: { courseId: string; price: number; isDemo: boolean }) => {

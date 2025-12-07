@@ -12,8 +12,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
+import { usePersonalizedFundraisings } from "@/hooks/usePersonalizedDiscovery";
 
 export default function Fundraising() {
   const navigate = useNavigate();
@@ -40,22 +41,8 @@ export default function Fundraising() {
     fund_usage: [{ item: "", amount: "" }],
   });
 
-  const { data: fundraisings = [], isLoading } = useQuery({
-    queryKey: ["fundraisings"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("fundraisings")
-        .select(`
-          *,
-          profiles!fundraisings_user_id_fkey(full_name, profile_picture_url)
-        `)
-        .eq("status", "approved")
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      return data;
-    },
-  });
+  // Use personalized fundraising algorithm
+  const { fundraisings, loading: isLoading } = usePersonalizedFundraisings(50);
 
   const createFundraisingMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
