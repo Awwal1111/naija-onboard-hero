@@ -12,6 +12,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import EnhancedCourseDialog from "@/components/EnhancedCourseDialog";
 import { usePersonalizedCourses } from "@/hooks/usePersonalizedDiscovery";
+import { BookmarkButton } from "@/components/BookmarkButton";
 
 export default function Courses() {
   const navigate = useNavigate();
@@ -96,6 +97,7 @@ export default function Courses() {
         <div className="flex items-center justify-between">
           <span className="text-lg font-bold text-primary">₦{course.price}NC</span>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <BookmarkButton type="course" itemId={course.id} />
             {course.average_rating > 0 && (
               <span className="flex items-center gap-1">
                 <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
