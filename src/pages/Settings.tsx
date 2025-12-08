@@ -18,6 +18,7 @@ import { TwoFactorSetup } from '@/components/TwoFactorSetup'
 import { EmailVerificationStatus } from '@/components/EmailVerificationBanner'
 import { UserBadges } from '@/components/UserBadges'
 import { FaceVerificationDialog } from '@/components/FaceVerificationDialog'
+import { PhoneVerificationDialog } from '@/components/PhoneVerificationDialog'
 
 interface NotificationPreferences {
   chats: boolean
@@ -43,6 +44,7 @@ const Settings = () => {
     expertStatus: true
   })
   const [activityLog, setActivityLog] = useState<any[]>([])
+  const [phoneVerifyOpen, setPhoneVerifyOpen] = useState(false)
 
   useEffect(() => {
     // Load saved preferences
@@ -424,7 +426,12 @@ const Settings = () => {
                 </div>
                 <div>
                   <h4 className="font-medium text-foreground">Phone Number</h4>
-                  <p className="text-xs text-muted-foreground">Verify via Telegram bot</p>
+                  <p className="text-xs text-muted-foreground">
+                    {(profile as any)?.phone_verified 
+                      ? (profile as any)?.phone_number || 'Verified'
+                      : 'Verify via code sent to Telegram'
+                    }
+                  </p>
                 </div>
               </div>
               {(profile as any)?.phone_verified ? (
@@ -433,11 +440,16 @@ const Settings = () => {
                   <span className="text-sm font-medium">Verified</span>
                 </div>
               ) : (
-                <Button variant="outline" size="sm" onClick={() => window.open('https://t.me/NaijaLancersBot', '_blank')}>
-                  Verify via Telegram
+                <Button variant="outline" size="sm" onClick={() => setPhoneVerifyOpen(true)}>
+                  Verify Phone
                 </Button>
               )}
             </div>
+
+            <PhoneVerificationDialog 
+              open={phoneVerifyOpen} 
+              onOpenChange={setPhoneVerifyOpen}
+            />
 
             <Separator />
 
