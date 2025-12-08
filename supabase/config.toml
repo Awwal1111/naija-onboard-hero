@@ -107,3 +107,9 @@ verify_jwt = false
 
 [functions.verify-face]
 verify_jwt = true
+
+[functions.send-phone-verification]
+verify_jwt = true
+
+[functions.verify-phone-code]
+verify_jwt = true
