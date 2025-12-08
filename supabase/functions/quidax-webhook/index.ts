@@ -11,6 +11,21 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+/**
+ * QUIDAX WEBHOOK - STATUS UPDATES ONLY
+ * 
+ * This webhook receives notifications from Quidax about transaction status changes.
+ * 
+ * IMPORTANT: For ON-RAMP (buying crypto):
+ * - This webhook ONLY updates the quidax_transactions status
+ * - NC crediting and sweeping are handled by celo-deposit-webhook when 
+ *   the crypto arrives in the user's Celo wallet
+ * - This prevents double-crediting and ensures sweep always happens
+ * 
+ * For OFF-RAMP (selling crypto):
+ * - Updates status and handles refunds if transaction fails
+ */
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -39,10 +54,10 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Transaction not found" }), { status: 404 });
     }
 
-    console.log(`[QUIDAX_WEBHOOK] Processing ${transaction_type} for user ${transaction.user_id}`);
+    console.log(`[QUIDAX_WEBHOOK] Processing ${transaction_type || transaction.transaction_type} for user ${transaction.user_id}`);
 
-    // Update transaction status
-    await supabase
+    // Update transaction status with webhook data
+    const { error: updateError } = await supabase
       .from('quidax_transactions')
       .update({
         status,
@@ -51,160 +66,76 @@ serve(async (req) => {
       })
       .eq('reference', reference);
 
-    if (transaction_type === 'on_ramp' || transaction.transaction_type === 'on_ramp') {
-      // On-Ramp: User bought crypto with fiat
-      if (status === 'completed' || status === 'success') {
-        // Extract amounts from correct webhook payload paths
-        const cryptoAmount = parseFloat(webhookData.data?.crypto_payout?.amount || token_amount || '0');
-        const fiatAmount = parseFloat(webhookData.data?.fiat_deposit?.amount || fiat_amount || '0');
-        
-        console.log(`[QUIDAX_WEBHOOK] Raw amounts from payload:`, {
-          cryptoAmount,
-          fiatAmount,
-          fullPayload: webhookData.data
-        });
+    if (updateError) {
+      console.error("[QUIDAX_WEBHOOK] Failed to update transaction:", updateError);
+    }
 
-        // Validate amounts
-        if (fiatAmount <= 0 || cryptoAmount <= 0) {
-          console.error('[QUIDAX_WEBHOOK] Invalid fiat or crypto amount:', { fiatAmount, cryptoAmount });
-          throw new Error('Invalid fiat or crypto amount in Quidax payload');
-        }
+    const txType = transaction_type || transaction.transaction_type;
 
-        // Calculate NC dynamically based on actual transaction rate
-        const ncPerUSDT = fiatAmount / cryptoAmount;
-        const ncAmount = Math.floor(cryptoAmount * ncPerUSDT);
-        
-        console.log(`[QUIDAX_WEBHOOK] NC Calculation:`, {
-          cryptoAmount,
-          fiatAmount,
-          ncPerUSDT: ncPerUSDT.toFixed(2),
-          ncAmount,
-          userId: transaction.user_id
-        });
-        
-        // Get user profile
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('wallet_balance, balance_withdrawable')
-          .eq('user_id', transaction.user_id)
-          .single();
-        
-        if (profileError) {
-          console.error('[QUIDAX_WEBHOOK] Profile fetch error:', profileError);
-          throw new Error('Failed to fetch user profile');
-        }
-
-        if (!profile) {
-          console.error('[QUIDAX_WEBHOOK] Profile not found for user:', transaction.user_id);
-          throw new Error('User profile not found');
-        }
-
-        const previousWallet = profile.wallet_balance || 0;
-        const previousWithdrawable = profile.balance_withdrawable || 0;
-
-        // Credit user balance
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({
-            wallet_balance: previousWallet + ncAmount,
-            balance_withdrawable: previousWithdrawable + ncAmount,
-            updated_at: new Date().toISOString()
-          })
-          .eq('user_id', transaction.user_id);
-        
-        if (updateError) {
-          console.error('[QUIDAX_WEBHOOK] Balance update error:', updateError);
-          throw new Error('Failed to update balance');
-        }
-        
-        console.log(`[QUIDAX_WEBHOOK] Balance updated:`, {
-          userId: transaction.user_id,
-          previousWallet,
-          newWallet: previousWallet + ncAmount,
-          credited: ncAmount
-        });
-        
-        // Log wallet transaction
-        const { error: txError } = await supabase
-          .from('wallet_transactions')
-          .insert({
-            user_id: transaction.user_id,
-            amount: ncAmount,
-            kind: 'quidax_deposit',
-            description: `Quidax Ramp deposit: ${cryptoAmount.toFixed(4)} USDT (₦${fiatAmount.toFixed(2)})`,
-            status: 'completed',
-            reference: reference
-          });
-        
-        if (txError) {
-          console.error('[QUIDAX_WEBHOOK] Wallet transaction log error:', txError);
-        }
-        
-        // Log crypto transaction
-        const { error: cryptoError } = await supabase
-          .from('crypto_transactions')
-          .insert({
-            user_id: transaction.user_id,
-            transaction_type: 'deposit',
-            crypto_amount: cryptoAmount,
-            crypto_currency: 'USDT',
-            naira_amount: fiatAmount,
-            nc_amount: ncAmount,
-            exchange_rate: ncPerUSDT,
-            wallet_address: transaction.wallet_address || '',
-            status: 'completed'
-          });
-        
-        if (cryptoError) {
-          console.error('[QUIDAX_WEBHOOK] Crypto transaction log error:', cryptoError);
-        }
-        
-        console.log(`[QUIDAX_WEBHOOK] ✅ Successfully credited ${ncAmount} NC to user ${transaction.user_id}`);
+    if (txType === 'on_ramp') {
+      // ON-RAMP: User bought crypto with fiat via Quidax
+      // NC crediting and sweep will be handled by celo-deposit-webhook
+      // when the crypto arrives in user's Celo wallet
       
-
-        // Send notification
+      if (status === 'completed' || status === 'success') {
+        console.log(`[QUIDAX_WEBHOOK] ✅ On-ramp completed via Quidax`);
+        console.log(`[QUIDAX_WEBHOOK] Crypto will arrive in user wallet shortly`);
+        console.log(`[QUIDAX_WEBHOOK] celo-deposit-webhook will handle: NC credit + sweep`);
+        
+        // Send notification that crypto is on the way
         await supabase.from('notifications').insert({
           user_id: transaction.user_id,
           type: 'transaction',
-          title: 'Deposit Successful! 🎉',
-          message: `Your deposit of ₦${fiatAmount.toFixed(2)} (${cryptoAmount.toFixed(4)} USDT) has been credited. You received ${ncAmount} NC!`,
-          metadata: { reference, fiat_amount: fiatAmount, crypto_amount: cryptoAmount, nc_amount: ncAmount }
+          title: 'Crypto Purchase Complete! 🎉',
+          message: `Your purchase of ${token_amount || transaction.token_amount} USDT is being processed. You'll be credited shortly when it arrives in your wallet.`,
+          metadata: { reference, status, fiat_amount: fiat_amount || transaction.fiat_amount }
         });
+        
       } else if (status === 'failed' || status === 'cancelled') {
-        console.log(`[QUIDAX_WEBHOOK] On-ramp failed: ${reference}`);
+        console.log(`[QUIDAX_WEBHOOK] ❌ On-ramp failed: ${reference}`);
         
         await supabase.from('notifications').insert({
           user_id: transaction.user_id,
           type: 'transaction',
           title: 'Deposit Failed',
-          message: `Your deposit of ₦${fiat_amount} could not be completed. Please contact support if you were charged.`,
+          message: `Your deposit of ₦${fiat_amount || transaction.fiat_amount} could not be completed. Please contact support if you were charged.`,
           metadata: { reference, status }
         });
+      } else {
+        console.log(`[QUIDAX_WEBHOOK] On-ramp status update: ${status}`);
       }
-    } else if (transaction_type === 'off_ramp' || transaction.transaction_type === 'off_ramp') {
-      // Off-Ramp: User sold crypto for fiat
+      
+    } else if (txType === 'off_ramp') {
+      // OFF-RAMP: User sold crypto for fiat
+      
       if (status === 'completed' || status === 'success') {
-        console.log(`[QUIDAX_WEBHOOK] Off-ramp completed: ${token_amount} USDT → ${fiat_amount} NGN`);
+        console.log(`[QUIDAX_WEBHOOK] ✅ Off-ramp completed: ${token_amount || transaction.token_amount} USDT → ${fiat_amount || transaction.fiat_amount} NGN`);
 
         // Update wallet transaction to completed
-        await supabase
+        const { error: wtError } = await supabase
           .from('wallet_transactions')
           .update({ status: 'completed' })
           .eq('user_id', transaction.user_id)
-          .eq('reference', `Quidax Off-Ramp: ${transaction.fiat_amount} NC → ${transaction.token_amount} USDT`)
+          .eq('kind', 'quidax_withdrawal')
+          .eq('status', 'pending')
           .order('created_at', { ascending: false })
           .limit(1);
+
+        if (wtError) {
+          console.error("[QUIDAX_WEBHOOK] Failed to update wallet transaction:", wtError);
+        }
 
         // Send notification
         await supabase.from('notifications').insert({
           user_id: transaction.user_id,
           type: 'transaction',
           title: 'Withdrawal Successful! 💰',
-          message: `₦${fiat_amount} has been sent to your bank account. It should arrive shortly.`,
-          metadata: { reference, fiat_amount, token_amount }
+          message: `₦${fiat_amount || transaction.fiat_amount} has been sent to your bank account. It should arrive shortly.`,
+          metadata: { reference, fiat_amount: fiat_amount || transaction.fiat_amount, token_amount: token_amount || transaction.token_amount }
         });
+        
       } else if (status === 'failed' || status === 'cancelled') {
-        console.log(`[QUIDAX_WEBHOOK] Off-ramp failed: ${reference}`);
+        console.log(`[QUIDAX_WEBHOOK] ❌ Off-ramp failed: ${reference}`);
 
         // Refund user
         const { data: profile } = await supabase
@@ -214,20 +145,23 @@ serve(async (req) => {
           .single();
 
         if (profile) {
+          const refundAmount = transaction.fiat_amount || 0;
+          
           await supabase
             .from('profiles')
             .update({
-              wallet_balance: profile.wallet_balance + transaction.fiat_amount,
-              balance_withdrawable: profile.balance_withdrawable + transaction.fiat_amount
+              wallet_balance: profile.wallet_balance + refundAmount,
+              balance_withdrawable: profile.balance_withdrawable + refundAmount
             })
             .eq('user_id', transaction.user_id);
 
-          // Update wallet transaction
+          // Update wallet transaction to failed
           await supabase
             .from('wallet_transactions')
             .update({ status: 'failed' })
             .eq('user_id', transaction.user_id)
-            .eq('reference', `Quidax Off-Ramp: ${transaction.fiat_amount} NC → ${transaction.token_amount} USDT`)
+            .eq('kind', 'quidax_withdrawal')
+            .eq('status', 'pending')
             .order('created_at', { ascending: false })
             .limit(1);
 
@@ -235,10 +169,12 @@ serve(async (req) => {
           await supabase.from('wallet_transactions').insert({
             user_id: transaction.user_id,
             kind: 'refund',
-            amount: transaction.fiat_amount,
+            amount: refundAmount,
             status: 'completed',
             reference: `Quidax Off-Ramp Refund (Failed): ${reference}`
           });
+          
+          console.log(`[QUIDAX_WEBHOOK] Refunded ${refundAmount} NC to user`);
         }
 
         await supabase.from('notifications').insert({
@@ -248,9 +184,13 @@ serve(async (req) => {
           message: `Your withdrawal of ₦${transaction.fiat_amount} could not be completed. Funds have been refunded to your wallet.`,
           metadata: { reference, status }
         });
+      } else {
+        console.log(`[QUIDAX_WEBHOOK] Off-ramp status update: ${status}`);
       }
     }
 
+    console.log(`[QUIDAX_WEBHOOK] ✅ Webhook processed successfully`);
+    
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
