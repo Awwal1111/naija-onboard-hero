@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react'
-import { ArrowLeft, Trash2, Eye, Globe, Users, Lock, Moon, Sun, Bell, Languages, Shield, HelpCircle, FileText, User, Activity, TrendingUp, CheckCircle, ShieldCheck, Phone, Mail, Camera } from 'lucide-react'
+import { ArrowLeft, Trash2, Eye, Globe, Users, Lock, Moon, Sun, Bell, Languages, Shield, HelpCircle, FileText, User, Activity, TrendingUp, CheckCircle, ShieldCheck, Phone, Mail, Camera, Fingerprint } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
+import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
 import { useLanguage } from '@/hooks/useLanguage'
+import { useBiometric } from '@/hooks/useBiometric'
 import { supabase } from '@/integrations/supabase/client'
 import { Logo } from '@/components/ui/logo'
 import { Separator } from '@/components/ui/separator'
@@ -19,6 +21,35 @@ import { EmailVerificationStatus } from '@/components/EmailVerificationBanner'
 import { UserBadges } from '@/components/UserBadges'
 import { FaceVerificationDialog } from '@/components/FaceVerificationDialog'
 import { PhoneVerificationDialog } from '@/components/PhoneVerificationDialog'
+
+// Biometric toggle component for visibility
+const BiometricToggle = () => {
+  const { isAvailable, isEnabled, enableBiometric, disableBiometric, loading } = useBiometric()
+  
+  const handleToggle = async () => {
+    if (isEnabled) {
+      await disableBiometric()
+    } else {
+      await enableBiometric()
+    }
+  }
+  
+  return (
+    <div className="flex items-center gap-3">
+      {!isAvailable && (
+        <Badge variant="secondary" className="text-xs">Not Available</Badge>
+      )}
+      {isEnabled && (
+        <Badge className="bg-green-500 text-xs">Enabled</Badge>
+      )}
+      <Switch
+        checked={isEnabled}
+        onCheckedChange={handleToggle}
+        disabled={!isAvailable || loading}
+      />
+    </div>
+  )
+}
 
 interface NotificationPreferences {
   chats: boolean
@@ -231,26 +262,22 @@ const Settings = () => {
           </CardContent>
         </Card>
 
-        {/* Preferences Section */}
+        {/* Language Selection - Top Priority */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Languages className="h-5 w-5" />
-              Preferences
+              {t('settings.language')}
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Language */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="font-medium text-text-primary">{t('settings.language')}</h4>
-                <p className="text-sm text-text-secondary">Choose your preferred language</p>
-              </div>
+          <CardContent>
+            <div className="space-y-3">
+              <p className="text-sm text-text-secondary">Choose your preferred language</p>
               <Select value={language} onValueChange={(v) => handleLanguageChange(v as 'en' | 'ha' | 'yo' | 'ig' | 'pcm')}>
-                <SelectTrigger className="w-48">
+                <SelectTrigger className="w-full">
                   <SelectValue>{languageNames[language]}</SelectValue>
                 </SelectTrigger>
-                <SelectContent className="bg-background border border-border z-50">
+                <SelectContent className="bg-background border border-border z-[100]">
                   <SelectItem value="en">🇬🇧 English</SelectItem>
                   <SelectItem value="ha">🇳🇬 Hausa</SelectItem>
                   <SelectItem value="yo">🇳🇬 Yoruba</SelectItem>
@@ -259,6 +286,18 @@ const Settings = () => {
                 </SelectContent>
               </Select>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Preferences Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Bell className="h-5 w-5" />
+              Preferences
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
 
             {/* Theme */}
             <div className="flex items-center justify-between">
@@ -473,6 +512,27 @@ const Settings = () => {
                   });
                 }}
               />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Biometric Authentication - Standalone Card for Visibility */}
+        <Card className="border-primary/20 bg-primary/5">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Fingerprint className="h-5 w-5 text-primary" />
+              Biometric Authentication
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <p className="font-medium text-foreground">Fingerprint / Face ID</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Use your device's biometrics to quickly authorize transactions
+                </p>
+              </div>
+              <BiometricToggle />
             </div>
           </CardContent>
         </Card>
