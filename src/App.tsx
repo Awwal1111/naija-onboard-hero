@@ -75,6 +75,7 @@ import Sitemap from "./pages/Sitemap";
 import InstallApp from "./pages/InstallApp";
 import AIChat from "./pages/AIChat";
 import Analytics from "./pages/Analytics";
+import Dashboard from "./pages/Dashboard";
 
 // Component to handle app state persistence
 const AppStateManager = () => {
@@ -151,6 +152,7 @@ const App = () => (
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/main-feed" element={<ProtectedRoute><MainFeed /></ProtectedRoute>} />
           <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
           <Route path="/settings/pin" element={<ProtectedRoute><SetupPin /></ProtectedRoute>} />
           <Route path="/activity-log" element={<ProtectedRoute><ActivityLog /></ProtectedRoute>} />
