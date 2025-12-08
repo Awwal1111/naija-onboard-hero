@@ -246,13 +246,13 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
     <>
       {/* Floating AI Button - positioned higher to avoid bottom nav */}
       {!isOpen && (
-        <div className="fixed bottom-20 md:bottom-6 right-4 md:right-6 z-50">
+        <div className="fixed bottom-24 md:bottom-8 right-4 md:right-6 z-[60]">
           <Button
             onClick={() => setIsOpen(true)}
-            className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl transition-all duration-300 group"
+            className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-xl hover:shadow-2xl transition-all duration-300 group border-2 border-white/20"
           >
-            <Bot className="h-5 w-5 md:h-6 md:w-6 text-white group-hover:scale-110 transition-transform" />
-            <div className="absolute -top-1 -right-1 w-3 h-3 md:w-4 md:h-4 bg-green-500 rounded-full animate-pulse" />
+            <Bot className="h-6 w-6 md:h-7 md:w-7 text-white group-hover:scale-110 transition-transform" />
+            <div className="absolute -top-1 -right-1 w-4 h-4 md:w-5 md:h-5 bg-green-500 rounded-full animate-pulse border-2 border-white" />
           </Button>
         </div>
       )}
@@ -261,9 +261,9 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
       {isOpen && (
         <div 
           ref={dragRef}
-          className={`fixed z-50 ${
+          className={`fixed z-[70] ${
             isMobile 
-              ? 'inset-x-4 bottom-16 top-20' // Mobile: full screen with padding
+              ? 'inset-x-2 bottom-20 top-16' // Mobile: full screen with padding
               : ''
           }`}
           style={!isMobile ? { 
@@ -274,10 +274,10 @@ const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
           onMouseDown={handleMouseDown}
         >
           <Card className={`${
-            isMobile ? 'w-full h-full' : 'w-80'
-          } shadow-2xl border-primary/20 ${
-            isMinimized ? 'h-16' : isMobile ? 'h-full' : 'h-96'
-          } transition-all duration-300 flex flex-col`}>
+            isMobile ? 'w-full h-full' : 'w-96'
+          } shadow-2xl border-2 border-primary/30 bg-background ${
+            isMinimized ? 'h-16' : isMobile ? 'h-full' : 'h-[500px]'
+          } transition-all duration-300 flex flex-col overflow-hidden`}>
         <CardHeader className={`drag-handle py-3 px-4 bg-gradient-to-r from-primary to-primary/80 text-white ${
           isMobile ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'
         } select-none flex-shrink-0`}>
