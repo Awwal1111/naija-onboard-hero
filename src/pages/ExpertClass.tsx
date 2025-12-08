@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Video, Calendar, Star } from 'lucide-react'
+import { Plus, Video, Calendar, Star, User, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Input } from '@/components/ui/input'
 import { useAuth } from '@/hooks/useAuth'
 import { useExpertClasses } from '@/hooks/useExpertClasses'
 import { CreateClassDialog } from '@/components/CreateClassDialog'
@@ -15,9 +16,10 @@ const ExpertClass = () => {
   const { user } = useAuth()
   const [userProfile, setUserProfile] = useState<any>(null)
   const [showCreateDialog, setShowCreateDialog] = useState(false)
-  const { liveClasses, upcomingClasses, featuredClasses, isLoading } = useExpertClasses()
+  const [searchQuery, setSearchQuery] = useState('')
+  const [activeTab, setActiveTab] = useState('discover')
+  const { liveClasses, upcomingClasses, featuredClasses, pastClasses, isLoading } = useExpertClasses()
 
-  // Fetch user profile
   useEffect(() => {
     if (!user) return
     
@@ -28,139 +30,197 @@ const ExpertClass = () => {
         .eq('user_id', user.id)
         .single()
       
-      if (error) {
-        console.error('Error fetching profile:', error)
-        return
-      }
-      
-      console.log('Profile loaded:', {
-        is_expert: data?.is_expert,
-        expert_verified_at: data?.expert_verified_at,
-        full_name: data?.full_name
-      })
-      
-      setUserProfile(data)
+      if (!error) setUserProfile(data)
     }
     
     fetchProfile()
   }, [user])
 
-  // Check if user is an expert based on is_expert field
   const isExpert = Boolean(userProfile?.is_expert === true)
-  
-  console.log('isExpert check:', {
-    isExpert,
-    is_expert: userProfile?.is_expert,
-    hasProfile: !!userProfile
-  })
+
+  // Get expert's own classes
+  const myClasses = [...liveClasses, ...upcomingClasses, ...pastClasses].filter(
+    c => c.expert_id === user?.id
+  )
+
+  // Filter classes by search
+  const filterClasses = (classes: any[]) => {
+    if (!searchQuery.trim()) return classes
+    const query = searchQuery.toLowerCase()
+    return classes.filter(c => 
+      c.title?.toLowerCase().includes(query) ||
+      c.description?.toLowerCase().includes(query) ||
+      c.category?.toLowerCase().includes(query) ||
+      c.expert?.full_name?.toLowerCase().includes(query)
+    )
+  }
+
+  const ClassGrid = ({ classes, emptyIcon: Icon, emptyTitle, emptyMessage }: {
+    classes: any[],
+    emptyIcon: React.ElementType,
+    emptyTitle: string,
+    emptyMessage: string
+  }) => {
+    if (isLoading) {
+      return (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3].map(i => (
+            <Skeleton key={i} className="h-72 w-full rounded-xl" />
+          ))}
+        </div>
+      )
+    }
+
+    if (classes.length === 0) {
+      return (
+        <div className="text-center py-16 bg-muted/30 rounded-xl">
+          <Icon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+          <h3 className="text-lg font-semibold mb-2">{emptyTitle}</h3>
+          <p className="text-muted-foreground text-sm">{emptyMessage}</p>
+        </div>
+      )
+    }
+
+    return (
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {classes.map((classItem) => (
+          <ClassCard key={classItem.id} classItem={classItem} />
+        ))}
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-background pb-20">
       {/* Header */}
-      <div className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground p-6">
+      <div className="bg-gradient-to-br from-primary via-primary to-primary/80 text-primary-foreground p-6">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-3xl font-bold mb-2">ExpertClass</h1>
-              <p className="text-primary-foreground/90">Live video training & classes</p>
+              <h1 className="text-2xl font-bold">ExpertClass</h1>
+              <p className="text-primary-foreground/80 text-sm">Live video training & classes</p>
             </div>
             {isExpert && (
               <Button
                 onClick={() => setShowCreateDialog(true)}
+                size="sm"
                 className="bg-background text-foreground hover:bg-background/90"
               >
-                <Plus className="h-5 w-5 mr-2" />
-                Create Class
+                <Plus className="h-4 w-4 mr-1" />
+                Create
               </Button>
             )}
+          </div>
+          
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search classes, topics, or experts..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 bg-background/95 border-0 text-foreground placeholder:text-muted-foreground"
+            />
           </div>
         </div>
       </div>
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 py-6">
-        <Tabs defaultValue="live" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-6">
-            <TabsTrigger value="live" className="flex items-center gap-2">
-              <Video className="h-4 w-4" />
-              Live Now
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className={`grid w-full mb-6 ${isExpert ? 'grid-cols-4' : 'grid-cols-3'}`}>
+            {isExpert && (
+              <TabsTrigger value="my-classes" className="flex items-center gap-1.5 text-xs">
+                <User className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">My Classes</span>
+                <span className="sm:hidden">Mine</span>
+              </TabsTrigger>
+            )}
+            <TabsTrigger value="discover" className="flex items-center gap-1.5 text-xs">
+              <Video className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Live & Upcoming</span>
+              <span className="sm:hidden">Live</span>
             </TabsTrigger>
-            <TabsTrigger value="upcoming" className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              Upcoming
-            </TabsTrigger>
-            <TabsTrigger value="featured" className="flex items-center gap-2">
-              <Star className="h-4 w-4" />
+            <TabsTrigger value="featured" className="flex items-center gap-1.5 text-xs">
+              <Star className="h-3.5 w-3.5" />
               Featured
+            </TabsTrigger>
+            <TabsTrigger value="past" className="flex items-center gap-1.5 text-xs">
+              <Calendar className="h-3.5 w-3.5" />
+              Past
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="live" className="space-y-4">
-            {isLoading ? (
-              <>
-                <Skeleton className="h-48 w-full rounded-lg" />
-                <Skeleton className="h-48 w-full rounded-lg" />
-              </>
-            ) : liveClasses.length === 0 ? (
-              <div className="text-center py-12">
-                <Video className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No Live Classes</h3>
-                <p className="text-muted-foreground">Check back later for live sessions</p>
+          {/* My Classes Tab (Experts Only) */}
+          {isExpert && (
+            <TabsContent value="my-classes" className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold">Your Classes</h2>
+                <Button size="sm" onClick={() => setShowCreateDialog(true)}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  New Class
+                </Button>
               </div>
-            ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {liveClasses.map((classItem) => (
-                  <ClassCard key={classItem.id} classItem={classItem} />
-                ))}
+              <ClassGrid
+                classes={filterClasses(myClasses)}
+                emptyIcon={Video}
+                emptyTitle="No Classes Yet"
+                emptyMessage="Create your first class to start teaching"
+              />
+            </TabsContent>
+          )}
+
+          {/* Discover Tab */}
+          <TabsContent value="discover" className="space-y-6">
+            {/* Live Now Section */}
+            {filterClasses(liveClasses).length > 0 && (
+              <div className="space-y-3">
+                <h2 className="text-lg font-semibold flex items-center gap-2">
+                  <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                  Live Now
+                </h2>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {filterClasses(liveClasses).map((classItem) => (
+                    <ClassCard key={classItem.id} classItem={classItem} />
+                  ))}
+                </div>
               </div>
             )}
+
+            {/* Upcoming Section */}
+            <div className="space-y-3">
+              <h2 className="text-lg font-semibold">Upcoming Classes</h2>
+              <ClassGrid
+                classes={filterClasses(upcomingClasses)}
+                emptyIcon={Calendar}
+                emptyTitle="No Upcoming Classes"
+                emptyMessage="Check back later for scheduled classes"
+              />
+            </div>
           </TabsContent>
 
-          <TabsContent value="upcoming" className="space-y-4">
-            {isLoading ? (
-              <>
-                <Skeleton className="h-48 w-full rounded-lg" />
-                <Skeleton className="h-48 w-full rounded-lg" />
-              </>
-            ) : upcomingClasses.length === 0 ? (
-              <div className="text-center py-12">
-                <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No Upcoming Classes</h3>
-                <p className="text-muted-foreground">New classes will appear here</p>
-              </div>
-            ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {upcomingClasses.map((classItem) => (
-                  <ClassCard key={classItem.id} classItem={classItem} />
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
+          {/* Featured Tab */}
           <TabsContent value="featured" className="space-y-4">
-            {isLoading ? (
-              <>
-                <Skeleton className="h-48 w-full rounded-lg" />
-                <Skeleton className="h-48 w-full rounded-lg" />
-              </>
-            ) : featuredClasses.length === 0 ? (
-              <div className="text-center py-12">
-                <Star className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No Featured Classes</h3>
-                <p className="text-muted-foreground">Featured classes will appear here</p>
-              </div>
-            ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {featuredClasses.map((classItem) => (
-                  <ClassCard key={classItem.id} classItem={classItem} />
-                ))}
-              </div>
-            )}
+            <ClassGrid
+              classes={filterClasses(featuredClasses)}
+              emptyIcon={Star}
+              emptyTitle="No Featured Classes"
+              emptyMessage="Top-rated classes will appear here"
+            />
+          </TabsContent>
+
+          {/* Past Tab */}
+          <TabsContent value="past" className="space-y-4">
+            <ClassGrid
+              classes={filterClasses(pastClasses)}
+              emptyIcon={Calendar}
+              emptyTitle="No Past Classes"
+              emptyMessage="Completed classes with recordings will appear here"
+            />
           </TabsContent>
         </Tabs>
       </div>
 
-      {/* Create Class Dialog */}
       <CreateClassDialog
         open={showCreateDialog}
         onOpenChange={setShowCreateDialog}
