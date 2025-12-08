@@ -840,16 +840,36 @@ export const WebRTCProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       })
     } catch (error: any) {
       console.error('Screen share error:', error)
+      setIsScreenSharing(false)
+      setScreenStream(null)
       
       if (error.name === 'NotAllowedError') {
         toast({
           title: "Cancelled",
-          description: "Screen sharing was cancelled"
+          description: "Screen sharing was cancelled or denied"
+        })
+      } else if (error.name === 'NotSupportedError') {
+        toast({
+          title: "Not Supported",
+          description: "Screen sharing is not supported on this device. Try using Chrome or Edge on desktop.",
+          variant: "destructive"
+        })
+      } else if (error.name === 'NotReadableError') {
+        toast({
+          title: "Screen Share Failed",
+          description: "Could not access screen. Please try again.",
+          variant: "destructive"
+        })
+      } else if (error.message?.includes('getDisplayMedia')) {
+        toast({
+          title: "Not Available",
+          description: "Screen sharing is not available on mobile devices. Please use a desktop browser.",
+          variant: "destructive"
         })
       } else {
         toast({
           title: "Screen Share Failed",
-          description: error.message || "Failed to start screen sharing",
+          description: error.message || "Failed to start screen sharing. Please try on a desktop browser.",
           variant: "destructive"
         })
       }

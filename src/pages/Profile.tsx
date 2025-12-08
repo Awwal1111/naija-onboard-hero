@@ -28,7 +28,6 @@ import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 import PortfolioSection from '@/components/PortfolioSection'
 import SkillsSection from '@/components/SkillsSection'
-import TopBannerAd from '@/components/TopBannerAd'
 import { SavedPostsSection } from '@/components/SavedPostsSection'
 import { StarRating } from '@/components/ui/star-rating'
 import { RatingDialog } from '@/components/ui/rating-dialog'
@@ -305,11 +304,8 @@ const Profile = () => {
     )
   }
 
-
   return (
     <div className="min-h-screen bg-background pb-20">
-      {/* Top Ad Banner */}
-      <TopBannerAd />
       
       {/* Header */}
       <header className="bg-background border-b border-border px-6 py-5 flex items-center justify-between sticky top-0 z-10 backdrop-blur-sm bg-background/95">
