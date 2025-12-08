@@ -50,12 +50,16 @@ Deno.serve(async (req) => {
 
     console.log('Creating notification:', { userId, type, title, sendEmail })
 
-    // Get user profile for email
+    // Get user profile for name
     const { data: profile } = await supabaseClient
       .from('profiles')
-      .select('email, full_name')
+      .select('full_name')
       .eq('user_id', userId)
       .single()
+
+    // Get user email from auth.users
+    const { data: authUser } = await supabaseClient.auth.admin.getUserById(userId)
+    const userEmail = authUser?.user?.email
 
     // Insert notification in database
     const { data, error } = await supabaseClient
@@ -78,9 +82,9 @@ Deno.serve(async (req) => {
     console.log('Notification created successfully:', data.id)
 
     // Send email if requested and user has email
-    if (sendEmail && profile?.email) {
+    if (sendEmail && userEmail) {
       try {
-        console.log('Sending email notification to:', profile.email)
+        console.log('Sending email notification to:', userEmail)
         
         let html = ''
         let pdfAttachment = null
@@ -133,7 +137,7 @@ Deno.serve(async (req) => {
         // Send email via Resend
         const emailData: any = {
           from: 'NaijaLancers <notifications@naijalancers.name.ng>',
-          to: [profile.email],
+          to: [userEmail],
           subject: title,
           html,
         }
@@ -147,7 +151,7 @@ Deno.serve(async (req) => {
         if (emailError) {
           console.error('Error sending email:', emailError)
         } else {
-          console.log('Email sent successfully to:', profile.email)
+          console.log('Email sent successfully to:', userEmail)
         }
       } catch (emailError) {
         console.error('Error in email sending process:', emailError)
