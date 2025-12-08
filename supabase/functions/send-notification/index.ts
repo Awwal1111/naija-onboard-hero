@@ -136,7 +136,7 @@ Deno.serve(async (req) => {
 
         // Send email via Resend
         const emailData: any = {
-          from: 'NaijaLancers <notifications@naijalancers.name.ng>',
+          from: 'NaijaLancers <notifications@send.naijalancers.name.ng>',
           to: [userEmail],
           subject: title,
           html,

@@ -35,7 +35,9 @@ export async function sendAllNotifications(
       console.log('[NOTIFICATION] ✅ In-app notification created')
     }
 
-    // 2. Send email notification
+    // 2. Send email notification with PDF receipt for financial transactions
+    const isFinancialTransaction = type.includes('transaction') || type.includes('payment') || type.includes('withdrawal') || type.includes('deposit') || type === 'deposit_completed' || type === 'withdrawal_completed'
+    
     try {
       const { error: emailError } = await supabase.functions.invoke('send-notification', {
         body: {
@@ -43,10 +45,16 @@ export async function sendAllNotifications(
           type,
           title,
           message,
-          metadata,
+          metadata: {
+            ...metadata,
+            transactionType: type,
+            amount: amount ? `₦${amount.toLocaleString()} NC` : metadata?.amount,
+            reference: metadata?.reference || `TXN-${Date.now()}`,
+            status: 'Completed'
+          },
           sendEmail: true,
-          emailTemplate: type.includes('transaction') || type.includes('payment') || type.includes('withdrawal') || type.includes('deposit') ? 'transaction' : 'general',
-          attachPDF: type === 'transaction' || type === 'payment'
+          emailTemplate: isFinancialTransaction ? 'transaction' : 'general',
+          attachPDF: isFinancialTransaction
         }
       })
 

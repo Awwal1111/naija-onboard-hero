@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { ethers } from "https://esm.sh/ethers@6.7.0";
 import CryptoJS from "https://esm.sh/crypto-js@4.1.1";
+import { sendAllNotifications } from '../_shared/notification-helper.ts';
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -400,35 +401,25 @@ serve(async (req) => {
         .order("created_at", { ascending: false })
         .limit(1);
 
-      // Send Telegram notification
-      if (profile.telegram_user_id) {
-        try {
-          const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
-          if (TELEGRAM_BOT_TOKEN) {
-            const sourceMessage = walletSource === "user" 
-              ? "🔑 *Source:* Your Personal Wallet" 
-              : "🏦 *Source:* Master Wallet";
-            
-            await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                chat_id: profile.telegram_user_id,
-                text: `✅ *Withdrawal Successful!*\n\n` +
-                      `Amount: ${cryptoAmount.toFixed(4)} ${currency}\n` +
-                      `Deducted: ₦${ncAmount} NC\n` +
-                      `${sourceMessage}\n` +
-                      `To: ${walletAddress}\n` +
-                      `Tx Hash: ${txHash}\n\n` +
-                      `Funds should arrive shortly! 🎉`,
-                parse_mode: "Markdown"
-              })
-            });
-          }
-        } catch (notifError) {
-          console.error("Error sending Telegram notification:", notifError);
+      // Send all notifications (in-app, email with PDF, push, Telegram)
+      await sendAllNotifications(supabase, {
+        userId: user.id,
+        type: 'withdrawal_completed',
+        title: '✅ Withdrawal Successful',
+        message: `Your withdrawal of ₦${ncAmount.toLocaleString()} NC (${cryptoAmount.toFixed(4)} ${currency}) has been sent to ${walletAddress}`,
+        amount: ncAmount,
+        metadata: {
+          reference: txHash,
+          cryptoAmount: cryptoAmount.toFixed(4),
+          currency,
+          walletAddress,
+          walletSource,
+          transactionType: 'Crypto Withdrawal',
+          actionUrl: '/dashboard'
         }
-      }
+      });
+
+      console.log(`[NOTIFICATION] ✅ All notifications sent for withdrawal ${txHash}`);
 
       return new Response(JSON.stringify({
         success: true,
