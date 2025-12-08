@@ -331,7 +331,7 @@ export const usePushNotificationTriggers = () => {
       })
 
     // Listen for wallet transactions
-    const transactionsChannel = supabase
+    const walletTransactionsChannel = supabase
       .channel('wallet-transactions-push')
       .on(
         'postgres_changes',
@@ -343,23 +343,274 @@ export const usePushNotificationTriggers = () => {
         },
         async (payload) => {
           const transaction = payload.new as any
-          console.log('[Push] New transaction:', transaction.id)
+          console.log('[Push] New wallet transaction:', transaction.id, 'kind:', transaction.kind)
           
           const isCredit = transaction.amount > 0
-          const title = isCredit ? 'Money Received' : 'Money Sent'
-          const body = `NC ${Math.abs(transaction.amount).toLocaleString()} ${isCredit ? 'credited to' : 'debited from'} your wallet`
+          let title = isCredit ? 'Money Received' : 'Money Sent'
+          let body = `NC ${Math.abs(transaction.amount).toLocaleString()} ${isCredit ? 'credited to' : 'debited from'} your wallet`
+
+          // Customize based on transaction kind
+          if (transaction.kind) {
+            const kindMap: Record<string, { title: string; emoji: string }> = {
+              'deposit': { title: 'Deposit Successful', emoji: '💰' },
+              'withdrawal': { title: 'Withdrawal Processed', emoji: '💸' },
+              'transfer': { title: isCredit ? 'Transfer Received' : 'Transfer Sent', emoji: '📤' },
+              'safepay': { title: 'SafePay Transaction', emoji: '🔒' },
+              'escrow': { title: 'Escrow Transaction', emoji: '🤝' },
+              'refund': { title: 'Refund Received', emoji: '↩️' }
+            }
+            const kindInfo = kindMap[transaction.kind]
+            if (kindInfo) {
+              title = `${kindInfo.emoji} ${kindInfo.title}`
+            }
+          }
 
           await sendPush({
             userId: user.id,
             title,
-            body: `${body} - ${transaction.description || 'Transaction completed'}`,
+            body,
             url: '/settings',
-            data: { type: 'transaction', transactionId: transaction.id }
+            data: { type: 'wallet_transaction', transactionId: transaction.id, kind: transaction.kind }
           })
         }
       )
       .subscribe((status) => {
-        console.log('[Push] Transactions channel status:', status)
+        console.log('[Push] Wallet transactions channel status:', status)
+      })
+
+    // Listen for ALL transactions (VTU, betting, etc.)
+    const allTransactionsChannel = supabase
+      .channel('all-transactions-push')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'transactions',
+          filter: `user_id=eq.${user.id}`
+        },
+        async (payload) => {
+          const transaction = payload.new as any
+          console.log('[Push] New transaction:', transaction.id, 'type:', transaction.type)
+          
+          // Map transaction types to user-friendly notifications
+          const typeMap: Record<string, { title: string; emoji: string; description: string }> = {
+            // VTU Services
+            'airtime': { title: 'Airtime Purchase', emoji: '📱', description: 'Airtime recharge successful' },
+            'airtime_purchase': { title: 'Airtime Purchase', emoji: '📱', description: 'Airtime recharge successful' },
+            'data': { title: 'Data Purchase', emoji: '📶', description: 'Data bundle purchased successfully' },
+            'data_purchase': { title: 'Data Purchase', emoji: '📶', description: 'Data bundle purchased successfully' },
+            'cable_tv': { title: 'Cable TV Subscription', emoji: '📺', description: 'Cable TV subscription successful' },
+            'cable': { title: 'Cable TV Subscription', emoji: '📺', description: 'Cable TV subscription successful' },
+            'electricity': { title: 'Electricity Payment', emoji: '⚡', description: 'Electricity token purchased' },
+            'electricity_payment': { title: 'Electricity Payment', emoji: '⚡', description: 'Electricity token purchased' },
+            
+            // Betting
+            'betting': { title: 'Betting Account Funded', emoji: '🎲', description: 'Betting wallet funded successfully' },
+            'betting_funding': { title: 'Betting Account Funded', emoji: '🎲', description: 'Betting wallet funded successfully' },
+            'bet_funding': { title: 'Betting Account Funded', emoji: '🎲', description: 'Betting wallet funded successfully' },
+            
+            // Wallet operations
+            'deposit': { title: 'Deposit Successful', emoji: '💰', description: 'Funds added to your wallet' },
+            'withdrawal': { title: 'Withdrawal Processed', emoji: '💸', description: 'Withdrawal processed successfully' },
+            'transfer': { title: 'Transfer Complete', emoji: '📤', description: 'Transfer completed successfully' },
+            'transfer_in': { title: 'Transfer Received', emoji: '📥', description: 'You received a transfer' },
+            'transfer_out': { title: 'Transfer Sent', emoji: '📤', description: 'Transfer sent successfully' },
+            
+            // Earnings & Rewards
+            'earning': { title: 'Earnings Credited', emoji: '💵', description: 'You earned money!' },
+            'reward': { title: 'Reward Received', emoji: '🎁', description: 'Reward credited to your wallet' },
+            'referral_bonus': { title: 'Referral Bonus', emoji: '🎉', description: 'Referral bonus credited' },
+            'daily_signin': { title: 'Daily Sign-in Reward', emoji: '📅', description: 'Daily reward credited' },
+            'spin_wheel': { title: 'Spin Wheel Win', emoji: '🎰', description: 'Spin wheel reward credited' },
+            'trivia_win': { title: 'Trivia Win', emoji: '🧠', description: 'Trivia reward credited' },
+            'game_win': { title: 'Game Win', emoji: '🏆', description: 'Game reward credited' },
+            'survey': { title: 'Survey Completed', emoji: '📋', description: 'Survey reward credited' },
+            'task': { title: 'Task Completed', emoji: '✅', description: 'Task reward credited' },
+            
+            // Purchases
+            'course_purchase': { title: 'Course Purchased', emoji: '📚', description: 'Course purchase successful' },
+            'product_purchase': { title: 'Product Purchased', emoji: '🛒', description: 'Product purchase successful' },
+            'class_enrollment': { title: 'Class Enrolled', emoji: '🎓', description: 'Expert class enrollment successful' },
+            
+            // SafePay & Escrow
+            'safepay': { title: 'SafePay Transaction', emoji: '🔒', description: 'SafePay transaction processed' },
+            'escrow': { title: 'Escrow Transaction', emoji: '🤝', description: 'Escrow transaction processed' },
+            'escrow_funded': { title: 'Escrow Funded', emoji: '🔐', description: 'Escrow has been funded' },
+            'escrow_released': { title: 'Escrow Released', emoji: '✅', description: 'Escrow funds released' },
+            'escrow_refunded': { title: 'Escrow Refunded', emoji: '↩️', description: 'Escrow funds refunded' },
+            
+            // Donations & Fundraising
+            'donation': { title: 'Donation Made', emoji: '❤️', description: 'Thank you for your donation' },
+            'donation_received': { title: 'Donation Received', emoji: '💝', description: 'You received a donation' },
+            'fundraising': { title: 'Fundraising Contribution', emoji: '🙏', description: 'Contribution successful' },
+            
+            // Refunds
+            'refund': { title: 'Refund Received', emoji: '↩️', description: 'Refund processed successfully' },
+            
+            // Crypto
+            'crypto_deposit': { title: 'Crypto Deposit', emoji: '🪙', description: 'Crypto deposit received' },
+            'crypto_withdrawal': { title: 'Crypto Withdrawal', emoji: '🪙', description: 'Crypto withdrawal processed' }
+          }
+
+          const typeInfo = typeMap[transaction.type] || { 
+            title: 'Transaction Complete', 
+            emoji: '💳', 
+            description: transaction.description || 'Transaction processed'
+          }
+          
+          const amount = transaction.amount_nc || transaction.amount || 0
+          const amountStr = Math.abs(amount).toLocaleString()
+
+          await sendPush({
+            userId: user.id,
+            title: `${typeInfo.emoji} ${typeInfo.title}`,
+            body: `NC ${amountStr} - ${typeInfo.description}`,
+            url: '/settings',
+            data: { type: 'transaction', transactionId: transaction.id, transactionType: transaction.type }
+          })
+        }
+      )
+      .subscribe((status) => {
+        console.log('[Push] All transactions channel status:', status)
+      })
+
+    // Listen for crypto transactions
+    const cryptoTransactionsChannel = supabase
+      .channel('crypto-transactions-push')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'crypto_transactions',
+          filter: `user_id=eq.${user.id}`
+        },
+        async (payload) => {
+          const transaction = payload.new as any
+          const oldTransaction = payload.old as any
+          
+          // Only notify when status changes to completed
+          if (oldTransaction.status === transaction.status) return
+          
+          console.log('[Push] Crypto transaction status changed:', transaction.status)
+          
+          if (transaction.status === 'completed') {
+            const isDeposit = transaction.transaction_type === 'deposit'
+            await sendPush({
+              userId: user.id,
+              title: isDeposit ? '🪙 Crypto Deposit Confirmed' : '🪙 Crypto Withdrawal Sent',
+              body: `${transaction.crypto_amount} ${transaction.crypto_currency} ${isDeposit ? 'deposited' : 'withdrawn'} - NC ${transaction.nc_amount?.toLocaleString() || 0}`,
+              url: '/settings',
+              data: { type: 'crypto_transaction', transactionId: transaction.id }
+            })
+          } else if (transaction.status === 'failed') {
+            await sendPush({
+              userId: user.id,
+              title: '❌ Crypto Transaction Failed',
+              body: transaction.error_message || 'Your crypto transaction could not be processed',
+              url: '/settings',
+              data: { type: 'crypto_transaction', transactionId: transaction.id }
+            })
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('[Push] Crypto transactions channel status:', status)
+      })
+
+    // Listen for SafePay transaction updates
+    const safepayChannel = supabase
+      .channel('safepay-transactions-push')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'safepay_transactions'
+        },
+        async (payload) => {
+          const safepay = payload.new as any
+          const oldSafepay = payload.old as any
+          
+          // Only notify on status changes
+          if (oldSafepay.status === safepay.status) return
+          
+          console.log('[Push] SafePay status changed:', safepay.status)
+          
+          // Determine which user to notify
+          const isBuyer = safepay.buyer_id === user.id
+          const isSeller = safepay.seller_id === user.id
+          
+          if (!isBuyer && !isSeller) return
+          
+          const statusMap: Record<string, { buyerTitle: string; sellerTitle: string; emoji: string }> = {
+            'funded': { buyerTitle: 'Payment Secured', sellerTitle: 'Payment Received', emoji: '🔒' },
+            'released': { buyerTitle: 'Payment Released', sellerTitle: 'Payment Credited', emoji: '✅' },
+            'cancelled': { buyerTitle: 'Payment Cancelled', sellerTitle: 'Transaction Cancelled', emoji: '❌' },
+            'disputed': { buyerTitle: 'Dispute Filed', sellerTitle: 'Dispute Filed', emoji: '⚠️' },
+            'refunded': { buyerTitle: 'Refund Received', sellerTitle: 'Refund Processed', emoji: '↩️' }
+          }
+          
+          const statusInfo = statusMap[safepay.status]
+          if (!statusInfo) return
+          
+          await sendPush({
+            userId: user.id,
+            title: `${statusInfo.emoji} SafePay: ${isBuyer ? statusInfo.buyerTitle : statusInfo.sellerTitle}`,
+            body: `NC ${safepay.amount?.toLocaleString() || 0} - Transaction ${safepay.status}`,
+            url: '/settings',
+            data: { type: 'safepay', safepayId: safepay.id, status: safepay.status }
+          })
+        }
+      )
+      .subscribe((status) => {
+        console.log('[Push] SafePay channel status:', status)
+      })
+
+    // Listen for Quidax ramp transactions
+    const quidaxChannel = supabase
+      .channel('quidax-transactions-push')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'quidax_transactions',
+          filter: `user_id=eq.${user.id}`
+        },
+        async (payload) => {
+          const transaction = payload.new as any
+          const oldTransaction = payload.old as any
+          
+          if (oldTransaction.status === transaction.status) return
+          
+          console.log('[Push] Quidax transaction status changed:', transaction.status)
+          
+          if (transaction.status === 'completed') {
+            const isBuy = transaction.transaction_type === 'buy'
+            await sendPush({
+              userId: user.id,
+              title: isBuy ? '💰 Deposit Confirmed' : '💸 Withdrawal Complete',
+              body: isBuy 
+                ? `₦${transaction.fiat_amount?.toLocaleString() || 0} converted - Check your wallet`
+                : `₦${transaction.fiat_amount?.toLocaleString() || 0} sent to your bank`,
+              url: '/settings',
+              data: { type: 'quidax', transactionId: transaction.id }
+            })
+          } else if (transaction.status === 'failed') {
+            await sendPush({
+              userId: user.id,
+              title: '❌ Transaction Failed',
+              body: 'Your deposit/withdrawal could not be processed',
+              url: '/settings',
+              data: { type: 'quidax', transactionId: transaction.id }
+            })
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('[Push] Quidax channel status:', status)
       })
 
     // Listen for new expert classes (notify participants)
@@ -597,7 +848,11 @@ export const usePushNotificationTriggers = () => {
       supabase.removeChannel(commentsChannel)
       supabase.removeChannel(likesChannel)
       supabase.removeChannel(jobApplicationsChannel)
-      supabase.removeChannel(transactionsChannel)
+      supabase.removeChannel(walletTransactionsChannel)
+      supabase.removeChannel(allTransactionsChannel)
+      supabase.removeChannel(cryptoTransactionsChannel)
+      supabase.removeChannel(safepayChannel)
+      supabase.removeChannel(quidaxChannel)
       supabase.removeChannel(expertClassesChannel)
       supabase.removeChannel(expertClassStatusChannel)
       supabase.removeChannel(expertRatingsChannel)
