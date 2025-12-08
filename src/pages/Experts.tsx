@@ -11,7 +11,6 @@ import { useExpertRatings } from '@/hooks/useExpertRatings'
 import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/useAuth'
-import TopBannerAd from '@/components/TopBannerAd'
 import ProfilePreview from '@/components/ProfilePreview'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ClassCard } from '@/components/ClassCard'
@@ -20,6 +19,7 @@ import { useExpertClasses } from '@/hooks/useExpertClasses'
 import { Skeleton } from '@/components/ui/skeleton'
 import { usePersonalizedExperts, PersonalizedExpert } from '@/hooks/usePersonalizedDiscovery'
 import { Badge } from '@/components/ui/badge'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 interface Expert {
   id: string
@@ -220,8 +220,7 @@ const Experts = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      {/* Top Ad Banner */}
-      <TopBannerAd />
+      {/* Header */}
       
       {/* Header */}
       <header className="bg-background border-b border-border px-6 py-4 sticky top-0 z-10">
@@ -306,10 +305,18 @@ const Experts = () => {
                 <div className="flex items-start gap-4">
                   {/* Profile Picture */}
                   <div 
-                    className="w-16 h-16 bg-primary rounded-full flex items-center justify-center text-white text-xl font-bold shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                    className="shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
                     onClick={() => setProfilePreview({ isOpen: true, userId: expert.user_id })}
                   >
-                    {expert.profiles?.full_name?.charAt(0) || expert.full_name.charAt(0)}
+                    <Avatar className="w-16 h-16">
+                      <AvatarImage 
+                        src={expert.profiles?.profile_picture_url} 
+                        alt={expert.profiles?.full_name || expert.full_name}
+                      />
+                      <AvatarFallback className="bg-primary text-primary-foreground text-xl font-bold">
+                        {expert.profiles?.full_name?.charAt(0) || expert.full_name.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
                   </div>
                   
                   {/* Expert Info */}

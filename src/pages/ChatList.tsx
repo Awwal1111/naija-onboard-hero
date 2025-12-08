@@ -6,6 +6,8 @@ import { supabase } from '@/integrations/supabase/client'
 import { BrandInput } from '@/components/ui/brand-input'
 import { useToast } from '@/hooks/use-toast'
 import { MoreMenuDrawer } from '@/components/MoreMenuDrawer'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import ProfilePreview from '@/components/ProfilePreview'
 
 interface ChatWithProfile {
   id: string
@@ -34,6 +36,7 @@ const ChatList = () => {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
+  const [profilePreview, setProfilePreview] = useState<{ isOpen: boolean; userId: string | null }>({ isOpen: false, userId: null })
 
   const bottomNavItems = [
     { icon: Home, label: 'Feed', path: '/feed' },
@@ -218,8 +221,22 @@ const ChatList = () => {
               >
                 <div className="flex items-center gap-4">
                   {/* Profile Picture */}
-                  <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white font-bold shrink-0">
-                    {chat.otherUser.full_name.charAt(0)}
+                  <div 
+                    className="shrink-0 cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setProfilePreview({ isOpen: true, userId: chat.otherUser.user_id })
+                    }}
+                  >
+                    <Avatar className="w-12 h-12">
+                      <AvatarImage 
+                        src={chat.otherUser.profile_picture_url} 
+                        alt={chat.otherUser.full_name}
+                      />
+                      <AvatarFallback className="bg-primary text-primary-foreground font-bold">
+                        {chat.otherUser.full_name.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
                   </div>
                   
                   {/* Chat Info */}
@@ -286,6 +303,13 @@ const ChatList = () => {
         </div>
       </div>
       <MoreMenuDrawer open={moreMenuOpen} onOpenChange={setMoreMenuOpen} />
+      
+      {/* Profile Preview */}
+      <ProfilePreview
+        profileId={profilePreview.userId || ''}
+        isOpen={profilePreview.isOpen}
+        onClose={() => setProfilePreview({ isOpen: false, userId: null })}
+      />
     </div>
   )
 }
