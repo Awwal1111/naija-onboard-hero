@@ -28,6 +28,7 @@ export interface ExpertClass {
   expert?: {
     full_name: string
     avatar_url: string | null
+    profile_picture_url?: string | null
   }
 }
 
