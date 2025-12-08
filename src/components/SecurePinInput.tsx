@@ -82,16 +82,32 @@ export const SecurePinInput = ({
         </Alert>
       )}
 
-      {biometricEnabled && biometricAvailable && (
-        <Button
-          variant="outline"
-          className="w-full"
-          onClick={handleBiometric}
-          disabled={loading || !hasPin}
-        >
-          <Fingerprint className="h-4 w-4 mr-2" />
-          Use Biometric Authentication
-        </Button>
+      {/* Biometric Authentication - Show prominently when available */}
+      {biometricAvailable && (
+        <div className="space-y-2">
+          <Button
+            variant={biometricEnabled ? "default" : "outline"}
+            className={`w-full h-14 ${biometricEnabled ? 'bg-gradient-to-r from-primary to-primary/80' : ''}`}
+            onClick={handleBiometric}
+            disabled={loading || !hasPin || !biometricEnabled}
+          >
+            <Fingerprint className="h-6 w-6 mr-3" />
+            <div className="text-left">
+              <div className="font-medium">
+                {biometricEnabled ? 'Tap to Authenticate' : 'Biometric Not Enabled'}
+              </div>
+              <div className="text-xs opacity-70">
+                {biometricEnabled ? 'Use fingerprint or Face ID' : 'Enable in Settings → Security'}
+              </div>
+            </div>
+          </Button>
+          
+          {biometricEnabled && hasPin && (
+            <p className="text-center text-xs text-muted-foreground">
+              — or enter PIN below —
+            </p>
+          )}
+        </div>
       )}
 
       <div className="space-y-2">
@@ -106,6 +122,7 @@ export const SecurePinInput = ({
           maxLength={4}
           autoFocus={!biometricEnabled}
           disabled={!hasPin}
+          className="text-center text-2xl tracking-[1em] font-mono"
         />
       </div>
 
