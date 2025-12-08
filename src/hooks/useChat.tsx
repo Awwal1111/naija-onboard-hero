@@ -173,6 +173,26 @@ export const useChat = (otherUserId: string) => {
           })
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'messages',
+          filter: `chat_id=eq.${chat.id}`
+        },
+        (payload) => {
+          // Handle read receipt updates
+          const updatedMessage = payload.new as Message
+          setMessages(prev => 
+            prev.map(msg => 
+              msg.id === updatedMessage.id 
+                ? { ...msg, read_at: updatedMessage.read_at }
+                : msg
+            )
+          )
+        }
+      )
       .subscribe((status) => {
         console.log('Realtime subscription status:', status)
       })

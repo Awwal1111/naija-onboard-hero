@@ -244,8 +244,8 @@ const ActiveCallInterface: React.FC<ActiveCallInterfaceProps> = ({
             </Button>
           )}
 
-          {/* Screen Share Button (only for video calls when connected) */}
-          {callType === 'video' && callStatus === 'connected' && (
+          {/* Screen Share Button (only for video calls when connected and handler is provided) */}
+          {callType === 'video' && callStatus === 'connected' && onStartScreenShare && (
             <Button
               size="lg"
               variant={isScreenSharing ? "default" : "secondary"}
@@ -257,6 +257,19 @@ const ActiveCallInterface: React.FC<ActiveCallInterfaceProps> = ({
               title={isScreenSharing ? "Stop sharing" : "Share screen"}
             >
               {isScreenSharing ? <MonitorOff className="h-6 w-6" /> : <Monitor className="h-6 w-6" />}
+            </Button>
+          )}
+          
+          {/* Show disabled screen share for unsupported */}
+          {callType === 'video' && callStatus === 'connected' && !onStartScreenShare && (
+            <Button
+              size="lg"
+              variant="secondary"
+              className="rounded-full h-14 w-14 opacity-50 cursor-not-allowed"
+              disabled
+              title="Screen sharing not available on this device"
+            >
+              <Monitor className="h-6 w-6" />
             </Button>
           )}
 
