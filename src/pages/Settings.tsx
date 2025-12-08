@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
+import { useLanguage } from '@/hooks/useLanguage'
 import { supabase } from '@/integrations/supabase/client'
 import { Logo } from '@/components/ui/logo'
 import { Separator } from '@/components/ui/separator'
@@ -31,8 +32,8 @@ const Settings = () => {
   const { toast } = useToast()
   const { user, signOut } = useAuth()
   const { profile, updateProfile } = useProfile()
+  const { language, setLanguage, t, languageNames } = useLanguage()
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
-  const [language, setLanguage] = useState('en')
   const [profileVisibility, setProfileVisibility] = useState<'public' | 'registered' | 'private'>('public')
   const [notifications, setNotifications] = useState<NotificationPreferences>({
     chats: true,
@@ -46,11 +47,9 @@ const Settings = () => {
   useEffect(() => {
     // Load saved preferences
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' || 'light'
-    const savedLanguage = localStorage.getItem('language') || 'en'
     const savedNotifications = localStorage.getItem('notifications')
     
     setTheme(savedTheme)
-    setLanguage(savedLanguage)
     if (savedNotifications) {
       setNotifications(JSON.parse(savedNotifications))
     }
@@ -111,13 +110,12 @@ const Settings = () => {
     })
   }
 
-  const handleLanguageChange = (newLanguage: string) => {
+  const handleLanguageChange = (newLanguage: 'en' | 'ha' | 'yo' | 'ig' | 'pcm') => {
     setLanguage(newLanguage)
-    localStorage.setItem('language', newLanguage)
     
     toast({
-      title: "Language Updated",
-      description: "Language preference saved"
+      title: t('message.success'),
+      description: `${t('settings.language')}: ${languageNames[newLanguage]}`
     })
   }
 
@@ -243,19 +241,19 @@ const Settings = () => {
             {/* Language */}
             <div className="flex items-center justify-between">
               <div>
-                <h4 className="font-medium text-text-primary">Language</h4>
+                <h4 className="font-medium text-text-primary">{t('settings.language')}</h4>
                 <p className="text-sm text-text-secondary">Choose your preferred language</p>
               </div>
-              <Select value={language} onValueChange={handleLanguageChange}>
+              <Select value={language} onValueChange={(v) => handleLanguageChange(v as 'en' | 'ha' | 'yo' | 'ig' | 'pcm')}>
                 <SelectTrigger className="w-48">
-                  <SelectValue />
+                  <SelectValue>{languageNames[language]}</SelectValue>
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="en">English</SelectItem>
-                  <SelectItem value="ha">Hausa</SelectItem>
-                  <SelectItem value="yo">Yoruba</SelectItem>
-                  <SelectItem value="ig">Igbo</SelectItem>
-                  <SelectItem value="pcm">Nigerian Pidgin</SelectItem>
+                <SelectContent className="bg-background border border-border z-50">
+                  <SelectItem value="en">🇬🇧 English</SelectItem>
+                  <SelectItem value="ha">🇳🇬 Hausa</SelectItem>
+                  <SelectItem value="yo">🇳🇬 Yoruba</SelectItem>
+                  <SelectItem value="ig">🇳🇬 Igbo</SelectItem>
+                  <SelectItem value="pcm">🇳🇬 Nigerian Pidgin</SelectItem>
                 </SelectContent>
               </Select>
             </div>
