@@ -8,71 +8,59 @@ interface UserPresence {
   last_seen: string
 }
 
+/**
+ * Hook to check online status of users
+ * 
+ * This hook subscribes to the global presence channel and provides
+ * methods to check if specific users are online. The actual presence
+ * tracking is done by GlobalPresenceManager at the app level.
+ */
 export const useUserPresence = () => {
   const { user } = useAuth()
   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set())
 
   useEffect(() => {
-    if (!user) return
-
-    // Set up realtime subscription for presence updates using channel presence
+    // Subscribe to the same global presence channel to listen for updates
     const channel = supabase
-      .channel('user-presence')
+      .channel('global-user-presence')
       .on('presence', { event: 'sync' }, () => {
         const state = channel.presenceState()
         const online = new Set<string>()
         
         Object.values(state).forEach((presences: any) => {
           presences.forEach((presence: any) => {
-            online.add(presence.user_id)
+            if (presence.user_id) {
+              online.add(presence.user_id)
+            }
           })
         })
         
         setOnlineUsers(online)
       })
-      .on('presence', { event: 'join' }, ({ key, newPresences }) => {
-        console.log('User joined:', key, newPresences)
-      })
-      .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
-        console.log('User left:', key, leftPresences)
-      })
-      .subscribe(async (status) => {
-        if (status === 'SUBSCRIBED') {
-          await channel.track({
-            user_id: user.id,
-            online_at: new Date().toISOString(),
+      .on('presence', { event: 'join' }, ({ newPresences }) => {
+        setOnlineUsers(prev => {
+          const updated = new Set(prev)
+          newPresences.forEach((p: any) => {
+            if (p.user_id) updated.add(p.user_id)
           })
-        }
-      })
-
-    // Handle page visibility changes
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        // User is going offline - just untrack presence
-        channel.untrack()
-      } else {
-        // User is back online - track again
-        channel.track({
-          user_id: user.id,
-          online_at: new Date().toISOString(),
+          return updated
         })
-      }
-    }
-
-    // Handle beforeunload to set offline status
-    const handleBeforeUnload = () => {
-      channel.untrack()
-    }
-
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-    window.addEventListener('beforeunload', handleBeforeUnload)
+      })
+      .on('presence', { event: 'leave' }, ({ leftPresences }) => {
+        setOnlineUsers(prev => {
+          const updated = new Set(prev)
+          leftPresences.forEach((p: any) => {
+            if (p.user_id) updated.delete(p.user_id)
+          })
+          return updated
+        })
+      })
+      .subscribe()
 
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
-      window.removeEventListener('beforeunload', handleBeforeUnload)
       supabase.removeChannel(channel)
     }
-  }, [user])
+  }, [])
 
   const isUserOnline = (userId: string): boolean => {
     return onlineUsers.has(userId)
