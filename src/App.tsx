@@ -10,6 +10,7 @@ import GlobalPresenceManager from "@/components/GlobalPresenceManager";
 import { QuidaxRampManager } from "@/components/QuidaxRampManager";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { PushNotificationManager } from "@/components/PushNotificationManager";
+import { OnboardingTour } from "@/components/OnboardingTour";
 import { useAppState } from "@/hooks/useAppState";
 import { WebRTCProvider } from "@/contexts/WebRTCContext";
 import Welcome from "./pages/Welcome";

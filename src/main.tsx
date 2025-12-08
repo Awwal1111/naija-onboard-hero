@@ -4,6 +4,7 @@ import App from './App.tsx'
 import './index.css'
 import { QueryProvider } from "./providers/QueryProvider"
 import { ThemeProvider } from "next-themes"
+import { LanguageProvider } from "./hooks/useLanguage"
 
 // Register service worker for push notifications
 if ('serviceWorker' in navigator) {
@@ -57,7 +58,9 @@ createRoot(document.getElementById("root")!).render(
   <HelmetProvider>
     <QueryProvider>
       <ThemeProvider defaultTheme="system" storageKey="naijalancers-theme" attribute="class">
-        <App />
+        <LanguageProvider>
+          <App />
+        </LanguageProvider>
       </ThemeProvider>
     </QueryProvider>
   </HelmetProvider>
