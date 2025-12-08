@@ -13,6 +13,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import EnhancedProductDialog from "@/components/EnhancedProductDialog";
 import { usePersonalizedProducts } from "@/hooks/usePersonalizedDiscovery";
+import { BookmarkButton } from "@/components/BookmarkButton";
 
 const categories: Array<"document" | "ebook" | "pdf" | "template" | "audio" | "video" | "other"> = ["document", "ebook", "pdf", "template", "audio", "video", "other"];
 
@@ -102,6 +103,7 @@ export default function DigitalProducts() {
         <div className="flex items-center justify-between">
           <span className="text-lg font-bold text-primary">₦{product.price}NC</span>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <BookmarkButton type="product" itemId={product.id} />
             {product.average_rating > 0 && (
               <span className="flex items-center gap-1"><Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />{product.average_rating.toFixed(1)}</span>
             )}

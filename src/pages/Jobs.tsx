@@ -13,6 +13,7 @@ import { usePersonalizedJobs, PersonalizedJob } from '@/hooks/usePersonalizedDis
 import { supabase } from '@/integrations/supabase/client'
 import JobPostingDialog from '@/components/JobPostingDialog'
 import { MoreMenuDrawer } from '@/components/MoreMenuDrawer'
+import { BookmarkButton } from '@/components/BookmarkButton'
 
 const Jobs = () => {
   const navigate = useNavigate()
@@ -108,11 +109,14 @@ const Jobs = () => {
               )}
             </div>
           </div>
-          {!showActions && user?.id !== job.poster_id && (
-            <Button size="sm" onClick={() => navigate(`/chat/${job.poster_id}`)}>
-              Chat Now
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            <BookmarkButton type="job" itemId={job.id} />
+            {!showActions && user?.id !== job.poster_id && (
+              <Button size="sm" onClick={() => navigate(`/chat/${job.poster_id}`)}>
+                Chat Now
+              </Button>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent>

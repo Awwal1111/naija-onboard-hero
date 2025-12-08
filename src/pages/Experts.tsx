@@ -20,6 +20,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { usePersonalizedExperts, PersonalizedExpert } from '@/hooks/usePersonalizedDiscovery'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { BookmarkButton } from '@/components/BookmarkButton'
 
 interface Expert {
   id: string
@@ -361,6 +362,7 @@ const Experts = () => {
 
                     {/* Action Buttons */}
                     <div className="flex gap-2 mb-2">
+                      <BookmarkButton type="expert" itemId={expert.user_id} />
                       <BrandButton 
                         size="sm" 
                         className="flex-1"

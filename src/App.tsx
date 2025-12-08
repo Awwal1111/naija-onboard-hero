@@ -77,6 +77,7 @@ import InstallApp from "./pages/InstallApp";
 import AIChat from "./pages/AIChat";
 import Analytics from "./pages/Analytics";
 import Dashboard from "./pages/Dashboard";
+import Bookmarks from "./pages/Bookmarks";
 
 // Component to handle app state persistence
 const AppStateManager = () => {
@@ -157,6 +158,7 @@ const App = () => (
           <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
           <Route path="/settings/pin" element={<ProtectedRoute><SetupPin /></ProtectedRoute>} />
           <Route path="/activity-log" element={<ProtectedRoute><ActivityLog /></ProtectedRoute>} />
+          <Route path="/bookmarks" element={<ProtectedRoute><Bookmarks /></ProtectedRoute>} />
           <Route path="/payment-success" element={<PaymentSuccess />} />
           <Route path="/payment-failed" element={<PaymentFailed />} />
           
