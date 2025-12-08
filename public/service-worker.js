@@ -16,8 +16,8 @@ self.addEventListener('push', (event) => {
   let notificationData = {
     title: 'NaijaLancers',
     body: 'You have a new notification',
-    icon: '/logo.png',
-    badge: '/logo.png',
+    icon: '/icon-512.png',
+    badge: '/icon-512.png',
     tag: 'naijalancers-notification',
     requireInteraction: false,
     url: '/main-feed'
@@ -31,7 +31,7 @@ self.addEventListener('push', (event) => {
         body: data.body || notificationData.body,
         icon: data.icon || notificationData.icon,
         badge: data.badge || notificationData.badge,
-        tag: data.tag || notificationData.tag,
+        tag: data.tag || `naijalancers-${Date.now()}`,
         data: data.data || {},
         url: data.url || notificationData.url,
         requireInteraction: data.requireInteraction || false,
@@ -47,8 +47,13 @@ self.addEventListener('push', (event) => {
       icon: notificationData.icon,
       badge: notificationData.badge,
       tag: notificationData.tag,
+      vibrate: [100, 50, 100],
       data: { ...notificationData.data, url: notificationData.url },
       requireInteraction: notificationData.requireInteraction,
+      actions: [
+        { action: 'open', title: 'Open' },
+        { action: 'dismiss', title: 'Dismiss' }
+      ]
     })
   )
 })

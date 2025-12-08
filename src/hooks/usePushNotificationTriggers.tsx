@@ -30,7 +30,7 @@ export const usePushNotificationTriggers = () => {
 
     console.log('[Push] Setting up notification triggers for user:', user.id)
 
-    // Helper to send push notification
+    // Helper to send push notification with app icon
     const sendPush = async (payload: {
       userId: string
       title: string
@@ -42,7 +42,11 @@ export const usePushNotificationTriggers = () => {
       try {
         console.log('[Push] Sending notification:', payload.title)
         const result = await supabase.functions.invoke('send-push-notification', {
-          body: payload
+          body: {
+            ...payload,
+            icon: payload.icon || '/icon-512.png',
+            badge: '/icon-512.png'
+          }
         })
         console.log('[Push] Send result:', result.data)
         return result
@@ -103,7 +107,7 @@ export const usePushNotificationTriggers = () => {
             userId: user.id,
             title: `New message from ${sender?.full_name || 'Someone'}`,
             body: message.content?.substring(0, 100) || 'Sent you a message',
-            icon: sender?.profile_picture_url || '/logo.png',
+            icon: sender?.profile_picture_url || '/icon-512.png',
             url: `/chat/${message.sender_id}`,
             data: { type: 'message', messageId: message.id }
           })
@@ -139,7 +143,7 @@ export const usePushNotificationTriggers = () => {
             userId: user.id,
             title: 'New Connection Request',
             body: `${requester?.full_name || 'Someone'} wants to connect with you`,
-            icon: requester?.profile_picture_url || '/logo.png',
+            icon: requester?.profile_picture_url || '/icon-512.png',
             url: '/connections/requests',
             data: { type: 'connection_request', requestId: request.id }
           })
@@ -175,7 +179,7 @@ export const usePushNotificationTriggers = () => {
               userId: user.id,
               title: 'Connection Accepted',
               body: `${accepter?.full_name || 'Someone'} accepted your connection request`,
-              icon: accepter?.profile_picture_url || '/logo.png',
+              icon: accepter?.profile_picture_url || '/icon-512.png',
               url: `/profile/${request.requested_id}`,
               data: { type: 'connection_accepted', userId: request.requested_id }
             })
@@ -224,7 +228,7 @@ export const usePushNotificationTriggers = () => {
             userId: user.id,
             title: 'New Comment',
             body: `${commenter?.full_name || 'Someone'} commented on your post`,
-            icon: commenter?.profile_picture_url || '/logo.png',
+            icon: commenter?.profile_picture_url || '/icon-512.png',
             url: `/post/${comment.post_id}`,
             data: { type: 'comment', postId: comment.post_id, commentId: comment.id }
           })
@@ -271,7 +275,7 @@ export const usePushNotificationTriggers = () => {
             userId: user.id,
             title: 'New Like',
             body: `${liker?.full_name || 'Someone'} liked your post`,
-            icon: liker?.profile_picture_url || '/logo.png',
+            icon: liker?.profile_picture_url || '/icon-512.png',
             url: `/post/${like.post_id}`,
             data: { type: 'like', postId: like.post_id }
           })
@@ -316,7 +320,7 @@ export const usePushNotificationTriggers = () => {
             userId: user.id,
             title: 'New Job Application',
             body: `${applicant?.full_name || 'Someone'} applied for ${job.title}`,
-            icon: applicant?.profile_picture_url || '/logo.png',
+            icon: applicant?.profile_picture_url || '/icon-512.png',
             url: `/jobs/${application.job_post_id}`,
             data: { type: 'job_application', jobId: application.job_post_id }
           })
@@ -349,7 +353,6 @@ export const usePushNotificationTriggers = () => {
             userId: user.id,
             title,
             body: `${body} - ${transaction.description || 'Transaction completed'}`,
-            icon: '/logo.png',
             url: '/settings',
             data: { type: 'transaction', transactionId: transaction.id }
           })
@@ -357,6 +360,233 @@ export const usePushNotificationTriggers = () => {
       )
       .subscribe((status) => {
         console.log('[Push] Transactions channel status:', status)
+      })
+
+    // Listen for new expert classes (notify participants)
+    const expertClassesChannel = supabase
+      .channel('expert-classes-push')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'expert_classes'
+        },
+        async (payload) => {
+          const expertClass = payload.new as any
+          console.log('[Push] New expert class created:', expertClass.id)
+          
+          // Get expert info
+          const { data: expert } = await supabase
+            .from('profiles')
+            .select('full_name, profile_picture_url')
+            .eq('user_id', expertClass.expert_id)
+            .single()
+
+          // Notify all users who follow this expert (connections)
+          const { data: connections } = await supabase
+            .from('connections')
+            .select('user1_id, user2_id')
+            .or(`user1_id.eq.${expertClass.expert_id},user2_id.eq.${expertClass.expert_id}`)
+
+          if (connections) {
+            for (const conn of connections) {
+              const followerId = conn.user1_id === expertClass.expert_id ? conn.user2_id : conn.user1_id
+              await sendPush({
+                userId: followerId,
+                title: 'New Expert Class',
+                body: `${expert?.full_name || 'An expert'} is hosting: ${expertClass.title}`,
+                icon: expert?.profile_picture_url || '/icon-512.png',
+                url: `/expert-class/${expertClass.id}`,
+                data: { type: 'expert_class', classId: expertClass.id }
+              })
+            }
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('[Push] Expert classes channel status:', status)
+      })
+
+    // Listen for expert class status changes (live, ended)
+    const expertClassStatusChannel = supabase
+      .channel('expert-class-status-push')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'expert_classes'
+        },
+        async (payload) => {
+          const expertClass = payload.new as any
+          const oldClass = payload.old as any
+          
+          // Only notify when class goes live
+          if (oldClass.status !== 'live' && expertClass.status === 'live') {
+            console.log('[Push] Expert class went live:', expertClass.id)
+            
+            // Get expert info
+            const { data: expert } = await supabase
+              .from('profiles')
+              .select('full_name, profile_picture_url')
+              .eq('user_id', expertClass.expert_id)
+              .single()
+
+            // Notify all participants who enrolled
+            const { data: participants } = await supabase
+              .from('class_participants')
+              .select('user_id')
+              .eq('class_id', expertClass.id)
+
+            if (participants) {
+              for (const participant of participants) {
+                if (participant.user_id !== expertClass.expert_id) {
+                  await sendPush({
+                    userId: participant.user_id,
+                    title: 'Class Starting Now!',
+                    body: `${expert?.full_name}'s class "${expertClass.title}" is now live!`,
+                    icon: expert?.profile_picture_url || '/icon-512.png',
+                    url: `/classroom/${expertClass.id}`,
+                    data: { type: 'class_live', classId: expertClass.id }
+                  })
+                }
+              }
+            }
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('[Push] Expert class status channel status:', status)
+      })
+
+    // Listen for new expert ratings
+    const expertRatingsChannel = supabase
+      .channel('expert-ratings-push')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'expert_ratings',
+          filter: `expert_id=eq.${user.id}`
+        },
+        async (payload) => {
+          const rating = payload.new as any
+          console.log('[Push] New expert rating received:', rating.id)
+          
+          const { data: rater } = await supabase
+            .from('profiles')
+            .select('full_name, profile_picture_url')
+            .eq('user_id', rating.user_id)
+            .single()
+
+          await sendPush({
+            userId: user.id,
+            title: 'New Rating Received',
+            body: `${rater?.full_name || 'Someone'} rated you ${rating.rating} stars${rating.comment ? ': "' + rating.comment.substring(0, 50) + '..."' : ''}`,
+            icon: rater?.profile_picture_url || '/icon-512.png',
+            url: '/profile',
+            data: { type: 'expert_rating', ratingId: rating.id }
+          })
+        }
+      )
+      .subscribe((status) => {
+        console.log('[Push] Expert ratings channel status:', status)
+      })
+
+    // Listen for class participant joins (notify expert)
+    const classParticipantsChannel = supabase
+      .channel('class-participants-push')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'class_participants'
+        },
+        async (payload) => {
+          const participant = payload.new as any
+          console.log('[Push] New class participant:', participant.id)
+          
+          // Get class info
+          const { data: expertClass } = await supabase
+            .from('expert_classes')
+            .select('expert_id, title')
+            .eq('id', participant.class_id)
+            .single()
+
+          // Skip if participant is the expert
+          if (!expertClass || expertClass.expert_id === participant.user_id) return
+
+          // Notify the expert
+          const { data: participantProfile } = await supabase
+            .from('profiles')
+            .select('full_name, profile_picture_url')
+            .eq('user_id', participant.user_id)
+            .single()
+
+          await sendPush({
+            userId: expertClass.expert_id,
+            title: 'New Class Enrollment',
+            body: `${participantProfile?.full_name || 'Someone'} enrolled in your class "${expertClass.title}"`,
+            icon: participantProfile?.profile_picture_url || '/icon-512.png',
+            url: `/expert-class/${participant.class_id}`,
+            data: { type: 'class_enrollment', classId: participant.class_id }
+          })
+        }
+      )
+      .subscribe((status) => {
+        console.log('[Push] Class participants channel status:', status)
+      })
+
+    // Listen for expert application status changes
+    const expertApplicationsChannel = supabase
+      .channel('expert-applications-push')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'expert_applications',
+          filter: `user_id=eq.${user.id}`
+        },
+        async (payload) => {
+          const application = payload.new as any
+          const oldApplication = payload.old as any
+          
+          // Only notify when status changes
+          if (oldApplication.status === application.status) return
+          
+          console.log('[Push] Expert application status changed:', application.status)
+          
+          let title = 'Expert Application Update'
+          let body = ''
+          
+          if (application.status === 'approved') {
+            title = '🎉 Expert Application Approved!'
+            body = 'Congratulations! You are now a verified expert on NaijaLancers.'
+          } else if (application.status === 'rejected') {
+            title = 'Expert Application Status'
+            body = `Your application was not approved. ${application.admin_feedback || 'Please try again later.'}`
+          } else if (application.status === 'pending_review') {
+            title = 'Application Under Review'
+            body = 'Your expert application is being reviewed by our team.'
+          }
+
+          if (body) {
+            await sendPush({
+              userId: user.id,
+              title,
+              body,
+              url: '/expert-application',
+              data: { type: 'expert_application', status: application.status }
+            })
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('[Push] Expert applications channel status:', status)
       })
 
     return () => {
@@ -368,6 +598,11 @@ export const usePushNotificationTriggers = () => {
       supabase.removeChannel(likesChannel)
       supabase.removeChannel(jobApplicationsChannel)
       supabase.removeChannel(transactionsChannel)
+      supabase.removeChannel(expertClassesChannel)
+      supabase.removeChannel(expertClassStatusChannel)
+      supabase.removeChannel(expertRatingsChannel)
+      supabase.removeChannel(classParticipantsChannel)
+      supabase.removeChannel(expertApplicationsChannel)
     }
   }, [user])
 }
