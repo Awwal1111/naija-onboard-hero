@@ -6,6 +6,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import SmartAIAssistant from "@/components/SmartAIAssistant";
 import WalletInitializer from "@/components/WalletInitializer";
 import GlobalCallManager from "@/components/GlobalCallManager";
+import GlobalPresenceManager from "@/components/GlobalPresenceManager";
 import { QuidaxRampManager } from "@/components/QuidaxRampManager";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { PushNotificationManager } from "@/components/PushNotificationManager";
@@ -90,6 +91,7 @@ const App = () => (
           <AppStateManager />
           <WalletInitializer />
           <GlobalCallManager />
+          <GlobalPresenceManager />
           <QuidaxRampManager />
           <PWAInstallPrompt />
           <PushNotificationManager />
