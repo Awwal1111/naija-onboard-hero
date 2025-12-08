@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Video, Calendar, Star, User, Search } from 'lucide-react'
+import { Plus, Video, Calendar, Star, User, Search, HelpCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
@@ -10,6 +10,7 @@ import { CreateClassDialog } from '@/components/CreateClassDialog'
 import { ClassCard } from '@/components/ClassCard'
 import { Skeleton } from '@/components/ui/skeleton'
 import { supabase } from '@/integrations/supabase/client'
+import { ExpertClassHelpDialog } from '@/components/ExpertClassHelpDialog'
 
 const ExpertClass = () => {
   const navigate = useNavigate()
@@ -100,16 +101,26 @@ const ExpertClass = () => {
               <h1 className="text-2xl font-bold">ExpertClass</h1>
               <p className="text-primary-foreground/80 text-sm">Live video training & classes</p>
             </div>
-            {isExpert && (
-              <Button
-                onClick={() => setShowCreateDialog(true)}
-                size="sm"
-                className="bg-background text-foreground hover:bg-background/90"
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                Create
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              <ExpertClassHelpDialog 
+                trigger={
+                  <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10">
+                    <HelpCircle className="h-4 w-4 mr-1" />
+                    <span className="hidden sm:inline">Help</span>
+                  </Button>
+                }
+              />
+              {isExpert && (
+                <Button
+                  onClick={() => setShowCreateDialog(true)}
+                  size="sm"
+                  className="bg-background text-foreground hover:bg-background/90"
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Create
+                </Button>
+              )}
+            </div>
           </div>
           
           {/* Search */}

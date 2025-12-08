@@ -176,14 +176,26 @@ const ClassRoom = () => {
         enableWelcomePage: false,
         prejoinPageEnabled: false,
         disableDeepLinking: true,
+        // Disable lobby for smoother experience
+        lobby: {
+          enabled: false,
+          autoKnock: true,
+        },
+        // Allow all to start as moderator won't work without JWT
+        // So we use open room configuration
+        enableInsecureRoomNameWarning: false,
+        // Ensure participants can join without waiting
+        startSilent: false,
       },
       interfaceConfigOverwrite: {
         TOOLBAR_BUTTONS: userIsExpert 
-          ? ['microphone', 'camera', 'desktop', 'hangup', 'chat', 'raisehand', 'participants-pane', 'tileview', 'recording', 'settings']
-          : ['microphone', 'camera', 'hangup', 'chat', 'raisehand', 'tileview', 'settings'],
+          ? ['microphone', 'camera', 'desktop', 'hangup', 'chat', 'raisehand', 'participants-pane', 'tileview', 'recording', 'settings', 'fullscreen']
+          : ['microphone', 'camera', 'hangup', 'chat', 'raisehand', 'tileview', 'settings', 'fullscreen'],
         SHOW_JITSI_WATERMARK: false,
         SHOW_WATERMARK_FOR_GUESTS: false,
         DISABLE_JOIN_LEAVE_NOTIFICATIONS: false,
+        MOBILE_APP_PROMO: false,
+        HIDE_INVITE_MORE_HEADER: false,
       },
     }
 

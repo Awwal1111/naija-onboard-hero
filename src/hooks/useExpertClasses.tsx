@@ -70,14 +70,16 @@ export const useExpertClasses = () => {
     },
   })
 
-  // Fetch upcoming classes
+  // Fetch upcoming classes (only future classes)
   const { data: upcomingClasses = [], isLoading: isLoadingUpcoming } = useQuery({
     queryKey: ['expert-classes', 'upcoming'],
     queryFn: async () => {
+      const now = new Date().toISOString()
       const { data: classes, error } = await supabase
         .from('expert_classes')
         .select('*')
         .eq('status', 'scheduled')
+        .gt('scheduled_start', now) // Only future classes
         .order('scheduled_start', { ascending: true })
 
       if (error) throw error
@@ -103,14 +105,15 @@ export const useExpertClasses = () => {
     },
   })
 
-  // Fetch featured classes (popular and highly rated)
+  // Fetch featured classes (popular and highly rated, only current/future)
   const { data: featuredClasses = [], isLoading: isLoadingFeatured } = useQuery({
     queryKey: ['expert-classes', 'featured'],
     queryFn: async () => {
+      const now = new Date().toISOString()
       const { data: classes, error } = await supabase
         .from('expert_classes')
         .select('*')
-        .in('status', ['scheduled', 'live'])
+        .or(`status.eq.live,and(status.eq.scheduled,scheduled_start.gt.${now})`)
         .order('current_participants', { ascending: false })
         .limit(6)
 
