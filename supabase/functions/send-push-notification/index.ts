@@ -84,10 +84,10 @@ Deno.serve(async (req) => {
     const payload = JSON.stringify({
       title,
       body,
-      icon: icon || '/logo.png',
-      badge: badge || '/logo.png',
+      icon: icon || '/icon-512.png',
+      badge: badge || '/icon-512.png',
       data: data || {},
-      url: url || '/',
+      url: url || '/main-feed',
     })
 
     // Send to all user's subscriptions
