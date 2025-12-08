@@ -1,13 +1,20 @@
 import React, { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { ArrowUpRight, ArrowDownLeft, Clock, CheckCircle, XCircle, ChevronRight } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { ArrowUpRight, ArrowDownLeft, Clock, CheckCircle, XCircle, ChevronRight, Download, FileText, FileSpreadsheet } from 'lucide-react'
 import { useWallet, WalletTransaction } from '@/hooks/useWallet'
 import { TransactionDetailDialog } from './TransactionDetailDialog'
 import { AllTransactionsDialog } from './AllTransactionsDialog'
 import { BrandButton } from './ui/brand-button'
+import { exportToCSV, generatePDFData } from '@/lib/exportTransactions'
+import { pdf } from '@react-pdf/renderer'
+import TransactionsPDFDocument from './TransactionsPDFDocument'
+import { useToast } from '@/hooks/use-toast'
+import { format } from 'date-fns'
 
 export const TransactionHistory = () => {
+  const { toast } = useToast()
   const { transactions, loading } = useWallet()
   const [selectedTransaction, setSelectedTransaction] = useState<WalletTransaction | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -83,10 +90,63 @@ export const TransactionHistory = () => {
     )
   }
 
+  const handleExportCSV = () => {
+    if (transactions.length === 0) {
+      toast({ title: 'No transactions to export', variant: 'destructive' })
+      return
+    }
+    exportToCSV(transactions, 'naijalancers_transactions')
+    toast({ title: 'CSV exported successfully' })
+  }
+
+  const handleExportPDF = async () => {
+    if (transactions.length === 0) {
+      toast({ title: 'No transactions to export', variant: 'destructive' })
+      return
+    }
+    
+    try {
+      const pdfData = generatePDFData(transactions)
+      const blob = await pdf(<TransactionsPDFDocument data={pdfData} />).toBlob()
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `naijalancers_transactions_${format(new Date(), 'yyyy-MM-dd')}.pdf`
+      link.click()
+      URL.revokeObjectURL(url)
+      toast({ title: 'PDF exported successfully' })
+    } catch (error) {
+      console.error('PDF export error:', error)
+      toast({ title: 'Failed to export PDF', variant: 'destructive' })
+    }
+  }
+
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-lg">Recent Transactions</CardTitle>
+        {transactions.length > 0 && (
+          <div className="flex gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={handleExportCSV}
+              title="Export CSV"
+            >
+              <FileSpreadsheet className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={handleExportPDF}
+              title="Export PDF"
+            >
+              <FileText className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
       </CardHeader>
       <CardContent>
         {transactions.length === 0 ? (
