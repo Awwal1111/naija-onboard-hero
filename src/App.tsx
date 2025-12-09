@@ -78,6 +78,7 @@ import AIChat from "./pages/AIChat";
 import Analytics from "./pages/Analytics";
 import Dashboard from "./pages/Dashboard";
 import Bookmarks from "./pages/Bookmarks";
+import CopilotPage from "./pages/CopilotPage";
 
 // Component to handle app state persistence
 const AppStateManager = () => {
@@ -146,6 +147,7 @@ const App = () => (
           <Route path="/earn/articles" element={<ProtectedRoute><Articles /></ProtectedRoute>} />
           <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
           <Route path="/chat/ai" element={<ProtectedRoute><AIChat /></ProtectedRoute>} />
+          <Route path="/chat/copilot" element={<ProtectedRoute><CopilotPage /></ProtectedRoute>} />
           <Route path="/chat/:userId" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
           <Route path="/call-history" element={<ProtectedRoute><CallHistoryPage /></ProtectedRoute>} />
           <Route path="/groups/:groupId" element={<ProtectedRoute><GroupChat /></ProtectedRoute>} />

@@ -122,6 +122,125 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_copilot_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          is_saved: boolean
+          media_url: string | null
+          message_type: string | null
+          metadata: Json | null
+          role: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          is_saved?: boolean
+          media_url?: string | null
+          message_type?: string | null
+          metadata?: Json | null
+          role: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_saved?: boolean
+          media_url?: string | null
+          message_type?: string | null
+          metadata?: Json | null
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_copilot_saved: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          media_url: string | null
+          message_id: string | null
+          metadata: Json | null
+          output_type: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          media_url?: string | null
+          message_id?: string | null
+          metadata?: Json | null
+          output_type: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          media_url?: string | null
+          message_id?: string | null
+          metadata?: Json | null
+          output_type?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_copilot_saved_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "ai_copilot_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_copilot_settings: {
+        Row: {
+          client_mode: boolean
+          copilot_name: string
+          created_at: string
+          expertise: string
+          id: string
+          is_visible: boolean
+          memory_enabled: boolean
+          tone: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_mode?: boolean
+          copilot_name?: string
+          created_at?: string
+          expertise?: string
+          id?: string
+          is_visible?: boolean
+          memory_enabled?: boolean
+          tone?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client_mode?: boolean
+          copilot_name?: string
+          created_at?: string
+          expertise?: string
+          id?: string
+          is_visible?: boolean
+          memory_enabled?: boolean
+          tone?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_moderation_logs: {
         Row: {
           action_taken: string
