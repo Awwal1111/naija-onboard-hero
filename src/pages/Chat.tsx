@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { ArrowLeft, Smile, Send, UserX, UserCheck, Circle, X, Check, CheckCheck, Image as ImageIcon, Loader2, Mic, Phone, Lock, Play, Pause, Video, ShieldCheck, Bot } from 'lucide-react'
+import { ArrowLeft, Smile, Send, UserX, UserCheck, Circle, X, Check, CheckCheck, Image as ImageIcon, Loader2, Mic, Phone, Lock, Play, Pause, Video, ShieldCheck } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useChat } from '@/hooks/useChat'
@@ -435,14 +435,6 @@ const Chat = () => {
         {/* Action Buttons */}
         {userId && !isBlocked && !isBlockedBy && (
           <div className="flex items-center gap-1">
-            {/* AI Chat Button */}
-            <button
-              onClick={() => navigate('/chat/ai')}
-              className="p-2 hover:bg-muted rounded-full transition-colors"
-              title="AI Assistant"
-            >
-              <Bot className="h-5 w-5 text-purple-500" />
-            </button>
             <button
               onClick={() => setShowCallHistory(true)}
               className="p-2 hover:bg-muted rounded-full transition-colors"
