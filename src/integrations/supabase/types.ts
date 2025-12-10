@@ -292,6 +292,63 @@ export type Database = {
           },
         ]
       }
+      api_rate_limits: {
+        Row: {
+          created_at: string
+          id: string
+          plan_name: string
+          requests_per_day: number
+          requests_per_minute: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          plan_name: string
+          requests_per_day?: number
+          requests_per_minute?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          plan_name?: string
+          requests_per_day?: number
+          requests_per_minute?: number
+        }
+        Relationships: []
+      }
+      api_usage: {
+        Row: {
+          api_key: string
+          created_at: string
+          endpoint: string
+          id: string
+          method: string
+          response_time_ms: number | null
+          status_code: number | null
+          user_id: string
+        }
+        Insert: {
+          api_key: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          method: string
+          response_time_ms?: number | null
+          status_code?: number | null
+          user_id: string
+        }
+        Update: {
+          api_key?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          method?: string
+          response_time_ms?: number | null
+          status_code?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       article_submissions: {
         Row: {
           article_id: string
@@ -2957,6 +3014,8 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_type: string | null
+          api_key: string | null
           area: string | null
           average_rating: number | null
           avg_response_time_seconds: number | null
@@ -2965,6 +3024,9 @@ export type Database = {
           balance_withdrawable: number
           bio: string | null
           biometric_enabled: boolean | null
+          business_name: string | null
+          business_registration_number: string | null
+          business_verified: boolean | null
           celo_wallet_address: string | null
           connections_count: number | null
           created_at: string
@@ -3000,6 +3062,8 @@ export type Database = {
           wallet_balance: number | null
         }
         Insert: {
+          account_type?: string | null
+          api_key?: string | null
           area?: string | null
           average_rating?: number | null
           avg_response_time_seconds?: number | null
@@ -3008,6 +3072,9 @@ export type Database = {
           balance_withdrawable?: number
           bio?: string | null
           biometric_enabled?: boolean | null
+          business_name?: string | null
+          business_registration_number?: string | null
+          business_verified?: boolean | null
           celo_wallet_address?: string | null
           connections_count?: number | null
           created_at?: string
@@ -3043,6 +3110,8 @@ export type Database = {
           wallet_balance?: number | null
         }
         Update: {
+          account_type?: string | null
+          api_key?: string | null
           area?: string | null
           average_rating?: number | null
           avg_response_time_seconds?: number | null
@@ -3051,6 +3120,9 @@ export type Database = {
           balance_withdrawable?: number
           bio?: string | null
           biometric_enabled?: boolean | null
+          business_name?: string | null
+          business_registration_number?: string | null
+          business_verified?: boolean | null
           celo_wallet_address?: string | null
           connections_count?: number | null
           created_at?: string
@@ -4319,6 +4391,7 @@ export type Database = {
         Args: { p_reason: string; p_safepay_id: string }
         Returns: undefined
       }
+      generate_api_key: { Args: never; Returns: string }
       generate_referral_code: { Args: never; Returns: string }
       generate_verification_token: { Args: never; Returns: string }
       get_connected_profile_info: {
