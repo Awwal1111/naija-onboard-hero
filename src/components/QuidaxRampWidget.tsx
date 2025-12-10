@@ -134,7 +134,7 @@ export const QuidaxRampWidget = ({ open, onOpenChange, mode }: QuidaxRampWidgetP
           return false
         },
           onSuccess: async function(transaction: any) {
-            console.log('Transaction successful:', transaction)
+            console.log('[QUIDAX] Transaction successful:', transaction)
             
             // Send transaction details to backend for verification
             try {
@@ -149,7 +149,16 @@ export const QuidaxRampWidget = ({ open, onOpenChange, mode }: QuidaxRampWidgetP
               if (error) throw error
 
               if (data?.success) {
-                toast.success(`${mode === 'buy' ? 'Purchase' : 'Sale'} successful! Balance updated.`)
+                if (mode === 'buy') {
+                  // For buy: Crypto is being sent to user wallet, NC will be credited when it arrives
+                  toast.success('Payment confirmed! Your NC will be credited automatically when crypto arrives.', {
+                    duration: 5000,
+                    description: 'This usually takes 1-3 minutes'
+                  })
+                } else {
+                  // For sell: Transaction is complete
+                  toast.success('Withdrawal successful! Funds sent to your bank.')
+                }
               } else {
                 toast.error('Transaction verification failed. Please contact support.')
               }
