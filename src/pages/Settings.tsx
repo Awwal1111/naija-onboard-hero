@@ -21,8 +21,8 @@ import { EmailVerificationStatus } from '@/components/EmailVerificationBanner'
 import { UserBadges } from '@/components/UserBadges'
 import { FaceVerificationDialog } from '@/components/FaceVerificationDialog'
 import { PhoneVerificationDialog } from '@/components/PhoneVerificationDialog'
+import { AccountTypeSettings } from '@/components/AccountTypeSettings'
 
-// Biometric toggle component for visibility
 const BiometricToggle = () => {
   const { isAvailable, isEnabled, enableBiometric, disableBiometric, loading } = useBiometric()
   
@@ -246,21 +246,14 @@ const Settings = () => {
                 View Log
               </Button>
             </div>
-            
-            <Separator />
-            
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="font-medium text-text-primary text-destructive">Delete Account</h4>
-                <p className="text-sm text-text-secondary">Permanently delete your account & data</p>
-              </div>
-              <Button variant="destructive" onClick={handleDeleteAccount}>
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete
-              </Button>
-            </div>
           </CardContent>
         </Card>
+
+        {/* Account Type Settings */}
+        <AccountTypeSettings />
+
+
+        {/* Language Selection - Top Priority */}
 
         {/* Language Selection - Top Priority */}
         <Card>

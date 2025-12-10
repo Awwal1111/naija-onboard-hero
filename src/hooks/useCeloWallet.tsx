@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ethers } from 'ethers';
 import { toast } from 'sonner';
 import CryptoJS from 'crypto-js';
@@ -16,6 +16,9 @@ const cUSD_ADDRESS = USE_TESTNET
 
 const USDT_ADDRESS = '0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e'; // Tether USD on Celo Mainnet
 
+// Polling interval for deposit detection (30 seconds)
+const DEPOSIT_CHECK_INTERVAL = 30000;
+
 export const useCeloWallet = () => {
   const [wallet, setWallet] = useState<ethers.HDNodeWallet | ethers.Wallet | null>(null);
   const [address, setAddress] = useState<string>('');
@@ -23,10 +26,91 @@ export const useCeloWallet = () => {
   const [cUsdBalance, setCUsdBalance] = useState<string>('0');
   const [usdtBalance, setUsdtBalance] = useState<string>('0');
   const [loading, setLoading] = useState(true);
+  const [isCheckingDeposits, setIsCheckingDeposits] = useState(false);
+
+  // Update balances from blockchain - defined early for use in deposit check
+  const updateBalancesForWallet = async (walletInstance: ethers.HDNodeWallet | ethers.Wallet) => {
+    try {
+      const celoBalance = await walletInstance.provider!.getBalance(walletInstance.address);
+      setCeloBalance(ethers.formatEther(celoBalance));
+
+      const cUsdContract = new ethers.Contract(
+        cUSD_ADDRESS,
+        ['function balanceOf(address) view returns (uint256)'],
+        walletInstance.provider
+      );
+      const cUsdBalance = await cUsdContract.balanceOf(walletInstance.address);
+      setCUsdBalance(ethers.formatEther(cUsdBalance));
+
+      const usdtContract = new ethers.Contract(
+        USDT_ADDRESS,
+        ['function balanceOf(address) view returns (uint256)', 'function decimals() view returns (uint8)'],
+        walletInstance.provider
+      );
+      const usdtDecimals = await usdtContract.decimals();
+      const usdtBalance = await usdtContract.balanceOf(walletInstance.address);
+      setUsdtBalance(ethers.formatUnits(usdtBalance, usdtDecimals));
+    } catch (error) {
+      console.error('Error updating balances:', error);
+    }
+  };
+
+  // Check for deposits by calling the edge function
+  const checkForDeposits = useCallback(async (walletAddress: string, walletInstance?: ethers.HDNodeWallet | ethers.Wallet) => {
+    if (isCheckingDeposits) return;
+    
+    try {
+      setIsCheckingDeposits(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      console.log('[DEPOSIT-CHECK] Checking for deposits...');
+      
+      const { data, error } = await supabase.functions.invoke('check-celo-deposits', {
+        body: { user_id: user.id, wallet_address: walletAddress },
+        headers: {
+          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+        }
+      });
+
+      if (error) {
+        console.error('[DEPOSIT-CHECK] Error:', error);
+        return;
+      }
+
+      if (data?.deposit_detected) {
+        console.log(`[DEPOSIT-CHECK] ✅ Deposit detected! Credited: ${data.credited} NC`);
+        toast.success(`Deposit received! ${data.credited} NC credited to your wallet`);
+        // Refresh balances after deposit
+        if (walletInstance) {
+          await updateBalancesForWallet(walletInstance);
+        }
+      }
+    } catch (error) {
+      console.error('[DEPOSIT-CHECK] Error:', error);
+    } finally {
+      setIsCheckingDeposits(false);
+    }
+  }, [isCheckingDeposits]);
 
   useEffect(() => {
     initializeWallet();
   }, []);
+
+  // Set up deposit polling when wallet is ready
+  useEffect(() => {
+    if (!address || !wallet) return;
+
+    // Initial check
+    checkForDeposits(address, wallet);
+
+    // Set up polling interval
+    const intervalId = setInterval(() => {
+      checkForDeposits(address, wallet);
+    }, DEPOSIT_CHECK_INTERVAL);
+
+    return () => clearInterval(intervalId);
+  }, [address, wallet, checkForDeposits]);
 
   const initializeWallet = async () => {
     try {
@@ -170,36 +254,8 @@ export const useCeloWallet = () => {
     }
   };
 
-  const updateBalances = async (walletInstance: ethers.HDNodeWallet | ethers.Wallet) => {
-    try {
-      // Get CELO balance
-      const celoBalance = await walletInstance.provider!.getBalance(walletInstance.address);
-      setCeloBalance(ethers.formatEther(celoBalance));
-
-      // Get cUSD balance
-      const cUsdContract = new ethers.Contract(
-        cUSD_ADDRESS,
-        ['function balanceOf(address) view returns (uint256)'],
-        walletInstance.provider
-      );
-      
-      const cUsdBalance = await cUsdContract.balanceOf(walletInstance.address);
-      setCUsdBalance(ethers.formatEther(cUsdBalance));
-
-      // Get USDT balance
-      const usdtContract = new ethers.Contract(
-        USDT_ADDRESS,
-        ['function balanceOf(address) view returns (uint256)', 'function decimals() view returns (uint8)'],
-        walletInstance.provider
-      );
-      
-      const usdtDecimals = await usdtContract.decimals();
-      const usdtBalance = await usdtContract.balanceOf(walletInstance.address);
-      setUsdtBalance(ethers.formatUnits(usdtBalance, usdtDecimals));
-    } catch (error) {
-      console.error('Error updating balances:', error);
-    }
-  };
+  // Alias for backwards compatibility
+  const updateBalances = updateBalancesForWallet;
 
   const sendCUSD = async (toAddress: string, amount: string) => {
     if (!wallet) throw new Error('Wallet not initialized');
