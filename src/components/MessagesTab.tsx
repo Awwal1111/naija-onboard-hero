@@ -125,6 +125,26 @@ const MessagesTab: React.FC = () => {
 
   return (
     <div className="space-y-4">
+      {/* NaijaLancers Copilot - AI Assistant */}
+      <div
+        onClick={() => navigate('/chat/copilot')}
+        className="bg-gradient-to-r from-primary/10 via-purple-500/10 to-pink-500/10 border border-primary/20 rounded-xl p-4 cursor-pointer hover:shadow-lg transition-all flex items-center gap-4"
+      >
+        <div className="relative">
+          <div className="w-14 h-14 bg-gradient-to-br from-primary via-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+            <MessageCircle className="h-7 w-7 text-white" />
+          </div>
+          <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-background rounded-full" />
+        </div>
+        <div className="flex-1">
+          <h3 className="font-semibold text-foreground">NaijaLancers Copilot</h3>
+          <p className="text-sm text-muted-foreground">Your AI Freelancing Partner • Online</p>
+        </div>
+        <div className="bg-gradient-to-r from-primary to-purple-500 text-white text-xs font-medium px-2 py-1 rounded-full">
+          PRO
+        </div>
+      </div>
+
       <div className="relative">
         <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
         <Input

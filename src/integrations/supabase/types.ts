@@ -4267,11 +4267,11 @@ export type Database = {
     Functions: {
       accept_admin_invitation: { Args: { p_token: string }; Returns: Json }
       accept_safepay:
-        | { Args: { p_safepay_id: string }; Returns: undefined }
         | {
             Args: { p_acceptor: string; p_escrow_id: string }
             Returns: undefined
           }
+        | { Args: { p_safepay_id: string }; Returns: undefined }
       admin_release_fundraising_funds: {
         Args: { p_admin_id: string; p_fundraising_id: string }
         Returns: Json
