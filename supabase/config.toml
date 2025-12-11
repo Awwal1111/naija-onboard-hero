@@ -116,3 +116,51 @@ verify_jwt = true
 
 [functions.verify-phone-code]
 verify_jwt = true
+
+[functions.upload-video]
+verify_jwt = true
+
+[functions.quidax-on-ramp]
+verify_jwt = true
+
+[functions.quidax-off-ramp]
+verify_jwt = true
+
+[functions.quidax-webhook]
+verify_jwt = false
+
+[functions.process-quidax-sell]
+verify_jwt = true
+
+[functions.verify-quidax-ramp-transaction]
+verify_jwt = true
+
+[functions.get-quidax-public-key]
+verify_jwt = true
+
+[functions.approve-payout]
+verify_jwt = true
+
+[functions.weekly-inactive-users-check]
+verify_jwt = false
+
+[functions.ai-copilot]
+verify_jwt = true
+
+[functions.ai-moderation]
+verify_jwt = true
+
+[functions.buy-vtu-cable-tv]
+verify_jwt = true
+
+[functions.buy-vtu-electricity]
+verify_jwt = true
+
+[functions.verify-cable-customer]
+verify_jwt = true
+
+[functions.verify-electricity-customer]
+verify_jwt = true
+
+[functions.get-tv-variations]
+verify_jwt = true

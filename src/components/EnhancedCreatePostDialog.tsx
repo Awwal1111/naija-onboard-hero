@@ -8,8 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
-import { Users, Globe, Lock, Plus, X, Image, Video, FileText, Briefcase } from 'lucide-react'
+import { Progress } from '@/components/ui/progress'
+import { Users, Globe, Lock, Plus, X, Image, Video, FileText, Briefcase, Loader2 } from 'lucide-react'
 import { useFileUpload } from '@/hooks/useFileUpload'
+import { useVideoUpload } from '@/hooks/useVideoUpload'
+import { useToast } from '@/hooks/use-toast'
 
 interface EnhancedCreatePostDialogProps {
   isOpen: boolean
@@ -29,13 +32,17 @@ const EnhancedCreatePostDialog: React.FC<EnhancedCreatePostDialogProps> = ({
   userProfile
 }) => {
   const { uploadFile, uploadProgress } = useFileUpload()
+  const { uploadVideo, uploadProgress: videoProgress } = useVideoUpload()
+  const { toast } = useToast()
   const [postType, setPostType] = useState<'status' | 'job' | 'media'>('status')
   const [visibility, setVisibility] = useState<'public' | 'connections' | 'private'>('public')
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [mediaFiles, setMediaFiles] = useState<File[]>([])
   const [mediaUrls, setMediaUrls] = useState<string[]>([])
+  const [mediaPreviews, setMediaPreviews] = useState<{ url: string; type: string }[]>([])
   const [submitting, setSubmitting] = useState(false)
+  const [uploading, setUploading] = useState(false)
 
   // Job-specific fields
   const [jobData, setJobData] = useState({
@@ -54,6 +61,7 @@ const EnhancedCreatePostDialog: React.FC<EnhancedCreatePostDialogProps> = ({
     setContent('')
     setMediaFiles([])
     setMediaUrls([])
+    setMediaPreviews([])
     setJobData({
       company: '',
       location: '',
@@ -71,23 +79,63 @@ const EnhancedCreatePostDialog: React.FC<EnhancedCreatePostDialogProps> = ({
 
   const handleFileUpload = async (files: FileList) => {
     const fileArray = Array.from(files)
-    setMediaFiles(prev => [...prev, ...fileArray])
-
-    // Upload files
-    const uploadedUrls: string[] = []
-    for (const file of fileArray) {
-      const { url } = await uploadFile(file, 'Feed')
-      if (url) {
-        uploadedUrls.push(url)
-      }
-    }
     
-    setMediaUrls(prev => [...prev, ...uploadedUrls])
+    // Limit to 10 files
+    if (mediaFiles.length + fileArray.length > 10) {
+      toast({
+        title: "Too many files",
+        description: "You can upload a maximum of 10 files",
+        variant: "destructive"
+      })
+      return
+    }
+
+    setUploading(true)
+    const newPreviews: { url: string; type: string }[] = []
+    const uploadedUrls: string[] = []
+
+    try {
+      for (const file of fileArray) {
+        // Create preview
+        const previewUrl = URL.createObjectURL(file)
+        newPreviews.push({ url: previewUrl, type: file.type })
+        
+        // Upload based on file type
+        if (file.type.startsWith('video/')) {
+          const result = await uploadVideo(file, 'feed')
+          if (result?.videoUrl) {
+            uploadedUrls.push(result.videoUrl)
+          }
+        } else if (file.type.startsWith('image/')) {
+          const { url } = await uploadFile(file, 'Feed')
+          if (url) {
+            uploadedUrls.push(url)
+          }
+        }
+      }
+      
+      setMediaFiles(prev => [...prev, ...fileArray])
+      setMediaPreviews(prev => [...prev, ...newPreviews])
+      setMediaUrls(prev => [...prev, ...uploadedUrls])
+    } catch (error: any) {
+      toast({
+        title: "Upload failed",
+        description: error.message || "Failed to upload some files",
+        variant: "destructive"
+      })
+    } finally {
+      setUploading(false)
+    }
   }
 
   const removeMedia = (index: number) => {
+    // Revoke the preview URL to free memory
+    if (mediaPreviews[index]) {
+      URL.revokeObjectURL(mediaPreviews[index].url)
+    }
     setMediaFiles(prev => prev.filter((_, i) => i !== index))
     setMediaUrls(prev => prev.filter((_, i) => i !== index))
+    setMediaPreviews(prev => prev.filter((_, i) => i !== index))
   }
 
   const addSkill = () => {
@@ -366,10 +414,10 @@ ${jobData.skills.length > 0 ? `🎯 Skills: ${jobData.skills.join(', ')}` : ''}`
             />
           </div>
 
-          {/* Media upload */}
-          {postType === 'media' && (
+          {/* Media upload - available for status and media posts */}
+          {(postType === 'status' || postType === 'media') && (
             <div>
-              <Label>Media Files</Label>
+              <Label>Add Photos/Videos (optional)</Label>
               <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
                 <input
                   type="file"
@@ -378,40 +426,70 @@ ${jobData.skills.length > 0 ? `🎯 Skills: ${jobData.skills.join(', ')}` : ''}`
                   onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
                   className="hidden"
                   id="media-upload"
+                  disabled={uploading}
                 />
-                <label htmlFor="media-upload" className="cursor-pointer">
+                <label htmlFor="media-upload" className={`cursor-pointer ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
                   <div className="flex flex-col items-center gap-2">
-                    <div className="flex gap-2">
-                      <Image className="h-8 w-8 text-text-secondary" />
-                      <Video className="h-8 w-8 text-text-secondary" />
-                    </div>
-                    <p className="text-sm text-text-secondary">
-                      Click to upload images or videos
-                    </p>
+                    {uploading ? (
+                      <>
+                        <Loader2 className="h-8 w-8 text-primary animate-spin" />
+                        <p className="text-sm text-muted-foreground">
+                          Uploading... {videoProgress.isUploading ? `${videoProgress.progress}%` : ''}
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex gap-2">
+                          <Image className="h-8 w-8 text-muted-foreground" />
+                          <Video className="h-8 w-8 text-muted-foreground" />
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Click to upload images or videos (max 10 files)
+                        </p>
+                      </>
+                    )}
                   </div>
                 </label>
               </div>
 
+              {/* Upload progress */}
+              {(uploadProgress.isUploading || videoProgress.isUploading) && (
+                <div className="mt-2">
+                  <Progress value={videoProgress.isUploading ? videoProgress.progress : uploadProgress.progress} className="h-2" />
+                </div>
+              )}
+
               {/* Media preview */}
-              {mediaFiles.length > 0 && (
-                <div className="grid grid-cols-2 gap-2 mt-4">
-                  {mediaFiles.map((file, index) => (
-                    <div key={index} className="relative">
-                      <div className="aspect-video bg-accent rounded-lg flex items-center justify-center">
-                        {file.type.startsWith('image/') ? (
+              {mediaPreviews.length > 0 && (
+                <div className="grid grid-cols-3 gap-2 mt-4">
+                  {mediaPreviews.map((preview, index) => (
+                    <div key={index} className="relative group">
+                      <div className="aspect-square bg-muted rounded-lg flex items-center justify-center overflow-hidden">
+                        {preview.type.startsWith('image/') ? (
                           <img
-                            src={URL.createObjectURL(file)}
+                            src={preview.url}
                             alt={`Upload ${index + 1}`}
-                            className="w-full h-full object-cover rounded-lg"
+                            className="w-full h-full object-cover"
                           />
                         ) : (
-                          <Video className="h-8 w-8 text-text-secondary" />
+                          <div className="relative w-full h-full bg-black flex items-center justify-center">
+                            <video
+                              src={preview.url}
+                              className="w-full h-full object-cover"
+                              muted
+                            />
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="bg-black/60 rounded-full p-2">
+                                <Video className="h-6 w-6 text-white" />
+                              </div>
+                            </div>
+                          </div>
                         )}
                       </div>
                       <button
                         type="button"
                         onClick={() => removeMedia(index)}
-                        className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 hover:bg-destructive/90"
+                        className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 hover:bg-destructive/90 opacity-0 group-hover:opacity-100 transition-opacity"
                       >
                         <X className="h-4 w-4" />
                       </button>
@@ -428,16 +506,16 @@ ${jobData.skills.length > 0 ? `🎯 Skills: ${jobData.skills.join(', ')}` : ''}`
           <div className="flex gap-2">
             <Button
               type="submit"
-              disabled={submitting || !content.trim() || uploadProgress.isUploading}
+              disabled={submitting || !content.trim() || uploadProgress.isUploading || videoProgress.isUploading || uploading}
               className="flex-1"
             >
-              {submitting ? 'Creating...' : uploadProgress.isUploading ? 'Uploading...' : 'Create Post'}
+              {submitting ? 'Creating...' : uploading ? 'Uploading...' : 'Create Post'}
             </Button>
             <Button
               type="button"
               variant="outline"
               onClick={handleClose}
-              disabled={submitting}
+              disabled={submitting || uploading}
             >
               Cancel
             </Button>

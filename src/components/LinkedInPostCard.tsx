@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { MessageCircle, Share2, Heart, Eye, MoreHorizontal, MapPin, Briefcase, Award, Calendar, Send, Bookmark, BookmarkCheck, Flag, Link2, Copy } from 'lucide-react'
+import { MessageCircle, Share2, Heart, Eye, MoreHorizontal, MapPin, Briefcase, Award, Calendar, Send, Bookmark, BookmarkCheck, Flag, Link2, Copy, Edit, Trash2 } from 'lucide-react'
 import { EnhancedPost } from '@/hooks/useEnhancedFeed'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
@@ -8,13 +8,18 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import MediaGallery from './MediaGallery'
+import CommentsSection from './CommentsSection'
+import LikesListDialog from './LikesListDialog'
+import EditPostDialog from './EditPostDialog'
 import { UserBadges } from './UserBadges'
 import { usePostViews } from '@/hooks/usePostViews'
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/integrations/supabase/client'
 import { formatDistanceToNow } from 'date-fns'
 import { cn } from '@/lib/utils'
+import { useQueryClient } from '@tanstack/react-query'
 
 interface LinkedInPostCardProps {
   post: EnhancedPost & { user_saved?: boolean }
@@ -37,13 +42,20 @@ const LinkedInPostCard: React.FC<LinkedInPostCardProps> = ({
   onSave,
   currentUserId
 }) => {
+  const queryClient = useQueryClient()
   const [showFullText, setShowFullText] = useState(false)
   const [showCommentInput, setShowCommentInput] = useState(false)
+  const [showCommentsSection, setShowCommentsSection] = useState(false)
+  const [showLikesDialog, setShowLikesDialog] = useState(false)
+  const [showEditDialog, setShowEditDialog] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [commentText, setCommentText] = useState('')
   const [isLiked, setIsLiked] = useState(!!(post.user_reaction || (post as any).user_liked))
   const [likesCount, setLikesCount] = useState(post.likes_count || 0)
+  const [commentsCount, setCommentsCount] = useState(post.comments_count || 0)
   const [isSaved, setIsSaved] = useState(post.user_saved || false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   const [showReportDialog, setShowReportDialog] = useState(false)
   const [reportReason, setReportReason] = useState('')
   const [reportDetails, setReportDetails] = useState('')
@@ -157,6 +169,34 @@ const LinkedInPostCard: React.FC<LinkedInPostCardProps> = ({
       })
     } finally {
       setIsReporting(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    setIsDeleting(true)
+    try {
+      const { error } = await supabase
+        .from('posts')
+        .delete()
+        .eq('id', post.id)
+
+      if (error) throw error
+
+      toast({
+        title: "Post deleted",
+        description: "Your post has been deleted successfully"
+      })
+
+      queryClient.invalidateQueries({ queryKey: ['personalized-posts-v2'] })
+      setShowDeleteDialog(false)
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete post",
+        variant: "destructive"
+      })
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -293,6 +333,28 @@ const LinkedInPostCard: React.FC<LinkedInPostCardProps> = ({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48" onClick={(e) => e.stopPropagation()}>
+              {isOwnPost && (
+                <>
+                  <DropdownMenuItem onClick={(e) => {
+                    e.stopPropagation()
+                    setShowEditDialog(true)
+                  }}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    Edit post
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setShowDeleteDialog(true)
+                    }}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete post
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              )}
               <DropdownMenuItem onClick={handleSave}>
                 {isSaved ? <BookmarkCheck className="mr-2 h-4 w-4 text-primary" /> : <Bookmark className="mr-2 h-4 w-4" />}
                 {isSaved ? 'Unsave post' : 'Save post'}
@@ -353,17 +415,31 @@ const LinkedInPostCard: React.FC<LinkedInPostCardProps> = ({
         <div className="px-4 py-2 flex items-center justify-between text-sm text-muted-foreground">
           <div className="flex items-center gap-1">
             {likesCount > 0 && (
-              <span className="flex items-center gap-1">
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setShowLikesDialog(true)
+                }}
+                className="flex items-center gap-1 hover:underline cursor-pointer"
+              >
                 <span className="flex items-center justify-center w-5 h-5 bg-red-500 rounded-full">
                   <Heart className="h-3 w-3 text-white fill-white" />
                 </span>
                 <span>{likesCount}</span>
-              </span>
+              </button>
             )}
           </div>
           <div className="flex items-center gap-3">
-            {(post.comments_count || 0) > 0 && (
-              <span>{post.comments_count} comments</span>
+            {commentsCount > 0 && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setShowCommentsSection(!showCommentsSection)
+                }}
+                className="hover:underline cursor-pointer"
+              >
+                {commentsCount} comments
+              </button>
             )}
             {(post.views_count || 0) > 0 && (
               <span className="flex items-center gap-1">
@@ -390,7 +466,7 @@ const LinkedInPostCard: React.FC<LinkedInPostCardProps> = ({
           <button
             onClick={(e) => {
               e.stopPropagation()
-              setShowCommentInput(!showCommentInput)
+              setShowCommentsSection(!showCommentsSection)
             }}
             className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-muted-foreground hover:bg-muted transition-colors"
           >
@@ -432,6 +508,13 @@ const LinkedInPostCard: React.FC<LinkedInPostCardProps> = ({
             </div>
           </div>
         )}
+
+        {/* Comments Section */}
+        <CommentsSection 
+          postId={post.id} 
+          isOpen={showCommentsSection} 
+          onClose={() => setShowCommentsSection(false)} 
+        />
       </article>
 
       {/* Report Dialog */}
@@ -496,6 +579,43 @@ const LinkedInPostCard: React.FC<LinkedInPostCardProps> = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Post</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this post? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Edit Post Dialog */}
+      <EditPostDialog
+        isOpen={showEditDialog}
+        onClose={() => setShowEditDialog(false)}
+        post={post}
+      />
+
+      {/* Likes List Dialog */}
+      <LikesListDialog
+        isOpen={showLikesDialog}
+        onClose={() => setShowLikesDialog(false)}
+        postId={post.id}
+        likesCount={likesCount}
+      />
     </>
   )
 }
