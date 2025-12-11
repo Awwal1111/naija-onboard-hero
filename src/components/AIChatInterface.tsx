@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Loader2, Image as ImageIcon, Sparkles, Download } from 'lucide-react';
+import { Send, Loader2, Image as ImageIcon, Sparkles, Download, Search, Upload, X, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BrandInput } from '@/components/ui/brand-input';
 import { Card } from '@/components/ui/card';
@@ -11,7 +11,9 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   imageUrl?: string;
+  userImage?: string;
   timestamp: Date;
+  isSearchResult?: boolean;
 }
 
 const AIChatInterface = () => {
@@ -19,14 +21,18 @@ const AIChatInterface = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
-      content: "Hi! I'm NaijaLancers AI Assistant. I can help you with conversations, answer questions, and generate images! Try asking me to create an image or help with something.",
+      content: "Hi! I'm NaijaLancers AI Assistant. I'm powered by advanced AI and can:\n\n🔍 **Search the web** for current information\n🖼️ **Generate images** from your descriptions\n📷 **Analyze images** you share with me\n💬 **Chat** about anything\n\nTry asking me about current events, share an image to analyze, or ask me to create an image!",
       timestamp: new Date()
     }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -45,10 +51,51 @@ const AIChatInterface = () => {
     return imageKeywords.some(keyword => lowerText.includes(keyword)) &&
            (lowerText.includes('image') || lowerText.includes('picture') || 
             lowerText.includes('photo') || lowerText.includes('illustration') ||
-            lowerText.includes('art') || lowerText.includes('visual'));
+            lowerText.includes('art') || lowerText.includes('visual') ||
+            lowerText.includes('logo') || lowerText.includes('design'));
   };
 
-  const streamChat = async (conversationMessages: Message[]) => {
+  const detectSearchRequest = (text: string): boolean => {
+    const searchKeywords = [
+      'search', 'find', 'look up', 'google', 'what is the latest',
+      'current', 'today', 'news', 'recent', 'price of', 'weather',
+      'search for', 'search online', 'find out'
+    ];
+    const lowerText = text.toLowerCase();
+    return searchKeywords.some(keyword => lowerText.includes(keyword));
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Invalid file",
+          description: "Please select an image file",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64 = event.target?.result as string;
+        setSelectedImage(base64);
+        setImagePreview(base64);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeSelectedImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const streamChat = async (conversationMessages: Message[], action?: string, imageAttachment?: string, searchQuery?: string) => {
     const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
     
     const resp = await fetch(CHAT_URL, {
@@ -61,7 +108,10 @@ const AIChatInterface = () => {
         messages: conversationMessages.map(m => ({
           role: m.role,
           content: m.content
-        }))
+        })),
+        action,
+        imageAttachment,
+        searchQuery
       }),
     });
 
@@ -97,7 +147,8 @@ const AIChatInterface = () => {
     setMessages(prev => [...prev, {
       role: 'assistant',
       content: '',
-      timestamp: new Date()
+      timestamp: new Date(),
+      isSearchResult: action === 'web_search'
     }]);
 
     while (!streamDone) {
@@ -130,7 +181,8 @@ const AIChatInterface = () => {
               newMessages[newMessages.length - 1] = {
                 role: 'assistant',
                 content: assistantMessage,
-                timestamp: new Date()
+                timestamp: new Date(),
+                isSearchResult: action === 'web_search'
               };
               return newMessages;
             });
@@ -185,24 +237,47 @@ const AIChatInterface = () => {
   };
 
   const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+    if ((!input.trim() && !selectedImage) || isLoading) return;
 
     const userMessage: Message = {
       role: 'user',
-      content: input,
+      content: input || (selectedImage ? "What's in this image?" : ''),
+      userImage: selectedImage || undefined,
       timestamp: new Date()
     };
 
     setMessages(prev => [...prev, userMessage]);
+    const currentInput = input;
     setInput('');
+    const currentImage = selectedImage;
+    removeSelectedImage();
+
+    // If user attached an image, analyze it
+    if (currentImage) {
+      setIsLoading(true);
+      try {
+        await streamChat([...messages, userMessage], 'analyze_image', currentImage);
+      } catch (error) {
+        console.error('Error analyzing image:', error);
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: "Sorry, I couldn't analyze that image. Please try again.",
+          timestamp: new Date()
+        }]);
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
 
     // Check if this is an image generation request
-    const isImageRequest = detectImageRequest(input);
+    const isImageRequest = detectImageRequest(currentInput);
+    const isSearchRequest = detectSearchRequest(currentInput);
 
     if (isImageRequest) {
       setIsGeneratingImage(true);
       try {
-        const result = await generateImage(input);
+        const result = await generateImage(currentInput);
         
         setMessages(prev => [...prev, {
           role: 'assistant',
@@ -219,6 +294,20 @@ const AIChatInterface = () => {
         }]);
       } finally {
         setIsGeneratingImage(false);
+      }
+    } else if (isSearchRequest) {
+      setIsSearching(true);
+      try {
+        await streamChat([...messages, userMessage], 'web_search', undefined, currentInput);
+      } catch (error) {
+        console.error('Error in search:', error);
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: "Sorry, I encountered an error while searching. Please try again.",
+          timestamp: new Date()
+        }]);
+      } finally {
+        setIsSearching(false);
       }
     } else {
       setIsLoading(true);
@@ -237,6 +326,12 @@ const AIChatInterface = () => {
     }
   };
 
+  const quickActions = [
+    { icon: Search, label: "Search the web", prompt: "Search for " },
+    { icon: ImageIcon, label: "Generate image", prompt: "Generate an image of " },
+    { icon: Globe, label: "Latest news", prompt: "What's the latest news about " },
+  ];
+
   return (
     <div className="flex flex-col h-screen bg-background">
       {/* Header */}
@@ -246,12 +341,34 @@ const AIChatInterface = () => {
             <Sparkles className="h-6 w-6 text-primary-foreground" />
           </AvatarFallback>
         </Avatar>
-        <div>
+        <div className="flex-1">
           <h1 className="text-lg font-semibold">AI Assistant</h1>
-          <Badge variant="secondary" className="text-xs">
-            Powered by Gemini
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="text-xs">
+              Powered by Gemini
+            </Badge>
+            <Badge variant="outline" className="text-xs flex items-center gap-1">
+              <Globe className="h-3 w-3" />
+              Web Search
+            </Badge>
+          </div>
         </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="bg-card/50 px-4 py-2 flex gap-2 overflow-x-auto border-b border-border">
+        {quickActions.map((action, idx) => (
+          <Button
+            key={idx}
+            variant="outline"
+            size="sm"
+            className="flex-shrink-0 gap-1"
+            onClick={() => setInput(action.prompt)}
+          >
+            <action.icon className="h-3 w-3" />
+            {action.label}
+          </Button>
+        ))}
       </div>
 
       {/* Messages */}
@@ -264,7 +381,7 @@ const AIChatInterface = () => {
             }`}
           >
             {message.role === 'assistant' && (
-              <Avatar className="h-8 w-8 bg-gradient-to-br from-primary to-primary/60">
+              <Avatar className="h-8 w-8 bg-gradient-to-br from-primary to-primary/60 flex-shrink-0">
                 <AvatarFallback className="bg-transparent">
                   <Sparkles className="h-4 w-4 text-primary-foreground" />
                 </AvatarFallback>
@@ -272,12 +389,29 @@ const AIChatInterface = () => {
             )}
             
             <Card
-              className={`max-w-[70%] p-4 ${
+              className={`max-w-[80%] p-4 ${
                 message.role === 'user'
                   ? 'bg-primary text-primary-foreground'
                   : 'bg-card'
               }`}
             >
+              {message.isSearchResult && (
+                <div className="flex items-center gap-1 text-xs text-muted-foreground mb-2">
+                  <Globe className="h-3 w-3" />
+                  Web search result
+                </div>
+              )}
+              
+              {message.userImage && (
+                <div className="mb-3">
+                  <img
+                    src={message.userImage}
+                    alt="User shared"
+                    className="rounded-lg max-w-full h-auto max-h-48 object-cover"
+                  />
+                </div>
+              )}
+              
               <p className="text-sm whitespace-pre-wrap">{message.content}</p>
               
               {message.imageUrl && (
@@ -306,14 +440,14 @@ const AIChatInterface = () => {
             </Card>
 
             {message.role === 'user' && (
-              <Avatar className="h-8 w-8 bg-muted">
+              <Avatar className="h-8 w-8 bg-muted flex-shrink-0">
                 <AvatarFallback>U</AvatarFallback>
               </Avatar>
             )}
           </div>
         ))}
 
-        {(isLoading || isGeneratingImage) && (
+        {(isLoading || isGeneratingImage || isSearching) && (
           <div className="flex gap-3 justify-start">
             <Avatar className="h-8 w-8 bg-gradient-to-br from-primary to-primary/60">
               <AvatarFallback className="bg-transparent">
@@ -324,7 +458,7 @@ const AIChatInterface = () => {
               <div className="flex items-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 <span className="text-sm text-muted-foreground">
-                  {isGeneratingImage ? 'Generating image...' : 'Thinking...'}
+                  {isGeneratingImage ? 'Generating image...' : isSearching ? 'Searching the web...' : 'Thinking...'}
                 </span>
               </div>
             </Card>
@@ -334,33 +468,79 @@ const AIChatInterface = () => {
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Image Preview */}
+      {imagePreview && (
+        <div className="px-4 pb-2">
+          <div className="relative inline-block">
+            <img
+              src={imagePreview}
+              alt="Preview"
+              className="h-20 rounded-lg border border-border"
+            />
+            <Button
+              variant="destructive"
+              size="icon"
+              className="absolute -top-2 -right-2 h-6 w-6"
+              onClick={removeSelectedImage}
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Input */}
       <div className="bg-card border-t border-border p-4">
         <div className="flex gap-2">
+          <input
+            type="file"
+            ref={fileInputRef}
+            accept="image/*"
+            onChange={handleImageSelect}
+            className="hidden"
+          />
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isLoading || isGeneratingImage || isSearching}
+          >
+            <Upload className="h-5 w-5" />
+          </Button>
           <BrandInput
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-            placeholder="Ask anything or request an image..."
-            disabled={isLoading || isGeneratingImage}
+            placeholder="Ask anything, search the web, or share an image..."
+            disabled={isLoading || isGeneratingImage || isSearching}
             className="flex-1"
           />
           <Button
             onClick={handleSend}
-            disabled={!input.trim() || isLoading || isGeneratingImage}
+            disabled={(!input.trim() && !selectedImage) || isLoading || isGeneratingImage || isSearching}
             size="icon"
           >
-            {isLoading || isGeneratingImage ? (
+            {isLoading || isGeneratingImage || isSearching ? (
               <Loader2 className="h-5 w-5 animate-spin" />
             ) : (
               <Send className="h-5 w-5" />
             )}
           </Button>
         </div>
-        <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-          <ImageIcon className="h-3 w-3" />
-          Try: "Generate an image of a sunset" or ask any question!
-        </p>
+        <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1">
+            <ImageIcon className="h-3 w-3" />
+            Generate images
+          </span>
+          <span className="flex items-center gap-1">
+            <Upload className="h-3 w-3" />
+            Analyze photos
+          </span>
+          <span className="flex items-center gap-1">
+            <Search className="h-3 w-3" />
+            Web search
+          </span>
+        </div>
       </div>
     </div>
   );
