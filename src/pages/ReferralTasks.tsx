@@ -13,7 +13,7 @@ export default function ReferralTasks() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<"highest" | "lowest">("highest");
-  const { tasks, loading: isLoading, submitTask, hasSubmitted, getSubmissionStatus } = useReferralTasks();
+  const { tasks, loading: isLoading, submitTask, hasSubmitted, getSubmissionStatus, getAdminComment } = useReferralTasks();
 
   const filteredTasks = tasks
     .filter((task) => {
@@ -97,6 +97,7 @@ export default function ReferralTasks() {
                 task={task}
                 hasSubmitted={hasSubmitted(task.id)}
                 submissionStatus={getSubmissionStatus(task.id)}
+                adminComment={getAdminComment(task.id)}
                 onSubmit={submitTask}
               />
             ))}

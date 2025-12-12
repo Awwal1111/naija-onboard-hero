@@ -13,10 +13,11 @@ interface ReferralTaskCardProps {
   task: ReferralTask
   hasSubmitted: boolean
   submissionStatus?: string
+  adminComment?: string
   onSubmit: (taskId: string, proofUrl?: string, textExplanation?: string) => Promise<{ success: boolean; error?: string }>
 }
 
-export const ReferralTaskCard = ({ task, hasSubmitted, submissionStatus, onSubmit }: ReferralTaskCardProps) => {
+export const ReferralTaskCard = ({ task, hasSubmitted, submissionStatus, adminComment, onSubmit }: ReferralTaskCardProps) => {
   const [open, setOpen] = useState(false)
   const [proof, setProof] = useState('')
   const [textExplanation, setTextExplanation] = useState('')
@@ -106,6 +107,7 @@ export const ReferralTaskCard = ({ task, hasSubmitted, submissionStatus, onSubmi
     }
   }
 
+
   const getButtonText = () => {
     if (hasSubmitted) {
       return submissionStatus === 'rejected' ? 'Resubmit' : 'Submitted'
@@ -136,6 +138,14 @@ export const ReferralTaskCard = ({ task, hasSubmitted, submissionStatus, onSubmi
             className="text-sm text-muted-foreground"
           />
         </div>
+
+        {/* Show rejection reason if rejected */}
+        {submissionStatus === 'rejected' && adminComment && (
+          <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3">
+            <p className="text-xs font-medium text-destructive mb-1">Rejection Reason:</p>
+            <p className="text-sm text-destructive/90">{adminComment}</p>
+          </div>
+        )}
 
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>

@@ -267,21 +267,30 @@ export const usePersonalizedFeed = () => {
   const loading = postsLoading || storiesLoading
 
   // Post creation with cache invalidation
-  const createPost = useCallback(async (content: string, contentType: string = 'status', title?: string, mediaUrls?: string[]) => {
+  const createPost = useCallback(async (content: string, contentType: string = 'status', visibility: string = 'public', title?: string, mediaUrls?: string[]) => {
     if (!user) return { error: 'User not authenticated' }
 
+    console.log('[Feed] Creating post with media_urls:', mediaUrls)
+
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('posts')
         .insert({
           user_id: user.id,
           content,
           content_type: contentType,
-          title,
-          media_urls: mediaUrls
+          visibility,
+          title: title || null,
+          media_urls: mediaUrls && mediaUrls.length > 0 ? mediaUrls : null
         })
+        .select()
 
-      if (error) throw error
+      if (error) {
+        console.error('[Feed] Post creation error:', error)
+        throw error
+      }
+
+      console.log('[Feed] Post created successfully:', data)
 
       queryClient.invalidateQueries({ queryKey: ['personalized-posts-v2'] })
 

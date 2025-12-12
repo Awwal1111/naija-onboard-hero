@@ -355,9 +355,8 @@ const MainFeed = () => {
       <EnhancedCreatePostDialog
         isOpen={showCreatePost}
         onClose={() => setShowCreatePost(false)}
-        onCreatePost={(content, contentType, title, mediaUrls) => {
-          const urlsArray = typeof mediaUrls === 'string' ? [mediaUrls] : mediaUrls
-          return createPost(content, contentType, title, urlsArray)
+        onCreatePost={(content, contentType, visibility, title, mediaUrls) => {
+          return createPost(content, contentType, visibility, title, mediaUrls)
         }}
         userProfile={profile}
       />
