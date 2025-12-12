@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Send, Loader2, Image as ImageIcon, Sparkles, Download, 
   Bookmark, Settings, Trash2, Copy, MoreVertical, FileText,
-  Code, Palette, MessageSquare, Zap, Bot
+  Code, Palette, MessageSquare, Zap, Bot, Search, Globe, Upload, X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -16,14 +16,12 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -47,7 +45,10 @@ const CopilotChat = () => {
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [saveTitle, setSaveTitle] = useState('');
   const [messageToSave, setMessageToSave] = useState<CopilotMessage | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploadedImage, setUploadedImage] = useState<File | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -57,11 +58,58 @@ const CopilotChat = () => {
     scrollToBottom();
   }, [messages]);
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        toast({
+          title: "File too large",
+          description: "Please upload an image under 10MB",
+          variant: "destructive"
+        });
+        return;
+      }
+      setUploadedImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = () => {
+    setImagePreview(null);
+    setUploadedImage(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const handleSend = async () => {
-    if (!input.trim() || isStreaming) return;
+    if ((!input.trim() && !uploadedImage) || isStreaming) return;
+    
     const message = input.trim();
     setInput('');
-    await sendMessage(message);
+    
+    let attachments: { type: string; url: string }[] | undefined;
+    
+    if (imagePreview) {
+      attachments = [{ type: 'image/png', url: imagePreview }];
+      removeImage();
+    }
+    
+    await sendMessage(message, attachments);
+  };
+
+  const handleQuickAction = async (actionType: string, prompt: string) => {
+    if (actionType === 'search') {
+      setInput(`search: ${prompt}`);
+    } else if (actionType === 'image') {
+      setInput(`generate image: ${prompt}`);
+    } else {
+      setInput(prompt);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -94,14 +142,15 @@ const CopilotChat = () => {
   };
 
   const quickActions = [
-    { icon: FileText, label: 'Write Proposal', prompt: 'Help me write a professional proposal for a client' },
-    { icon: Code, label: 'Generate Code', prompt: 'Help me write code for' },
-    { icon: Palette, label: 'Design Brief', prompt: 'Create a design brief for' },
-    { icon: MessageSquare, label: 'Client Email', prompt: 'Help me draft a professional email to a client about' },
+    { icon: Search, label: 'Web Search', prompt: '', actionType: 'search', placeholder: 'Search for anything...' },
+    { icon: ImageIcon, label: 'Generate Image', prompt: '', actionType: 'image', placeholder: 'Describe your image...' },
+    { icon: FileText, label: 'Write Proposal', prompt: 'Help me write a professional proposal for a client project', actionType: 'text' },
+    { icon: Code, label: 'Generate Code', prompt: 'Help me write code for', actionType: 'text' },
+    { icon: Palette, label: 'Design Brief', prompt: 'Create a design brief for', actionType: 'text' },
+    { icon: MessageSquare, label: 'Client Email', prompt: 'Help me draft a professional email to a client about', actionType: 'text' },
   ];
 
   const copilotName = settings?.copilot_name || 'NaijaLancers Copilot';
-  const isOnline = true; // AI is always online
 
   return (
     <div className="flex flex-col h-screen bg-background">
@@ -131,11 +180,7 @@ const CopilotChat = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setShowSettings(true)}
-          >
+          <Button variant="ghost" size="icon" onClick={() => setShowSettings(true)}>
             <Settings className="h-5 w-5" />
           </Button>
           <DropdownMenu>
@@ -163,23 +208,31 @@ const CopilotChat = () => {
             </div>
             <h2 className="text-xl font-semibold mb-2">Hey there! I'm {copilotName}</h2>
             <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-              Your personal freelancing AI partner. I can help you with proposals, 
-              client communication, design, code, and much more!
+              Your AI freelancing partner with web search, image generation, code writing, and more!
             </p>
 
             {/* Quick Actions */}
-            <div className="grid grid-cols-2 gap-2 max-w-sm mx-auto">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-w-lg mx-auto">
               {quickActions.map((action, i) => (
                 <Button
                   key={i}
                   variant="outline"
-                  className="flex items-center gap-2 justify-start"
-                  onClick={() => setInput(action.prompt)}
+                  className="flex items-center gap-2 justify-start h-auto py-3"
+                  onClick={() => handleQuickAction(action.actionType, action.prompt)}
                 >
-                  <action.icon className="h-4 w-4" />
+                  <action.icon className="h-4 w-4 shrink-0" />
                   <span className="text-sm">{action.label}</span>
                 </Button>
               ))}
+            </div>
+
+            <div className="mt-6 p-4 bg-muted/50 rounded-lg max-w-md mx-auto">
+              <p className="text-sm text-muted-foreground">
+                <strong>Pro Tips:</strong><br />
+                • Type "search: [query]" for web search<br />
+                • Type "generate image: [description]" for images<br />
+                • Upload an image for AI analysis
+              </p>
             </div>
           </div>
         )}
@@ -199,7 +252,7 @@ const CopilotChat = () => {
               </Avatar>
             )}
 
-            <div className={`group relative max-w-[75%] ${message.role === 'user' ? 'order-first' : ''}`}>
+            <div className={`group relative max-w-[80%] ${message.role === 'user' ? 'order-first' : ''}`}>
               <Card
                 className={`p-3 ${
                   message.role === 'user'
@@ -207,8 +260,28 @@ const CopilotChat = () => {
                     : 'bg-card'
                 }`}
               >
+                {/* Search result badge */}
+                {message.metadata?.isSearchResult && (
+                  <Badge variant="outline" className="mb-2 text-xs">
+                    <Globe className="h-3 w-3 mr-1" />
+                    Web Search Result
+                  </Badge>
+                )}
+
                 <p className="text-sm whitespace-pre-wrap">{message.content}</p>
 
+                {/* Show attached user image */}
+                {message.metadata?.attachments?.[0]?.url && (
+                  <div className="mt-2">
+                    <img
+                      src={message.metadata.attachments[0].url}
+                      alt="Uploaded"
+                      className="rounded-lg max-w-full h-auto max-h-48 object-contain"
+                    />
+                  </div>
+                )}
+
+                {/* Show generated image */}
                 {message.media_url && (
                   <div className="mt-2">
                     <img
@@ -288,21 +361,57 @@ const CopilotChat = () => {
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Image Preview */}
+      {imagePreview && (
+        <div className="px-4 py-2 border-t border-border">
+          <div className="relative inline-block">
+            <img
+              src={imagePreview}
+              alt="Preview"
+              className="h-20 w-20 object-cover rounded-lg"
+            />
+            <Button
+              variant="destructive"
+              size="icon"
+              className="absolute -top-2 -right-2 h-6 w-6"
+              onClick={removeImage}
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Input */}
       <div className="bg-card border-t border-border p-4">
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-end">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleImageUpload}
+            className="hidden"
+          />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => fileInputRef.current?.click()}
+            className="shrink-0"
+          >
+            <Upload className="h-5 w-5" />
+          </Button>
           <Textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask me anything or describe what you need..."
+            placeholder="Ask anything, search the web, or generate images..."
             disabled={isStreaming}
             className="flex-1 min-h-[44px] max-h-[120px] resize-none"
             rows={1}
           />
           <Button
             onClick={handleSend}
-            disabled={!input.trim() || isStreaming}
+            disabled={(!input.trim() && !uploadedImage) || isStreaming}
             size="icon"
             className="shrink-0"
           >
@@ -313,10 +422,10 @@ const CopilotChat = () => {
             )}
           </Button>
         </div>
-        <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+        <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
           <Zap className="h-3 w-3" />
-          Try: "Write a proposal for a web design project" or "Generate a logo concept"
-        </p>
+          <span>Try: "search: latest freelancing trends" or "generate image: professional logo for tech startup"</span>
+        </div>
       </div>
 
       {/* Settings Dialog */}
