@@ -19,7 +19,7 @@ const ExpertClass = () => {
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [activeTab, setActiveTab] = useState('discover')
-  const { liveClasses, upcomingClasses, featuredClasses, pastClasses, isLoading } = useExpertClasses()
+  const { myClasses, liveClasses, upcomingClasses, featuredClasses, pastClasses, isLoading } = useExpertClasses()
 
   useEffect(() => {
     if (!user) return
@@ -38,11 +38,6 @@ const ExpertClass = () => {
   }, [user])
 
   const isExpert = Boolean(userProfile?.is_expert === true)
-
-  // Get expert's own classes
-  const myClasses = [...liveClasses, ...upcomingClasses, ...pastClasses].filter(
-    c => c.expert_id === user?.id
-  )
 
   // Filter classes by search
   const filterClasses = (classes: any[]) => {

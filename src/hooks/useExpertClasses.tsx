@@ -37,6 +37,42 @@ export const useExpertClasses = () => {
   const { user } = useAuth()
   const queryClient = useQueryClient()
 
+  // Fetch user's own classes (My Classes)
+  const { data: myClasses = [], isLoading: isLoadingMy } = useQuery({
+    queryKey: ['expert-classes', 'my', user?.id],
+    queryFn: async () => {
+      if (!user) return []
+      
+      const { data: classes, error } = await supabase
+        .from('expert_classes')
+        .select('*')
+        .eq('expert_id', user.id)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      if (!classes || classes.length === 0) return []
+
+      // Fetch expert profiles
+      const expertIds = [...new Set(classes.map(c => c.expert_id))]
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, profile_picture_url')
+        .in('user_id', expertIds)
+
+      // Combine data
+      return classes.map(classItem => ({
+        ...classItem,
+        expert: profiles?.find(p => p.user_id === classItem.expert_id) 
+          ? {
+              full_name: profiles.find(p => p.user_id === classItem.expert_id)!.full_name || '',
+              avatar_url: profiles.find(p => p.user_id === classItem.expert_id)!.profile_picture_url || ''
+            }
+          : undefined
+      })) as ExpertClass[]
+    },
+    enabled: !!user
+  })
+
   // Fetch live classes
   const { data: liveClasses = [], isLoading: isLoadingLive } = useQuery({
     queryKey: ['expert-classes', 'live'],
@@ -315,11 +351,12 @@ export const useExpertClasses = () => {
   })
 
   return {
+    myClasses,
     liveClasses,
     upcomingClasses,
     featuredClasses,
     pastClasses,
-    isLoading: isLoadingLive || isLoadingUpcoming || isLoadingFeatured || isLoadingPast,
+    isLoading: isLoadingMy || isLoadingLive || isLoadingUpcoming || isLoadingFeatured || isLoadingPast,
     createClass: createClassMutation.mutate,
     joinClass: joinClassMutation.mutate,
     leaveClass: leaveClassMutation.mutate,
