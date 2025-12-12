@@ -28,13 +28,15 @@ serve(async (req) => {
     const { user_id, wallet_address } = await req.json();
     
     if (!user_id || !wallet_address) {
+      console.log("[CHECK-DEPOSIT] ❌ Missing user_id or wallet_address");
       return new Response(JSON.stringify({ 
         error: "Missing user_id or wallet_address" 
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 });
     }
 
-    console.log(`[CHECK-DEPOSIT] Checking deposits for user: ${user_id}`);
-    console.log(`[CHECK-DEPOSIT] Wallet: ${wallet_address}`);
+    console.log(`[CHECK-DEPOSIT] ========================================`);
+    console.log(`[CHECK-DEPOSIT] 🔍 Checking deposits for user: ${user_id}`);
+    console.log(`[CHECK-DEPOSIT] 📍 Wallet: ${wallet_address}`);
 
     const provider = new ethers.JsonRpcProvider("https://forno.celo.org");
     
@@ -51,67 +53,88 @@ serve(async (req) => {
       provider
     );
 
-    const [cusdBalance, cusdDecimals, usdtBalance, usdtDecimals, celoBalance] = await Promise.all([
-      cusdContract.balanceOf(wallet_address),
-      cusdContract.decimals(),
-      usdtContract.balanceOf(wallet_address),
-      usdtContract.decimals(),
-      provider.getBalance(wallet_address)
-    ]);
+    let cusdAmount = 0, usdtAmount = 0, celoAmount = 0;
+    
+    try {
+      const [cusdBalance, cusdDecimals, usdtBalance, usdtDecimals, celoBalance] = await Promise.all([
+        cusdContract.balanceOf(wallet_address),
+        cusdContract.decimals(),
+        usdtContract.balanceOf(wallet_address),
+        usdtContract.decimals(),
+        provider.getBalance(wallet_address)
+      ]);
 
-    const cusdAmount = parseFloat(ethers.formatUnits(cusdBalance, cusdDecimals));
-    const usdtAmount = parseFloat(ethers.formatUnits(usdtBalance, usdtDecimals));
-    const celoAmount = parseFloat(ethers.formatEther(celoBalance));
+      cusdAmount = parseFloat(ethers.formatUnits(cusdBalance, cusdDecimals));
+      usdtAmount = parseFloat(ethers.formatUnits(usdtBalance, usdtDecimals));
+      celoAmount = parseFloat(ethers.formatEther(celoBalance));
 
-    console.log(`[CHECK-DEPOSIT] Balances - cUSD: ${cusdAmount}, USDT: ${usdtAmount}, CELO: ${celoAmount}`);
+      console.log(`[CHECK-DEPOSIT] 💰 Balances - cUSD: ${cusdAmount}, USDT: ${usdtAmount}, CELO: ${celoAmount}`);
+    } catch (balanceError: any) {
+      console.error(`[CHECK-DEPOSIT] ❌ Error fetching balances:`, balanceError.message);
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: "Failed to fetch wallet balances",
+        details: balanceError.message
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
-    // Check for pending deposits that haven't been processed yet
-    const { data: pendingTx } = await supabase
-      .from('quidax_transactions')
-      .select('*')
+    // Get user's last recorded balance to detect new deposits
+    const { data: userProfile } = await supabase
+      .from('profiles')
+      .select('last_celo_balance, last_cusd_balance, last_usdt_balance')
       .eq('user_id', user_id)
-      .eq('status', 'pending')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .single();
 
-    // Minimum threshold to consider as a deposit (to avoid dust)
+    const lastCusd = userProfile?.last_cusd_balance || 0;
+    const lastUsdt = userProfile?.last_usdt_balance || 0;
+    const lastCelo = userProfile?.last_celo_balance || 0;
+
+    console.log(`[CHECK-DEPOSIT] 📊 Previous balances - cUSD: ${lastCusd}, USDT: ${lastUsdt}, CELO: ${lastCelo}`);
+
+    // Minimum threshold for deposit detection
     const MIN_DEPOSIT = 0.01;
     
+    // Calculate new deposits (current balance - last recorded balance)
+    const newCusd = cusdAmount - lastCusd;
+    const newUsdt = usdtAmount - lastUsdt;
+    const newCelo = celoAmount - lastCelo;
+
+    console.log(`[CHECK-DEPOSIT] 📈 New deposits detected - cUSD: ${newCusd}, USDT: ${newUsdt}, CELO: ${newCelo}`);
+
     let depositDetected = false;
     let asset = "";
     let cryptoAmount = 0;
 
-    // Check if there's a pending Quidax transaction
-    if (pendingTx) {
-      console.log(`[CHECK-DEPOSIT] Found pending Quidax tx: ${pendingTx.reference}`);
-      
-      // For buy/on-ramp, check if USDT arrived
-      if (pendingTx.transaction_type === 'buy' && usdtAmount >= MIN_DEPOSIT) {
-        depositDetected = true;
-        asset = "USDT";
-        cryptoAmount = usdtAmount;
-        console.log(`[CHECK-DEPOSIT] ✅ USDT deposit detected: ${cryptoAmount}`);
-      }
-    } else {
-      // No pending Quidax tx - check for direct deposits
-      if (usdtAmount >= MIN_DEPOSIT) {
-        depositDetected = true;
-        asset = "USDT";
-        cryptoAmount = usdtAmount;
-      } else if (cusdAmount >= MIN_DEPOSIT) {
-        depositDetected = true;
-        asset = "cUSD";
-        cryptoAmount = cusdAmount;
-      } else if (celoAmount >= 0.1) { // Higher threshold for CELO
-        depositDetected = true;
-        asset = "CELO";
-        cryptoAmount = celoAmount;
-      }
+    // Prioritize USDT, then cUSD, then CELO
+    if (newUsdt >= MIN_DEPOSIT) {
+      depositDetected = true;
+      asset = "USDT";
+      cryptoAmount = newUsdt;
+      console.log(`[CHECK-DEPOSIT] ✅ USDT deposit detected: ${cryptoAmount}`);
+    } else if (newCusd >= MIN_DEPOSIT) {
+      depositDetected = true;
+      asset = "cUSD";
+      cryptoAmount = newCusd;
+      console.log(`[CHECK-DEPOSIT] ✅ cUSD deposit detected: ${cryptoAmount}`);
+    } else if (newCelo >= 0.1) { // Higher threshold for CELO
+      depositDetected = true;
+      asset = "CELO";
+      cryptoAmount = newCelo;
+      console.log(`[CHECK-DEPOSIT] ✅ CELO deposit detected: ${cryptoAmount}`);
     }
 
+    // Always update recorded balances
+    await supabase
+      .from('profiles')
+      .update({
+        last_cusd_balance: cusdAmount,
+        last_usdt_balance: usdtAmount,
+        last_celo_balance: celoAmount
+      })
+      .eq('user_id', user_id);
+
     if (!depositDetected) {
-      console.log(`[CHECK-DEPOSIT] No new deposits detected`);
+      console.log(`[CHECK-DEPOSIT] ℹ️ No new deposits detected above threshold`);
       return new Response(JSON.stringify({ 
         success: true, 
         deposit_detected: false,
@@ -119,28 +142,7 @@ serve(async (req) => {
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Check if we already processed this amount recently (within 1 hour)
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-    const { data: recentTx } = await supabase
-      .from('crypto_transactions')
-      .select('id')
-      .eq('user_id', user_id)
-      .eq('crypto_currency', asset)
-      .eq('status', 'completed')
-      .gte('created_at', oneHourAgo)
-      .limit(1)
-      .maybeSingle();
-
-    if (recentTx) {
-      console.log(`[CHECK-DEPOSIT] Recently processed similar deposit - skipping`);
-      return new Response(JSON.stringify({ 
-        success: true, 
-        deposit_detected: false,
-        message: "Recent deposit already processed"
-      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
-
-    console.log(`[CHECK-DEPOSIT] Processing deposit: ${cryptoAmount} ${asset}`);
+    console.log(`[CHECK-DEPOSIT] 🎉 Processing deposit: ${cryptoAmount} ${asset}`);
 
     // Get exchange rate
     let usdToNgn = 1600;
@@ -150,10 +152,11 @@ serve(async (req) => {
         const rateData = await rateResponse.json();
         if (rateData.conversion_rates?.NGN) {
           usdToNgn = rateData.conversion_rates.NGN;
+          console.log(`[CHECK-DEPOSIT] 💱 Exchange rate: 1 USD = ${usdToNgn} NGN`);
         }
       }
     } catch (e) {
-      console.log(`[CHECK-DEPOSIT] Using fallback exchange rate`);
+      console.log(`[CHECK-DEPOSIT] ⚠️ Using fallback exchange rate`);
     }
 
     // Calculate NC amount
@@ -170,20 +173,23 @@ serve(async (req) => {
         );
         if (celoResponse.ok) {
           const celoData = await celoResponse.json();
-          if (celoData.celo?.usd) celoPrice = celoData.celo.usd;
+          if (celoData.celo?.usd) {
+            celoPrice = celoData.celo.usd;
+            console.log(`[CHECK-DEPOSIT] 💰 CELO price: $${celoPrice}`);
+          }
         }
       } catch (e) { /* use fallback */ }
       nairaAmount = cryptoAmount * celoPrice * usdToNgn;
     }
 
     const ncAmount = Math.round(nairaAmount * 100) / 100;
-    console.log(`[CHECK-DEPOSIT] NC to credit: ${ncAmount}`);
+    console.log(`[CHECK-DEPOSIT] 💵 NC to credit: ${ncAmount} (from ${nairaAmount.toFixed(2)} NGN)`);
 
     // Generate a unique reference for this deposit
     const depositRef = `DEP-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
     // Create transaction record
-    await supabase.from("crypto_transactions").insert({
+    const { error: txInsertError } = await supabase.from("crypto_transactions").insert({
       user_id,
       transaction_type: "deposit",
       crypto_amount: cryptoAmount,
@@ -197,6 +203,12 @@ serve(async (req) => {
       completed_at: new Date().toISOString()
     });
 
+    if (txInsertError) {
+      console.error(`[CHECK-DEPOSIT] ❌ Failed to create transaction:`, txInsertError);
+    } else {
+      console.log(`[CHECK-DEPOSIT] ✅ Transaction recorded: ${depositRef}`);
+    }
+
     // Update user wallet
     const { data: profile } = await supabase
       .from("profiles")
@@ -205,26 +217,40 @@ serve(async (req) => {
       .single();
 
     if (profile) {
+      const newBalance = (profile.wallet_balance || 0) + ncAmount;
+      const newWithdrawable = (profile.balance_withdrawable || 0) + ncAmount;
+      
       await supabase
         .from("profiles")
         .update({
-          wallet_balance: profile.wallet_balance + ncAmount,
-          balance_withdrawable: profile.balance_withdrawable + ncAmount
+          wallet_balance: newBalance,
+          balance_withdrawable: newWithdrawable
         })
         .eq("user_id", user_id);
+      
+      console.log(`[CHECK-DEPOSIT] 💰 Updated balance: ${profile.wallet_balance} → ${newBalance}`);
     }
 
     // Log wallet transaction
     await supabase.from("wallet_transactions").insert({
       user_id,
-      kind: pendingTx ? "quidax_deposit" : "deposit",
+      kind: "deposit",
       amount: ncAmount,
       status: "completed",
       reference: `Crypto deposit: ${cryptoAmount} ${asset}`
     });
 
-    // Update Quidax transaction if exists
-    if (pendingTx) {
+    // Check for pending Quidax transaction
+    const { data: pendingQuidax } = await supabase
+      .from('quidax_transactions')
+      .select('id, reference')
+      .eq('user_id', user_id)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (pendingQuidax) {
       await supabase
         .from('quidax_transactions')
         .update({
@@ -232,7 +258,8 @@ serve(async (req) => {
           token_amount: cryptoAmount,
           tx_hash: depositRef
         })
-        .eq('id', pendingTx.id);
+        .eq('id', pendingQuidax.id);
+      console.log(`[CHECK-DEPOSIT] ✅ Updated Quidax transaction: ${pendingQuidax.reference}`);
     }
 
     console.log(`[CHECK-DEPOSIT] ✅ Credited ${ncAmount} NC to user`);
@@ -273,13 +300,13 @@ serve(async (req) => {
           const masterCeloBalance = await provider.getBalance(masterAddress);
           
           if (masterCeloBalance >= gasAmount) {
-            console.log(`[SWEEP] Sending gas to user wallet...`);
+            console.log(`[SWEEP] 🚀 Sending gas to user wallet...`);
             const gasTx = await masterWallet.sendTransaction({
               to: wallet_address,
               value: gasAmount
             });
             await gasTx.wait();
-            console.log(`[SWEEP] Gas sent`);
+            console.log(`[SWEEP] ✅ Gas sent`);
 
             // Wait for gas to settle
             await new Promise(resolve => setTimeout(resolve, 5000));
@@ -306,23 +333,29 @@ serve(async (req) => {
         }
       }
     } catch (sweepError: any) {
-      console.error(`[SWEEP] Error: ${sweepError.message} - funds safe in user wallet`);
+      console.error(`[SWEEP] ❌ Error: ${sweepError.message} - funds safe in user wallet`);
     }
 
     // Send notifications
-    await sendAllNotifications(supabase, {
-      userId: user_id,
-      type: 'deposit_completed',
-      title: '💰 Deposit Successful',
-      message: `Your account has been credited with ₦${ncAmount.toLocaleString()} NC (${cryptoAmount} ${asset})`,
-      amount: ncAmount,
-      metadata: {
-        reference: depositRef,
-        cryptoAmount,
-        asset,
-        transactionType: 'Crypto Deposit'
-      }
-    });
+    try {
+      await sendAllNotifications(supabase, {
+        userId: user_id,
+        type: 'deposit_completed',
+        title: '💰 Deposit Successful',
+        message: `Your account has been credited with ₦${ncAmount.toLocaleString()} NC (${cryptoAmount} ${asset})`,
+        amount: ncAmount,
+        metadata: {
+          reference: depositRef,
+          cryptoAmount,
+          asset,
+          transactionType: 'Crypto Deposit'
+        }
+      });
+    } catch (notifError) {
+      console.error(`[CHECK-DEPOSIT] ⚠️ Notification error:`, notifError);
+    }
+
+    console.log(`[CHECK-DEPOSIT] ========================================`);
 
     return new Response(JSON.stringify({ 
       success: true, 
@@ -333,7 +366,7 @@ serve(async (req) => {
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
   } catch (error: any) {
-    console.error("[CHECK-DEPOSIT] Error:", error);
+    console.error("[CHECK-DEPOSIT] ❌ Error:", error);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500

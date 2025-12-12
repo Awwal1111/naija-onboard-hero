@@ -3042,6 +3042,9 @@ export type Database = {
           full_name: string | null
           id: string
           is_expert: boolean | null
+          last_celo_balance: number | null
+          last_cusd_balance: number | null
+          last_usdt_balance: number | null
           lga_name: string | null
           open_to_work: boolean | null
           phone_number: string | null
@@ -3090,6 +3093,9 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_expert?: boolean | null
+          last_celo_balance?: number | null
+          last_cusd_balance?: number | null
+          last_usdt_balance?: number | null
           lga_name?: string | null
           open_to_work?: boolean | null
           phone_number?: string | null
@@ -3138,6 +3144,9 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_expert?: boolean | null
+          last_celo_balance?: number | null
+          last_cusd_balance?: number | null
+          last_usdt_balance?: number | null
           lga_name?: string | null
           open_to_work?: boolean | null
           phone_number?: string | null
