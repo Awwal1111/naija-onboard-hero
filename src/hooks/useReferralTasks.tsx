@@ -153,6 +153,11 @@ export const useReferralTasks = () => {
     return submission?.status
   }
 
+  const getAdminComment = (taskId: string) => {
+    const submission = submissions.find(sub => sub.task_id === taskId)
+    return submission?.admin_comment
+  }
+
   return {
     tasks,
     submissions,
@@ -160,6 +165,7 @@ export const useReferralTasks = () => {
     submitTask,
     hasSubmitted,
     getSubmissionStatus,
+    getAdminComment,
     refetch: () => {
       fetchTasks()
       fetchSubmissions()
