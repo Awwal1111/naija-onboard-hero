@@ -188,25 +188,51 @@ serve(async (req) => {
     // Generate a unique reference for this deposit
     const depositRef = `DEP-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-    // Create transaction record
-    const { error: txInsertError } = await supabase.from("crypto_transactions").insert({
-      user_id,
-      transaction_type: "deposit",
-      crypto_amount: cryptoAmount,
-      crypto_currency: asset,
-      naira_amount: nairaAmount,
-      nc_amount: ncAmount,
-      exchange_rate: usdToNgn,
-      wallet_address,
-      tx_hash: depositRef,
-      status: "completed",
-      completed_at: new Date().toISOString()
-    });
+    // Check if there's already a "detected" transaction from webhook that we should update
+    const { data: existingDetected } = await supabase
+      .from("crypto_transactions")
+      .select("id, tx_hash")
+      .eq("user_id", user_id)
+      .eq("status", "detected")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-    if (txInsertError) {
-      console.error(`[CHECK-DEPOSIT] ❌ Failed to create transaction:`, txInsertError);
+    if (existingDetected) {
+      // Update the existing detected transaction instead of creating a new one
+      console.log(`[CHECK-DEPOSIT] 📝 Updating existing detected transaction: ${existingDetected.tx_hash}`);
+      await supabase
+        .from("crypto_transactions")
+        .update({
+          naira_amount: nairaAmount,
+          nc_amount: ncAmount,
+          exchange_rate: usdToNgn,
+          status: "completed",
+          completed_at: new Date().toISOString(),
+          error_message: null
+        })
+        .eq("id", existingDetected.id);
     } else {
-      console.log(`[CHECK-DEPOSIT] ✅ Transaction recorded: ${depositRef}`);
+      // Create new transaction record
+      const { error: txInsertError } = await supabase.from("crypto_transactions").insert({
+        user_id,
+        transaction_type: "deposit",
+        crypto_amount: cryptoAmount,
+        crypto_currency: asset,
+        naira_amount: nairaAmount,
+        nc_amount: ncAmount,
+        exchange_rate: usdToNgn,
+        wallet_address,
+        tx_hash: depositRef,
+        status: "completed",
+        completed_at: new Date().toISOString()
+      });
+
+      if (txInsertError) {
+        console.error(`[CHECK-DEPOSIT] ❌ Failed to create transaction:`, txInsertError);
+      } else {
+        console.log(`[CHECK-DEPOSIT] ✅ Transaction recorded: ${depositRef}`);
+      }
     }
 
     // Update user wallet
