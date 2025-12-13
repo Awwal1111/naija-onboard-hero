@@ -976,6 +976,8 @@ export type Database = {
           id: string
           reward_amount: number
           signin_date: string
+          streak_bonus: number | null
+          streak_count: number | null
           user_id: string
         }
         Insert: {
@@ -983,6 +985,8 @@ export type Database = {
           id?: string
           reward_amount?: number
           signin_date?: string
+          streak_bonus?: number | null
+          streak_count?: number | null
           user_id: string
         }
         Update: {
@@ -990,6 +994,8 @@ export type Database = {
           id?: string
           reward_amount?: number
           signin_date?: string
+          streak_bonus?: number | null
+          streak_count?: number | null
           user_id?: string
         }
         Relationships: []
@@ -3030,6 +3036,7 @@ export type Database = {
           celo_wallet_address: string | null
           connections_count: number | null
           created_at: string
+          current_streak: number | null
           email_2fa_enabled: boolean | null
           email_confirmed: boolean | null
           email_verification_sent_at: string | null
@@ -3044,6 +3051,7 @@ export type Database = {
           is_expert: boolean | null
           last_celo_balance: number | null
           last_cusd_balance: number | null
+          last_signin_date: string | null
           last_usdt_balance: number | null
           lga_name: string | null
           open_to_work: boolean | null
@@ -3081,6 +3089,7 @@ export type Database = {
           celo_wallet_address?: string | null
           connections_count?: number | null
           created_at?: string
+          current_streak?: number | null
           email_2fa_enabled?: boolean | null
           email_confirmed?: boolean | null
           email_verification_sent_at?: string | null
@@ -3095,6 +3104,7 @@ export type Database = {
           is_expert?: boolean | null
           last_celo_balance?: number | null
           last_cusd_balance?: number | null
+          last_signin_date?: string | null
           last_usdt_balance?: number | null
           lga_name?: string | null
           open_to_work?: boolean | null
@@ -3132,6 +3142,7 @@ export type Database = {
           celo_wallet_address?: string | null
           connections_count?: number | null
           created_at?: string
+          current_streak?: number | null
           email_2fa_enabled?: boolean | null
           email_confirmed?: boolean | null
           email_verification_sent_at?: string | null
@@ -3146,6 +3157,7 @@ export type Database = {
           is_expert?: boolean | null
           last_celo_balance?: number | null
           last_cusd_balance?: number | null
+          last_signin_date?: string | null
           last_usdt_balance?: number | null
           lga_name?: string | null
           open_to_work?: boolean | null
