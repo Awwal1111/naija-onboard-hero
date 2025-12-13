@@ -97,18 +97,30 @@ export const AllTransactionsDialog: React.FC<AllTransactionsDialogProps> = ({
         t.kind.includes('received') ||
         t.kind.includes('reward') ||
         t.kind.includes('deposit') ||
-        t.kind === 'transfer_in'
+        t.kind === 'transfer_in' ||
+        t.kind === 'crypto_deposit' ||
+        t.amount > 0
       )
     }
 
     if (filterType === 'debit') {
       return transactions.filter(t => 
-        !['credit', 'transfer_in'].includes(t.kind) &&
+        !['credit', 'transfer_in', 'crypto_deposit'].includes(t.kind) &&
         !t.kind.includes('win') &&
         !t.kind.includes('received') &&
         !t.kind.includes('reward') &&
-        !t.kind.includes('deposit')
+        !t.kind.includes('deposit') &&
+        t.amount < 0
       )
+    }
+
+    // For specific filters like 'withdrawal', include crypto_withdrawal
+    if (filterType === 'withdrawal') {
+      return transactions.filter(t => t.kind === 'withdrawal' || t.kind === 'crypto_withdrawal')
+    }
+    
+    if (filterType === 'deposit') {
+      return transactions.filter(t => t.kind === 'deposit' || t.kind === 'crypto_deposit' || t.kind === 'quidax_deposit')
     }
 
     return transactions.filter(t => t.kind === filterType)
@@ -297,7 +309,9 @@ export const AllTransactionsDialog: React.FC<AllTransactionsDialogProps> = ({
                                  transaction.kind.includes('received') ||
                                  transaction.kind.includes('reward') ||
                                  transaction.kind.includes('deposit') ||
-                                 transaction.kind === 'transfer_in'
+                                 transaction.kind === 'transfer_in' ||
+                                 transaction.kind === 'crypto_deposit' ||
+                                 transaction.amount > 0
                   
                   return (
                     <button
