@@ -110,15 +110,56 @@ export const useWallet = () => {
 
     try {
       // Fetch from wallet transactions table
-      const { data, error } = await supabase
+      const { data: walletData, error: walletError } = await supabase
         .from('wallet_transactions')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
-        .limit(20)
+        .limit(50)
 
-      if (error) throw error
-      setTransactions(data || [])
+      if (walletError) throw walletError
+
+      // Also fetch crypto transactions (deposits/withdrawals)
+      const { data: cryptoData, error: cryptoError } = await supabase
+        .from('crypto_transactions')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(50)
+
+      // Merge and convert crypto transactions to wallet transaction format
+      const cryptoAsWallet: WalletTransaction[] = (cryptoData || []).map((ct: any) => ({
+        id: ct.id,
+        user_id: ct.user_id,
+        amount: ct.transaction_type === 'deposit' ? ct.nc_amount : -ct.nc_amount,
+        kind: ct.transaction_type === 'deposit' ? 'crypto_deposit' : 'crypto_withdrawal',
+        reference: ct.transaction_type === 'deposit' 
+          ? `Crypto deposit: ${ct.crypto_amount} ${ct.crypto_currency}`
+          : `Crypto withdrawal: ${ct.crypto_amount} ${ct.crypto_currency} to ${ct.wallet_address?.substring(0, 10)}...`,
+        status: ct.status,
+        created_at: ct.created_at,
+        currency: 'NGN',
+        metadata: {
+          tx_hash: ct.tx_hash,
+          crypto_amount: ct.crypto_amount,
+          crypto_currency: ct.crypto_currency,
+          wallet_address: ct.wallet_address,
+          exchange_rate: ct.exchange_rate
+        }
+      }))
+
+      // Merge, deduplicate by reference, and sort
+      const allTransactions = [...(walletData || []), ...cryptoAsWallet]
+      const uniqueTransactions = allTransactions.filter((tx, index, self) =>
+        index === self.findIndex(t => t.reference === tx.reference || t.id === tx.id)
+      )
+      
+      // Sort by created_at descending
+      uniqueTransactions.sort((a, b) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      )
+
+      setTransactions(uniqueTransactions.slice(0, 50))
     } catch (error) {
       console.error('Error fetching transactions:', error)
     }

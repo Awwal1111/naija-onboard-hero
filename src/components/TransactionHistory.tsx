@@ -167,12 +167,16 @@ export const TransactionHistory = () => {
                                transaction.kind.includes('deposit') ||
                                transaction.kind === 'transfer_in' ||
                                transaction.kind === 'fundraising_release' ||
-                               transaction.kind === 'refund'
+                               transaction.kind === 'refund' ||
+                               transaction.kind === 'crypto_deposit' ||
+                               transaction.amount > 0
                 
                 const isDebit = transaction.kind === 'withdrawal' ||
                               transaction.kind === 'transfer_out' ||
                               transaction.kind.includes('loss') ||
-                              transaction.kind.includes('payment_sent')
+                              transaction.kind.includes('payment_sent') ||
+                              transaction.kind === 'crypto_withdrawal' ||
+                              transaction.amount < 0
                 
                 return (
                   <button
