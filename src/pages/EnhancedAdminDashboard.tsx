@@ -26,6 +26,7 @@ import { AdminManualDepositsSection } from '@/components/AdminManualDepositsSect
 import { AdminAIAssistant } from '@/components/AdminAIAssistant'
 import { AdminSetup } from '@/components/AdminSetup'
 import { AdminAnalyticsCharts } from '@/components/AdminAnalyticsCharts'
+import { AdminBroadcastDialog } from '@/components/AdminBroadcastDialog'
 
 // Marketplace Section Components
 const DonationsSection = () => {
@@ -776,6 +777,7 @@ const EnhancedAdminDashboard = () => {
   const { user, loading: authLoading } = useAuth()
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+  const [showBroadcastDialog, setShowBroadcastDialog] = useState(false)
 
   // Check if user is admin
   useEffect(() => {
@@ -1190,9 +1192,13 @@ const EnhancedAdminDashboard = () => {
                     <Clock className="h-4 w-4 mr-2" />
                     Review Expert Applications ({dashboardStats.pendingApplications})
                   </Button>
-                  <Button className="w-full justify-start" variant="outline">
+                  <Button 
+                    className="w-full justify-start" 
+                    variant="outline"
+                    onClick={() => setShowBroadcastDialog(true)}
+                  >
                     <MessageCircle className="h-4 w-4 mr-2" />
-                    Moderate Reported Content
+                    Broadcast to Users
                   </Button>
                   <Button className="w-full justify-start" variant="outline">
                     <TrendingUp className="h-4 w-4 mr-2" />
@@ -1222,6 +1228,10 @@ const EnhancedAdminDashboard = () => {
               <Button variant="outline">
                 <Filter className="h-4 w-4 mr-2" />
                 Filters
+              </Button>
+              <Button onClick={() => setShowBroadcastDialog(true)}>
+                <MessageCircle className="h-4 w-4 mr-2" />
+                Broadcast
               </Button>
             </div>
 
@@ -1618,13 +1628,27 @@ const EnhancedAdminDashboard = () => {
               )}
 
               <div className="flex gap-3 pt-4 border-t">
-                <Button variant="outline" className="flex-1">
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => {
+                    setShowUserDialog(false)
+                    navigate(`/chat/${selectedUser.user_id}`)
+                  }}
+                >
                   <MessageCircle className="h-4 w-4 mr-2" />
                   Send Message
                 </Button>
-                <Button variant="outline" className="flex-1">
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit User
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => {
+                    setShowUserDialog(false)
+                    navigate(`/profile/${selectedUser.user_id}`)
+                  }}
+                >
+                  <Eye className="h-4 w-4 mr-2" />
+                  View Profile
                 </Button>
               </div>
             </div>
@@ -1633,6 +1657,7 @@ const EnhancedAdminDashboard = () => {
       </Dialog>
       
       <AdminAIAssistant />
+      <AdminBroadcastDialog open={showBroadcastDialog} onOpenChange={setShowBroadcastDialog} />
     </div>
   )
 }
