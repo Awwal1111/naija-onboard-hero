@@ -7,7 +7,6 @@ import MessagesTab from '@/components/MessagesTab'
 import GroupMessagesTab from '@/components/GroupMessagesTab'
 import CreateGroupDialog from '@/components/CreateGroupDialog'
 import { useAuth } from '@/hooks/useAuth'
-import TopBannerAd from '@/components/TopBannerAd'
 import { MoreMenuDrawer } from '@/components/MoreMenuDrawer'
 
 const ChatPage: React.FC = () => {
@@ -32,7 +31,6 @@ const ChatPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <TopBannerAd />
       
       <div className="container mx-auto max-w-4xl p-4">
         <div className="flex items-center justify-between mb-6">
