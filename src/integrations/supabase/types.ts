@@ -3034,6 +3034,7 @@ export type Database = {
           business_registration_number: string | null
           business_verified: boolean | null
           celo_wallet_address: string | null
+          completed_jobs_count: number | null
           connections_count: number | null
           created_at: string
           current_streak: number | null
@@ -3047,6 +3048,7 @@ export type Database = {
           face_verified: boolean | null
           face_verified_at: string | null
           full_name: string | null
+          has_rated_platform: boolean | null
           id: string
           is_expert: boolean | null
           last_celo_balance: number | null
@@ -3054,6 +3056,7 @@ export type Database = {
           last_signin_date: string | null
           last_usdt_balance: number | null
           lga_name: string | null
+          onboarding_completed: boolean | null
           open_to_work: boolean | null
           phone_number: string | null
           phone_verified: boolean | null
@@ -3065,6 +3068,8 @@ export type Database = {
           state_name: string | null
           telegram_user_id: string | null
           telegram_username: string | null
+          total_earnings: number | null
+          total_transactions: number | null
           totp_enabled: boolean | null
           totp_secret: string | null
           transaction_pin: string | null
@@ -3087,6 +3092,7 @@ export type Database = {
           business_registration_number?: string | null
           business_verified?: boolean | null
           celo_wallet_address?: string | null
+          completed_jobs_count?: number | null
           connections_count?: number | null
           created_at?: string
           current_streak?: number | null
@@ -3100,6 +3106,7 @@ export type Database = {
           face_verified?: boolean | null
           face_verified_at?: string | null
           full_name?: string | null
+          has_rated_platform?: boolean | null
           id?: string
           is_expert?: boolean | null
           last_celo_balance?: number | null
@@ -3107,6 +3114,7 @@ export type Database = {
           last_signin_date?: string | null
           last_usdt_balance?: number | null
           lga_name?: string | null
+          onboarding_completed?: boolean | null
           open_to_work?: boolean | null
           phone_number?: string | null
           phone_verified?: boolean | null
@@ -3118,6 +3126,8 @@ export type Database = {
           state_name?: string | null
           telegram_user_id?: string | null
           telegram_username?: string | null
+          total_earnings?: number | null
+          total_transactions?: number | null
           totp_enabled?: boolean | null
           totp_secret?: string | null
           transaction_pin?: string | null
@@ -3140,6 +3150,7 @@ export type Database = {
           business_registration_number?: string | null
           business_verified?: boolean | null
           celo_wallet_address?: string | null
+          completed_jobs_count?: number | null
           connections_count?: number | null
           created_at?: string
           current_streak?: number | null
@@ -3153,6 +3164,7 @@ export type Database = {
           face_verified?: boolean | null
           face_verified_at?: string | null
           full_name?: string | null
+          has_rated_platform?: boolean | null
           id?: string
           is_expert?: boolean | null
           last_celo_balance?: number | null
@@ -3160,6 +3172,7 @@ export type Database = {
           last_signin_date?: string | null
           last_usdt_balance?: number | null
           lga_name?: string | null
+          onboarding_completed?: boolean | null
           open_to_work?: boolean | null
           phone_number?: string | null
           phone_verified?: boolean | null
@@ -3171,6 +3184,8 @@ export type Database = {
           state_name?: string | null
           telegram_user_id?: string | null
           telegram_username?: string | null
+          total_earnings?: number | null
+          total_transactions?: number | null
           totp_enabled?: boolean | null
           totp_secret?: string | null
           transaction_pin?: string | null
