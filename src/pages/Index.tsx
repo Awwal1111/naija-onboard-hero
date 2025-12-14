@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Facebook, Youtube, Linkedin, MessageSquare, Phone, Users, Shield, ArrowRight, Briefcase, DollarSign, Clock, Award, Wallet, CreditCard, UserCheck, CheckCircle2, Building2, Network, Download } from 'lucide-react'
 import heroImage from '@/assets/hero-image.jpg'
+import { SocialProofSection } from '@/components/SocialProofSection'
 
 const Index = () => {
   const handleSocialLink = (url: string) => {
@@ -315,6 +316,9 @@ const Index = () => {
           </div>
         </div>
       </section>
+
+      {/* Social Proof Section */}
+      <SocialProofSection />
 
       {/* CTA Section */}
       <section className="py-20 bg-primary text-primary-foreground">
