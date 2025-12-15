@@ -25,6 +25,9 @@ import { useProfileCompletion } from '@/hooks/useProfileCompletion'
 import { MoreMenuDrawer } from '@/components/MoreMenuDrawer'
 import { UnifiedSearchBar } from '@/components/UnifiedSearchBar'
 import { NCConverter } from '@/components/NCConverter'
+import { QuickOnboarding } from '@/components/QuickOnboarding'
+import { PlatformRatingDialog } from '@/components/PlatformRatingDialog'
+import { supabase } from '@/integrations/supabase/client'
 
 const MainFeed = () => {
   const navigate = useNavigate()
@@ -56,6 +59,62 @@ const MainFeed = () => {
   const [profilePreview, setProfilePreview] = useState<{ isOpen: boolean; userId: string | null }>({ isOpen: false, userId: null })
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [pullStartY, setPullStartY] = useState(0)
+  const [showOnboarding, setShowOnboarding] = useState(false)
+  const [showRatingDialog, setShowRatingDialog] = useState(false)
+
+  // Check for onboarding and rating dialog
+  useEffect(() => {
+    if (profile && user) {
+      // Cast profile to any to access new columns
+      const p = profile as any
+      
+      // Show onboarding if not completed
+      if (p.onboarding_completed === false && !p.full_name) {
+        setShowOnboarding(true)
+      }
+      
+      // Check for rating dialog after first transaction
+      if (!p.has_rated_platform) {
+        checkFirstTransaction()
+      }
+    }
+  }, [profile, user])
+
+  const checkFirstTransaction = async () => {
+    if (!user || !profile) return
+    const p = profile as any
+    if (p.has_rated_platform) return
+    
+    try {
+      const { data, error } = await supabase
+        .from('wallet_transactions')
+        .select('id')
+        .eq('user_id', user.id)
+        .limit(1)
+      
+      if (data && data.length > 0) {
+        // User has completed at least one transaction but hasn't rated
+        setShowRatingDialog(true)
+      }
+    } catch (error) {
+      console.error('Error checking transactions:', error)
+    }
+  }
+
+  const handleOnboardingComplete = () => {
+    setShowOnboarding(false)
+    refreshFeed()
+  }
+
+  const handleOnboardingSkip = async () => {
+    if (user) {
+      await supabase
+        .from('profiles')
+        .update({ onboarding_completed: true })
+        .eq('user_id', user.id)
+    }
+    setShowOnboarding(false)
+  }
 
   const feedSuggestions = [
     "How do I create an engaging post?",
@@ -420,6 +479,19 @@ const MainFeed = () => {
       
       {/* More Menu Drawer */}
       <MoreMenuDrawer open={moreMenuOpen} onOpenChange={setMoreMenuOpen} />
+
+      {/* Quick Onboarding for new users */}
+      <QuickOnboarding
+        open={showOnboarding}
+        onOpenChange={setShowOnboarding}
+        onComplete={handleOnboardingComplete}
+      />
+
+      {/* Platform Rating Dialog */}
+      <PlatformRatingDialog
+        open={showRatingDialog}
+        onOpenChange={setShowRatingDialog}
+      />
     </>
   )
 }

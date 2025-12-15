@@ -8,6 +8,7 @@ import { Separator } from '@/components/ui/separator'
 import { Facebook, Youtube, Linkedin, MessageSquare, Phone, Users, Shield, ArrowRight, Briefcase, DollarSign, Clock, Award, Wallet, CreditCard, UserCheck, CheckCircle2, Building2, Network, Download } from 'lucide-react'
 import heroImage from '@/assets/hero-image.jpg'
 import { SocialProofSection } from '@/components/SocialProofSection'
+import { LeaderboardSection } from '@/components/LeaderboardSection'
 
 const Index = () => {
   const handleSocialLink = (url: string) => {
@@ -319,6 +320,15 @@ const Index = () => {
 
       {/* Social Proof Section */}
       <SocialProofSection />
+
+      {/* Leaderboard Section */}
+      <section className="py-16">
+        <div className="container mx-auto px-6">
+          <div className="max-w-4xl mx-auto">
+            <LeaderboardSection />
+          </div>
+        </div>
+      </section>
 
       {/* CTA Section */}
       <section className="py-20 bg-primary text-primary-foreground">
