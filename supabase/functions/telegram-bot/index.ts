@@ -12,7 +12,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 interface TelegramUpdate {
   message?: {
     chat: { id: number };
-    from?: { first_name?: string; username?: string; id: number };
+    from?: { first_name?: string; last_name?: string; username?: string; id: number };
     text?: string;
     photo?: Array<{ file_id: string }>;
     contact?: {
@@ -50,8 +50,283 @@ serve(async (req) => {
     const userId = message.from?.id;
     const text = message.text?.trim() || "";
     const userName = message.from?.first_name || "User";
+    const lastName = message.from?.last_name || "";
 
-    // Command: /start - Link account
+    // ===========================================
+    // SIGNUP COMMAND: /signup [email] [password]
+    // ===========================================
+    if (text.startsWith("/signup")) {
+      const parts = text.split(" ");
+      if (parts.length < 3) {
+        await sendTelegramMessage(
+          chatId,
+          `📝 *Sign Up for NaijaLancers*\n\n` +
+          `To create an account, use:\n` +
+          `/signup your@email.com YourPassword123\n\n` +
+          `*Password Requirements:*\n` +
+          `• At least 8 characters\n` +
+          `• One uppercase letter\n` +
+          `• One lowercase letter\n` +
+          `• One number\n\n` +
+          `Example:\n` +
+          `/signup john@example.com @Secure123`,
+          true
+        );
+        return new Response("OK", { status: 200 });
+      }
+
+      const email = parts[1].toLowerCase();
+      const password = parts.slice(2).join(" ");
+
+      // Validate email
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        await sendTelegramMessage(
+          chatId,
+          `❌ Invalid email format.\n\nPlease use a valid email address.`
+        );
+        return new Response("OK", { status: 200 });
+      }
+
+      // Validate password
+      if (password.length < 8) {
+        await sendTelegramMessage(
+          chatId,
+          `❌ Password too short.\n\nPassword must be at least 8 characters.`
+        );
+        return new Response("OK", { status: 200 });
+      }
+
+      // Check if user already exists
+      const { data: existingUsers } = await supabase.auth.admin.listUsers();
+      const exists = existingUsers?.users?.some(u => u.email?.toLowerCase() === email);
+      
+      if (exists) {
+        await sendTelegramMessage(
+          chatId,
+          `⚠️ Account already exists with this email.\n\n` +
+          `Please use /login to link your existing account, or use a different email.`
+        );
+        return new Response("OK", { status: 200 });
+      }
+
+      // Create the user
+      const fullName = `${userName} ${lastName}`.trim() || "NaijaLancers User";
+      
+      const { data: newUser, error: signUpError } = await supabase.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true, // Auto-confirm since they're using Telegram
+        user_metadata: {
+          full_name: fullName,
+          telegram_user_id: userId?.toString(),
+          telegram_username: message.from?.username
+        }
+      });
+
+      if (signUpError) {
+        console.error("Signup error:", signUpError);
+        await sendTelegramMessage(
+          chatId,
+          `❌ Failed to create account.\n\n${signUpError.message}`
+        );
+        return new Response("OK", { status: 200 });
+      }
+
+      // Link telegram to the new profile
+      if (newUser?.user) {
+        await supabase
+          .from("profiles")
+          .update({
+            telegram_user_id: userId?.toString(),
+            telegram_username: message.from?.username || null,
+            full_name: fullName
+          })
+          .eq("user_id", newUser.user.id);
+      }
+
+      await sendTelegramMessage(
+        chatId,
+        `🎉 *Account Created Successfully!*\n\n` +
+        `Welcome to NaijaLancers, ${fullName}!\n\n` +
+        `📧 Email: ${email}\n` +
+        `🔗 Telegram: Already linked!\n` +
+        `💰 Signup Bonus: ₦50 NC credited!\n\n` +
+        `*What you can do now:*\n` +
+        `• /balance - Check your wallet\n` +
+        `• /deposit - Add funds\n` +
+        `• /help - See all commands\n\n` +
+        `💡 You can also log in on the web app:\n` +
+        `https://naijalancers.com/login`,
+        true
+      );
+      return new Response("OK", { status: 200 });
+    }
+
+    // ===========================================
+    // LOGIN/LINK COMMAND: /login [email]
+    // ===========================================
+    if (text.startsWith("/login")) {
+      const parts = text.split(" ");
+      if (parts.length < 2) {
+        await sendTelegramMessage(
+          chatId,
+          `🔗 *Link Your Existing Account*\n\n` +
+          `To link your NaijaLancers account:\n` +
+          `/login your@email.com\n\n` +
+          `A verification code will be sent to your email.`,
+          true
+        );
+        return new Response("OK", { status: 200 });
+      }
+
+      const email = parts[1].toLowerCase();
+      
+      // Find user by email
+      const { data: users } = await supabase.auth.admin.listUsers();
+      const foundUser = users?.users?.find(u => u.email?.toLowerCase() === email);
+
+      if (!foundUser) {
+        await sendTelegramMessage(
+          chatId,
+          `❌ No account found with this email.\n\n` +
+          `Use /signup to create a new account.`
+        );
+        return new Response("OK", { status: 200 });
+      }
+
+      // Check if already linked to another telegram
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("telegram_user_id, full_name")
+        .eq("user_id", foundUser.id)
+        .maybeSingle();
+
+      if (profile?.telegram_user_id && profile.telegram_user_id !== userId?.toString()) {
+        await sendTelegramMessage(
+          chatId,
+          `⚠️ This account is linked to another Telegram account.\n\n` +
+          `Please contact support if you need help.`
+        );
+        return new Response("OK", { status: 200 });
+      }
+
+      // Generate and store verification code
+      const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+      
+      await supabase
+        .from("telegram_link_codes")
+        .upsert({
+          email,
+          code: verificationCode,
+          telegram_user_id: userId?.toString(),
+          expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString() // 10 min
+        }, { onConflict: 'email' });
+
+      // Send email with code (using send-notification edge function)
+      await supabase.functions.invoke('send-notification', {
+        body: {
+          to: email,
+          subject: 'NaijaLancers - Telegram Link Verification',
+          type: 'general',
+          html: `
+            <h2>Link Your Telegram Account</h2>
+            <p>Your verification code is:</p>
+            <h1 style="font-size: 32px; letter-spacing: 5px; color: #2563eb;">${verificationCode}</h1>
+            <p>Enter this code in Telegram to complete the linking process.</p>
+            <p>This code expires in 10 minutes.</p>
+          `
+        }
+      });
+
+      await sendTelegramMessage(
+        chatId,
+        `📧 *Verification Code Sent*\n\n` +
+        `A 6-digit code has been sent to:\n${email}\n\n` +
+        `Reply with:\n/verify ${verificationCode.slice(0, 2)}XXXX\n\n` +
+        `(Replace XXXX with the actual digits)`,
+        true
+      );
+      return new Response("OK", { status: 200 });
+    }
+
+    // ===========================================
+    // VERIFY COMMAND: /verify [code]
+    // ===========================================
+    if (text.startsWith("/verify")) {
+      const parts = text.split(" ");
+      if (parts.length < 2) {
+        await sendTelegramMessage(
+          chatId,
+          `Please provide the verification code:\n/verify 123456`
+        );
+        return new Response("OK", { status: 200 });
+      }
+
+      const code = parts[1];
+      
+      // Find and validate code
+      const { data: linkData } = await supabase
+        .from("telegram_link_codes")
+        .select("*")
+        .eq("code", code)
+        .eq("telegram_user_id", userId?.toString())
+        .gt("expires_at", new Date().toISOString())
+        .maybeSingle();
+
+      if (!linkData) {
+        await sendTelegramMessage(
+          chatId,
+          `❌ Invalid or expired code.\n\nPlease try /login again.`
+        );
+        return new Response("OK", { status: 200 });
+      }
+
+      // Find user and link telegram
+      const { data: users } = await supabase.auth.admin.listUsers();
+      const foundUser = users?.users?.find(u => u.email?.toLowerCase() === linkData.email);
+
+      if (!foundUser) {
+        await sendTelegramMessage(chatId, `❌ Account not found.`);
+        return new Response("OK", { status: 200 });
+      }
+
+      // Update profile with telegram info
+      await supabase
+        .from("profiles")
+        .update({
+          telegram_user_id: userId?.toString(),
+          telegram_username: message.from?.username || null
+        })
+        .eq("user_id", foundUser.id);
+
+      // Delete used code
+      await supabase
+        .from("telegram_link_codes")
+        .delete()
+        .eq("code", code);
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name, wallet_balance")
+        .eq("user_id", foundUser.id)
+        .maybeSingle();
+
+      await sendTelegramMessage(
+        chatId,
+        `✅ *Account Linked Successfully!*\n\n` +
+        `Welcome back, ${profile?.full_name || userName}!\n\n` +
+        `💰 Balance: ₦${profile?.wallet_balance || 0} NC\n\n` +
+        `You can now manage your account via Telegram.\n` +
+        `Type /help to see all commands.`,
+        true
+      );
+      return new Response("OK", { status: 200 });
+    }
+
+    // ===========================================
+    // START COMMAND (legacy link via referral code)
+    // ===========================================
     if (text.startsWith("/start")) {
       const parts = text.split(" ");
       if (parts.length > 1) {
@@ -66,26 +341,17 @@ serve(async (req) => {
         }
         
         let userData = null;
-        let lookupMethod = "";
         
-        const { data: profileByRef, error: refError } = await supabase
+        const { data: profileByRef } = await supabase
           .from("profiles")
           .select("user_id, full_name, telegram_user_id, celo_wallet_address")
           .eq("referral_code", identifier.toUpperCase())
           .maybeSingle();
         
-        console.log("Lookup by referral code:", { 
-          found: !!profileByRef, 
-          refError, 
-          searchCode: identifier.toUpperCase(),
-          telegram_user_id: profileByRef?.telegram_user_id 
-        });
-        
         if (profileByRef) {
           userData = profileByRef;
-          lookupMethod = "referral code";
         } else if (identifier.includes("@")) {
-          const { data: authUser, error: emailError } = await supabase.auth.admin.listUsers();
+          const { data: authUser } = await supabase.auth.admin.listUsers();
           const foundUser = authUser?.users?.find(u => 
             u.email?.toLowerCase() === identifier.toLowerCase()
           );
@@ -97,7 +363,6 @@ serve(async (req) => {
               .eq("user_id", foundUser.id)
               .maybeSingle();
             userData = profile;
-            lookupMethod = "email";
           }
         }
 
@@ -105,12 +370,12 @@ serve(async (req) => {
           if (userData.telegram_user_id && userData.telegram_user_id !== userId?.toString()) {
             await sendTelegramMessage(
               chatId,
-              `⚠️ This account is already linked to another Telegram account.\n\nPlease contact support if you need to change the linked account.`
+              `⚠️ This account is already linked to another Telegram account.`
             );
             return new Response("OK", { status: 200 });
           }
 
-          const { error: updateError } = await supabase
+          await supabase
             .from("profiles")
             .update({
               telegram_user_id: userId?.toString(),
@@ -118,36 +383,46 @@ serve(async (req) => {
             })
             .eq("user_id", userData.user_id);
 
-          const welcomeMsg = `✅ *Account Linked Successfully!*\n\n` +
+          await sendTelegramMessage(
+            chatId,
+            `✅ *Account Linked Successfully!*\n\n` +
             `Hello ${userData.full_name || userName}! 👋\n\n` +
             `Your NaijaLancers account is now connected.\n\n` +
             `🤖 *I'm your AI assistant!* I can help you with:\n` +
             `• 💰 Check balance & transactions\n` +
-            `• 📥 Deposit NaijaCoin (automated via Celo)\n` +
-            `• 📤 Withdraw to your bank account\n` +
+            `• 📥 Deposit NaijaCoin\n` +
+            `• 📤 Withdraw to bank account\n` +
             `• 💸 Transfer NC to other users\n` +
             `• 👥 View referral stats\n` +
             `• 💬 Answer any questions\n\n` +
-            `Just type your question naturally, or use:\n` +
-            `/balance - Quick balance check\n` +
-            `/deposit - Deposit instructions\n` +
-            `/help - See all commands\n\n` +
-            `Try asking me something like:\n` +
-            `"How do I deposit money?" or "Show my balance"`;
-
-          await sendTelegramMessage(chatId, welcomeMsg, true);
+            `Type /help to see all commands`,
+            true
+          );
         } else {
           await sendTelegramMessage(
             chatId,
-            `❌ Account not found.\n\nPlease use the correct link from the NaijaLancers app.\n\nThe link should look like:\nhttps://t.me/NaijaLancersBot?start=YOUR_REFERRAL_CODE`
+            `❌ Account not found with that code.\n\n` +
+            `Please use:\n` +
+            `• /signup - Create new account\n` +
+            `• /login - Link existing account`
           );
         }
         return new Response("OK", { status: 200 });
       }
 
+      // Welcome message for fresh /start
       await sendTelegramMessage(
         chatId,
-        `Welcome to NaijaLancers Bot! 👋\n\nTo link your account, use the connection link from the NaijaLancers app.`
+        `👋 *Welcome to NaijaLancers Bot!*\n\n` +
+        `I'm your AI assistant for managing your NaijaLancers account.\n\n` +
+        `🆕 *New User?*\n` +
+        `/signup email password - Create account\n\n` +
+        `🔗 *Have an account?*\n` +
+        `/login email - Link your account\n\n` +
+        `📱 *Or visit the web app:*\n` +
+        `https://naijalancers.com\n\n` +
+        `Type /help for more commands.`,
+        true
       );
       return new Response("OK", { status: 200 });
     }
@@ -157,7 +432,6 @@ serve(async (req) => {
       const phoneNumber = message.contact.phone_number;
       const contactUserId = message.contact.user_id;
       
-      // Verify the contact is the user's own phone number
       if (contactUserId !== userId) {
         await sendTelegramMessage(
           chatId,
@@ -166,10 +440,7 @@ serve(async (req) => {
         return new Response("OK", { status: 200 });
       }
 
-      console.log(`Phone verification for telegram user ${userId}: ${phoneNumber}`);
-
-      // Find user by telegram_user_id
-      const { data: profileData, error: lookupError } = await supabase
+      const { data: profileData } = await supabase
         .from("profiles")
         .select("user_id, full_name, phone_verified")
         .eq("telegram_user_id", userId?.toString())
@@ -178,7 +449,7 @@ serve(async (req) => {
       if (!profileData) {
         await sendTelegramMessage(
           chatId,
-          `⚠️ Account not linked.\n\nPlease link your NaijaLancers account first using the connection link from the app.`
+          `⚠️ Account not linked.\n\nPlease use /signup or /login first.`
         );
         return new Response("OK", { status: 200 });
       }
@@ -191,8 +462,7 @@ serve(async (req) => {
         return new Response("OK", { status: 200 });
       }
 
-      // Update profile with phone verification
-      const { error: updateError } = await supabase
+      await supabase
         .from("profiles")
         .update({
           phone_verified: true,
@@ -201,36 +471,33 @@ serve(async (req) => {
         })
         .eq("user_id", profileData.user_id);
 
-      if (updateError) {
-        console.error("Phone verification update error:", updateError);
-        await sendTelegramMessage(
-          chatId,
-          `❌ Failed to verify phone number. Please try again later.`
-        );
-        return new Response("OK", { status: 200 });
-      }
-
       await sendTelegramMessage(
         chatId,
         `✅ *Phone Verified Successfully!*\n\n` +
         `📱 Phone: ${phoneNumber}\n\n` +
-        `You've earned the phone verification badge! 🎉\n\n` +
-        `This helps build trust on the platform.`,
+        `You've earned the phone verification badge! 🎉`,
         true
       );
       return new Response("OK", { status: 200 });
     }
 
-    // Command: /phone - Request phone verification
-    if (text === "/phone" || text.toLowerCase().includes("verify phone") || text.toLowerCase().includes("verify my phone")) {
-      // Check if already linked
+    // Phone verification command
+    if (text === "/phone" || text.toLowerCase().includes("verify phone")) {
       const { data: existingProfile } = await supabase
         .from("profiles")
         .select("phone_verified")
         .eq("telegram_user_id", userId?.toString())
         .maybeSingle();
 
-      if (existingProfile?.phone_verified) {
+      if (!existingProfile) {
+        await sendTelegramMessage(
+          chatId,
+          `⚠️ Please link your account first using /login or /signup`
+        );
+        return new Response("OK", { status: 200 });
+      }
+
+      if (existingProfile.phone_verified) {
         await sendTelegramMessage(
           chatId,
           `✅ Your phone number is already verified!`
@@ -238,107 +505,107 @@ serve(async (req) => {
         return new Response("OK", { status: 200 });
       }
 
-      // Send request for phone number with a keyboard button
       await sendTelegramMessageWithPhoneRequest(
         chatId,
         `📱 *Phone Verification*\n\n` +
-        `To verify your phone number and earn the Verified badge, please share your phone number using the button below.\n\n` +
-        `🔒 Your phone number will only be used for verification purposes.`
+        `Share your phone number using the button below to verify and earn a badge.\n\n` +
+        `🔒 Your phone number is kept secure.`
       );
       return new Response("OK", { status: 200 });
     }
 
-    // Find user by telegram_user_id - try both string and number formats
+    // Find user by telegram_user_id for all other commands
     const telegramUserId = userId?.toString();
-    console.log("Looking up profile with telegram_user_id:", telegramUserId);
     
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile } = await supabase
       .from("profiles")
       .select("user_id, full_name, wallet_balance, balance_withdrawable, celo_wallet_address, referral_code, telegram_user_id")
       .eq("telegram_user_id", telegramUserId)
       .maybeSingle();
 
-    console.log("Profile lookup result:", { 
-      found: !!profile, 
-      profileError, 
-      searched_telegram_id: telegramUserId,
-      profile_telegram_id: profile?.telegram_user_id 
-    });
-
     if (!profile) {
-      console.log("User not linked - requesting account connection");
       await sendTelegramMessage(
         chatId,
-        `⚠️ Account not linked.\n\nPlease link your NaijaLancers account first.\n\nClick "Connect to Telegram Bot" in the NaijaLancers app and use the link provided.`
-      );
-      return new Response("OK", { status: 200 });
-    }
-    
-    console.log(`User ${profile.full_name} (ID: ${profile.user_id}) is connected and authenticated`);
-
-    // Command: /deposit - Show automated deposit instructions
-    if (text === "/deposit" || text.toLowerCase().includes("how to deposit") || text.toLowerCase().includes("deposit money")) {
-      await sendTelegramMessage(
-        chatId,
-        `💰 *Automated Deposit via Celo Blockchain*\n\n` +
-        `*Your Personal Deposit Address:*\n` +
-        `\`${profile.celo_wallet_address}\`\n\n` +
-        `📱 *How to Deposit:*\n` +
-        `1. Open your Celo wallet (Valora, MetaMask, etc.)\n` +
-        `2. Send cUSD or USDT to your address above\n` +
-        `3. Your NaijaCoin balance updates automatically!\n\n` +
-        `⚡ *Processing Time:* Usually under 1 minute\n` +
-        `💵 *Exchange Rate:* 1 cUSD/USDT = 1 NaijaCoin\n\n` +
-        `🔒 Your wallet address is unique to you and secure.\n\n` +
-        `Need help? Just ask me: "How do I buy cUSD?" or "What is Celo?"`,
+        `⚠️ *Account Not Linked*\n\n` +
+        `Please link your NaijaLancers account first:\n\n` +
+        `🆕 New user: /signup email password\n` +
+        `🔗 Existing: /login email\n\n` +
+        `Or visit https://naijalancers.com to get started!`,
         true
       );
       return new Response("OK", { status: 200 });
     }
 
-    // Command: /balance - Check balance
+    // ===========================================
+    // DEPOSIT COMMAND
+    // ===========================================
+    if (text === "/deposit" || text.toLowerCase().includes("deposit")) {
+      await sendTelegramMessage(
+        chatId,
+        `💰 *Deposit NaijaCoin*\n\n` +
+        `*Your Personal Deposit Address:*\n` +
+        `\`${profile.celo_wallet_address || 'Not yet generated'}\`\n\n` +
+        `📱 *How to Deposit:*\n` +
+        `1. Send cUSD, USDT, or CELO to the address above\n` +
+        `2. Balance updates automatically in ~1 minute\n\n` +
+        `💵 *Exchange Rate:* 1 cUSD/USDT ≈ 1 NC\n\n` +
+        `💡 Tip: Use the QuidaxRamp in the app for easier deposits with card/bank transfer.`,
+        true
+      );
+      return new Response("OK", { status: 200 });
+    }
+
+    // ===========================================
+    // BALANCE COMMAND
+    // ===========================================
     if (text === "/balance") {
       await sendTelegramMessage(
         chatId,
         `💳 *Your Wallet Balance*\n\n` +
-        `Total Balance: ₦${profile.wallet_balance || 0} NC\n` +
-        `Withdrawable: ₦${profile.balance_withdrawable || 0} NC\n\n` +
-        `To deposit more, type /deposit`
-      );
-      return new Response("OK", { status: 200 });
-    }
-
-    // Command: /help
-    if (text === "/help") {
-      await sendTelegramMessage(
-        chatId,
-        `🤖 *NaijaLancers AI Assistant*\n\n` +
-        `I'm your intelligent assistant! Ask me anything naturally, or use these quick commands:\n\n` +
-        `💰 *Wallet Commands*\n` +
-        `/balance - Check your balance\n` +
-        `/deposit - Automated deposit guide\n` +
-        `/withdraw [amount] - Request withdrawal\n` +
-        `/transactions - Recent transactions\n` +
-        `/stats - Earnings statistics\n\n` +
-        `💸 *Other Commands*\n` +
-        `/transfer [amount] [code] - Send NC\n` +
-        `/referral - Referral dashboard\n\n` +
-        `💬 *Natural Conversations*\n` +
-        `Just ask me things like:\n` +
-        `• "How do I deposit money?"\n` +
-        `• "Show my wallet balance"\n` +
-        `• "How do withdrawals work?"\n` +
-        `• "What is Celo blockchain?"\n\n` +
-        `I remember your context and wallet info!`,
+        `💰 Total: ₦${profile.wallet_balance || 0} NC\n` +
+        `🏦 Withdrawable: ₦${profile.balance_withdrawable || 0} NC\n\n` +
+        `To add funds: /deposit\n` +
+        `To withdraw: /withdraw [amount]`,
         true
       );
       return new Response("OK", { status: 200 });
     }
 
-    // Command: /transactions - View recent transactions
+    // ===========================================
+    // HELP COMMAND
+    // ===========================================
+    if (text === "/help") {
+      await sendTelegramMessage(
+        chatId,
+        `🤖 *NaijaLancers Bot Commands*\n\n` +
+        `*🔐 Account*\n` +
+        `/signup [email] [password] - Create account\n` +
+        `/login [email] - Link existing account\n` +
+        `/phone - Verify phone number\n\n` +
+        `*💰 Wallet*\n` +
+        `/balance - Check balance\n` +
+        `/deposit - Deposit instructions\n` +
+        `/withdraw [amount] - Request withdrawal\n` +
+        `/transactions - Recent transactions\n\n` +
+        `*💸 Transfers*\n` +
+        `/transfer [amount] [code] - Send NC\n\n` +
+        `*👥 Social*\n` +
+        `/referral - Referral dashboard\n` +
+        `/stats - Earnings statistics\n\n` +
+        `*💬 AI Chat*\n` +
+        `Just type any question naturally!\n\n` +
+        `📱 Web App: https://naijalancers.com`,
+        true
+      );
+      return new Response("OK", { status: 200 });
+    }
+
+    // ===========================================
+    // TRANSACTIONS COMMAND
+    // ===========================================
     if (text === "/transactions") {
       const { data: transactions } = await supabase
-        .from("transactions")
+        .from("wallet_transactions")
         .select("*")
         .eq("user_id", profile.user_id)
         .order("created_at", { ascending: false })
@@ -349,26 +616,27 @@ serve(async (req) => {
         return new Response("OK", { status: 200 });
       }
 
-      let message = `📜 *Recent Transactions (Last 10)*\n\n`;
+      let msg = `📜 *Recent Transactions*\n\n`;
       transactions.forEach((tx, i) => {
         const date = new Date(tx.created_at).toLocaleDateString();
-        const type = tx.type.toUpperCase();
-        const amount = tx.amount;
-        const status = tx.status;
-        message += `${i + 1}. ${type} - ₦${amount} NC\n   Status: ${status}\n   Date: ${date}\n\n`;
+        const kind = tx.kind?.toUpperCase() || 'UNKNOWN';
+        const amount = tx.amount || 0;
+        msg += `${i + 1}. ${kind}\n   ₦${amount} NC | ${date}\n\n`;
       });
 
-      await sendTelegramMessage(chatId, message, true);
+      await sendTelegramMessage(chatId, msg, true);
       return new Response("OK", { status: 200 });
     }
 
-    // Command: /withdraw [amount] - Request withdrawal
+    // ===========================================
+    // WITHDRAW COMMAND
+    // ===========================================
     if (text.startsWith("/withdraw")) {
       const parts = text.split(" ");
       if (parts.length < 2) {
         await sendTelegramMessage(
           chatId,
-          `❌ Please specify amount.\n\nUsage: /withdraw [amount]\nExample: /withdraw 500`
+          `Usage: /withdraw [amount]\nExample: /withdraw 500\n\nMinimum: ₦100 NC`
         );
         return new Response("OK", { status: 200 });
       }
@@ -385,12 +653,11 @@ serve(async (req) => {
       if (amount > (profile.balance_withdrawable || 0)) {
         await sendTelegramMessage(
           chatId,
-          `❌ Insufficient withdrawable balance.\n\nYour withdrawable balance: ₦${profile.balance_withdrawable || 0} NC\nRequested: ₦${amount} NC`
+          `❌ Insufficient balance.\n\nWithdrawable: ₦${profile.balance_withdrawable || 0} NC\nRequested: ₦${amount} NC`
         );
         return new Response("OK", { status: 200 });
       }
 
-      // Create withdrawal request
       const { error } = await supabase
         .from("withdrawal_requests")
         .insert({
@@ -402,104 +669,69 @@ serve(async (req) => {
       if (error) {
         await sendTelegramMessage(
           chatId,
-          `❌ Failed to create withdrawal request. Please try again later.`
+          `❌ Failed to create withdrawal request. Try again later.`
         );
         return new Response("OK", { status: 200 });
       }
 
       await sendTelegramMessage(
         chatId,
-        `✅ *Withdrawal Request Submitted*\n\nAmount: ₦${amount} NC\nStatus: Pending Review\n\nYour request will be processed by our admin team shortly. You'll receive a notification once approved.`,
+        `✅ *Withdrawal Request Submitted*\n\nAmount: ₦${amount} NC\nStatus: Pending\n\nYou'll be notified once processed.`,
         true
       );
       return new Response("OK", { status: 200 });
     }
 
-    // Command: /referral - View referral dashboard
+    // ===========================================
+    // REFERRAL COMMAND
+    // ===========================================
     if (text === "/referral") {
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("referral_code")
-        .eq("user_id", profile.user_id)
-        .single();
-
       const { count: referralCount } = await supabase
         .from("profiles")
         .select("*", { count: "exact", head: true })
-        .eq("referred_by", profileData?.referral_code);
-
-      const { data: referralEarnings } = await supabase
-        .from("transactions")
-        .select("amount")
-        .eq("user_id", profile.user_id)
-        .eq("type", "referral_bonus");
-
-      const totalEarnings = referralEarnings?.reduce((sum, tx) => sum + parseFloat(tx.amount), 0) || 0;
+        .eq("referred_by", profile.referral_code);
 
       await sendTelegramMessage(
         chatId,
         `👥 *Referral Dashboard*\n\n` +
-        `Your Referral Code: \`${profileData?.referral_code}\`\n\n` +
-        `📊 *Statistics*\n` +
-        `Total Referrals: ${referralCount || 0}\n` +
-        `Total Earnings: ₦${totalEarnings} NC\n\n` +
-        `Share your code with friends and earn rewards when they sign up!`,
+        `Your Code: \`${profile.referral_code}\`\n\n` +
+        `📊 Total Referrals: ${referralCount || 0}\n\n` +
+        `Share your code to earn rewards when friends sign up!`,
         true
       );
       return new Response("OK", { status: 200 });
     }
 
-    // Command: /stats - View earnings statistics
+    // ===========================================
+    // STATS COMMAND
+    // ===========================================
     if (text === "/stats") {
-      const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-      const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-
-      const { data: dailyTx } = await supabase
-        .from("transactions")
-        .select("amount, type")
+      const { data: profile_data } = await supabase
+        .from("profiles")
+        .select("total_earnings, completed_jobs_count, connections_count")
         .eq("user_id", profile.user_id)
-        .gte("created_at", today.toISOString())
-        .in("type", ["job_payment", "task_completion", "referral_bonus", "daily_signin"]);
-
-      const { data: weeklyTx } = await supabase
-        .from("transactions")
-        .select("amount, type")
-        .eq("user_id", profile.user_id)
-        .gte("created_at", weekAgo.toISOString())
-        .in("type", ["job_payment", "task_completion", "referral_bonus", "daily_signin"]);
-
-      const { data: monthlyTx } = await supabase
-        .from("transactions")
-        .select("amount, type")
-        .eq("user_id", profile.user_id)
-        .gte("created_at", monthAgo.toISOString())
-        .in("type", ["job_payment", "task_completion", "referral_bonus", "daily_signin"]);
-
-      const dailyTotal = dailyTx?.reduce((sum, tx) => sum + parseFloat(tx.amount), 0) || 0;
-      const weeklyTotal = weeklyTx?.reduce((sum, tx) => sum + parseFloat(tx.amount), 0) || 0;
-      const monthlyTotal = monthlyTx?.reduce((sum, tx) => sum + parseFloat(tx.amount), 0) || 0;
+        .single();
 
       await sendTelegramMessage(
         chatId,
-        `📊 *Earnings Statistics*\n\n` +
-        `Today: ₦${dailyTotal} NC\n` +
-        `Last 7 Days: ₦${weeklyTotal} NC\n` +
-        `Last 30 Days: ₦${monthlyTotal} NC\n\n` +
-        `Keep earning more by completing tasks and jobs!`,
+        `📊 *Your Statistics*\n\n` +
+        `💰 Total Earnings: ₦${profile_data?.total_earnings || 0} NC\n` +
+        `✅ Completed Jobs: ${profile_data?.completed_jobs_count || 0}\n` +
+        `👥 Connections: ${profile_data?.connections_count || 0}`,
         true
       );
       return new Response("OK", { status: 200 });
     }
 
-    // Command: /transfer [amount] [code] - Send NC to another user
+    // ===========================================
+    // TRANSFER COMMAND
+    // ===========================================
     if (text.startsWith("/transfer")) {
       const parts = text.split(" ");
       if (parts.length < 3) {
         await sendTelegramMessage(
           chatId,
-          `❌ Invalid format.\n\nUsage: /transfer [amount] [referral_code]\nExample: /transfer 100 ABC123`
+          `Usage: /transfer [amount] [recipient_code]\n\nExample: /transfer 100 ABC12345`
         );
         return new Response("OK", { status: 200 });
       }
@@ -515,33 +747,32 @@ serve(async (req) => {
       if (amount > (profile.balance_withdrawable || 0)) {
         await sendTelegramMessage(
           chatId,
-          `❌ Insufficient balance.\n\nYour withdrawable balance: ₦${profile.balance_withdrawable || 0} NC`
+          `❌ Insufficient balance.\n\nWithdrawable: ₦${profile.balance_withdrawable || 0} NC`
         );
         return new Response("OK", { status: 200 });
       }
 
-      // Find recipient
       const { data: recipient } = await supabase
         .from("profiles")
-        .select("user_id, full_name, referral_code")
+        .select("user_id, full_name")
         .eq("referral_code", recipientCode)
-        .single();
+        .maybeSingle();
 
       if (!recipient) {
         await sendTelegramMessage(
           chatId,
-          `❌ Recipient not found with code: ${recipientCode}`
+          `❌ Recipient not found.\n\nCheck the referral code and try again.`
         );
         return new Response("OK", { status: 200 });
       }
 
       if (recipient.user_id === profile.user_id) {
-        await sendTelegramMessage(chatId, `❌ You cannot transfer to yourself.`);
+        await sendTelegramMessage(chatId, `❌ Cannot transfer to yourself.`);
         return new Response("OK", { status: 200 });
       }
 
       // Deduct from sender
-      const { error: deductError } = await supabase
+      await supabase
         .from("profiles")
         .update({
           wallet_balance: (profile.wallet_balance || 0) - amount,
@@ -549,556 +780,129 @@ serve(async (req) => {
         })
         .eq("user_id", profile.user_id);
 
-      if (deductError) {
-        await sendTelegramMessage(chatId, `❌ Transfer failed. Please try again.`);
-        return new Response("OK", { status: 200 });
-      }
-
       // Add to recipient
-      await supabase.rpc("increment_wallet_balance", {
-        user_id: recipient.user_id,
-        amount: amount
-      });
+      const { data: recipientProfile } = await supabase
+        .from("profiles")
+        .select("wallet_balance, balance_withdrawable")
+        .eq("user_id", recipient.user_id)
+        .single();
 
-      // Record transactions
-      await supabase.from("transactions").insert([
+      await supabase
+        .from("profiles")
+        .update({
+          wallet_balance: (recipientProfile?.wallet_balance || 0) + amount,
+          balance_withdrawable: (recipientProfile?.balance_withdrawable || 0) + amount
+        })
+        .eq("user_id", recipient.user_id);
+
+      // Log transactions
+      await supabase.from("wallet_transactions").insert([
         {
           user_id: profile.user_id,
-          type: "transfer_out",
+          kind: 'transfer_out',
           amount: -amount,
-          description: `Transfer to ${recipient.full_name}`,
-          status: "completed"
+          status: 'completed',
+          reference: `Transfer to ${recipient.full_name}`
         },
         {
           user_id: recipient.user_id,
-          type: "transfer_in",
+          kind: 'transfer_in',
           amount: amount,
-          description: `Transfer from ${profile.full_name}`,
-          status: "completed"
+          status: 'completed',
+          reference: `Transfer from ${profile.full_name}`
         }
       ]);
 
       await sendTelegramMessage(
         chatId,
-        `✅ *Transfer Successful*\n\nAmount: ₦${amount} NC\nRecipient: ${recipient.full_name}\nNew Balance: ₦${(profile.wallet_balance || 0) - amount} NC`,
+        `✅ *Transfer Successful*\n\n` +
+        `Sent: ₦${amount} NC\n` +
+        `To: ${recipient.full_name}\n\n` +
+        `New Balance: ₦${(profile.wallet_balance || 0) - amount} NC`,
         true
       );
-
-      // Notify recipient if they have telegram linked
-      const { data: recipientProfile } = await supabase
-        .from("profiles")
-        .select("telegram_user_id")
-        .eq("user_id", recipient.user_id)
-        .single();
-
-      if (recipientProfile?.telegram_user_id) {
-        await sendTelegramMessage(
-          parseInt(recipientProfile.telegram_user_id),
-          `💰 You received ₦${amount} NC from ${profile.full_name}!`
-        );
-      }
-
       return new Response("OK", { status: 200 });
     }
 
-    // AI-Powered Natural Conversation Handler
-    // Handle any other message as a natural language query to AI
-    if (text && !text.startsWith("/")) {
-      try {
-        // Get recent transaction history for context
-        const { data: recentTx } = await supabase
-          .from("transactions")
-          .select("type, amount, created_at, status")
-          .eq("user_id", profile.user_id)
-          .order("created_at", { ascending: false })
-          .limit(5);
-
-        // Build context for AI
-        const userContext = `
-User Profile:
-- Name: ${profile.full_name}
+    // ===========================================
+    // AI CHAT (Default for any other message)
+    // ===========================================
+    try {
+      const aiContext = `You are NaijaLancers AI Assistant on Telegram. The user ${profile.full_name} has:
 - Wallet Balance: ₦${profile.wallet_balance || 0} NC
-- Withdrawable Balance: ₦${profile.balance_withdrawable || 0} NC
-- Wallet Address: ${profile.celo_wallet_address}
+- Withdrawable: ₦${profile.balance_withdrawable || 0} NC
 - Referral Code: ${profile.referral_code}
+- Celo Wallet: ${profile.celo_wallet_address || 'Not set'}
 
-Recent Transactions: ${recentTx && recentTx.length > 0 
-  ? recentTx.map(tx => `${tx.type}: ₦${tx.amount} (${tx.status})`).join(", ")
-  : "No recent transactions"}
+Available commands: /balance, /deposit, /withdraw, /transfer, /referral, /stats, /transactions, /help
 
-Platform: NaijaLancers - Nigerian freelancing and earning platform
-Deposit Method: Automated via Celo blockchain (send cUSD/USDT to wallet address)
-Withdrawal: Request via /withdraw command, processed to Nigerian bank accounts
-`;
+Answer questions about NaijaLancers, freelancing, earning money, deposits, withdrawals, etc. Be helpful and concise.`;
 
-        const systemPrompt = `You are the NaijaLancers AI assistant on Telegram. You help users with:
-- Wallet operations (deposits, withdrawals, transfers, balance checks)
-- Understanding Celo blockchain deposits (cUSD/USDT)
-- Referral program information
-- Platform guidance
-
-Key Information:
-- Deposits: Users send cUSD or USDT to their unique Celo wallet address - automatic & instant
-- Withdrawals: Minimum ₦100 NC, processed to Nigerian bank accounts by admin team
-- NaijaCoin (NC): Platform currency, 1:1 with Naira
-- No manual deposits - everything is automated via blockchain
-
-Be friendly, concise, and helpful. Use emojis appropriately. If asked about deposits, always mention their wallet address. If asked about balance, include both total and withdrawable amounts.
-
-User Context:
-${userContext}`;
-
-        const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "google/gemini-2.5-flash",
-            messages: [
-              { role: "system", content: systemPrompt },
-              { role: "user", content: text }
-            ],
-          }),
-        });
-
-        if (aiResponse.ok) {
-          const aiData = await aiResponse.json();
-          const aiMessage = aiData.choices?.[0]?.message?.content || "I'm having trouble understanding. Please try again or use /help for available commands.";
-          
-          await sendTelegramMessage(chatId, aiMessage);
-        } else {
-          // Fallback if AI fails
-          await sendTelegramMessage(
-            chatId,
-            `I'm here to help! 🤖\n\nTry asking:\n• "How do I deposit?"\n• "What's my balance?"\n• "How do withdrawals work?"\n\nOr use /help for all commands.`
-          );
-        }
-        
-        return new Response("OK", { status: 200 });
-      } catch (error) {
-        console.error("AI conversation error:", error);
-        await sendTelegramMessage(
-          chatId,
-          `Sorry, I encountered an error. Please try /help for available commands.`
-        );
-        return new Response("OK", { status: 200 });
-      }
-    }
-
-    // Command: /support [message] - Contact admin
-    if (text.startsWith("/support")) {
-      const message = text.replace("/support", "").trim();
-      if (!message) {
-        await sendTelegramMessage(
-          chatId,
-          `❌ Please include your message.\n\nUsage: /support [your message]\nExample: /support I need help with my withdrawal`
-        );
-        return new Response("OK", { status: 200 });
-      }
-
-      // Create support ticket (you can create a support_tickets table or use notifications)
-      const { error } = await supabase
-        .from("notifications")
-        .insert({
-          user_id: profile.user_id,
-          title: "Support Request from Telegram",
-          message: message,
-          type: "support",
-          metadata: { source: "telegram", telegram_username: userName }
-        });
-
-      if (error) {
-        await sendTelegramMessage(
-          chatId,
-          `❌ Failed to send support request. Please try again later.`
-        );
-        return new Response("OK", { status: 200 });
-      }
-
-      await sendTelegramMessage(
-        chatId,
-        `✅ *Support Request Sent*\n\nYour message has been forwarded to our admin team. We'll get back to you as soon as possible.\n\nThank you for your patience! 🙏`,
-        true
-      );
-      return new Response("OK", { status: 200 });
-    }
-
-    // Admin Commands (check if user is admin first)
-    const { data: adminProfile } = await supabase
-      .from("profiles")
-      .select("user_role")
-      .eq("user_id", profile.user_id)
-      .single();
-
-    const isAdmin = adminProfile?.user_role === "admin";
-
-    // Command: /admin_deposits - View pending deposits (admin only)
-    if (text === "/admin_deposits" && isAdmin) {
-      const { data: pendingDeposits } = await supabase
-        .from("manual_deposits")
-        .select(`
-          id,
-          amount_claimed,
-          created_at,
-          telegram_username,
-          proof_url,
-          user_id,
-          profiles!inner(full_name)
-        `)
-        .eq("status", "pending")
-        .order("created_at", { ascending: false })
-        .limit(10);
-
-      if (!pendingDeposits || pendingDeposits.length === 0) {
-        await sendTelegramMessage(chatId, `✅ No pending deposits.`);
-        return new Response("OK", { status: 200 });
-      }
-
-      let message = `🔔 *Pending Deposits*\n\n`;
-      pendingDeposits.forEach((dep: any, i: number) => {
-        const date = new Date(dep.created_at).toLocaleDateString();
-        message += `${i + 1}. ${dep.profiles.full_name} (@${dep.telegram_username})\n`;
-        message += `   Amount: ₦${dep.amount_claimed} NC\n`;
-        message += `   Date: ${date}\n`;
-        message += `   ID: \`${dep.id}\`\n`;
-        message += `   Proof: ${dep.proof_url || 'No proof'}\n\n`;
+      const aiResponse = await fetch("https://api.lovable.dev/v1/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${LOVABLE_API_KEY}`
+        },
+        body: JSON.stringify({
+          messages: [
+            { role: "system", content: aiContext },
+            { role: "user", content: text }
+          ],
+          model: "gemini-2.5-flash"
+        })
       });
 
-      message += `\nUse /admin_approve [ID] or /admin_reject [ID]`;
-      await sendTelegramMessage(chatId, message, true);
-      return new Response("OK", { status: 200 });
-    }
+      const aiData = await aiResponse.json();
+      const reply = aiData.choices?.[0]?.message?.content || 
+        "I couldn't process that. Try /help for available commands.";
 
-    // Command: /admin_approve [deposit_id] - Approve deposit (admin only)
-    if (text.startsWith("/admin_approve") && isAdmin) {
-      const depositId = text.split(" ")[1];
-      if (!depositId) {
-        await sendTelegramMessage(chatId, `❌ Please provide deposit ID.\n\nUsage: /admin_approve [deposit_id]`);
-        return new Response("OK", { status: 200 });
-      }
-
-      const { data: deposit } = await supabase
-        .from("manual_deposits")
-        .select("*, profiles!inner(full_name, telegram_user_id)")
-        .eq("id", depositId)
-        .single();
-
-      if (!deposit) {
-        await sendTelegramMessage(chatId, `❌ Deposit not found.`);
-        return new Response("OK", { status: 200 });
-      }
-
-      // Update deposit status
-      await supabase
-        .from("manual_deposits")
-        .update({ status: "approved", reviewed_at: new Date().toISOString() })
-        .eq("id", depositId);
-
-      // Credit user wallet
-      await supabase.rpc("increment_wallet_balance", {
-        user_id: deposit.user_id,
-        amount: deposit.amount_claimed
-      });
-
-      // Record transaction
-      await supabase.from("transactions").insert({
-        user_id: deposit.user_id,
-        type: "deposit",
-        amount: deposit.amount_claimed,
-        description: "Manual deposit via Telegram",
-        status: "completed"
-      });
-
+      await sendTelegramMessage(chatId, reply);
+    } catch (aiError) {
+      console.error("AI error:", aiError);
       await sendTelegramMessage(
         chatId,
-        `✅ Deposit approved!\n\nUser: ${deposit.profiles.full_name}\nAmount: ₦${deposit.amount_claimed} NC`
+        `I couldn't understand that. Try:\n/help - See commands\n/balance - Check wallet`
       );
-
-      // Notify user
-      if (deposit.profiles.telegram_user_id) {
-        await sendTelegramMessage(
-          parseInt(deposit.profiles.telegram_user_id),
-          `✅ Your deposit of ₦${deposit.amount_claimed} NC has been approved! 🎉\n\nYour new balance is updated. Thank you!`
-        );
-      }
-
-      return new Response("OK", { status: 200 });
     }
-
-    // Command: /admin_reject [deposit_id] - Reject deposit (admin only)
-    if (text.startsWith("/admin_reject") && isAdmin) {
-      const depositId = text.split(" ")[1];
-      if (!depositId) {
-        await sendTelegramMessage(chatId, `❌ Please provide deposit ID.\n\nUsage: /admin_reject [deposit_id]`);
-        return new Response("OK", { status: 200 });
-      }
-
-      const { data: deposit } = await supabase
-        .from("manual_deposits")
-        .select("*, profiles!inner(full_name, telegram_user_id)")
-        .eq("id", depositId)
-        .single();
-
-      if (!deposit) {
-        await sendTelegramMessage(chatId, `❌ Deposit not found.`);
-        return new Response("OK", { status: 200 });
-      }
-
-      // Update deposit status
-      await supabase
-        .from("manual_deposits")
-        .update({ status: "rejected", reviewed_at: new Date().toISOString() })
-        .eq("id", depositId);
-
-      await sendTelegramMessage(
-        chatId,
-        `❌ Deposit rejected.\n\nUser: ${deposit.profiles.full_name}\nAmount: ₦${deposit.amount_claimed} NC`
-      );
-
-      // Notify user
-      if (deposit.profiles.telegram_user_id) {
-        await sendTelegramMessage(
-          parseInt(deposit.profiles.telegram_user_id),
-          `❌ Your deposit request of ₦${deposit.amount_claimed} NC was rejected.\n\nPlease contact support if you believe this was an error.`
-        );
-      }
-
-      return new Response("OK", { status: 200 });
-    }
-
-    // Command: /admin_withdrawals - View pending withdrawals (admin only)
-    if (text === "/admin_withdrawals" && isAdmin) {
-      const { data: pendingWithdrawals } = await supabase
-        .from("withdrawal_requests")
-        .select(`
-          id,
-          amount,
-          created_at,
-          user_id,
-          profiles!inner(full_name)
-        `)
-        .eq("status", "pending")
-        .order("created_at", { ascending: false })
-        .limit(10);
-
-      if (!pendingWithdrawals || pendingWithdrawals.length === 0) {
-        await sendTelegramMessage(chatId, `✅ No pending withdrawals.`);
-        return new Response("OK", { status: 200 });
-      }
-
-      let message = `💸 *Pending Withdrawals*\n\n`;
-      pendingWithdrawals.forEach((wd: any, i: number) => {
-        const date = new Date(wd.created_at).toLocaleDateString();
-        message += `${i + 1}. ${wd.profiles.full_name}\n`;
-        message += `   Amount: ₦${wd.amount} NC\n`;
-        message += `   Date: ${date}\n`;
-        message += `   ID: \`${wd.id}\`\n\n`;
-      });
-
-      message += `\nProcess these in the admin dashboard.`;
-      await sendTelegramMessage(chatId, message, true);
-      return new Response("OK", { status: 200 });
-    }
-
-    // Command: /admin_broadcast [message] - Send message to all users (admin only)
-    if (text.startsWith("/admin_broadcast") && isAdmin) {
-      const broadcastMsg = text.replace("/admin_broadcast", "").trim();
-      if (!broadcastMsg) {
-        await sendTelegramMessage(chatId, `❌ Please include message.\n\nUsage: /admin_broadcast [message]`);
-        return new Response("OK", { status: 200 });
-      }
-
-      const { data: users } = await supabase
-        .from("profiles")
-        .select("telegram_user_id")
-        .not("telegram_user_id", "is", null);
-
-      if (!users || users.length === 0) {
-        await sendTelegramMessage(chatId, `❌ No users with linked Telegram accounts.`);
-        return new Response("OK", { status: 200 });
-      }
-
-      let successCount = 0;
-      for (const user of users) {
-        try {
-          await sendTelegramMessage(
-            parseInt(user.telegram_user_id!),
-            `📢 *Admin Announcement*\n\n${broadcastMsg}`,
-            true
-          );
-          successCount++;
-        } catch (e) {
-          console.error(`Failed to send to ${user.telegram_user_id}:`, e);
-        }
-      }
-
-      await sendTelegramMessage(
-        chatId,
-        `✅ Broadcast sent to ${successCount}/${users.length} users.`
-      );
-      return new Response("OK", { status: 200 });
-    }
-
-    // Command: /admin_stats - View admin statistics (admin only)
-    if (text === "/admin_stats" && isAdmin) {
-      const { count: totalUsers } = await supabase
-        .from("profiles")
-        .select("*", { count: "exact", head: true });
-
-      const { count: linkedTelegram } = await supabase
-        .from("profiles")
-        .select("*", { count: "exact", head: true })
-        .not("telegram_user_id", "is", null);
-
-      const { count: pendingDeposits } = await supabase
-        .from("manual_deposits")
-        .select("*", { count: "exact", head: true })
-        .eq("status", "pending");
-
-      const { count: pendingWithdrawals } = await supabase
-        .from("withdrawal_requests")
-        .select("*", { count: "exact", head: true })
-        .eq("status", "pending");
-
-      await sendTelegramMessage(
-        chatId,
-        `📊 *Admin Statistics*\n\n` +
-        `Total Users: ${totalUsers || 0}\n` +
-        `Telegram Linked: ${linkedTelegram || 0}\n` +
-        `Pending Deposits: ${pendingDeposits || 0}\n` +
-        `Pending Withdrawals: ${pendingWithdrawals || 0}\n\n` +
-        `Use /admin_deposits or /admin_withdrawals for details.`,
-        true
-      );
-      return new Response("OK", { status: 200 });
-    }
-
-    // Check if user sent a photo (proof of payment)
-    if (message.photo && message.photo.length > 0) {
-      const fileId = message.photo[message.photo.length - 1].file_id;
-      
-      // Get file URL from Telegram
-      const fileResponse = await fetch(
-        `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getFile?file_id=${fileId}`
-      );
-      const fileData = await fileResponse.json();
-      
-      if (fileData.ok) {
-        const fileUrl = `https://api.telegram.org/file/bot${TELEGRAM_BOT_TOKEN}/${fileData.result.file_path}`;
-        
-        // Check if there's a pending deposit request for this user
-        const { data: pendingDeposit } = await supabase
-          .from("manual_deposits")
-          .select("id, amount_claimed")
-          .eq("user_id", profile.user_id)
-          .eq("status", "awaiting_proof")
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .single();
-
-        if (pendingDeposit) {
-          // Update with proof
-          await supabase
-            .from("manual_deposits")
-            .update({
-              proof_url: fileUrl,
-              status: "pending"
-            })
-            .eq("id", pendingDeposit.id);
-
-          await sendTelegramMessage(
-            chatId,
-            `✅ *Proof received!*\n\nYour deposit request for ₦${pendingDeposit.amount_claimed} NC has been submitted to our admin team for review.\n\nYou'll receive a notification once it's approved.\n\nThank you! 🎉`
-          );
-        } else {
-          await sendTelegramMessage(
-            chatId,
-            `Please first tell me how much you deposited.\n\nExample: Send "500" for ₦500`
-          );
-        }
-      }
-      return new Response("OK", { status: 200 });
-    }
-
-    // Check if user sent an amount
-    const amount = parseFloat(text);
-    if (!isNaN(amount) && amount > 0) {
-      // Create deposit request awaiting proof
-      const { error } = await supabase
-        .from("manual_deposits")
-        .insert({
-          user_id: profile.user_id,
-          telegram_user_id: userId?.toString(),
-          telegram_username: message.from?.username || null,
-          amount_claimed: amount,
-          status: "awaiting_proof"
-        });
-
-      if (error) {
-        console.error("Error creating deposit:", error);
-        await sendTelegramMessage(
-          chatId,
-          `❌ Sorry, there was an error processing your request. Please try again later.`
-        );
-      } else {
-        await sendTelegramMessage(
-          chatId,
-          `✅ Amount received: ₦${amount} NC\n\nNow please send a screenshot of your payment proof.`
-        );
-      }
-      return new Response("OK", { status: 200 });
-    }
-
-    // Default response
-    await sendTelegramMessage(
-      chatId,
-      `Hi ${profile.full_name || userName}! 👋\n\nI didn't understand that command.\n\nType /help to see available commands.`
-    );
 
     return new Response("OK", { status: 200 });
   } catch (error) {
-    console.error("Error processing Telegram update:", error);
+    console.error("Error:", error);
     return new Response("OK", { status: 200 });
   }
 });
 
 async function sendTelegramMessage(chatId: number, text: string, markdown = false) {
-  try {
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text,
-        parse_mode: markdown ? "Markdown" : undefined
-      })
-    });
-  } catch (error) {
-    console.error("Error sending Telegram message:", error);
-  }
+  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+  await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chatId,
+      text,
+      parse_mode: markdown ? "Markdown" : undefined
+    })
+  });
 }
 
 async function sendTelegramMessageWithPhoneRequest(chatId: number, text: string) {
-  try {
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text,
-        parse_mode: "Markdown",
-        reply_markup: {
-          keyboard: [
-            [{ text: "📱 Share Phone Number", request_contact: true }]
-          ],
-          resize_keyboard: true,
-          one_time_keyboard: true
-        }
-      })
-    });
-  } catch (error) {
-    console.error("Error sending Telegram phone request message:", error);
-  }
+  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+  await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chatId,
+      text,
+      parse_mode: "Markdown",
+      reply_markup: {
+        keyboard: [[{
+          text: "📱 Share Phone Number",
+          request_contact: true
+        }]],
+        resize_keyboard: true,
+        one_time_keyboard: true
+      }
+    })
+  });
 }

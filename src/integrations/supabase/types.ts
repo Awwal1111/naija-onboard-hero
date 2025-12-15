@@ -4018,6 +4018,33 @@ export type Database = {
         }
         Relationships: []
       }
+      telegram_link_codes: {
+        Row: {
+          code: string
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          telegram_user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          email: string
+          expires_at: string
+          id?: string
+          telegram_user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          telegram_user_id?: string
+        }
+        Relationships: []
+      }
       todos: {
         Row: {
           done: boolean | null
@@ -4442,6 +4469,7 @@ export type Database = {
         Returns: boolean
       }
       cleanup_expired_2fa_codes: { Args: never; Returns: undefined }
+      cleanup_expired_telegram_codes: { Args: never; Returns: undefined }
       contribute_to_fundraising: {
         Args: {
           p_amount: number

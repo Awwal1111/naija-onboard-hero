@@ -3,16 +3,44 @@ import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/use-toast'
 
-// ICE servers configuration with STUN servers for NAT traversal
+// ICE servers configuration with STUN + TURN servers for cross-platform NAT traversal
+// TURN servers are essential for iOS/Android calls across symmetric NAT (mobile networks)
 const ICE_SERVERS: RTCConfiguration = {
   iceServers: [
+    // STUN servers for basic NAT traversal
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
     { urls: 'stun:stun2.l.google.com:19302' },
-    { urls: 'stun:stun3.l.google.com:19302' },
-    { urls: 'stun:stun4.l.google.com:19302' },
+    // Free TURN servers for relay when STUN fails (common on mobile)
+    { 
+      urls: 'turn:openrelay.metered.ca:80',
+      username: 'openrelayproject',
+      credential: 'openrelayproject'
+    },
+    { 
+      urls: 'turn:openrelay.metered.ca:443',
+      username: 'openrelayproject',
+      credential: 'openrelayproject'
+    },
+    { 
+      urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+      username: 'openrelayproject',
+      credential: 'openrelayproject'
+    },
+    // Additional free TURN server
+    {
+      urls: 'turn:relay.metered.ca:80',
+      username: 'e8dd65b92e8176e13e908a55',
+      credential: '2urfJWJysuZoNpGC'
+    },
+    {
+      urls: 'turn:relay.metered.ca:443',
+      username: 'e8dd65b92e8176e13e908a55',
+      credential: '2urfJWJysuZoNpGC'
+    }
   ],
-  iceCandidatePoolSize: 10
+  iceCandidatePoolSize: 10,
+  iceTransportPolicy: 'all' // Try direct connection first, then relay
 }
 
 // Call timeout in milliseconds (30 seconds)
