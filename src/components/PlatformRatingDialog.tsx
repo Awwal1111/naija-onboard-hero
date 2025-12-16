@@ -79,10 +79,11 @@ export const PlatformRatingDialog: React.FC<PlatformRatingDialogProps> = ({
   }
 
   const handleSkip = async () => {
+    // Don't mark as rated - just store skip timestamp so we can show again on next sign-in
     if (user) {
       await supabase
         .from('profiles')
-        .update({ has_rated_platform: true })
+        .update({ rating_skipped_at: new Date().toISOString() } as any)
         .eq('user_id', user.id)
     }
     onOpenChange(false)

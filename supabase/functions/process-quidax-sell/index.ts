@@ -26,6 +26,11 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const masterWalletPrivateKey = Deno.env.get('CELO_MASTER_WALLET_PRIVATE_KEY')
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    
+    if (!masterWalletPrivateKey) {
+      console.error('[QUIDAX SELL] CELO_MASTER_WALLET_PRIVATE_KEY is not configured!')
+      throw new Error('Master wallet not configured. Please contact support.')
+    }
 
     // Get authenticated user
     const authHeader = req.headers.get('authorization')

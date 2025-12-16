@@ -3090,6 +3090,7 @@ export type Database = {
           profession: string | null
           profile_picture_url: string | null
           rating_count: number | null
+          rating_skipped_at: string | null
           referral_code: string | null
           state_id: string | null
           state_name: string | null
@@ -3148,6 +3149,7 @@ export type Database = {
           profession?: string | null
           profile_picture_url?: string | null
           rating_count?: number | null
+          rating_skipped_at?: string | null
           referral_code?: string | null
           state_id?: string | null
           state_name?: string | null
@@ -3206,6 +3208,7 @@ export type Database = {
           profession?: string | null
           profile_picture_url?: string | null
           rating_count?: number | null
+          rating_skipped_at?: string | null
           referral_code?: string | null
           state_id?: string | null
           state_name?: string | null
