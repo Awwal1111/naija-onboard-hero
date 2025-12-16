@@ -84,7 +84,16 @@ const MainFeed = () => {
   const checkFirstTransaction = async () => {
     if (!user || !profile) return
     const p = profile as any
+    
+    // If user has already rated, never show again
     if (p.has_rated_platform) return
+    
+    // If user skipped in this session (within last 5 minutes), don't show again
+    if (p.rating_skipped_at) {
+      const skippedAt = new Date(p.rating_skipped_at)
+      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000)
+      if (skippedAt > fiveMinutesAgo) return // Recently skipped, don't show
+    }
     
     try {
       const { data, error } = await supabase
