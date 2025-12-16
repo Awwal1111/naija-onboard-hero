@@ -65,7 +65,7 @@ serve(async (req) => {
         }
 
         const response = await fetch(
-          `${QUIDAX_BASE_URL}/purchase_quotes/sell?token=USDT&currency=NGN&token_amount=${tokenAmount}&token_network=BEP20`,
+          `${QUIDAX_BASE_URL}/purchase_quotes/sell?token=USDT&currency=NGN&token_amount=${tokenAmount}&token_network=CELO`,
           {
             headers: {
               'Authorization': `Bearer ${QUIDAX_PUBLIC_KEY}`,
@@ -114,7 +114,7 @@ serve(async (req) => {
 
         // Get Quidax deposit address for USDT
         const quoteResponse = await fetch(
-          `${QUIDAX_BASE_URL}/purchase_quotes/sell?token=USDT&currency=NGN&token_amount=${usdtAmount}&token_network=BEP20`,
+          `${QUIDAX_BASE_URL}/purchase_quotes/sell?token=USDT&currency=NGN&token_amount=${usdtAmount}&token_network=CELO`,
           {
             headers: {
               'Authorization': `Bearer ${QUIDAX_PUBLIC_KEY}`,
@@ -178,7 +178,7 @@ serve(async (req) => {
             },
             body: JSON.stringify({
               token: "USDT",
-              token_network: "BEP20",
+              token_network: "CELO",
               currency: "NGN",
               token_amount: usdtAmount,
               transaction_hash: txHash,
