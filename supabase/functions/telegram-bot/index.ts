@@ -157,7 +157,7 @@ serve(async (req) => {
         `• /deposit - Add funds\n` +
         `• /help - See all commands\n\n` +
         `💡 You can also log in on the web app:\n` +
-        `https://naijalancers.com/login`,
+        `https://naijalancers.name.ng/login`,
         true
       );
       return new Response("OK", { status: 200 });
@@ -420,7 +420,7 @@ serve(async (req) => {
         `🔗 *Have an account?*\n` +
         `/login email - Link your account\n\n` +
         `📱 *Or visit the web app:*\n` +
-        `https://naijalancers.com\n\n` +
+        `https://naijalancers.name.ng\n\n` +
         `Type /help for more commands.`,
         true
       );
@@ -530,7 +530,7 @@ serve(async (req) => {
         `Please link your NaijaLancers account first:\n\n` +
         `🆕 New user: /signup email password\n` +
         `🔗 Existing: /login email\n\n` +
-        `Or visit https://naijalancers.com to get started!`,
+        `Or visit https://naijalancers.name.ng to get started!`,
         true
       );
       return new Response("OK", { status: 200 });
@@ -594,7 +594,7 @@ serve(async (req) => {
         `/stats - Earnings statistics\n\n` +
         `*💬 AI Chat*\n` +
         `Just type any question naturally!\n\n` +
-        `📱 Web App: https://naijalancers.com`,
+        `📱 Web App: https://naijalancers.name.ng`,
         true
       );
       return new Response("OK", { status: 200 });
