@@ -43,7 +43,7 @@ export const GeneralNotification = ({
         
         <Text style={footer}>
           <Link
-            href="https://naijalancers.com"
+            href="https://naijalancers.name.ng"
             target="_blank"
             style={link}
           >
@@ -52,7 +52,7 @@ export const GeneralNotification = ({
           <br />
           Nigeria's Digital Freelance Marketplace
           <br />
-          Support: support@naijalancers.com | WhatsApp: +234 816 714 0857
+          Support: support@naijalancers.name.ng | WhatsApp: +234 816 714 0857
         </Text>
       </Container>
     </Body>

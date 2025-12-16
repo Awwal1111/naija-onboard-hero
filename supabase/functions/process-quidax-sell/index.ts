@@ -157,11 +157,9 @@ serve(async (req) => {
       .insert({
         user_id: user.id,
         amount: -ncAmount,
-        type: 'quidax_sell_pending',
-        description: `Sell ${usdtAmount} USDT via Quidax Ramp (${walletSource} wallet, pending confirmation)`,
-        status: 'pending',
-        reference: reference,
-        tx_hash: receipt.hash
+        kind: 'quidax_sell_pending',
+        reference: `Sell ${usdtAmount} USDT via Quidax Ramp (${walletSource} wallet, pending confirmation)`,
+        status: 'pending'
       })
 
     return new Response(
