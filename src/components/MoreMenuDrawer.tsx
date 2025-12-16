@@ -1,6 +1,6 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useNavigate } from "react-router-dom";
-import { User, Briefcase, FileText, GraduationCap, Heart, AlertCircle, Banknote, Gift, BarChart3, Settings, Video, Wallet, Bookmark, Search } from "lucide-react";
+import { User, Briefcase, FileText, GraduationCap, Heart, AlertCircle, Banknote, Gift, BarChart3, Settings, Video, Wallet, Bookmark, Search, Trophy } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
 interface MoreMenuDrawerProps {
@@ -28,7 +28,8 @@ export const MoreMenuDrawer = ({ open, onOpenChange }: MoreMenuDrawerProps) => {
   ];
 
   const otherItems = [
-    { icon: AlertCircle, label: "Emergency", path: "/emergency", color: "text-yellow-500" },
+    { icon: Trophy, label: "Leaderboard", path: "/leaderboard", color: "text-yellow-500" },
+    { icon: AlertCircle, label: "Emergency", path: "/emergency", color: "text-amber-500" },
     { icon: Banknote, label: "Loan", path: "/loan", color: "text-indigo-500" },
     { icon: Gift, label: "Donations", path: "/donations", color: "text-pink-500" },
     { icon: Settings, label: "Settings", path: "/settings", color: "text-gray-500" },

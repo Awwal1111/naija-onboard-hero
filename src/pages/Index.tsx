@@ -9,6 +9,7 @@ import { Facebook, Youtube, Linkedin, MessageSquare, Phone, Users, Shield, Arrow
 import heroImage from '@/assets/hero-image.jpg'
 import { SocialProofSection } from '@/components/SocialProofSection'
 import { LeaderboardSection } from '@/components/LeaderboardSection'
+import { FloatingRatings } from '@/components/FloatingRatings'
 
 const Index = () => {
   const handleSocialLink = (url: string) => {
@@ -23,8 +24,11 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Floating Ratings Banner */}
+      <FloatingRatings />
+      
       {/* Navigation Bar */}
-      <nav className="flex items-center justify-between p-6 sticky top-0 bg-background/95 backdrop-blur-md border-b border-border z-50 shadow-sm">
+      <nav className="flex items-center justify-between p-6 sticky top-0 bg-background/95 backdrop-blur-md border-b border-border z-50 shadow-sm mt-12">
         <Logo />
         <div className="flex items-center gap-4">
           <BrandButton variant="ghost" asChild>
