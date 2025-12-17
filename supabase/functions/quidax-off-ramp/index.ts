@@ -1,7 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { ethers } from "https://esm.sh/ethers@6.7.0";
-import CryptoJS from "https://esm.sh/crypto-js@4.1.1";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -130,19 +129,12 @@ serve(async (req) => {
 
         console.log(`[QUIDAX_OFF_RAMP] Quidax deposit address: ${quoteData.deposit_address}`);
 
-        // Send USDT from master wallet to Quidax
-        const { data: masterWalletData } = await supabase
-          .from("system_settings")
-          .select("value")
-          .eq("key", "master_wallet_encrypted")
-          .single();
-
-        if (!masterWalletData) {
-          throw new Error("Master wallet not configured");
+        // Get master wallet private key from environment variable
+        const masterPrivateKey = Deno.env.get("CELO_MASTER_WALLET_PRIVATE_KEY");
+        if (!masterPrivateKey) {
+          console.error('[QUIDAX_OFF_RAMP] CELO_MASTER_WALLET_PRIVATE_KEY is not configured!');
+          throw new Error("Master wallet not configured. Please contact support.");
         }
-
-        const encryptionSecret = Deno.env.get("WALLET_ENCRYPTION_SECRET") || "default_secret_change_in_production";
-        const masterPrivateKey = CryptoJS.AES.decrypt(masterWalletData.value, encryptionSecret).toString(CryptoJS.enc.Utf8);
 
         const provider = new ethers.JsonRpcProvider(CELO_RPC);
         const masterWallet = new ethers.Wallet(masterPrivateKey, provider);
