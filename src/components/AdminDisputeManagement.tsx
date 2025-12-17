@@ -55,7 +55,7 @@ export const AdminDisputeManagement = () => {
         .from("transaction_disputes")
         .select(`
           *,
-          profiles!transaction_disputes_user_id_fkey(full_name, phone_number)
+          profiles(full_name, phone_number)
         `)
         .order("created_at", { ascending: false });
 

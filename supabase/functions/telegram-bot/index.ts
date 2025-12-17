@@ -11,7 +11,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 interface TelegramUpdate {
   message?: {
-    chat: { id: number };
+    chat: { id: number; type?: string; title?: string };
     from?: { first_name?: string; last_name?: string; username?: string; id: number };
     text?: string;
     photo?: Array<{ file_id: string }>;
@@ -21,6 +21,11 @@ interface TelegramUpdate {
       last_name?: string;
       user_id?: number;
     };
+  };
+  channel_post?: {
+    chat: { id: number; type?: string; title?: string };
+    from?: { first_name?: string; last_name?: string; username?: string; id: number };
+    text?: string;
   };
 }
 
@@ -41,16 +46,45 @@ serve(async (req) => {
 
     console.log("Telegram update received:", JSON.stringify(update));
 
+    // Handle channel posts with AI
+    if (update.channel_post) {
+      const channelPost = update.channel_post;
+      const chatId = channelPost.chat.id;
+      const text = channelPost.text?.trim() || "";
+      const chatType = channelPost.chat.type;
+      const chatTitle = channelPost.chat.title || "Channel";
+      
+      // Only respond to text messages in channels
+      if (text && !text.startsWith('/')) {
+        await handleChannelAI(chatId, text, chatTitle, chatType);
+      }
+      return new Response("OK", { status: 200 });
+    }
+
     const message = update.message;
     if (!message) {
       return new Response("OK", { status: 200 });
     }
 
     const chatId = message.chat.id;
+    const chatType = message.chat.type;
     const userId = message.from?.id;
     const text = message.text?.trim() || "";
     const userName = message.from?.first_name || "User";
     const lastName = message.from?.last_name || "";
+
+    // Handle group/supergroup messages with AI (only non-command messages that mention the bot)
+    if ((chatType === 'group' || chatType === 'supergroup') && text && !text.startsWith('/')) {
+      // In groups, only respond if bot is mentioned or message contains keywords
+      const botMentioned = text.toLowerCase().includes('@naijalancersbot') || 
+                          text.toLowerCase().includes('naijalancers') ||
+                          text.toLowerCase().includes('naija');
+      
+      if (botMentioned) {
+        await handleChannelAI(chatId, text, message.chat.title || "Group", chatType);
+      }
+      return new Response("OK", { status: 200 });
+    }
 
     // ===========================================
     // SIGNUP COMMAND: /signup [email] [password]
@@ -905,4 +939,46 @@ async function sendTelegramMessageWithPhoneRequest(chatId: number, text: string)
       }
     })
   });
+}
+
+// Handle AI in channels and groups
+async function handleChannelAI(chatId: number, text: string, chatTitle: string, chatType: string | undefined) {
+  try {
+    const aiContext = `You are NaijaLancers AI Assistant in a Telegram ${chatType || 'channel'} called "${chatTitle}".
+    
+You help users with:
+- Information about NaijaLancers platform
+- Freelancing tips and advice
+- Earning opportunities in Nigeria
+- General questions about making money online
+- Career and skill development advice
+
+Be helpful, concise, and friendly. You can use emojis. Always mention NaijaLancers when relevant.
+For specific account actions, tell users to message the bot directly (@NaijaLancersBot) or visit https://naijalancers.name.ng`;
+
+    const aiResponse = await fetch("https://api.lovable.dev/v1/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${LOVABLE_API_KEY}`
+      },
+      body: JSON.stringify({
+        messages: [
+          { role: "system", content: aiContext },
+          { role: "user", content: text }
+        ],
+        model: "gemini-2.5-flash"
+      })
+    });
+
+    const aiData = await aiResponse.json();
+    const reply = aiData.choices?.[0]?.message?.content;
+
+    if (reply) {
+      await sendTelegramMessage(chatId, reply, true);
+    }
+  } catch (error) {
+    console.error("Channel AI error:", error);
+    // Don't send error messages to channels to avoid spam
+  }
 }
