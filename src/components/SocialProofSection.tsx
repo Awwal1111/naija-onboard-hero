@@ -27,20 +27,10 @@ export const SocialProofSection: React.FC = () => {
 
   const fetchFeaturedRatings = async () => {
     try {
-      // Fetch featured ratings with user profiles (cast to any to avoid type issues with new table)
-      const { data, error } = await supabase
+      // Fetch ratings first
+      const { data: ratingsData, error } = await supabase
         .from('platform_ratings' as any)
-        .select(`
-          id,
-          rating,
-          review,
-          created_at,
-          profiles:user_id (
-            full_name,
-            profession,
-            profile_picture_url
-          )
-        `)
+        .select('id, rating, review, created_at, user_id')
         .eq('is_featured', true)
         .not('review', 'is', null)
         .order('created_at', { ascending: false })
@@ -48,13 +38,29 @@ export const SocialProofSection: React.FC = () => {
 
       if (error) throw error
 
-      setRatings((data || []) as PlatformRating[])
-
-      // Calculate stats
-      if (data && data.length > 0) {
-        const avg = data.reduce((sum: number, r: any) => sum + r.rating, 0) / data.length
-        setStats({ average: Math.round(avg * 10) / 10, count: data.length })
+      if (!ratingsData || ratingsData.length === 0) {
+        setRatings([])
+        return
       }
+
+      // Fetch profiles separately
+      const userIds = ratingsData.map((r: any) => r.user_id)
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, profession, profile_picture_url')
+        .in('user_id', userIds)
+
+      // Merge ratings with profiles
+      const ratingsWithProfiles = ratingsData.map((rating: any) => {
+        const profile = profilesData?.find((p: any) => p.user_id === rating.user_id)
+        return {
+          ...rating,
+          profiles: profile || { full_name: null, profession: null, profile_picture_url: null }
+        }
+      })
+
+      setRatings(ratingsWithProfiles as PlatformRating[])
+      setStats({ average: Math.round(ratingsWithProfiles.reduce((sum: number, r: any) => sum + r.rating, 0) / ratingsWithProfiles.length * 10) / 10, count: ratingsWithProfiles.length })
     } catch (error) {
       console.error('Error fetching ratings:', error)
     } finally {
