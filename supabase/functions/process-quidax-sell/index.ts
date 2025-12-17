@@ -67,20 +67,11 @@ serve(async (req) => {
       throw new Error('Insufficient balance')
     }
 
-    // Deduct balance from user
-    const { error: updateError } = await supabase
-      .from('profiles')
-      .update({
-        wallet_balance: profile.wallet_balance - ncAmount,
-        balance_withdrawable: profile.balance_withdrawable - ncAmount
-      })
-      .eq('user_id', user.id)
+    // Store original balance for potential rollback - DON'T deduct yet
+    const originalBalance = profile.wallet_balance
+    const originalWithdrawable = profile.balance_withdrawable
 
-    if (updateError) {
-      throw new Error('Failed to deduct balance')
-    }
-
-    console.log(`[QUIDAX SELL] Deducted ${ncAmount} NC from user ${user.id}`)
+    console.log(`[QUIDAX SELL] Processing ${ncAmount} NC withdrawal for user ${user.id}`)
 
     // Get Quidax deposit address from details (check multiple possible keys)
     const quidaxDepositAddress = details.deposit_address || details.walletAddress || details.wallet_address || details.address || details.depositAddress
@@ -137,16 +128,8 @@ serve(async (req) => {
     console.log(`[QUIDAX SELL] Sending ${usdtAmount} USDT to ${quidaxDepositAddress}`)
 
     if (senderBalance < usdtAmountWei) {
-      // Refund user
-      await supabase
-        .from('profiles')
-        .update({
-          wallet_balance: profile.wallet_balance,
-          balance_withdrawable: profile.balance_withdrawable
-        })
-        .eq('user_id', user.id)
-
-      throw new Error('Insufficient USDT in sender wallet')
+      // Don't need to refund since we haven't deducted yet
+      throw new Error('Insufficient USDT in sender wallet. Please try a smaller amount or wait for wallet to be funded.')
     }
 
     // Send USDT
@@ -155,6 +138,22 @@ serve(async (req) => {
 
     const receipt = await tx.wait()
     console.log(`[QUIDAX SELL] Transaction confirmed: ${receipt.hash}`)
+
+    // NOW deduct balance from user AFTER successful transfer
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({
+        wallet_balance: originalBalance - ncAmount,
+        balance_withdrawable: originalWithdrawable - ncAmount
+      })
+      .eq('user_id', user.id)
+
+    if (updateError) {
+      console.error(`[QUIDAX SELL] Failed to deduct balance after transfer: ${updateError.message}`)
+      // Transfer succeeded but balance update failed - log but don't fail
+    }
+
+    console.log(`[QUIDAX SELL] Deducted ${ncAmount} NC from user ${user.id} after successful transfer`)
 
     // Log transaction with wallet source
     await supabase

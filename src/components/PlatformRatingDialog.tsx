@@ -32,14 +32,13 @@ export const PlatformRatingDialog: React.FC<PlatformRatingDialogProps> = ({
 
     setSubmitting(true)
     try {
-      // Insert rating using raw query since types may not be updated yet
+      // Insert rating - only use columns that exist in the table
       const { error: ratingError } = await supabase
         .from('platform_ratings' as any)
         .insert({
           user_id: user.id,
           rating,
           review: review.trim() || null,
-          transaction_type: transactionType,
           is_featured: rating >= 4 // Auto-feature good ratings
         } as any)
 
