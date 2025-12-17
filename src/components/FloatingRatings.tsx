@@ -33,24 +33,39 @@ export const FloatingRatings: React.FC = () => {
 
   const fetchRatings = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch ratings first
+      const { data: ratingsData, error } = await supabase
         .from('platform_ratings' as any)
-        .select(`
-          id,
-          rating,
-          review,
-          profiles:user_id (
-            full_name,
-            profile_picture_url
-          )
-        `)
+        .select('id, rating, review, user_id')
         .eq('is_featured', true)
         .not('review', 'is', null)
         .order('created_at', { ascending: false })
         .limit(10) as any
 
       if (error) throw error
-      setRatings(data || [])
+      
+      if (!ratingsData || ratingsData.length === 0) {
+        setRatings([])
+        return
+      }
+
+      // Fetch profiles separately
+      const userIds = ratingsData.map((r: any) => r.user_id)
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, profile_picture_url')
+        .in('user_id', userIds)
+
+      // Merge ratings with profiles
+      const ratingsWithProfiles = ratingsData.map((rating: any) => {
+        const profile = profilesData?.find((p: any) => p.user_id === rating.user_id)
+        return {
+          ...rating,
+          profiles: profile || { full_name: null, profile_picture_url: null }
+        }
+      })
+
+      setRatings(ratingsWithProfiles)
 
       // Get total stats
       const { data: allRatings } = await supabase

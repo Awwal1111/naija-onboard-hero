@@ -200,6 +200,8 @@ export const QuidaxRampWidget = ({ open, onOpenChange, mode }: QuidaxRampWidgetP
             
             // Backend will handle sending USDT to Quidax deposit address
             try {
+              const { data: { session } } = await supabase.auth.getSession()
+              
               const { data, error } = await supabase.functions.invoke('process-quidax-sell', {
                 body: {
                   reference: reference,
@@ -208,6 +210,9 @@ export const QuidaxRampWidget = ({ open, onOpenChange, mode }: QuidaxRampWidgetP
                     deposit_address: depositAddress,
                     ...details
                   }
+                },
+                headers: {
+                  Authorization: `Bearer ${session?.access_token}`
                 }
               })
               
@@ -215,6 +220,8 @@ export const QuidaxRampWidget = ({ open, onOpenChange, mode }: QuidaxRampWidgetP
               
               if (data?.success) {
                 toast.success('USDT sent to Quidax successfully')
+              } else if (data?.error) {
+                throw new Error(data.error)
               }
             } catch (err: any) {
               console.error('Failed to process sell:', err)
