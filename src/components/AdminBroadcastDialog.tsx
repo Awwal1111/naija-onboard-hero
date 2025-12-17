@@ -73,7 +73,7 @@ export const AdminBroadcastDialog: React.FC<AdminBroadcastDialogProps> = ({ open
               type: 'admin_broadcast',
               title: title || 'Message from NaijaLancers',
               message: message,
-              data: { from: 'admin', broadcast: true }
+              metadata: { from: 'admin', broadcast: true }
             })
           }
 
