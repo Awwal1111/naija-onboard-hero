@@ -27,7 +27,6 @@ import { UnifiedSearchBar } from '@/components/UnifiedSearchBar'
 import { NCConverter } from '@/components/NCConverter'
 import { QuickOnboarding } from '@/components/QuickOnboarding'
 import { PlatformRatingDialog } from '@/components/PlatformRatingDialog'
-import { FloatingRatings } from '@/components/FloatingRatings'
 import { supabase } from '@/integrations/supabase/client'
 
 const MainFeed = () => {
@@ -250,9 +249,6 @@ const MainFeed = () => {
 
   return (
     <>
-    {/* Floating Ratings Bar */}
-    <FloatingRatings />
-    
     <ResponsiveLayout className="pb-20 pt-12">
       {/* Pull to Refresh Indicator */}
       {isRefreshing && (
