@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Facebook, Youtube, Linkedin, MessageSquare, Phone, Users, Shield, ArrowRight, Briefcase, DollarSign, Clock, Award, Wallet, CreditCard, UserCheck, CheckCircle2, Building2, Network, Download } from 'lucide-react'
 import heroImage from '@/assets/hero-image.jpg'
-import { SocialProofSection } from '@/components/SocialProofSection'
+
 import { LeaderboardSection } from '@/components/LeaderboardSection'
 
 const Index = () => {
@@ -318,8 +318,7 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Social Proof Section */}
-      <SocialProofSection />
+      {/* Social proof moved to dedicated page */}
 
       {/* Leaderboard Section */}
       <section className="py-16">

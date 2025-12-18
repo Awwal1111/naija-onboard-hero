@@ -26,7 +26,7 @@ import { MoreMenuDrawer } from '@/components/MoreMenuDrawer'
 import { UnifiedSearchBar } from '@/components/UnifiedSearchBar'
 import { NCConverter } from '@/components/NCConverter'
 import { QuickOnboarding } from '@/components/QuickOnboarding'
-import { PlatformRatingDialog } from '@/components/PlatformRatingDialog'
+
 import { supabase } from '@/integrations/supabase/client'
 
 const MainFeed = () => {
@@ -60,9 +60,9 @@ const MainFeed = () => {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [pullStartY, setPullStartY] = useState(0)
   const [showOnboarding, setShowOnboarding] = useState(false)
-  const [showRatingDialog, setShowRatingDialog] = useState(false)
+  
 
-  // Check for onboarding and rating dialog
+  // Check for onboarding
   useEffect(() => {
     if (profile && user) {
       // Cast profile to any to access new columns
@@ -72,43 +72,8 @@ const MainFeed = () => {
       if (p.onboarding_completed === false && !p.full_name) {
         setShowOnboarding(true)
       }
-      
-      // Check for rating dialog after first transaction
-      if (!p.has_rated_platform) {
-        checkFirstTransaction()
-      }
     }
   }, [profile, user])
-
-  const checkFirstTransaction = async () => {
-    if (!user || !profile) return
-    const p = profile as any
-    
-    // If user has already rated, never show again
-    if (p.has_rated_platform) return
-    
-    // If user skipped in this session (within last 5 minutes), don't show again
-    if (p.rating_skipped_at) {
-      const skippedAt = new Date(p.rating_skipped_at)
-      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000)
-      if (skippedAt > fiveMinutesAgo) return // Recently skipped, don't show
-    }
-    
-    try {
-      const { data, error } = await supabase
-        .from('wallet_transactions')
-        .select('id')
-        .eq('user_id', user.id)
-        .limit(1)
-      
-      if (data && data.length > 0) {
-        // User has completed at least one transaction but hasn't rated
-        setShowRatingDialog(true)
-      }
-    } catch (error) {
-      console.error('Error checking transactions:', error)
-    }
-  }
 
   const handleOnboardingComplete = () => {
     setShowOnboarding(false)
@@ -496,11 +461,6 @@ const MainFeed = () => {
         onComplete={handleOnboardingComplete}
       />
 
-      {/* Platform Rating Dialog */}
-      <PlatformRatingDialog
-        open={showRatingDialog}
-        onOpenChange={setShowRatingDialog}
-      />
     </>
   )
 }
