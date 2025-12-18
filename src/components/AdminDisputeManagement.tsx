@@ -51,21 +51,46 @@ export const AdminDisputeManagement = () => {
   const fetchDisputes = async () => {
     try {
       console.log('Fetching disputes...');
-      const { data, error } = await supabase
+      
+      // First fetch disputes
+      const { data: disputesData, error: disputeError } = await supabase
         .from("transaction_disputes")
-        .select(`
-          *,
-          profiles(full_name, phone_number)
-        `)
+        .select("*")
         .order("created_at", { ascending: false });
 
-      console.log('Disputes fetch result:', { data, error });
-      if (error) {
-        console.error('Supabase error:', error);
-        throw error;
+      if (disputeError) {
+        console.error('Disputes fetch error:', disputeError);
+        throw disputeError;
       }
-      console.log('Setting disputes:', data?.length || 0, 'disputes found');
-      setDisputes(data || []);
+
+      if (!disputesData || disputesData.length === 0) {
+        console.log('No disputes found');
+        setDisputes([]);
+        return;
+      }
+
+      // Get unique user IDs
+      const userIds = [...new Set(disputesData.map(d => d.user_id))];
+
+      // Fetch profiles for these users
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, phone_number')
+        .in('user_id', userIds);
+
+      // Create profiles map
+      const profilesMap = new Map(
+        profilesData?.map(p => [p.user_id, p]) || []
+      );
+
+      // Merge disputes with profiles
+      const enrichedDisputes = disputesData.map(dispute => ({
+        ...dispute,
+        profiles: profilesMap.get(dispute.user_id) || null
+      }));
+
+      console.log('Disputes enriched:', enrichedDisputes.length);
+      setDisputes(enrichedDisputes);
     } catch (error: any) {
       console.error("Error fetching disputes:", error);
       toast({
