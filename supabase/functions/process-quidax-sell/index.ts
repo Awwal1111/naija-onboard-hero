@@ -24,12 +24,32 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const masterWalletPrivateKey = Deno.env.get('CELO_MASTER_WALLET_PRIVATE_KEY')
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
-    
-    if (!masterWalletPrivateKey) {
-      console.error('[QUIDAX SELL] CELO_MASTER_WALLET_PRIVATE_KEY is not configured!')
-      throw new Error('Master wallet not configured. Please contact support.')
+    const encryptionSecret = Deno.env.get('WALLET_ENCRYPTION_SECRET') || 'default_secret_change_in_production'
+
+    // Get master wallet from database (encrypted)
+    const { data: masterWalletData, error: masterWalletError } = await supabase
+      .from('system_settings')
+      .select('value')
+      .eq('key', 'master_wallet_encrypted')
+      .single()
+
+    if (masterWalletError || !masterWalletData?.value) {
+      console.error('[QUIDAX SELL] Master wallet not found in database:', masterWalletError)
+      throw new Error('Master wallet not initialized. Please contact admin.')
+    }
+
+    // Decrypt master wallet private key
+    let masterWalletPrivateKey: string
+    try {
+      masterWalletPrivateKey = CryptoJS.AES.decrypt(masterWalletData.value, encryptionSecret).toString(CryptoJS.enc.Utf8)
+      if (!masterWalletPrivateKey || masterWalletPrivateKey.length < 64) {
+        throw new Error('Decryption failed - invalid key length')
+      }
+      console.log('[QUIDAX SELL] Master wallet decrypted successfully')
+    } catch (decryptError) {
+      console.error('[QUIDAX SELL] Failed to decrypt master wallet:', decryptError)
+      throw new Error('Master wallet decryption failed. Please contact admin.')
     }
 
     // Get authenticated user
@@ -86,7 +106,6 @@ serve(async (req) => {
 
     // DUAL WALLET SYSTEM: Try user wallet first, then master wallet
     const provider = new ethers.JsonRpcProvider(CELO_RPC)
-    const encryptionSecret = Deno.env.get('WALLET_ENCRYPTION_SECRET') || 'default_secret_change_in_production'
     
     let senderWallet: any
     let walletSource = 'master'
@@ -114,8 +133,8 @@ serve(async (req) => {
     
     // Use master wallet if user wallet not available or insufficient
     if (walletSource === 'master') {
-      senderWallet = new ethers.Wallet(masterWalletPrivateKey!, provider)
-      console.log(`[QUIDAX SELL] Using MASTER wallet`)
+      senderWallet = new ethers.Wallet(masterWalletPrivateKey, provider)
+      console.log(`[QUIDAX SELL] Using MASTER wallet: ${senderWallet.address}`)
     }
     
     const usdtContract = new ethers.Contract(USDT_ADDRESS, USDT_ABI, senderWallet)
@@ -128,7 +147,6 @@ serve(async (req) => {
     console.log(`[QUIDAX SELL] Sending ${usdtAmount} USDT to ${quidaxDepositAddress}`)
 
     if (senderBalance < usdtAmountWei) {
-      // Don't need to refund since we haven't deducted yet
       throw new Error('Insufficient USDT in sender wallet. Please try a smaller amount or wait for wallet to be funded.')
     }
 
@@ -150,7 +168,6 @@ serve(async (req) => {
 
     if (updateError) {
       console.error(`[QUIDAX SELL] Failed to deduct balance after transfer: ${updateError.message}`)
-      // Transfer succeeded but balance update failed - log but don't fail
     }
 
     console.log(`[QUIDAX SELL] Deducted ${ncAmount} NC from user ${user.id} after successful transfer`)
