@@ -4,43 +4,84 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Plus, Minus, Search, Wallet } from 'lucide-react'
+import { Plus, Minus, Search, Wallet, Users } from 'lucide-react'
 import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 
 export const AdminWalletManagement = () => {
   const { toast } = useToast()
-  const [searchEmail, setSearchEmail] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
   const [selectedUser, setSelectedUser] = useState<any>(null)
+  const [searchResults, setSearchResults] = useState<any[]>([])
   const [amount, setAmount] = useState('')
   const [reason, setReason] = useState('')
   const [searching, setSearching] = useState(false)
   const [processing, setProcessing] = useState(false)
 
   const searchUser = async () => {
-    if (!searchEmail.trim()) return
+    if (!searchQuery.trim()) return
 
     setSearching(true)
+    setSearchResults([])
+    setSelectedUser(null)
+
     try {
-      // First get user from auth.users via email
-      const { data: authData, error: authError } = await supabase
+      const query = searchQuery.trim().toLowerCase()
+
+      // Search by name or phone in profiles
+      const { data: profileResults, error: profileError } = await supabase
         .from('profiles')
-        .select('user_id, full_name, wallet_balance, balance_withdrawable')
-        .eq('phone_number', searchEmail)
-        .maybeSingle()
+        .select('user_id, full_name, phone_number, wallet_balance, balance_withdrawable, profile_picture_url')
+        .or(`full_name.ilike.%${query}%,phone_number.ilike.%${query}%`)
+        .limit(10)
 
-      if (authError) throw authError
+      if (profileError) {
+        console.error('Profile search error:', profileError)
+      }
 
-      if (!authData) {
+      // Also try email lookup using the RPC function
+      const { data: emailResult } = await supabase.rpc('lookup_user_by_email', {
+        lookup_email: searchQuery.trim()
+      })
+
+      let results: any[] = profileResults || []
+
+      // If email lookup found a match, add user details
+      const emailData = emailResult as { found: boolean; user_id?: string; email?: string } | null
+      if (emailData && emailData.found && emailData.user_id) {
+        const emailUserId = emailData.user_id
+        
+        // Check if already in results
+        const alreadyInResults = results.some(r => r.user_id === emailUserId)
+        
+        if (!alreadyInResults) {
+          // Fetch full profile data for this user
+          const { data: emailUserProfile } = await supabase
+            .from('profiles')
+            .select('user_id, full_name, phone_number, wallet_balance, balance_withdrawable, profile_picture_url')
+            .eq('user_id', emailUserId)
+            .single()
+
+          if (emailUserProfile) {
+            results = [{
+              ...emailUserProfile,
+              email: emailData.email
+            }, ...results]
+          }
+        }
+      }
+
+      if (results.length === 0) {
         toast({
           title: "Not Found",
-          description: "User not found with that phone number. Try searching by email through admin panel.",
+          description: "No users found matching that search query.",
           variant: "destructive"
         })
+      } else if (results.length === 1) {
+        setSelectedUser(results[0])
       } else {
-        setSelectedUser(authData)
+        setSearchResults(results)
       }
     } catch (error: any) {
       console.error('Error searching user:', error)
@@ -54,6 +95,11 @@ export const AdminWalletManagement = () => {
     }
   }
 
+  const selectUser = (user: any) => {
+    setSelectedUser(user)
+    setSearchResults([])
+  }
+
   const adjustWallet = async (type: 'add' | 'remove') => {
     if (!selectedUser || !amount || Number(amount) <= 0) return
 
@@ -62,9 +108,18 @@ export const AdminWalletManagement = () => {
       const amountNum = Number(amount)
       const finalAmount = type === 'remove' ? -amountNum : amountNum
 
+      // Get current balance first
+      const { data: currentProfile, error: fetchError } = await supabase
+        .from('profiles')
+        .select('wallet_balance, balance_withdrawable')
+        .eq('user_id', selectedUser.user_id)
+        .single()
+
+      if (fetchError) throw fetchError
+
       // Update wallet balance
-      const newBalance = selectedUser.wallet_balance + finalAmount
-      const newWithdrawable = Math.max(0, selectedUser.balance_withdrawable + finalAmount)
+      const newBalance = (currentProfile.wallet_balance || 0) + finalAmount
+      const newWithdrawable = Math.max(0, (currentProfile.balance_withdrawable || 0) + finalAmount)
 
       const { error: updateError } = await supabase
         .from('profiles')
@@ -115,34 +170,92 @@ export const AdminWalletManagement = () => {
       <Alert>
         <Wallet className="h-4 w-4" />
         <AlertDescription>
-          Add or remove NC from user accounts for manual adjustments, corrections, or special rewards.
+          Add or remove NC from user accounts. Search by name, email, or phone number.
         </AlertDescription>
       </Alert>
 
       <Card>
         <CardHeader>
           <CardTitle>Search User</CardTitle>
-          <CardDescription>Enter email or phone number to find a user</CardDescription>
+          <CardDescription>Enter name, email, or phone number to find a user</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-2">
             <Input
-              placeholder="Email or phone number"
-              value={searchEmail}
-              onChange={(e) => setSearchEmail(e.target.value)}
+              placeholder="Name, email, or phone number"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && searchUser()}
             />
-            <Button onClick={searchUser} disabled={searching || !searchEmail.trim()}>
+            <Button onClick={searchUser} disabled={searching || !searchQuery.trim()}>
               <Search className="h-4 w-4 mr-2" />
               {searching ? 'Searching...' : 'Search'}
             </Button>
           </div>
 
+          {/* Search Results List */}
+          {searchResults.length > 0 && (
+            <Card className="bg-muted/30">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  {searchResults.length} users found - Select one:
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {searchResults.map((user) => (
+                  <div
+                    key={user.user_id}
+                    className="flex items-center justify-between p-3 rounded-lg bg-background hover:bg-muted cursor-pointer border"
+                    onClick={() => selectUser(user)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white text-sm font-bold">
+                        {user.profile_picture_url ? (
+                          <img
+                            src={user.profile_picture_url}
+                            alt={user.full_name}
+                            className="w-full h-full object-cover rounded-full"
+                          />
+                        ) : (
+                          user.full_name?.charAt(0) || 'U'
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-medium">{user.full_name || 'Unknown'}</p>
+                        <p className="text-xs text-muted-foreground">{user.phone_number || user.email || 'No contact'}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold text-primary">{user.wallet_balance?.toFixed(2) || '0.00'} NC</p>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Selected User Card */}
           {selectedUser && (
-            <Card className="bg-muted/50">
+            <Card className="bg-muted/50 border-primary">
               <CardHeader>
-                <CardTitle className="text-base">{selectedUser.full_name}</CardTitle>
-                <CardDescription>{selectedUser.email || searchEmail}</CardDescription>
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white font-bold">
+                    {selectedUser.profile_picture_url ? (
+                      <img
+                        src={selectedUser.profile_picture_url}
+                        alt={selectedUser.full_name}
+                        className="w-full h-full object-cover rounded-full"
+                      />
+                    ) : (
+                      selectedUser.full_name?.charAt(0) || 'U'
+                    )}
+                  </div>
+                  <div>
+                    <CardTitle className="text-base">{selectedUser.full_name || 'Unknown User'}</CardTitle>
+                    <CardDescription>{selectedUser.email || selectedUser.phone_number || 'No contact info'}</CardDescription>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -201,6 +314,18 @@ export const AdminWalletManagement = () => {
                     Remove NC
                   </Button>
                 </div>
+
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => {
+                    setSelectedUser(null)
+                    setAmount('')
+                    setReason('')
+                  }}
+                >
+                  Clear Selection
+                </Button>
               </CardContent>
             </Card>
           )}
