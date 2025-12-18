@@ -185,22 +185,34 @@ export const QuidaxRampWidget = ({ open, onOpenChange, mode }: QuidaxRampWidgetP
           config.to_currency = 'ngn'
           config.from_amount = amountToProcess
           config.onReceiveWalletDetails = async function(details: any) {
-            console.log('Quidax provided wallet details:', details)
+            console.log('[QUIDAX SELL] onReceiveWalletDetails called')
+            console.log('[QUIDAX SELL] Received details:', JSON.stringify(details))
             
             // Extract deposit address from various possible keys
-            const depositAddress = details.walletAddress || details.wallet_address || details.address || details.depositAddress
+            const depositAddress = details?.walletAddress || details?.wallet_address || details?.address || details?.depositAddress || details?.deposit_address
             
             if (!depositAddress) {
-              console.error('No deposit address found in wallet details:', details)
-              toast.error('Failed to get deposit address from Quidax')
+              console.error('[QUIDAX SELL] No deposit address found in wallet details:', details)
+              toast.error('Failed to get deposit address from Quidax. Please try again.')
+              setLoading(false)
               return
             }
             
-            console.log('Extracted deposit address:', depositAddress)
+            console.log('[QUIDAX SELL] Extracted deposit address:', depositAddress)
             
             // Backend will handle sending USDT to Quidax deposit address
             try {
-              const { data: { session } } = await supabase.auth.getSession()
+              console.log('[QUIDAX SELL] Getting session...')
+              const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+              
+              if (sessionError || !session) {
+                console.error('[QUIDAX SELL] Session error:', sessionError)
+                toast.error('Session expired. Please log in again.')
+                setLoading(false)
+                return
+              }
+              
+              console.log('[QUIDAX SELL] Calling process-quidax-sell with:', { reference, amount, deposit_address: depositAddress })
               
               const { data, error } = await supabase.functions.invoke('process-quidax-sell', {
                 body: {
@@ -212,11 +224,16 @@ export const QuidaxRampWidget = ({ open, onOpenChange, mode }: QuidaxRampWidgetP
                   }
                 },
                 headers: {
-                  Authorization: `Bearer ${session?.access_token}`
+                  Authorization: `Bearer ${session.access_token}`
                 }
               })
               
-              if (error) throw error
+              console.log('[QUIDAX SELL] Response:', { data, error })
+              
+              if (error) {
+                console.error('[QUIDAX SELL] Edge function error:', error)
+                throw error
+              }
               
               if (data?.success) {
                 toast.success('USDT sent to Quidax successfully')
@@ -224,8 +241,9 @@ export const QuidaxRampWidget = ({ open, onOpenChange, mode }: QuidaxRampWidgetP
                 throw new Error(data.error)
               }
             } catch (err: any) {
-              console.error('Failed to process sell:', err)
+              console.error('[QUIDAX SELL] Failed to process sell:', err)
               toast.error(err.message || 'Failed to initiate sell transaction')
+              setLoading(false)
             }
           }
         }
