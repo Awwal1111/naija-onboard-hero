@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { ethers } from "https://esm.sh/ethers@6.7.0";
+import CryptoJS from "https://esm.sh/crypto-js@4.1.1"
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -16,6 +17,19 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+/**
+ * QUIDAX OFF-RAMP - Withdraw NC to Bank via Quidax
+ * 
+ * CRITICAL FIX: Use Quidax quote for exact NGN amount user will receive
+ * 
+ * Flow:
+ * 1. User wants to withdraw X NC (= ₦X)
+ * 2. Get quote from Quidax: how much USDT needed for ₦X
+ * 3. Deduct X NC from user
+ * 4. Send USDT to Quidax
+ * 5. Quidax sends ₦X to user's bank (minus their fees)
+ */
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -40,13 +54,12 @@ serve(async (req) => {
 
     switch (action) {
       case 'get_purchase_limits': {
-        // GET /api/v1/merchants/purchase_limits/sell?token_symbol=USDT
         const response = await fetch(
           `${QUIDAX_BASE_URL}/purchase_limits/sell?token_symbol=USDT`,
           {
             headers: {
-              'Authorization': `Bearer ${QUIDAX_PUBLIC_KEY}`,
-              'Content-Type': 'application/json'
+              'accept': 'application/json',
+              'x-private-key': QUIDAX_PRIVATE_KEY
             }
           }
         );
@@ -57,7 +70,7 @@ serve(async (req) => {
       }
 
       case 'get_quote': {
-        // GET /api/v1/merchants/purchase_quotes/sell?token=USDT&currency=NGN&token_amount=X&token_network=BEP20
+        // Get quote for selling USDT → NGN
         const { tokenAmount } = params;
         if (!tokenAmount || tokenAmount <= 0) {
           throw new Error("Invalid token amount");
@@ -67,19 +80,19 @@ serve(async (req) => {
           `${QUIDAX_BASE_URL}/purchase_quotes/sell?token=USDT&currency=NGN&token_amount=${tokenAmount}&token_network=CELO`,
           {
             headers: {
-              'Authorization': `Bearer ${QUIDAX_PUBLIC_KEY}`,
-              'Content-Type': 'application/json'
+              'accept': 'application/json',
+              'x-private-key': QUIDAX_PRIVATE_KEY
             }
           }
         );
         const data = await response.json();
+        console.log(`[QUIDAX_OFF_RAMP] Quote response:`, JSON.stringify(data));
         return new Response(JSON.stringify(data), {
           headers: { ...corsHeaders, "Content-Type": "application/json" }
         });
       }
 
       case 'initiate_withdrawal': {
-        // Initiate off-ramp: Convert NC → USDT → Fiat (NGN)
         const { ncAmount, bankDetails } = params;
 
         if (!ncAmount || ncAmount <= 0) {
@@ -90,7 +103,8 @@ serve(async (req) => {
           throw new Error("Missing bank details");
         }
 
-        console.log(`[QUIDAX_OFF_RAMP] Processing ${ncAmount} NC withdrawal for user ${user.id}`);
+        console.log(`[QUIDAX_OFF_RAMP] ========== INITIATING WITHDRAWAL ==========`);
+        console.log(`[QUIDAX_OFF_RAMP] NC Amount: ${ncAmount}`);
 
         // Get user profile
         const { data: profile } = await supabase
@@ -103,85 +117,108 @@ serve(async (req) => {
           throw new Error("Insufficient withdrawable balance");
         }
 
-        // Convert NC to USDT (assuming 1 NC = 1 NGN, need exchange rate)
-        const exchangeRateResponse = await fetch("https://v6.exchangerate-api.com/v6/c06b378e6d590d4c22aa2998/latest/USD");
-        const exchangeRateData = await exchangeRateResponse.json();
-        const usdToNgn = exchangeRateData.conversion_rates?.NGN || 1600;
+        // Get LIVE exchange rate to calculate USDT amount
+        let usdToNgn = 1600;
+        try {
+          const rateResponse = await fetch(
+            "https://v6.exchangerate-api.com/v6/c06b378e6d590d4c22aa2998/latest/USD",
+            { signal: AbortSignal.timeout(5000) }
+          );
+          if (rateResponse.ok) {
+            const rateData = await rateResponse.json();
+            if (rateData.conversion_rates?.NGN) {
+              usdToNgn = rateData.conversion_rates.NGN;
+            }
+          }
+        } catch (e) {
+          console.log(`[QUIDAX_OFF_RAMP] Using fallback rate: ${usdToNgn}`);
+        }
+
+        // NC = NGN, so calculate USDT needed
+        // User wants to receive ₦ncAmount, calculate USDT to sell
         const usdtAmount = ncAmount / usdToNgn;
+        
+        console.log(`[QUIDAX_OFF_RAMP] Exchange rate: ₦${usdToNgn}/USDT`);
+        console.log(`[QUIDAX_OFF_RAMP] USDT to sell: ${usdtAmount.toFixed(6)}`);
 
-        console.log(`[QUIDAX_OFF_RAMP] Converting ${ncAmount} NC → ${usdtAmount} USDT`);
-
-        // Get Quidax deposit address for USDT
+        // Get Quidax quote to see actual NGN user will receive
         const quoteResponse = await fetch(
-          `${QUIDAX_BASE_URL}/purchase_quotes/sell?token=USDT&currency=NGN&token_amount=${usdtAmount}&token_network=CELO`,
+          `${QUIDAX_BASE_URL}/purchase_quotes/sell?token=USDT&currency=NGN&token_amount=${usdtAmount.toFixed(6)}&token_network=CELO`,
           {
             headers: {
-              'Authorization': `Bearer ${QUIDAX_PUBLIC_KEY}`,
-              'Content-Type': 'application/json'
+              'accept': 'application/json',
+              'x-private-key': QUIDAX_PRIVATE_KEY
             }
           }
         );
         const quoteData = await quoteResponse.json();
+        console.log(`[QUIDAX_OFF_RAMP] Quidax quote:`, JSON.stringify(quoteData));
 
-        if (!quoteData.deposit_address) {
+        const quidaxFiatAmount = parseFloat(quoteData.data?.fiat_amount || quoteData.fiat_amount || '0');
+        const depositAddress = quoteData.data?.deposit_address || quoteData.deposit_address;
+
+        if (!depositAddress) {
           throw new Error("Failed to get Quidax deposit address");
         }
 
-        console.log(`[QUIDAX_OFF_RAMP] Quidax deposit address: ${quoteData.deposit_address}`);
+        console.log(`[QUIDAX_OFF_RAMP] Quidax deposit address: ${depositAddress}`);
+        console.log(`[QUIDAX_OFF_RAMP] User will receive: ₦${quidaxFiatAmount} (after Quidax fees)`);
 
-        // Get master wallet private key from environment variable
-        const masterPrivateKey = Deno.env.get("CELO_MASTER_WALLET_PRIVATE_KEY");
-        if (!masterPrivateKey) {
-          console.error('[QUIDAX_OFF_RAMP] CELO_MASTER_WALLET_PRIVATE_KEY is not configured!');
+        // Get master wallet from database (encrypted)
+        const encryptionSecret = Deno.env.get('WALLET_ENCRYPTION_SECRET') || 'default_secret';
+        const { data: masterWalletData, error: masterWalletError } = await supabase
+          .from('system_settings')
+          .select('value')
+          .eq('key', 'master_wallet_encrypted')
+          .single();
+
+        if (masterWalletError || !masterWalletData?.value) {
+          console.error('[QUIDAX_OFF_RAMP] Master wallet not found:', masterWalletError);
           throw new Error("Master wallet not configured. Please contact support.");
+        }
+
+        let masterPrivateKey: string;
+        try {
+          masterPrivateKey = CryptoJS.AES.decrypt(masterWalletData.value, encryptionSecret).toString(CryptoJS.enc.Utf8);
+          if (!masterPrivateKey || masterPrivateKey.length < 64) {
+            throw new Error('Decryption failed');
+          }
+        } catch (e) {
+          console.error('[QUIDAX_OFF_RAMP] Failed to decrypt master wallet');
+          throw new Error("Master wallet decryption failed. Please contact support.");
         }
 
         const provider = new ethers.JsonRpcProvider(CELO_RPC);
         const masterWallet = new ethers.Wallet(masterPrivateKey, provider);
+
+        console.log(`[QUIDAX_OFF_RAMP] Master wallet: ${masterWallet.address}`);
 
         // Send USDT to Quidax
         const tokenContract = new ethers.Contract(
           USDT_ADDRESS,
           [
             "function transfer(address to, uint256 amount) returns (bool)",
-            "function decimals() view returns (uint8)"
+            "function balanceOf(address account) view returns (uint256)"
           ],
           masterWallet
         );
 
-        const decimals = await tokenContract.decimals();
-        const amount = ethers.parseUnits(usdtAmount.toFixed(Number(decimals)), decimals);
+        // Check balance
+        const masterBalance = await tokenContract.balanceOf(masterWallet.address);
+        const usdtAmountWei = ethers.parseUnits(usdtAmount.toFixed(6), 6);
+        
+        console.log(`[QUIDAX_OFF_RAMP] Master USDT balance: ${ethers.formatUnits(masterBalance, 6)}`);
 
-        console.log(`[QUIDAX_OFF_RAMP] Sending ${usdtAmount} USDT to Quidax...`);
-        const tx = await tokenContract.transfer(quoteData.deposit_address, amount);
+        if (masterBalance < usdtAmountWei) {
+          throw new Error(`Insufficient USDT in master wallet. Available: ${ethers.formatUnits(masterBalance, 6)}, Required: ${usdtAmount.toFixed(6)}`);
+        }
+
+        console.log(`[QUIDAX_OFF_RAMP] Sending ${usdtAmount.toFixed(6)} USDT to Quidax...`);
+        const tx = await tokenContract.transfer(depositAddress, usdtAmountWei);
         const receipt = await tx.wait();
         const txHash = receipt.hash;
 
         console.log(`[QUIDAX_OFF_RAMP] ✅ USDT sent to Quidax: ${txHash}`);
-
-        // Initiate off-ramp transaction with Quidax
-        const offRampResponse = await fetch(
-          `${QUIDAX_BASE_URL}/off_ramp_transaction`,
-          {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${QUIDAX_PRIVATE_KEY}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              token: "USDT",
-              token_network: "CELO",
-              currency: "NGN",
-              token_amount: usdtAmount,
-              transaction_hash: txHash,
-              bank_details: bankDetails,
-              callback_url: `${SUPABASE_URL}/functions/v1/quidax-webhook`
-            })
-          }
-        );
-
-        const offRampData = await offRampResponse.json();
-        console.log(`[QUIDAX_OFF_RAMP] Off-ramp initiated:`, offRampData);
 
         // Deduct from user balance
         await supabase
@@ -192,44 +229,63 @@ serve(async (req) => {
           })
           .eq("user_id", user.id);
 
-        // Log transaction
+        console.log(`[QUIDAX_OFF_RAMP] Deducted ${ncAmount} NC from user`);
+
+        // Log transaction with accurate info
+        const reference = `NL_SELL_${Date.now()}_${user.id.slice(0, 8)}`;
         await supabase.from("wallet_transactions").insert({
           user_id: user.id,
-          kind: "withdrawal",
+          kind: "quidax_withdrawal",
           amount: -ncAmount,
           status: "processing",
-          reference: `Quidax Off-Ramp: ${ncAmount} NC → ${usdtAmount} USDT`
+          reference: `Withdraw ${ncAmount} NC → ${usdtAmount.toFixed(4)} USDT → ₦${quidaxFiatAmount.toLocaleString()} @ ₦${usdToNgn}/USDT`
         });
 
         // Store Quidax transaction
-        if (offRampData.reference) {
-          await supabase.from('quidax_transactions').insert({
-            user_id: user.id,
-            transaction_type: 'off_ramp',
-            reference: offRampData.reference,
-            fiat_amount: ncAmount,
-            fiat_currency: 'NGN',
-            token: 'USDT',
-            token_amount: usdtAmount,
-            tx_hash: txHash,
-            status: 'processing',
-            quidax_data: offRampData
-          });
-        }
+        await supabase.from('quidax_transactions').insert({
+          user_id: user.id,
+          transaction_type: 'off_ramp',
+          reference: reference,
+          fiat_amount: quidaxFiatAmount,
+          fiat_currency: 'NGN',
+          token: 'USDT',
+          token_amount: usdtAmount,
+          tx_hash: txHash,
+          status: 'processing',
+          quidax_data: { 
+            quote: quoteData, 
+            nc_deducted: ncAmount, 
+            exchange_rate: usdToNgn,
+            deposit_address: depositAddress 
+          }
+        });
+
+        // Send notification
+        await supabase.from('notifications').insert({
+          user_id: user.id,
+          type: 'transaction',
+          title: '💸 Withdrawal Processing',
+          message: `Your withdrawal of ${ncAmount.toLocaleString()} NC is being processed. You'll receive approximately ₦${quidaxFiatAmount.toLocaleString()} in your bank account.`,
+          metadata: { reference, ncAmount, fiatAmount: quidaxFiatAmount, txHash }
+        });
+
+        console.log(`[QUIDAX_OFF_RAMP] ========== WITHDRAWAL INITIATED ==========`);
 
         return new Response(JSON.stringify({
           success: true,
-          reference: offRampData.reference,
+          reference,
           txHash,
-          usdtAmount,
-          fiatAmount: quoteData.fiat_amount || ncAmount
+          usdtAmount: usdtAmount.toFixed(6),
+          fiatAmount: quidaxFiatAmount,
+          ncDeducted: ncAmount,
+          exchangeRate: usdToNgn,
+          message: `Withdrawal processing. You'll receive ₦${quidaxFiatAmount.toLocaleString()} in your bank.`
         }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" }
         });
       }
 
       case 'get_transaction_status': {
-        // GET /api/v1/merchants/off_ramp_transaction/{reference}
         const { reference } = params;
         if (!reference) {
           throw new Error("Missing reference");
@@ -239,8 +295,8 @@ serve(async (req) => {
           `${QUIDAX_BASE_URL}/off_ramp_transaction/${reference}`,
           {
             headers: {
-              'Authorization': `Bearer ${QUIDAX_PUBLIC_KEY}`,
-              'Content-Type': 'application/json'
+              'accept': 'application/json',
+              'x-private-key': QUIDAX_PRIVATE_KEY
             }
           }
         );
