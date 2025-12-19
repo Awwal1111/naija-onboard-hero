@@ -10,6 +10,7 @@ const corsHeaders = {
 
 const CELO_RPC = "https://forno.celo.org"
 const USDT_ADDRESS = "0x48065fbbe25f71c9282ddf5e1cd6d6a887483d5e" // USDT on Celo mainnet
+const EXCHANGE_RATE_API = "https://v6.exchangerate-api.com/v6/c06b378e6d590d4c22aa2998/latest/USD"
 
 const USDT_ABI = [
   "function transfer(address to, uint256 amount) returns (bool)",
@@ -65,9 +66,10 @@ serve(async (req) => {
       throw new Error('Unauthorized')
     }
 
-    const { reference, details, amount } = await req.json()
+    const { reference, details, amount, ncAmount: providedNcAmount } = await req.json()
 
     console.log(`[QUIDAX SELL] Processing sell for user ${user.id}, ref: ${reference}`)
+    console.log(`[QUIDAX SELL] Details:`, JSON.stringify({ amount, providedNcAmount, details }))
 
     // Get user profile to verify and deduct balance
     const { data: profile, error: profileError } = await supabase
@@ -81,10 +83,29 @@ serve(async (req) => {
     }
 
     const usdtAmount = parseFloat(amount)
-    const ncAmount = Math.floor(usdtAmount * 1600) // Convert USDT to NC
+    
+    // CRITICAL FIX: Get LIVE exchange rate instead of hardcoded 1600
+    let usdToNgn = 1600 // Fallback only
+    try {
+      const rateResponse = await fetch(EXCHANGE_RATE_API, { signal: AbortSignal.timeout(5000) })
+      if (rateResponse.ok) {
+        const rateData = await rateResponse.json()
+        if (rateData.conversion_rates?.NGN) {
+          usdToNgn = rateData.conversion_rates.NGN
+          console.log(`[QUIDAX SELL] Live exchange rate: $1 = ₦${usdToNgn}`)
+        }
+      }
+    } catch (e) {
+      console.log(`[QUIDAX SELL] Using fallback exchange rate: ${usdToNgn}`)
+    }
+
+    // Calculate NC based on live rate (or use provided NC amount if available)
+    const ncAmount = providedNcAmount || Math.floor(usdtAmount * usdToNgn)
+    
+    console.log(`[QUIDAX SELL] NC Calculation: ${usdtAmount} USDT × ${usdToNgn} = ${ncAmount} NC`)
 
     if (profile.balance_withdrawable < ncAmount) {
-      throw new Error('Insufficient balance')
+      throw new Error(`Insufficient balance. Required: ${ncAmount} NC, Available: ${profile.balance_withdrawable} NC`)
     }
 
     // Store original balance for potential rollback - DON'T deduct yet
@@ -172,14 +193,14 @@ serve(async (req) => {
 
     console.log(`[QUIDAX SELL] Deducted ${ncAmount} NC from user ${user.id} after successful transfer`)
 
-    // Log transaction with wallet source
+    // Log transaction with wallet source and rate info
     await supabase
       .from('wallet_transactions')
       .insert({
         user_id: user.id,
         amount: -ncAmount,
         kind: 'quidax_sell_pending',
-        reference: `Sell ${usdtAmount} USDT via Quidax Ramp (${walletSource} wallet, pending confirmation)`,
+        reference: `Sell ${usdtAmount} USDT via Quidax Ramp @ ₦${usdToNgn}/USDT (${walletSource} wallet)`,
         status: 'pending'
       })
 
@@ -187,6 +208,9 @@ serve(async (req) => {
       JSON.stringify({ 
         success: true,
         txHash: receipt.hash,
+        ncDeducted: ncAmount,
+        usdtSent: usdtAmount,
+        exchangeRate: usdToNgn,
         message: 'USDT sent to Quidax. Waiting for confirmation.'
       }),
       { 
