@@ -3869,6 +3869,53 @@ export type Database = {
           },
         ]
       }
+      staking_transactions: {
+        Row: {
+          amount: number
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          position_id: string | null
+          status: string
+          transaction_type: string
+          tx_hash: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          position_id?: string | null
+          status?: string
+          transaction_type: string
+          tx_hash?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          position_id?: string | null
+          status?: string
+          transaction_type?: string
+          tx_hash?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staking_transactions_position_id_fkey"
+            columns: ["position_id"]
+            isOneToOne: false
+            referencedRelation: "usdt_staking_positions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stories: {
         Row: {
           background_color: string | null
@@ -4239,6 +4286,45 @@ export type Database = {
           id?: string
           type?: string
           used?: boolean | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      usdt_staking_positions: {
+        Row: {
+          amount_earned: number
+          amount_staked: number
+          created_at: string
+          id: string
+          last_apy: number | null
+          status: string
+          total_deposited: number
+          total_withdrawn: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_earned?: number
+          amount_staked?: number
+          created_at?: string
+          id?: string
+          last_apy?: number | null
+          status?: string
+          total_deposited?: number
+          total_withdrawn?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_earned?: number
+          amount_staked?: number
+          created_at?: string
+          id?: string
+          last_apy?: number | null
+          status?: string
+          total_deposited?: number
+          total_withdrawn?: number
+          updated_at?: string
           user_id?: string
         }
         Relationships: []

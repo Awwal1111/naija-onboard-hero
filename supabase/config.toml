@@ -164,3 +164,6 @@ verify_jwt = true
 
 [functions.get-tv-variations]
 verify_jwt = true
+
+[functions.moola-staking]
+verify_jwt = true
