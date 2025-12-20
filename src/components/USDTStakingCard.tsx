@@ -3,9 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
-import { TrendingUp, Wallet, ArrowUpRight, ArrowDownLeft, Info, Loader2, ExternalLink, RefreshCw } from 'lucide-react'
+import { TrendingUp, Wallet, ArrowUpRight, ArrowDownLeft, Info, Loader2, RefreshCw, PiggyBank } from 'lucide-react'
 import { useUSDTStaking } from '@/hooks/useUSDTStaking'
 import { useWallet } from '@/hooks/useWallet'
 
@@ -39,11 +38,8 @@ export const USDTStakingCard = () => {
     }
   }
 
-  // Estimate USDT from NC (using approximate rate)
-  const estimatedUSDT = (nc: number) => {
-    const rate = 1600 // Approximate NGN/USDT
-    return (nc / rate).toFixed(4)
-  }
+  // Total available in savings (staked + earned)
+  const totalAvailable = (position?.amount_staked || 0) + (position?.amount_earned || 0)
 
   return (
     <>
@@ -52,9 +48,9 @@ export const USDTStakingCard = () => {
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg font-semibold flex items-center gap-2">
               <div className="p-2 bg-emerald-500/20 rounded-lg">
-                <TrendingUp className="h-5 w-5 text-emerald-500" />
+                <PiggyBank className="h-5 w-5 text-emerald-500" />
               </div>
-              USDT Savings
+              NC Savings
             </CardTitle>
             <Button
               variant="ghost"
@@ -82,18 +78,24 @@ export const USDTStakingCard = () => {
             )}
           </div>
 
-          {/* Staked Balance */}
+          {/* Savings Balance */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Your Staked Balance</span>
-              <span className="text-xs text-muted-foreground">Powered by Moola Market</span>
+              <span className="text-sm text-muted-foreground">Your Savings Balance</span>
+              <span className="text-xs text-emerald-600">Earning interest</span>
             </div>
             <div className="flex items-baseline gap-2">
               <span className="text-2xl font-bold text-foreground">
-                ${position?.amount_staked?.toFixed(2) || '0.00'}
+                {(position?.amount_staked || 0).toLocaleString()}
               </span>
-              <span className="text-sm text-muted-foreground">USDT</span>
+              <span className="text-sm text-muted-foreground">NC</span>
             </div>
+            {position?.amount_earned && position.amount_earned > 0 && (
+              <div className="flex items-center gap-1 text-sm text-emerald-600">
+                <TrendingUp className="h-3.5 w-3.5" />
+                <span>+{position.amount_earned.toFixed(2)} NC earned</span>
+              </div>
+            )}
           </div>
 
           {/* Stats Row */}
@@ -101,13 +103,13 @@ export const USDTStakingCard = () => {
             <div className="p-3 bg-background/50 rounded-lg border border-border/50">
               <p className="text-xs text-muted-foreground mb-1">Total Deposited</p>
               <p className="font-semibold text-foreground">
-                ${position?.total_deposited?.toFixed(2) || '0.00'}
+                {(position?.total_deposited || 0).toLocaleString()} NC
               </p>
             </div>
             <div className="p-3 bg-background/50 rounded-lg border border-border/50">
               <p className="text-xs text-muted-foreground mb-1">Total Withdrawn</p>
               <p className="font-semibold text-foreground">
-                ${position?.total_withdrawn?.toFixed(2) || '0.00'}
+                {(position?.total_withdrawn || 0).toLocaleString()} NC
               </p>
             </div>
           </div>
@@ -124,32 +126,26 @@ export const USDTStakingCard = () => {
               ) : (
                 <ArrowUpRight className="h-4 w-4 mr-2" />
               )}
-              Stake
+              Save
             </Button>
             <Button 
               variant="outline" 
               onClick={() => setShowWithdrawDialog(true)}
-              disabled={loading || !position || position.amount_staked <= 0}
+              disabled={loading || totalAvailable <= 0}
             >
               {loading ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
               ) : (
                 <ArrowDownLeft className="h-4 w-4 mr-2" />
               )}
-              Unstake
+              Withdraw
             </Button>
           </div>
 
-          {/* Info Link */}
-          <a 
-            href="https://moola.market" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors pt-2"
-          >
-            Learn more about Moola Market
-            <ExternalLink className="h-3 w-3" />
-          </a>
+          {/* Info */}
+          <p className="text-xs text-center text-muted-foreground pt-2">
+            Earn daily interest on your savings. Withdraw anytime.
+          </p>
         </CardContent>
       </Card>
 
@@ -158,11 +154,11 @@ export const USDTStakingCard = () => {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-emerald-500" />
-              Stake USDT
+              <PiggyBank className="h-5 w-5 text-emerald-500" />
+              Save NC
             </DialogTitle>
             <DialogDescription>
-              Deposit NC to earn interest on Moola Market. Your NC will be converted to USDT and staked.
+              Deposit NC to earn {apy}% APY. Interest is calculated daily and added automatically.
             </DialogDescription>
           </DialogHeader>
           
@@ -171,25 +167,27 @@ export const USDTStakingCard = () => {
               <label className="text-sm font-medium">Amount (NC)</label>
               <Input
                 type="number"
-                placeholder="Enter NC amount"
+                placeholder="Min 100 NC"
                 value={depositAmount}
                 onChange={(e) => setDepositAmount(e.target.value)}
+                min="100"
               />
               <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Available: NC {balance.withdrawable.toLocaleString()}</span>
-                <span>≈ ${estimatedUSDT(parseFloat(depositAmount) || 0)} USDT</span>
+                <span>Available: {balance.withdrawable.toLocaleString()} NC</span>
+                <span>Min: 100 NC</span>
               </div>
             </div>
 
             {/* Quick Amount Buttons */}
             <div className="flex gap-2">
-              {[1000, 5000, 10000, 20000].map((amount) => (
+              {[500, 1000, 5000, 10000].map((amount) => (
                 <Button
                   key={amount}
                   variant="outline"
                   size="sm"
                   onClick={() => setDepositAmount(amount.toString())}
                   className="flex-1 text-xs"
+                  disabled={balance.withdrawable < amount}
                 >
                   {amount.toLocaleString()}
                 </Button>
@@ -199,10 +197,10 @@ export const USDTStakingCard = () => {
             <div className="p-3 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
               <div className="flex items-center gap-2 text-sm">
                 <TrendingUp className="h-4 w-4 text-emerald-500" />
-                <span className="text-emerald-600 font-medium">Earn up to {apy}% APY</span>
+                <span className="text-emerald-600 font-medium">Earn {apy}% APY</span>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                Interest is calculated and added automatically
+                Interest is calculated daily and compounded automatically
               </p>
             </div>
           </div>
@@ -213,16 +211,16 @@ export const USDTStakingCard = () => {
             </Button>
             <Button 
               onClick={handleDeposit} 
-              disabled={loading || !depositAmount || parseFloat(depositAmount) <= 0}
+              disabled={loading || !depositAmount || parseFloat(depositAmount) < 100 || parseFloat(depositAmount) > balance.withdrawable}
               className="bg-emerald-600 hover:bg-emerald-700"
             >
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Staking...
+                  Saving...
                 </>
               ) : (
-                'Confirm Stake'
+                'Confirm Save'
               )}
             </Button>
           </DialogFooter>
@@ -235,36 +233,39 @@ export const USDTStakingCard = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Wallet className="h-5 w-5 text-primary" />
-              Unstake USDT
+              Withdraw Savings
             </DialogTitle>
             <DialogDescription>
-              Withdraw your staked USDT. It will be converted back to NC and credited to your wallet.
+              Withdraw NC from your savings. Funds are credited instantly to your wallet.
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Amount (USDT)</label>
+              <label className="text-sm font-medium">Amount (NC)</label>
               <Input
                 type="number"
-                placeholder="Enter USDT amount"
+                placeholder="Enter NC amount"
                 value={withdrawAmount}
                 onChange={(e) => setWithdrawAmount(e.target.value)}
-                step="0.01"
               />
               <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Staked: ${position?.amount_staked?.toFixed(4) || '0'} USDT</span>
-                <span>≈ NC {Math.round((parseFloat(withdrawAmount) || 0) * 1600).toLocaleString()}</span>
+                <span>Available: {totalAvailable.toLocaleString()} NC</span>
+                {position?.amount_earned && position.amount_earned > 0 && (
+                  <span className="text-emerald-600">
+                    (includes {position.amount_earned.toFixed(2)} NC earnings)
+                  </span>
+                )}
               </div>
             </div>
 
             {/* Quick Amount Buttons */}
-            {position && position.amount_staked > 0 && (
+            {totalAvailable > 0 && (
               <div className="flex gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setWithdrawAmount((position.amount_staked * 0.25).toFixed(4))}
+                  onClick={() => setWithdrawAmount(Math.floor(totalAvailable * 0.25).toString())}
                   className="flex-1 text-xs"
                 >
                   25%
@@ -272,7 +273,7 @@ export const USDTStakingCard = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setWithdrawAmount((position.amount_staked * 0.5).toFixed(4))}
+                  onClick={() => setWithdrawAmount(Math.floor(totalAvailable * 0.5).toString())}
                   className="flex-1 text-xs"
                 >
                   50%
@@ -280,7 +281,7 @@ export const USDTStakingCard = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setWithdrawAmount((position.amount_staked * 0.75).toFixed(4))}
+                  onClick={() => setWithdrawAmount(Math.floor(totalAvailable * 0.75).toString())}
                   className="flex-1 text-xs"
                 >
                   75%
@@ -288,7 +289,7 @@ export const USDTStakingCard = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setWithdrawAmount(position.amount_staked.toFixed(4))}
+                  onClick={() => setWithdrawAmount(Math.floor(totalAvailable).toString())}
                   className="flex-1 text-xs"
                 >
                   Max
@@ -298,7 +299,7 @@ export const USDTStakingCard = () => {
 
             <div className="p-3 bg-muted/50 rounded-lg border border-border">
               <p className="text-xs text-muted-foreground">
-                Your USDT will be withdrawn from Moola Market and the equivalent NC will be credited to your wallet balance.
+                Your NC will be instantly credited to your wallet balance. No fees or waiting period.
               </p>
             </div>
           </div>
@@ -309,7 +310,7 @@ export const USDTStakingCard = () => {
             </Button>
             <Button 
               onClick={handleWithdraw} 
-              disabled={loading || !withdrawAmount || parseFloat(withdrawAmount) <= 0 || parseFloat(withdrawAmount) > (position?.amount_staked || 0)}
+              disabled={loading || !withdrawAmount || parseFloat(withdrawAmount) <= 0 || parseFloat(withdrawAmount) > totalAvailable}
             >
               {loading ? (
                 <>
@@ -317,7 +318,7 @@ export const USDTStakingCard = () => {
                   Withdrawing...
                 </>
               ) : (
-                'Confirm Unstake'
+                'Confirm Withdraw'
               )}
             </Button>
           </DialogFooter>
