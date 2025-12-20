@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Trophy, Zap, FileText, User, History, Users, ArrowUpRight, Phone, Wifi, TrendingUp, Home, MessageCircle, Briefcase, DollarSign, Menu, Tv, Wallet, Receipt, Coins, PiggyBank } from 'lucide-react'
+import { Trophy, Zap, FileText, User, History, Users, ArrowUpRight, Phone, Wifi, TrendingUp, Home, MessageCircle, Briefcase, DollarSign, Menu, Tv, Wallet, Receipt, Coins, PiggyBank, ArrowDownUp } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useWallet } from '@/hooks/useWallet'
 import NaijaLanceWalletCard from '@/components/NaijaLanceWalletCard'
@@ -17,6 +17,7 @@ import { VTUElectricityDialog } from '@/components/VTUElectricityDialog'
 import { VTUCableTVDialog } from '@/components/VTUCableTVDialog'
 import { MoreMenuDrawer } from '@/components/MoreMenuDrawer'
 import { USDTStakingCard } from '@/components/USDTStakingCard'
+import { CryptoSwapCard } from '@/components/CryptoSwapCard'
 
 const EnhancedEarn = () => {
   const { balance, loading } = useWallet()
@@ -176,7 +177,10 @@ const EnhancedEarn = () => {
 
           {/* EARN TAB */}
           <TabsContent value="earn" className="space-y-6 mt-0">
-            {/* USDT Staking Section */}
+            {/* Crypto Trading Section */}
+            <CryptoSwapCard />
+            
+            {/* NC Savings Section */}
             <USDTStakingCard />
 
             {/* Daily Sign-In Streak */}
