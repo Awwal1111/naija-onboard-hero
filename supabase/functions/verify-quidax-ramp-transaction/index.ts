@@ -12,12 +12,12 @@ const corsHeaders = {
 /**
  * VERIFY QUIDAX RAMP TRANSACTION
  * 
- * CRITICAL FIX: Use Quidax's actual transaction rate, not hardcoded values.
+ * FIX: Use Quidax's actual transaction amounts directly.
  * 
- * For deposits (buy): User pays ₦X, gets Y USDT → Credit ₦X as NC (what they paid)
- * For withdrawals (sell): User sells Y USDT, gets ₦X → Deduct ₦X as NC (what Quidax pays)
+ * For deposits (buy): User pays ₦X → gets Y USDT → Credit X NC (what they paid)
+ * For withdrawals (sell): User deducted X NC → sends Y USDT → gets ₦Z in bank
  * 
- * This ensures users get exactly what they pay/receive from Quidax.
+ * Quidax handles the rate, we just credit/debit based on their actual amounts.
  */
 
 serve(async (req) => {
@@ -51,6 +51,37 @@ serve(async (req) => {
     console.log(`[VERIFY_QUIDAX] Mode: ${mode}, Reference: ${reference}`)
     console.log(`[VERIFY_QUIDAX] User: ${user.id}`)
 
+    // DEDUPLICATION CHECK - Critical to prevent double crediting
+    const { data: existingTx } = await supabase
+      .from('wallet_transactions')
+      .select('id')
+      .eq('reference', reference)
+      .eq('status', 'completed')
+      .single()
+
+    if (existingTx) {
+      console.log(`[VERIFY_QUIDAX] ⚠️ Transaction already processed: ${reference}`)
+      return new Response(
+        JSON.stringify({ success: true, message: 'Transaction already processed' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Check quidax_transactions for double processing
+    const { data: existingQuidaxTx } = await supabase
+      .from('quidax_transactions')
+      .select('id, status')
+      .eq('reference', reference)
+      .single()
+
+    if (existingQuidaxTx?.status === 'completed') {
+      console.log(`[VERIFY_QUIDAX] ⚠️ Quidax transaction already completed: ${reference}`)
+      return new Response(
+        JSON.stringify({ success: true, message: 'Transaction already completed' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     // Get user profile with wallet info
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
@@ -65,11 +96,11 @@ serve(async (req) => {
     console.log(`[VERIFY_QUIDAX] User wallet: ${profile.celo_wallet_address}`)
 
     // Verify transaction with Quidax API
-    console.log(`[VERIFY_QUIDAX] Calling Quidax API...`)
+    console.log(`[VERIFY_QUIDAX] Calling Quidax API to verify...`)
     const verifyResponse = await fetch(`https://ramp-be.quidax.io/api/v1/merchants/on_ramp_transaction/${reference}`, {
       method: 'GET',
       headers: {
-        'x-private-key': quidaxPrivateKey,
+        'x-private-key': quidaxPrivateKey!,
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       }
@@ -78,134 +109,65 @@ serve(async (req) => {
     if (!verifyResponse.ok) {
       const errorText = await verifyResponse.text()
       console.error('[VERIFY_QUIDAX] Quidax verification failed:', errorText)
-      throw new Error('Transaction verification failed')
+      throw new Error('Transaction verification failed with Quidax')
     }
 
     const verifiedTransaction = await verifyResponse.json()
-    console.log('[VERIFY_QUIDAX] Quidax API response:', JSON.stringify(verifiedTransaction))
+    console.log('[VERIFY_QUIDAX] Quidax API response:', JSON.stringify(verifiedTransaction, null, 2))
 
     // Check if transaction is successful
     const status = verifiedTransaction.data?.status
     if (status !== 'successful' && status !== 'completed') {
       console.log(`[VERIFY_QUIDAX] Transaction not yet complete. Status: ${status}`)
-      throw new Error(`Transaction not successful. Status: ${status}`)
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          message: `Transaction status: ${status}. Please wait for completion.` 
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
-    // CRITICAL FIX: Extract amounts from correct Quidax payload paths
-    // For on-ramp: fiat_deposit.amount = what user paid, crypto_payout.amount = USDT received
-    const cryptoAmount = parseFloat(
-      verifiedTransaction.data?.crypto_payout?.amount || 
-      verifiedTransaction.data?.token_amount || 
-      verifiedTransaction.data?.crypto_amount || 
-      '0'
-    )
+    // Extract amounts from Quidax response
+    // For on-ramp: fiat_deposit.amount = what user paid in NGN
+    // For on-ramp: crypto_payout.amount = USDT they receive
+    const quidaxData = verifiedTransaction.data
+    
     const fiatAmount = parseFloat(
-      verifiedTransaction.data?.fiat_deposit?.amount || 
-      verifiedTransaction.data?.fiat_amount || 
+      quidaxData?.fiat_deposit?.amount || 
+      quidaxData?.fiat_amount || 
+      quidaxData?.from_amount ||
+      '0'
+    )
+    const cryptoAmount = parseFloat(
+      quidaxData?.crypto_payout?.amount || 
+      quidaxData?.token_amount || 
+      quidaxData?.to_amount ||
       '0'
     )
 
-    console.log('[VERIFY_QUIDAX] Extracted amounts:', { cryptoAmount, fiatAmount })
+    console.log('[VERIFY_QUIDAX] Quidax transaction amounts:')
+    console.log(`  - Fiat (NGN) paid/received: ₦${fiatAmount}`)
+    console.log(`  - Crypto (USDT): ${cryptoAmount}`)
 
-    // Validate amounts
-    if (fiatAmount <= 0 || cryptoAmount <= 0) {
-      console.error('[VERIFY_QUIDAX] Invalid amounts from Quidax:', { fiatAmount, cryptoAmount })
-      throw new Error('Invalid transaction amounts from Quidax')
+    if (fiatAmount <= 0) {
+      console.error('[VERIFY_QUIDAX] Invalid fiat amount from Quidax:', fiatAmount)
+      throw new Error('Invalid transaction amount from Quidax')
     }
 
-    // Calculate the actual rate from this transaction
-    const actualRate = fiatAmount / cryptoAmount
-    console.log(`[VERIFY_QUIDAX] Actual Quidax rate: ₦${actualRate.toFixed(2)} per USDT`)
+    // Calculate the actual rate from Quidax
+    const actualRate = cryptoAmount > 0 ? fiatAmount / cryptoAmount : 0
+    console.log(`[VERIFY_QUIDAX] Quidax rate: ₦${actualRate.toFixed(2)} per USDT`)
 
     if (mode === 'buy') {
       // ===== ON-RAMP (BUY): User paid fiatAmount NGN, gets cryptoAmount USDT =====
-      // CREDIT the user with fiatAmount as NC (what they actually paid)
-      console.log(`[VERIFY_QUIDAX] ON-RAMP: Processing buy transaction`)
-
-      if (!profile.celo_wallet_address) {
-        throw new Error('User wallet address not found')
-      }
-
-      // Check if already processed
-      const { data: existingTx } = await supabase
-        .from('wallet_transactions')
-        .select('id')
-        .eq('reference', reference)
-        .eq('status', 'completed')
-        .single()
-
-      if (existingTx) {
-        console.log(`[VERIFY_QUIDAX] Transaction already processed: ${reference}`)
-        return new Response(
-          JSON.stringify({ success: true, message: 'Transaction already processed' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
-
-      // Connect to Celo
-      const provider = new ethers.JsonRpcProvider("https://forno.celo.org")
+      // CREDIT the user with EXACTLY what they paid (fiatAmount) as NC
+      // 1 NC = 1 NGN, so if they paid ₦10,000, they get 10,000 NC
       
-      // USDT contract on Celo
-      const usdtAddress = "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e"
-      const tokenContract = new ethers.Contract(
-        usdtAddress,
-        ["function balanceOf(address account) view returns (uint256)"],
-        provider
-      )
+      console.log(`[VERIFY_QUIDAX] ON-RAMP: Processing deposit`)
+      const ncAmount = Math.round(fiatAmount) // User paid this in NGN, credit this as NC
 
-      // Wait for deposit to arrive (up to 60 seconds)
-      console.log(`[VERIFY_QUIDAX] Waiting for USDT to arrive in wallet...`)
-      let userBalance = BigInt(0)
-      const expectedAmount = ethers.parseUnits(cryptoAmount.toFixed(6), 6)
-      const tolerance = expectedAmount * BigInt(95) / BigInt(100) // 95% tolerance
-
-      for (let attempt = 1; attempt <= 12; attempt++) {
-        userBalance = await tokenContract.balanceOf(profile.celo_wallet_address)
-        const balanceFormatted = ethers.formatUnits(userBalance, 6)
-        console.log(`[VERIFY_QUIDAX] Attempt ${attempt}/12 - USDT balance: ${balanceFormatted}`)
-
-        if (userBalance >= tolerance) {
-          console.log(`[VERIFY_QUIDAX] ✅ USDT arrived in wallet!`)
-          break
-        }
-
-        if (attempt < 12) {
-          console.log(`[VERIFY_QUIDAX] Waiting 5 seconds...`)
-          await new Promise(resolve => setTimeout(resolve, 5000))
-        }
-      }
-
-      if (userBalance < tolerance) {
-        console.log(`[VERIFY_QUIDAX] ⏳ USDT not yet arrived. Will be credited when detected.`)
-        
-        await supabase
-          .from('quidax_transactions')
-          .update({
-            status: 'awaiting_crypto',
-            quidax_data: { ...verifiedTransaction, awaiting_since: new Date().toISOString() }
-          })
-          .eq('reference', reference)
-
-        return new Response(
-          JSON.stringify({ 
-            success: true, 
-            message: 'Payment confirmed. USDT is being sent to your wallet. You will be credited automatically.',
-            status: 'awaiting_crypto'
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
-
-      // CRITICAL FIX: Credit user with the FIAT AMOUNT they paid (as NC)
-      // User paid ₦X, so they get X NC (1 NC = 1 NGN)
-      const ncAmount = Math.round(fiatAmount)
-      const actualCryptoReceived = parseFloat(ethers.formatUnits(userBalance, 6))
-
-      console.log(`[VERIFY_QUIDAX] NC Calculation:`)
-      console.log(`  - User paid: ₦${fiatAmount}`)
-      console.log(`  - User receives: ${actualCryptoReceived} USDT`)
-      console.log(`  - Rate: ₦${actualRate.toFixed(2)}/USDT`)
-      console.log(`  - NC to credit: ${ncAmount} NC`)
+      console.log(`[VERIFY_QUIDAX] ✅ Crediting ${ncAmount} NC (user paid ₦${fiatAmount})`)
 
       // Credit user
       const newBalance = (profile.wallet_balance || 0) + ncAmount
@@ -224,15 +186,15 @@ serve(async (req) => {
         throw new Error('Failed to credit balance')
       }
 
-      console.log(`[VERIFY_QUIDAX] ✅ Credited ${ncAmount} NC to user. New balance: ${newBalance}`)
+      console.log(`[VERIFY_QUIDAX] New balance: ${newBalance} NC`)
 
-      // Log wallet transaction with accurate info
+      // Log wallet transaction
       await supabase.from('wallet_transactions').insert({
         user_id: user.id,
         kind: 'quidax_deposit',
         amount: ncAmount,
         status: 'completed',
-        reference: `Deposit ₦${fiatAmount.toLocaleString()} → ${actualCryptoReceived.toFixed(4)} USDT @ ₦${actualRate.toFixed(0)}/USDT | Ref: ${reference}`
+        reference: reference
       })
 
       // Update quidax_transactions
@@ -240,10 +202,10 @@ serve(async (req) => {
         .from('quidax_transactions')
         .update({
           status: 'completed',
-          token_amount: actualCryptoReceived,
+          token_amount: cryptoAmount,
           fiat_amount: fiatAmount,
           quidax_data: { 
-            ...verifiedTransaction, 
+            ...quidaxData, 
             credited_at: new Date().toISOString(), 
             nc_amount: ncAmount,
             exchange_rate: actualRate 
@@ -251,23 +213,24 @@ serve(async (req) => {
         })
         .eq('reference', reference)
 
-      // Send notifications
+      // Send notification
       await sendAllNotifications(supabase, {
         userId: user.id,
         type: 'deposit_completed',
         title: '💰 Deposit Successful',
-        message: `Credited ${ncAmount.toLocaleString()} NC (${actualCryptoReceived.toFixed(4)} USDT @ ₦${actualRate.toFixed(0)}/USDT)`,
+        message: `${ncAmount.toLocaleString()} NC credited to your wallet`,
         amount: ncAmount,
-        metadata: { reference, cryptoAmount: actualCryptoReceived, fiatAmount, exchangeRate: actualRate }
+        metadata: { reference, fiatAmount, cryptoAmount, exchangeRate: actualRate }
       })
 
       // ===== SWEEP FUNDS TO MASTER WALLET =====
-      console.log(`[VERIFY_QUIDAX] Starting sweep to master wallet...`)
-      
-      try {
-        if (!profile.encrypted_wallet) {
-          console.log(`[VERIFY_QUIDAX] No encrypted wallet - skipping sweep`)
-        } else {
+      if (profile.encrypted_wallet && profile.celo_wallet_address) {
+        console.log(`[VERIFY_QUIDAX] Attempting sweep to master wallet...`)
+        
+        try {
+          const provider = new ethers.JsonRpcProvider("https://forno.celo.org")
+          const usdtAddress = "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e"
+          
           const { data: masterAddressData } = await supabase
             .from("system_settings")
             .select("value")
@@ -289,41 +252,47 @@ serve(async (req) => {
               const masterWallet = new ethers.Wallet(masterPrivateKey, provider)
               const userWallet = new ethers.Wallet(userPrivateKey, provider)
 
-              const gasAmount = ethers.parseEther("0.003")
-              const masterCeloBalance = await provider.getBalance(masterAddress)
+              // Check user's USDT balance
+              const tokenContract = new ethers.Contract(
+                usdtAddress,
+                ["function balanceOf(address account) view returns (uint256)", "function transfer(address to, uint256 amount) returns (bool)"],
+                userWallet
+              )
 
-              if (masterCeloBalance >= gasAmount) {
-                console.log(`[VERIFY_QUIDAX] Sending gas to user wallet...`)
-                const gasTx = await masterWallet.sendTransaction({
-                  to: profile.celo_wallet_address,
-                  value: gasAmount
-                })
-                await gasTx.wait()
-                console.log(`[VERIFY_QUIDAX] ✅ Gas sent`)
+              // Wait a moment for Quidax to send the USDT
+              await new Promise(resolve => setTimeout(resolve, 3000))
 
-                await new Promise(resolve => setTimeout(resolve, 2000))
+              const userUsdtBalance = await tokenContract.balanceOf(profile.celo_wallet_address)
+              console.log(`[VERIFY_QUIDAX] User USDT balance: ${ethers.formatUnits(userUsdtBalance, 6)}`)
 
-                const sweepContract = new ethers.Contract(
-                  usdtAddress,
-                  ["function transfer(address to, uint256 amount) returns (bool)"],
-                  userWallet
-                )
+              if (userUsdtBalance > BigInt(0)) {
+                // Send gas for the sweep
+                const gasAmount = ethers.parseEther("0.003")
+                const masterCeloBalance = await provider.getBalance(masterAddress)
 
-                const sweepBalance = await tokenContract.balanceOf(profile.celo_wallet_address)
-                if (sweepBalance > BigInt(0)) {
-                  console.log(`[VERIFY_QUIDAX] Sweeping ${ethers.formatUnits(sweepBalance, 6)} USDT...`)
-                  const sweepTx = await sweepContract.transfer(masterAddress, sweepBalance)
+                if (masterCeloBalance >= gasAmount) {
+                  console.log(`[VERIFY_QUIDAX] Sending gas...`)
+                  const gasTx = await masterWallet.sendTransaction({
+                    to: profile.celo_wallet_address,
+                    value: gasAmount
+                  })
+                  await gasTx.wait()
+
+                  await new Promise(resolve => setTimeout(resolve, 2000))
+
+                  // Sweep USDT
+                  console.log(`[VERIFY_QUIDAX] Sweeping USDT...`)
+                  const sweepTx = await tokenContract.transfer(masterAddress, userUsdtBalance)
                   await sweepTx.wait()
-                  console.log(`[VERIFY_QUIDAX] ✅ USDT swept to master wallet`)
+                  console.log(`[VERIFY_QUIDAX] ✅ Swept ${ethers.formatUnits(userUsdtBalance, 6)} USDT to master wallet`)
                 }
-              } else {
-                console.log(`[VERIFY_QUIDAX] ⚠️ Insufficient CELO in master wallet for gas`)
               }
             }
           }
+        } catch (sweepError: any) {
+          console.error(`[VERIFY_QUIDAX] Sweep failed:`, sweepError.message)
+          // Don't fail the transaction, just log the error
         }
-      } catch (sweepError: any) {
-        console.error(`[VERIFY_QUIDAX] Sweep failed:`, sweepError.message)
       }
 
       console.log(`[VERIFY_QUIDAX] ========== BUY COMPLETE ==========`)
@@ -339,16 +308,13 @@ serve(async (req) => {
       )
 
     } else if (mode === 'sell') {
-      // ===== OFF-RAMP (SELL): User sells cryptoAmount USDT, gets fiatAmount NGN =====
+      // ===== OFF-RAMP (SELL): Verify the sell completed =====
       console.log(`[VERIFY_QUIDAX] OFF-RAMP: Verifying sell completion`)
       
-      // For sell, the fiatAmount is what Quidax will send to user's bank
-      const ncAmount = Math.round(fiatAmount) // What user receives in NGN = their NC value
-
-      console.log(`[VERIFY_QUIDAX] Sell calculation:`)
-      console.log(`  - User sold: ${cryptoAmount} USDT`)
-      console.log(`  - User receives: ₦${fiatAmount}`)
-      console.log(`  - Rate: ₦${actualRate.toFixed(2)}/USDT`)
+      // For sell, fiatAmount is what Quidax sends to user's bank
+      console.log(`[VERIFY_QUIDAX] Sell complete:`)
+      console.log(`  - Sold: ${cryptoAmount} USDT`)
+      console.log(`  - Receiving: ₦${fiatAmount} to bank`)
 
       // Update quidax_transactions to completed
       await supabase
@@ -358,19 +324,19 @@ serve(async (req) => {
           fiat_amount: fiatAmount,
           token_amount: cryptoAmount,
           quidax_data: { 
-            ...verifiedTransaction, 
+            ...quidaxData, 
             verified_at: new Date().toISOString(),
             exchange_rate: actualRate 
           }
         })
         .eq('reference', reference)
 
-      // Update wallet transaction
+      // Update wallet transaction to completed
       await supabase
         .from('wallet_transactions')
         .update({ 
           status: 'completed',
-          reference: `Sold ${cryptoAmount} USDT → ₦${fiatAmount.toLocaleString()} @ ₦${actualRate.toFixed(0)}/USDT | Ref: ${reference}`
+          reference: reference
         })
         .eq('reference', reference)
         .eq('user_id', user.id)
@@ -380,8 +346,8 @@ serve(async (req) => {
         userId: user.id,
         type: 'withdrawal_completed',
         title: '✅ Withdrawal Successful',
-        message: `₦${fiatAmount.toLocaleString()} has been sent to your bank account.`,
-        amount: ncAmount,
+        message: `₦${fiatAmount.toLocaleString()} sent to your bank account.`,
+        amount: fiatAmount,
         metadata: { reference, fiatAmount, cryptoAmount, exchangeRate: actualRate }
       })
 
@@ -400,7 +366,7 @@ serve(async (req) => {
 
     throw new Error(`Unknown mode: ${mode}`)
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[VERIFY_QUIDAX] Error:', error)
     return new Response(
       JSON.stringify({ error: error.message }),

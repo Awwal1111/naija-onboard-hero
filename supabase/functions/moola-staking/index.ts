@@ -1,31 +1,25 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
-import { ethers } from 'https://esm.sh/ethers@6.13.4'
-import CryptoJS from "https://esm.sh/crypto-js@4.1.1"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Moola Market Mainnet Contract Addresses (Aave V2 fork on Celo)
-const MOOLA_LENDING_POOL = "0xc1548F5AA1D76CDcAB7385FA6B5cEA70f941e535"
-const USDT_ADDRESS = "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e"
-const CELO_RPC = "https://forno.celo.org"
+/**
+ * NC SAVINGS - Internal Yield System
+ * 
+ * Since Moola Market on Celo doesn't support USDT deposits,
+ * we implement an internal savings system where:
+ * - Users deposit NC to earn yield
+ * - Platform pays interest from transaction fees revenue
+ * - Interest compounds daily at a fixed APY
+ * 
+ * This is simpler, more reliable, and doesn't require on-chain transactions.
+ */
 
-// Aave V2 Lending Pool ABI (subset we need)
-const LENDING_POOL_ABI = [
-  "function deposit(address asset, uint256 amount, address onBehalfOf, uint16 referralCode) external",
-  "function withdraw(address asset, uint256 amount, address to) external returns (uint256)",
-  "function getUserAccountData(address user) external view returns (uint256 totalCollateralETH, uint256 totalDebtETH, uint256 availableBorrowsETH, uint256 currentLiquidationThreshold, uint256 ltv, uint256 healthFactor)",
-  "function getReserveData(address asset) external view returns (uint256 configuration, uint128 liquidityIndex, uint128 variableBorrowIndex, uint128 currentLiquidityRate, uint128 currentVariableBorrowRate, uint128 currentStableBorrowRate, uint40 lastUpdateTimestamp, address aTokenAddress, address stableDebtTokenAddress, address variableDebtTokenAddress, address interestRateStrategyAddress, uint8 id)"
-]
-
-const ERC20_ABI = [
-  "function approve(address spender, uint256 amount) returns (bool)",
-  "function balanceOf(address account) view returns (uint256)",
-  "function allowance(address owner, address spender) view returns (uint256)"
-]
+// Fixed APY for NC savings (can be adjusted by admin)
+const DEFAULT_APY = 5.0 // 5% annual yield
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -36,7 +30,6 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
-    const encryptionSecret = Deno.env.get('WALLET_ENCRYPTION_SECRET') || 'default_secret'
 
     // Get authenticated user
     const authHeader = req.headers.get('authorization')
@@ -52,39 +45,28 @@ serve(async (req) => {
     }
 
     const { action, amount } = await req.json()
-    console.log(`[MOOLA_STAKING] Action: ${action}, User: ${user.id}, Amount: ${amount}`)
-
-    const provider = new ethers.JsonRpcProvider(CELO_RPC)
+    console.log(`[NC_SAVINGS] Action: ${action}, User: ${user.id}, Amount: ${amount}`)
 
     switch (action) {
       case 'get_apy': {
-        // Get current APY from Moola Market
-        try {
-          const lendingPool = new ethers.Contract(MOOLA_LENDING_POOL, LENDING_POOL_ABI, provider)
-          const reserveData = await lendingPool.getReserveData(USDT_ADDRESS)
-          
-          // currentLiquidityRate is in RAY (27 decimals), APY = rate / 1e27 * 100
-          const liquidityRate = BigInt(reserveData[3])
-          const apy = Number(liquidityRate) / 1e27 * 100
-          
-          console.log(`[MOOLA_STAKING] Current APY: ${apy.toFixed(2)}%`)
-          
-          return new Response(
-            JSON.stringify({ success: true, apy: apy.toFixed(2) }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          )
-        } catch (e: any) {
-          console.log(`[MOOLA_STAKING] Error fetching APY:`, e.message)
-          // Return a reasonable fallback APY
-          return new Response(
-            JSON.stringify({ success: true, apy: '3.50' }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          )
-        }
+        // Get APY from system settings or use default
+        const { data: apySetting } = await supabase
+          .from('system_settings')
+          .select('value')
+          .eq('key', 'savings_apy')
+          .single()
+
+        const apy = apySetting?.value ? parseFloat(apySetting.value) : DEFAULT_APY
+        console.log(`[NC_SAVINGS] Current APY: ${apy}%`)
+
+        return new Response(
+          JSON.stringify({ success: true, apy: apy.toFixed(2) }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
       }
 
       case 'get_balance': {
-        // Get user's staked balance from database and on-chain
+        // Get user's staked balance and calculate earned interest
         const { data: position } = await supabase
           .from('usdt_staking_positions')
           .select('*')
@@ -92,29 +74,46 @@ serve(async (req) => {
           .eq('status', 'active')
           .single()
 
-        // Get user's wallet to check mToken balance
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('celo_wallet_address, encrypted_wallet')
-          .eq('user_id', user.id)
-          .single()
-
-        let onChainBalance = '0'
-        if (profile?.celo_wallet_address) {
-          try {
-            // mUSDT address (mToken) - would need to query from reserve data
-            // For now use database tracking
-            onChainBalance = position?.amount_staked?.toString() || '0'
-          } catch (e) {
-            console.log(`[MOOLA_STAKING] Error fetching on-chain balance`)
-          }
+        if (!position) {
+          return new Response(
+            JSON.stringify({
+              success: true,
+              position: { amount_staked: 0, amount_earned: 0, total_deposited: 0, total_withdrawn: 0 },
+              onChainBalance: '0'
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
         }
+
+        // Calculate earned interest since last update
+        const { data: apySetting } = await supabase
+          .from('system_settings')
+          .select('value')
+          .eq('key', 'savings_apy')
+          .single()
+        
+        const apy = apySetting?.value ? parseFloat(apySetting.value) : DEFAULT_APY
+        const dailyRate = apy / 100 / 365
+
+        const lastUpdate = new Date(position.updated_at || position.created_at)
+        const now = new Date()
+        const daysSinceUpdate = (now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60 * 24)
+        
+        // Compound interest calculation
+        const interestEarned = position.amount_staked * dailyRate * daysSinceUpdate
+        const totalEarned = (position.amount_earned || 0) + interestEarned
+
+        console.log(`[NC_SAVINGS] Balance: ${position.amount_staked} NC, Earned: ${totalEarned.toFixed(4)} NC`)
 
         return new Response(
           JSON.stringify({
             success: true,
-            position: position || { amount_staked: 0, amount_earned: 0, total_deposited: 0, total_withdrawn: 0 },
-            onChainBalance
+            position: {
+              ...position,
+              amount_earned: totalEarned,
+              pending_interest: interestEarned
+            },
+            onChainBalance: position.amount_staked.toString()
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
@@ -125,10 +124,16 @@ serve(async (req) => {
           throw new Error('Invalid deposit amount')
         }
 
-        // Get user profile and master wallet
+        // Amount is in NC
+        const ncAmount = parseFloat(amount)
+        if (ncAmount < 100) {
+          throw new Error('Minimum deposit is 100 NC')
+        }
+
+        // Get user profile
         const { data: profile } = await supabase
           .from('profiles')
-          .select('wallet_balance, balance_withdrawable, celo_wallet_address, encrypted_wallet')
+          .select('wallet_balance, balance_withdrawable')
           .eq('user_id', user.id)
           .single()
 
@@ -136,87 +141,18 @@ serve(async (req) => {
           throw new Error('Profile not found')
         }
 
-        // Get exchange rate for NC to USDT conversion
-        let usdToNgn = 1600
-        try {
-          const rateResponse = await fetch(
-            "https://v6.exchangerate-api.com/v6/c06b378e6d590d4c22aa2998/latest/USD",
-            { signal: AbortSignal.timeout(5000) }
-          )
-          if (rateResponse.ok) {
-            const rateData = await rateResponse.json()
-            if (rateData.conversion_rates?.NGN) {
-              usdToNgn = rateData.conversion_rates.NGN
-            }
-          }
-        } catch (e) {
-          console.log(`[MOOLA_STAKING] Using fallback rate`)
+        if (profile.balance_withdrawable < ncAmount) {
+          throw new Error(`Insufficient balance. Available: ${profile.balance_withdrawable} NC`)
         }
 
-        // amount is in NC, convert to USDT
-        const usdtAmount = amount / usdToNgn
+        console.log(`[NC_SAVINGS] Depositing ${ncAmount} NC to savings`)
 
-        if (profile.balance_withdrawable < amount) {
-          throw new Error(`Insufficient balance. Required: ${amount} NC, Available: ${profile.balance_withdrawable} NC`)
-        }
-
-        console.log(`[MOOLA_STAKING] Depositing ${amount} NC (${usdtAmount.toFixed(6)} USDT) to Moola`)
-
-        // Get master wallet
-        const { data: masterWalletData } = await supabase
-          .from('system_settings')
-          .select('value')
-          .eq('key', 'master_wallet_encrypted')
-          .single()
-
-        if (!masterWalletData?.value) {
-          throw new Error('Master wallet not configured')
-        }
-
-        const masterPrivateKey = CryptoJS.AES.decrypt(masterWalletData.value, encryptionSecret).toString(CryptoJS.enc.Utf8)
-        if (!masterPrivateKey || masterPrivateKey.length < 64) {
-          throw new Error('Master wallet decryption failed')
-        }
-
-        const masterWallet = new ethers.Wallet(masterPrivateKey, provider)
-        console.log(`[MOOLA_STAKING] Using master wallet: ${masterWallet.address}`)
-
-        // Check USDT balance in master wallet
-        const usdtContract = new ethers.Contract(USDT_ADDRESS, ERC20_ABI, masterWallet)
-        const masterBalance = await usdtContract.balanceOf(masterWallet.address)
-        const usdtAmountWei = ethers.parseUnits(usdtAmount.toFixed(6), 6)
-
-        if (masterBalance < usdtAmountWei) {
-          throw new Error(`Insufficient USDT in master wallet. Available: ${ethers.formatUnits(masterBalance, 6)}, Required: ${usdtAmount.toFixed(6)}`)
-        }
-
-        // Approve USDT for Moola Lending Pool
-        const currentAllowance = await usdtContract.allowance(masterWallet.address, MOOLA_LENDING_POOL)
-        if (currentAllowance < usdtAmountWei) {
-          console.log(`[MOOLA_STAKING] Approving USDT...`)
-          const approveTx = await usdtContract.approve(MOOLA_LENDING_POOL, ethers.MaxUint256)
-          await approveTx.wait()
-          console.log(`[MOOLA_STAKING] Approval confirmed`)
-        }
-
-        // Deposit to Moola Market
-        const lendingPool = new ethers.Contract(MOOLA_LENDING_POOL, LENDING_POOL_ABI, masterWallet)
-        console.log(`[MOOLA_STAKING] Depositing to Moola...`)
-        const depositTx = await lendingPool.deposit(
-          USDT_ADDRESS,
-          usdtAmountWei,
-          masterWallet.address,
-          0 // referral code
-        )
-        const receipt = await depositTx.wait()
-        console.log(`[MOOLA_STAKING] ✅ Deposit confirmed: ${receipt.hash}`)
-
-        // Deduct NC from user
+        // Deduct from user's withdrawable balance
         await supabase
           .from('profiles')
           .update({
-            wallet_balance: profile.wallet_balance - amount,
-            balance_withdrawable: profile.balance_withdrawable - amount
+            wallet_balance: profile.wallet_balance - ncAmount,
+            balance_withdrawable: profile.balance_withdrawable - ncAmount
           })
           .eq('user_id', user.id)
 
@@ -229,11 +165,26 @@ serve(async (req) => {
           .single()
 
         if (existingPosition) {
+          // Calculate and add any pending interest first
+          const { data: apySetting } = await supabase
+            .from('system_settings')
+            .select('value')
+            .eq('key', 'savings_apy')
+            .single()
+          
+          const apy = apySetting?.value ? parseFloat(apySetting.value) : DEFAULT_APY
+          const dailyRate = apy / 100 / 365
+          const lastUpdate = new Date(existingPosition.updated_at)
+          const now = new Date()
+          const daysSinceUpdate = (now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60 * 24)
+          const pendingInterest = existingPosition.amount_staked * dailyRate * daysSinceUpdate
+
           await supabase
             .from('usdt_staking_positions')
             .update({
-              amount_staked: existingPosition.amount_staked + usdtAmount,
-              total_deposited: existingPosition.total_deposited + usdtAmount,
+              amount_staked: existingPosition.amount_staked + ncAmount,
+              amount_earned: (existingPosition.amount_earned || 0) + pendingInterest,
+              total_deposited: existingPosition.total_deposited + ncAmount,
               updated_at: new Date().toISOString()
             })
             .eq('id', existingPosition.id)
@@ -242,8 +193,9 @@ serve(async (req) => {
             .from('usdt_staking_positions')
             .insert({
               user_id: user.id,
-              amount_staked: usdtAmount,
-              total_deposited: usdtAmount,
+              amount_staked: ncAmount,
+              total_deposited: ncAmount,
+              amount_earned: 0,
               status: 'active'
             })
         }
@@ -252,8 +204,7 @@ serve(async (req) => {
         await supabase.from('staking_transactions').insert({
           user_id: user.id,
           transaction_type: 'deposit',
-          amount: usdtAmount,
-          tx_hash: receipt.hash,
+          amount: ncAmount,
           status: 'completed',
           completed_at: new Date().toISOString()
         })
@@ -262,27 +213,27 @@ serve(async (req) => {
         await supabase.from('wallet_transactions').insert({
           user_id: user.id,
           kind: 'staking_deposit',
-          amount: -amount,
+          amount: -ncAmount,
           status: 'completed',
-          reference: `Staked ${usdtAmount.toFixed(4)} USDT to Moola Market | TX: ${receipt.hash.slice(0, 10)}...`
+          reference: `Saved ${ncAmount.toLocaleString()} NC to Savings`
         })
 
         // Notify user
         await supabase.from('notifications').insert({
           user_id: user.id,
           type: 'transaction',
-          title: '📈 Staking Deposit Successful',
-          message: `You have staked ${usdtAmount.toFixed(4)} USDT ($${amount.toLocaleString()} NC). You'll start earning interest immediately!`,
-          metadata: { txHash: receipt.hash, amount: usdtAmount }
+          title: '📈 Savings Deposit Successful',
+          message: `You saved ${ncAmount.toLocaleString()} NC. Start earning ${DEFAULT_APY}% APY!`,
+          metadata: { amount: ncAmount }
         })
+
+        console.log(`[NC_SAVINGS] ✅ Deposited ${ncAmount} NC`)
 
         return new Response(
           JSON.stringify({
             success: true,
-            txHash: receipt.hash,
-            usdtAmount: usdtAmount.toFixed(6),
-            ncDeducted: amount,
-            message: `Successfully staked ${usdtAmount.toFixed(4)} USDT to Moola Market!`
+            ncDeducted: ncAmount,
+            message: `Successfully saved ${ncAmount.toLocaleString()} NC!`
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
@@ -293,6 +244,8 @@ serve(async (req) => {
           throw new Error('Invalid withdraw amount')
         }
 
+        const ncAmount = parseFloat(amount)
+
         // Get user's staking position
         const { data: position } = await supabase
           .from('usdt_staking_positions')
@@ -301,55 +254,35 @@ serve(async (req) => {
           .eq('status', 'active')
           .single()
 
-        if (!position || position.amount_staked < amount) {
-          throw new Error(`Insufficient staked balance. Staked: ${position?.amount_staked || 0} USDT, Requested: ${amount} USDT`)
+        if (!position) {
+          throw new Error('No active savings position found')
         }
 
-        // Get master wallet
-        const { data: masterWalletData } = await supabase
+        // Calculate earned interest
+        const { data: apySetting } = await supabase
           .from('system_settings')
           .select('value')
-          .eq('key', 'master_wallet_encrypted')
+          .eq('key', 'savings_apy')
           .single()
+        
+        const apy = apySetting?.value ? parseFloat(apySetting.value) : DEFAULT_APY
+        const dailyRate = apy / 100 / 365
+        const lastUpdate = new Date(position.updated_at)
+        const now = new Date()
+        const daysSinceUpdate = (now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60 * 24)
+        const pendingInterest = position.amount_staked * dailyRate * daysSinceUpdate
+        const totalEarned = (position.amount_earned || 0) + pendingInterest
 
-        if (!masterWalletData?.value) {
-          throw new Error('Master wallet not configured')
+        // Total available = staked + earned
+        const totalAvailable = position.amount_staked + totalEarned
+
+        if (ncAmount > totalAvailable) {
+          throw new Error(`Insufficient savings balance. Available: ${totalAvailable.toFixed(2)} NC`)
         }
 
-        const masterPrivateKey = CryptoJS.AES.decrypt(masterWalletData.value, encryptionSecret).toString(CryptoJS.enc.Utf8)
-        const masterWallet = new ethers.Wallet(masterPrivateKey, provider)
+        console.log(`[NC_SAVINGS] Withdrawing ${ncAmount} NC (Available: ${totalAvailable.toFixed(2)})`)
 
-        // Withdraw from Moola Market
-        const lendingPool = new ethers.Contract(MOOLA_LENDING_POOL, LENDING_POOL_ABI, masterWallet)
-        const withdrawAmountWei = ethers.parseUnits(amount.toFixed(6), 6)
-        
-        console.log(`[MOOLA_STAKING] Withdrawing ${amount} USDT from Moola...`)
-        const withdrawTx = await lendingPool.withdraw(
-          USDT_ADDRESS,
-          withdrawAmountWei,
-          masterWallet.address
-        )
-        const receipt = await withdrawTx.wait()
-        console.log(`[MOOLA_STAKING] ✅ Withdrawal confirmed: ${receipt.hash}`)
-
-        // Get exchange rate
-        let usdToNgn = 1600
-        try {
-          const rateResponse = await fetch(
-            "https://v6.exchangerate-api.com/v6/c06b378e6d590d4c22aa2998/latest/USD",
-            { signal: AbortSignal.timeout(5000) }
-          )
-          if (rateResponse.ok) {
-            const rateData = await rateResponse.json()
-            if (rateData.conversion_rates?.NGN) {
-              usdToNgn = rateData.conversion_rates.NGN
-            }
-          }
-        } catch (e) {}
-
-        const ncAmount = Math.round(amount * usdToNgn)
-
-        // Credit NC to user
+        // Credit NC back to user
         const { data: profile } = await supabase
           .from('profiles')
           .select('wallet_balance, balance_withdrawable')
@@ -365,22 +298,53 @@ serve(async (req) => {
           .eq('user_id', user.id)
 
         // Update staking position
-        await supabase
-          .from('usdt_staking_positions')
-          .update({
-            amount_staked: position.amount_staked - amount,
-            total_withdrawn: position.total_withdrawn + amount,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', position.id)
+        // If withdrawing everything, close the position
+        const remainingStaked = totalAvailable - ncAmount
+
+        if (remainingStaked < 1) {
+          // Close position
+          await supabase
+            .from('usdt_staking_positions')
+            .update({
+              amount_staked: 0,
+              amount_earned: 0,
+              total_withdrawn: position.total_withdrawn + ncAmount,
+              status: 'closed',
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', position.id)
+        } else {
+          // Partial withdrawal - withdraw from principal first, then from earnings
+          let newStaked = position.amount_staked
+          let newEarned = totalEarned
+          let amountToWithdraw = ncAmount
+
+          // First take from earnings
+          if (amountToWithdraw <= newEarned) {
+            newEarned -= amountToWithdraw
+          } else {
+            amountToWithdraw -= newEarned
+            newEarned = 0
+            newStaked -= amountToWithdraw
+          }
+
+          await supabase
+            .from('usdt_staking_positions')
+            .update({
+              amount_staked: newStaked,
+              amount_earned: newEarned,
+              total_withdrawn: position.total_withdrawn + ncAmount,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', position.id)
+        }
 
         // Log transaction
         await supabase.from('staking_transactions').insert({
           user_id: user.id,
           position_id: position.id,
           transaction_type: 'withdraw',
-          amount: amount,
-          tx_hash: receipt.hash,
+          amount: ncAmount,
           status: 'completed',
           completed_at: new Date().toISOString()
         })
@@ -391,25 +355,25 @@ serve(async (req) => {
           kind: 'staking_withdrawal',
           amount: ncAmount,
           status: 'completed',
-          reference: `Unstaked ${amount.toFixed(4)} USDT from Moola Market | TX: ${receipt.hash.slice(0, 10)}...`
+          reference: `Withdrew ${ncAmount.toLocaleString()} NC from Savings`
         })
 
         // Notify user
         await supabase.from('notifications').insert({
           user_id: user.id,
           type: 'transaction',
-          title: '💰 Staking Withdrawal Complete',
-          message: `You have withdrawn ${amount.toFixed(4)} USDT and received ${ncAmount.toLocaleString()} NC.`,
-          metadata: { txHash: receipt.hash, amount }
+          title: '💰 Savings Withdrawal Complete',
+          message: `Withdrew ${ncAmount.toLocaleString()} NC to your wallet.`,
+          metadata: { amount: ncAmount }
         })
+
+        console.log(`[NC_SAVINGS] ✅ Withdrew ${ncAmount} NC`)
 
         return new Response(
           JSON.stringify({
             success: true,
-            txHash: receipt.hash,
-            usdtAmount: amount.toFixed(6),
             ncCredited: ncAmount,
-            message: `Successfully withdrew ${amount.toFixed(4)} USDT! ${ncAmount.toLocaleString()} NC credited.`
+            message: `Successfully withdrew ${ncAmount.toLocaleString()} NC!`
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
@@ -420,7 +384,7 @@ serve(async (req) => {
     }
 
   } catch (error: any) {
-    console.error('[MOOLA_STAKING] Error:', error)
+    console.error('[NC_SAVINGS] Error:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
