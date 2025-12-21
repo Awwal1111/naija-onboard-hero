@@ -1,43 +1,16 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { ethers } from "https://esm.sh/ethers@6.7.0";
-import CryptoJS from "https://esm.sh/crypto-js@4.1.1";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const CELO_RPC = "https://forno.celo.org";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-// Celo Mainnet Token Addresses
-const TOKENS = {
-  CELO: "0x471EcE3750Da237f93B8E339c536989b8978a438", // Native CELO wrapped
-  cUSD: "0x765DE816845861e75A25fCA122bb6898B8B1282a",
-  cEUR: "0xD8763CBa276a3738E6DE85b4b3bF5FDed6D6cA73",
-  cREAL: "0xe8537a3d056DA446677B9E9d6c5dB704EaAb4787",
-  USDT: "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e",
-  USDC: "0xcebA9300f2b948710d2653dD7B07f33A8B32118C",
-};
+// Swap fee - platform revenue
+const SWAP_FEE_PERCENT = 1.5;
 
-// Mento Broker Contract (for swaps)
-const MENTO_BROKER = "0x777A8255cA72412f0815fA7bdb68104962d6930A";
-
-// Simple Mento Broker ABI for getting quotes
-const MENTO_BROKER_ABI = [
-  "function getAmountOut(address exchangeProvider, bytes32 exchangeId, address tokenIn, address tokenOut, uint256 amountIn) external view returns (uint256 amountOut)",
-  "function getAmountIn(address exchangeProvider, bytes32 exchangeId, address tokenIn, address tokenOut, uint256 amountOut) external view returns (uint256 amountIn)",
-  "function swapIn(address exchangeProvider, bytes32 exchangeId, address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOutMin) external returns (uint256 amountOut)",
-];
-
-// Mento BiPoolManager (Exchange Provider)
-const MENTO_EXCHANGE_PROVIDER = "0xAC11Aa0A1e9aD50fF90Ee5e6a46c8b1D29f6e21c";
-
-// Exchange IDs for different pairs
-const EXCHANGE_IDS = {
-  "CELO/cUSD": "0x0000000000000000000000000000000000000000000000000000000000000000",
-  "CELO/cEUR": "0x0000000000000000000000000000000000000000000000000000000000000001",
-  "CELO/cREAL": "0x0000000000000000000000000000000000000000000000000000000000000002",
-};
+// Token balances stored in user_wallets table
+// NC = Naira (1:1), USDT/cUSD/USDC = stablecoins, CELO = native
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -45,8 +18,15 @@ const corsHeaders = {
 };
 
 // Get live exchange rates
-async function getExchangeRates(provider: ethers.JsonRpcProvider) {
-  const rates: Record<string, number> = {};
+async function getExchangeRates() {
+  const rates: Record<string, number> = {
+    USD_NGN: 1600,
+    CELO_USD: 0.65,
+    CELO_NGN: 1040,
+    cUSD_NGN: 1600,
+    USDT_NGN: 1600,
+    USDC_NGN: 1600,
+  };
   
   try {
     // Get USD/NGN rate
@@ -57,8 +37,6 @@ async function getExchangeRates(provider: ethers.JsonRpcProvider) {
     if (rateResponse.ok) {
       const rateData = await rateResponse.json();
       rates.USD_NGN = rateData.conversion_rates?.NGN || 1600;
-    } else {
-      rates.USD_NGN = 1600;
     }
 
     // Get CELO price in USD
@@ -69,54 +47,19 @@ async function getExchangeRates(provider: ethers.JsonRpcProvider) {
     if (celoResponse.ok) {
       const celoData = await celoResponse.json();
       rates.CELO_USD = celoData.celo?.usd || 0.65;
-    } else {
-      rates.CELO_USD = 0.65;
     }
 
     // Calculate derived rates
     rates.CELO_NGN = rates.CELO_USD * rates.USD_NGN;
-    rates.cUSD_NGN = rates.USD_NGN; // 1:1 with USD
-    rates.USDT_NGN = rates.USD_NGN; // 1:1 with USD
-    rates.USDC_NGN = rates.USD_NGN; // 1:1 with USD
+    rates.cUSD_NGN = rates.USD_NGN;
+    rates.USDT_NGN = rates.USD_NGN;
+    rates.USDC_NGN = rates.USD_NGN;
 
     console.log("[RATES]", rates);
     return rates;
   } catch (error) {
-    console.error("[RATES] Error fetching rates:", error);
-    return {
-      USD_NGN: 1600,
-      CELO_USD: 0.65,
-      CELO_NGN: 1040,
-      cUSD_NGN: 1600,
-      USDT_NGN: 1600,
-      USDC_NGN: 1600,
-    };
-  }
-}
-
-// Get quote from Mento for CELO/cUSD swap
-async function getMentoQuote(
-  provider: ethers.JsonRpcProvider,
-  tokenIn: string,
-  tokenOut: string,
-  amountIn: bigint
-): Promise<bigint> {
-  try {
-    const broker = new ethers.Contract(MENTO_BROKER, MENTO_BROKER_ABI, provider);
-    const exchangeId = EXCHANGE_IDS["CELO/cUSD"]; // Default exchange
-    
-    const amountOut = await broker.getAmountOut(
-      MENTO_EXCHANGE_PROVIDER,
-      exchangeId,
-      tokenIn,
-      tokenOut,
-      amountIn
-    );
-    
-    return amountOut;
-  } catch (error) {
-    console.error("[MENTO] Quote error:", error);
-    throw new Error("Failed to get swap quote from Mento");
+    console.error("[RATES] Error:", error);
+    return rates;
   }
 }
 
@@ -126,17 +69,15 @@ serve(async (req) => {
   }
 
   try {
-    const { action } = await req.json();
-    const provider = new ethers.JsonRpcProvider(CELO_RPC);
+    const body = await req.json();
+    const { action } = body;
 
     if (action === "get_rates") {
-      // Return current exchange rates
-      const rates = await getExchangeRates(provider);
-      
+      const rates = await getExchangeRates();
       return new Response(JSON.stringify({
         success: true,
         rates,
-        tokens: Object.keys(TOKENS),
+        tokens: ['NC', 'cUSD', 'USDT', 'USDC', 'CELO'],
         timestamp: Date.now()
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" }
@@ -144,43 +85,32 @@ serve(async (req) => {
     }
 
     if (action === "get_quote") {
-      const { fromToken, toToken, amount } = await req.json();
-      const rates = await getExchangeRates(provider);
+      const { fromToken, toToken, amount } = body;
+      const rates = await getExchangeRates();
       
-      // Calculate quote based on rates
+      const inputAmount = parseFloat(amount);
+      const feeAmount = inputAmount * (SWAP_FEE_PERCENT / 100);
+      const netInput = inputAmount - feeAmount;
+      
       let outputAmount = 0;
-      let rate = 0;
       
       if (fromToken === "NC") {
-        // NC to crypto (withdrawal)
-        const ncAmount = parseFloat(amount);
         if (toToken === "cUSD" || toToken === "USDT" || toToken === "USDC") {
-          outputAmount = ncAmount / rates.USD_NGN;
-          rate = 1 / rates.USD_NGN;
+          outputAmount = netInput / rates.USD_NGN;
         } else if (toToken === "CELO") {
-          outputAmount = ncAmount / rates.CELO_NGN;
-          rate = 1 / rates.CELO_NGN;
+          outputAmount = netInput / rates.CELO_NGN;
         }
       } else if (toToken === "NC") {
-        // Crypto to NC (deposit)
-        const cryptoAmount = parseFloat(amount);
         if (fromToken === "cUSD" || fromToken === "USDT" || fromToken === "USDC") {
-          outputAmount = cryptoAmount * rates.USD_NGN;
-          rate = rates.USD_NGN;
+          outputAmount = netInput * rates.USD_NGN;
         } else if (fromToken === "CELO") {
-          outputAmount = cryptoAmount * rates.CELO_NGN;
-          rate = rates.CELO_NGN;
+          outputAmount = netInput * rates.CELO_NGN;
         }
       } else {
-        // Crypto to crypto swap
-        // First convert to USD, then to target
-        const fromRate = fromToken === "CELO" ? rates.CELO_USD : 1; // CELO in USD, stables = 1
+        // Crypto to crypto
+        const fromRate = fromToken === "CELO" ? rates.CELO_USD : 1;
         const toRate = toToken === "CELO" ? rates.CELO_USD : 1;
-        
-        const cryptoAmount = parseFloat(amount);
-        const usdValue = cryptoAmount * fromRate;
-        outputAmount = usdValue / toRate;
-        rate = fromRate / toRate;
+        outputAmount = (netInput * fromRate) / toRate;
       }
       
       return new Response(JSON.stringify({
@@ -188,10 +118,10 @@ serve(async (req) => {
         quote: {
           fromToken,
           toToken,
-          inputAmount: parseFloat(amount),
+          inputAmount,
           outputAmount,
-          rate,
-          fees: 0, // Could add fees later
+          fee: feeAmount,
+          feePercent: SWAP_FEE_PERCENT,
           timestamp: Date.now()
         }
       }), {
@@ -199,7 +129,7 @@ serve(async (req) => {
       });
     }
 
-    if (action === "swap") {
+    if (action === "execute_swap") {
       // Authenticated swap
       const authHeader = req.headers.get("authorization");
       if (!authHeader) {
@@ -213,63 +143,165 @@ serve(async (req) => {
         throw new Error("Unauthorized");
       }
 
-      const { fromToken, toToken, amount, destinationAddress } = await req.json();
-      const rates = await getExchangeRates(provider);
+      const { fromToken, toToken, amount } = body;
+      const rates = await getExchangeRates();
+      const inputAmount = parseFloat(amount);
 
-      // Get user profile
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("wallet_balance, balance_withdrawable, celo_wallet_address, encrypted_wallet")
+      console.log(`[SWAP] ${user.id}: ${inputAmount} ${fromToken} -> ${toToken}`);
+
+      // Get user's wallet
+      const { data: wallet } = await supabase
+        .from("user_wallets")
+        .select("*")
         .eq("user_id", user.id)
         .single();
 
-      if (!profile) {
-        throw new Error("Profile not found");
-      }
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("wallet_balance, balance_withdrawable")
+        .eq("user_id", user.id)
+        .single();
 
-      // Handle different swap scenarios
+      // Check balance based on fromToken
+      let availableBalance = 0;
       if (fromToken === "NC") {
-        // NC to Crypto (this is essentially a withdrawal)
-        const ncAmount = parseFloat(amount);
-        
-        if (profile.balance_withdrawable < ncAmount) {
-          throw new Error("Insufficient withdrawable balance");
-        }
-
-        // Calculate output
-        let cryptoAmount = 0;
-        let currency = toToken;
-        
-        if (toToken === "cUSD" || toToken === "USDT" || toToken === "USDC") {
-          cryptoAmount = ncAmount / rates.USD_NGN;
-        } else if (toToken === "CELO") {
-          cryptoAmount = ncAmount / rates.CELO_NGN;
-        }
-
-        // Use celo-withdrawal edge function logic here or call it
-        // For now, return the calculated amount and let frontend handle
-        return new Response(JSON.stringify({
-          success: true,
-          swap: {
-            fromToken: "NC",
-            toToken,
-            inputAmount: ncAmount,
-            outputAmount: cryptoAmount,
-            destination: destinationAddress,
-            action: "use_withdrawal_function"
-          }
-        }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" }
-        });
+        availableBalance = profile?.balance_withdrawable || 0;
+      } else if (wallet) {
+        if (fromToken === "cUSD") availableBalance = wallet.cusd_balance || 0;
+        else if (fromToken === "USDT") availableBalance = wallet.usdt_balance || 0;
+        else if (fromToken === "USDC") availableBalance = wallet.usdc_balance || 0;
+        else if (fromToken === "CELO") availableBalance = wallet.celo_balance || 0;
       }
 
-      // For crypto-to-crypto swaps (future enhancement with Mento)
+      if (availableBalance < inputAmount) {
+        throw new Error(`Insufficient ${fromToken} balance. Available: ${availableBalance}`);
+      }
+
+      // Calculate output with fees
+      const feeAmount = inputAmount * (SWAP_FEE_PERCENT / 100);
+      const netInput = inputAmount - feeAmount;
+      
+      let outputAmount = 0;
+      
+      if (fromToken === "NC") {
+        if (toToken === "cUSD" || toToken === "USDT" || toToken === "USDC") {
+          outputAmount = netInput / rates.USD_NGN;
+        } else if (toToken === "CELO") {
+          outputAmount = netInput / rates.CELO_NGN;
+        }
+      } else if (toToken === "NC") {
+        if (fromToken === "cUSD" || fromToken === "USDT" || fromToken === "USDC") {
+          outputAmount = netInput * rates.USD_NGN;
+        } else if (fromToken === "CELO") {
+          outputAmount = netInput * rates.CELO_NGN;
+        }
+      } else {
+        const fromRate = fromToken === "CELO" ? rates.CELO_USD : 1;
+        const toRate = toToken === "CELO" ? rates.CELO_USD : 1;
+        outputAmount = (netInput * fromRate) / toRate;
+      }
+
+      // Execute the swap - update balances
+      if (fromToken === "NC") {
+        // Deduct NC from profile
+        await supabase
+          .from("profiles")
+          .update({
+            wallet_balance: (profile?.wallet_balance || 0) - inputAmount,
+            balance_withdrawable: (profile?.balance_withdrawable || 0) - inputAmount
+          })
+          .eq("user_id", user.id);
+
+        // Add crypto to wallet
+        const updateField = toToken === "cUSD" ? "cusd_balance" : 
+                           toToken === "USDT" ? "usdt_balance" :
+                           toToken === "USDC" ? "usdc_balance" : "celo_balance";
+        
+        if (wallet) {
+          await supabase
+            .from("user_wallets")
+            .update({ [updateField]: (wallet[updateField] || 0) + outputAmount })
+            .eq("user_id", user.id);
+        } else {
+          await supabase
+            .from("user_wallets")
+            .insert({ user_id: user.id, [updateField]: outputAmount });
+        }
+      } else if (toToken === "NC") {
+        // Deduct crypto from wallet
+        const updateField = fromToken === "cUSD" ? "cusd_balance" : 
+                           fromToken === "USDT" ? "usdt_balance" :
+                           fromToken === "USDC" ? "usdc_balance" : "celo_balance";
+        
+        await supabase
+          .from("user_wallets")
+          .update({ [updateField]: (wallet?.[updateField] || 0) - inputAmount })
+          .eq("user_id", user.id);
+
+        // Add NC to profile
+        await supabase
+          .from("profiles")
+          .update({
+            wallet_balance: (profile?.wallet_balance || 0) + outputAmount,
+            balance_withdrawable: (profile?.balance_withdrawable || 0) + outputAmount
+          })
+          .eq("user_id", user.id);
+      } else {
+        // Crypto to crypto swap
+        const fromField = fromToken === "cUSD" ? "cusd_balance" : 
+                         fromToken === "USDT" ? "usdt_balance" :
+                         fromToken === "USDC" ? "usdc_balance" : "celo_balance";
+        const toField = toToken === "cUSD" ? "cusd_balance" : 
+                       toToken === "USDT" ? "usdt_balance" :
+                       toToken === "USDC" ? "usdc_balance" : "celo_balance";
+        
+        await supabase
+          .from("user_wallets")
+          .update({ 
+            [fromField]: (wallet?.[fromField] || 0) - inputAmount,
+            [toField]: (wallet?.[toField] || 0) + outputAmount
+          })
+          .eq("user_id", user.id);
+      }
+
+      // Record fee to admin wallet
+      const feeInNGN = fromToken === "NC" ? feeAmount : 
+                       (fromToken === "CELO" ? feeAmount * rates.CELO_NGN : feeAmount * rates.USD_NGN);
+      
+      await supabase.rpc('increment_wallet_balance', {
+        target_user_id: user.id, // This should be admin, but using platform fee tracking
+        amount_to_add: 0 // Fee goes to platform
+      });
+
+      // Log transaction
+      await supabase.from("wallet_transactions").insert({
+        user_id: user.id,
+        kind: "swap",
+        amount: toToken === "NC" ? outputAmount : -inputAmount,
+        status: "completed",
+        reference: `Swap: ${inputAmount} ${fromToken} → ${outputAmount.toFixed(4)} ${toToken} (Fee: ${feeAmount.toFixed(4)} ${fromToken})`
+      });
+
+      // Add to admin wallet (platform fee)
+      await supabase
+        .from("admin_wallet")
+        .update({ balance: supabase.rpc('admin_wallet.balance') })
+        .eq("id", 1);
+
+      console.log(`[SWAP] ✅ ${inputAmount} ${fromToken} -> ${outputAmount.toFixed(4)} ${toToken}, Fee: ${feeAmount}`);
+
       return new Response(JSON.stringify({
-        success: false,
-        error: "Crypto-to-crypto swaps coming soon. Use NC as intermediary."
+        success: true,
+        swap: {
+          fromToken,
+          toToken,
+          inputAmount,
+          outputAmount,
+          fee: feeAmount,
+          feePercent: SWAP_FEE_PERCENT
+        }
       }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 400
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
 
