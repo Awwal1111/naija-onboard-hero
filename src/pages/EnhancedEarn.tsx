@@ -17,7 +17,6 @@ import { VTUElectricityDialog } from '@/components/VTUElectricityDialog'
 import { VTUCableTVDialog } from '@/components/VTUCableTVDialog'
 import { MoreMenuDrawer } from '@/components/MoreMenuDrawer'
 import { USDTStakingCard } from '@/components/USDTStakingCard'
-import { WalletActionsCard } from '@/components/WalletActionsCard'
 
 const EnhancedEarn = () => {
   const { balance, loading } = useWallet()
@@ -177,7 +176,7 @@ const EnhancedEarn = () => {
 
           {/* EARN TAB */}
           <TabsContent value="earn" className="space-y-6 mt-0">
-            {/* cUSD Savings Section */}
+            {/* USDT Staking Section */}
             <USDTStakingCard />
 
             {/* Daily Sign-In Streak */}
@@ -323,9 +322,6 @@ const EnhancedEarn = () => {
           <TabsContent value="wallet" className="space-y-6 mt-0">
             {/* Wallet Card */}
             <NaijaLanceWalletCard balance={balance} />
-            
-            {/* Buy NC, Send, Swap - 3 Sections */}
-            <WalletActionsCard />
             
             {/* Action Buttons */}
             <div className="grid grid-cols-2 gap-3">

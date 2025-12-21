@@ -167,6 +167,3 @@ verify_jwt = true
 
 [functions.moola-staking]
 verify_jwt = true
-
-[functions.crypto-swap]
-verify_jwt = false
