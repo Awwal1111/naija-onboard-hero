@@ -1,61 +1,134 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
-import { TrendingUp, Wallet, ArrowUpRight, ArrowDownLeft, Info, Loader2, RefreshCw, PiggyBank } from 'lucide-react'
-import { useUSDTStaking } from '@/hooks/useUSDTStaking'
-import { useWallet } from '@/hooks/useWallet'
+import { TrendingUp, Wallet, ArrowUpRight, ArrowDownLeft, Info, Loader2, RefreshCw, PiggyBank, DollarSign } from 'lucide-react'
+import { useCeloWallet } from '@/hooks/useCeloWallet'
+import { supabase } from '@/integrations/supabase/client'
+import { toast } from 'sonner'
 
 export const USDTStakingCard = () => {
-  const { position, apy, apyLoading, loading, deposit, withdraw, refresh } = useUSDTStaking()
-  const { balance } = useWallet()
+  const { cUsdBalance } = useCeloWallet()
+  const [position, setPosition] = useState<any>(null)
+  const [apy, setApy] = useState('4.50')
+  const [apyLoading, setApyLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [showDepositDialog, setShowDepositDialog] = useState(false)
   const [showWithdrawDialog, setShowWithdrawDialog] = useState(false)
   const [depositAmount, setDepositAmount] = useState('')
   const [withdrawAmount, setWithdrawAmount] = useState('')
 
+  const fetchData = async () => {
+    try {
+      // Get APY
+      setApyLoading(true)
+      const { data: apyData } = await supabase.functions.invoke('moola-staking', {
+        body: { action: 'get_apy' }
+      })
+      if (apyData?.apy) setApy(apyData.apy)
+
+      // Get balance
+      const session = await supabase.auth.getSession()
+      if (session.data.session) {
+        const { data: balanceData } = await supabase.functions.invoke('moola-staking', {
+          body: { action: 'get_balance' },
+          headers: { Authorization: `Bearer ${session.data.session.access_token}` }
+        })
+        if (balanceData?.position) setPosition(balanceData.position)
+      }
+    } catch (error) {
+      console.error('[MOOLA] Error fetching data:', error)
+    } finally {
+      setApyLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchData()
+  }, [])
+
   const handleDeposit = async () => {
     const amount = parseFloat(depositAmount)
-    if (isNaN(amount) || amount <= 0) return
+    if (isNaN(amount) || amount < 1) {
+      toast.error('Minimum deposit is 1 cUSD')
+      return
+    }
     
-    const result = await deposit(amount)
-    if (result.success) {
+    setLoading(true)
+    try {
+      const session = await supabase.auth.getSession()
+      if (!session.data.session) throw new Error('Please log in')
+
+      const { data, error } = await supabase.functions.invoke('moola-staking', {
+        body: { action: 'deposit', amount: amount.toString() },
+        headers: { Authorization: `Bearer ${session.data.session.access_token}` }
+      })
+
+      if (error) throw error
+      if (!data?.success) throw new Error(data?.error || 'Deposit failed')
+
+      toast.success(`Deposited ${amount} cUSD to Moola Savings`)
       setShowDepositDialog(false)
       setDepositAmount('')
+      fetchData()
+    } catch (error: any) {
+      toast.error(error.message || 'Deposit failed')
+    } finally {
+      setLoading(false)
     }
   }
 
   const handleWithdraw = async () => {
     const amount = parseFloat(withdrawAmount)
-    if (isNaN(amount) || amount <= 0) return
+    if (isNaN(amount) || amount <= 0) {
+      toast.error('Enter a valid amount')
+      return
+    }
     
-    const result = await withdraw(amount)
-    if (result.success) {
+    setLoading(true)
+    try {
+      const session = await supabase.auth.getSession()
+      if (!session.data.session) throw new Error('Please log in')
+
+      const { data, error } = await supabase.functions.invoke('moola-staking', {
+        body: { action: 'withdraw', amount: amount.toString() },
+        headers: { Authorization: `Bearer ${session.data.session.access_token}` }
+      })
+
+      if (error) throw error
+      if (!data?.success) throw new Error(data?.error || 'Withdrawal failed')
+
+      toast.success(`Withdrew ${amount} cUSD from Moola`)
       setShowWithdrawDialog(false)
       setWithdrawAmount('')
+      fetchData()
+    } catch (error: any) {
+      toast.error(error.message || 'Withdrawal failed')
+    } finally {
+      setLoading(false)
     }
   }
 
-  // Total available in savings (staked + earned)
   const totalAvailable = (position?.amount_staked || 0) + (position?.amount_earned || 0)
+  const cusdBalanceNum = parseFloat(cUsdBalance) || 0
 
   return (
     <>
-      <Card className="border-border/50 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 overflow-hidden">
+      <Card className="border-border/50 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 overflow-hidden">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg font-semibold flex items-center gap-2">
-              <div className="p-2 bg-emerald-500/20 rounded-lg">
-                <PiggyBank className="h-5 w-5 text-emerald-500" />
+              <div className="p-2 bg-blue-500/20 rounded-lg">
+                <DollarSign className="h-5 w-5 text-blue-500" />
               </div>
-              NC Savings
+              cUSD Savings (Moola)
             </CardTitle>
             <Button
               variant="ghost"
               size="icon"
-              onClick={refresh}
+              onClick={fetchData}
               className="h-8 w-8"
             >
               <RefreshCw className="h-4 w-4" />
@@ -66,13 +139,13 @@ export const USDTStakingCard = () => {
           {/* APY Display */}
           <div className="flex items-center justify-between p-3 bg-background/50 rounded-lg border border-border/50">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Current APY</span>
+              <span className="text-sm text-muted-foreground">Live APY</span>
               <Info className="h-3.5 w-3.5 text-muted-foreground" />
             </div>
             {apyLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <Badge variant="secondary" className="bg-emerald-500/20 text-emerald-600 font-bold">
+              <Badge variant="secondary" className="bg-blue-500/20 text-blue-600 font-bold">
                 {apy}%
               </Badge>
             )}
@@ -81,52 +154,42 @@ export const USDTStakingCard = () => {
           {/* Savings Balance */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Your Savings Balance</span>
-              <span className="text-xs text-emerald-600">Earning interest</span>
+              <span className="text-sm text-muted-foreground">Staked in Moola</span>
+              <span className="text-xs text-blue-600">Earning DeFi yield</span>
             </div>
             <div className="flex items-baseline gap-2">
               <span className="text-2xl font-bold text-foreground">
-                {(position?.amount_staked || 0).toLocaleString()}
+                {(position?.amount_staked || 0).toFixed(4)}
               </span>
-              <span className="text-sm text-muted-foreground">NC</span>
+              <span className="text-sm text-muted-foreground">cUSD</span>
             </div>
-            {position?.amount_earned && position.amount_earned > 0 && (
-              <div className="flex items-center gap-1 text-sm text-emerald-600">
+            {position?.amount_earned > 0 && (
+              <div className="flex items-center gap-1 text-sm text-blue-600">
                 <TrendingUp className="h-3.5 w-3.5" />
-                <span>+{position.amount_earned.toFixed(2)} NC earned</span>
+                <span>+{position.amount_earned.toFixed(4)} cUSD earned</span>
               </div>
             )}
           </div>
 
-          {/* Stats Row */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="p-3 bg-background/50 rounded-lg border border-border/50">
-              <p className="text-xs text-muted-foreground mb-1">Total Deposited</p>
-              <p className="font-semibold text-foreground">
-                {(position?.total_deposited || 0).toLocaleString()} NC
-              </p>
-            </div>
-            <div className="p-3 bg-background/50 rounded-lg border border-border/50">
-              <p className="text-xs text-muted-foreground mb-1">Total Withdrawn</p>
-              <p className="font-semibold text-foreground">
-                {(position?.total_withdrawn || 0).toLocaleString()} NC
-              </p>
-            </div>
+          {/* Available cUSD */}
+          <div className="p-3 bg-background/50 rounded-lg border border-border/50">
+            <p className="text-xs text-muted-foreground mb-1">Available cUSD in Wallet</p>
+            <p className="font-semibold text-foreground">{cusdBalanceNum.toFixed(4)} cUSD</p>
           </div>
 
           {/* Action Buttons */}
           <div className="grid grid-cols-2 gap-3 pt-2">
             <Button 
               onClick={() => setShowDepositDialog(true)} 
-              className="w-full bg-emerald-600 hover:bg-emerald-700"
-              disabled={loading}
+              className="w-full bg-blue-600 hover:bg-blue-700"
+              disabled={loading || cusdBalanceNum < 1}
             >
               {loading ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
               ) : (
                 <ArrowUpRight className="h-4 w-4 mr-2" />
               )}
-              Save
+              Deposit
             </Button>
             <Button 
               variant="outline" 
@@ -144,7 +207,7 @@ export const USDTStakingCard = () => {
 
           {/* Info */}
           <p className="text-xs text-center text-muted-foreground pt-2">
-            Earn daily interest on your savings. Withdraw anytime.
+            Real DeFi yield from Moola Market lending. Withdraw anytime.
           </p>
         </CardContent>
       </Card>
@@ -154,74 +217,67 @@ export const USDTStakingCard = () => {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <PiggyBank className="h-5 w-5 text-emerald-500" />
-              Save NC
+              <DollarSign className="h-5 w-5 text-blue-500" />
+              Deposit cUSD to Moola
             </DialogTitle>
             <DialogDescription>
-              Deposit NC to earn {apy}% APY. Interest is calculated daily and added automatically.
+              Earn {apy}% APY from real DeFi lending activity.
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Amount (NC)</label>
+              <label className="text-sm font-medium">Amount (cUSD)</label>
               <Input
                 type="number"
-                placeholder="Min 100 NC"
+                placeholder="Min 1 cUSD"
                 value={depositAmount}
                 onChange={(e) => setDepositAmount(e.target.value)}
-                min="100"
+                min="1"
+                step="0.01"
               />
               <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Available: {balance.withdrawable.toLocaleString()} NC</span>
-                <span>Min: 100 NC</span>
+                <span>Available: {cusdBalanceNum.toFixed(4)} cUSD</span>
+                <span>Min: 1 cUSD</span>
               </div>
             </div>
 
             {/* Quick Amount Buttons */}
             <div className="flex gap-2">
-              {[500, 1000, 5000, 10000].map((amount) => (
+              {[25, 50, 75, 100].map((pct) => (
                 <Button
-                  key={amount}
+                  key={pct}
                   variant="outline"
                   size="sm"
-                  onClick={() => setDepositAmount(amount.toString())}
+                  onClick={() => setDepositAmount((cusdBalanceNum * pct / 100).toFixed(4))}
                   className="flex-1 text-xs"
-                  disabled={balance.withdrawable < amount}
+                  disabled={cusdBalanceNum < 1}
                 >
-                  {amount.toLocaleString()}
+                  {pct}%
                 </Button>
               ))}
             </div>
 
-            <div className="p-3 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
+            <div className="p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
               <div className="flex items-center gap-2 text-sm">
-                <TrendingUp className="h-4 w-4 text-emerald-500" />
-                <span className="text-emerald-600 font-medium">Earn {apy}% APY</span>
+                <TrendingUp className="h-4 w-4 text-blue-500" />
+                <span className="text-blue-600 font-medium">Earn {apy}% APY</span>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                Interest is calculated daily and compounded automatically
+                Interest from Moola Market DeFi lending
               </p>
             </div>
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDepositDialog(false)}>
-              Cancel
-            </Button>
+            <Button variant="outline" onClick={() => setShowDepositDialog(false)}>Cancel</Button>
             <Button 
               onClick={handleDeposit} 
-              disabled={loading || !depositAmount || parseFloat(depositAmount) < 100 || parseFloat(depositAmount) > balance.withdrawable}
-              className="bg-emerald-600 hover:bg-emerald-700"
+              disabled={loading || !depositAmount || parseFloat(depositAmount) < 1 || parseFloat(depositAmount) > cusdBalanceNum}
+              className="bg-blue-600 hover:bg-blue-700"
             >
-              {loading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Saving...
-                </>
-              ) : (
-                'Confirm Save'
-              )}
+              {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Deposit
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -233,27 +289,28 @@ export const USDTStakingCard = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Wallet className="h-5 w-5 text-primary" />
-              Withdraw Savings
+              Withdraw from Moola
             </DialogTitle>
             <DialogDescription>
-              Withdraw NC from your savings. Funds are credited instantly to your wallet.
+              Withdraw cUSD + earned interest to your wallet.
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Amount (NC)</label>
+              <label className="text-sm font-medium">Amount (cUSD)</label>
               <Input
                 type="number"
-                placeholder="Enter NC amount"
+                placeholder="Enter amount"
                 value={withdrawAmount}
                 onChange={(e) => setWithdrawAmount(e.target.value)}
+                step="0.01"
               />
               <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Available: {totalAvailable.toLocaleString()} NC</span>
-                {position?.amount_earned && position.amount_earned > 0 && (
-                  <span className="text-emerald-600">
-                    (includes {position.amount_earned.toFixed(2)} NC earnings)
+                <span>Available: {totalAvailable.toFixed(4)} cUSD</span>
+                {position?.amount_earned > 0 && (
+                  <span className="text-blue-600">
+                    (includes {position.amount_earned.toFixed(4)} earnings)
                   </span>
                 )}
               </div>
@@ -262,64 +319,29 @@ export const USDTStakingCard = () => {
             {/* Quick Amount Buttons */}
             {totalAvailable > 0 && (
               <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setWithdrawAmount(Math.floor(totalAvailable * 0.25).toString())}
-                  className="flex-1 text-xs"
-                >
-                  25%
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setWithdrawAmount(Math.floor(totalAvailable * 0.5).toString())}
-                  className="flex-1 text-xs"
-                >
-                  50%
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setWithdrawAmount(Math.floor(totalAvailable * 0.75).toString())}
-                  className="flex-1 text-xs"
-                >
-                  75%
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setWithdrawAmount(Math.floor(totalAvailable).toString())}
-                  className="flex-1 text-xs"
-                >
-                  Max
-                </Button>
+                {[25, 50, 75, 100].map((pct) => (
+                  <Button
+                    key={pct}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setWithdrawAmount((totalAvailable * pct / 100).toFixed(4))}
+                    className="flex-1 text-xs"
+                  >
+                    {pct}%
+                  </Button>
+                ))}
               </div>
             )}
-
-            <div className="p-3 bg-muted/50 rounded-lg border border-border">
-              <p className="text-xs text-muted-foreground">
-                Your NC will be instantly credited to your wallet balance. No fees or waiting period.
-              </p>
-            </div>
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowWithdrawDialog(false)}>
-              Cancel
-            </Button>
+            <Button variant="outline" onClick={() => setShowWithdrawDialog(false)}>Cancel</Button>
             <Button 
               onClick={handleWithdraw} 
               disabled={loading || !withdrawAmount || parseFloat(withdrawAmount) <= 0 || parseFloat(withdrawAmount) > totalAvailable}
             >
-              {loading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Withdrawing...
-                </>
-              ) : (
-                'Confirm Withdraw'
-              )}
+              {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Withdraw
             </Button>
           </DialogFooter>
         </DialogContent>
