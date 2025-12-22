@@ -840,6 +840,154 @@ export const usePushNotificationTriggers = () => {
         console.log('[Push] Expert applications channel status:', status)
       })
 
+    // Listen for new job posts (notify experts)
+    const newJobsChannel = supabase
+      .channel('new-jobs-push')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'job_posts'
+        },
+        async (payload) => {
+          const job = payload.new as any
+          console.log('[Push] New job posted:', job.id)
+          
+          // Skip if this is the user's own job
+          if (job.user_id === user.id) return
+          
+          // Check if user is an expert (only notify experts of new jobs)
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('is_expert, state_name')
+            .eq('user_id', user.id)
+            .single()
+          
+          if (!profile?.is_expert) return
+          
+          // Check if job is in user's state or remote
+          if (job.location_state && job.location_state !== profile.state_name && !job.is_remote) {
+            return
+          }
+
+          const { data: poster } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('user_id', job.user_id)
+            .single()
+
+          await sendPush({
+            userId: user.id,
+            title: '🎯 New Gig Alert',
+            body: `${job.title} - Budget: ₦${job.budget_min?.toLocaleString() || 0}-${job.budget_max?.toLocaleString() || 0}`,
+            url: `/jobs/${job.id}`,
+            data: { type: 'new_job', jobId: job.id }
+          })
+        }
+      )
+      .subscribe((status) => {
+        console.log('[Push] New jobs channel status:', status)
+      })
+
+    // Listen for new courses (notify connections)
+    const newCoursesChannel = supabase
+      .channel('new-courses-push')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'courses'
+        },
+        async (payload) => {
+          const course = payload.new as any
+          console.log('[Push] New course created:', course.id)
+          
+          // Skip if this is the user's own course
+          if (course.user_id === user.id) return
+          
+          // Check if user is connected to the course creator
+          const { data: connection } = await supabase
+            .from('connections')
+            .select('id')
+            .or(`and(user1_id.eq.${user.id},user2_id.eq.${course.user_id}),and(user1_id.eq.${course.user_id},user2_id.eq.${user.id})`)
+            .single()
+          
+          if (!connection) return
+
+          const { data: instructor } = await supabase
+            .from('profiles')
+            .select('full_name, profile_picture_url')
+            .eq('user_id', course.user_id)
+            .single()
+
+          await sendPush({
+            userId: user.id,
+            title: '📚 New Course',
+            body: `${instructor?.full_name || 'An expert'} published: ${course.title}`,
+            icon: instructor?.profile_picture_url || '/icon-512.png',
+            url: `/courses/${course.id}`,
+            data: { type: 'new_course', courseId: course.id }
+          })
+        }
+      )
+      .subscribe((status) => {
+        console.log('[Push] New courses channel status:', status)
+      })
+
+    // Listen for new fundraising campaigns
+    const newFundraisingChannel = supabase
+      .channel('new-fundraising-push')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'fundraisings'
+        },
+        async (payload) => {
+          const fundraising = payload.new as any
+          const oldFundraising = payload.old as any
+          
+          // Only notify when status changes to approved
+          if (oldFundraising.status === fundraising.status) return
+          if (fundraising.status !== 'approved') return
+          
+          // Skip if this is the user's own campaign
+          if (fundraising.user_id === user.id) return
+          
+          console.log('[Push] New approved fundraising:', fundraising.id)
+          
+          // Check if user is connected to the campaign creator
+          const { data: connection } = await supabase
+            .from('connections')
+            .select('id')
+            .or(`and(user1_id.eq.${user.id},user2_id.eq.${fundraising.user_id}),and(user1_id.eq.${fundraising.user_id},user2_id.eq.${user.id})`)
+            .single()
+          
+          if (!connection) return
+
+          const { data: creator } = await supabase
+            .from('profiles')
+            .select('full_name, profile_picture_url')
+            .eq('user_id', fundraising.user_id)
+            .single()
+
+          await sendPush({
+            userId: user.id,
+            title: '🙏 New Campaign',
+            body: `${creator?.full_name || 'Someone'} started: ${fundraising.title}`,
+            icon: creator?.profile_picture_url || '/icon-512.png',
+            url: `/fundraising/${fundraising.id}`,
+            data: { type: 'new_fundraising', fundraisingId: fundraising.id }
+          })
+        }
+      )
+      .subscribe((status) => {
+        console.log('[Push] New fundraising channel status:', status)
+      })
+
     return () => {
       console.log('[Push] Cleaning up notification triggers')
       supabase.removeChannel(messagesChannel)
@@ -858,6 +1006,9 @@ export const usePushNotificationTriggers = () => {
       supabase.removeChannel(expertRatingsChannel)
       supabase.removeChannel(classParticipantsChannel)
       supabase.removeChannel(expertApplicationsChannel)
+      supabase.removeChannel(newJobsChannel)
+      supabase.removeChannel(newCoursesChannel)
+      supabase.removeChannel(newFundraisingChannel)
     }
   }, [user])
 }

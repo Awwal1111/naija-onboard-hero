@@ -167,3 +167,18 @@ verify_jwt = true
 
 [functions.moola-staking]
 verify_jwt = true
+
+[functions.send-sms]
+verify_jwt = false
+
+[functions.smart-notification]
+verify_jwt = false
+
+[functions.engage-inactive-users]
+verify_jwt = false
+
+[functions.notify-new-signup]
+verify_jwt = false
+
+[functions.notify-matching-content]
+verify_jwt = false

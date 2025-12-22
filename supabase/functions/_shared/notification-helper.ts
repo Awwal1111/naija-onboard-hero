@@ -7,124 +7,127 @@ interface NotificationParams {
   message: string
   amount?: number
   metadata?: any
+  priority?: 'low' | 'normal' | 'high' | 'urgent'
 }
 
+/**
+ * Unified notification sender that uses the smart notification engine
+ * to determine the best channels based on user status.
+ * 
+ * Priority levels:
+ * - low: In-app only
+ * - normal: Push + Telegram if offline
+ * - high: Push + Telegram + Email
+ * - urgent: All channels including SMS for inactive users
+ */
 export async function sendAllNotifications(
+  supabase: any,
+  params: NotificationParams
+): Promise<void> {
+  const { userId, type, title, message, amount, metadata, priority = 'normal' } = params
+
+  console.log(`[NOTIFICATION] ========================================`)
+  console.log(`[NOTIFICATION] Sending smart notification for user ${userId}`)
+  console.log(`[NOTIFICATION] Type: ${type}, Title: ${title}, Priority: ${priority}`)
+
+  try {
+    // Use the smart notification engine to handle channel selection
+    const { data, error } = await supabase.functions.invoke('smart-notification', {
+      body: {
+        userId,
+        type,
+        title,
+        message,
+        priority,
+        data: {
+          ...metadata,
+          amount: amount ? `₦${amount.toLocaleString()} NC` : undefined,
+          transactionType: metadata?.transactionType || type
+        },
+        actionUrl: metadata?.actionUrl || '/dashboard'
+      }
+    })
+
+    if (error) {
+      console.error('[NOTIFICATION] ❌ Smart notification error:', error)
+      
+      // Fallback to direct notification creation
+      console.log('[NOTIFICATION] Falling back to direct notification...')
+      await createDirectNotification(supabase, params)
+    } else {
+      console.log('[NOTIFICATION] ✅ Smart notification result:', data)
+      console.log('[NOTIFICATION] Channels used:', data?.channels?.join(', ') || 'none')
+    }
+
+    console.log('[NOTIFICATION] 🎉 Notification processing complete')
+    console.log(`[NOTIFICATION] ========================================`)
+  } catch (error) {
+    console.error('[NOTIFICATION] ❌ Error in sendAllNotifications:', error)
+    
+    // Final fallback - just create in-app notification
+    try {
+      await createDirectNotification(supabase, params)
+    } catch (fallbackError) {
+      console.error('[NOTIFICATION] ❌ Fallback also failed:', fallbackError)
+    }
+  }
+}
+
+/**
+ * Direct notification creation without using edge functions
+ * Used as fallback when smart-notification fails
+ */
+async function createDirectNotification(
   supabase: any,
   params: NotificationParams
 ): Promise<void> {
   const { userId, type, title, message, amount, metadata } = params
 
-  console.log(`[NOTIFICATION] ========================================`)
-  console.log(`[NOTIFICATION] Sending all notifications for user ${userId}`)
-  console.log(`[NOTIFICATION] Type: ${type}, Title: ${title}, Amount: ${amount}`)
-
-  try {
-    // 1. Create in-app notification
-    console.log('[NOTIFICATION] 1️⃣ Creating in-app notification...')
-    const { error: notifError } = await supabase
-      .from('notifications')
-      .insert({
-        user_id: userId,
-        type,
-        title,
-        message,
-        metadata: metadata || {}
-      })
-
-    if (notifError) {
-      console.error('[NOTIFICATION] ❌ In-app notification error:', notifError)
-    } else {
-      console.log('[NOTIFICATION] ✅ In-app notification created')
-    }
-
-    // 2. Send push notification to browser
-    console.log('[NOTIFICATION] 2️⃣ Sending push notification...')
-    try {
-      const { data: pushData, error: pushError } = await supabase.functions.invoke('send-push-notification', {
-        body: {
-          userId,
-          title,
-          body: message,
-          icon: '/icon-512.png',
-          badge: '/icon-512.png',
-          data: metadata,
-          url: metadata?.actionUrl || '/dashboard'
-        }
-      })
-
-      if (pushError) {
-        console.error('[NOTIFICATION] ❌ Push notification error:', pushError)
-      } else {
-        console.log('[NOTIFICATION] ✅ Push notification result:', pushData)
+  console.log('[NOTIFICATION] Creating direct in-app notification...')
+  
+  const { error: notifError } = await supabase
+    .from('notifications')
+    .insert({
+      user_id: userId,
+      type,
+      title,
+      message,
+      metadata: {
+        ...metadata,
+        amount: amount ? `₦${amount.toLocaleString()} NC` : undefined,
+        fallback: true
       }
-    } catch (pushErr) {
-      console.error('[NOTIFICATION] ❌ Push notification failed:', pushErr)
-    }
+    })
 
-    // 3. Send Telegram notification (use user_id, not userId)
-    console.log('[NOTIFICATION] 3️⃣ Sending Telegram notification...')
-    try {
-      const telegramMessage = `🔔 *${title}*\n\n${message}`
-      
-      const { data: telegramData, error: telegramError } = await supabase.functions.invoke('send-telegram-notification', {
-        body: {
-          user_id: userId, // FIXED: use user_id, not userId
-          message: telegramMessage,
-          parse_mode: 'Markdown'
-        }
-      })
-
-      if (telegramError) {
-        console.error('[NOTIFICATION] ❌ Telegram notification error:', telegramError)
-      } else {
-        console.log('[NOTIFICATION] ✅ Telegram notification result:', telegramData)
-      }
-    } catch (telegramErr) {
-      console.error('[NOTIFICATION] ❌ Telegram notification failed:', telegramErr)
-    }
-
-    // 4. Send email notification with PDF receipt for financial transactions
-    const isFinancialTransaction = type.includes('transaction') || 
-      type.includes('payment') || 
-      type.includes('withdrawal') || 
-      type.includes('deposit') || 
-      type === 'deposit_completed' || 
-      type === 'withdrawal_completed'
-    
-    console.log('[NOTIFICATION] 4️⃣ Sending email notification... (financial:', isFinancialTransaction, ')')
-    try {
-      const { data: emailData, error: emailError } = await supabase.functions.invoke('send-notification', {
-        body: {
-          userId,
-          type,
-          title,
-          message,
-          metadata: {
-            ...metadata,
-            transactionType: metadata?.transactionType || type,
-            amount: amount ? `₦${amount.toLocaleString()} NC` : metadata?.amount,
-            reference: metadata?.reference || `TXN-${Date.now()}`,
-            status: 'Completed'
-          },
-          sendEmail: true,
-          emailTemplate: isFinancialTransaction ? 'transaction' : 'general',
-          attachPDF: isFinancialTransaction
-        }
-      })
-
-      if (emailError) {
-        console.error('[NOTIFICATION] ❌ Email notification error:', emailError)
-      } else {
-        console.log('[NOTIFICATION] ✅ Email notification result:', emailData)
-      }
-    } catch (emailErr) {
-      console.error('[NOTIFICATION] ❌ Email notification failed:', emailErr)
-    }
-
-    console.log('[NOTIFICATION] 🎉 All notifications processed')
-    console.log(`[NOTIFICATION] ========================================`)
-  } catch (error) {
-    console.error('[NOTIFICATION] ❌ Error in sendAllNotifications:', error)
+  if (notifError) {
+    console.error('[NOTIFICATION] ❌ Direct notification error:', notifError)
+    throw notifError
+  } else {
+    console.log('[NOTIFICATION] ✅ Direct in-app notification created')
   }
+}
+
+/**
+ * Send notification for high-value events that should reach users via all channels
+ */
+export async function sendUrgentNotification(
+  supabase: any,
+  params: Omit<NotificationParams, 'priority'>
+): Promise<void> {
+  return sendAllNotifications(supabase, { ...params, priority: 'urgent' })
+}
+
+/**
+ * Send notification for transaction-related events
+ */
+export async function sendTransactionNotification(
+  supabase: any,
+  params: NotificationParams
+): Promise<void> {
+  // Financial notifications are at least 'high' priority
+  const priority = params.priority && ['high', 'urgent'].includes(params.priority) 
+    ? params.priority 
+    : 'high'
+  
+  return sendAllNotifications(supabase, { ...params, priority })
 }
