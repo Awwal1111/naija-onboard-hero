@@ -1,30 +1,33 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { ArrowLeft, MapPin, Clock, DollarSign, Users, Briefcase, Home, MessageCircle, Menu, Plus, Search, BarChart3, Eye, TrendingUp } from 'lucide-react'
+import { ArrowLeft, MapPin, Clock, DollarSign, Users, Briefcase, Home, MessageCircle, Menu, Plus, Search, Eye, TrendingUp, Grid3X3, List, Package } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { BrandInput } from '@/components/ui/brand-input'
 import { useAuth } from '@/hooks/useAuth'
-import { usePersonalizedJobs, PersonalizedJob } from '@/hooks/usePersonalizedDiscovery'
+import { usePersonalizedJobs, usePersonalizedGigs } from '@/hooks/usePersonalizedDiscovery'
 import { supabase } from '@/integrations/supabase/client'
 import JobPostingDialog from '@/components/JobPostingDialog'
 import { MoreMenuDrawer } from '@/components/MoreMenuDrawer'
 import { BookmarkButton } from '@/components/BookmarkButton'
+import { GigCard } from '@/components/GigCard'
 
 const Jobs = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { user } = useAuth()
-  const { jobs, loading } = usePersonalizedJobs(50)
+  const { jobs, loading: jobsLoading } = usePersonalizedJobs(50)
+  const { gigs, loading: gigsLoading } = usePersonalizedGigs(50)
   const [searchQuery, setSearchQuery] = useState('')
   const [stateFilter, setStateFilter] = useState('all')
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState('discover')
+  const [activeTab, setActiveTab] = useState('gigs')
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [myJobs, setMyJobs] = useState<any[]>([])
   const [myApplications, setMyApplications] = useState<any[]>([])
   const [stats, setStats] = useState({ posted: 0, applications: 0, views: 0 })
@@ -56,17 +59,10 @@ const Jobs = () => {
     if (max) return `Up to ₦${max.toLocaleString()}`
   }
 
-  const nigerianStates = [
-    'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno',
-    'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'Abuja', 'Gombe', 'Imo',
-    'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi', 'Kwara', 'Lagos', 'Nasarawa',
-    'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau', 'Rivers', 'Sokoto', 'Taraba',
-    'Yobe', 'Zamfara'
-  ]
-
-  const jobCategories = [
-    'Web Development', 'Mobile Development', 'Design', 'Writing', 'Marketing',
-    'Data Analysis', 'Virtual Assistant', 'Customer Service', 'Other'
+  const gigCategories = [
+    'All Categories', 'Web Development', 'Mobile App Development', 'UI/UX Design', 'Graphic Design',
+    'Digital Marketing', 'Content Writing', 'Video Editing', 'Photography', 'Social Media',
+    'Virtual Assistant', 'Data Analysis', 'Voice Over', 'Music Production', 'Translation'
   ]
 
   const bottomNavItems = [
@@ -81,78 +77,26 @@ const Jobs = () => {
     navigate(path)
   }
 
-  const filteredJobs = jobs.filter(job => {
-    const matchesSearch = job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         job.description.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredGigs = gigs.filter((gig: any) => {
+    const matchesSearch = gig.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         gig.description?.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesCategory = !categoryFilter || categoryFilter === 'all' || 
+                           categoryFilter === 'All Categories' ||
+                           gig.category?.toLowerCase().includes(categoryFilter.toLowerCase())
+    return matchesSearch && matchesCategory
+  })
+
+  const filteredJobs = jobs.filter((job: any) => {
+    const matchesSearch = job.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         job.description?.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesState = !stateFilter || stateFilter === 'all' || job.location?.includes(stateFilter)
     const matchesCategory = !categoryFilter || categoryFilter === 'all' || 
-                           job.required_skills?.some(skill => skill.toLowerCase().includes(categoryFilter.toLowerCase()))
-    
+                           categoryFilter === 'All Categories' ||
+                           job.required_skills?.some((skill: string) => skill.toLowerCase().includes(categoryFilter.toLowerCase()))
     return matchesSearch && matchesState && matchesCategory
   })
 
-  const JobCard = ({ job, showActions = false }: { job: any, showActions?: boolean }) => (
-    <Card className="hover:shadow-md transition-shadow">
-      <CardHeader className="pb-2">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <CardTitle className="text-lg mb-1">{job.title}</CardTitle>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              {job.poster_name && (
-                <div className="flex items-center gap-2">
-                  <Avatar className="h-5 w-5">
-                    <AvatarImage src={job.poster_picture || undefined} />
-                    <AvatarFallback className="text-xs">{job.poster_name?.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  <span className="text-xs">{job.poster_name}</span>
-                </div>
-              )}
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <BookmarkButton type="job" itemId={job.id} />
-            {!showActions && user?.id !== job.poster_id && (
-              <Button size="sm" onClick={() => navigate(`/chat/${job.poster_id}`)}>
-                Chat Now
-              </Button>
-            )}
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{job.description}</p>
-        <div className="flex flex-wrap items-center gap-2 text-xs">
-          <Badge variant="secondary" className="gap-1">
-            <DollarSign className="h-3 w-3" />
-            {formatBudget(job.budget_min, job.budget_max)}
-          </Badge>
-          {job.location && (
-            <Badge variant="outline" className="gap-1">
-              <MapPin className="h-3 w-3" />
-              {job.location}
-            </Badge>
-          )}
-          {job.job_type && (
-            <Badge variant="outline" className="capitalize">{job.job_type}</Badge>
-          )}
-          <span className="text-muted-foreground flex items-center gap-1">
-            <Clock className="h-3 w-3" />
-            {new Date(job.created_at).toLocaleDateString()}
-          </span>
-        </div>
-        {job.required_skills?.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-3">
-            {job.required_skills.slice(0, 4).map((skill: string) => (
-              <Badge key={skill} variant="secondary" className="text-xs">{skill}</Badge>
-            ))}
-            {job.required_skills.length > 4 && (
-              <Badge variant="secondary" className="text-xs">+{job.required_skills.length - 4}</Badge>
-            )}
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  )
+  const loading = jobsLoading || gigsLoading
 
   if (loading) {
     return (
@@ -165,151 +109,159 @@ const Jobs = () => {
   return (
     <div className="min-h-screen bg-background pb-20">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b px-4 py-3">
-        <div className="flex items-center justify-between gap-3">
-          <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
-            <ArrowLeft className="h-4 w-4" />
+      <div className="sticky top-0 z-10 bg-background border-b">
+        <div className="flex items-center justify-between px-4 py-3">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+            <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-lg font-bold flex-1">Jobs & Gigs</h1>
-          <JobPostingDialog
-            trigger={
-              <Button size="sm" className="gap-1">
-                <Plus className="h-4 w-4" />
-                Post
-              </Button>
-            }
-          />
+          <h1 className="text-lg font-bold">Marketplace</h1>
+          <Button size="sm" onClick={() => navigate('/post-job')} className="gap-1.5 h-8 px-3">
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline">Sell</span>
+          </Button>
+        </div>
+        
+        {/* Search Bar */}
+        <div className="px-4 pb-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <BrandInput
+              placeholder="What service are you looking for?"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 h-10 text-sm"
+            />
+          </div>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto">
-        {/* Stats Preview */}
-        <div className="grid grid-cols-3 gap-3 p-4">
-          <Card className="bg-blue-500/10 border-blue-500/20">
-            <CardContent className="pt-3 pb-3 text-center">
-              <div className="text-xl font-bold text-blue-600">{stats.posted}</div>
-              <div className="text-xs text-muted-foreground">Jobs Posted</div>
-            </CardContent>
-          </Card>
-          <Card className="bg-green-500/10 border-green-500/20">
-            <CardContent className="pt-3 pb-3 text-center">
-              <div className="text-xl font-bold text-green-600">{stats.applications}</div>
-              <div className="text-xs text-muted-foreground">Applications</div>
-            </CardContent>
-          </Card>
-          <Card className="bg-purple-500/10 border-purple-500/20">
-            <CardContent className="pt-3 pb-3 text-center">
-              <div className="text-xl font-bold text-purple-600">{stats.views}</div>
-              <div className="text-xs text-muted-foreground">Total Views</div>
-            </CardContent>
-          </Card>
-        </div>
-
+      <div className="max-w-6xl mx-auto">
         {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="px-4">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="discover">Discover</TabsTrigger>
-            <TabsTrigger value="my-jobs">My Jobs</TabsTrigger>
-            <TabsTrigger value="applications">Applications</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="discover" className="mt-4 space-y-4">
-            {/* Search and Filters */}
-            <div className="space-y-3">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <BrandInput
-                  placeholder="Search jobs..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-              <div className="flex gap-2">
-                <Select value={stateFilter} onValueChange={setStateFilter}>
-                  <SelectTrigger className="flex-1 h-9">
-                    <SelectValue placeholder="State" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All States</SelectItem>
-                    {nigerianStates.map((state) => (
-                      <SelectItem key={state} value={state}>{state}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                  <SelectTrigger className="flex-1 h-9">
-                    <SelectValue placeholder="Category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Categories</SelectItem>
-                    {jobCategories.map((category) => (
-                      <SelectItem key={category} value={category}>{category}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <div className="sticky top-[105px] z-10 bg-background border-b px-4">
+            <div className="flex items-center justify-between">
+              <TabsList className="h-10 bg-transparent p-0 gap-4">
+                <TabsTrigger 
+                  value="gigs" 
+                  className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-2.5 px-0"
+                >
+                  <Package className="h-4 w-4 mr-1.5" />
+                  Services
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="jobs"
+                  className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-2.5 px-0"
+                >
+                  <Briefcase className="h-4 w-4 mr-1.5" />
+                  Jobs
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="my-posts"
+                  className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-2.5 px-0"
+                >
+                  <TrendingUp className="h-4 w-4 mr-1.5" />
+                  My Posts
+                </TabsTrigger>
+              </TabsList>
+              
+              {activeTab === 'gigs' && (
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => setViewMode('grid')}
+                  >
+                    <Grid3X3 className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => setViewMode('list')}
+                  >
+                    <List className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
             </div>
+          </div>
 
-            {/* Job Listings */}
-            {filteredJobs.length === 0 ? (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <Briefcase className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="font-semibold mb-2">No Jobs Found</h3>
-                  <p className="text-sm text-muted-foreground">Be the first to post a job!</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-3 pb-4">
-                {filteredJobs.map((job: PersonalizedJob) => (
-                  <JobCard key={job.id} job={job} />
+          {/* Category Filter Pills */}
+          {(activeTab === 'gigs' || activeTab === 'jobs') && (
+            <div className="px-4 py-3 overflow-x-auto scrollbar-hide">
+              <div className="flex gap-2 min-w-max">
+                {gigCategories.map((cat) => (
+                  <Button
+                    key={cat}
+                    variant={categoryFilter === cat || (cat === 'All Categories' && categoryFilter === 'all') ? 'default' : 'outline'}
+                    size="sm"
+                    className="h-7 text-xs rounded-full whitespace-nowrap"
+                    onClick={() => setCategoryFilter(cat === 'All Categories' ? 'all' : cat)}
+                  >
+                    {cat}
+                  </Button>
                 ))}
               </div>
-            )}
-          </TabsContent>
+            </div>
+          )}
 
-          <TabsContent value="my-jobs" className="mt-4 space-y-4">
-            {myJobs.length === 0 ? (
-              <Card>
+          {/* Gigs Tab Content */}
+          <TabsContent value="gigs" className="mt-0 px-4">
+            {filteredGigs.length === 0 ? (
+              <Card className="mt-4">
                 <CardContent className="py-12 text-center">
-                  <Briefcase className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="font-semibold mb-2">No Jobs Posted Yet</h3>
-                  <p className="text-sm text-muted-foreground mb-4">Post your first job to find talent</p>
-                  <JobPostingDialog
-                    trigger={
-                      <Button className="gap-2">
-                        <Plus className="h-4 w-4" />
-                        Post a Job
-                      </Button>
-                    }
-                  />
+                  <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="font-semibold mb-2">No Services Found</h3>
+                  <p className="text-sm text-muted-foreground mb-4">Be the first to offer a service!</p>
+                  <Button onClick={() => navigate('/post-job')}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Gig
+                  </Button>
                 </CardContent>
               </Card>
+            ) : viewMode === 'grid' ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 py-3">
+                {filteredGigs.map((gig: any) => (
+                  <GigCard
+                    key={gig.id}
+                    id={gig.id}
+                    title={gig.title}
+                    description={gig.description}
+                    price={gig.price}
+                    category={gig.category}
+                    photo_urls={gig.photo_urls}
+                    seller_name={gig.seller_name}
+                    seller_picture={gig.seller_picture}
+                    seller_rating={gig.seller_rating}
+                    seller_is_expert={gig.seller_is_expert}
+                    seller_id={gig.seller_id}
+                  />
+                ))}
+              </div>
             ) : (
-              <div className="space-y-3 pb-4">
-                {myJobs.map((job) => (
-                  <Card key={job.id}>
-                    <CardContent className="pt-4">
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <h3 className="font-semibold">{job.title}</h3>
-                          <p className="text-xs text-muted-foreground">Posted {new Date(job.created_at).toLocaleDateString()}</p>
-                        </div>
-                        <Badge variant={job.status === 'open' ? 'default' : 'secondary'}>
-                          {job.status}
-                        </Badge>
+              <div className="space-y-2 py-3">
+                {filteredGigs.map((gig: any) => (
+                  <Card 
+                    key={gig.id} 
+                    className="cursor-pointer hover:shadow-md transition-shadow"
+                    onClick={() => navigate(`/gig/${gig.id}`)}
+                  >
+                    <CardContent className="p-3 flex gap-3">
+                      <div className="w-20 h-14 rounded-md overflow-hidden bg-muted flex-shrink-0">
+                        <img
+                          src={gig.photo_urls?.[0] || '/placeholder.svg'}
+                          alt={gig.title}
+                          className="w-full h-full object-cover"
+                        />
                       </div>
-                      <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{job.description}</p>
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Eye className="h-3 w-3" />
-                          {job.views_count || 0} views
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Users className="h-3 w-3" />
-                          {job.applications_count || 0} applications
-                        </span>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-sm font-medium line-clamp-1">{gig.title}</h3>
+                        <p className="text-xs text-muted-foreground mt-0.5">{gig.seller_name}</p>
+                        <div className="flex items-center justify-between mt-1.5">
+                          <Badge variant="secondary" className="text-[10px]">{gig.category}</Badge>
+                          <span className="text-sm font-bold text-primary">₦{gig.price?.toLocaleString()}</span>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -318,32 +270,125 @@ const Jobs = () => {
             )}
           </TabsContent>
 
-          <TabsContent value="applications" className="mt-4 space-y-4">
-            {myApplications.length === 0 ? (
+          {/* Jobs Tab Content */}
+          <TabsContent value="jobs" className="mt-0 px-4 space-y-3 py-3">
+            {filteredJobs.length === 0 ? (
               <Card>
                 <CardContent className="py-12 text-center">
-                  <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="font-semibold mb-2">No Applications Yet</h3>
-                  <p className="text-sm text-muted-foreground">Browse jobs and apply to get started</p>
+                  <Briefcase className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="font-semibold mb-2">No Jobs Found</h3>
+                  <p className="text-sm text-muted-foreground">Try adjusting your filters</p>
                 </CardContent>
               </Card>
             ) : (
-              <div className="space-y-3 pb-4">
-                {myApplications.map((app) => (
-                  <Card key={app.id}>
-                    <CardContent className="pt-4">
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <h3 className="font-semibold">{app.job_posts?.title || 'Job'}</h3>
-                          <p className="text-xs text-muted-foreground">Applied {new Date(app.created_at).toLocaleDateString()}</p>
+              filteredJobs.map((job: any) => (
+                <Card key={job.id} className="hover:shadow-md transition-shadow">
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-sm line-clamp-1">{job.title}</h3>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Avatar className="h-5 w-5">
+                            <AvatarImage src={job.poster_picture || undefined} />
+                            <AvatarFallback className="text-[10px]">{job.poster_name?.charAt(0)}</AvatarFallback>
+                          </Avatar>
+                          <span className="text-xs text-muted-foreground">{job.poster_name}</span>
                         </div>
-                        <Badge variant={app.status === 'pending' ? 'secondary' : app.status === 'accepted' ? 'default' : 'destructive'}>
-                          {app.status}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <BookmarkButton type="job" itemId={job.id} />
+                        {user?.id !== job.user_id && (
+                          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); navigate(`/chat/${job.user_id}`); }}>
+                            Chat
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2 line-clamp-2">{job.description}</p>
+                    <div className="flex flex-wrap items-center gap-2 mt-3">
+                      <Badge variant="secondary" className="gap-1 text-[10px]">
+                        <DollarSign className="h-3 w-3" />
+                        {formatBudget(job.budget_min, job.budget_max)}
+                      </Badge>
+                      {job.location && (
+                        <Badge variant="outline" className="gap-1 text-[10px]">
+                          <MapPin className="h-3 w-3" />
+                          {job.location}
+                        </Badge>
+                      )}
+                      <span className="text-[10px] text-muted-foreground flex items-center gap-1 ml-auto">
+                        <Clock className="h-3 w-3" />
+                        {new Date(job.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </TabsContent>
+
+          {/* My Posts Tab Content */}
+          <TabsContent value="my-posts" className="mt-0 px-4 space-y-4 py-3">
+            {/* Stats */}
+            <div className="grid grid-cols-3 gap-2">
+              <Card className="bg-primary/5 border-primary/20">
+                <CardContent className="py-3 text-center">
+                  <div className="text-lg font-bold text-primary">{stats.posted}</div>
+                  <div className="text-[10px] text-muted-foreground">Posted</div>
+                </CardContent>
+              </Card>
+              <Card className="bg-blue-500/5 border-blue-500/20">
+                <CardContent className="py-3 text-center">
+                  <div className="text-lg font-bold text-blue-600">{stats.applications}</div>
+                  <div className="text-[10px] text-muted-foreground">Applied</div>
+                </CardContent>
+              </Card>
+              <Card className="bg-purple-500/5 border-purple-500/20">
+                <CardContent className="py-3 text-center">
+                  <div className="text-lg font-bold text-purple-600">{stats.views}</div>
+                  <div className="text-[10px] text-muted-foreground">Views</div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {myJobs.length === 0 ? (
+              <Card>
+                <CardContent className="py-10 text-center">
+                  <Briefcase className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+                  <h3 className="font-semibold mb-1 text-sm">No Posts Yet</h3>
+                  <p className="text-xs text-muted-foreground mb-3">Start offering services or posting jobs</p>
+                  <Button size="sm" onClick={() => navigate('/post-job')}>
+                    <Plus className="h-4 w-4 mr-1" />
+                    Create Post
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-2">
+                {myJobs.map((job) => (
+                  <Card key={job.id}>
+                    <CardContent className="p-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-medium text-sm line-clamp-1">{job.title}</h3>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">
+                            Posted {new Date(job.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <Badge variant={job.status === 'open' ? 'default' : 'secondary'} className="text-[10px]">
+                          {job.status}
                         </Badge>
                       </div>
-                      {app.cover_letter && (
-                        <p className="text-sm text-muted-foreground line-clamp-2">{app.cover_letter}</p>
-                      )}
+                      <div className="flex items-center gap-4 mt-2 text-[10px] text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Eye className="h-3 w-3" />
+                          {job.views_count || 0}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Users className="h-3 w-3" />
+                          {job.applications_count || 0}
+                        </span>
+                      </div>
                     </CardContent>
                   </Card>
                 ))}
