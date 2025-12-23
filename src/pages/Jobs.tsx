@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { ArrowLeft, MapPin, Clock, DollarSign, Users, Briefcase, Home, MessageCircle, Menu, Plus, Search, Eye, TrendingUp, Grid3X3, List, Package } from 'lucide-react'
+import { ArrowLeft, MapPin, Clock, DollarSign, Users, Briefcase, Home, MessageCircle, Menu, Plus, Search, Eye, TrendingUp, Grid3X3, List, Package, Star } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -15,6 +15,7 @@ import JobPostingDialog from '@/components/JobPostingDialog'
 import { MoreMenuDrawer } from '@/components/MoreMenuDrawer'
 import { BookmarkButton } from '@/components/BookmarkButton'
 import { GigCard } from '@/components/GigCard'
+import { MarketplaceExplainer } from '@/components/MarketplaceExplainer'
 
 const Jobs = () => {
   const navigate = useNavigate()
@@ -31,6 +32,12 @@ const Jobs = () => {
   const [myJobs, setMyJobs] = useState<any[]>([])
   const [myApplications, setMyApplications] = useState<any[]>([])
   const [stats, setStats] = useState({ posted: 0, applications: 0, views: 0 })
+  const [showGigExplainer, setShowGigExplainer] = useState(() => {
+    return localStorage.getItem('hideGigExplainer') !== 'true'
+  })
+  const [showJobExplainer, setShowJobExplainer] = useState(() => {
+    return localStorage.getItem('hideJobExplainer') !== 'true'
+  })
 
   useEffect(() => {
     if (user) {
@@ -208,6 +215,19 @@ const Jobs = () => {
 
           {/* Gigs Tab Content */}
           <TabsContent value="gigs" className="mt-0 px-4">
+            {/* Explainer Card */}
+            {showGigExplainer && (
+              <div className="pt-3">
+                <MarketplaceExplainer 
+                  type="gig" 
+                  onDismiss={() => {
+                    setShowGigExplainer(false)
+                    localStorage.setItem('hideGigExplainer', 'true')
+                  }}
+                />
+              </div>
+            )}
+            
             {filteredGigs.length === 0 ? (
               <Card className="mt-4">
                 <CardContent className="py-12 text-center">
@@ -236,6 +256,9 @@ const Jobs = () => {
                     seller_rating={gig.seller_rating}
                     seller_is_expert={gig.seller_is_expert}
                     seller_id={gig.seller_id}
+                    seller_state={gig.seller_state}
+                    average_rating={gig.average_rating}
+                    review_count={gig.review_count}
                   />
                 ))}
               </div>
@@ -257,9 +280,28 @@ const Jobs = () => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="text-sm font-medium line-clamp-1">{gig.title}</h3>
-                        <p className="text-xs text-muted-foreground mt-0.5">{gig.seller_name}</p>
+                        <div className="flex items-center gap-1 mt-0.5">
+                          <span className="text-xs text-muted-foreground">{gig.seller_name}</span>
+                          {gig.seller_state && (
+                            <>
+                              <span className="text-muted-foreground">•</span>
+                              <span className="text-xs text-muted-foreground flex items-center gap-0.5">
+                                <MapPin className="h-3 w-3" />
+                                {gig.seller_state}
+                              </span>
+                            </>
+                          )}
+                        </div>
                         <div className="flex items-center justify-between mt-1.5">
-                          <Badge variant="secondary" className="text-[10px]">{gig.category}</Badge>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary" className="text-[10px]">{gig.category}</Badge>
+                            {(gig.average_rating || gig.review_count > 0) && (
+                              <div className="flex items-center gap-0.5">
+                                <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                                <span className="text-[10px]">{gig.average_rating?.toFixed(1) || 'New'}</span>
+                              </div>
+                            )}
+                          </div>
                           <span className="text-sm font-bold text-primary">₦{gig.price?.toLocaleString()}</span>
                         </div>
                       </div>
@@ -272,6 +314,17 @@ const Jobs = () => {
 
           {/* Jobs Tab Content */}
           <TabsContent value="jobs" className="mt-0 px-4 space-y-3 py-3">
+            {/* Explainer Card */}
+            {showJobExplainer && (
+              <MarketplaceExplainer 
+                type="job" 
+                onDismiss={() => {
+                  setShowJobExplainer(false)
+                  localStorage.setItem('hideJobExplainer', 'true')
+                }}
+              />
+            )}
+            
             {filteredJobs.length === 0 ? (
               <Card>
                 <CardContent className="py-12 text-center">
