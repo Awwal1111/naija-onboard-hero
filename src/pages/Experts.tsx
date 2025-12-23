@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react'
-import { Search, Filter, Star, MapPin, MessageCircle, Home, Users, DollarSign, Briefcase, Menu, Video, Plus, TrendingUp } from 'lucide-react'
+import { Search, Filter, Star, MapPin, MessageCircle, Home, Users, DollarSign, Briefcase, Menu, Video, Plus, TrendingUp, Grid3X3, List } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { MoreMenuDrawer } from '@/components/MoreMenuDrawer'
 import { BrandInput } from '@/components/ui/brand-input'
 import { BrandButton } from '@/components/ui/brand-button'
+import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { StarRating } from '@/components/ui/star-rating'
 import { RatingDialog } from '@/components/ui/rating-dialog'
@@ -21,6 +22,8 @@ import { usePersonalizedExperts, PersonalizedExpert } from '@/hooks/usePersonali
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { BookmarkButton } from '@/components/BookmarkButton'
+import { MarketplaceExplainer } from '@/components/MarketplaceExplainer'
+import { Card, CardContent } from '@/components/ui/card'
 
 interface Expert {
   id: string
@@ -54,6 +57,8 @@ const Experts = () => {
   const [profilePreview, setProfilePreview] = useState<{ isOpen: boolean; userId: string | null }>({ isOpen: false, userId: null })
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [userProfile, setUserProfile] = useState<any>(null)
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list')
+  const [showExplainer, setShowExplainer] = useState(() => localStorage.getItem('hideExpertExplainer') !== 'true')
   const { liveClasses, upcomingClasses, featuredClasses, pastClasses, isLoading: classesLoading } = useExpertClasses()
   
   // Use personalized experts algorithm
@@ -237,6 +242,36 @@ const Experts = () => {
 
           {/* Expert List Tab */}
           <TabsContent value="experts" className="space-y-4">
+            {/* Explainer Card */}
+            {showExplainer && (
+              <MarketplaceExplainer 
+                type="expert" 
+                onDismiss={() => {
+                  setShowExplainer(false)
+                  localStorage.setItem('hideExpertExplainer', 'true')
+                }}
+              />
+            )}
+            
+            {/* View Toggle */}
+            <div className="flex items-center justify-end gap-1">
+              <Button
+                variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setViewMode('list')}
+              >
+                <List className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setViewMode('grid')}
+              >
+                <Grid3X3 className="h-4 w-4" />
+              </Button>
+            </div>
         {/* Search and Filters */}
         <div className="space-y-4 mb-6">
           <div className="relative">

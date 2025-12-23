@@ -1696,6 +1696,44 @@ export type Database = {
         }
         Relationships: []
       }
+      gig_reviews: {
+        Row: {
+          comment: string | null
+          created_at: string
+          gig_id: string
+          id: string
+          rating: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          gig_id: string
+          id?: string
+          rating: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          gig_id?: string
+          id?: string
+          rating?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gig_reviews_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "jobs_services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_events: {
         Row: {
           created_at: string
@@ -2289,12 +2327,14 @@ export type Database = {
       jobs_services: {
         Row: {
           applications_count: number | null
+          average_rating: number | null
           category: string
           created_at: string
           description: string
           id: string
           photo_urls: string[] | null
           price: number
+          review_count: number | null
           status: string | null
           title: string
           updated_at: string
@@ -2302,12 +2342,14 @@ export type Database = {
         }
         Insert: {
           applications_count?: number | null
+          average_rating?: number | null
           category: string
           created_at?: string
           description: string
           id?: string
           photo_urls?: string[] | null
           price: number
+          review_count?: number | null
           status?: string | null
           title: string
           updated_at?: string
@@ -2315,12 +2357,14 @@ export type Database = {
         }
         Update: {
           applications_count?: number | null
+          average_rating?: number | null
           category?: string
           created_at?: string
           description?: string
           id?: string
           photo_urls?: string[] | null
           price?: number
+          review_count?: number | null
           status?: string | null
           title?: string
           updated_at?: string

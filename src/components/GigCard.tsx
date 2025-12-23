@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Star, Heart, Clock, CheckCircle2 } from 'lucide-react';
+import { Star, MapPin, CheckCircle2 } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { BookmarkButton } from '@/components/BookmarkButton';
@@ -18,6 +18,9 @@ export interface GigCardProps {
   seller_rating?: number;
   seller_is_expert?: boolean;
   seller_id?: string;
+  seller_state?: string;
+  average_rating?: number;
+  review_count?: number;
   created_at?: string;
   className?: string;
 }
@@ -34,6 +37,9 @@ export const GigCard: React.FC<GigCardProps> = ({
   seller_rating = 0,
   seller_is_expert = false,
   seller_id,
+  seller_state,
+  average_rating,
+  review_count = 0,
   className,
 }) => {
   const navigate = useNavigate();
@@ -50,8 +56,9 @@ export const GigCard: React.FC<GigCardProps> = ({
   };
 
   const coverImage = photo_urls?.[0] || '/placeholder.svg';
-  const displayRating = seller_rating || 5.0;
-  const reviewCount = Math.floor(Math.random() * 50) + 1; // Placeholder
+  // Use actual review data, fall back to seller rating if no reviews yet
+  const displayRating = average_rating || seller_rating || 0;
+  const displayReviewCount = review_count;
 
   return (
     <div
@@ -112,11 +119,23 @@ export const GigCard: React.FC<GigCardProps> = ({
           {title}
         </h3>
 
-        {/* Rating */}
-        <div className="flex items-center gap-1">
-          <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
-          <span className="text-xs font-semibold text-foreground">{displayRating.toFixed(1)}</span>
-          <span className="text-[10px] text-muted-foreground">({reviewCount})</span>
+        {/* Rating & Location */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1">
+            <Star className={cn("h-3.5 w-3.5", displayRating > 0 ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground")} />
+            <span className="text-xs font-semibold text-foreground">
+              {displayRating > 0 ? displayRating.toFixed(1) : 'New'}
+            </span>
+            {displayReviewCount > 0 && (
+              <span className="text-[10px] text-muted-foreground">({displayReviewCount})</span>
+            )}
+          </div>
+          {seller_state && (
+            <div className="flex items-center gap-0.5 text-muted-foreground">
+              <MapPin className="h-3 w-3" />
+              <span className="text-[10px] truncate max-w-[60px]">{seller_state}</span>
+            </div>
+          )}
         </div>
 
         {/* Divider */}

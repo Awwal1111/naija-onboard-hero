@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { ArrowLeft, Upload, X, Camera } from 'lucide-react'
+import React, { useState, useRef } from 'react'
+import { ArrowLeft, Upload, X, Camera, Image as ImageIcon, Loader2 } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Logo } from '@/components/ui/logo'
 import { BrandButton } from '@/components/ui/brand-button'
@@ -13,8 +13,12 @@ const PostJob = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { toast } = useToast()
+  const fileInputRef = useRef<HTMLInputElement>(null)
   
   const [loading, setLoading] = useState(false)
+  const [uploadingImages, setUploadingImages] = useState(false)
+  const [selectedImages, setSelectedImages] = useState<File[]>([])
+  const [previewUrls, setPreviewUrls] = useState<string[]>([])
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -61,13 +65,109 @@ const PostJob = () => {
     'Other'
   ]
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    if (files.length === 0) return
+
+    // Limit to 5 images
+    const totalImages = selectedImages.length + files.length
+    if (totalImages > 5) {
+      toast({
+        title: 'Too many images',
+        description: 'You can upload a maximum of 5 images',
+        variant: 'destructive'
+      })
+      return
+    }
+
+    // Validate file types and sizes
+    const validFiles = files.filter(file => {
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: 'Invalid file type',
+          description: `${file.name} is not an image`,
+          variant: 'destructive'
+        })
+        return false
+      }
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        toast({
+          title: 'File too large',
+          description: `${file.name} is larger than 5MB`,
+          variant: 'destructive'
+        })
+        return false
+      }
+      return true
+    })
+
+    // Create preview URLs
+    const newPreviews = validFiles.map(file => URL.createObjectURL(file))
+    
+    setSelectedImages(prev => [...prev, ...validFiles])
+    setPreviewUrls(prev => [...prev, ...newPreviews])
+  }
+
+  const removeImage = (index: number) => {
+    // Revoke the object URL to free memory
+    URL.revokeObjectURL(previewUrls[index])
+    
+    setSelectedImages(prev => prev.filter((_, i) => i !== index))
+    setPreviewUrls(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const uploadImages = async (): Promise<string[]> => {
+    if (!user || selectedImages.length === 0) return []
+
+    setUploadingImages(true)
+    const uploadedUrls: string[] = []
+
+    try {
+      for (const file of selectedImages) {
+        const fileExt = file.name.split('.').pop()
+        const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
+
+        const { data, error } = await supabase.storage
+          .from('gig-images')
+          .upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: false
+          })
+
+        if (error) {
+          console.error('Upload error:', error)
+          throw error
+        }
+
+        // Get public URL
+        const { data: urlData } = supabase.storage
+          .from('gig-images')
+          .getPublicUrl(fileName)
+
+        uploadedUrls.push(urlData.publicUrl)
+      }
+
+      return uploadedUrls
+    } catch (error) {
+      console.error('Error uploading images:', error)
+      toast({
+        title: 'Upload Failed',
+        description: 'Failed to upload images. Please try again.',
+        variant: 'destructive'
+      })
+      return []
+    } finally {
+      setUploadingImages(false)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
     if (!user) {
       toast({
         title: "Authentication Required",
-        description: "Please log in to post a job",
+        description: "Please log in to post a service",
         variant: "destructive"
       })
       return
@@ -100,6 +200,9 @@ const PostJob = () => {
     setLoading(true)
 
     try {
+      // Upload images first
+      const photoUrls = await uploadImages()
+
       const { data, error } = await supabase
         .from('jobs_services')
         .insert([
@@ -109,7 +212,7 @@ const PostJob = () => {
             description: formData.description,
             price: price,
             category: formData.category,
-            photo_urls: [], // Will implement file upload later
+            photo_urls: photoUrls,
             status: 'active'
           }
         ])
@@ -117,16 +220,16 @@ const PostJob = () => {
       if (error) throw error
 
       toast({
-        title: "Job Posted Successfully!",
-        description: "Your job/service has been published and is now visible to all users."
+        title: "Service Posted Successfully!",
+        description: "Your service is now visible to all users."
       })
 
-      navigate('/feed')
+      navigate('/jobs')
     } catch (error) {
-      console.error('Error posting job:', error)
+      console.error('Error posting service:', error)
       toast({
         title: "Posting Failed",
-        description: "Failed to post your job/service. Please try again.",
+        description: "Failed to post your service. Please try again.",
         variant: "destructive"
       })
     } finally {
@@ -141,27 +244,81 @@ const PostJob = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-background border-b border-border px-6 py-4 flex items-center justify-between">
-        <button onClick={() => navigate('/feed')} className="flex items-center gap-2">
-          <ArrowLeft className="h-5 w-5 text-text-secondary" />
+      <header className="bg-background border-b border-border px-6 py-4 flex items-center justify-between sticky top-0 z-10">
+        <button onClick={() => navigate(-1)} className="flex items-center gap-2">
+          <ArrowLeft className="h-5 w-5 text-muted-foreground" />
         </button>
-        <Logo />
-        <div className="w-5" /> {/* Spacer */}
+        <h1 className="font-semibold">Create Service</h1>
+        <div className="w-5" />
       </header>
 
-      <div className="px-6 py-6">
+      <div className="px-4 sm:px-6 py-6 max-w-2xl mx-auto">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-text-primary mb-2">Post a Job/Service</h1>
-          <p className="text-text-secondary">Create a listing for your product or service</p>
+          <h1 className="text-xl font-bold mb-1">Post a Service (Gig)</h1>
+          <p className="text-sm text-muted-foreground">Create a listing for your product or service</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Photos Section - Moved to top for better UX */}
+          <div className="space-y-3">
+            <h2 className="text-sm font-semibold">Photos *</h2>
+            <p className="text-xs text-muted-foreground">Add up to 5 images to showcase your work. First image will be the cover.</p>
+            
+            {/* Image Previews */}
+            {previewUrls.length > 0 && (
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                {previewUrls.map((url, index) => (
+                  <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-border group">
+                    <img
+                      src={url}
+                      alt={`Preview ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(index)}
+                      className="absolute top-1 right-1 p-1 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                    {index === 0 && (
+                      <span className="absolute bottom-1 left-1 text-[10px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded">
+                        Cover
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Upload Button */}
+            {previewUrls.length < 5 && (
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 hover:bg-muted/50 transition-colors"
+              >
+                <ImageIcon className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground mb-1">Click to upload images</p>
+                <p className="text-xs text-muted-foreground">PNG, JPG up to 5MB each</p>
+              </div>
+            )}
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleImageSelect}
+              className="hidden"
+            />
+          </div>
+
           {/* Basic Information */}
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-text-primary">Basic Information</h2>
+            <h2 className="text-sm font-semibold">Basic Information</h2>
             
             <BrandInput
-              label="Product/Service Name *"
+              label="Service Title *"
               value={formData.title}
               onChange={(e) => handleInputChange('title', e.target.value)}
               placeholder="e.g., Professional Logo Design, Website Development"
@@ -169,7 +326,7 @@ const PostJob = () => {
             />
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-text-primary">Category *</label>
+              <label className="text-sm font-medium">Category *</label>
               <Select value={formData.category} onValueChange={(value) => handleInputChange('category', value)}>
                 <SelectTrigger className="w-full h-10 bg-input">
                   <SelectValue placeholder="Select a category" />
@@ -189,7 +346,7 @@ const PostJob = () => {
               type="number"
               value={formData.price}
               onChange={(e) => handleInputChange('price', e.target.value)}
-              placeholder="Enter price amount"
+              placeholder="Starting price for your service"
               min="0"
               step="0.01"
               required
@@ -197,13 +354,13 @@ const PostJob = () => {
           </div>
 
           {/* Description */}
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-text-primary">Description</h2>
+          <div className="space-y-3">
+            <h2 className="text-sm font-semibold">Description</h2>
             
             <div className="space-y-2">
-              <label className="text-sm font-medium text-text-primary">
+              <label className="text-sm font-medium">
                 Detailed Description *
-                <span className="text-text-secondary font-normal"> (Max 500 characters)</span>
+                <span className="text-muted-foreground font-normal"> (Max 500 characters)</span>
               </label>
               <textarea
                 value={formData.description}
@@ -212,39 +369,43 @@ const PostJob = () => {
                     handleInputChange('description', e.target.value)
                   }
                 }}
-                placeholder="Describe your product or service in detail. Include what you offer, delivery time, requirements, etc."
-                className="flex min-h-[120px] w-full rounded-lg border border-border bg-input px-3 py-2 text-sm text-text-primary placeholder:text-text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                placeholder="Describe your service in detail. Include what you offer, delivery time, what's included, etc."
+                className="flex min-h-[120px] w-full rounded-lg border border-border bg-input px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 required
               />
-              <div className="text-right text-xs text-text-secondary">
+              <div className="text-right text-xs text-muted-foreground">
                 {formData.description.length}/500 characters
               </div>
             </div>
           </div>
 
-          {/* Photos */}
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-text-primary">Photos</h2>
-            <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
-              <Camera className="h-12 w-12 text-text-secondary mx-auto mb-4" />
-              <p className="text-text-secondary mb-2">Upload photos of your work</p>
-              <p className="text-sm text-text-secondary">Add images to showcase your product/service (Coming soon)</p>
-            </div>
-          </div>
-
+          {/* Preview Card */}
           <div className="bg-card border border-border rounded-lg p-4">
-            <h3 className="font-semibold text-text-primary mb-2">Preview</h3>
-            <div className="space-y-2">
-              <h4 className="font-medium text-text-primary">{formData.title || 'Your Service Title'}</h4>
-              <p className="text-sm text-primary font-semibold">
-                ₦{formData.price ? parseFloat(formData.price).toLocaleString() : '0'}
-              </p>
-              <p className="text-sm text-text-secondary">
-                {formData.description || 'Your service description will appear here...'}
-              </p>
-              <span className="inline-block bg-primary/10 text-primary text-xs px-2 py-1 rounded">
-                {formData.category || 'Category'}
-              </span>
+            <h3 className="font-semibold text-sm mb-3">Preview</h3>
+            <div className="flex gap-3">
+              <div className="w-20 h-14 rounded-md overflow-hidden bg-muted flex-shrink-0">
+                {previewUrls[0] ? (
+                  <img src={previewUrls[0]} alt="Preview" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="font-medium text-sm line-clamp-1">{formData.title || 'Your Service Title'}</h4>
+                <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
+                  {formData.description || 'Your service description...'}
+                </p>
+                <div className="flex items-center justify-between mt-1.5">
+                  <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded">
+                    {formData.category || 'Category'}
+                  </span>
+                  <span className="text-sm font-bold text-primary">
+                    ₦{formData.price ? parseFloat(formData.price).toLocaleString() : '0'}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -252,15 +413,21 @@ const PostJob = () => {
             type="submit"
             className="w-full" 
             size="lg"
-            disabled={loading}
+            disabled={loading || uploadingImages}
           >
-            {loading ? 'Publishing...' : 'Post Product/Service'}
+            {loading || uploadingImages ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                {uploadingImages ? 'Uploading Images...' : 'Publishing...'}
+              </>
+            ) : (
+              'Publish Service'
+            )}
           </BrandButton>
 
-          <div className="text-sm text-text-secondary text-center">
-            <p>Your listing will be immediately visible to all NaijaLancers users.</p>
-            <p>You can manage and edit your listings from your profile.</p>
-          </div>
+          <p className="text-xs text-muted-foreground text-center">
+            Your listing will be immediately visible to all NaijaLancers users.
+          </p>
         </form>
       </div>
     </div>
