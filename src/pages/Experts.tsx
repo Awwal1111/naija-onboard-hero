@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Search, Filter, Star, MapPin, MessageCircle, Home, Users, DollarSign, Briefcase, Menu, Video, Plus, TrendingUp, Grid3X3, List } from 'lucide-react'
+import { Search, Filter, Star, MapPin, MessageCircle, Home, Users, DollarSign, Briefcase, Menu, Video, Plus, TrendingUp, Grid3X3, List, Shield } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { MoreMenuDrawer } from '@/components/MoreMenuDrawer'
 import { BrandInput } from '@/components/ui/brand-input'
@@ -24,6 +24,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { BookmarkButton } from '@/components/BookmarkButton'
 import { MarketplaceExplainer } from '@/components/MarketplaceExplainer'
 import { Card, CardContent } from '@/components/ui/card'
+import { ExpertCard } from '@/components/ExpertCard'
 
 interface Expert {
   id: string
@@ -319,7 +320,7 @@ const Experts = () => {
           </div>
         </div>
 
-        {/* Experts Grid */}
+        {/* Experts Grid/List */}
         {filteredExperts.length === 0 ? (
           <div className="text-center py-12">
             <Users className="h-16 w-16 text-text-secondary mx-auto mb-4" />
@@ -332,105 +333,14 @@ const Experts = () => {
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className={viewMode === 'grid' ? 'grid grid-cols-2 md:grid-cols-3 gap-4' : 'space-y-3'}>
             {filteredExperts.map((expert) => (
-              <div
+              <ExpertCard
                 key={expert.id}
-                className="bg-card border border-border rounded-2xl p-6 hover:shadow-lg transition-all duration-200"
-              >
-                <div className="flex items-start gap-4">
-                  {/* Profile Picture */}
-                  <div 
-                    className="shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
-                    onClick={() => setProfilePreview({ isOpen: true, userId: expert.user_id })}
-                  >
-                    <Avatar className="w-16 h-16">
-                      <AvatarImage 
-                        src={expert.profiles?.profile_picture_url} 
-                        alt={expert.profiles?.full_name || expert.full_name}
-                      />
-                      <AvatarFallback className="bg-primary text-primary-foreground text-xl font-bold">
-                        {expert.profiles?.full_name?.charAt(0) || expert.full_name.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                  </div>
-                  
-                  {/* Expert Info */}
-                  <div className="flex-1 min-w-0">
-                    <h3 
-                      className="text-lg font-semibold text-text-primary truncate cursor-pointer hover:text-primary transition-colors"
-                      onClick={() => setProfilePreview({ isOpen: true, userId: expert.user_id })}
-                    >
-                      {expert.profiles?.full_name || expert.full_name}
-                    </h3>
-                    <p className="text-primary font-medium text-sm mb-2">
-                      {expert.skill_category}
-                    </p>
-                    
-                    {/* Rating */}
-                    <div className="flex items-center gap-2 mb-2">
-                      <StarRating
-                        rating={expert.profiles?.average_rating || 0}
-                        readonly
-                        size="sm"
-                      />
-                      <span className="text-sm text-text-secondary">
-                        {expert.profiles?.rating_count 
-                          ? `${expert.profiles.rating_count} review${expert.profiles.rating_count !== 1 ? 's' : ''}`
-                          : 'No reviews yet'
-                        }
-                      </span>
-                    </div>
-                    
-                    {/* Location */}
-                    <div className="flex items-center gap-1 mb-3">
-                      <MapPin className="h-4 w-4 text-text-secondary" />
-                      <span className="text-sm text-text-secondary">
-                        {expert.location_area}, {expert.location_lga}, {expert.location_state}
-                      </span>
-                    </div>
-
-                    {/* Experience */}
-                    <p className="text-sm text-text-secondary mb-4">
-                      {expert.years_experience} years experience
-                    </p>
-
-                    {/* Action Buttons */}
-                    <div className="flex gap-2 mb-2">
-                      <BookmarkButton type="expert" itemId={expert.user_id} />
-                      <BrandButton 
-                        size="sm" 
-                        className="flex-1"
-                        onClick={() => navigate(`/chat/${expert.user_id}`)}
-                      >
-                        <MessageCircle className="h-4 w-4 mr-2" />
-                        Chat
-                      </BrandButton>
-                      <BrandButton 
-                        variant="outline" 
-                        size="sm" 
-                        className="flex-1"
-                        onClick={() => navigate(`/expert/${expert.user_id}`)}
-                      >
-                        View Profile
-                      </BrandButton>
-                    </div>
-
-                    {/* Rating Button */}
-                    {user && user.id !== expert.user_id && (
-                      <RatingDialog
-                        onSubmit={(rating, comment) => handleRatingSubmit(expert.user_id, rating, comment)}
-                        trigger={
-                          <BrandButton variant="outline" size="sm" className="w-full">
-                            <Star className="h-4 w-4 mr-2" />
-                            Rate Expert
-                          </BrandButton>
-                        }
-                      />
-                    )}
-                  </div>
-                </div>
-              </div>
+                expert={expert}
+                viewMode={viewMode}
+                onProfileClick={(userId) => setProfilePreview({ isOpen: true, userId })}
+              />
             ))}
           </div>
         )}
