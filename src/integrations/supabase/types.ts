@@ -1498,6 +1498,47 @@ export type Database = {
         }
         Relationships: []
       }
+      expert_verification_payments: {
+        Row: {
+          amount: number
+          completed_at: string | null
+          created_at: string
+          id: string
+          payment_method: string | null
+          status: string
+          transaction_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          payment_method?: string | null
+          status?: string
+          transaction_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          payment_method?: string | null
+          status?: string
+          transaction_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expert_verification_payments_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fundraising_contributions: {
         Row: {
           amount: number
@@ -3147,6 +3188,12 @@ export type Database = {
           transaction_pin: string | null
           updated_at: string
           user_id: string
+          verification_description: string | null
+          verification_payment_status: string | null
+          verification_reviewed_at: string | null
+          verification_reviewed_by: string | null
+          verification_status: string | null
+          verification_submitted_at: string | null
           wallet_balance: number | null
         }
         Insert: {
@@ -3206,6 +3253,12 @@ export type Database = {
           transaction_pin?: string | null
           updated_at?: string
           user_id: string
+          verification_description?: string | null
+          verification_payment_status?: string | null
+          verification_reviewed_at?: string | null
+          verification_reviewed_by?: string | null
+          verification_status?: string | null
+          verification_submitted_at?: string | null
           wallet_balance?: number | null
         }
         Update: {
@@ -3265,6 +3318,12 @@ export type Database = {
           transaction_pin?: string | null
           updated_at?: string
           user_id?: string
+          verification_description?: string | null
+          verification_payment_status?: string | null
+          verification_reviewed_at?: string | null
+          verification_reviewed_by?: string | null
+          verification_status?: string | null
+          verification_submitted_at?: string | null
           wallet_balance?: number | null
         }
         Relationships: []

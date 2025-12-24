@@ -37,6 +37,7 @@ import { UserBadges } from '@/components/UserBadges'
 import { EmailVerificationBanner } from '@/components/EmailVerificationBanner'
 import { TrustScoreCard } from '@/components/TrustScoreDisplay'
 import { calculateTrustScore } from '@/hooks/useTrustScore'
+import { ExpertVerificationSection } from '@/components/ExpertVerificationSection'
 
 const Profile = () => {
   const navigate = useNavigate()
@@ -599,6 +600,11 @@ const Profile = () => {
                     ))}
                 </CardContent>
               </Card>
+            )}
+
+            {/* Expert Verification Section - Only for experts on own profile */}
+            {isOwnProfile && profile?.is_expert && (
+              <ExpertVerificationSection />
             )}
 
             {/* Professional Action Buttons - Only for own profile */}

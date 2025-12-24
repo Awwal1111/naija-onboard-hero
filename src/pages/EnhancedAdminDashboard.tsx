@@ -27,6 +27,7 @@ import { AdminAIAssistant } from '@/components/AdminAIAssistant'
 import { AdminSetup } from '@/components/AdminSetup'
 import { AdminAnalyticsCharts } from '@/components/AdminAnalyticsCharts'
 import { AdminBroadcastDialog } from '@/components/AdminBroadcastDialog'
+import { AdminExpertVerification } from '@/components/AdminExpertVerification'
 
 // Marketplace Section Components
 const DonationsSection = () => {
