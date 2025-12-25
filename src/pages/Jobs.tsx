@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { ArrowLeft, MapPin, Clock, DollarSign, Users, Briefcase, Home, MessageCircle, Menu, Plus, Search, Eye, TrendingUp, Grid3X3, List, Package, Star } from 'lucide-react'
+import { ArrowLeft, MapPin, Clock, DollarSign, Users, Briefcase, Home, MessageCircle, Menu, Plus, Search, Eye, TrendingUp, Grid3X3, List, Package, Star, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -8,14 +8,15 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { BrandInput } from '@/components/ui/brand-input'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { useAuth } from '@/hooks/useAuth'
 import { usePersonalizedJobs, usePersonalizedGigs } from '@/hooks/usePersonalizedDiscovery'
 import { supabase } from '@/integrations/supabase/client'
-import JobPostingDialog from '@/components/JobPostingDialog'
 import { MoreMenuDrawer } from '@/components/MoreMenuDrawer'
 import { BookmarkButton } from '@/components/BookmarkButton'
 import { GigCard } from '@/components/GigCard'
 import { MarketplaceExplainer } from '@/components/MarketplaceExplainer'
+import { CreateJobPostDialog } from '@/components/CreateJobPostDialog'
 
 const Jobs = () => {
   const navigate = useNavigate()
@@ -38,6 +39,7 @@ const Jobs = () => {
   const [showJobExplainer, setShowJobExplainer] = useState(() => {
     return localStorage.getItem('hideJobExplainer') !== 'true'
   })
+  const [showCreateJobDialog, setShowCreateJobDialog] = useState(false)
 
   useEffect(() => {
     if (user) {
@@ -122,10 +124,24 @@ const Jobs = () => {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <h1 className="text-lg font-bold">Marketplace</h1>
-          <Button size="sm" onClick={() => navigate('/post-job')} className="gap-1.5 h-8 px-3">
-            <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline">Sell</span>
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" className="gap-1.5 h-8 px-3">
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Create</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => navigate('/post-job')}>
+                <Package className="h-4 w-4 mr-2" />
+                Create Gig (Service)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowCreateJobDialog(true)}>
+                <Briefcase className="h-4 w-4 mr-2" />
+                Post a Job
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         
         {/* Search Bar */}
@@ -259,6 +275,7 @@ const Jobs = () => {
                     seller_state={gig.seller_state}
                     average_rating={gig.average_rating}
                     review_count={gig.review_count}
+                    boost_amount={gig.boost_amount}
                   />
                 ))}
               </div>
@@ -478,6 +495,11 @@ const Jobs = () => {
         </div>
       </nav>
       <MoreMenuDrawer open={moreMenuOpen} onOpenChange={setMoreMenuOpen} />
+      <CreateJobPostDialog 
+        open={showCreateJobDialog} 
+        onOpenChange={setShowCreateJobDialog}
+        onSuccess={() => {}}
+      />
     </div>
   )
 }
