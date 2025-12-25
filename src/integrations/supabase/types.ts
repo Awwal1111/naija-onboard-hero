@@ -2369,6 +2369,8 @@ export type Database = {
         Row: {
           applications_count: number | null
           average_rating: number | null
+          boost_amount: number | null
+          boosted_at: string | null
           category: string
           created_at: string
           description: string
@@ -2384,6 +2386,8 @@ export type Database = {
         Insert: {
           applications_count?: number | null
           average_rating?: number | null
+          boost_amount?: number | null
+          boosted_at?: string | null
           category: string
           created_at?: string
           description: string
@@ -2399,6 +2403,8 @@ export type Database = {
         Update: {
           applications_count?: number | null
           average_rating?: number | null
+          boost_amount?: number | null
+          boosted_at?: string | null
           category?: string
           created_at?: string
           description?: string
@@ -4799,6 +4805,8 @@ export type Database = {
       get_personalized_gigs: {
         Args: { p_limit?: number; p_offset?: number; p_user_id: string }
         Returns: {
+          average_rating: number
+          boost_amount: number
           category: string
           created_at: string
           description: string
@@ -4806,11 +4814,13 @@ export type Database = {
           photo_urls: string[]
           price: number
           relevance_score: number
+          review_count: number
           seller_id: string
           seller_is_expert: boolean
           seller_name: string
           seller_picture: string
           seller_rating: number
+          seller_state: string
           status: string
           title: string
         }[]

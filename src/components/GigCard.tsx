@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Star, MapPin, CheckCircle2 } from 'lucide-react';
+import { Star, MapPin, CheckCircle2, Zap } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { BookmarkButton } from '@/components/BookmarkButton';
@@ -22,6 +22,7 @@ export interface GigCardProps {
   average_rating?: number;
   review_count?: number;
   created_at?: string;
+  boost_amount?: number;
   className?: string;
 }
 
@@ -40,6 +41,7 @@ export const GigCard: React.FC<GigCardProps> = ({
   seller_state,
   average_rating,
   review_count = 0,
+  boost_amount = 0,
   className,
 }) => {
   const navigate = useNavigate();
@@ -76,6 +78,15 @@ export const GigCard: React.FC<GigCardProps> = ({
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           loading="lazy"
         />
+        {/* Boosted Badge */}
+        {boost_amount > 0 && (
+          <div className="absolute top-2 left-2">
+            <Badge className="bg-gradient-to-r from-orange-500 to-yellow-500 text-white text-[10px] gap-0.5 border-0">
+              <Zap className="h-3 w-3 fill-white" />
+              BOOSTED
+            </Badge>
+          </div>
+        )}
         {/* Bookmark Button */}
         <div 
           className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -90,6 +101,7 @@ export const GigCard: React.FC<GigCardProps> = ({
           </Badge>
         </div>
       </div>
+
 
       {/* Content */}
       <div className="p-3 space-y-2.5">
