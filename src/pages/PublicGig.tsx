@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -6,21 +7,53 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { ArrowLeft, Star, Clock, CheckCircle2, Share2, Heart, MessageCircle } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
+import { ArrowLeft, Star, Clock, CheckCircle2, Share2, MessageCircle, ExternalLink, Zap, TrendingUp, Shield } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { BookmarkButton } from '@/components/BookmarkButton';
 import { toast } from 'sonner';
+import { useAuth } from '@/hooks/useAuth';
+import { useGigReviews } from '@/hooks/useGigReviews';
+import { usePortfolio } from '@/hooks/usePortfolio';
+import { calculateTrustScore, TrustScoreData } from '@/hooks/useTrustScore';
+import { TrustScoreBadge, TrustScoreCard } from '@/components/TrustScoreDisplay';
+import { GigBoostDialog } from '@/components/GigBoostDialog';
 
 export default function PublicGig() {
   const { gigId } = useParams<{ gigId: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [showBoostDialog, setShowBoostDialog] = useState(false);
+  const [reviewText, setReviewText] = useState('');
+  const [reviewRating, setReviewRating] = useState(5);
+  const [submittingReview, setSubmittingReview] = useState(false);
 
-  const { data: gig, isLoading } = useQuery({
-    queryKey: ['public-gig', gigId],
+  const { data: gig, isLoading, refetch: refetchGig } = useQuery({
+    queryKey: ['public-gig-full', gigId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('jobs_services')
-        .select('*, profiles:user_id(full_name, profile_picture_url, is_expert, average_rating)')
+        .select(`
+          *,
+          profiles:user_id(
+            user_id,
+            full_name, 
+            profile_picture_url, 
+            is_expert, 
+            average_rating,
+            bio,
+            profession,
+            state_name,
+            lga_name,
+            email_verified,
+            phone_verified,
+            face_verified,
+            created_at,
+            connections_count,
+            verification_status
+          )
+        `)
         .eq('id', gigId)
         .eq('status', 'active')
         .single();
@@ -29,6 +62,24 @@ export default function PublicGig() {
       return data;
     },
   });
+
+  const { reviews, stats, addReview, loading: reviewsLoading } = useGigReviews(gigId);
+  const seller = gig?.profiles as any;
+  const { items: portfolioItems, loading: portfolioLoading } = usePortfolio(seller?.user_id);
+
+  // Calculate trust score for the seller
+  const trustScore: TrustScoreData | null = seller ? calculateTrustScore({
+    emailVerified: seller.email_verified,
+    phoneVerified: seller.phone_verified,
+    faceVerified: seller.face_verified,
+    averageRating: seller.average_rating || 0,
+    ratingCount: stats.count,
+    createdAt: seller.created_at,
+    connectionsCount: seller.connections_count || 0,
+    isExpert: seller.is_expert,
+  }) : null;
+
+  const isOwner = user?.id === gig?.user_id;
 
   const handleShare = async () => {
     try {
@@ -40,6 +91,34 @@ export default function PublicGig() {
     } catch {
       navigator.clipboard.writeText(window.location.href);
       toast.success('Link copied to clipboard!');
+    }
+  };
+
+  const handleContactSeller = () => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    navigate(`/chat/${gig?.user_id}`);
+  };
+
+  const handleSubmitReview = async () => {
+    if (!user) {
+      toast.error('Please log in to leave a review');
+      return;
+    }
+    if (user.id === gig?.user_id) {
+      toast.error('You cannot review your own gig');
+      return;
+    }
+    
+    setSubmittingReview(true);
+    const result = await addReview(reviewRating, reviewText);
+    setSubmittingReview(false);
+    
+    if (!result.error) {
+      setReviewText('');
+      setReviewRating(5);
     }
   };
 
@@ -75,8 +154,8 @@ export default function PublicGig() {
     );
   }
 
-  const seller = gig.profiles as any;
-  const rating = seller?.average_rating || 5.0;
+  const rating = stats.average || seller?.average_rating || 5.0;
+  const isVerifiedExpert = seller?.verification_status === 'verified';
 
   const structuredData = {
     "@context": "https://schema.org",
@@ -107,7 +186,7 @@ export default function PublicGig() {
         <script type="application/ld+json">{JSON.stringify(structuredData)}</script>
       </Helmet>
 
-      <div className="min-h-screen bg-background pb-24">
+      <div className="min-h-screen bg-background pb-28">
         {/* Header */}
         <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b">
           <div className="flex items-center justify-between px-4 py-3">
@@ -115,6 +194,12 @@ export default function PublicGig() {
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div className="flex items-center gap-2">
+              {isOwner && (
+                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setShowBoostDialog(true)}>
+                  <Zap className="h-4 w-4 text-yellow-500" />
+                  Boost
+                </Button>
+              )}
               <BookmarkButton type="gig" itemId={gig.id} />
               <Button variant="ghost" size="icon" onClick={handleShare}>
                 <Share2 className="h-5 w-5" />
@@ -126,71 +211,306 @@ export default function PublicGig() {
         <div className="max-w-4xl mx-auto">
           {/* Gallery */}
           {gig.photo_urls?.length > 0 ? (
-            <div className="aspect-video bg-muted">
+            <div className="aspect-video bg-muted relative">
               <img
                 src={gig.photo_urls[0]}
                 alt={gig.title}
                 className="w-full h-full object-cover"
               />
+              {(gig.boost_amount || 0) > 0 && (
+                <Badge className="absolute top-3 right-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-0">
+                  <TrendingUp className="h-3 w-3 mr-1" />
+                  BOOSTED
+                </Badge>
+              )}
             </div>
           ) : (
-            <div className="aspect-video bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+            <div className="aspect-video bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center relative">
               <span className="text-6xl">🎨</span>
+              {(gig.boost_amount || 0) > 0 && (
+                <Badge className="absolute top-3 right-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-0">
+                  <TrendingUp className="h-3 w-3 mr-1" />
+                  BOOSTED
+                </Badge>
+              )}
             </div>
           )}
 
           <div className="p-4 space-y-5">
-            {/* Seller Info */}
-            <div className="flex items-center gap-3">
-              <Avatar className="h-11 w-11 ring-2 ring-border">
-                <AvatarImage src={seller?.profile_picture_url} alt={seller?.full_name} />
-                <AvatarFallback className="bg-primary/10 text-primary font-medium">
-                  {seller?.full_name?.charAt(0)?.toUpperCase() || 'S'}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1">
-                <div className="flex items-center gap-1.5">
-                  <span className="font-medium text-sm">{seller?.full_name || 'Seller'}</span>
-                  {seller?.is_expert && (
-                    <CheckCircle2 className="h-4 w-4 text-primary" />
-                  )}
-                </div>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <div className="flex items-center gap-0.5">
-                    <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
-                    <span className="font-medium text-foreground">{rating.toFixed(1)}</span>
+            {/* Seller Info Card */}
+            <Card className="p-4">
+              <div className="flex items-start gap-3">
+                <Avatar className="h-14 w-14 ring-2 ring-border cursor-pointer" onClick={() => navigate(`/profile/${gig.user_id}`)}>
+                  <AvatarImage src={seller?.profile_picture_url} alt={seller?.full_name} />
+                  <AvatarFallback className="bg-primary/10 text-primary font-medium text-lg">
+                    {seller?.full_name?.charAt(0)?.toUpperCase() || 'S'}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="font-semibold">{seller?.full_name || 'Seller'}</span>
+                    {isVerifiedExpert && (
+                      <Badge variant="secondary" className="text-[10px] h-5 bg-green-500/10 text-green-600">
+                        <Shield className="h-3 w-3 mr-0.5" />
+                        Verified
+                      </Badge>
+                    )}
+                    {seller?.is_expert && !isVerifiedExpert && (
+                      <CheckCircle2 className="h-4 w-4 text-primary" />
+                    )}
                   </div>
-                  <span>•</span>
-                  <Badge variant="secondary" className="text-[10px] h-5">{gig.category}</Badge>
+                  <p className="text-sm text-muted-foreground">{seller?.profession || 'Freelancer'}</p>
+                  <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                    <div className="flex items-center gap-0.5">
+                      <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
+                      <span className="text-sm font-medium">{rating.toFixed(1)}</span>
+                      <span className="text-xs text-muted-foreground">({stats.count})</span>
+                    </div>
+                    {trustScore && (
+                      <TrustScoreBadge score={trustScore.score} level={trustScore.level} size="sm" />
+                    )}
+                    {seller?.state_name && (
+                      <span className="text-xs text-muted-foreground">{seller.state_name}</span>
+                    )}
+                  </div>
                 </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="shrink-0"
+                  onClick={() => navigate(`/profile/${gig.user_id}`)}
+                >
+                  View Profile
+                </Button>
               </div>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="gap-1.5 h-8"
-                onClick={() => navigate(`/profile/${gig.user_id}`)}
-              >
-                View Profile
-              </Button>
-            </div>
+            </Card>
 
             {/* Title & Price */}
             <div>
               <h1 className="text-xl font-bold leading-tight mb-3">{gig.title}</h1>
-              <div className="flex items-baseline gap-1">
+              <div className="flex items-center gap-3 flex-wrap">
                 <span className="text-2xl font-bold text-primary">₦{gig.price?.toLocaleString()}</span>
+                <Badge variant="secondary">{gig.category}</Badge>
               </div>
             </div>
 
-            {/* Description */}
-            <Card className="p-4">
-              <h2 className="font-semibold mb-2 text-sm">About This Service</h2>
-              <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                {gig.description}
-              </p>
-            </Card>
+            {/* Tabs for Description, Portfolio, Reviews, Trust Score */}
+            <Tabs defaultValue="description" className="w-full">
+              <TabsList className="grid grid-cols-4 w-full">
+                <TabsTrigger value="description" className="text-xs">Description</TabsTrigger>
+                <TabsTrigger value="portfolio" className="text-xs">Portfolio</TabsTrigger>
+                <TabsTrigger value="reviews" className="text-xs">Reviews ({stats.count})</TabsTrigger>
+                <TabsTrigger value="trust" className="text-xs">Trust</TabsTrigger>
+              </TabsList>
 
-            {/* Stats */}
+              <TabsContent value="description" className="mt-4">
+                <Card className="p-4">
+                  <h2 className="font-semibold mb-3">About This Service</h2>
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                    {gig.description}
+                  </p>
+                  
+                  {/* Seller Bio */}
+                  {seller?.bio && (
+                    <div className="mt-4 pt-4 border-t">
+                      <h3 className="font-medium mb-2 text-sm">About the Seller</h3>
+                      <p className="text-sm text-muted-foreground">{seller.bio}</p>
+                    </div>
+                  )}
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="portfolio" className="mt-4">
+                <Card className="p-4">
+                  <h2 className="font-semibold mb-3">Portfolio</h2>
+                  {portfolioLoading ? (
+                    <div className="grid grid-cols-2 gap-3">
+                      {[1, 2, 3, 4].map(i => (
+                        <Skeleton key={i} className="aspect-video rounded-lg" />
+                      ))}
+                    </div>
+                  ) : portfolioItems.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <p>No portfolio items yet</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-3">
+                      {portfolioItems.map(item => (
+                        <Card key={item.id} className="overflow-hidden group cursor-pointer">
+                          {item.media_url ? (
+                            <div className="aspect-video bg-muted">
+                              <img 
+                                src={item.media_url} 
+                                alt={item.title}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                              />
+                            </div>
+                          ) : (
+                            <div className="aspect-video bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                              <span className="text-2xl">📁</span>
+                            </div>
+                          )}
+                          <div className="p-2">
+                            <p className="font-medium text-xs truncate">{item.title}</p>
+                            {item.project_url && (
+                              <a 
+                                href={item.project_url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-[10px] text-primary flex items-center gap-0.5 mt-1"
+                              >
+                                <ExternalLink className="h-3 w-3" />
+                                View Project
+                              </a>
+                            )}
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="reviews" className="mt-4 space-y-4">
+                {/* Review Stats */}
+                <Card className="p-4">
+                  <div className="flex items-center gap-4">
+                    <div className="text-center">
+                      <div className="text-3xl font-bold text-primary">{rating.toFixed(1)}</div>
+                      <div className="flex items-center justify-center gap-0.5 mt-1">
+                        {[1, 2, 3, 4, 5].map(star => (
+                          <Star 
+                            key={star} 
+                            className={`h-4 w-4 ${star <= Math.round(rating) ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'}`} 
+                          />
+                        ))}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">{stats.count} reviews</p>
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      {[5, 4, 3, 2, 1].map(star => {
+                        const count = reviews.filter(r => r.rating === star).length;
+                        const percentage = stats.count > 0 ? (count / stats.count) * 100 : 0;
+                        return (
+                          <div key={star} className="flex items-center gap-2 text-xs">
+                            <span className="w-3">{star}</span>
+                            <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                            <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-yellow-400 rounded-full" 
+                                style={{ width: `${percentage}%` }}
+                              />
+                            </div>
+                            <span className="w-8 text-muted-foreground">{count}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </Card>
+
+                {/* Write Review */}
+                {user && user.id !== gig.user_id && (
+                  <Card className="p-4">
+                    <h3 className="font-medium mb-3 text-sm">Write a Review</h3>
+                    <div className="flex items-center gap-1 mb-3">
+                      {[1, 2, 3, 4, 5].map(star => (
+                        <button
+                          key={star}
+                          onClick={() => setReviewRating(star)}
+                          className="focus:outline-none"
+                        >
+                          <Star 
+                            className={`h-6 w-6 transition-colors ${
+                              star <= reviewRating ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground hover:text-yellow-400'
+                            }`} 
+                          />
+                        </button>
+                      ))}
+                    </div>
+                    <Textarea
+                      placeholder="Share your experience with this service..."
+                      value={reviewText}
+                      onChange={(e) => setReviewText(e.target.value)}
+                      rows={3}
+                      className="mb-3"
+                    />
+                    <Button 
+                      onClick={handleSubmitReview}
+                      disabled={submittingReview}
+                      size="sm"
+                    >
+                      {submittingReview ? 'Submitting...' : 'Submit Review'}
+                    </Button>
+                  </Card>
+                )}
+
+                {/* Reviews List */}
+                <div className="space-y-3">
+                  {reviewsLoading ? (
+                    [1, 2, 3].map(i => (
+                      <Card key={i} className="p-4">
+                        <div className="flex items-start gap-3">
+                          <Skeleton className="h-10 w-10 rounded-full" />
+                          <div className="flex-1 space-y-2">
+                            <Skeleton className="h-4 w-24" />
+                            <Skeleton className="h-3 w-full" />
+                          </div>
+                        </div>
+                      </Card>
+                    ))
+                  ) : reviews.length === 0 ? (
+                    <Card className="p-8 text-center text-muted-foreground">
+                      <p>No reviews yet. Be the first to review!</p>
+                    </Card>
+                  ) : (
+                    reviews.map(review => (
+                      <Card key={review.id} className="p-4">
+                        <div className="flex items-start gap-3">
+                          <Avatar className="h-10 w-10">
+                            <AvatarImage src={review.reviewer?.profile_picture_url || ''} />
+                            <AvatarFallback className="bg-primary/10 text-primary">
+                              {review.reviewer?.full_name?.charAt(0) || '?'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium text-sm">{review.reviewer?.full_name || 'Anonymous'}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {new Date(review.created_at).toLocaleDateString()}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-0.5 mt-0.5 mb-2">
+                              {[1, 2, 3, 4, 5].map(star => (
+                                <Star 
+                                  key={star} 
+                                  className={`h-3 w-3 ${star <= review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'}`} 
+                                />
+                              ))}
+                            </div>
+                            {review.comment && (
+                              <p className="text-sm text-muted-foreground">{review.comment}</p>
+                            )}
+                          </div>
+                        </div>
+                      </Card>
+                    ))
+                  )}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="trust" className="mt-4">
+                {trustScore ? (
+                  <TrustScoreCard trustScore={trustScore} showBreakdown={true} />
+                ) : (
+                  <Card className="p-8 text-center text-muted-foreground">
+                    <p>Trust score not available</p>
+                  </Card>
+                )}
+              </TabsContent>
+            </Tabs>
+
+            {/* Quick Stats */}
             <div className="grid grid-cols-3 gap-3">
               <Card className="p-3 text-center">
                 <Clock className="h-5 w-5 mx-auto text-muted-foreground mb-1" />
@@ -212,7 +532,7 @@ export default function PublicGig() {
         </div>
 
         {/* Fixed Bottom CTA */}
-        <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4">
+        <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4 safe-bottom">
           <div className="max-w-4xl mx-auto flex items-center gap-3">
             <div className="flex-1">
               <div className="text-xs text-muted-foreground">Starting at</div>
@@ -221,7 +541,7 @@ export default function PublicGig() {
             <Button 
               size="lg" 
               className="gap-2 px-8"
-              onClick={() => navigate('/login')}
+              onClick={handleContactSeller}
             >
               <MessageCircle className="h-4 w-4" />
               Contact Seller
@@ -229,6 +549,18 @@ export default function PublicGig() {
           </div>
         </div>
       </div>
+
+      {/* Boost Dialog */}
+      {isOwner && (
+        <GigBoostDialog
+          open={showBoostDialog}
+          onOpenChange={setShowBoostDialog}
+          gigId={gig.id}
+          gigTitle={gig.title}
+          currentBoost={gig.boost_amount || 0}
+          onSuccess={() => refetchGig()}
+        />
+      )}
     </>
   );
 }

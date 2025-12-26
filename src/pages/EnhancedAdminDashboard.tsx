@@ -1391,6 +1391,7 @@ const EnhancedAdminDashboard = () => {
               <div className="overflow-x-auto mb-6">
                 <TabsList className="inline-flex w-full min-w-max">
                   <TabsTrigger value="expert">Expert Applications</TabsTrigger>
+                  <TabsTrigger value="verification">Expert Verification</TabsTrigger>
                   <TabsTrigger value="social">Social Tasks</TabsTrigger>
                   <TabsTrigger value="referral">Referral Tasks</TabsTrigger>
                   <TabsTrigger value="articles">Articles</TabsTrigger>
@@ -1414,6 +1415,10 @@ const EnhancedAdminDashboard = () => {
                     </div>
                   </CardContent>
                 </Card>
+              </TabsContent>
+
+              <TabsContent value="verification">
+                <AdminExpertVerification />
               </TabsContent>
 
               <TabsContent value="social">
