@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { BrandInput } from '@/components/ui/brand-input'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { useAuth } from '@/hooks/useAuth'
-import { usePersonalizedJobs, usePersonalizedGigs } from '@/hooks/usePersonalizedDiscovery'
+import { usePersonalizedJobPosts, usePersonalizedGigs } from '@/hooks/usePersonalizedDiscovery'
 import { supabase } from '@/integrations/supabase/client'
 import { MoreMenuDrawer } from '@/components/MoreMenuDrawer'
 import { BookmarkButton } from '@/components/BookmarkButton'
@@ -22,7 +22,7 @@ const Jobs = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { user } = useAuth()
-  const { jobs, loading: jobsLoading } = usePersonalizedJobs(50)
+  const { jobPosts, loading: jobsLoading } = usePersonalizedJobPosts(50)
   const { gigs, loading: gigsLoading } = usePersonalizedGigs(50)
   const [searchQuery, setSearchQuery] = useState('')
   const [stateFilter, setStateFilter] = useState('all')
@@ -95,7 +95,7 @@ const Jobs = () => {
     return matchesSearch && matchesCategory
   })
 
-  const filteredJobs = jobs.filter((job: any) => {
+  const filteredJobs = jobPosts.filter((job: any) => {
     const matchesSearch = job.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          job.description?.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesState = !stateFilter || stateFilter === 'all' || job.location?.includes(stateFilter)
