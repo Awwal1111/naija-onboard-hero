@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Loader2, Image as ImageIcon, Sparkles, Download, Search, Upload, X, Globe } from 'lucide-react';
+import { Send, Loader2, Image as ImageIcon, Sparkles, Download, Search, Upload, X, Globe, Volume2, VolumeX, Link } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BrandInput } from '@/components/ui/brand-input';
 import { Card } from '@/components/ui/card';
@@ -14,6 +14,8 @@ interface Message {
   userImage?: string;
   timestamp: Date;
   isSearchResult?: boolean;
+  isWebScrape?: boolean;
+  audioUrl?: string;
 }
 
 const AIChatInterface = () => {
@@ -21,7 +23,7 @@ const AIChatInterface = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
-      content: "Hi! I'm NaijaLancers AI Assistant. I'm powered by advanced AI and can:\n\n🔍 **Search the web** for current information\n🖼️ **Generate images** from your descriptions\n📷 **Analyze images** you share with me\n💬 **Chat** about anything\n\nTry asking me about current events, share an image to analyze, or ask me to create an image!",
+      content: "Hi! I'm NaijaLancers AI Assistant powered by advanced AI. I can:\n\n🔍 **Search the web** for current information (Perplexity-powered)\n🖼️ **Generate images** from your descriptions\n📷 **Analyze images** you share with me\n🌐 **Scrape websites** - just share a URL!\n🔊 **Read responses aloud** - click the speaker icon\n💬 **Chat** about anything\n\nTry asking about current events, share an image, generate art, or give me a website to analyze!",
       timestamp: new Date()
     }
   ]);
@@ -29,8 +31,12 @@ const AIChatInterface = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
+  const [isScraping, setIsScraping] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [playingAudioId, setPlayingAudioId] = useState<number | null>(null);
+  const [loadingAudioId, setLoadingAudioId] = useState<number | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -65,6 +71,16 @@ const AIChatInterface = () => {
     return searchKeywords.some(keyword => lowerText.includes(keyword));
   };
 
+  const detectScrapeRequest = (text: string): string | null => {
+    const urlPattern = /(https?:\/\/[^\s]+|www\.[^\s]+|[a-zA-Z0-9-]+\.(com|org|net|io|dev|co|ng|app)[^\s]*)/gi;
+    const match = text.match(urlPattern);
+    if (match && (text.toLowerCase().includes('scrape') || text.toLowerCase().includes('read') || 
+        text.toLowerCase().includes('what') || text.toLowerCase().includes('get'))) {
+      return match[0];
+    }
+    return null;
+  };
+
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -92,6 +108,76 @@ const AIChatInterface = () => {
     setImagePreview(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
+    }
+  };
+
+  const handleTextToSpeech = async (text: string, messageIndex: number) => {
+    // Stop any currently playing audio
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+
+    // If clicking on the same message that's playing, just stop
+    if (playingAudioId === messageIndex) {
+      setPlayingAudioId(null);
+      return;
+    }
+
+    setLoadingAudioId(messageIndex);
+    
+    try {
+      const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
+      
+      const resp = await fetch(CHAT_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({ 
+          messages: [{ role: 'assistant', content: text }],
+          action: 'text_to_speech'
+        }),
+      });
+
+      if (!resp.ok) {
+        throw new Error('Failed to generate speech');
+      }
+
+      const data = await resp.json();
+      
+      if (data.audioUrl) {
+        const audio = new Audio(data.audioUrl);
+        audioRef.current = audio;
+        
+        audio.onended = () => {
+          setPlayingAudioId(null);
+        };
+        
+        audio.onerror = () => {
+          toast({
+            title: "Audio Error",
+            description: "Failed to play audio",
+            variant: "destructive"
+          });
+          setPlayingAudioId(null);
+        };
+        
+        await audio.play();
+        setPlayingAudioId(messageIndex);
+      } else {
+        throw new Error('No audio URL received');
+      }
+    } catch (error) {
+      console.error('TTS error:', error);
+      toast({
+        title: "Speech Error",
+        description: "Could not generate speech. ElevenLabs may not be configured.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoadingAudioId(null);
     }
   };
 
@@ -148,7 +234,8 @@ const AIChatInterface = () => {
       role: 'assistant',
       content: '',
       timestamp: new Date(),
-      isSearchResult: action === 'web_search'
+      isSearchResult: action === 'web_search',
+      isWebScrape: action === 'scrape_website'
     }]);
 
     while (!streamDone) {
@@ -182,7 +269,8 @@ const AIChatInterface = () => {
                 role: 'assistant',
                 content: assistantMessage,
                 timestamp: new Date(),
-                isSearchResult: action === 'web_search'
+                isSearchResult: action === 'web_search',
+                isWebScrape: action === 'scrape_website'
               };
               return newMessages;
             });
@@ -273,27 +361,52 @@ const AIChatInterface = () => {
     // Check if this is an image generation request
     const isImageRequest = detectImageRequest(currentInput);
     const isSearchRequest = detectSearchRequest(currentInput);
+    const urlToScrape = detectScrapeRequest(currentInput);
 
     if (isImageRequest) {
       setIsGeneratingImage(true);
       try {
         const result = await generateImage(currentInput);
         
-        setMessages(prev => [...prev, {
-          role: 'assistant',
-          content: result.content || "I've generated an image for you!",
-          imageUrl: result.imageUrl,
-          timestamp: new Date()
-        }]);
+        // Check if we got an image URL
+        if (result.imageUrl) {
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: result.content || "I've generated an image for you!",
+            imageUrl: result.imageUrl,
+            timestamp: new Date()
+          }]);
+        } else {
+          // No image URL returned, show error
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: result.content || "I tried to generate an image but didn't get a result. Please try again with a different prompt.",
+            timestamp: new Date()
+          }]);
+        }
       } catch (error) {
         console.error('Error generating image:', error);
         setMessages(prev => [...prev, {
           role: 'assistant',
-          content: "Sorry, I couldn't generate that image. Please try again.",
+          content: "Sorry, I couldn't generate that image. Please try again with a different prompt.",
           timestamp: new Date()
         }]);
       } finally {
         setIsGeneratingImage(false);
+      }
+    } else if (urlToScrape) {
+      setIsScraping(true);
+      try {
+        await streamChat([...messages, userMessage], 'scrape_website', undefined, urlToScrape);
+      } catch (error) {
+        console.error('Error scraping website:', error);
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: "Sorry, I couldn't scrape that website. Please check the URL and try again.",
+          timestamp: new Date()
+        }]);
+      } finally {
+        setIsScraping(false);
       }
     } else if (isSearchRequest) {
       setIsSearching(true);
@@ -330,6 +443,7 @@ const AIChatInterface = () => {
     { icon: Search, label: "Search the web", prompt: "Search for " },
     { icon: ImageIcon, label: "Generate image", prompt: "Generate an image of " },
     { icon: Globe, label: "Latest news", prompt: "What's the latest news about " },
+    { icon: Link, label: "Scrape website", prompt: "Scrape and summarize " },
   ];
 
   return (
@@ -343,13 +457,17 @@ const AIChatInterface = () => {
         </Avatar>
         <div className="flex-1">
           <h1 className="text-lg font-semibold">AI Assistant</h1>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Badge variant="secondary" className="text-xs">
               Powered by Gemini
             </Badge>
             <Badge variant="outline" className="text-xs flex items-center gap-1">
               <Globe className="h-3 w-3" />
-              Web Search
+              Perplexity Search
+            </Badge>
+            <Badge variant="outline" className="text-xs flex items-center gap-1">
+              <Volume2 className="h-3 w-3" />
+              ElevenLabs
             </Badge>
           </div>
         </div>
@@ -397,11 +515,19 @@ const AIChatInterface = () => {
             >
               {message.isSearchResult && (
                 <div className="flex items-center gap-1 text-xs text-muted-foreground mb-2">
-                  <Globe className="h-3 w-3" />
+                  <Search className="h-3 w-3" />
                   Web search result
                 </div>
               )}
+
+              {message.isWebScrape && (
+                <div className="flex items-center gap-1 text-xs text-muted-foreground mb-2">
+                  <Link className="h-3 w-3" />
+                  Website content
+                </div>
+              )}
               
+              {/* Display user's attached image */}
               {message.userImage && (
                 <div className="mb-3">
                   <img
@@ -414,12 +540,17 @@ const AIChatInterface = () => {
               
               <p className="text-sm whitespace-pre-wrap">{message.content}</p>
               
+              {/* Display AI-generated image */}
               {message.imageUrl && (
                 <div className="mt-3 space-y-2">
                   <img
                     src={message.imageUrl}
                     alt="Generated"
                     className="rounded-lg max-w-full h-auto"
+                    onError={(e) => {
+                      console.error('Image failed to load:', message.imageUrl?.substring(0, 100));
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
                   />
                   <Button
                     variant="outline"
@@ -437,6 +568,28 @@ const AIChatInterface = () => {
                   </Button>
                 </div>
               )}
+
+              {/* Text-to-speech button for assistant messages */}
+              {message.role === 'assistant' && message.content && !message.imageUrl && (
+                <div className="mt-2 pt-2 border-t border-border">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-xs"
+                    onClick={() => handleTextToSpeech(message.content, index)}
+                    disabled={loadingAudioId === index}
+                  >
+                    {loadingAudioId === index ? (
+                      <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                    ) : playingAudioId === index ? (
+                      <VolumeX className="h-3 w-3 mr-1" />
+                    ) : (
+                      <Volume2 className="h-3 w-3 mr-1" />
+                    )}
+                    {loadingAudioId === index ? 'Loading...' : playingAudioId === index ? 'Stop' : 'Listen'}
+                  </Button>
+                </div>
+              )}
             </Card>
 
             {message.role === 'user' && (
@@ -447,7 +600,7 @@ const AIChatInterface = () => {
           </div>
         ))}
 
-        {(isLoading || isGeneratingImage || isSearching) && (
+        {(isLoading || isGeneratingImage || isSearching || isScraping) && (
           <div className="flex gap-3 justify-start">
             <Avatar className="h-8 w-8 bg-gradient-to-br from-primary to-primary/60">
               <AvatarFallback className="bg-transparent">
@@ -458,7 +611,10 @@ const AIChatInterface = () => {
               <div className="flex items-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 <span className="text-sm text-muted-foreground">
-                  {isGeneratingImage ? 'Generating image...' : isSearching ? 'Searching the web...' : 'Thinking...'}
+                  {isGeneratingImage ? 'Generating image...' : 
+                   isSearching ? 'Searching the web...' : 
+                   isScraping ? 'Scraping website...' : 
+                   'Thinking...'}
                 </span>
               </div>
             </Card>
@@ -503,7 +659,7 @@ const AIChatInterface = () => {
             variant="outline"
             size="icon"
             onClick={() => fileInputRef.current?.click()}
-            disabled={isLoading || isGeneratingImage || isSearching}
+            disabled={isLoading || isGeneratingImage || isSearching || isScraping}
           >
             <Upload className="h-5 w-5" />
           </Button>
@@ -511,23 +667,23 @@ const AIChatInterface = () => {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-            placeholder="Ask anything, search the web, or share an image..."
-            disabled={isLoading || isGeneratingImage || isSearching}
+            placeholder="Ask anything, search, share an image, or paste a URL..."
+            disabled={isLoading || isGeneratingImage || isSearching || isScraping}
             className="flex-1"
           />
           <Button
             onClick={handleSend}
-            disabled={(!input.trim() && !selectedImage) || isLoading || isGeneratingImage || isSearching}
+            disabled={(!input.trim() && !selectedImage) || isLoading || isGeneratingImage || isSearching || isScraping}
             size="icon"
           >
-            {isLoading || isGeneratingImage || isSearching ? (
+            {isLoading || isGeneratingImage || isSearching || isScraping ? (
               <Loader2 className="h-5 w-5 animate-spin" />
             ) : (
               <Send className="h-5 w-5" />
             )}
           </Button>
         </div>
-        <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+        <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground flex-wrap">
           <span className="flex items-center gap-1">
             <ImageIcon className="h-3 w-3" />
             Generate images
@@ -538,7 +694,15 @@ const AIChatInterface = () => {
           </span>
           <span className="flex items-center gap-1">
             <Search className="h-3 w-3" />
-            Web search
+            Perplexity search
+          </span>
+          <span className="flex items-center gap-1">
+            <Link className="h-3 w-3" />
+            Firecrawl scrape
+          </span>
+          <span className="flex items-center gap-1">
+            <Volume2 className="h-3 w-3" />
+            ElevenLabs TTS
           </span>
         </div>
       </div>
