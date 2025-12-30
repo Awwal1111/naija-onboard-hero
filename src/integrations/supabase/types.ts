@@ -1737,6 +1737,41 @@ export type Database = {
         }
         Relationships: []
       }
+      gig_faqs: {
+        Row: {
+          answer: string
+          created_at: string
+          display_order: number | null
+          gig_id: string
+          id: string
+          question: string
+        }
+        Insert: {
+          answer: string
+          created_at?: string
+          display_order?: number | null
+          gig_id: string
+          id?: string
+          question: string
+        }
+        Update: {
+          answer?: string
+          created_at?: string
+          display_order?: number | null
+          gig_id?: string
+          id?: string
+          question?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gig_faqs_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "jobs_services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gig_reviews: {
         Row: {
           comment: string | null
@@ -1768,6 +1803,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "gig_reviews_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "jobs_services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gig_testimonials: {
+        Row: {
+          created_at: string
+          gig_id: string
+          id: string
+          is_verified: boolean | null
+          project_date: string | null
+          project_type: string | null
+          rating: number
+          testimonial: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          gig_id: string
+          id?: string
+          is_verified?: boolean | null
+          project_date?: string | null
+          project_type?: string | null
+          rating: number
+          testimonial: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          gig_id?: string
+          id?: string
+          is_verified?: boolean | null
+          project_date?: string | null
+          project_type?: string | null
+          rating?: number
+          testimonial?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gig_testimonials_gig_id_fkey"
             columns: ["gig_id"]
             isOneToOne: false
             referencedRelation: "jobs_services"
@@ -2373,10 +2455,14 @@ export type Database = {
           boosted_at: string | null
           category: string
           created_at: string
+          delivery_days: number | null
           description: string
           id: string
+          order_queue: number | null
+          packages: Json | null
           photo_urls: string[] | null
           price: number
+          response_time: string | null
           review_count: number | null
           status: string | null
           title: string
@@ -2390,10 +2476,14 @@ export type Database = {
           boosted_at?: string | null
           category: string
           created_at?: string
+          delivery_days?: number | null
           description: string
           id?: string
+          order_queue?: number | null
+          packages?: Json | null
           photo_urls?: string[] | null
           price: number
+          response_time?: string | null
           review_count?: number | null
           status?: string | null
           title: string
@@ -2407,10 +2497,14 @@ export type Database = {
           boosted_at?: string | null
           category?: string
           created_at?: string
+          delivery_days?: number | null
           description?: string
           id?: string
+          order_queue?: number | null
+          packages?: Json | null
           photo_urls?: string[] | null
           price?: number
+          response_time?: string | null
           review_count?: number | null
           status?: string | null
           title?: string
