@@ -24,6 +24,8 @@ import Profile from "./pages/Profile";
 import PostJob from "./pages/PostJob";
 import Experts from "./pages/Experts";
 import Jobs from "./pages/Jobs";
+import MyGigs from "./pages/MyGigs";
+import EditGig from "./pages/EditGig";
 import Chat from './pages/Chat'
 import ChatPage from "./pages/ChatPage";
 import CallHistoryPage from "./pages/CallHistoryPage";
@@ -121,6 +123,8 @@ const App = () => (
           <Route path="/experts" element={<ProtectedRoute><Experts /></ProtectedRoute>} />
           <Route path="/expert-class/room/:classId" element={<ProtectedRoute><ClassRoom /></ProtectedRoute>} />
           <Route path="/jobs" element={<ProtectedRoute><Jobs /></ProtectedRoute>} />
+          <Route path="/my-gigs" element={<ProtectedRoute><MyGigs /></ProtectedRoute>} />
+          <Route path="/edit-gig/:gigId" element={<ProtectedRoute><EditGig /></ProtectedRoute>} />
           <Route path="/surveys" element={<ProtectedRoute><Surveys /></ProtectedRoute>} />
           <Route path="/cpx-surveys" element={<ProtectedRoute><CpxSurveys /></ProtectedRoute>} />
           <Route path="/games/guess-number" element={<ProtectedRoute><GuessNumberGame /></ProtectedRoute>} />

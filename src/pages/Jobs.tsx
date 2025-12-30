@@ -399,6 +399,27 @@ const Jobs = () => {
 
           {/* My Posts Tab Content */}
           <TabsContent value="my-posts" className="mt-0 px-4 space-y-4 py-3">
+            {/* Quick Actions */}
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex-1"
+                onClick={() => navigate('/my-gigs')}
+              >
+                <Package className="h-4 w-4 mr-1.5" />
+                Manage My Gigs
+              </Button>
+              <Button 
+                size="sm" 
+                className="flex-1"
+                onClick={() => navigate('/post-job')}
+              >
+                <Plus className="h-4 w-4 mr-1.5" />
+                Create New
+              </Button>
+            </div>
+
             {/* Stats */}
             <div className="grid grid-cols-3 gap-2">
               <Card className="bg-primary/5 border-primary/20">
