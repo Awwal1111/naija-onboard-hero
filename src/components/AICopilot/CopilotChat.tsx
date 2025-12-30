@@ -270,10 +270,16 @@ const CopilotChat = () => {
             <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-primary via-purple-500 to-pink-500 rounded-full flex items-center justify-center">
               <Bot className="h-10 w-10 text-white" />
             </div>
-            <h2 className="text-xl font-semibold mb-2">Hey there! I'm {copilotName}</h2>
-            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-              Your AI freelancing partner with Perplexity search, Firecrawl scraping, ElevenLabs TTS, and image generation!
+            <h2 className="text-xl font-semibold mb-2">Hey! I'm {copilotName} 🚀</h2>
+            <p className="text-muted-foreground mb-2 max-w-md mx-auto">
+              Your elite AI freelancing partner. I think deeply, research thoroughly, and deliver expert-level solutions.
             </p>
+            <div className="flex flex-wrap justify-center gap-1 mb-6">
+              <Badge variant="outline" className="text-xs">Perplexity Search</Badge>
+              <Badge variant="outline" className="text-xs">Firecrawl Scrape</Badge>
+              <Badge variant="outline" className="text-xs">ElevenLabs TTS</Badge>
+              <Badge variant="outline" className="text-xs">Image Gen</Badge>
+            </div>
 
             {/* Quick Actions */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-w-lg mx-auto">
@@ -438,10 +444,19 @@ const CopilotChat = () => {
                 <Bot className="h-4 w-4 text-white" />
               </AvatarFallback>
             </Avatar>
-            <Card className="p-3 bg-card">
+            <Card className="p-3 bg-card border-primary/20">
               <div className="flex items-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="text-sm text-muted-foreground">Thinking...</span>
+                <div className="relative">
+                  <Sparkles className="h-4 w-4 text-primary animate-pulse" />
+                </div>
+                <span className="text-sm font-medium bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent">
+                  Thinking deeply...
+                </span>
+              </div>
+              <div className="flex gap-1 mt-2">
+                <div className="h-1.5 w-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0ms' }} />
+                <div className="h-1.5 w-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '150ms' }} />
+                <div className="h-1.5 w-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: '300ms' }} />
               </div>
             </Card>
           </div>
