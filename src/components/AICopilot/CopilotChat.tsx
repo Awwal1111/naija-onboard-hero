@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Send, Loader2, Image as ImageIcon, Sparkles, Download, 
   Bookmark, Settings, Trash2, Copy, MoreVertical, FileText,
-  Code, Palette, MessageSquare, Zap, Bot, Search, Globe, Upload, X
+  Code, Palette, MessageSquare, Zap, Bot, Search, Globe, Upload, X,
+  Volume2, FileSearch, Mic
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -11,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { useAICopilot, CopilotMessage } from '@/hooks/useAICopilot';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -47,6 +49,8 @@ const CopilotChat = () => {
   const [messageToSave, setMessageToSave] = useState<CopilotMessage | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploadedImage, setUploadedImage] = useState<File | null>(null);
+  const [isPlayingAudio, setIsPlayingAudio] = useState<string | null>(null);
+  const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -104,9 +108,11 @@ const CopilotChat = () => {
 
   const handleQuickAction = async (actionType: string, prompt: string) => {
     if (actionType === 'search') {
-      setInput(`search: ${prompt}`);
+      setInput(`search: `);
     } else if (actionType === 'image') {
-      setInput(`generate image: ${prompt}`);
+      setInput(`generate image: `);
+    } else if (actionType === 'scrape') {
+      setInput(`scrape: `);
     } else {
       setInput(prompt);
     }
@@ -141,12 +147,62 @@ const CopilotChat = () => {
     });
   };
 
+  const handleTextToSpeech = async (messageId: string, text: string) => {
+    if (isPlayingAudio === messageId) {
+      audioElement?.pause();
+      setIsPlayingAudio(null);
+      setAudioElement(null);
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-copilot', {
+        body: { action: 'text_to_speech', prompt: text }
+      });
+
+      if (error || !data?.audioUrl) {
+        toast({
+          title: "Text-to-Speech Error",
+          description: "Could not generate audio. Please try again.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const audio = new Audio(data.audioUrl);
+      audio.onended = () => {
+        setIsPlayingAudio(null);
+        setAudioElement(null);
+      };
+      audio.onerror = () => {
+        toast({
+          title: "Audio Error",
+          description: "Could not play audio.",
+          variant: "destructive"
+        });
+        setIsPlayingAudio(null);
+        setAudioElement(null);
+      };
+      
+      await audio.play();
+      setIsPlayingAudio(messageId);
+      setAudioElement(audio);
+    } catch (error) {
+      console.error('TTS error:', error);
+      toast({
+        title: "Error",
+        description: "Text-to-speech failed.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const quickActions = [
-    { icon: Search, label: 'Web Search', prompt: '', actionType: 'search', placeholder: 'Search for anything...' },
-    { icon: ImageIcon, label: 'Generate Image', prompt: '', actionType: 'image', placeholder: 'Describe your image...' },
+    { icon: Search, label: 'Web Search', prompt: '', actionType: 'search' },
+    { icon: ImageIcon, label: 'Generate Image', prompt: '', actionType: 'image' },
+    { icon: FileSearch, label: 'Scrape Website', prompt: '', actionType: 'scrape' },
     { icon: FileText, label: 'Write Proposal', prompt: 'Help me write a professional proposal for a client project', actionType: 'text' },
     { icon: Code, label: 'Generate Code', prompt: 'Help me write code for', actionType: 'text' },
-    { icon: Palette, label: 'Design Brief', prompt: 'Create a design brief for', actionType: 'text' },
     { icon: MessageSquare, label: 'Client Email', prompt: 'Help me draft a professional email to a client about', actionType: 'text' },
   ];
 
@@ -167,14 +223,22 @@ const CopilotChat = () => {
           </div>
           <div>
             <h1 className="text-lg font-semibold">{copilotName}</h1>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 flex-wrap">
               <Badge variant="secondary" className="text-xs">
                 {settings?.expertise || 'All-Rounder'}
               </Badge>
-              <span className="text-xs text-green-500 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-                Online
-              </span>
+              <Badge variant="outline" className="text-xs bg-blue-500/10 text-blue-500 border-blue-500/30">
+                <Search className="h-2.5 w-2.5 mr-1" />
+                Perplexity
+              </Badge>
+              <Badge variant="outline" className="text-xs bg-orange-500/10 text-orange-500 border-orange-500/30">
+                <FileSearch className="h-2.5 w-2.5 mr-1" />
+                Firecrawl
+              </Badge>
+              <Badge variant="outline" className="text-xs bg-purple-500/10 text-purple-500 border-purple-500/30">
+                <Volume2 className="h-2.5 w-2.5 mr-1" />
+                ElevenLabs
+              </Badge>
             </div>
           </div>
         </div>
@@ -208,7 +272,7 @@ const CopilotChat = () => {
             </div>
             <h2 className="text-xl font-semibold mb-2">Hey there! I'm {copilotName}</h2>
             <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-              Your AI freelancing partner with web search, image generation, code writing, and more!
+              Your AI freelancing partner with Perplexity search, Firecrawl scraping, ElevenLabs TTS, and image generation!
             </p>
 
             {/* Quick Actions */}
@@ -226,11 +290,12 @@ const CopilotChat = () => {
               ))}
             </div>
 
-            <div className="mt-6 p-4 bg-muted/50 rounded-lg max-w-md mx-auto">
+            <div className="mt-6 p-4 bg-muted/50 rounded-lg max-w-md mx-auto text-left">
               <p className="text-sm text-muted-foreground">
                 <strong>Pro Tips:</strong><br />
-                • Type "search: [query]" for web search<br />
-                • Type "generate image: [description]" for images<br />
+                • "search: [query]" - Perplexity web search<br />
+                • "generate image: [description]" - Create images<br />
+                • "scrape: [url]" - Extract website content<br />
                 • Upload an image for AI analysis
               </p>
             </div>
@@ -262,9 +327,17 @@ const CopilotChat = () => {
               >
                 {/* Search result badge */}
                 {message.metadata?.isSearchResult && (
-                  <Badge variant="outline" className="mb-2 text-xs">
+                  <Badge variant="outline" className="mb-2 text-xs bg-blue-500/10 text-blue-500">
                     <Globe className="h-3 w-3 mr-1" />
-                    Web Search Result
+                    {message.metadata?.searchProvider || 'Web'} Search Result
+                  </Badge>
+                )}
+
+                {/* Scrape result badge */}
+                {message.metadata?.isScrapeResult && (
+                  <Badge variant="outline" className="mb-2 text-xs bg-orange-500/10 text-orange-500">
+                    <FileSearch className="h-3 w-3 mr-1" />
+                    Firecrawl Result
                   </Badge>
                 )}
 
@@ -291,6 +364,13 @@ const CopilotChat = () => {
                     />
                   </div>
                 )}
+
+                {/* Audio player for TTS */}
+                {message.metadata?.audioUrl && (
+                  <div className="mt-2">
+                    <audio controls src={message.metadata.audioUrl} className="w-full" />
+                  </div>
+                )}
               </Card>
 
               {/* Message Actions (for assistant messages) */}
@@ -304,6 +384,15 @@ const CopilotChat = () => {
                   >
                     <Copy className="h-3 w-3 mr-1" />
                     Copy
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2"
+                    onClick={() => handleTextToSpeech(message.id, message.content)}
+                  >
+                    <Volume2 className={`h-3 w-3 mr-1 ${isPlayingAudio === message.id ? 'text-primary animate-pulse' : ''}`} />
+                    {isPlayingAudio === message.id ? 'Stop' : 'Listen'}
                   </Button>
                   <Button
                     variant="ghost"
@@ -404,7 +493,7 @@ const CopilotChat = () => {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask anything, search the web, or generate images..."
+            placeholder="Ask anything, search the web, scrape websites, or generate images..."
             disabled={isStreaming}
             className="flex-1 min-h-[44px] max-h-[120px] resize-none"
             rows={1}
@@ -424,7 +513,7 @@ const CopilotChat = () => {
         </div>
         <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
           <Zap className="h-3 w-3" />
-          <span>Try: "search: latest freelancing trends" or "generate image: professional logo for tech startup"</span>
+          <span>Try: "search: freelancing trends" • "scrape: example.com" • "generate image: tech logo"</span>
         </div>
       </div>
 
