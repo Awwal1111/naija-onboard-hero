@@ -78,12 +78,12 @@ export const GigCard: React.FC<GigCardProps> = ({
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           loading="lazy"
         />
-        {/* Boosted Badge */}
+        {/* Boosted Badge - Prominent indicator per MVP spec */}
         {boost_amount > 0 && (
           <div className="absolute top-2 left-2">
-            <Badge className="bg-gradient-to-r from-orange-500 to-yellow-500 text-white text-[10px] gap-0.5 border-0">
+            <Badge className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-400 text-white text-[10px] gap-0.5 border-0 shadow-lg animate-pulse">
               <Zap className="h-3 w-3 fill-white" />
-              BOOSTED
+              🔥 BOOSTED
             </Badge>
           </div>
         )}
@@ -175,6 +175,7 @@ export const GigCardCompact: React.FC<GigCardProps> = ({
   seller_rating = 0,
   seller_is_expert = false,
   seller_id,
+  boost_amount = 0,
   className,
 }) => {
   const navigate = useNavigate();
@@ -198,6 +199,14 @@ export const GigCardCompact: React.FC<GigCardProps> = ({
           className="w-full h-full object-cover"
           loading="lazy"
         />
+        {/* Boosted indicator on compact card */}
+        {boost_amount > 0 && (
+          <div className="absolute top-0.5 left-0.5">
+            <Badge className="bg-gradient-to-r from-orange-500 to-yellow-400 text-white text-[8px] h-4 px-1 gap-0 border-0">
+              <Zap className="h-2.5 w-2.5 fill-white" />
+            </Badge>
+          </div>
+        )}
       </div>
 
       {/* Content */}
