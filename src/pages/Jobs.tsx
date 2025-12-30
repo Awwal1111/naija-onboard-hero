@@ -288,12 +288,20 @@ const Jobs = () => {
                     onClick={() => navigate(`/gig/${gig.id}`)}
                   >
                     <CardContent className="p-3 flex gap-3">
-                      <div className="w-20 h-14 rounded-md overflow-hidden bg-muted flex-shrink-0">
+                      <div className="relative w-20 h-14 rounded-md overflow-hidden bg-muted flex-shrink-0">
                         <img
                           src={gig.photo_urls?.[0] || '/placeholder.svg'}
                           alt={gig.title}
                           className="w-full h-full object-cover"
                         />
+                        {/* Boosted indicator */}
+                        {(gig.boost_amount || 0) > 0 && (
+                          <div className="absolute top-0.5 left-0.5">
+                            <Badge className="bg-gradient-to-r from-orange-500 to-yellow-400 text-white text-[8px] h-4 px-1 gap-0 border-0">
+                              <Zap className="h-2.5 w-2.5 fill-white" />
+                            </Badge>
+                          </div>
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="text-sm font-medium line-clamp-1">{gig.title}</h3>

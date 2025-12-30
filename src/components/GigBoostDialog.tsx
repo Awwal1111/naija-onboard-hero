@@ -84,14 +84,13 @@ export const GigBoostDialog: React.FC<GigBoostDialogProps> = ({
 
       if (boostError) throw boostError;
 
-      // Record transaction
-      await supabase.from('transactions').insert({
+      // Record transaction in wallet_transactions
+      await supabase.from('wallet_transactions').insert({
         user_id: user.id,
-        amount: parsedAmount,
-        type: 'gig_boost',
+        amount: -parsedAmount,
+        kind: 'gig_boost',
         status: 'completed',
-        description: `Boost for gig: ${gigTitle}`,
-        balance_type: 'nc'
+        reference: `Boost for gig: ${gigTitle.substring(0, 50)}`
       });
 
       toast({

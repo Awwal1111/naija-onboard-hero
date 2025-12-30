@@ -477,11 +477,15 @@ export interface PersonalizedGig {
   photo_urls?: string[]
   status: string
   created_at: string
+  boost_amount: number
   seller_id: string
   seller_name?: string
   seller_picture?: string
   seller_rating: number
   seller_is_expert: boolean
+  seller_state?: string
+  average_rating: number
+  review_count: number
   relevance_score: number
 }
 

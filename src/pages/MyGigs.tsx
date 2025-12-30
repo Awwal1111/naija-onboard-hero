@@ -285,11 +285,21 @@ const GigManagementCard: React.FC<GigManagementCardProps> = ({
               <Badge variant="outline" className="text-[10px] h-5">
                 {gig.category}
               </Badge>
-              {(gig.boost_amount || 0) > 0 && (
+              {(gig.boost_amount || 0) > 0 ? (
                 <Badge className="text-[10px] h-5 bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-0">
                   <Zap className="h-3 w-3 mr-0.5" />
-                  ₦{gig.boost_amount.toLocaleString()}
+                  🔥 ₦{gig.boost_amount.toLocaleString()}
                 </Badge>
+              ) : !isPaused && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-5 text-[10px] px-2 text-yellow-600 border-yellow-400 hover:bg-yellow-50"
+                  onClick={(e) => { e.stopPropagation(); onBoost(); }}
+                >
+                  <Zap className="h-3 w-3 mr-0.5" />
+                  Boost to get clients
+                </Button>
               )}
             </div>
 
