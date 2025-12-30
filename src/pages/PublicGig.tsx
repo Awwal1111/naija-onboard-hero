@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Star, Clock, CheckCircle2, Share2, MessageCircle, ExternalLink, Zap, TrendingUp, Shield } from 'lucide-react';
+import { ArrowLeft, Star, Clock, CheckCircle2, Share2, MessageCircle, ExternalLink, Zap, TrendingUp, Shield, MapPin, Package, Users, HelpCircle, Quote } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { BookmarkButton } from '@/components/BookmarkButton';
 import { toast } from 'sonner';
@@ -19,6 +19,8 @@ import { usePortfolio } from '@/hooks/usePortfolio';
 import { calculateTrustScore, TrustScoreData } from '@/hooks/useTrustScore';
 import { TrustScoreBadge, TrustScoreCard } from '@/components/TrustScoreDisplay';
 import { GigBoostDialog } from '@/components/GigBoostDialog';
+import { GigTestimonialsSection } from '@/components/GigTestimonialsSection';
+import { GigFAQSection } from '@/components/GigFAQSection';
 
 export default function PublicGig() {
   const { gigId } = useParams<{ gigId: string }>();
@@ -28,38 +30,50 @@ export default function PublicGig() {
   const [reviewText, setReviewText] = useState('');
   const [reviewRating, setReviewRating] = useState(5);
   const [submittingReview, setSubmittingReview] = useState(false);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
 
+  // Fetch gig without requiring profile join (separate query for profile)
   const { data: gig, isLoading, refetch: refetchGig } = useQuery({
     queryKey: ['public-gig-full', gigId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // First get the gig
+      const { data: gigData, error: gigError } = await supabase
         .from('jobs_services')
-        .select(`
-          *,
-          profiles:user_id(
-            user_id,
-            full_name, 
-            profile_picture_url, 
-            is_expert, 
-            average_rating,
-            bio,
-            profession,
-            state_name,
-            lga_name,
-            email_verified,
-            phone_verified,
-            face_verified,
-            created_at,
-            connections_count,
-            verification_status
-          )
-        `)
+        .select('*')
         .eq('id', gigId)
         .eq('status', 'active')
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
-      return data;
+      if (gigError) throw gigError;
+      if (!gigData) return null;
+
+      // Then get the profile separately
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select(`
+          user_id,
+          full_name, 
+          profile_picture_url, 
+          is_expert, 
+          average_rating,
+          bio,
+          profession,
+          state_name,
+          lga_name,
+          email_verified,
+          phone_verified,
+          face_verified,
+          created_at,
+          connections_count,
+          verification_status
+        `)
+        .eq('user_id', gigData.user_id)
+        .maybeSingle();
+
+      return {
+        ...gigData,
+        profiles: profileData
+      };
     },
   });
 
@@ -146,8 +160,9 @@ export default function PublicGig() {
           <meta name="robots" content="noindex" />
         </Helmet>
         <Card className="p-8 text-center max-w-sm">
+          <Package className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
           <h1 className="text-xl font-bold mb-2">Gig Not Found</h1>
-          <p className="text-muted-foreground text-sm mb-4">This service is no longer available.</p>
+          <p className="text-muted-foreground text-sm mb-4">This service is no longer available or has been paused.</p>
           <Button onClick={() => navigate('/jobs')}>Browse Services</Button>
         </Card>
       </div>
@@ -156,6 +171,9 @@ export default function PublicGig() {
 
   const rating = stats.average || seller?.average_rating || 5.0;
   const isVerifiedExpert = seller?.verification_status === 'verified';
+  const images = gig.photo_urls?.filter((url: string) => url) || [];
+  const deliveryDays = gig.delivery_days || 7;
+  const responseTime = gig.response_time || 'Within 1 hour';
 
   const structuredData = {
     "@context": "https://schema.org",
@@ -167,7 +185,12 @@ export default function PublicGig() {
       "@type": "Offer",
       "price": gig.price,
       "priceCurrency": "NGN"
-    }
+    },
+    "aggregateRating": stats.count > 0 ? {
+      "@type": "AggregateRating",
+      "ratingValue": rating,
+      "reviewCount": stats.count
+    } : undefined
   };
 
   return (
@@ -177,12 +200,12 @@ export default function PublicGig() {
         <meta name="description" content={gig.description || `${gig.title} service on NaijaLancers`} />
         <meta property="og:title" content={gig.title} />
         <meta property="og:description" content={gig.description || gig.title} />
-        {gig.photo_urls?.[0] && <meta property="og:image" content={gig.photo_urls[0]} />}
+        {images[0] && <meta property="og:image" content={images[0]} />}
         <meta property="og:type" content="product" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={gig.title} />
         <meta name="twitter:description" content={gig.description || gig.title} />
-        {gig.photo_urls?.[0] && <meta name="twitter:image" content={gig.photo_urls[0]} />}
+        {images[0] && <meta name="twitter:image" content={images[0]} />}
         <script type="application/ld+json">{JSON.stringify(structuredData)}</script>
       </Helmet>
 
@@ -209,19 +232,37 @@ export default function PublicGig() {
         </div>
 
         <div className="max-w-4xl mx-auto">
-          {/* Gallery */}
-          {gig.photo_urls?.length > 0 ? (
-            <div className="aspect-video bg-muted relative">
-              <img
-                src={gig.photo_urls[0]}
-                alt={gig.title}
-                className="w-full h-full object-cover"
-              />
-              {(gig.boost_amount || 0) > 0 && (
-                <Badge className="absolute top-3 right-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-0">
-                  <TrendingUp className="h-3 w-3 mr-1" />
-                  BOOSTED
-                </Badge>
+          {/* Image Gallery */}
+          {images.length > 0 ? (
+            <div className="relative">
+              <div className="aspect-video bg-muted">
+                <img
+                  src={images[activeImageIndex]}
+                  alt={gig.title}
+                  className="w-full h-full object-cover"
+                />
+                {(gig.boost_amount || 0) > 0 && (
+                  <Badge className="absolute top-3 right-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-0">
+                    <TrendingUp className="h-3 w-3 mr-1" />
+                    BOOSTED
+                  </Badge>
+                )}
+              </div>
+              {/* Thumbnails */}
+              {images.length > 1 && (
+                <div className="flex gap-2 p-2 overflow-x-auto">
+                  {images.map((url: string, idx: number) => (
+                    <button
+                      key={idx}
+                      onClick={() => setActiveImageIndex(idx)}
+                      className={`w-16 h-12 rounded-md overflow-hidden flex-shrink-0 border-2 transition-colors ${
+                        idx === activeImageIndex ? 'border-primary' : 'border-transparent'
+                      }`}
+                    >
+                      <img src={url} alt={`${gig.title} ${idx + 1}`} className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
               )}
             </div>
           ) : (
@@ -270,7 +311,10 @@ export default function PublicGig() {
                       <TrustScoreBadge score={trustScore.score} level={trustScore.level} size="sm" />
                     )}
                     {seller?.state_name && (
-                      <span className="text-xs text-muted-foreground">{seller.state_name}</span>
+                      <span className="text-xs text-muted-foreground flex items-center gap-0.5">
+                        <MapPin className="h-3 w-3" />
+                        {seller.state_name}
+                      </span>
                     )}
                   </div>
                 </div>
@@ -294,27 +338,67 @@ export default function PublicGig() {
               </div>
             </div>
 
-            {/* Tabs for Description, Portfolio, Reviews, Trust Score */}
+            {/* Quick Stats */}
+            <div className="grid grid-cols-4 gap-2">
+              <Card className="p-3 text-center">
+                <Clock className="h-4 w-4 mx-auto text-muted-foreground mb-1" />
+                <div className="text-[10px] text-muted-foreground">Delivery</div>
+                <div className="font-semibold text-xs">{deliveryDays} days</div>
+              </Card>
+              <Card className="p-3 text-center">
+                <Star className="h-4 w-4 mx-auto text-yellow-400 fill-yellow-400 mb-1" />
+                <div className="text-[10px] text-muted-foreground">Rating</div>
+                <div className="font-semibold text-xs">{rating.toFixed(1)}</div>
+              </Card>
+              <Card className="p-3 text-center">
+                <MessageCircle className="h-4 w-4 mx-auto text-muted-foreground mb-1" />
+                <div className="text-[10px] text-muted-foreground">Response</div>
+                <div className="font-semibold text-xs truncate">{responseTime.replace('Within ', '')}</div>
+              </Card>
+              <Card className="p-3 text-center">
+                <Users className="h-4 w-4 mx-auto text-muted-foreground mb-1" />
+                <div className="text-[10px] text-muted-foreground">Queue</div>
+                <div className="font-semibold text-xs">{gig.order_queue || 0} orders</div>
+              </Card>
+            </div>
+
+            {/* Tabs */}
             <Tabs defaultValue="description" className="w-full">
-              <TabsList className="grid grid-cols-4 w-full">
-                <TabsTrigger value="description" className="text-xs">Description</TabsTrigger>
-                <TabsTrigger value="portfolio" className="text-xs">Portfolio</TabsTrigger>
-                <TabsTrigger value="reviews" className="text-xs">Reviews ({stats.count})</TabsTrigger>
-                <TabsTrigger value="trust" className="text-xs">Trust</TabsTrigger>
+              <TabsList className="grid grid-cols-5 w-full h-auto">
+                <TabsTrigger value="description" className="text-[10px] px-1 py-2">About</TabsTrigger>
+                <TabsTrigger value="portfolio" className="text-[10px] px-1 py-2">Portfolio</TabsTrigger>
+                <TabsTrigger value="reviews" className="text-[10px] px-1 py-2">Reviews</TabsTrigger>
+                <TabsTrigger value="testimonials" className="text-[10px] px-1 py-2">
+                  <Quote className="h-3 w-3 mr-0.5" />
+                  Clients
+                </TabsTrigger>
+                <TabsTrigger value="faq" className="text-[10px] px-1 py-2">
+                  <HelpCircle className="h-3 w-3 mr-0.5" />
+                  FAQ
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="description" className="mt-4">
                 <Card className="p-4">
                   <h2 className="font-semibold mb-3">About This Service</h2>
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                    {gig.description}
-                  </p>
+                  <div className="prose prose-sm max-w-none">
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                      {gig.description}
+                    </p>
+                  </div>
                   
                   {/* Seller Bio */}
                   {seller?.bio && (
                     <div className="mt-4 pt-4 border-t">
                       <h3 className="font-medium mb-2 text-sm">About the Seller</h3>
                       <p className="text-sm text-muted-foreground">{seller.bio}</p>
+                    </div>
+                  )}
+
+                  {/* Trust Score */}
+                  {trustScore && (
+                    <div className="mt-4 pt-4 border-t">
+                      <TrustScoreCard trustScore={trustScore} showBreakdown={true} />
                     </div>
                   )}
                 </Card>
@@ -499,35 +583,14 @@ export default function PublicGig() {
                 </div>
               </TabsContent>
 
-              <TabsContent value="trust" className="mt-4">
-                {trustScore ? (
-                  <TrustScoreCard trustScore={trustScore} showBreakdown={true} />
-                ) : (
-                  <Card className="p-8 text-center text-muted-foreground">
-                    <p>Trust score not available</p>
-                  </Card>
-                )}
+              <TabsContent value="testimonials" className="mt-4">
+                <GigTestimonialsSection gigId={gig.id} gigOwnerId={gig.user_id} />
+              </TabsContent>
+
+              <TabsContent value="faq" className="mt-4">
+                <GigFAQSection gigId={gig.id} isOwner={isOwner} />
               </TabsContent>
             </Tabs>
-
-            {/* Quick Stats */}
-            <div className="grid grid-cols-3 gap-3">
-              <Card className="p-3 text-center">
-                <Clock className="h-5 w-5 mx-auto text-muted-foreground mb-1" />
-                <div className="text-xs text-muted-foreground">Delivery</div>
-                <div className="font-semibold text-sm">Fast</div>
-              </Card>
-              <Card className="p-3 text-center">
-                <Star className="h-5 w-5 mx-auto text-yellow-400 fill-yellow-400 mb-1" />
-                <div className="text-xs text-muted-foreground">Rating</div>
-                <div className="font-semibold text-sm">{rating.toFixed(1)}</div>
-              </Card>
-              <Card className="p-3 text-center">
-                <CheckCircle2 className="h-5 w-5 mx-auto text-primary mb-1" />
-                <div className="text-xs text-muted-foreground">Status</div>
-                <div className="font-semibold text-sm">Active</div>
-              </Card>
-            </div>
           </div>
         </div>
 
@@ -548,6 +611,17 @@ export default function PublicGig() {
             </Button>
           </div>
         </div>
+
+        {/* Floating Chat Button */}
+        {!isOwner && user && (
+          <Button
+            size="icon"
+            className="fixed bottom-24 right-4 h-14 w-14 rounded-full shadow-lg z-20"
+            onClick={handleContactSeller}
+          >
+            <MessageCircle className="h-6 w-6" />
+          </Button>
+        )}
       </div>
 
       {/* Boost Dialog */}
