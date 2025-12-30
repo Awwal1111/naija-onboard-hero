@@ -6,10 +6,47 @@ const corsHeaders = {
 };
 
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+const PERPLEXITY_API_KEY = Deno.env.get("PERPLEXITY_API_KEY");
+const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
+const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
 
-// Web search using DuckDuckGo
+// Web search using Perplexity (with DuckDuckGo fallback)
 async function webSearch(query: string): Promise<string> {
+  // Try Perplexity first if available
+  if (PERPLEXITY_API_KEY) {
+    try {
+      console.log("Using Perplexity for search:", query);
+      const response = await fetch("https://api.perplexity.ai/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${PERPLEXITY_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "llama-3.1-sonar-small-128k-online",
+          messages: [
+            { role: "system", content: "Be precise and concise. Provide factual, up-to-date information with sources when available." },
+            { role: "user", content: query }
+          ],
+          max_tokens: 1024
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const content = data.choices?.[0]?.message?.content;
+        if (content) {
+          return `[Perplexity Search Result]\n${content}`;
+        }
+      }
+    } catch (error) {
+      console.error("Perplexity search error:", error);
+    }
+  }
+
+  // Fallback to DuckDuckGo
   try {
+    console.log("Using DuckDuckGo fallback for search:", query);
     const response = await fetch(
       `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&skip_disambig=1`
     );
@@ -29,12 +66,103 @@ async function webSearch(query: string): Promise<string> {
     }
     return results || 'No search results found.';
   } catch (error) {
-    console.error('Search error:', error);
+    console.error('DuckDuckGo search error:', error);
     return 'Search failed. Please try again.';
   }
 }
 
-// Detect if message needs web search
+// Scrape website using Firecrawl
+async function scrapeWebsite(url: string): Promise<string> {
+  if (!FIRECRAWL_API_KEY) {
+    return "Website scraping is not available. Please connect Firecrawl.";
+  }
+
+  try {
+    console.log("Scraping website with Firecrawl:", url);
+    
+    let formattedUrl = url.trim();
+    if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
+      formattedUrl = `https://${formattedUrl}`;
+    }
+
+    const response = await fetch('https://api.firecrawl.dev/v1/scrape', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${FIRECRAWL_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        url: formattedUrl,
+        formats: ['markdown'],
+        onlyMainContent: true,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Firecrawl error:", errorText);
+      return `Failed to scrape website: ${response.status}`;
+    }
+
+    const data = await response.json();
+    const markdown = data.data?.markdown || data.markdown;
+    
+    if (markdown) {
+      // Truncate if too long
+      const truncated = markdown.length > 4000 ? markdown.substring(0, 4000) + '...' : markdown;
+      return `[Scraped from ${formattedUrl}]\n\n${truncated}`;
+    }
+    
+    return "Could not extract content from the website.";
+  } catch (error) {
+    console.error("Firecrawl scrape error:", error);
+    return `Scraping failed: ${error.message}`;
+  }
+}
+
+// Generate speech using ElevenLabs
+async function generateSpeech(text: string): Promise<string | null> {
+  if (!ELEVENLABS_API_KEY) {
+    console.log("ElevenLabs API key not configured");
+    return null;
+  }
+
+  try {
+    console.log("Generating speech with ElevenLabs");
+    const response = await fetch(
+      "https://api.elevenlabs.io/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM",
+      {
+        method: "POST",
+        headers: {
+          "xi-api-key": ELEVENLABS_API_KEY,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          text: text.substring(0, 2500), // ElevenLabs limit
+          model_id: "eleven_monolingual_v1",
+          voice_settings: {
+            stability: 0.5,
+            similarity_boost: 0.75,
+          },
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      console.error("ElevenLabs error:", await response.text());
+      return null;
+    }
+
+    const audioBuffer = await response.arrayBuffer();
+    const base64Audio = btoa(String.fromCharCode(...new Uint8Array(audioBuffer)));
+    return `data:audio/mpeg;base64,${base64Audio}`;
+  } catch (error) {
+    console.error("ElevenLabs TTS error:", error);
+    return null;
+  }
+}
+
+// Detect intents
 function detectSearchIntent(text: string): boolean {
   const searchIndicators = [
     'search', 'find', 'look up', 'google', 'what is', 'who is', 'when did',
@@ -45,38 +173,68 @@ function detectSearchIntent(text: string): boolean {
   return searchIndicators.some(indicator => lowerText.includes(indicator));
 }
 
-const getSystemPrompt = (context: any, searchResults?: string) => {
+function detectScrapeIntent(text: string): { shouldScrape: boolean; url: string | null } {
+  const lowerText = text.toLowerCase();
+  
+  if (lowerText.includes('scrape:') || lowerText.includes('scrape ')) {
+    const urlMatch = text.match(/(?:scrape:?\s*)?(https?:\/\/[^\s]+|www\.[^\s]+|[a-zA-Z0-9-]+\.[a-zA-Z]{2,}[^\s]*)/i);
+    if (urlMatch) {
+      return { shouldScrape: true, url: urlMatch[1] };
+    }
+  }
+  
+  if (lowerText.includes('summarize this website') || lowerText.includes('what does this website say') || lowerText.includes('read this page')) {
+    const urlMatch = text.match(/(https?:\/\/[^\s]+|www\.[^\s]+)/i);
+    if (urlMatch) {
+      return { shouldScrape: true, url: urlMatch[1] };
+    }
+  }
+  
+  return { shouldScrape: false, url: null };
+}
+
+function detectSpeechIntent(text: string): boolean {
+  const lowerText = text.toLowerCase();
+  return lowerText.includes('read this') || lowerText.includes('speak this') || 
+         lowerText.includes('say this') || lowerText.includes('read aloud') ||
+         lowerText.includes('text to speech') || lowerText.includes('tts:');
+}
+
+const getSystemPrompt = (context: any, searchResults?: string, scrapeResults?: string) => {
   const { user, settings } = context;
   
   const expertisePrompts: Record<string, string> = {
-    'designer': 'You specialize in visual design, UI/UX, branding, logos, and creative assets. You excel at creating mockups, design briefs, and visual concepts.',
-    'writer': 'You specialize in content creation, copywriting, blog posts, marketing emails, SEO content, and professional documentation.',
-    'developer': 'You specialize in coding, web development, app prototypes, scripts, and technical solutions. You can write HTML, CSS, JavaScript, Python, and more.',
-    'marketer': 'You specialize in marketing strategy, social media content, ad copy, SEO, analytics, and growth strategies.',
-    'all-rounder': 'You are a versatile assistant skilled in design, writing, development, and marketing. You adapt to whatever the freelancer needs.'
+    'designer': 'You specialize in visual design, UI/UX, branding, logos, and creative assets.',
+    'writer': 'You specialize in content creation, copywriting, blog posts, marketing emails, SEO content.',
+    'developer': 'You specialize in coding, web development, app prototypes, scripts, and technical solutions.',
+    'marketer': 'You specialize in marketing strategy, social media content, ad copy, SEO, analytics.',
+    'all-rounder': 'You are a versatile assistant skilled in design, writing, development, and marketing.'
   };
 
   const toneInstructions: Record<string, string> = {
-    'casual': 'Be friendly, relaxed, and conversational. Use simple language and occasional humor.',
-    'professional': 'Be helpful, clear, and business-appropriate. Balance warmth with professionalism.',
-    'formal': 'Be precise, structured, and formal. Use proper grammar and professional terminology.',
-    'creative': 'Be imaginative, inspiring, and unconventional. Think outside the box and encourage creativity.'
+    'casual': 'Be friendly, relaxed, and conversational.',
+    'professional': 'Be helpful, clear, and business-appropriate.',
+    'formal': 'Be precise, structured, and formal.',
+    'creative': 'Be imaginative, inspiring, and unconventional.'
   };
 
   const clientModeAddition = settings?.clientMode 
     ? `\n\nCLIENT MODE ACTIVE: All responses must be client-safe and professional.`
     : '';
 
-  const searchContext = searchResults 
-    ? `\n\nWEB SEARCH RESULTS (use this information to answer):\n${searchResults}`
-    : '';
+  let additionalContext = '';
+  if (searchResults) {
+    additionalContext += `\n\nWEB SEARCH RESULTS:\n${searchResults}`;
+  }
+  if (scrapeResults) {
+    additionalContext += `\n\nSCRAPED WEBSITE CONTENT:\n${scrapeResults}`;
+  }
 
-  return `You are NaijaLancers Copilot - a powerful AI assistant for Nigerian freelancers with advanced capabilities.
+  return `You are NaijaLancers Copilot - a powerful AI assistant for Nigerian freelancers.
 
 ABOUT THE USER:
 - Name: ${user?.name || 'User'}
 - Profession: ${user?.profession || 'Freelancer'}
-- Location: ${user?.location || 'Nigeria'}
 
 YOUR EXPERTISE:
 ${expertisePrompts[settings?.expertise] || expertisePrompts['all-rounder']}
@@ -85,26 +243,22 @@ COMMUNICATION STYLE:
 ${toneInstructions[settings?.tone] || toneInstructions['professional']}
 ${clientModeAddition}
 
-ADVANCED CAPABILITIES:
-1. **Web Search**: You can search the internet for current information, news, prices, trends
-2. **Image Generation**: Create logos, banners, mockups, social media graphics - just ask!
-3. **Image Analysis**: Analyze uploaded images and provide feedback, descriptions, suggestions
-4. **Content Generation**: Proposals, contracts, emails, blog posts, marketing copy
-5. **Code Writing**: HTML, CSS, JavaScript, Python, and more
-6. **Strategy**: Pricing advice, competitive analysis, business planning
+CAPABILITIES:
+1. Web Search (Perplexity) - Search for current information
+2. Image Generation - Create logos, banners, graphics
+3. Image Analysis - Analyze uploaded images
+4. Website Scraping (Firecrawl) - Extract content from websites
+5. Text-to-Speech (ElevenLabs) - Convert text to audio
+6. Content Generation - Proposals, emails, code, documents
 
-SPECIAL COMMANDS (users can type these):
-- "search: [query]" - Search the web for information
-- "generate image: [description]" - Create an image
-- "analyze this image" - Analyze an uploaded image
+COMMANDS:
+- "search: [query]" - Web search
+- "generate image: [description]" - Create image
+- "scrape: [url]" - Scrape website content
+- "tts: [text]" or "read this" - Text to speech
+${additionalContext}
 
-FREELANCING CONTEXT:
-- Understand Nigerian business culture and market dynamics
-- Familiar with pricing in Naira and USD
-- Know common freelancing challenges in Nigeria
-${searchContext}
-
-Be helpful, proactive, and always provide actionable advice. When generating content, make it ready to use.`;
+Be helpful and provide actionable advice for Nigerian freelancers.`;
 };
 
 serve(async (req) => {
@@ -117,6 +271,26 @@ serve(async (req) => {
 
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
+    }
+
+    // Handle text-to-speech action
+    if (action === 'text_to_speech') {
+      const audioUrl = await generateSpeech(prompt);
+      if (audioUrl) {
+        return new Response(JSON.stringify({ 
+          audioUrl,
+          success: true
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      return new Response(JSON.stringify({ 
+        error: "Text-to-speech failed or not configured",
+        success: false
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Handle web search action
@@ -132,7 +306,7 @@ serve(async (req) => {
         body: JSON.stringify({
           model: "google/gemini-2.5-flash",
           messages: [
-            { role: "system", content: `You are a helpful assistant. Use these search results to answer the user's question:\n\n${searchResults}` },
+            { role: "system", content: `Summarize and present these search results clearly:\n\n${searchResults}` },
             { role: "user", content: prompt }
           ]
         }),
@@ -145,7 +319,40 @@ serve(async (req) => {
       const data = await response.json();
       return new Response(JSON.stringify({ 
         content: data.choices?.[0]?.message?.content || "No results found.",
-        isSearchResult: true
+        isSearchResult: true,
+        searchProvider: PERPLEXITY_API_KEY ? 'Perplexity' : 'DuckDuckGo'
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Handle website scraping action
+    if (action === 'scrape_website') {
+      const scrapeResults = await scrapeWebsite(prompt);
+      
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            { role: "system", content: `Summarize this scraped website content clearly and concisely:\n\n${scrapeResults}` },
+            { role: "user", content: `Summarize the key points from this website: ${prompt}` }
+          ]
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Scrape summary generation failed");
+      }
+
+      const data = await response.json();
+      return new Response(JSON.stringify({ 
+        content: data.choices?.[0]?.message?.content || "Could not summarize the website.",
+        isScrapeResult: true
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -171,7 +378,7 @@ serve(async (req) => {
       if (!imageResponse.ok) {
         const errorText = await imageResponse.text();
         console.error("Image generation error:", errorText);
-        return new Response(JSON.stringify({ error: "Image generation failed", details: errorText }), {
+        return new Response(JSON.stringify({ error: "Image generation failed" }), {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -204,7 +411,7 @@ serve(async (req) => {
             { 
               role: "user", 
               content: [
-                { type: "text", text: prompt || "Analyze this image in detail. Describe what you see, provide feedback, and suggest improvements if applicable." },
+                { type: "text", text: prompt || "Analyze this image in detail." },
                 { type: "image_url", image_url: { url: attachments?.[0]?.url } }
               ]
             }
@@ -225,53 +432,45 @@ serve(async (req) => {
       });
     }
 
-    // Handle document/code generation (non-streaming)
-    if (action === 'generate_document' || action === 'generate_code') {
-      const genResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: [
-            { 
-              role: "system", 
-              content: action === 'generate_code' 
-                ? "You are an expert programmer. Generate clean, well-commented, production-ready code."
-                : "You are a professional document writer. Generate polished, ready-to-use professional documents."
-            },
-            { role: "user", content: prompt }
-          ]
-        }),
-      });
-
-      if (!genResponse.ok) {
-        throw new Error("Content generation failed");
-      }
-
-      const genData = await genResponse.json();
-      return new Response(JSON.stringify({ 
-        content: genData.choices?.[0]?.message?.content || "",
-        type: action.replace('generate_', '')
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     // Regular streaming chat with auto-detection
     let searchResults = '';
+    let scrapeResults = '';
     let shouldSearch = false;
+    let shouldScrape = false;
     
-    // Check for explicit search command or auto-detect search intent
+    // Check for explicit commands or auto-detect intents
     if (message?.toLowerCase().startsWith('search:')) {
       const searchQuery = message.substring(7).trim();
       searchResults = await webSearch(searchQuery);
       shouldSearch = true;
+    } else if (message?.toLowerCase().startsWith('scrape:')) {
+      const url = message.substring(7).trim();
+      scrapeResults = await scrapeWebsite(url);
+      shouldScrape = true;
     } else if (detectSearchIntent(message)) {
       searchResults = await webSearch(message);
       shouldSearch = true;
+    } else {
+      const scrapeIntent = detectScrapeIntent(message);
+      if (scrapeIntent.shouldScrape && scrapeIntent.url) {
+        scrapeResults = await scrapeWebsite(scrapeIntent.url);
+        shouldScrape = true;
+      }
+    }
+
+    // Check for TTS request
+    if (detectSpeechIntent(message)) {
+      const textToSpeak = message.replace(/tts:|read this|speak this|say this|read aloud|text to speech/gi, '').trim();
+      const audioUrl = await generateSpeech(textToSpeak || message);
+      if (audioUrl) {
+        return new Response(JSON.stringify({ 
+          content: "🔊 Audio generated! Click play to listen.",
+          audioUrl,
+          type: 'tts'
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     // Check for image generation request
@@ -311,20 +510,18 @@ serve(async (req) => {
       }
     }
 
-    const systemPrompt = getSystemPrompt(context || {
-      user: { name: 'User', profession: 'Freelancer' },
-      settings: { expertise: 'all-rounder', tone: 'professional', clientMode: false }
-    }, shouldSearch ? searchResults : undefined);
+    const systemPrompt = getSystemPrompt(
+      context || { user: { name: 'User', profession: 'Freelancer' }, settings: { expertise: 'all-rounder', tone: 'professional' } },
+      shouldSearch ? searchResults : undefined,
+      shouldScrape ? scrapeResults : undefined
+    );
 
-    // Build messages array
     const messages = [{ role: "system", content: systemPrompt }];
 
-    // Add conversation history if provided
     if (context?.conversationHistory?.length) {
       messages.push(...context.conversationHistory.slice(-10));
     }
 
-    // Handle image attachments for vision
     if (attachments?.length) {
       const imageAttachments = attachments.filter((a: any) => a.type?.startsWith('image'));
       
