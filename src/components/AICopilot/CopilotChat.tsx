@@ -437,7 +437,7 @@ const CopilotChat = () => {
           </div>
         ))}
 
-        {isStreaming && messages[messages.length - 1]?.content === '' && (
+        {(isStreaming || isLoading) && (messages.length === 0 || !['loading', 'streaming'].includes(messages[messages.length - 1]?.id)) && (
           <div className="flex gap-3 justify-start">
             <Avatar className="h-8 w-8 bg-gradient-to-br from-primary to-purple-500">
               <AvatarFallback className="bg-transparent">
@@ -450,7 +450,7 @@ const CopilotChat = () => {
                   <Sparkles className="h-4 w-4 text-primary animate-pulse" />
                 </div>
                 <span className="text-sm font-medium bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent">
-                  Thinking deeply...
+                  {isLoading ? 'Processing...' : 'Thinking deeply...'}
                 </span>
               </div>
               <div className="flex gap-1 mt-2">
@@ -509,17 +509,17 @@ const CopilotChat = () => {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Ask anything, search the web, scrape websites, or generate images..."
-            disabled={isStreaming}
+            disabled={isStreaming || isLoading}
             className="flex-1 min-h-[44px] max-h-[120px] resize-none"
             rows={1}
           />
           <Button
             onClick={handleSend}
-            disabled={(!input.trim() && !uploadedImage) || isStreaming}
+            disabled={(!input.trim() && !uploadedImage) || isStreaming || isLoading}
             size="icon"
             className="shrink-0"
           >
-            {isStreaming ? (
+            {(isStreaming || isLoading) ? (
               <Loader2 className="h-5 w-5 animate-spin" />
             ) : (
               <Send className="h-5 w-5" />
