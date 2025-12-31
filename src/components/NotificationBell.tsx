@@ -242,11 +242,16 @@ const NotificationBell = () => {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base">Notifications</CardTitle>
-              {unreadCount > 0 && (
-                <Button variant="ghost" size="sm" onClick={markAllAsRead}>
-                  Mark all read
+              <div className="flex items-center gap-2">
+                {unreadCount > 0 && (
+                  <Button variant="ghost" size="sm" onClick={markAllAsRead}>
+                    Mark all read
+                  </Button>
+                )}
+                <Button variant="outline" size="sm" onClick={() => { navigate('/notifications'); setIsOpen(false) }}>
+                  View All
                 </Button>
-              )}
+              </div>
             </div>
           </CardHeader>
           <CardContent className="p-0 max-h-96 overflow-y-auto">
