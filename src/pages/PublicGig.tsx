@@ -9,7 +9,9 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Star, Clock, CheckCircle2, Share2, MessageCircle, ExternalLink, Zap, TrendingUp, Shield, MapPin, Package, Users, HelpCircle, Quote } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { ArrowLeft, Star, Clock, CheckCircle2, Share2, MessageCircle, ExternalLink, Zap, TrendingUp, Shield, MapPin, Package, Users, HelpCircle, Quote, ShoppingCart } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { BookmarkButton } from '@/components/BookmarkButton';
 import { toast } from 'sonner';
@@ -21,12 +23,17 @@ import { TrustScoreBadge, TrustScoreCard } from '@/components/TrustScoreDisplay'
 import { GigBoostDialog } from '@/components/GigBoostDialog';
 import { GigTestimonialsSection } from '@/components/GigTestimonialsSection';
 import { GigFAQSection } from '@/components/GigFAQSection';
+import { useGigOrders } from '@/hooks/useGigOrders';
 
 export default function PublicGig() {
   const { gigId } = useParams<{ gigId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { createOrder } = useGigOrders();
   const [showBoostDialog, setShowBoostDialog] = useState(false);
+  const [showOrderDialog, setShowOrderDialog] = useState(false);
+  const [orderNotes, setOrderNotes] = useState('');
+  const [placingOrder, setPlacingOrder] = useState(false);
   const [reviewText, setReviewText] = useState('');
   const [reviewRating, setReviewRating] = useState(5);
   const [submittingReview, setSubmittingReview] = useState(false);
@@ -114,6 +121,42 @@ export default function PublicGig() {
       return;
     }
     navigate(`/chat/${gig?.user_id}`);
+  };
+
+  const handlePlaceOrder = async () => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    if (!gig || user.id === gig.user_id) {
+      toast.error("You can't order your own service");
+      return;
+    }
+    
+    setPlacingOrder(true);
+    try {
+      const result = await createOrder(
+        gig.id,
+        gig.user_id,
+        gig.title,
+        orderNotes || gig.description || '',
+        gig.price,
+        gig.delivery_days || 7
+      );
+
+      if (result && 'order' in result && result.order) {
+        setShowOrderDialog(false);
+        setOrderNotes('');
+        toast.success('Order placed successfully!');
+        navigate(`/orders/${result.order.id}`);
+      } else if (result && 'error' in result) {
+        toast.error(result.error || 'Failed to place order');
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to place order');
+    } finally {
+      setPlacingOrder(false);
+    }
   };
 
   const handleSubmitReview = async () => {
@@ -601,13 +644,30 @@ export default function PublicGig() {
               <div className="text-xs text-muted-foreground">Starting at</div>
               <div className="text-xl font-bold text-primary">₦{gig.price?.toLocaleString()}</div>
             </div>
+            {!isOwner && (
+              <Button 
+                size="lg" 
+                className="gap-2 px-6"
+                onClick={() => {
+                  if (!user) {
+                    navigate('/login');
+                    return;
+                  }
+                  setShowOrderDialog(true);
+                }}
+              >
+                <ShoppingCart className="h-4 w-4" />
+                Order Now
+              </Button>
+            )}
             <Button 
               size="lg" 
-              className="gap-2 px-8"
+              variant={isOwner ? "default" : "outline"}
+              className="gap-2 px-6"
               onClick={handleContactSeller}
             >
               <MessageCircle className="h-4 w-4" />
-              Contact Seller
+              {isOwner ? 'View Messages' : 'Contact'}
             </Button>
           </div>
         </div>
@@ -623,6 +683,50 @@ export default function PublicGig() {
           </Button>
         )}
       </div>
+
+      {/* Order Dialog */}
+      <Dialog open={showOrderDialog} onOpenChange={setShowOrderDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Place Order</DialogTitle>
+            <DialogDescription>
+              You're about to order: {gig.title}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+              <span className="text-sm text-muted-foreground">Service Price</span>
+              <span className="font-bold text-primary">₦{gig.price?.toLocaleString()}</span>
+            </div>
+            
+            <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+              <span className="text-sm text-muted-foreground">Delivery Time</span>
+              <span className="font-medium">{gig.delivery_days || 7} days</span>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="order-notes">Requirements / Notes (Optional)</Label>
+              <Textarea
+                id="order-notes"
+                placeholder="Describe what you need from the seller..."
+                value={orderNotes}
+                onChange={(e) => setOrderNotes(e.target.value)}
+                rows={4}
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowOrderDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handlePlaceOrder} disabled={placingOrder}>
+              {placingOrder ? 'Placing Order...' : `Pay ₦${gig.price?.toLocaleString()}`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Boost Dialog */}
       {isOwner && (
