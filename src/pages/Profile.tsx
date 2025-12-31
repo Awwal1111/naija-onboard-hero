@@ -39,6 +39,8 @@ import { TrustScoreCard } from '@/components/TrustScoreDisplay'
 import { calculateTrustScore } from '@/hooks/useTrustScore'
 import { PremiumSubscriptionDialog } from '@/components/PremiumSubscriptionDialog'
 import { PremiumContactButtons } from '@/components/PremiumContactButtons'
+import { ProfileVideoIntro } from '@/components/premium/ProfileVideoIntro'
+import { PortfolioVideos } from '@/components/premium/PortfolioVideos'
 // ExpertVerificationSection moved to Experts page
 
 const Profile = () => {
@@ -672,6 +674,28 @@ const Profile = () => {
                   />
                 </CardContent>
               </Card>
+            )}
+
+            {/* Premium Video Features */}
+            {profile?.is_expert && (
+              <div className="space-y-6">
+                <ProfileVideoIntro
+                  userId={profile.user_id}
+                  videoUrl={(profile as any)?.intro_video_url}
+                  thumbnailUrl={(profile as any)?.intro_video_thumbnail}
+                  isOwner={isOwnProfile}
+                  isPremium={!!profile?.is_premium}
+                  onUpdate={refetchProfile}
+                />
+                
+                <PortfolioVideos
+                  userId={profile.user_id}
+                  videos={((profile as any)?.portfolio_videos as any[]) || []}
+                  isOwner={isOwnProfile}
+                  isPremium={!!profile?.is_premium}
+                  onUpdate={refetchProfile}
+                />
+              </div>
             )}
 
             {/* Professional Action Buttons - Only for own profile */}
