@@ -82,14 +82,43 @@ serve(async (req) => {
         console.log(`[QUIDAX_WEBHOOK] Crypto will arrive in user wallet shortly`);
         console.log(`[QUIDAX_WEBHOOK] celo-deposit-webhook will handle: NC credit + sweep`);
         
-        // Send notification that crypto is on the way
-        await supabase.from('notifications').insert({
-          user_id: transaction.user_id,
-          type: 'transaction',
-          title: 'Crypto Purchase Complete! 🎉',
-          message: `Your purchase of ${token_amount || transaction.token_amount} USDT is being processed. You'll be credited shortly when it arrives in your wallet.`,
-          metadata: { reference, status, fiat_amount: fiat_amount || transaction.fiat_amount }
-        });
+        // Send notification with email via edge function
+        try {
+          await fetch(`${SUPABASE_URL}/functions/v1/send-notification`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`
+            },
+            body: JSON.stringify({
+              userId: transaction.user_id,
+              type: 'deposit',
+              title: 'Crypto Purchase Complete! 🎉',
+              message: `Your purchase of ${token_amount || transaction.token_amount} USDT is being processed. You'll be credited shortly when it arrives in your wallet.`,
+              metadata: { 
+                reference, 
+                status, 
+                fiat_amount: fiat_amount || transaction.fiat_amount,
+                transactionType: 'Deposit',
+                amount: `₦${fiat_amount || transaction.fiat_amount}`
+              },
+              sendEmail: true,
+              emailTemplate: 'transaction',
+              attachPDF: true
+            })
+          });
+          console.log(`[QUIDAX_WEBHOOK] Email notification sent for on-ramp`);
+        } catch (emailErr) {
+          console.error(`[QUIDAX_WEBHOOK] Failed to send email notification:`, emailErr);
+          // Fallback to direct insert
+          await supabase.from('notifications').insert({
+            user_id: transaction.user_id,
+            type: 'transaction',
+            title: 'Crypto Purchase Complete! 🎉',
+            message: `Your purchase of ${token_amount || transaction.token_amount} USDT is being processed. You'll be credited shortly when it arrives in your wallet.`,
+            metadata: { reference, status, fiat_amount: fiat_amount || transaction.fiat_amount }
+          });
+        }
         
       } else if (status === 'failed' || status === 'cancelled') {
         console.log(`[QUIDAX_WEBHOOK] ❌ On-ramp failed: ${reference}`);
@@ -125,14 +154,43 @@ serve(async (req) => {
           console.error("[QUIDAX_WEBHOOK] Failed to update wallet transaction:", wtError);
         }
 
-        // Send notification
-        await supabase.from('notifications').insert({
-          user_id: transaction.user_id,
-          type: 'transaction',
-          title: 'Withdrawal Successful! 💰',
-          message: `₦${fiat_amount || transaction.fiat_amount} has been sent to your bank account. It should arrive shortly.`,
-          metadata: { reference, fiat_amount: fiat_amount || transaction.fiat_amount, token_amount: token_amount || transaction.token_amount }
-        });
+        // Send notification with email
+        try {
+          await fetch(`${SUPABASE_URL}/functions/v1/send-notification`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`
+            },
+            body: JSON.stringify({
+              userId: transaction.user_id,
+              type: 'withdrawal',
+              title: 'Withdrawal Successful! 💰',
+              message: `₦${fiat_amount || transaction.fiat_amount} has been sent to your bank account. It should arrive shortly.`,
+              metadata: { 
+                reference, 
+                fiat_amount: fiat_amount || transaction.fiat_amount, 
+                token_amount: token_amount || transaction.token_amount,
+                transactionType: 'Withdrawal',
+                amount: `₦${fiat_amount || transaction.fiat_amount}`,
+                status: 'Completed'
+              },
+              sendEmail: true,
+              emailTemplate: 'transaction',
+              attachPDF: true
+            })
+          });
+          console.log(`[QUIDAX_WEBHOOK] Email notification sent for withdrawal`);
+        } catch (emailErr) {
+          console.error(`[QUIDAX_WEBHOOK] Failed to send email notification:`, emailErr);
+          await supabase.from('notifications').insert({
+            user_id: transaction.user_id,
+            type: 'transaction',
+            title: 'Withdrawal Successful! 💰',
+            message: `₦${fiat_amount || transaction.fiat_amount} has been sent to your bank account. It should arrive shortly.`,
+            metadata: { reference, fiat_amount: fiat_amount || transaction.fiat_amount, token_amount: token_amount || transaction.token_amount }
+          });
+        }
         
       } else if (status === 'failed' || status === 'cancelled') {
         console.log(`[QUIDAX_WEBHOOK] ❌ Off-ramp failed: ${reference}`);

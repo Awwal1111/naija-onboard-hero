@@ -206,6 +206,38 @@ async function handleChargeSuccess(supabaseClient: any, data: any) {
           reference_id: data.reference,
           status: 'completed'
         });
+
+      // Send email notification for deposit
+      try {
+        const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+        const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+        
+        await fetch(`${SUPABASE_URL}/functions/v1/send-notification`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`
+          },
+          body: JSON.stringify({
+            userId: data.metadata.user_id,
+            type: 'deposit',
+            title: 'Deposit Successful! 💰',
+            message: `Your deposit of ₦${amountInNaira.toLocaleString()} has been credited to your wallet.`,
+            metadata: { 
+              reference: data.reference, 
+              transactionType: 'Deposit',
+              amount: `₦${amountInNaira.toLocaleString()}`,
+              status: 'Completed'
+            },
+            sendEmail: true,
+            emailTemplate: 'transaction',
+            attachPDF: true
+          })
+        });
+        console.log("Email notification sent for deposit:", data.reference);
+      } catch (emailErr) {
+        console.error("Failed to send email notification:", emailErr);
+      }
     }
 
     console.log("Charge success processed for reference:", data.reference);
