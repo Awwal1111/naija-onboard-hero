@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react'
-import { Search, Filter, Star, MapPin, MessageCircle, Home, Users, DollarSign, Briefcase, Menu, Video, Plus, TrendingUp, Grid3X3, List, Shield } from 'lucide-react'
+import React, { useState, useEffect, useMemo } from 'react'
+import { Search, Filter, Star, MapPin, MessageCircle, Home, Users, DollarSign, Briefcase, Menu, Video, Plus, TrendingUp, Grid3X3, List, Shield, Zap } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { MoreMenuDrawer } from '@/components/MoreMenuDrawer'
 import { BrandInput } from '@/components/ui/brand-input'
@@ -25,6 +25,10 @@ import { BookmarkButton } from '@/components/BookmarkButton'
 import { MarketplaceExplainer } from '@/components/MarketplaceExplainer'
 import { Card, CardContent } from '@/components/ui/card'
 import { ExpertCard } from '@/components/ExpertCard'
+import { FeaturedExperts } from '@/components/experts/FeaturedExperts'
+import { CategoryChips } from '@/components/experts/CategoryChips'
+import { ExpertFilters, SortOption } from '@/components/experts/ExpertFilters'
+import { ExpertBoostDialog } from '@/components/experts/ExpertBoostDialog'
 
 interface Expert {
   id: string
@@ -54,9 +58,12 @@ const Experts = () => {
   const location = useLocation()
   const [stateFilter, setStateFilter] = useState('all')
   const [skillFilter, setSkillFilter] = useState('all')
+  const [sortBy, setSortBy] = useState<SortOption>('relevance')
+  const [verifiedOnly, setVerifiedOnly] = useState(false)
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
   const [profilePreview, setProfilePreview] = useState<{ isOpen: boolean; userId: string | null }>({ isOpen: false, userId: null })
   const [showCreateDialog, setShowCreateDialog] = useState(false)
+  const [showBoostDialog, setShowBoostDialog] = useState(false)
   const [userProfile, setUserProfile] = useState<any>(null)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list')
   const [showExplainer, setShowExplainer] = useState(() => localStorage.getItem('hideExpertExplainer') !== 'true')
@@ -205,14 +212,37 @@ const Experts = () => {
     }
   }
 
-  const filteredExperts = experts.filter(expert => {
-    const matchesSearch = expert.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         expert.skill_category.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesState = !stateFilter || stateFilter === 'all' || expert.location_state === stateFilter
-    const matchesSkill = !skillFilter || skillFilter === 'all' || expert.skill_category === skillFilter
-    
-    return matchesSearch && matchesState && matchesSkill
-  })
+  // Calculate category counts
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {}
+    experts.forEach(e => {
+      counts[e.skill_category] = (counts[e.skill_category] || 0) + 1
+    })
+    return counts
+  }, [experts])
+
+  // Filter and sort experts
+  const filteredExperts = useMemo(() => {
+    let result = experts.filter(expert => {
+      const matchesSearch = expert.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           expert.skill_category.toLowerCase().includes(searchQuery.toLowerCase())
+      const matchesState = !stateFilter || stateFilter === 'all' || expert.location_state === stateFilter
+      const matchesSkill = !skillFilter || skillFilter === 'all' || expert.skill_category === skillFilter
+      
+      return matchesSearch && matchesState && matchesSkill
+    })
+
+    // Sort
+    if (sortBy === 'rating') {
+      result = result.sort((a, b) => (b.profiles?.average_rating || 0) - (a.profiles?.average_rating || 0))
+    } else if (sortBy === 'experience') {
+      result = result.sort((a, b) => b.years_experience - a.years_experience)
+    }
+
+    return result
+  }, [experts, searchQuery, stateFilter, skillFilter, sortBy])
+
+  const activeFiltersCount = [stateFilter !== 'all', verifiedOnly].filter(Boolean).length
 
   if (loading) {
     return (
@@ -253,72 +283,75 @@ const Experts = () => {
                 }}
               />
             )}
-            
-            {/* View Toggle */}
-            <div className="flex items-center justify-end gap-1">
-              <Button
-                variant={viewMode === 'list' ? 'secondary' : 'ghost'}
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => setViewMode('list')}
-              >
-                <List className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => setViewMode('grid')}
-              >
-                <Grid3X3 className="h-4 w-4" />
-              </Button>
-            </div>
-        {/* Search and Filters */}
-        <div className="space-y-4 mb-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-text-secondary" />
-            <BrandInput
-              placeholder="Search by name or skill..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+
+            {/* Featured Experts Carousel */}
+            <FeaturedExperts 
+              experts={experts.map(e => ({
+                id: e.id,
+                user_id: e.user_id,
+                full_name: e.full_name,
+                skill_category: e.skill_category,
+                profile_picture_url: e.profiles?.profile_picture_url,
+                average_rating: e.profiles?.average_rating || 0,
+                rating_count: e.profiles?.rating_count || 0,
+              }))}
+              onProfileClick={(userId) => setProfilePreview({ isOpen: true, userId })}
             />
-          </div>
-          
-          <div className="flex gap-3">
-            <div className="flex-1">
-              <Select value={stateFilter} onValueChange={setStateFilter}>
-                <SelectTrigger className="w-full h-10 bg-input">
-                  <SelectValue placeholder="Filter by state" />
-                </SelectTrigger>
-                <SelectContent className="bg-background border border-border z-50 max-h-60 overflow-y-auto">
-                  <SelectItem value="all" className="hover:bg-accent">All States</SelectItem>
-                  {nigerianStates.map((state) => (
-                    <SelectItem key={state} value={state} className="hover:bg-accent">
-                      {state}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+
+            {/* Category Chips */}
+            <CategoryChips 
+              selected={skillFilter} 
+              onSelect={setSkillFilter}
+              expertCounts={categoryCounts}
+            />
+
+            {/* Boost Button for Experts */}
+            {userProfile?.is_expert && (
+              <div className="flex justify-end">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="gap-2 border-amber-500/50 text-amber-600 hover:bg-amber-500/10"
+                  onClick={() => setShowBoostDialog(true)}
+                >
+                  <Zap className="h-4 w-4" />
+                  Boost My Profile
+                </Button>
+              </div>
+            )}
             
-            <div className="flex-1">
-              <Select value={skillFilter} onValueChange={setSkillFilter}>
-                <SelectTrigger className="w-full h-10 bg-input">
-                  <SelectValue placeholder="Filter by skill" />
-                </SelectTrigger>
-                <SelectContent className="bg-background border border-border z-50 max-h-60 overflow-y-auto">
-                  <SelectItem value="all" className="hover:bg-accent">All Skills</SelectItem>
-                  {skillCategories.map((skill) => (
-                    <SelectItem key={skill} value={skill} className="hover:bg-accent">
-                      {skill}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            {/* Filters & View Toggle */}
+            <div className="flex items-center justify-between gap-2">
+              <ExpertFilters
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                stateFilter={stateFilter}
+                onStateChange={setStateFilter}
+                sortBy={sortBy}
+                onSortChange={setSortBy}
+                verifiedOnly={verifiedOnly}
+                onVerifiedChange={setVerifiedOnly}
+                activeFiltersCount={activeFiltersCount}
+              />
+              <div className="flex gap-1 shrink-0">
+                <Button
+                  variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+                  size="icon"
+                  className="h-9 w-9"
+                  onClick={() => setViewMode('list')}
+                >
+                  <List className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+                  size="icon"
+                  className="h-9 w-9"
+                  onClick={() => setViewMode('grid')}
+                >
+                  <Grid3X3 className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
-          </div>
-        </div>
 
         {/* Experts Grid/List */}
         {filteredExperts.length === 0 ? (
@@ -502,6 +535,12 @@ const Experts = () => {
       <CreateClassDialog
         open={showCreateDialog}
         onOpenChange={setShowCreateDialog}
+      />
+
+      {/* Expert Boost Dialog */}
+      <ExpertBoostDialog
+        open={showBoostDialog}
+        onOpenChange={setShowBoostDialog}
       />
     </div>
   )
