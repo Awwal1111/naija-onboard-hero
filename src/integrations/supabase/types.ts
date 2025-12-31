@@ -4865,23 +4865,24 @@ export type Database = {
       get_personalized_experts: {
         Args: { p_limit?: number; p_offset?: number; p_user_id: string }
         Returns: {
+          area: string
           average_rating: number
           bio: string
-          email_verified: boolean
-          face_verified: boolean
+          boost_expires_at: string
+          connections_count: number
+          expert_verified_at: string
           full_name: string
-          id: string
+          is_boosted: boolean
           is_expert: boolean
-          location_area: string
-          location_lga: string
-          location_state: string
-          phone_verified: boolean
+          is_premium: boolean
+          lga_name: string
+          premium_expires_at: string
           profession: string
           profile_picture_url: string
           rating_count: number
           relevance_score: number
           skill_category: string
-          status: string
+          state_name: string
           user_id: string
           years_experience: number
         }[]
@@ -4945,6 +4946,7 @@ export type Database = {
           review_count: number
           seller_id: string
           seller_is_expert: boolean
+          seller_is_premium: boolean
           seller_name: string
           seller_picture: string
           seller_rating: number

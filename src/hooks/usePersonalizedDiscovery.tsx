@@ -116,24 +116,25 @@ export const usePersonalizedJobPosts = (limit = 20, offset = 0) => {
 
 // Personalized Experts Discovery
 export interface PersonalizedExpert {
-  id: string
   user_id: string
   full_name: string
-  skill_category: string
-  years_experience: number
-  location_state: string
-  location_lga: string
-  location_area: string
-  status: string
-  profile_picture_url?: string
-  bio?: string
-  profession?: string
+  profession?: string | null
+  bio?: string | null
+  profile_picture_url?: string | null
+  state_name?: string | null
+  lga_name?: string | null
+  area?: string | null
   average_rating: number
   rating_count: number
+  connections_count: number
   is_expert: boolean
-  email_verified: boolean
-  phone_verified: boolean
-  face_verified: boolean
+  expert_verified_at?: string | null
+  is_boosted: boolean
+  boost_expires_at?: string | null
+  is_premium: boolean
+  premium_expires_at?: string | null
+  skill_category?: string | null
+  years_experience?: number | null
   relevance_score: number
 }
 
