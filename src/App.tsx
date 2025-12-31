@@ -83,6 +83,7 @@ import Bookmarks from "./pages/Bookmarks";
 import CopilotPage from "./pages/CopilotPage";
 import Leaderboard from "./pages/Leaderboard";
 import Learn from "./pages/Learn";
+import ExpertClass from "./pages/ExpertClass";
 
 // Component to handle app state persistence
 const AppStateManager = () => {
@@ -122,6 +123,7 @@ const App = () => (
           <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
           <Route path="/post-job" element={<ProtectedRoute><PostJob /></ProtectedRoute>} />
           <Route path="/experts" element={<ProtectedRoute><Experts /></ProtectedRoute>} />
+          <Route path="/expert-class" element={<ProtectedRoute><ExpertClass /></ProtectedRoute>} />
           <Route path="/expert-class/room/:classId" element={<ProtectedRoute><ClassRoom /></ProtectedRoute>} />
           <Route path="/jobs" element={<ProtectedRoute><Jobs /></ProtectedRoute>} />
           <Route path="/my-gigs" element={<ProtectedRoute><MyGigs /></ProtectedRoute>} />
