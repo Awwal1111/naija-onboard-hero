@@ -3271,6 +3271,8 @@ export type Database = {
           google_meet_link: string | null
           has_rated_platform: boolean | null
           id: string
+          intro_video_thumbnail: string | null
+          intro_video_url: string | null
           is_boosted: boolean | null
           is_expert: boolean | null
           is_premium: boolean | null
@@ -3283,6 +3285,7 @@ export type Database = {
           open_to_work: boolean | null
           phone_number: string | null
           phone_verified: boolean | null
+          portfolio_videos: Json | null
           premium_expires_at: string | null
           premium_subscribed_at: string | null
           profession: string | null
@@ -3344,6 +3347,8 @@ export type Database = {
           google_meet_link?: string | null
           has_rated_platform?: boolean | null
           id?: string
+          intro_video_thumbnail?: string | null
+          intro_video_url?: string | null
           is_boosted?: boolean | null
           is_expert?: boolean | null
           is_premium?: boolean | null
@@ -3356,6 +3361,7 @@ export type Database = {
           open_to_work?: boolean | null
           phone_number?: string | null
           phone_verified?: boolean | null
+          portfolio_videos?: Json | null
           premium_expires_at?: string | null
           premium_subscribed_at?: string | null
           profession?: string | null
@@ -3417,6 +3423,8 @@ export type Database = {
           google_meet_link?: string | null
           has_rated_platform?: boolean | null
           id?: string
+          intro_video_thumbnail?: string | null
+          intro_video_url?: string | null
           is_boosted?: boolean | null
           is_expert?: boolean | null
           is_premium?: boolean | null
@@ -3429,6 +3437,7 @@ export type Database = {
           open_to_work?: boolean | null
           phone_number?: string | null
           phone_verified?: boolean | null
+          portfolio_videos?: Json | null
           premium_expires_at?: string | null
           premium_subscribed_at?: string | null
           profession?: string | null
