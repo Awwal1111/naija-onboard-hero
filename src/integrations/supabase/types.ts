@@ -2973,6 +2973,8 @@ export type Database = {
       }
       posts: {
         Row: {
+          boost_amount: number | null
+          boosted_at: string | null
           comments_count: number
           content: string
           content_type: string
@@ -2990,6 +2992,8 @@ export type Database = {
           visibility: string | null
         }
         Insert: {
+          boost_amount?: number | null
+          boosted_at?: string | null
           comments_count?: number
           content: string
           content_type?: string
@@ -3007,6 +3011,8 @@ export type Database = {
           visibility?: string | null
         }
         Update: {
+          boost_amount?: number | null
+          boosted_at?: string | null
           comments_count?: number
           content?: string
           content_type?: string
@@ -4864,14 +4870,16 @@ export type Database = {
       get_personalized_feed: {
         Args: { p_limit?: number; p_offset?: number; p_user_id: string }
         Returns: {
+          boost_amount: number
+          boosted_at: string
           comments_count: number
           content: string
           content_type: string
           created_at: string
+          id: string
           likes_count: number
-          media_urls: Json
+          media_urls: string[]
           metadata: Json
-          post_id: string
           relevance_score: number
           shares_count: number
           status: string

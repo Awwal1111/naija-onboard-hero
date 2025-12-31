@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { MessageCircle, Share2, Heart, Eye, MoreHorizontal, MapPin, Briefcase, Award, Calendar, Send, Bookmark, BookmarkCheck, Flag, Link2, Copy, Edit, Trash2 } from 'lucide-react'
+import { MessageCircle, Share2, Heart, Eye, MoreHorizontal, MapPin, Briefcase, Award, Calendar, Send, Bookmark, BookmarkCheck, Flag, Link2, Copy, Edit, Trash2, Zap } from 'lucide-react'
 import { EnhancedPost } from '@/hooks/useEnhancedFeed'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
@@ -13,6 +13,7 @@ import MediaGallery from './MediaGallery'
 import CommentsSection from './CommentsSection'
 import LikesListDialog from './LikesListDialog'
 import EditPostDialog from './EditPostDialog'
+import PostBoostDialog from './PostBoostDialog'
 import { UserBadges } from './UserBadges'
 import { usePostViews } from '@/hooks/usePostViews'
 import { useToast } from '@/hooks/use-toast'
@@ -57,6 +58,7 @@ const LinkedInPostCard: React.FC<LinkedInPostCardProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [showReportDialog, setShowReportDialog] = useState(false)
+  const [showBoostDialog, setShowBoostDialog] = useState(false)
   const [reportReason, setReportReason] = useState('')
   const [reportDetails, setReportDetails] = useState('')
   const [isReporting, setIsReporting] = useState(false)
@@ -322,6 +324,15 @@ const LinkedInPostCard: React.FC<LinkedInPostCardProps> = ({
                 <span>{post.profiles?.profession || 'Member'}</span>
                 <span>·</span>
                 <span>{formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}</span>
+                {(post as any).boost_amount > 0 && (
+                  <>
+                    <span>·</span>
+                    <span className="flex items-center gap-0.5 text-amber-600 dark:text-amber-400 font-medium">
+                      <Zap className="h-3 w-3 fill-current" />
+                      Boosted
+                    </span>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -335,6 +346,16 @@ const LinkedInPostCard: React.FC<LinkedInPostCardProps> = ({
             <DropdownMenuContent align="end" className="w-48" onClick={(e) => e.stopPropagation()}>
               {isOwnPost && (
                 <>
+                  <DropdownMenuItem onClick={(e) => {
+                    e.stopPropagation()
+                    setShowBoostDialog(true)
+                  }} className="text-amber-600 focus:text-amber-600">
+                    <Zap className="mr-2 h-4 w-4" />
+                    Boost post
+                    {(post as any).boost_amount > 0 && (
+                      <span className="ml-auto text-xs">₦{((post as any).boost_amount || 0).toLocaleString()}</span>
+                    )}
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={(e) => {
                     e.stopPropagation()
                     setShowEditDialog(true)
@@ -615,6 +636,15 @@ const LinkedInPostCard: React.FC<LinkedInPostCardProps> = ({
         onClose={() => setShowLikesDialog(false)}
         postId={post.id}
         likesCount={likesCount}
+      />
+
+      {/* Post Boost Dialog */}
+      <PostBoostDialog
+        open={showBoostDialog}
+        onOpenChange={setShowBoostDialog}
+        postId={post.id}
+        postTitle={post.title || post.content?.slice(0, 50)}
+        currentBoost={(post as any).boost_amount || 0}
       />
     </>
   )
