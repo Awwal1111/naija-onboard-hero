@@ -41,6 +41,47 @@ export interface SavedOutput {
   created_at: string;
 }
 
+// Detect if message requires a specific action (non-streaming)
+function detectAction(message: string): { action: string; prompt: string } | null {
+  const lowerMsg = message.toLowerCase();
+  
+  // Image generation
+  if (lowerMsg.includes('generate image:') || lowerMsg.includes('create image:') ||
+      lowerMsg.includes('make an image') || lowerMsg.includes('create a logo') ||
+      lowerMsg.includes('design a logo') || lowerMsg.includes('make a logo') ||
+      lowerMsg.includes('generate a logo') || lowerMsg.includes('create a banner') ||
+      lowerMsg.includes('design a banner') || lowerMsg.includes('make a banner') ||
+      lowerMsg.includes('create a poster') || lowerMsg.includes('design a poster') ||
+      lowerMsg.includes('create a graphic') || lowerMsg.includes('design a graphic') ||
+      lowerMsg.startsWith('draw ') || lowerMsg.includes('generate an image') ||
+      lowerMsg.includes('create an image') || lowerMsg.includes('make me an image') ||
+      lowerMsg.includes('generate a picture') || lowerMsg.includes('create a picture')) {
+    const prompt = message.replace(/generate image:|create image:/i, '').trim();
+    return { action: 'generate_image', prompt: prompt || message };
+  }
+  
+  // Web search
+  if (lowerMsg.startsWith('search:') || lowerMsg.startsWith('search ')) {
+    const prompt = message.replace(/^search:?\s*/i, '').trim();
+    return { action: 'web_search', prompt };
+  }
+  
+  // Website scraping
+  if (lowerMsg.startsWith('scrape:') || lowerMsg.startsWith('scrape ')) {
+    const prompt = message.replace(/^scrape:?\s*/i, '').trim();
+    return { action: 'scrape_website', prompt };
+  }
+  
+  // Text to speech
+  if (lowerMsg.startsWith('tts:') || lowerMsg.includes('read aloud') ||
+      lowerMsg.includes('read this out') || lowerMsg.includes('speak this')) {
+    const prompt = message.replace(/tts:|read aloud|read this out|speak this/gi, '').trim();
+    return { action: 'text_to_speech', prompt: prompt || message };
+  }
+  
+  return null;
+}
+
 export const useAICopilot = () => {
   const { user } = useAuth();
   const { profile } = useProfile();
@@ -139,7 +180,9 @@ export const useAICopilot = () => {
   const sendMessage = async (content: string, attachments?: { type: string; url: string }[]) => {
     if (!user || !content.trim()) return;
 
-    setIsStreaming(true);
+    // Check if this is an action-based request (non-streaming)
+    const detectedAction = detectAction(content);
+    const hasImageAttachment = attachments?.some(a => a.type?.startsWith('image'));
 
     // Add user message to DB and state
     const userMessageData = {
@@ -176,6 +219,105 @@ export const useAICopilot = () => {
     }));
 
     try {
+      // Handle action-based requests (non-streaming JSON response)
+      if (detectedAction || hasImageAttachment) {
+        setIsLoading(true);
+        
+        // Add placeholder message with loading state
+        const loadingMsg: CopilotMessage = {
+          id: 'loading',
+          user_id: user.id,
+          role: 'assistant',
+          content: detectedAction?.action === 'generate_image' 
+            ? '🎨 Generating your image...' 
+            : detectedAction?.action === 'web_search'
+            ? '🔍 Searching the web...'
+            : detectedAction?.action === 'scrape_website'
+            ? '🌐 Scraping website...'
+            : hasImageAttachment
+            ? '📸 Analyzing your image...'
+            : '⏳ Processing...',
+          message_type: 'text',
+          metadata: {},
+          is_saved: false,
+          created_at: new Date().toISOString()
+        };
+        setMessages(prev => [...prev, loadingMsg]);
+
+        const requestBody: Record<string, any> = {
+          context: {
+            user: userContext,
+            settings: {
+              expertise: settings?.expertise || 'all-rounder',
+              tone: settings?.tone || 'professional',
+              clientMode: settings?.client_mode || false
+            }
+          }
+        };
+
+        if (hasImageAttachment) {
+          requestBody.action = 'analyze_image';
+          requestBody.prompt = content;
+          requestBody.attachments = attachments;
+        } else if (detectedAction) {
+          requestBody.action = detectedAction.action;
+          requestBody.prompt = detectedAction.prompt;
+        }
+
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-copilot`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            },
+            body: JSON.stringify(requestBody)
+          }
+        );
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || 'Request failed');
+        }
+
+        const result = await response.json();
+        
+        // Create assistant message with result
+        const assistantMsgData = {
+          user_id: user.id,
+          role: 'assistant' as const,
+          content: result.content || result.error || 'Done!',
+          message_type: result.type || detectedAction?.action || 'text',
+          media_url: result.mediaUrl || null,
+          metadata: {
+            isSearchResult: result.isSearchResult,
+            isScrapeResult: result.isScrapeResult,
+            searchProvider: result.searchProvider,
+            audioUrl: result.audioUrl
+          }
+        };
+
+        const { data: savedAssistantMsg } = await supabase
+          .from('ai_copilot_messages')
+          .insert([assistantMsgData])
+          .select()
+          .single();
+
+        if (savedAssistantMsg) {
+          setMessages(prev => {
+            const updated = prev.filter(m => m.id !== 'loading');
+            return [...updated, savedAssistantMsg as unknown as CopilotMessage];
+          });
+        }
+
+        setIsLoading(false);
+        return;
+      }
+
+      // Regular streaming chat
+      setIsStreaming(true);
+
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-copilot`,
         {
@@ -222,6 +364,39 @@ export const useAICopilot = () => {
 
       if (!response.ok || !response.body) {
         throw new Error('Failed to get response');
+      }
+
+      // Check content type - if JSON, handle as action response
+      const contentType = response.headers.get('content-type');
+      if (contentType?.includes('application/json')) {
+        const result = await response.json();
+        
+        const assistantMsgData = {
+          user_id: user.id,
+          role: 'assistant' as const,
+          content: result.content || 'Done!',
+          message_type: result.type || 'text',
+          media_url: result.mediaUrl || null,
+          metadata: {
+            isSearchResult: result.isSearchResult,
+            isScrapeResult: result.isScrapeResult,
+            searchProvider: result.searchProvider,
+            audioUrl: result.audioUrl
+          }
+        };
+
+        const { data: savedAssistantMsg } = await supabase
+          .from('ai_copilot_messages')
+          .insert([assistantMsgData])
+          .select()
+          .single();
+
+        if (savedAssistantMsg) {
+          setMessages(prev => [...prev, savedAssistantMsg as unknown as CopilotMessage]);
+        }
+
+        setIsStreaming(false);
+        return;
       }
 
       // Stream response
@@ -304,13 +479,16 @@ export const useAICopilot = () => {
 
     } catch (error) {
       console.error('Error sending message:', error);
+      // Remove loading message if present
+      setMessages(prev => prev.filter(m => m.id !== 'loading' && m.id !== 'streaming'));
       toast({
         title: "Error",
-        description: "Failed to get AI response. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to get AI response. Please try again.",
         variant: "destructive"
       });
     } finally {
       setIsStreaming(false);
+      setIsLoading(false);
     }
   };
 
