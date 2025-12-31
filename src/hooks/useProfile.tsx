@@ -13,6 +13,7 @@ export interface Profile {
   phone_number: string | null
   connections_count: number
   wallet_balance: number
+  balance_withdrawable?: number
   state_id: string | null
   state_name: string | null
   lga_name: string | null
@@ -25,6 +26,13 @@ export interface Profile {
   celo_wallet_address?: string | null
   average_rating?: number
   rating_count?: number
+  // Premium subscription fields
+  is_premium?: boolean
+  premium_expires_at?: string | null
+  premium_subscribed_at?: string | null
+  whatsapp_number?: string | null
+  facebook_url?: string | null
+  google_meet_link?: string | null
   created_at: string
   updated_at: string
 }

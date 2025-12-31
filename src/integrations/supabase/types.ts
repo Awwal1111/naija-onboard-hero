@@ -3266,11 +3266,14 @@ export type Database = {
           expert_verified_at: string | null
           face_verified: boolean | null
           face_verified_at: string | null
+          facebook_url: string | null
           full_name: string | null
+          google_meet_link: string | null
           has_rated_platform: boolean | null
           id: string
           is_boosted: boolean | null
           is_expert: boolean | null
+          is_premium: boolean | null
           last_celo_balance: number | null
           last_cusd_balance: number | null
           last_signin_date: string | null
@@ -3280,6 +3283,8 @@ export type Database = {
           open_to_work: boolean | null
           phone_number: string | null
           phone_verified: boolean | null
+          premium_expires_at: string | null
+          premium_subscribed_at: string | null
           profession: string | null
           profile_picture_url: string | null
           rating_count: number | null
@@ -3303,6 +3308,7 @@ export type Database = {
           verification_status: string | null
           verification_submitted_at: string | null
           wallet_balance: number | null
+          whatsapp_number: string | null
         }
         Insert: {
           account_type?: string | null
@@ -3333,11 +3339,14 @@ export type Database = {
           expert_verified_at?: string | null
           face_verified?: boolean | null
           face_verified_at?: string | null
+          facebook_url?: string | null
           full_name?: string | null
+          google_meet_link?: string | null
           has_rated_platform?: boolean | null
           id?: string
           is_boosted?: boolean | null
           is_expert?: boolean | null
+          is_premium?: boolean | null
           last_celo_balance?: number | null
           last_cusd_balance?: number | null
           last_signin_date?: string | null
@@ -3347,6 +3356,8 @@ export type Database = {
           open_to_work?: boolean | null
           phone_number?: string | null
           phone_verified?: boolean | null
+          premium_expires_at?: string | null
+          premium_subscribed_at?: string | null
           profession?: string | null
           profile_picture_url?: string | null
           rating_count?: number | null
@@ -3370,6 +3381,7 @@ export type Database = {
           verification_status?: string | null
           verification_submitted_at?: string | null
           wallet_balance?: number | null
+          whatsapp_number?: string | null
         }
         Update: {
           account_type?: string | null
@@ -3400,11 +3412,14 @@ export type Database = {
           expert_verified_at?: string | null
           face_verified?: boolean | null
           face_verified_at?: string | null
+          facebook_url?: string | null
           full_name?: string | null
+          google_meet_link?: string | null
           has_rated_platform?: boolean | null
           id?: string
           is_boosted?: boolean | null
           is_expert?: boolean | null
+          is_premium?: boolean | null
           last_celo_balance?: number | null
           last_cusd_balance?: number | null
           last_signin_date?: string | null
@@ -3414,6 +3429,8 @@ export type Database = {
           open_to_work?: boolean | null
           phone_number?: string | null
           phone_verified?: boolean | null
+          premium_expires_at?: string | null
+          premium_subscribed_at?: string | null
           profession?: string | null
           profile_picture_url?: string | null
           rating_count?: number | null
@@ -3437,6 +3454,7 @@ export type Database = {
           verification_status?: string | null
           verification_submitted_at?: string | null
           wallet_balance?: number | null
+          whatsapp_number?: string | null
         }
         Relationships: []
       }
@@ -4764,6 +4782,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      check_premium_status: { Args: { p_user_id: string }; Returns: boolean }
       check_rate_limit: {
         Args: {
           action_name: string
@@ -5097,6 +5116,10 @@ export type Database = {
       }
       request_fundraising_release: {
         Args: { p_fundraising_id: string; p_user_id: string }
+        Returns: Json
+      }
+      subscribe_premium: {
+        Args: { p_months?: number; p_user_id: string }
         Returns: Json
       }
       transfer_funds: {
