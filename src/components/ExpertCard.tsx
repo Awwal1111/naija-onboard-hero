@@ -117,6 +117,16 @@ export const ExpertCard: React.FC<ExpertCardProps> = ({ expert, viewMode, onProf
                 <MessageCircle className="h-3.5 w-3.5 mr-1" />
                 Chat
               </Button>
+              <Button 
+                size="sm"
+                variant="outline"
+                className="flex-1"
+                onClick={() => navigate(`/expert/${expert.user_id}`)}
+              >
+                Profile
+              </Button>
+            </div>
+            <div className="flex justify-center pt-1">
               <BookmarkButton type="expert" itemId={expert.user_id} />
             </div>
           </div>
