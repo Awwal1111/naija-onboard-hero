@@ -3242,6 +3242,7 @@ export type Database = {
           balance_withdrawable: number
           bio: string | null
           biometric_enabled: boolean | null
+          boost_expires_at: string | null
           business_name: string | null
           business_registration_number: string | null
           business_verified: boolean | null
@@ -3262,6 +3263,7 @@ export type Database = {
           full_name: string | null
           has_rated_platform: boolean | null
           id: string
+          is_boosted: boolean | null
           is_expert: boolean | null
           last_celo_balance: number | null
           last_cusd_balance: number | null
@@ -3307,6 +3309,7 @@ export type Database = {
           balance_withdrawable?: number
           bio?: string | null
           biometric_enabled?: boolean | null
+          boost_expires_at?: string | null
           business_name?: string | null
           business_registration_number?: string | null
           business_verified?: boolean | null
@@ -3327,6 +3330,7 @@ export type Database = {
           full_name?: string | null
           has_rated_platform?: boolean | null
           id?: string
+          is_boosted?: boolean | null
           is_expert?: boolean | null
           last_celo_balance?: number | null
           last_cusd_balance?: number | null
@@ -3372,6 +3376,7 @@ export type Database = {
           balance_withdrawable?: number
           bio?: string | null
           biometric_enabled?: boolean | null
+          boost_expires_at?: string | null
           business_name?: string | null
           business_registration_number?: string | null
           business_verified?: boolean | null
@@ -3392,6 +3397,7 @@ export type Database = {
           full_name?: string | null
           has_rated_platform?: boolean | null
           id?: string
+          is_boosted?: boolean | null
           is_expert?: boolean | null
           last_celo_balance?: number | null
           last_cusd_balance?: number | null
@@ -4770,6 +4776,7 @@ export type Database = {
         }
         Returns: Json
       }
+      expire_expert_boosts: { Args: never; Returns: undefined }
       file_dispute_safepay: {
         Args: { p_reason: string; p_safepay_id: string }
         Returns: undefined
