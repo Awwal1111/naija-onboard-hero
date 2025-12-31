@@ -82,6 +82,7 @@ import Dashboard from "./pages/Dashboard";
 import Bookmarks from "./pages/Bookmarks";
 import CopilotPage from "./pages/CopilotPage";
 import Leaderboard from "./pages/Leaderboard";
+import Learn from "./pages/Learn";
 
 // Component to handle app state persistence
 const AppStateManager = () => {
@@ -167,6 +168,7 @@ const App = () => (
           <Route path="/activity-log" element={<ProtectedRoute><ActivityLog /></ProtectedRoute>} />
           <Route path="/bookmarks" element={<ProtectedRoute><Bookmarks /></ProtectedRoute>} />
           <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
+          <Route path="/learn" element={<ProtectedRoute><Learn /></ProtectedRoute>} />
           <Route path="/payment-success" element={<PaymentSuccess />} />
           <Route path="/payment-failed" element={<PaymentFailed />} />
           
