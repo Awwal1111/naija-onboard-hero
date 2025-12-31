@@ -4469,6 +4469,30 @@ export type Database = {
         }
         Relationships: []
       }
+      telegram_conversations: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          role: string
+          telegram_user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          role: string
+          telegram_user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          role?: string
+          telegram_user_id?: string
+        }
+        Relationships: []
+      }
       telegram_link_codes: {
         Row: {
           code: string
@@ -4961,6 +4985,7 @@ export type Database = {
       }
       cleanup_expired_2fa_codes: { Args: never; Returns: undefined }
       cleanup_expired_telegram_codes: { Args: never; Returns: undefined }
+      cleanup_old_telegram_conversations: { Args: never; Returns: undefined }
       contribute_to_fundraising: {
         Args: {
           p_amount: number
