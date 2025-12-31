@@ -89,35 +89,64 @@ const CreateStoryDialog: React.FC<CreateStoryDialogProps> = ({
 
       let mediaUrl = null
 
-      // Upload media if provided (using Catbox.moe for images/videos)
+      // Upload media if provided
       if (mediaFile) {
-        // Check if it's an image or video
         const isImageOrVideo = mediaFile.type.startsWith('image/') || mediaFile.type.startsWith('video/')
         
-        if (isImageOrVideo) {
-          // Upload to Catbox.moe (free hosting)
-          setUploading(true)
-          setUploadProgress(50) // Show progress
-          
-          const { url, error } = await uploadToCatbox(mediaFile)
-          
-          setUploadProgress(100)
-          setUploading(false)
-          
-          if (error || !url) {
-            throw new Error(error || 'Upload to Catbox failed')
-          }
-          
-          mediaUrl = url
-          
-          toast({
-            title: "Uploaded successfully",
-            description: "Your media is hosted on Catbox.moe"
-          })
-        } else {
-          // For other file types, show error (stories should only be images/videos)
+        if (!isImageOrVideo) {
           throw new Error('Only images and videos are supported for stories')
         }
+        
+        setUploading(true)
+        setUploadProgress(20)
+        
+        try {
+          // Try Catbox first (no CORS issues with file uploads)
+          const { url, error } = await uploadToCatbox(mediaFile)
+          
+          setUploadProgress(80)
+          
+          if (url && !error) {
+            mediaUrl = url
+            setUploadProgress(100)
+            toast({
+              title: "Uploaded successfully",
+              description: "Media uploaded!"
+            })
+          } else {
+            // Fallback: Use data URL for smaller files (under 2MB)
+            if (mediaFile.size <= 2 * 1024 * 1024) {
+              mediaUrl = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader()
+                reader.onload = () => resolve(reader.result as string)
+                reader.onerror = reject
+                reader.readAsDataURL(mediaFile)
+              })
+              setUploadProgress(100)
+              toast({
+                title: "Uploaded successfully",
+                description: "Media ready!"
+              })
+            } else {
+              throw new Error(error || 'Upload failed. Try a smaller file (under 2MB).')
+            }
+          }
+        } catch (uploadError: any) {
+          // Final fallback for small files
+          if (mediaFile.size <= 2 * 1024 * 1024) {
+            mediaUrl = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader()
+              reader.onload = () => resolve(reader.result as string)
+              reader.onerror = reject
+              reader.readAsDataURL(mediaFile)
+            })
+            setUploadProgress(100)
+          } else {
+            throw new Error('Upload failed. Please try a smaller image/video (under 2MB).')
+          }
+        }
+        
+        setUploading(false)
       }
 
       // Create story record (expires in 24 hours like Instagram/Facebook)
