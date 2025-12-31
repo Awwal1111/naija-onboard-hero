@@ -9,10 +9,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { TrendingUp, Zap, Eye, Star, CheckCircle, Loader2 } from 'lucide-react';
+import { TrendingUp, Zap, Eye, Star, CheckCircle, Loader2, Shield, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useQuery } from '@tanstack/react-query';
 
 const BOOST_PACKAGES = [
   {
@@ -59,6 +60,23 @@ export const ExpertBoostDialog: React.FC<ExpertBoostDialogProps> = ({
   const [selectedPackage, setSelectedPackage] = useState<string | null>('7-day');
   const [loading, setLoading] = useState(false);
 
+  // Check verification status
+  const { data: profile } = useQuery({
+    queryKey: ['expert-verification-status', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase
+        .from('profiles')
+        .select('verification_status, is_expert')
+        .eq('user_id', user.id)
+        .single();
+      return data;
+    },
+    enabled: !!user && open,
+  });
+
+  const isVerified = profile?.verification_status === 'verified';
+
   const handleBoost = async () => {
     if (!user || !selectedPackage) return;
 
@@ -68,14 +86,16 @@ export const ExpertBoostDialog: React.FC<ExpertBoostDialogProps> = ({
     setLoading(true);
 
     try {
-      // Check wallet balance
-      const { data: wallet } = await supabase
-        .from('wallets')
-        .select('balance')
+      // Check wallet balance from profiles table
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('wallet_balance, balance_withdrawable')
         .eq('user_id', user.id)
         .single();
 
-      if (!wallet || wallet.balance < pkg.price) {
+      const balance = profileData?.balance_withdrawable || profileData?.wallet_balance || 0;
+
+      if (balance < pkg.price) {
         toast({
           title: 'Insufficient Balance',
           description: `You need ₦${pkg.price.toLocaleString()} NC to boost. Please top up your wallet.`,
@@ -87,19 +107,22 @@ export const ExpertBoostDialog: React.FC<ExpertBoostDialogProps> = ({
 
       // Deduct from wallet
       const { error: deductError } = await supabase
-        .from('wallets')
-        .update({ balance: wallet.balance - pkg.price })
+        .from('profiles')
+        .update({ 
+          wallet_balance: (profileData?.wallet_balance || 0) - pkg.price,
+          balance_withdrawable: (profileData?.balance_withdrawable || 0) - pkg.price,
+        })
         .eq('user_id', user.id);
 
       if (deductError) throw deductError;
 
-      // Record transaction with correct schema
+      // Record transaction
       await supabase.from('wallet_transactions').insert({
         user_id: user.id,
-        kind: 'debit',
-        amount: pkg.price,
-        metadata: { description: `Expert Boost - ${pkg.name}` },
+        kind: 'expert_boost',
+        amount: -pkg.price,
         status: 'completed',
+        reference: `Expert Boost - ${pkg.name}`,
       });
 
       // Calculate boost end date
@@ -108,18 +131,11 @@ export const ExpertBoostDialog: React.FC<ExpertBoostDialogProps> = ({
       else if (pkg.id === '7-day') boostEnd.setDate(boostEnd.getDate() + 7);
       else boostEnd.setDate(boostEnd.getDate() + 30);
 
-      // Update expert profile with boost using raw SQL via edge function
-      // The is_boosted field was added in migration
-      try {
-        await supabase.from('profiles').update({
-          // @ts-ignore - is_boosted added via migration
-          is_boosted: true,
-          // @ts-ignore - boost_expires_at added via migration  
-          boost_expires_at: boostEnd.toISOString(),
-        } as any).eq('user_id', user.id);
-      } catch (updateErr) {
-        console.log('Boost update fallback:', updateErr);
-      }
+      // Update profile with boost
+      await supabase.from('profiles').update({
+        is_boosted: true,
+        boost_expires_at: boostEnd.toISOString(),
+      } as any).eq('user_id', user.id);
 
       toast({
         title: 'Boost Activated! 🚀',
@@ -139,6 +155,58 @@ export const ExpertBoostDialog: React.FC<ExpertBoostDialogProps> = ({
       setLoading(false);
     }
   };
+
+  // Show verification required message if not verified
+  if (!isVerified) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lock className="h-5 w-5 text-destructive" />
+              Verification Required
+            </DialogTitle>
+            <DialogDescription>
+              You need to verify your expert status before you can boost your profile.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="p-6 text-center space-y-4">
+            <div className="w-16 h-16 bg-primary/10 rounded-full mx-auto flex items-center justify-center">
+              <Shield className="h-8 w-8 text-primary" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-lg mb-2">Get Verified First</h3>
+              <p className="text-sm text-muted-foreground">
+                Complete your expert verification to unlock profile boosting and other premium features.
+              </p>
+            </div>
+            <div className="bg-muted/50 rounded-lg p-4 text-left">
+              <h4 className="font-medium text-sm mb-2">Verification Benefits:</h4>
+              <ul className="text-sm text-muted-foreground space-y-1">
+                <li className="flex items-center gap-2">
+                  <CheckCircle className="h-3 w-3 text-green-500" />
+                  Verified trust badge
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle className="h-3 w-3 text-green-500" />
+                  Access to profile boosting
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle className="h-3 w-3 text-green-500" />
+                  Higher search visibility
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <Button className="w-full" onClick={() => onOpenChange(false)}>
+            Go to Verification
+          </Button>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

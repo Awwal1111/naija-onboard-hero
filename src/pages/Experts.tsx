@@ -29,6 +29,7 @@ import { FeaturedExperts } from '@/components/experts/FeaturedExperts'
 import { CategoryChips } from '@/components/experts/CategoryChips'
 import { ExpertFilters, SortOption } from '@/components/experts/ExpertFilters'
 import { ExpertBoostDialog } from '@/components/experts/ExpertBoostDialog'
+import { ExpertVerificationHub } from '@/components/experts/ExpertVerificationHub'
 
 interface Expert {
   id: string
@@ -273,6 +274,11 @@ const Experts = () => {
 
           {/* Expert List Tab */}
           <TabsContent value="experts" className="space-y-4">
+            {/* Expert Verification Hub - Only for experts */}
+            {userProfile?.is_expert && (
+              <ExpertVerificationHub />
+            )}
+
             {/* Explainer Card */}
             {showExplainer && (
               <MarketplaceExplainer 
@@ -305,8 +311,8 @@ const Experts = () => {
               expertCounts={categoryCounts}
             />
 
-            {/* Boost Button for Experts */}
-            {userProfile?.is_expert && (
+            {/* Boost Button for Verified Experts Only */}
+            {userProfile?.is_expert && userProfile?.verification_status === 'verified' && (
               <div className="flex justify-end">
                 <Button 
                   variant="outline" 
