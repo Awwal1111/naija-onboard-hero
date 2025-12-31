@@ -143,41 +143,41 @@ export const usePersonalizedExperts = (limit = 20, offset = 0) => {
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['personalized-experts', user?.id, limit, offset],
     queryFn: async () => {
-      if (!user) return []
+      // For logged-in users, try personalized algorithm
+      if (user) {
+        const { data: experts, error } = await supabase
+          .rpc('get_personalized_experts', {
+            p_user_id: user.id,
+            p_limit: limit,
+            p_offset: offset
+          })
 
-      const { data: experts, error } = await supabase
-        .rpc('get_personalized_experts', {
-          p_user_id: user.id,
-          p_limit: limit,
-          p_offset: offset
-        })
-
-      if (error) {
+        if (!error && experts) {
+          console.log('[Experts] Personalized results:', experts.length)
+          return experts
+        }
         console.error('[Experts] Personalized fetch error:', error)
-        // Fallback to basic query
-        const { data: fallback } = await supabase
-          .from('expert_applications')
-          .select('*, profiles!inner(full_name, bio, profession, profile_picture_url, average_rating, rating_count, is_expert)')
-          .eq('status', 'approved')
-          .order('submitted_at', { ascending: false })
-          .limit(limit)
-        
-        return (fallback || []).map((e: any) => ({
-          ...e,
-          profile_picture_url: e.profiles?.profile_picture_url,
-          bio: e.profiles?.bio,
-          profession: e.profiles?.profession,
-          average_rating: e.profiles?.average_rating || 0,
-          rating_count: e.profiles?.rating_count || 0,
-          is_expert: e.profiles?.is_expert || false,
-          relevance_score: 0
-        }))
       }
 
-      console.log('[Experts] Personalized results:', experts?.length || 0)
-      return experts || []
+      // Fallback for guests OR on RPC error - show all approved experts
+      const { data: fallback } = await supabase
+        .from('expert_applications')
+        .select('*, profiles!inner(full_name, bio, profession, profile_picture_url, average_rating, rating_count, is_expert)')
+        .eq('status', 'approved')
+        .order('submitted_at', { ascending: false })
+        .limit(limit)
+      
+      return (fallback || []).map((e: any) => ({
+        ...e,
+        profile_picture_url: e.profiles?.profile_picture_url,
+        bio: e.profiles?.bio,
+        profession: e.profiles?.profession,
+        average_rating: e.profiles?.average_rating || 0,
+        rating_count: e.profiles?.rating_count || 0,
+        is_expert: e.profiles?.is_expert || false,
+        relevance_score: 0
+      }))
     },
-    enabled: !!user,
     staleTime: 5 * 60 * 1000,
   })
 
