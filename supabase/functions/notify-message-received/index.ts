@@ -146,6 +146,13 @@ serve(async (req) => {
 
     console.log(`[MSG_NOTIFY] Notifying ${recipient_id} about message from ${sender_id}`);
 
+    // Check if recipient has premium subscription (required for SMS/Email)
+    const { data: premiumCheck } = await supabase.rpc('check_premium_status', {
+      p_user_id: recipient_id
+    });
+    const isPremium = premiumCheck === true;
+    console.log(`[MSG_NOTIFY] Recipient premium status: ${isPremium}`);
+
     // Get sender profile
     const { data: sender } = await supabase
       .from("profiles")
@@ -258,15 +265,19 @@ serve(async (req) => {
       }
     }
 
-    // 2. Send SMS notification (if phone number exists)
-    if (recipient?.phone_number) {
+    // 2. Send SMS notification (PREMIUM ONLY - if phone number exists)
+    if (isPremium && recipient?.phone_number) {
       const smsText = `NaijaLancers: ${senderName} sent you a message: "${displayContent}". Open the app to reply.`;
       results.sms = await sendSMS(recipient.phone_number, smsText);
+    } else if (!isPremium && recipient?.phone_number) {
+      console.log(`[MSG_NOTIFY] SMS skipped - recipient not premium`);
     }
 
-    // 3. Send Email notification (if email exists)
-    if (recipientEmail) {
+    // 3. Send Email notification (PREMIUM ONLY - if email exists)
+    if (isPremium && recipientEmail) {
       results.email = await sendEmail(recipientEmail, senderName, displayContent);
+    } else if (!isPremium && recipientEmail) {
+      console.log(`[MSG_NOTIFY] Email skipped - recipient not premium`);
     }
 
     // Log successful notification channels

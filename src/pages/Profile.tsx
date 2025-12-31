@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Camera, Wallet, MoreVertical, Edit, Share, Settings, LogOut, Plus, ArrowLeft, Home, MessageCircle, Users, DollarSign, Phone, Mail, Award, Star, MapPin, Briefcase, UserPlus, Menu } from 'lucide-react'
+import { Camera, Wallet, MoreVertical, Edit, Share, Settings, LogOut, Plus, ArrowLeft, Home, MessageCircle, Users, DollarSign, Phone, Mail, Award, Star, MapPin, Briefcase, UserPlus, Menu, Crown } from 'lucide-react'
 import { useNavigate, useParams, useSearchParams, useLocation } from 'react-router-dom'
 import { MoreMenuDrawer } from '@/components/MoreMenuDrawer'
 import { Logo } from '@/components/ui/logo'
@@ -37,13 +37,15 @@ import { UserBadges } from '@/components/UserBadges'
 import { EmailVerificationBanner } from '@/components/EmailVerificationBanner'
 import { TrustScoreCard } from '@/components/TrustScoreDisplay'
 import { calculateTrustScore } from '@/hooks/useTrustScore'
+import { PremiumSubscriptionDialog } from '@/components/PremiumSubscriptionDialog'
+import { PremiumContactButtons } from '@/components/PremiumContactButtons'
 // ExpertVerificationSection moved to Experts page
 
 const Profile = () => {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { userId } = useParams() // Get userId from URL params
-  const { profile: currentUserProfile, loading: currentUserLoading, updateProfile } = useProfile()
+  const { profile: currentUserProfile, loading: currentUserLoading, updateProfile, refetch: refetchProfile } = useProfile()
   const { user } = useAuth()
   const { signOut } = useAuth()
   const { toast } = useToast()
@@ -59,6 +61,7 @@ const Profile = () => {
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [isImageViewerOpen, setIsImageViewerOpen] = useState(false)
   const [postsCount, setPostsCount] = useState(0)
+  const [premiumDialogOpen, setPremiumDialogOpen] = useState(false)
   const [editForm, setEditForm] = useState({
     full_name: '',
     bio: '',
@@ -443,7 +446,7 @@ const Profile = () => {
                 )}
               </div>
               
-              <div className="flex items-center gap-3 mb-3">
+              <div className="flex items-center gap-3 mb-3 flex-wrap">
                 <p className="text-muted-foreground text-lg">
                   {profile?.profession || 'Add your profession'}
                 </p>
@@ -451,6 +454,12 @@ const Profile = () => {
                   <Badge className="bg-primary/10 text-primary border-primary/20 text-sm px-3 py-1">
                     <Award className="h-4 w-4 mr-2" />
                     Expert
+                  </Badge>
+                )}
+                {profile?.is_premium && (
+                  <Badge className="bg-gradient-to-r from-yellow-500/20 to-amber-500/20 text-yellow-600 dark:text-yellow-400 border-yellow-500/30 text-sm px-3 py-1">
+                    <Crown className="h-4 w-4 mr-2" />
+                    Premium
                   </Badge>
                 )}
               </div>
@@ -603,6 +612,67 @@ const Profile = () => {
             )}
 
             {/* Expert Verification Section moved to /experts page */}
+
+            {/* Premium Subscription Card - Only for own profile */}
+            {isOwnProfile && (
+              <Card className="mb-4 border-yellow-500/30 bg-gradient-to-r from-yellow-500/5 to-amber-500/5">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <Crown className="h-5 w-5 text-yellow-500" />
+                    Premium Profile
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {profile?.is_premium && profile?.premium_expires_at ? (
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground">
+                        Your premium is active until{' '}
+                        <span className="font-medium text-foreground">
+                          {new Date(profile.premium_expires_at).toLocaleDateString()}
+                        </span>
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPremiumDialogOpen(true)}
+                        className="border-yellow-500/30 text-yellow-600 hover:bg-yellow-500/10"
+                      >
+                        Extend Subscription
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground">
+                        Get SMS & email notifications when clients message you. Only ₦2,000/month.
+                      </p>
+                      <Button
+                        onClick={() => setPremiumDialogOpen(true)}
+                        className="bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600 text-black"
+                      >
+                        <Crown className="h-4 w-4 mr-2" />
+                        Go Premium
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Premium Contact Buttons - Show on other user's profile if they're premium */}
+            {!isOwnProfile && profile?.is_premium && (
+              <Card className="mb-4">
+                <CardContent className="pt-4">
+                  <PremiumContactButtons
+                    phoneNumber={profile?.phone_number}
+                    email={userEmail}
+                    whatsappNumber={profile?.whatsapp_number}
+                    googleMeetLink={profile?.google_meet_link}
+                    facebookUrl={profile?.facebook_url}
+                    isPremium={true}
+                  />
+                </CardContent>
+              </Card>
+            )}
 
             {/* Professional Action Buttons - Only for own profile */}
             {isOwnProfile && (
@@ -909,6 +979,16 @@ const Profile = () => {
         </div>
       </div>
       <MoreMenuDrawer open={moreMenuOpen} onOpenChange={setMoreMenuOpen} />
+
+      {/* Premium Subscription Dialog */}
+      <PremiumSubscriptionDialog
+        open={premiumDialogOpen}
+        onOpenChange={setPremiumDialogOpen}
+        currentBalance={currentUserProfile?.balance_withdrawable || currentUserProfile?.wallet_balance || 0}
+        isPremium={currentUserProfile?.is_premium || false}
+        premiumExpiresAt={currentUserProfile?.premium_expires_at}
+        onSuccess={() => refetchProfile()}
+      />
     </div>
   )
 }
