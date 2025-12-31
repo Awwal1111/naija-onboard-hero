@@ -23,87 +23,87 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Navigation Bar */}
-      <nav className="flex items-center justify-between p-6 sticky top-0 bg-background/95 backdrop-blur-md border-b border-border z-50 shadow-sm">
+      {/* Navigation Bar - Mobile Optimized */}
+      <nav className="flex items-center justify-between px-3 py-3 sm:px-6 sm:py-4 sticky top-0 bg-background/95 backdrop-blur-md border-b border-border z-50 shadow-sm">
         <Logo />
-        <div className="flex items-center gap-4">
-          <BrandButton variant="ghost" asChild>
+        <div className="flex items-center gap-2 sm:gap-4">
+          <BrandButton variant="ghost" asChild className="text-sm sm:text-base px-2 sm:px-4">
             <Link to="/login">Log In</Link>
           </BrandButton>
-          <BrandButton asChild>
+          <BrandButton asChild className="text-sm sm:text-base px-3 sm:px-4">
             <Link to="/signup">Get Started</Link>
           </BrandButton>
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="relative overflow-hidden py-20 bg-gradient-to-br from-primary/10 via-background to-accent/5">
-        <div className="container mx-auto px-6 relative">
+      {/* Hero Section - Mobile First */}
+      <section className="relative overflow-hidden py-10 sm:py-16 lg:py-20 bg-gradient-to-br from-primary/10 via-background to-accent/5">
+        <div className="container mx-auto px-4 sm:px-6 relative">
           <div className="max-w-6xl mx-auto">
-            <div className="grid lg:grid-cols-2 gap-12 items-center">
-              <div className="space-y-8">
-                <Badge variant="secondary" className="w-fit bg-primary/10 text-primary border-primary/20">
-                  <Award className="w-4 h-4 mr-2" />
+            <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+              <div className="space-y-5 sm:space-y-8">
+                <Badge variant="secondary" className="w-fit bg-primary/10 text-primary border-primary/20 text-xs sm:text-sm">
+                  <Award className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                   CAC Registered • BN8870047
                 </Badge>
                 
-                <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight">
+                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold leading-tight">
                   <span className="text-foreground">Nigeria's Trusted</span>
-                  <span className="block text-primary mt-2">Freelance Marketplace</span>
+                  <span className="block text-primary mt-1 sm:mt-2">Freelance Marketplace</span>
                 </h1>
                 
-                <p className="text-xl text-muted-foreground leading-relaxed">
+                <p className="text-base sm:text-lg lg:text-xl text-muted-foreground leading-relaxed">
                   Connect with vetted professionals, secure payments through our banking partners, and grow your business with confidence.
                 </p>
 
-                <div className="flex flex-wrap gap-6 pt-4">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-primary" />
-                    <span className="text-sm font-medium">Legally Registered</span>
+                <div className="flex flex-wrap gap-3 sm:gap-6 pt-2 sm:pt-4">
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                    <span className="text-xs sm:text-sm font-medium">Legally Registered</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Shield className="w-5 h-5 text-primary" />
-                    <span className="text-sm font-medium">Secure Payments</span>
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                    <span className="text-xs sm:text-sm font-medium">Secure Payments</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Users className="w-5 h-5 text-primary" />
-                    <span className="text-sm font-medium">10,000+ Users</span>
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    <Users className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                    <span className="text-xs sm:text-sm font-medium">10,000+ Users</span>
                   </div>
                 </div>
 
-                <div className="max-w-2xl mb-6">
+                <div className="max-w-2xl mb-4 sm:mb-6">
                   <UnifiedSearchBar />
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                  <BrandButton asChild size="lg" className="text-lg px-8 py-6">
+                <div className="flex flex-col gap-3 sm:flex-row sm:gap-4 pt-2 sm:pt-4">
+                  <BrandButton asChild size="lg" className="text-sm sm:text-lg px-4 sm:px-8 py-4 sm:py-6 w-full sm:w-auto">
                     <Link to="/signup">
                       Start Earning Today
-                      <ArrowRight className="ml-2 w-5 h-5" />
+                      <ArrowRight className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />
                     </Link>
                   </BrandButton>
-                  <BrandButton variant="outline" asChild size="lg" className="text-lg px-8 py-6">
+                  <BrandButton variant="outline" asChild size="lg" className="text-sm sm:text-lg px-4 sm:px-8 py-4 sm:py-6 w-full sm:w-auto">
                     <Link to="/login">Sign In</Link>
                   </BrandButton>
                   <BrandButton 
                     variant="secondary" 
                     size="lg" 
-                    className="text-lg px-8 py-6"
+                    className="text-sm sm:text-lg px-4 sm:px-8 py-4 sm:py-6 w-full sm:w-auto"
                     onClick={() => window.open('https://apkpure.com/naijalancers/co.median.android.mbbeeqr', '_blank')}
                   >
-                    <Download className="mr-2 w-5 h-5" />
+                    <Download className="mr-2 w-4 h-4 sm:w-5 sm:h-5" />
                     Download App
                   </BrandButton>
                 </div>
               </div>
 
-              <div className="relative">
+              <div className="relative hidden sm:block">
                 <div className="aspect-square rounded-2xl overflow-hidden shadow-2xl border border-border">
                   <img src={heroImage} alt="NaijaLancers Platform" className="w-full h-full object-cover" />
                 </div>
-                <div className="absolute -bottom-6 -right-6 bg-primary text-primary-foreground p-6 rounded-xl shadow-xl">
-                  <div className="text-3xl font-bold">10K+</div>
-                  <div className="text-sm">Active Users</div>
+                <div className="absolute -bottom-4 -right-4 sm:-bottom-6 sm:-right-6 bg-primary text-primary-foreground p-4 sm:p-6 rounded-xl shadow-xl">
+                  <div className="text-2xl sm:text-3xl font-bold">10K+</div>
+                  <div className="text-xs sm:text-sm">Active Users</div>
                 </div>
               </div>
             </div>
