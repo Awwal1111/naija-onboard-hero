@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { ArrowLeft, MapPin, Clock, DollarSign, Users, Briefcase, Home, MessageCircle, Menu, Plus, Search, Eye, TrendingUp, Grid3X3, List, Package, Star, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -17,6 +17,8 @@ import { BookmarkButton } from '@/components/BookmarkButton'
 import { GigCard } from '@/components/GigCard'
 import { MarketplaceExplainer } from '@/components/MarketplaceExplainer'
 import { CreateJobPostDialog } from '@/components/CreateJobPostDialog'
+import { GigCategoryChips } from '@/components/gigs/GigCategoryChips'
+import { getCategoryPlaceholder, normalizeCategory } from '@/lib/gigCategories'
 
 const Jobs = () => {
   const navigate = useNavigate()
@@ -68,11 +70,15 @@ const Jobs = () => {
     if (max) return `Up to ₦${max.toLocaleString()}`
   }
 
-  const gigCategories = [
-    'All Categories', 'Web Development', 'Mobile App Development', 'UI/UX Design', 'Graphic Design',
-    'Digital Marketing', 'Content Writing', 'Video Editing', 'Photography', 'Social Media',
-    'Virtual Assistant', 'Data Analysis', 'Voice Over', 'Music Production', 'Translation'
-  ]
+  // Calculate category counts for chips
+  const gigCategoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {}
+    gigs.forEach((gig: any) => {
+      const cat = normalizeCategory(gig.category)
+      counts[cat] = (counts[cat] || 0) + 1
+    })
+    return counts
+  }, [gigs])
 
   const bottomNavItems = [
     { icon: Home, label: 'Feed', path: '/feed' },
@@ -86,14 +92,17 @@ const Jobs = () => {
     navigate(path)
   }
 
-  const filteredGigs = gigs.filter((gig: any) => {
-    const matchesSearch = gig.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         gig.description?.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesCategory = !categoryFilter || categoryFilter === 'all' || 
-                           categoryFilter === 'All Categories' ||
-                           gig.category?.toLowerCase().includes(categoryFilter.toLowerCase())
-    return matchesSearch && matchesCategory
-  })
+  const filteredGigs = useMemo(() => {
+    return gigs.filter((gig: any) => {
+      const matchesSearch = gig.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           gig.description?.toLowerCase().includes(searchQuery.toLowerCase())
+      const normalizedGigCategory = normalizeCategory(gig.category)
+      const matchesCategory = !categoryFilter || categoryFilter === 'all' || 
+                             categoryFilter === 'All Categories' ||
+                             normalizedGigCategory === categoryFilter
+      return matchesSearch && matchesCategory
+    })
+  }, [gigs, searchQuery, categoryFilter])
 
   const filteredJobs = jobPosts.filter((job: any) => {
     const matchesSearch = job.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -210,23 +219,13 @@ const Jobs = () => {
             </div>
           </div>
 
-          {/* Category Filter Pills */}
-          {(activeTab === 'gigs' || activeTab === 'jobs') && (
-            <div className="px-4 py-3 overflow-x-auto scrollbar-hide">
-              <div className="flex gap-2 min-w-max">
-                {gigCategories.map((cat) => (
-                  <Button
-                    key={cat}
-                    variant={categoryFilter === cat || (cat === 'All Categories' && categoryFilter === 'all') ? 'default' : 'outline'}
-                    size="sm"
-                    className="h-7 text-xs rounded-full whitespace-nowrap"
-                    onClick={() => setCategoryFilter(cat === 'All Categories' ? 'all' : cat)}
-                  >
-                    {cat}
-                  </Button>
-                ))}
-              </div>
-            </div>
+          {/* Category Filter Chips */}
+          {activeTab === 'gigs' && (
+            <GigCategoryChips
+              selected={categoryFilter}
+              onSelect={setCategoryFilter}
+              gigCounts={gigCategoryCounts}
+            />
           )}
 
           {/* Gigs Tab Content */}
@@ -290,7 +289,9 @@ const Jobs = () => {
                     <CardContent className="p-3 flex gap-3">
                       <div className="relative w-20 h-14 rounded-md overflow-hidden bg-muted flex-shrink-0">
                         <img
-                          src={gig.photo_urls?.[0] || '/placeholder.svg'}
+                          src={gig.photo_urls?.[0] && !gig.photo_urls[0].includes('placeholder') 
+                            ? gig.photo_urls[0] 
+                            : getCategoryPlaceholder(normalizeCategory(gig.category))}
                           alt={gig.title}
                           className="w-full h-full object-cover"
                         />
