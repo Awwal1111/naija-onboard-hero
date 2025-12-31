@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
+import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -154,7 +154,8 @@ async function generateSpeech(text: string): Promise<string | null> {
     }
 
     const audioBuffer = await response.arrayBuffer();
-    const base64Audio = btoa(String.fromCharCode(...new Uint8Array(audioBuffer)));
+    // Use proper base64 encoding that doesn't cause stack overflow
+    const base64Audio = base64Encode(audioBuffer);
     return `data:audio/mpeg;base64,${base64Audio}`;
   } catch (error) {
     console.error("ElevenLabs TTS error:", error);
