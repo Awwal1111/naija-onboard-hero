@@ -332,209 +332,199 @@ const Profile = () => {
           />
         )}
         
-        {/* Enhanced User Section with Stats */}
-        <div className="bg-card border border-border rounded-3xl p-8 mb-8 shadow-sm">
-          <div className="flex items-start gap-6 mb-8">
-            <div className="relative">
-              <button
-                onClick={() => profile?.profile_picture_url && setIsImageViewerOpen(true)}
-                className={`w-32 h-32 rounded-full p-1 transition-all ${
-                  profile?.profile_picture_url 
-                    ? 'bg-gradient-to-r from-primary via-primary/80 to-primary hover:scale-105' 
-                    : 'bg-muted'
-                }`}
-              >
-                <Avatar className="w-full h-full border-4 border-background">
-                  <AvatarImage 
-                    src={profile?.profile_picture_url} 
-                    alt={profile?.full_name || 'Profile'}
-                    className="object-cover"
-                  />
-                  <AvatarFallback className="bg-primary text-primary-foreground text-3xl font-bold">
-                    {profile?.full_name?.charAt(0) || 'U'}
-                  </AvatarFallback>
-                </Avatar>
-              </button>
-              
-              {isOwnProfile && (
-                <label className="absolute bottom-0 right-0 w-10 h-10 bg-primary rounded-full flex items-center justify-center text-primary-foreground cursor-pointer hover:bg-primary/90 transition-colors shadow-lg border-4 border-background z-10">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleProfilePictureUpload}
-                  />
-                  <Camera className="h-5 w-5" />
-                </label>
-              )}
-            </div>
-            
-            <div className="flex-1">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <h1 className="text-3xl font-bold text-foreground">
-                    {profile?.full_name || 'Add your name'}
-                  </h1>
-                  <UserBadges 
-                    badges={{
-                      isExpert: profile?.is_expert,
-                      emailVerified: (profile as any)?.email_verified,
-                      phoneVerified: (profile as any)?.phone_verified,
-                      faceVerified: (profile as any)?.face_verified,
-                      averageRating: profile?.average_rating,
-                      ratingCount: profile?.rating_count,
-                      avgResponseTimeSeconds: (profile as any)?.avg_response_time_seconds
-                    }}
-                    size="md"
-                  />
-                </div>
-                {isOwnProfile ? (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button className="p-2 hover:bg-accent rounded-full transition-colors">
-                        <MoreVertical className="h-6 w-6 text-muted-foreground" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-64">
-                      {!isComplete && (
-                        <DropdownMenuItem onClick={handleEditProfile} className="bg-orange-50 dark:bg-orange-950 py-3">
-                          <Edit className="mr-3 h-5 w-5 text-orange-600" />
-                          <div className="flex-1">
-                            <div className="font-medium text-orange-600">Complete Profile</div>
-                            <div className="text-sm text-orange-600/70">{missingFields.length} fields missing</div>
-                          </div>
-                        </DropdownMenuItem>
-                      )}
-                    <DropdownMenuItem onClick={handleEditProfile} className="py-3">
-                      <Edit className="mr-3 h-5 w-5" />
-                      <span className="text-base">Edit Profile</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate('/earn')} className="py-3">
-                      <Wallet className="mr-3 h-5 w-5" />
-                      <span className="text-base">Wallet & Transactions</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleShare} className="py-3">
-                      <Share className="mr-3 h-5 w-5" />
-                      <span className="text-base">Share Profile</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate('/settings')} className="py-3">
-                      <Settings className="mr-3 h-5 w-5" />
-                      <span className="text-base">App Settings</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleLogout} className="text-destructive py-3">
-                      <LogOut className="mr-3 h-5 w-5" />
-                      <span className="text-base">Log Out</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                ) : (
-                  <div className="flex gap-3">
-                    {!isConnected ? (
-                      <Button onClick={handleConnectUser} size="default">
-                        <UserPlus className="h-5 w-5 mr-2" />
-                        Connect
-                      </Button>
-                    ) : (
-                      <Button variant="secondary" size="default" disabled>
-                        <Users className="h-5 w-5 mr-2" />
-                        Connected
-                      </Button>
-                    )}
-                    <Button onClick={() => navigate(`/chat/${userId}`)} size="default" variant="outline">
-                      <MessageCircle className="h-5 w-5 mr-2" />
-                      Message
-                    </Button>
-                  </div>
+        {/* Professional Profile Card - LinkedIn Style */}
+        <div className="bg-card border border-border rounded-2xl overflow-hidden mb-6 shadow-sm">
+          {/* Cover/Banner Area */}
+          <div className="h-24 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/5" />
+          
+          {/* Profile Info Section */}
+          <div className="px-6 pb-6">
+            {/* Avatar - Overlapping the banner */}
+            <div className="flex items-end justify-between -mt-12 mb-4">
+              <div className="relative">
+                <button
+                  onClick={() => profile?.profile_picture_url && setIsImageViewerOpen(true)}
+                  className={`w-24 h-24 rounded-full p-1 transition-all ${
+                    profile?.profile_picture_url 
+                      ? 'bg-gradient-to-r from-primary via-primary/80 to-primary hover:scale-105' 
+                      : 'bg-muted'
+                  }`}
+                >
+                  <Avatar className="w-full h-full border-4 border-card">
+                    <AvatarImage 
+                      src={profile?.profile_picture_url} 
+                      alt={profile?.full_name || 'Profile'}
+                      className="object-cover"
+                    />
+                    <AvatarFallback className="bg-primary text-primary-foreground text-2xl font-bold">
+                      {profile?.full_name?.charAt(0) || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                </button>
+                
+                {isOwnProfile && (
+                  <label className="absolute bottom-0 right-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground cursor-pointer hover:bg-primary/90 transition-colors shadow-md border-2 border-card z-10">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleProfilePictureUpload}
+                    />
+                    <Camera className="h-4 w-4" />
+                  </label>
                 )}
               </div>
               
-              <div className="flex items-center gap-3 mb-3 flex-wrap">
-                <p className="text-muted-foreground text-lg">
-                  {profile?.profession || 'Add your profession'}
-                </p>
+              {/* Action Buttons */}
+              <div className="flex gap-2 mt-14">
+                {isOwnProfile ? (
+                  <>
+                    <Button variant="outline" size="sm" onClick={handleEditProfile}>
+                      <Edit className="h-4 w-4 mr-1" />
+                      Edit
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-9 w-9">
+                          <MoreVertical className="h-5 w-5" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuItem onClick={() => navigate('/earn')} className="py-2.5">
+                          <Wallet className="mr-2 h-4 w-4" />
+                          Wallet & Transactions
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={handleShare} className="py-2.5">
+                          <Share className="mr-2 h-4 w-4" />
+                          Share Profile
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigate('/settings')} className="py-2.5">
+                          <Settings className="mr-2 h-4 w-4" />
+                          Settings
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={handleLogout} className="text-destructive py-2.5">
+                          <LogOut className="mr-2 h-4 w-4" />
+                          Log Out
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </>
+                ) : (
+                  <>
+                    {!isConnected ? (
+                      <Button onClick={handleConnectUser} size="sm">
+                        <UserPlus className="h-4 w-4 mr-1" />
+                        Connect
+                      </Button>
+                    ) : (
+                      <Button variant="secondary" size="sm" disabled>
+                        <Users className="h-4 w-4 mr-1" />
+                        Connected
+                      </Button>
+                    )}
+                    <Button onClick={() => navigate(`/chat/${userId}`)} size="sm" variant="outline">
+                      <MessageCircle className="h-4 w-4 mr-1" />
+                      Message
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+            
+            {/* Name & Title */}
+            <div className="mb-4">
+              <div className="flex items-center gap-2 flex-wrap mb-1">
+                <h1 className="text-xl font-bold text-foreground">
+                  {profile?.full_name || 'Add your name'}
+                </h1>
+                <UserBadges 
+                  badges={{
+                    isExpert: profile?.is_expert,
+                    emailVerified: (profile as any)?.email_verified,
+                    phoneVerified: (profile as any)?.phone_verified,
+                    faceVerified: (profile as any)?.face_verified,
+                    averageRating: profile?.average_rating,
+                    ratingCount: profile?.rating_count,
+                    avgResponseTimeSeconds: (profile as any)?.avg_response_time_seconds
+                  }}
+                  size="sm"
+                />
+              </div>
+              
+              <p className="text-muted-foreground text-base">
+                {profile?.profession || 'Add your profession'}
+              </p>
+              
+              {/* Location & Status Badges */}
+              <div className="flex items-center gap-3 mt-2 flex-wrap">
+                {(profile?.state_name || profile?.lga_name) && (
+                  <span className="text-sm text-muted-foreground flex items-center gap-1">
+                    <MapPin className="h-3.5 w-3.5" />
+                    {profile.lga_name}{profile.state_name && `, ${profile.state_name}`}
+                  </span>
+                )}
                 {profile?.is_expert && (
-                  <Badge className="bg-primary/10 text-primary border-primary/20 text-sm px-3 py-1">
-                    <Award className="h-4 w-4 mr-2" />
+                  <Badge variant="secondary" className="text-xs">
+                    <Award className="h-3 w-3 mr-1" />
                     Expert
                   </Badge>
                 )}
                 {profile?.is_premium && (
-                  <Badge className="bg-gradient-to-r from-yellow-500/20 to-amber-500/20 text-yellow-600 dark:text-yellow-400 border-yellow-500/30 text-sm px-3 py-1">
-                    <Crown className="h-4 w-4 mr-2" />
+                  <Badge className="bg-gradient-to-r from-yellow-500/20 to-amber-500/20 text-yellow-600 dark:text-yellow-400 border-yellow-500/30 text-xs">
+                    <Crown className="h-3 w-3 mr-1" />
                     Premium
                   </Badge>
                 )}
               </div>
-              
-              <p className="text-muted-foreground text-base leading-relaxed mb-4">
-                {profile?.bio || 'Tell us about yourself'}
+            </div>
+            
+            {/* Bio */}
+            {profile?.bio && (
+              <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+                {profile.bio}
               </p>
-              
-              {/* Location */}
-              {(profile?.state_name || profile?.lga_name) && (
-                <div className="flex items-center gap-2 text-base text-muted-foreground">
-                  <MapPin className="h-5 w-5" />
-                  <span>{profile.lga_name}{profile.state_name && `, ${profile.state_name}`}</span>
-                </div>
+            )}
+            
+            {/* Stats Row */}
+            <div className="flex items-center gap-6 pt-4 border-t border-border">
+              <button 
+                onClick={() => navigate('/connections')}
+                className="text-center hover:text-primary transition-colors"
+              >
+                <span className="text-lg font-bold text-foreground">{profile?.connections_count || 0}</span>
+                <span className="text-sm text-muted-foreground ml-1">connections</span>
+              </button>
+              <div className="text-center">
+                <span className="text-lg font-bold text-foreground flex items-center gap-1">
+                  <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />
+                  {profile?.average_rating ? profile.average_rating.toFixed(1) : '0.0'}
+                </span>
+                <span className="text-sm text-muted-foreground">({profile?.rating_count || 0})</span>
+              </div>
+              {isOwnProfile && (
+                <>
+                  <div className="text-center">
+                    <span className="text-lg font-bold text-primary">NC {profile?.wallet_balance?.toFixed(0) || '0'}</span>
+                    <span className="text-sm text-muted-foreground ml-1">balance</span>
+                  </div>
+                  <div className="text-center">
+                    <span className="text-lg font-bold text-foreground">{postsCount}</span>
+                    <span className="text-sm text-muted-foreground ml-1">posts</span>
+                  </div>
+                </>
               )}
             </div>
           </div>
-
-          {/* Stats Row - Enhanced */}
-          <div className="grid grid-cols-4 gap-6 pt-6 border-t border-border">
-            <button 
-              onClick={() => navigate('/connections')}
-              className="text-center hover:bg-accent/50 rounded-xl p-4 transition-all hover:scale-105"
-            >
-              <div className="text-2xl font-bold text-primary mb-1">{profile?.connections_count || 0}</div>
-              <div className="text-sm text-muted-foreground font-medium">Connections</div>
-            </button>
-            <div className="text-center p-4">
-              <div className="text-2xl font-bold text-primary mb-1">
-                {profile?.average_rating ? profile.average_rating.toFixed(1) : '0.0'}
-              </div>
-              <div className="text-sm text-muted-foreground font-medium flex items-center justify-center gap-1">
-                <Star className="h-4 w-4 fill-current" />
-                Rating
-              </div>
-            </div>
-            {isOwnProfile && (
-              <>
-                <div className="text-center p-4">
-                  <div className="text-2xl font-bold text-primary mb-1">NC {profile?.wallet_balance?.toFixed(0) || '0'}</div>
-                  <div className="text-sm text-muted-foreground font-medium">Balance</div>
-                </div>
-                <div className="text-center p-4">
-                  <div className="text-2xl font-bold text-primary mb-1">{postsCount}</div>
-                  <div className="text-sm text-muted-foreground font-medium">Posts</div>
-                </div>
-              </>
-            )}
-            {!isOwnProfile && (
-              <>
-                <div className="text-center p-4">
-                  <div className="text-2xl font-bold text-primary mb-1">{profile?.rating_count || 0}</div>
-                  <div className="text-sm text-muted-foreground font-medium">Reviews</div>
-                </div>
-                <div className="text-center p-4">
-                  <div className="text-2xl font-bold text-primary mb-1">
-                    {profile?.is_expert ? 'Yes' : 'No'}
-                  </div>
-                  <div className="text-sm text-muted-foreground font-medium">Expert</div>
-                </div>
-              </>
-            )}
-          </div>
         </div>
 
-        {/* Enhanced Tabs Section */}
+        {/* Tabs Section - Compact */}
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 h-14 p-1 bg-muted rounded-xl mb-8">
-            <TabsTrigger value="overview" className="text-base">Overview</TabsTrigger>
-            {isOwnProfile && <TabsTrigger value="saved" className="text-base">Saved</TabsTrigger>}
-            <TabsTrigger value="skills" className="text-base">Skills</TabsTrigger>
-            <TabsTrigger value="portfolio" className="text-base">Portfolio</TabsTrigger>
-            {!isOwnProfile && <TabsTrigger value="reviews" className="text-base">Reviews</TabsTrigger>}
+          <TabsList className="grid w-full grid-cols-4 h-12 p-1 bg-card border border-border rounded-xl mb-4">
+            <TabsTrigger value="overview" className="text-sm">Overview</TabsTrigger>
+            {isOwnProfile && <TabsTrigger value="saved" className="text-sm">Saved</TabsTrigger>}
+            <TabsTrigger value="skills" className="text-sm">Skills</TabsTrigger>
+            <TabsTrigger value="portfolio" className="text-sm">Portfolio</TabsTrigger>
+            {!isOwnProfile && <TabsTrigger value="reviews" className="text-sm">Reviews</TabsTrigger>}
           </TabsList>
           
           <TabsContent value="overview" className="space-y-6">

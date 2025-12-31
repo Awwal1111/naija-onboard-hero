@@ -19,6 +19,7 @@ interface ChatPreview {
     profile_picture_url?: string
   }
   last_message?: string
+  unread_count: number
 }
 
 const MessagesTab: React.FC = () => {
@@ -71,10 +72,19 @@ const MessagesTab: React.FC = () => {
             .limit(1)
             .single()
 
+          // Get unread count - messages from other user that we haven't read
+          const { count: unreadCount } = await supabase
+            .from('messages')
+            .select('*', { count: 'exact', head: true })
+            .eq('chat_id', chat.id)
+            .eq('sender_id', otherUserId)
+            .is('read_at', null)
+
           return {
             ...chat,
             other_user: profile || { user_id: otherUserId, full_name: 'Unknown User' },
-            last_message: lastMessage?.content
+            last_message: lastMessage?.content,
+            unread_count: unreadCount || 0
           }
         })
       )
@@ -170,31 +180,49 @@ const MessagesTab: React.FC = () => {
       ) : (
         <div className="space-y-2">
           {filteredChats.map((chat) => (
-            <Card key={chat.id} className="hover:shadow-md transition-shadow cursor-pointer">
+            <Card 
+              key={chat.id} 
+              className={`hover:shadow-md transition-shadow cursor-pointer ${
+                chat.unread_count > 0 ? 'bg-primary/5 border-primary/20' : ''
+              }`}
+            >
               <CardContent 
                 className="p-4"
                 onClick={() => navigate(`/chat/${chat.other_user.user_id}`)}
               >
                 <div className="flex items-center gap-3">
-                  <Avatar className="h-12 w-12">
-                    <AvatarImage src={chat.other_user.profile_picture_url} />
-                    <AvatarFallback>
-                      {chat.other_user.full_name.charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
+                  <div className="relative">
+                    <Avatar className="h-12 w-12">
+                      <AvatarImage src={chat.other_user.profile_picture_url} />
+                      <AvatarFallback>
+                        {chat.other_user.full_name.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                    {chat.unread_count > 0 && (
+                      <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary text-primary-foreground text-xs font-bold rounded-full flex items-center justify-center">
+                        {chat.unread_count > 9 ? '9+' : chat.unread_count}
+                      </span>
+                    )}
+                  </div>
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                      <h4 className="font-medium text-text-primary truncate">
+                      <h4 className={`font-medium truncate ${
+                        chat.unread_count > 0 ? 'text-foreground font-semibold' : 'text-text-primary'
+                      }`}>
                         {chat.other_user.full_name}
                       </h4>
-                      <span className="text-xs text-muted-foreground">
+                      <span className={`text-xs ${
+                        chat.unread_count > 0 ? 'text-primary font-medium' : 'text-muted-foreground'
+                      }`}>
                         {formatTime(chat.updated_at)}
                       </span>
                     </div>
                     
                     {chat.last_message && (
-                      <p className="text-sm text-text-secondary truncate mt-1">
+                      <p className={`text-sm truncate mt-1 ${
+                        chat.unread_count > 0 ? 'text-foreground font-medium' : 'text-text-secondary'
+                      }`}>
                         {chat.last_message}
                       </p>
                     )}
