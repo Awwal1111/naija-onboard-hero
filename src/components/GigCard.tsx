@@ -5,6 +5,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { BookmarkButton } from '@/components/BookmarkButton';
 import { cn } from '@/lib/utils';
+import { getCategoryPlaceholder, getCategoryIcon, normalizeCategory } from '@/lib/gigCategories';
 
 export interface GigCardProps {
   id: string;
@@ -57,7 +58,12 @@ export const GigCard: React.FC<GigCardProps> = ({
     }
   };
 
-  const coverImage = photo_urls?.[0] || '/placeholder.svg';
+  // Use uploaded image or category-specific placeholder
+  const normalizedCategory = normalizeCategory(category);
+  const hasUserImage = photo_urls && photo_urls.length > 0 && photo_urls[0] && !photo_urls[0].includes('placeholder');
+  const coverImage = hasUserImage ? photo_urls[0] : getCategoryPlaceholder(normalizedCategory);
+  const categoryIcon = getCategoryIcon(normalizedCategory);
+  
   // Use actual review data, fall back to seller rating if no reviews yet
   const displayRating = average_rating || seller_rating || 0;
   const displayReviewCount = review_count;
@@ -96,8 +102,9 @@ export const GigCard: React.FC<GigCardProps> = ({
         </div>
         {/* Category Badge */}
         <div className="absolute bottom-2 left-2">
-          <Badge variant="secondary" className="text-[10px] bg-background/90 backdrop-blur-sm">
-            {category}
+          <Badge variant="secondary" className="text-[10px] bg-background/90 backdrop-blur-sm gap-1">
+            <span>{categoryIcon}</span>
+            {normalizedCategory}
           </Badge>
         </div>
       </div>
@@ -180,7 +187,10 @@ export const GigCardCompact: React.FC<GigCardProps> = ({
 }) => {
   const navigate = useNavigate();
   
-  const coverImage = photo_urls?.[0] || '/placeholder.svg';
+  // Use uploaded image or category-specific placeholder
+  const normalizedCategory = normalizeCategory(category);
+  const hasUserImage = photo_urls && photo_urls.length > 0 && photo_urls[0] && !photo_urls[0].includes('placeholder');
+  const coverImage = hasUserImage ? photo_urls[0] : getCategoryPlaceholder(normalizedCategory);
   const displayRating = seller_rating || 5.0;
 
   return (
