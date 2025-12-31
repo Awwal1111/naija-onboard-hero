@@ -41,6 +41,7 @@ import { PremiumSubscriptionDialog } from '@/components/PremiumSubscriptionDialo
 import { PremiumContactButtons } from '@/components/PremiumContactButtons'
 import { ProfileVideoIntro } from '@/components/premium/ProfileVideoIntro'
 import { PortfolioVideos } from '@/components/premium/PortfolioVideos'
+import { PremiumFeatureGate } from '@/components/premium/PremiumFeatureGate'
 // ExpertVerificationSection moved to Experts page
 
 const Profile = () => {
@@ -650,13 +651,61 @@ const Profile = () => {
               </Card>
             )}
 
-            {/* Premium Contact Buttons - Show on other user's profile if they're premium */}
-            {!isOwnProfile && profile?.is_premium && (
+            {/* Premium Contact Buttons - For owners: show with gate if not premium, for visitors: only show if profile is premium */}
+            {isOwnProfile ? (
+              <Card className="mb-4">
+                <CardContent className="pt-4">
+                  {profile?.is_premium ? (
+                    <PremiumContactButtons
+                      phoneNumber={profile?.phone_number}
+                      email={userEmail}
+                      whatsappNumber={profile?.whatsapp_number}
+                      googleMeetLink={profile?.google_meet_link}
+                      facebookUrl={profile?.facebook_url}
+                      isPremium={true}
+                    />
+                  ) : (
+                    <PremiumFeatureGate
+                      isPremium={false}
+                      featureName="Premium Contact Buttons"
+                      featureDescription="Let clients reach you directly via WhatsApp, Phone, Email, and Google Meet. Upgrade to Premium to enable these contact options on your profile!"
+                      showLockIcon={false}
+                    >
+                      <div className="space-y-3 opacity-60">
+                        <div className="flex items-center gap-2">
+                          <Crown className="h-4 w-4 text-yellow-500" />
+                          <span className="text-sm font-medium text-muted-foreground">
+                            Premium Contact Options
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <Button variant="outline" size="sm" disabled className="opacity-50">
+                            <MessageCircle className="h-4 w-4 mr-1" />
+                            WhatsApp
+                          </Button>
+                          <Button variant="outline" size="sm" disabled className="opacity-50">
+                            <Phone className="h-4 w-4 mr-1" />
+                            Call
+                          </Button>
+                          <Button variant="outline" size="sm" disabled className="opacity-50">
+                            <Mail className="h-4 w-4 mr-1" />
+                            Email
+                          </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Tap to upgrade and let clients contact you directly
+                        </p>
+                      </div>
+                    </PremiumFeatureGate>
+                  )}
+                </CardContent>
+              </Card>
+            ) : profile?.is_premium && (
               <Card className="mb-4">
                 <CardContent className="pt-4">
                   <PremiumContactButtons
                     phoneNumber={profile?.phone_number}
-                    email={userEmail}
+                    email={profile?.email}
                     whatsappNumber={profile?.whatsapp_number}
                     googleMeetLink={profile?.google_meet_link}
                     facebookUrl={profile?.facebook_url}
