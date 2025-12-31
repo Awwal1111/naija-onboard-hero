@@ -20,6 +20,7 @@ import {
   Clock
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { ReferralProgressCard } from '@/components/ReferralProgressCard'
 
 interface Referral {
   id: string
@@ -165,60 +166,14 @@ export const Referrals = () => {
           <div className="w-10" />
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-3 gap-3">
-          <Card className="border-accent/20">
-            <CardContent className="p-3 text-center">
-              <Users className="h-6 w-6 text-primary mx-auto mb-1" />
-              <p className="text-lg font-bold text-primary">{referrals.length}</p>
-              <p className="text-xs text-muted-foreground">Total</p>
-            </CardContent>
-          </Card>
-          <Card className="border-accent/20">
-            <CardContent className="p-3 text-center">
-              <Clock className="h-6 w-6 text-orange-500 mx-auto mb-1" />
-              <p className="text-lg font-bold text-orange-500">{pendingReferrals}</p>
-              <p className="text-xs text-muted-foreground">Pending</p>
-            </CardContent>
-          </Card>
-          <Card className="border-accent/20">
-            <CardContent className="p-3 text-center">
-              <Coins className="h-6 w-6 text-green-500 mx-auto mb-1" />
-              <p className="text-lg font-bold text-green-500">{totalEarned} NC</p>
-              <p className="text-xs text-muted-foreground">Earned</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Your Referral Code */}
-        <Card className="border-accent/20">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Share className="h-5 w-5 text-primary" />
-              <span>Your Referral Code</span>
-            </CardTitle>
-            <CardDescription>
-              Share this code with friends to earn 100 NC when they reach 1000 NC
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="bg-primary/10 rounded-lg p-4 text-center">
-              <p className="text-2xl font-mono font-bold text-primary">
-                {profile.referral_code}
-              </p>
-            </div>
-            <div className="flex space-x-2">
-              <Button onClick={copyReferralLink} variant="outline" className="flex-1">
-                <Copy className="h-4 w-4 mr-2" />
-                Copy Link
-              </Button>
-              <Button onClick={shareReferralCode} className="flex-1">
-                <Share className="h-4 w-4 mr-2" />
-                Share
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Enhanced Referral Progress Card */}
+        <ReferralProgressCard
+          referralCode={profile.referral_code || ''}
+          totalReferrals={referrals.length}
+          pendingReferrals={pendingReferrals}
+          completedReferrals={completedReferrals}
+          totalEarnings={totalEarned}
+        />
 
         {/* Apply Referral Code */}
         <Card className="border-accent/20">

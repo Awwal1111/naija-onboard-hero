@@ -9,6 +9,7 @@ import { Facebook, Youtube, Linkedin, MessageSquare, Phone, Users, Shield, Arrow
 import heroImage from '@/assets/hero-image.jpg'
 
 import { LeaderboardSection } from '@/components/LeaderboardSection'
+import { SuccessStoriesSection } from '@/components/SuccessStoriesSection'
 
 const Index = () => {
   const handleSocialLink = (url: string) => {
@@ -318,8 +319,8 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Social proof moved to dedicated page */}
-
+      {/* Success Stories Section */}
+      <SuccessStoriesSection />
       {/* Leaderboard Section */}
       <section className="py-16">
         <div className="container mx-auto px-6">

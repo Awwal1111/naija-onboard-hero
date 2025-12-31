@@ -5,8 +5,9 @@ import { Helmet } from 'react-helmet-async';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Briefcase, MapPin, DollarSign } from 'lucide-react';
+import { ArrowLeft, Briefcase, MapPin, DollarSign, Share2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ShareButtons } from '@/components/ShareButtons';
 
 export default function PublicJob() {
   const { jobId } = useParams<{ jobId: string }>();
@@ -151,6 +152,19 @@ export default function PublicJob() {
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Share Section */}
+          <div className="mb-6 p-4 bg-muted/30 rounded-lg">
+            <p className="text-sm font-medium mb-2 flex items-center gap-2">
+              <Share2 className="h-4 w-4" />
+              Share this job
+            </p>
+            <ShareButtons
+              title={job.title}
+              text={`🚀 ${job.title}${job.company_name ? ` at ${job.company_name}` : ''} - Check out this job on NaijaLancers!`}
+              url={`/job/${job.id}`}
+            />
           </div>
 
           <Button size="lg" onClick={() => navigate('/login')}>

@@ -24,6 +24,7 @@ import { GigBoostDialog } from '@/components/GigBoostDialog';
 import { GigTestimonialsSection } from '@/components/GigTestimonialsSection';
 import { GigFAQSection } from '@/components/GigFAQSection';
 import { useGigOrders } from '@/hooks/useGigOrders';
+import { ShareButtons } from '@/components/ShareButtons';
 
 export default function PublicGig() {
   const { gigId } = useParams<{ gigId: string }>();
@@ -634,6 +635,20 @@ export default function PublicGig() {
                 <GigFAQSection gigId={gig.id} isOwner={isOwner} />
               </TabsContent>
             </Tabs>
+
+            {/* Share Section */}
+            <Card className="p-4 mt-6">
+              <p className="text-sm font-medium mb-3 flex items-center gap-2">
+                <Share2 className="h-4 w-4" />
+                Share this gig
+              </p>
+              <ShareButtons
+                title={gig.title}
+                text={`🔥 Check out "${gig.title}" on NaijaLancers - Starting at ₦${gig.price?.toLocaleString()}!`}
+                url={`/gig/${gig.id}`}
+                showLabels
+              />
+            </Card>
           </div>
         </div>
 
