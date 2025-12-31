@@ -182,3 +182,6 @@ verify_jwt = false
 
 [functions.notify-matching-content]
 verify_jwt = false
+
+[functions.learn-assessment]
+verify_jwt = true
