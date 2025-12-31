@@ -1772,6 +1772,165 @@ export type Database = {
           },
         ]
       }
+      gig_order_messages: {
+        Row: {
+          attachments: string[] | null
+          created_at: string
+          id: string
+          message: string
+          order_id: string
+          sender_id: string
+        }
+        Insert: {
+          attachments?: string[] | null
+          created_at?: string
+          id?: string
+          message: string
+          order_id: string
+          sender_id: string
+        }
+        Update: {
+          attachments?: string[] | null
+          created_at?: string
+          id?: string
+          message?: string
+          order_id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gig_order_messages_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "gig_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gig_order_milestones: {
+        Row: {
+          amount: number
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          due_date: string | null
+          id: string
+          order_id: string
+          status: string
+          title: string
+        }
+        Insert: {
+          amount: number
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          order_id: string
+          status?: string
+          title: string
+        }
+        Update: {
+          amount?: number
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          order_id?: string
+          status?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gig_order_milestones_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "gig_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gig_orders: {
+        Row: {
+          amount: number
+          buyer_id: string
+          buyer_notes: string | null
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          completed_at: string | null
+          created_at: string
+          delivered_at: string | null
+          delivery_deadline: string | null
+          delivery_files: string[] | null
+          description: string | null
+          gig_id: string
+          id: string
+          max_revisions: number | null
+          platform_fee: number | null
+          revision_count: number | null
+          seller_id: string
+          seller_notes: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          buyer_id: string
+          buyer_notes?: string | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          delivery_deadline?: string | null
+          delivery_files?: string[] | null
+          description?: string | null
+          gig_id: string
+          id?: string
+          max_revisions?: number | null
+          platform_fee?: number | null
+          revision_count?: number | null
+          seller_id: string
+          seller_notes?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          buyer_id?: string
+          buyer_notes?: string | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          delivery_deadline?: string | null
+          delivery_files?: string[] | null
+          description?: string | null
+          gig_id?: string
+          id?: string
+          max_revisions?: number | null
+          platform_fee?: number | null
+          revision_count?: number | null
+          seller_id?: string
+          seller_notes?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gig_orders_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "jobs_services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gig_reviews: {
         Row: {
           comment: string | null

@@ -85,6 +85,8 @@ import Leaderboard from "./pages/Leaderboard";
 import Learn from "./pages/Learn";
 import ExpertClass from "./pages/ExpertClass";
 import Notifications from "./pages/Notifications";
+import Orders from "./pages/Orders";
+import OrderDetail from "./pages/OrderDetail";
 
 // Component to handle app state persistence
 const AppStateManager = () => {
@@ -173,6 +175,8 @@ const App = () => (
           <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
           <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
           <Route path="/learn" element={<ProtectedRoute><Learn /></ProtectedRoute>} />
+          <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
+          <Route path="/orders/:orderId" element={<ProtectedRoute><OrderDetail /></ProtectedRoute>} />
           <Route path="/payment-success" element={<PaymentSuccess />} />
           <Route path="/payment-failed" element={<PaymentFailed />} />
           
