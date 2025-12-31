@@ -81,6 +81,10 @@ export default function ProductDetail() {
         throw new Error("Insufficient balance");
       }
 
+      // Calculate platform fee (5%)
+      const platformFee = Math.round(product.price * 0.05);
+      const sellerAmount = product.price - platformFee;
+
       // Deduct from buyer
       await supabase
         .from("profiles")
@@ -90,10 +94,10 @@ export default function ProductDetail() {
         })
         .eq("user_id", user.id);
 
-      // Credit seller
+      // Credit seller (minus platform fee)
       await supabase.rpc("increment_wallet_balance", {
         target_user_id: product.user_id,
-        amount_to_add: product.price,
+        amount_to_add: sellerAmount,
       });
 
       // Record purchase
@@ -127,9 +131,16 @@ export default function ProductDetail() {
         {
           user_id: product.user_id,
           kind: "product_sale",
-          amount: product.price,
+          amount: sellerAmount,
           status: "completed",
-          reference: `Sale: ${product.title}`,
+          reference: `Sale: ${product.title} (after 5% fee)`,
+        },
+        {
+          user_id: product.user_id,
+          kind: "platform_fee",
+          amount: -platformFee,
+          status: "completed",
+          reference: `Platform fee (5%): ${product.title}`,
         },
       ]);
     },
