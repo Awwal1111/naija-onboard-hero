@@ -44,6 +44,7 @@ export const ExpertCard: React.FC<ExpertCardProps> = ({ expert, viewMode, onProf
   const reviewCount = expert.profiles?.rating_count || 0;
   const verificationStatus = expert.profiles?.verification_status || expert.verification_status || 'unverified';
   const isVerified = verificationStatus === 'verified';
+  const isSubmitted = verificationStatus === 'submitted';
   const isBoosted = expert.is_boosted;
   
   // Format response time
@@ -55,12 +56,39 @@ export const ExpertCard: React.FC<ExpertCardProps> = ({ expert, viewMode, onProf
     return null;
   };
 
+  // Get verification badge
+  const getVerificationBadge = () => {
+    if (isVerified) {
+      return (
+        <Badge className="bg-green-500/90 text-white text-[10px] px-1.5 py-0">
+          <CheckCircle className="h-2.5 w-2.5 mr-0.5" />
+          Verified
+        </Badge>
+      );
+    }
+    if (isSubmitted) {
+      return (
+        <Badge className="bg-yellow-500/80 text-white text-[10px] px-1.5 py-0">
+          <Clock className="h-2.5 w-2.5 mr-0.5" />
+          Pending
+        </Badge>
+      );
+    }
+    return null;
+  };
+
   if (viewMode === 'grid') {
     return (
       <Card className={`group overflow-hidden hover:shadow-lg transition-all duration-300 ${isBoosted ? 'ring-2 ring-amber-400/50 border-amber-400/30' : 'hover:border-primary/50'}`}>
         <CardContent className="p-0">
           {/* Header with gradient */}
-          <div className={`h-16 relative ${isBoosted ? 'bg-gradient-to-br from-amber-500/30 to-orange-500/20' : 'bg-gradient-to-br from-primary/20 to-primary/5'}`}>
+          <div className={`h-16 relative ${
+            isVerified 
+              ? 'bg-gradient-to-br from-green-500/20 to-emerald-500/10' 
+              : isBoosted 
+              ? 'bg-gradient-to-br from-amber-500/30 to-orange-500/20' 
+              : 'bg-gradient-to-br from-primary/20 to-primary/5'
+          }`}>
             <div className="absolute top-2 right-2 flex gap-1">
               {isBoosted && (
                 <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px] px-1.5 py-0">
@@ -68,12 +96,7 @@ export const ExpertCard: React.FC<ExpertCardProps> = ({ expert, viewMode, onProf
                   Boosted
                 </Badge>
               )}
-              {isVerified && (
-                <Badge className="bg-green-500/90 text-white text-[10px] px-1.5 py-0">
-                  <CheckCircle className="h-2.5 w-2.5 mr-0.5" />
-                  Verified
-                </Badge>
-              )}
+              {getVerificationBadge()}
             </div>
           </div>
           
@@ -189,12 +212,17 @@ export const ExpertCard: React.FC<ExpertCardProps> = ({ expert, viewMode, onProf
               >
                 {name}
               </h3>
-              {isVerified && (
+              {isVerified ? (
                 <Badge className="bg-green-500/10 text-green-600 border-green-500/20 text-xs shrink-0">
                   <CheckCircle className="h-3 w-3 mr-1" />
                   Verified
                 </Badge>
-              )}
+              ) : isSubmitted ? (
+                <Badge className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20 text-xs shrink-0">
+                  <Clock className="h-3 w-3 mr-1" />
+                  Pending
+                </Badge>
+              ) : null}
               {isBoosted && (
                 <Badge className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-700 dark:text-amber-400 border-amber-500/30 text-xs shrink-0">
                   <TrendingUp className="h-3 w-3 mr-1" />
