@@ -128,20 +128,22 @@ const Experts = () => {
 
   // Transform personalized experts to match expected format
   const experts = personalizedExperts.map((expert: PersonalizedExpert) => ({
-    id: expert.id,
+    id: expert.user_id, // Use user_id as id since function returns user_id
     user_id: expert.user_id,
     full_name: expert.full_name,
-    skill_category: expert.skill_category,
-    years_experience: expert.years_experience,
-    location_state: expert.location_state,
-    location_lga: expert.location_lga,
-    location_area: expert.location_area,
-    status: expert.status,
+    skill_category: expert.skill_category || 'General',
+    years_experience: expert.years_experience || 0,
+    location_state: expert.state_name || '',
+    location_lga: expert.lga_name || '',
+    location_area: expert.area || '',
+    status: 'approved', // All returned experts are approved
     relevance_score: expert.relevance_score,
+    is_premium: expert.is_premium,
+    is_boosted: expert.is_boosted,
     profiles: {
       full_name: expert.full_name,
       bio: expert.bio || '',
-      profession: expert.profession || expert.skill_category,
+      profession: expert.profession || expert.skill_category || 'Expert',
       profile_picture_url: expert.profile_picture_url || '',
       average_rating: expert.average_rating,
       rating_count: expert.rating_count
