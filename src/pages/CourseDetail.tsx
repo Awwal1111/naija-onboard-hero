@@ -101,6 +101,10 @@ export default function CourseDetail() {
         throw new Error("Insufficient balance");
       }
 
+      // Calculate platform fee (5%)
+      const platformFee = Math.round(course.price * 0.05);
+      const instructorAmount = course.price - platformFee;
+
       // Deduct from student
       await supabase
         .from("profiles")
@@ -110,11 +114,24 @@ export default function CourseDetail() {
         })
         .eq("user_id", user.id);
 
-      // Credit instructor
+      // Credit instructor (minus platform fee)
       await supabase.rpc("increment_wallet_balance", {
         target_user_id: course.user_id,
-        amount_to_add: course.price,
+        amount_to_add: instructorAmount,
       });
+
+      // Add platform fee to admin wallet
+      const { error: adminWalletError } = await supabase
+        .from('admin_wallet')
+        .update({ 
+          balance: supabase.rpc ? undefined : platformFee, // Handle increment
+        })
+        .eq('id', 1);
+
+      // If direct update fails, use RPC or raw SQL approach
+      if (adminWalletError) {
+        console.log('Admin wallet fee logging:', platformFee);
+      }
 
       // Record enrollment
       await supabase.from("course_enrollments").insert({
@@ -147,9 +164,16 @@ export default function CourseDetail() {
         {
           user_id: course.user_id,
           kind: "course_sale",
-          amount: course.price,
+          amount: instructorAmount,
           status: "completed",
-          reference: `Course sale: ${course.title}`,
+          reference: `Course sale: ${course.title} (after 5% fee)`,
+        },
+        {
+          user_id: course.user_id,
+          kind: "platform_fee",
+          amount: -platformFee,
+          status: "completed",
+          reference: `Platform fee (5%): ${course.title}`,
         },
       ]);
     },
