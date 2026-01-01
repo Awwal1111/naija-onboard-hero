@@ -289,7 +289,19 @@ export const Referrals = () => {
               <div className="bg-primary/10 rounded-full p-1 mt-0.5">
                 <span className="text-xs text-primary font-bold">3</span>
               </div>
-              <p>When they earn 1000 NC, you both get 100 NC!</p>
+              <p>When they earn ₦1,000 NC, you get ₦100 NC reward!</p>
+            </div>
+            <div className="flex items-start space-x-3">
+              <div className="bg-primary/10 rounded-full p-1 mt-0.5">
+                <span className="text-xs text-primary font-bold">4</span>
+              </div>
+              <p><strong>Bonus:</strong> Get 5 quality referrals and unlock ₦500 bonus!</p>
+            </div>
+            
+            <div className="mt-4 p-3 bg-muted/50 rounded-lg">
+              <p className="text-xs">
+                <strong>Quality referral:</strong> A user who earns at least ₦1,000 NC on the platform through deposits, jobs, or other activities.
+              </p>
             </div>
           </CardContent>
         </Card>

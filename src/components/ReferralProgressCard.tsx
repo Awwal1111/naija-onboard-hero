@@ -14,10 +14,10 @@ interface ReferralProgressCardProps {
 }
 
 const milestones = [
-  { count: 5, reward: "₦500 Bonus", icon: Gift },
-  { count: 10, reward: "Premium Badge", icon: Crown },
-  { count: 25, reward: "₦2,500 Bonus", icon: Trophy },
-  { count: 50, reward: "VIP Status", icon: Sparkles },
+  { count: 5, reward: "₦500 Bonus", icon: Gift, description: "5 quality referrals" },
+  { count: 10, reward: "Premium Badge", icon: Crown, description: "10 quality referrals" },
+  { count: 25, reward: "₦2,500 Bonus", icon: Trophy, description: "25 quality referrals" },
+  { count: 50, reward: "VIP Status", icon: Sparkles, description: "50 quality referrals" },
 ];
 
 export const ReferralProgressCard = ({
@@ -106,10 +106,18 @@ export const ReferralProgressCard = ({
           })}
         </div>
 
+        {/* Quality Referral Info */}
+        <div className="bg-amber-50 dark:bg-amber-950/30 rounded-lg p-3 text-sm">
+          <p className="font-medium text-amber-800 dark:text-amber-200 mb-1">What counts as a quality referral?</p>
+          <p className="text-amber-700 dark:text-amber-300 text-xs">
+            Your referred user must earn at least ₦1,000 NC on the platform. This ensures genuine, active users.
+          </p>
+        </div>
+
         {/* Share Section */}
         <div className="pt-3 border-t border-border space-y-3">
           <p className="text-sm font-medium text-center">
-            Share your link & earn ₦100 per signup!
+            Share your link & earn ₦100 per quality referral!
           </p>
           
           <div className="bg-muted/50 rounded-lg p-2 text-center">
