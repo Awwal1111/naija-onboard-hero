@@ -45,18 +45,34 @@ export interface SavedOutput {
 function detectAction(message: string): { action: string; prompt: string } | null {
   const lowerMsg = message.toLowerCase();
   
-  // Image generation
-  if (lowerMsg.includes('generate image:') || lowerMsg.includes('create image:') ||
-      lowerMsg.includes('make an image') || lowerMsg.includes('create a logo') ||
-      lowerMsg.includes('design a logo') || lowerMsg.includes('make a logo') ||
-      lowerMsg.includes('generate a logo') || lowerMsg.includes('create a banner') ||
-      lowerMsg.includes('design a banner') || lowerMsg.includes('make a banner') ||
-      lowerMsg.includes('create a poster') || lowerMsg.includes('design a poster') ||
-      lowerMsg.includes('create a graphic') || lowerMsg.includes('design a graphic') ||
-      lowerMsg.startsWith('draw ') || lowerMsg.includes('generate an image') ||
-      lowerMsg.includes('create an image') || lowerMsg.includes('make me an image') ||
-      lowerMsg.includes('generate a picture') || lowerMsg.includes('create a picture')) {
-    const prompt = message.replace(/generate image:|create image:/i, '').trim();
+  // Image generation - expanded detection patterns
+  const imageKeywords = [
+    'generate image:', 'create image:', 'make an image', 'create a logo',
+    'design a logo', 'make a logo', 'generate a logo', 'create a banner',
+    'design a banner', 'make a banner', 'create a poster', 'design a poster',
+    'create a graphic', 'design a graphic', 'generate an image', 'create an image',
+    'make me an image', 'generate a picture', 'create a picture', 'make a picture',
+    'draw ', 'draw me', 'can you create', 'can you make', 'can you design',
+    'please create', 'please make', 'please design', 'please generate',
+    'i need an image', 'i need a picture', 'i need a logo', 'i need a banner',
+    'create me a', 'make me a', 'design me a', 'generate me a',
+    'create for me', 'make for me', 'design for me',
+    'create picture', 'make picture', 'generate picture',
+    'create this image', 'make this image', 'generate this image',
+    'image of', 'picture of', 'photo of', 'illustration of',
+    'create an illustration', 'make an illustration', 'design an illustration',
+    'create artwork', 'make artwork', 'design artwork',
+    'create a design', 'make a design'
+  ];
+  
+  const isImageRequest = imageKeywords.some(kw => lowerMsg.includes(kw)) ||
+    // Also check for pattern like "create/make/design [something] for me"
+    /(?:create|make|design|generate|draw)\s+(?:a|an|the|me|some)?\s*(?:logo|image|picture|banner|poster|graphic|illustration|artwork|flyer|thumbnail|icon|avatar)/i.test(lowerMsg);
+  
+  if (isImageRequest) {
+    const prompt = message
+      .replace(/generate image:|create image:|please|can you|for me|i need/gi, '')
+      .trim();
     return { action: 'generate_image', prompt: prompt || message };
   }
   
