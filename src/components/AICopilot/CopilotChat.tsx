@@ -3,7 +3,8 @@ import {
   Send, Loader2, Image as ImageIcon, Sparkles, Download, 
   Bookmark, Settings, Trash2, Copy, MoreVertical, FileText,
   Code, Palette, MessageSquare, Zap, Bot, Search, Globe, Upload, X,
-  Volume2, FileSearch, Mic
+  Volume2, FileSearch, Mic, Library, Wand2, Languages, Calculator,
+  TrendingUp, PenTool, BookOpen, Lightbulb
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -28,6 +29,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import CopilotSettings from './CopilotSettings';
+import CopilotTemplates from './CopilotTemplates';
+import CopilotCapabilities from './CopilotCapabilities';
 
 const CopilotChat = () => {
   const { toast } = useToast();
@@ -44,6 +47,8 @@ const CopilotChat = () => {
 
   const [input, setInput] = useState('');
   const [showSettings, setShowSettings] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [showCapabilities, setShowCapabilities] = useState(false);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [saveTitle, setSaveTitle] = useState('');
   const [messageToSave, setMessageToSave] = useState<CopilotMessage | null>(null);
@@ -198,12 +203,15 @@ const CopilotChat = () => {
   };
 
   const quickActions = [
-    { icon: Search, label: 'Web Search', prompt: '', actionType: 'search' },
-    { icon: ImageIcon, label: 'Generate Image', prompt: '', actionType: 'image' },
-    { icon: FileSearch, label: 'Scrape Website', prompt: '', actionType: 'scrape' },
-    { icon: FileText, label: 'Write Proposal', prompt: 'Help me write a professional proposal for a client project', actionType: 'text' },
-    { icon: Code, label: 'Generate Code', prompt: 'Help me write code for', actionType: 'text' },
-    { icon: MessageSquare, label: 'Client Email', prompt: 'Help me draft a professional email to a client about', actionType: 'text' },
+    { icon: Search, label: 'Web Search', prompt: '', actionType: 'search', color: 'text-blue-500' },
+    { icon: ImageIcon, label: 'Generate Image', prompt: '', actionType: 'image', color: 'text-purple-500' },
+    { icon: FileSearch, label: 'Scrape Website', prompt: '', actionType: 'scrape', color: 'text-orange-500' },
+    { icon: FileText, label: 'Write Proposal', prompt: 'Help me write a professional proposal for a client project', actionType: 'text', color: 'text-indigo-500' },
+    { icon: Code, label: 'Generate Code', prompt: 'Help me write code for', actionType: 'text', color: 'text-yellow-500' },
+    { icon: Languages, label: 'Translate', prompt: 'Translate the following text to', actionType: 'text', color: 'text-cyan-500' },
+    { icon: Calculator, label: 'Calculate', prompt: 'Help me calculate', actionType: 'text', color: 'text-pink-500' },
+    { icon: TrendingUp, label: 'Marketing Plan', prompt: 'Create a marketing strategy for', actionType: 'text', color: 'text-emerald-500' },
+    { icon: PenTool, label: 'Design Brief', prompt: 'Create a design brief for', actionType: 'text', color: 'text-fuchsia-500' },
   ];
 
   const copilotName = settings?.copilot_name || 'NaijaLancers Copilot';
@@ -266,45 +274,87 @@ const CopilotChat = () => {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 && (
-          <div className="text-center py-8">
-            <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-primary via-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-              <Bot className="h-10 w-10 text-white" />
+          <div className="text-center py-6">
+            <div className="w-24 h-24 mx-auto mb-4 bg-gradient-to-br from-primary via-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-lg shadow-primary/25">
+              <Bot className="h-12 w-12 text-white" />
             </div>
-            <h2 className="text-xl font-semibold mb-2">Hey! I'm {copilotName} 🚀</h2>
-            <p className="text-muted-foreground mb-2 max-w-md mx-auto">
-              Your elite AI freelancing partner. I think deeply, research thoroughly, and deliver expert-level solutions.
+            <h2 className="text-2xl font-bold mb-2 bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent">
+              Hey! I'm {copilotName} 🚀
+            </h2>
+            <p className="text-muted-foreground mb-4 max-w-md mx-auto">
+              Your elite AI freelancing partner with superpowers. I can research, create, code, design, and help you win clients.
             </p>
-            <div className="flex flex-wrap justify-center gap-1 mb-6">
-              <Badge variant="outline" className="text-xs">Perplexity Search</Badge>
-              <Badge variant="outline" className="text-xs">Firecrawl Scrape</Badge>
-              <Badge variant="outline" className="text-xs">ElevenLabs TTS</Badge>
-              <Badge variant="outline" className="text-xs">Image Gen</Badge>
+            
+            {/* Capabilities badges */}
+            <div className="flex flex-wrap justify-center gap-2 mb-6">
+              <Badge className="bg-blue-500/10 text-blue-500 border-blue-500/30">
+                <Search className="h-3 w-3 mr-1" /> Web Search
+              </Badge>
+              <Badge className="bg-purple-500/10 text-purple-500 border-purple-500/30">
+                <ImageIcon className="h-3 w-3 mr-1" /> Image Gen
+              </Badge>
+              <Badge className="bg-orange-500/10 text-orange-500 border-orange-500/30">
+                <FileSearch className="h-3 w-3 mr-1" /> Web Scraping
+              </Badge>
+              <Badge className="bg-green-500/10 text-green-500 border-green-500/30">
+                <Volume2 className="h-3 w-3 mr-1" /> Text-to-Speech
+              </Badge>
+              <Badge className="bg-yellow-500/10 text-yellow-500 border-yellow-500/30">
+                <Code className="h-3 w-3 mr-1" /> Code Generation
+              </Badge>
+              <Badge className="bg-cyan-500/10 text-cyan-500 border-cyan-500/30">
+                <Languages className="h-3 w-3 mr-1" /> Translation
+              </Badge>
             </div>
 
-            {/* Quick Actions */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-w-lg mx-auto">
+            {/* Main action buttons */}
+            <div className="flex justify-center gap-3 mb-6">
+              <Button 
+                onClick={() => setShowTemplates(true)}
+                className="gap-2"
+              >
+                <Library className="h-4 w-4" />
+                Templates Library
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={() => setShowCapabilities(true)}
+                className="gap-2"
+              >
+                <Wand2 className="h-4 w-4" />
+                See All Powers
+              </Button>
+            </div>
+
+            {/* Quick Actions Grid */}
+            <div className="grid grid-cols-3 gap-2 max-w-xl mx-auto mb-6">
               {quickActions.map((action, i) => (
                 <Button
                   key={i}
-                  variant="outline"
-                  className="flex items-center gap-2 justify-start h-auto py-3"
+                  variant="ghost"
+                  className="flex flex-col items-center gap-1 h-auto py-3 hover:bg-accent/50"
                   onClick={() => handleQuickAction(action.actionType, action.prompt)}
                 >
-                  <action.icon className="h-4 w-4 shrink-0" />
-                  <span className="text-sm">{action.label}</span>
+                  <action.icon className={`h-5 w-5 ${action.color}`} />
+                  <span className="text-xs">{action.label}</span>
                 </Button>
               ))}
             </div>
 
-            <div className="mt-6 p-4 bg-muted/50 rounded-lg max-w-md mx-auto text-left">
-              <p className="text-sm text-muted-foreground">
-                <strong>Pro Tips:</strong><br />
-                • "search: [query]" - Perplexity web search<br />
-                • "generate image: [description]" - Create images<br />
-                • "scrape: [url]" - Extract website content<br />
-                • Upload an image for AI analysis
-              </p>
-            </div>
+            {/* Tips Card */}
+            <Card className="p-4 max-w-md mx-auto text-left bg-gradient-to-br from-muted/50 to-background border-primary/10">
+              <div className="flex items-center gap-2 mb-2">
+                <Lightbulb className="h-4 w-4 text-primary" />
+                <span className="font-semibold text-sm">Pro Tips</span>
+              </div>
+              <ul className="text-xs text-muted-foreground space-y-1">
+                <li>• <strong>search:</strong> [query] - Real-time web search</li>
+                <li>• <strong>generate image:</strong> [description] - Create visuals</li>
+                <li>• <strong>scrape:</strong> [url] - Extract website content</li>
+                <li>• <strong>translate to [lang]:</strong> [text] - Translate text</li>
+                <li>• <strong>Upload images</strong> for AI analysis & feedback</li>
+              </ul>
+            </Card>
           </div>
         )}
 
@@ -496,19 +546,31 @@ const CopilotChat = () => {
             onChange={handleImageUpload}
             className="hidden"
           />
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => fileInputRef.current?.click()}
-            className="shrink-0"
-          >
-            <Upload className="h-5 w-5" />
-          </Button>
+          <div className="flex gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => fileInputRef.current?.click()}
+              className="shrink-0"
+              title="Upload image"
+            >
+              <Upload className="h-5 w-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowTemplates(true)}
+              className="shrink-0"
+              title="Templates"
+            >
+              <Library className="h-5 w-5" />
+            </Button>
+          </div>
           <Textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask anything, search the web, scrape websites, or generate images..."
+            placeholder="Ask anything - I can search, create images, generate code, write proposals, translate, and more..."
             disabled={isStreaming || isLoading}
             className="flex-1 min-h-[44px] max-h-[120px] resize-none"
             rows={1}
@@ -526,14 +588,40 @@ const CopilotChat = () => {
             )}
           </Button>
         </div>
-        <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-          <Zap className="h-3 w-3" />
-          <span>Try: "search: freelancing trends" • "scrape: example.com" • "generate image: tech logo"</span>
+        <div className="flex items-center justify-between mt-2">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Zap className="h-3 w-3 text-primary" />
+            <span className="hidden sm:inline">search: • generate image: • scrape: • translate to:</span>
+            <span className="sm:hidden">Try commands or templates</span>
+          </div>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-6 text-xs"
+            onClick={() => setShowCapabilities(true)}
+          >
+            <Wand2 className="h-3 w-3 mr-1" />
+            All Powers
+          </Button>
         </div>
       </div>
 
       {/* Settings Dialog */}
       <CopilotSettings open={showSettings} onOpenChange={setShowSettings} />
+
+      {/* Templates Dialog */}
+      <CopilotTemplates 
+        open={showTemplates} 
+        onOpenChange={setShowTemplates}
+        onSelectTemplate={(prompt) => setInput(prompt)}
+      />
+
+      {/* Capabilities Dialog */}
+      <CopilotCapabilities
+        open={showCapabilities}
+        onOpenChange={setShowCapabilities}
+        onTryCapability={(command) => setInput(command)}
+      />
 
       {/* Save Dialog */}
       <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
