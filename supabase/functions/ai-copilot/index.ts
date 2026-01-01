@@ -529,14 +529,32 @@ serve(async (req) => {
       }
     }
 
-    // Check for image generation request
-    if (message?.toLowerCase().includes('generate image:') || 
-        message?.toLowerCase().includes('create image:') ||
-        message?.toLowerCase().includes('make an image') ||
-        message?.toLowerCase().includes('create a logo') ||
-        message?.toLowerCase().includes('design a')) {
-      
-      const imagePrompt = message.replace(/generate image:|create image:/i, '').trim();
+    // Check for image generation request - expanded patterns
+    const lowerMessage = message?.toLowerCase() || '';
+    const imageKeywords = [
+      'generate image:', 'create image:', 'make an image', 'create a logo',
+      'design a logo', 'make a logo', 'generate a logo', 'create a banner',
+      'design a banner', 'make a banner', 'create a poster', 'design a poster',
+      'create a graphic', 'design a graphic', 'generate an image', 'create an image',
+      'make me an image', 'generate a picture', 'create a picture', 'make a picture',
+      'draw ', 'draw me', 'can you create', 'can you make', 'can you design',
+      'please create', 'please make', 'please design', 'please generate',
+      'i need an image', 'i need a picture', 'i need a logo', 'i need a banner',
+      'create me a', 'make me a', 'design me a', 'generate me a',
+      'create for me', 'make for me', 'design for me',
+      'create picture', 'make picture', 'generate picture',
+      'create this image', 'make this image', 'generate this image',
+      'image of', 'picture of', 'photo of', 'illustration of',
+      'create an illustration', 'make an illustration', 'design an illustration',
+      'create artwork', 'make artwork', 'design artwork',
+      'create a design', 'make a design'
+    ];
+    
+    const isImageRequest = imageKeywords.some(kw => lowerMessage.includes(kw)) ||
+      /(?:create|make|design|generate|draw)\s+(?:a|an|the|me|some)?\s*(?:logo|image|picture|banner|poster|graphic|illustration|artwork|flyer|thumbnail|icon|avatar)/i.test(lowerMessage);
+    
+    if (isImageRequest) {
+      const imagePrompt = message.replace(/generate image:|create image:|please|can you|for me|i need/gi, '').trim();
       
       const imageResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
@@ -563,6 +581,8 @@ serve(async (req) => {
         }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
+      } else {
+        console.error("Image generation failed:", await imageResponse.text());
       }
     }
 

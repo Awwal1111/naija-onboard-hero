@@ -41,21 +41,87 @@ serve(async (req) => {
       throw new Error('Unauthorized - please log in again');
     }
 
-    // Check admin status
-    const { data: adminRoles, error: roleError } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id)
-      .eq('role', 'admin')
-      .limit(1);
+    // Add user lookup tool capability
+    const tools = [
+      {
+        type: "function",
+        function: {
+          name: "lookup_user",
+          description: "Look up a specific user by name or email to see their full profile, wallet balance, transaction history, and activity. Use this when admin asks about a specific user.",
+          parameters: {
+            type: "object",
+            properties: {
+              search_term: { 
+                type: "string", 
+                description: "User's name or email to search for" 
+              }
+            },
+            required: ["search_term"]
+          }
+        }
+      }
+    ];
 
-    if (roleError) {
-      console.error('Role check error:', roleError);
-    }
-
-    const isAdmin = adminRoles && adminRoles.length > 0;
-    if (!isAdmin) {
-      throw new Error('Admin access required');
+    // Check if message mentions a specific user lookup
+    const userLookupMatch = message.match(/(?:look up|check|find|show me|what about|details for|info on|information about|earnings? (?:of|for)|profile (?:of|for))\s+(?:user\s+)?["']?([^"'\n]+?)["']?(?:\s|$|,|\?)/i);
+    
+    let specificUserData = null;
+    if (userLookupMatch) {
+      const searchTerm = userLookupMatch[1].trim();
+      console.log('Looking up user:', searchTerm);
+      
+      // Search by name or email
+      const { data: foundUsers, error: searchError } = await supabase
+        .from('profiles')
+        .select(`
+          user_id,
+          full_name,
+          phone_number,
+          wallet_balance,
+          balance_withdrawable,
+          balance_non_withdrawable,
+          is_expert,
+          is_premium,
+          created_at,
+          referral_code,
+          connections_count
+        `)
+        .or(`full_name.ilike.%${searchTerm}%,phone_number.ilike.%${searchTerm}%`)
+        .limit(5);
+      
+      if (foundUsers && foundUsers.length > 0) {
+        // Get transaction history for each found user
+        const userDetails = await Promise.all(foundUsers.map(async (u) => {
+          const { data: transactions } = await supabase
+            .from('wallet_transactions')
+            .select('kind, amount, status, created_at, reference')
+            .eq('user_id', u.user_id)
+            .order('created_at', { ascending: false })
+            .limit(20);
+          
+          const { data: referrals } = await supabase
+            .from('referrals')
+            .select('status, points_earned, created_at')
+            .eq('referrer_id', u.user_id);
+          
+          const totalEarned = transactions?.filter(t => t.amount > 0).reduce((s, t) => s + t.amount, 0) || 0;
+          const totalSpent = transactions?.filter(t => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0) || 0;
+          
+          return {
+            ...u,
+            totalEarned,
+            totalSpent,
+            recentTransactions: transactions?.slice(0, 10) || [],
+            referrals: {
+              total: referrals?.length || 0,
+              completed: referrals?.filter(r => r.status === 'completed').length || 0,
+              totalPoints: referrals?.reduce((s, r) => s + (r.points_earned || 0), 0) || 0
+            }
+          };
+        }));
+        
+        specificUserData = userDetails;
+      }
     }
 
     console.log('Admin verified, fetching platform data...');
@@ -74,7 +140,7 @@ serve(async (req) => {
     ] = await Promise.all([
       supabase.from('article_submissions').select('*, profiles(full_name)').eq('status', 'pending').order('created_at', { ascending: false }).limit(20),
       supabase.from('social_tasks_submissions').select('*, social_tasks(task_name), profiles(full_name)').eq('status', 'pending').order('created_at', { ascending: false }).limit(20),
-      supabase.from('referral_task_submissions').select('*, referral_tasks(task_name), profiles(full_name)').eq('status', 'pending').order('created_at', { ascending: false }).limit(20),
+      supabase.from('referral_submissions').select('*, referral_tasks(title), profiles(full_name)').eq('status', 'pending').order('created_at', { ascending: false }).limit(20),
       supabase.from('profiles').select('user_id, full_name, wallet_balance, created_at').order('created_at', { ascending: false }).limit(10),
       supabase.from('wallet_transactions').select('*, profiles(full_name)').order('created_at', { ascending: false }).limit(20),
       supabase.from('fundraisings').select('*, profiles(full_name)').eq('status', 'pending').limit(10),
@@ -101,7 +167,8 @@ serve(async (req) => {
         recent_transactions: recentTransactions?.length || 0
       },
       stats: adminStats || [],
-      suspicious_users: suspiciousActivity || []
+      suspicious_users: suspiciousActivity || [],
+      specific_user_lookup: specificUserData
     };
 
     const systemPrompt = `You are NaijaLancers Admin AI Assistant, an intelligent system monitoring platform health.
@@ -113,16 +180,22 @@ CAPABILITIES:
 - Review fundraising and emergency requests
 - Generate daily breakdowns and reports
 - Flag unusual activity patterns
+- **LOOK UP SPECIFIC USERS** - When admin asks about a specific user, show their full profile and financial details
 
 CURRENT PLATFORM DATA:
 ${JSON.stringify(contextData, null, 2)}
+
+${specificUserData ? `
+📋 USER LOOKUP RESULTS:
+${JSON.stringify(specificUserData, null, 2)}
+` : ''}
 
 PENDING ITEMS DETAILS:
 Articles: ${pendingArticles?.map(a => `- ${a.profiles?.full_name || 'Unknown'} submitted ${new Date(a.created_at).toLocaleString()}`).join('\n') || 'None pending'}
 
 Social Tasks: ${pendingSocialTasks?.map(s => `- ${s.profiles?.full_name || 'Unknown'} for "${s.social_tasks?.task_name || 'Unknown task'}" at ${new Date(s.created_at).toLocaleString()}`).join('\n') || 'None pending'}
 
-Referral Tasks: ${pendingReferralTasks?.map(r => `- ${r.profiles?.full_name || 'Unknown'} for "${r.referral_tasks?.task_name || 'Unknown task'}" at ${new Date(r.created_at).toLocaleString()}`).join('\n') || 'None pending'}
+Referral Tasks: ${pendingReferralTasks?.map(r => `- ${r.profiles?.full_name || 'Unknown'} for "${r.referral_tasks?.title || 'Unknown task'}" at ${new Date(r.created_at).toLocaleString()}`).join('\n') || 'None pending'}
 
 Recent Users: ${recentUsers?.map(u => `- ${u.full_name || 'Unknown'} joined ${new Date(u.created_at).toLocaleString()}, balance: ₦${u.wallet_balance}`).join('\n') || 'No recent users'}
 
@@ -134,6 +207,12 @@ GUIDELINES:
 - Suggest specific users or submissions to review
 - Warn about suspicious activities or anomalies
 - Format responses with clear sections and bullet points
+- When showing user details, include: Name, Balance (Total/Withdrawable/Non-withdrawable), Total Earned, Total Spent, Recent Transactions, Referral Stats, Expert/Premium status
+
+USER LOOKUP TIPS:
+- If the admin asks to "look up [name]" or "check [name]" or "show me [name]'s earnings", you have their full data above
+- Present user financial data in a clear, organized format
+- Highlight any anomalies (very high balances, frequent transactions, etc.)
 
 Respond as a helpful admin assistant analyzing platform operations.`;
 
