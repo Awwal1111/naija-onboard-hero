@@ -29,6 +29,10 @@ export const MoreMenuDrawer = ({ open, onOpenChange }: MoreMenuDrawerProps) => {
     { icon: Heart, label: "Fundraising", path: "/fundraising", color: "text-red-500" },
   ];
 
+  const learningItems = [
+    { icon: GraduationCap, label: "Learn Hub", path: "/learn", color: "text-cyan-500", description: "Free courses & AI paths" },
+  ];
+
   const otherItems = [
     { icon: Trophy, label: "Leaderboard", path: "/leaderboard", color: "text-yellow-500" },
     { icon: AlertCircle, label: "Emergency", path: "/emergency", color: "text-amber-500" },
@@ -73,7 +77,31 @@ export const MoreMenuDrawer = ({ open, onOpenChange }: MoreMenuDrawerProps) => {
 
           <Separator />
 
-          {/* Business Section */}
+          {/* Learning Section */}
+          <div>
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-3">Learn</h3>
+            <div className="space-y-1">
+              {learningItems.map((item) => (
+                <button
+                  key={item.path}
+                  onClick={() => handleNavigation(item.path)}
+                  className="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-accent transition-colors"
+                >
+                  <div className={`p-2 rounded-lg bg-primary/10 ${item.color}`}>
+                    <item.icon className="h-5 w-5" />
+                  </div>
+                  <div className="text-left">
+                    <span className="text-sm font-medium block">{item.label}</span>
+                    {item.description && (
+                      <span className="text-xs text-muted-foreground">{item.description}</span>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <Separator />
           <div>
             <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-3">Business</h3>
             <div className="space-y-1">
