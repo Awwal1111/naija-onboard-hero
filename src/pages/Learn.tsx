@@ -12,13 +12,16 @@ import {
   Target,
   TrendingUp,
   Users,
-  ArrowRight
+  ArrowRight,
+  Award
 } from 'lucide-react';
 import { SkillAssessmentQuiz } from '@/components/learn/SkillAssessmentQuiz';
 import { LearningPathResult } from '@/components/learn/LearningPathResult';
-import { ResourceLibrary } from '@/components/learn/ResourceLibrary';
-import { skillCategories } from '@/lib/curatedResources';
+import { EnhancedResourceLibrary } from '@/components/learn/EnhancedResourceLibrary';
+import { learningCategories, learningCourses } from '@/lib/learningCourses';
 import { useNavigate } from 'react-router-dom';
+import { useLearningProgress } from '@/hooks/useLearningProgress';
+import { useAuth } from '@/hooks/useAuth';
 
 interface AssessmentResult {
   recommendedPath: string;
@@ -29,6 +32,8 @@ interface AssessmentResult {
 
 const Learn = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { learningStats } = useLearningProgress();
   const [activeTab, setActiveTab] = useState('discover');
   const [showQuiz, setShowQuiz] = useState(false);
   const [quizResult, setQuizResult] = useState<AssessmentResult | null>(null);
@@ -42,6 +47,10 @@ const Learn = () => {
     setQuizResult(null);
     setShowQuiz(true);
   };
+
+  // Calculate stats
+  const totalCourses = learningCourses.length;
+  const totalCategories = learningCategories.length;
 
   return (
     <>
@@ -89,18 +98,24 @@ const Learn = () => {
           </Card>
 
           {/* Quick Stats */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-4 gap-2">
             <Card className="p-3 text-center">
-              <p className="text-2xl font-bold text-primary">25+</p>
-              <p className="text-xs text-muted-foreground">Free Courses</p>
+              <p className="text-xl font-bold text-primary">{totalCourses}</p>
+              <p className="text-[10px] text-muted-foreground">Courses</p>
             </Card>
             <Card className="p-3 text-center">
-              <p className="text-2xl font-bold text-primary">8</p>
-              <p className="text-xs text-muted-foreground">Skill Paths</p>
+              <p className="text-xl font-bold text-primary">{totalCategories}</p>
+              <p className="text-[10px] text-muted-foreground">Categories</p>
             </Card>
             <Card className="p-3 text-center">
-              <p className="text-2xl font-bold text-primary">AI</p>
-              <p className="text-xs text-muted-foreground">Guided</p>
+              <p className="text-xl font-bold text-primary">3</p>
+              <p className="text-[10px] text-muted-foreground">Levels</p>
+            </Card>
+            <Card className="p-3 text-center">
+              <p className="text-xl font-bold text-primary">
+                <Award className="h-5 w-5 mx-auto text-primary" />
+              </p>
+              <p className="text-[10px] text-muted-foreground">Certificates</p>
             </Card>
           </div>
 
@@ -123,7 +138,7 @@ const Learn = () => {
 
             {/* Discover Tab */}
             <TabsContent value="discover" className="mt-4">
-              <ResourceLibrary />
+              <EnhancedResourceLibrary />
             </TabsContent>
 
             {/* AI Assessment Tab */}
@@ -154,40 +169,46 @@ const Learn = () => {
 
             {/* Skill Categories Tab */}
             <TabsContent value="paths" className="mt-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                {skillCategories.map((category) => (
-                  <Card 
-                    key={category.id} 
-                    className="hover:shadow-md hover:border-primary/30 transition-all cursor-pointer"
-                    onClick={() => {
-                      setActiveTab('discover');
-                    }}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex items-start gap-4">
-                        <span className="text-3xl">{category.icon}</span>
-                        <div className="flex-1">
-                          <h3 className="font-semibold">{category.name}</h3>
-                          <p className="text-sm text-muted-foreground mb-2">
-                            {category.description}
-                          </p>
-                          <div className="flex flex-wrap gap-1">
-                            {category.subcategories.slice(0, 3).map((sub, i) => (
-                              <Badge key={i} variant="outline" className="text-xs">
-                                {sub}
+              <div className="grid gap-3 md:grid-cols-2">
+                {learningCategories.map((category) => {
+                  const categoryCoursesCount = learningCourses.filter(c => c.category === category.id).length;
+                  return (
+                    <Card 
+                      key={category.id} 
+                      className="hover:shadow-md hover:border-primary/30 transition-all cursor-pointer"
+                      onClick={() => setActiveTab('discover')}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-4">
+                          <span className="text-3xl">{category.icon}</span>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3 className="font-semibold">{category.name}</h3>
+                              <Badge variant="secondary" className="text-xs">
+                                {categoryCoursesCount} courses
                               </Badge>
-                            ))}
-                            {category.subcategories.length > 3 && (
-                              <Badge variant="outline" className="text-xs">
-                                +{category.subcategories.length - 3}
-                              </Badge>
-                            )}
+                            </div>
+                            <p className="text-sm text-muted-foreground mb-2">
+                              {category.description}
+                            </p>
+                            <div className="flex flex-wrap gap-1">
+                              {category.subcategories.slice(0, 3).map((sub, i) => (
+                                <Badge key={i} variant="outline" className="text-xs">
+                                  {sub}
+                                </Badge>
+                              ))}
+                              {category.subcategories.length > 3 && (
+                                <Badge variant="outline" className="text-xs">
+                                  +{category.subcategories.length - 3}
+                                </Badge>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             </TabsContent>
           </Tabs>
