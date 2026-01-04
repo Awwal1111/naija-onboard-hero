@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -28,12 +28,43 @@ export interface CourseProgress {
   sections: Record<string, SectionProgress>;
 }
 
+// Local storage keys
+const STORAGE_KEY = 'naijalancers_learning_progress';
+
+// Get local progress for non-authenticated users
+function getLocalProgress(): Record<string, any> {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored ? JSON.parse(stored) : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveLocalProgress(data: Record<string, any>) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch {
+    console.warn('Failed to save progress to localStorage');
+  }
+}
+
 export function useLearningProgress(courseId?: string) {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  // Local state for non-authenticated progress
+  const [localProgress, setLocalProgress] = useState<Record<string, any>>(() => getLocalProgress());
 
-  // Fetch user's learning stats
+  // Sync local progress to state
+  useEffect(() => {
+    const handleStorageChange = () => setLocalProgress(getLocalProgress());
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  // Fetch user's learning stats from DB (only if authenticated)
   const { data: learningStats, isLoading: statsLoading } = useQuery({
     queryKey: ['learning-stats', user?.id],
     queryFn: async () => {
@@ -50,45 +81,70 @@ export function useLearningProgress(courseId?: string) {
     enabled: !!user,
   });
 
-  // Fetch course progress
-  const { data: courseProgress, isLoading: progressLoading } = useQuery({
+  // Fetch course progress from DB or local storage
+  const { data: courseProgress, isLoading: progressLoading, refetch: refetchProgress } = useQuery({
     queryKey: ['course-progress', user?.id, courseId],
     queryFn: async () => {
-      if (!user || !courseId) return null;
+      // For non-authenticated users, use local storage
+      if (!user) {
+        if (!courseId) return null;
+        const local = getLocalProgress();
+        return {
+          progress: local[courseId]?.progress || null,
+          sectionProgress: local[courseId]?.sectionProgress || [],
+          quizAttempts: local[courseId]?.quizAttempts || [],
+          examAttempts: local[courseId]?.examAttempts || [],
+          practicalSubmission: local[courseId]?.practicalSubmission || null,
+          certificate: null,
+        };
+      }
       
+      if (!courseId) return null;
+      
+      // Fetch from DB for authenticated users
       const { data: progress } = await supabase
         .from('course_progress')
         .select('*')
         .eq('student_id', user.id)
         .eq('course_id', courseId)
-        .single();
+        .maybeSingle();
 
       const { data: sectionProgress } = await supabase
         .from('user_section_progress')
         .select('*')
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .like('section_id', `${courseId}%`);
 
-      const { data: quizAttempts } = await supabase
+      // Use type assertion to avoid deep type inference issues
+      const quizAttempts = await supabase
         .from('user_quiz_attempts')
-        .select('*')
-        .eq('user_id', user.id);
+        .select('id, quiz_id, score_percentage, passed, completed_at')
+        .eq('user_id', user.id)
+        .then(res => (res.data || []) as unknown as Array<{id: string; quiz_id: string; score_percentage: number; passed: boolean; completed_at: string}>);
 
-      const { data: examAttempts } = await supabase
+      const examAttempts = await supabase
         .from('user_exam_attempts')
-        .select('*')
-        .eq('user_id', user.id);
+        .select('id, exam_id, score_percentage, passed, completed_at')
+        .eq('user_id', user.id)
+        .then(res => (res.data || []) as unknown as Array<{id: string; exam_id: string; score_percentage: number; passed: boolean; completed_at: string}>);
 
-      const { data: practicalSubmission } = await supabase
+      // Practical submissions - query by task_id pattern (courseId-*)
+      const practicalSubmission = await supabase
         .from('practical_task_submissions')
-        .select('*')
+        .select('id, task_id, status, submission_content, file_url')
         .eq('user_id', user.id)
-        .single();
+        .like('task_id', `${courseId}%`)
+        .maybeSingle()
+        .then(res => res.data);
 
-      const { data: certificate } = await supabase
+      // Certificates
+      const certificate = await supabase
         .from('learning_certificates')
-        .select('*')
+        .select('id, certificate_id, skill_name, skill_level, issued_at, final_exam_score')
         .eq('user_id', user.id)
-        .single();
+        .eq('course_id', courseId)
+        .maybeSingle()
+        .then(res => res.data);
 
       return {
         progress,
@@ -99,10 +155,10 @@ export function useLearningProgress(courseId?: string) {
         certificate,
       };
     },
-    enabled: !!user && !!courseId,
+    enabled: !!courseId,
   });
 
-  // Update section progress
+  // Update section progress (works for both auth and non-auth)
   const updateSectionProgress = useMutation({
     mutationFn: async ({ 
       sectionId, 
@@ -113,21 +169,50 @@ export function useLearningProgress(courseId?: string) {
       timeSpent: number;
       completed: boolean;
     }) => {
-      if (!user || !courseId) throw new Error('Not authenticated');
+      if (!courseId) throw new Error('No course ID');
 
+      // For non-authenticated users, save to local storage
+      if (!user) {
+        const local = getLocalProgress();
+        const courseData = local[courseId] || { sectionProgress: [], quizAttempts: [], examAttempts: [] };
+        
+        const existingIdx = courseData.sectionProgress.findIndex((s: any) => s.section_id === sectionId);
+        const existingProgress = existingIdx >= 0 ? courseData.sectionProgress[existingIdx] : null;
+        
+        const newProgress = {
+          section_id: sectionId,
+          watch_time_seconds: (existingProgress?.watch_time_seconds || 0) + timeSpent,
+          video_watched_percentage: completed ? 100 : (existingProgress?.video_watched_percentage || 0),
+          completed_at: completed ? new Date().toISOString() : null,
+          quiz_passed: existingProgress?.quiz_passed || false,
+        };
+
+        if (existingIdx >= 0) {
+          courseData.sectionProgress[existingIdx] = newProgress;
+        } else {
+          courseData.sectionProgress.push(newProgress);
+        }
+        
+        local[courseId] = courseData;
+        saveLocalProgress(local);
+        setLocalProgress(local);
+        return;
+      }
+
+      // For authenticated users, save to DB
       const { data: existing } = await supabase
         .from('user_section_progress')
-        .select('*')
+        .select('id, watch_time_seconds, video_watched_percentage')
         .eq('user_id', user.id)
         .eq('section_id', sectionId)
-        .single();
+        .maybeSingle();
 
       if (existing) {
         const { error } = await supabase
           .from('user_section_progress')
           .update({
-            watch_time_seconds: (existing.watch_time_seconds || 0) + timeSpent,
-            video_watched_percentage: completed ? 100 : existing.video_watched_percentage,
+            watch_time_seconds: ((existing.watch_time_seconds as number) || 0) + timeSpent,
+            video_watched_percentage: completed ? 100 : (existing.video_watched_percentage as number),
             completed_at: completed ? new Date().toISOString() : null,
             updated_at: new Date().toISOString(),
           })
@@ -166,15 +251,50 @@ export function useLearningProgress(courseId?: string) {
       score: number;
       passed: boolean;
     }) => {
-      if (!user || !courseId) throw new Error('Not authenticated');
+      if (!courseId) throw new Error('No course ID');
 
+      // For non-authenticated users
+      if (!user) {
+        const local = getLocalProgress();
+        const courseData = local[courseId] || { sectionProgress: [], quizAttempts: [], examAttempts: [] };
+        
+        courseData.quizAttempts.push({
+          quiz_id: quizId,
+          answers,
+          score,
+          passed,
+          completed_at: new Date().toISOString(),
+        });
+
+        // Update section progress if passed
+        if (passed) {
+          const existingIdx = courseData.sectionProgress.findIndex((s: any) => s.section_id === sectionId);
+          if (existingIdx >= 0) {
+            courseData.sectionProgress[existingIdx].quiz_passed = true;
+            courseData.sectionProgress[existingIdx].completed_at = new Date().toISOString();
+          } else {
+            courseData.sectionProgress.push({
+              section_id: sectionId,
+              quiz_passed: true,
+              completed_at: new Date().toISOString(),
+            });
+          }
+        }
+
+        local[courseId] = courseData;
+        saveLocalProgress(local);
+        setLocalProgress(local);
+        return { score, passed };
+      }
+
+      // For authenticated users
       const { error } = await supabase
         .from('user_quiz_attempts')
         .insert({
           user_id: user.id,
           quiz_id: quizId,
           answers,
-          score,
+          score_percentage: score,
           passed,
           completed_at: new Date().toISOString(),
         });
@@ -187,7 +307,7 @@ export function useLearningProgress(courseId?: string) {
           .select('id')
           .eq('user_id', user.id)
           .eq('section_id', sectionId)
-          .single();
+          .maybeSingle();
 
         if (existing) {
           await supabase
@@ -213,9 +333,9 @@ export function useLearningProgress(courseId?: string) {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['course-progress'] });
-      if (data.passed) {
-        toast({ title: 'Quiz Passed!', description: `You scored ${data.score}%` });
-      } else {
+      if (data?.passed) {
+        toast({ title: '🎉 Quiz Passed!', description: `You scored ${data.score}%` });
+      } else if (data) {
         toast({ 
           title: 'Quiz Not Passed', 
           description: `You scored ${data.score}%. You need 60% to pass.`,
@@ -238,16 +358,43 @@ export function useLearningProgress(courseId?: string) {
       score: number;
       passed: boolean;
     }) => {
-      if (!user || !courseId) throw new Error('Not authenticated');
+      if (!courseId) throw new Error('No course ID');
 
+      // For non-authenticated users
+      if (!user) {
+        const local = getLocalProgress();
+        const courseData = local[courseId] || { sectionProgress: [], quizAttempts: [], examAttempts: [] };
+        
+        courseData.examAttempts.push({
+          exam_id: examId,
+          answers,
+          score,
+          passed,
+          completed_at: new Date().toISOString(),
+        });
+
+        if (passed) {
+          courseData.progress = {
+            ...courseData.progress,
+            progress_percentage: 90,
+            completed_at: new Date().toISOString(),
+          };
+        }
+
+        local[courseId] = courseData;
+        saveLocalProgress(local);
+        setLocalProgress(local);
+        return { score, passed };
+      }
+
+      // For authenticated users
       const { error } = await supabase
         .from('user_exam_attempts')
         .insert({
           user_id: user.id,
-          course_id: courseId,
           exam_id: examId,
           answers,
-          score,
+          score_percentage: score,
           passed,
           completed_at: new Date().toISOString(),
         });
@@ -260,14 +407,14 @@ export function useLearningProgress(courseId?: string) {
           .select('id')
           .eq('student_id', user.id)
           .eq('course_id', courseId)
-          .single();
+          .maybeSingle();
 
         if (existing) {
           await supabase
             .from('course_progress')
             .update({
-              progress_percentage: 100,
-              completed_at: new Date().toISOString(),
+              progress_percentage: 90,
+              last_accessed_at: new Date().toISOString(),
             })
             .eq('id', existing.id);
         } else {
@@ -276,8 +423,8 @@ export function useLearningProgress(courseId?: string) {
             .insert({
               student_id: user.id,
               course_id: courseId,
-              progress_percentage: 100,
-              completed_at: new Date().toISOString(),
+              progress_percentage: 90,
+              last_accessed_at: new Date().toISOString(),
             });
         }
       }
@@ -286,9 +433,9 @@ export function useLearningProgress(courseId?: string) {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['course-progress'] });
-      if (data.passed) {
+      if (data?.passed) {
         toast({ title: '🎉 Exam Passed!', description: `You scored ${data.score}%! Submit your practical task to earn your certificate.` });
-      } else {
+      } else if (data) {
         toast({ 
           title: 'Exam Not Passed', 
           description: `You scored ${data.score}%. You need 70% to pass.`,
@@ -311,13 +458,22 @@ export function useLearningProgress(courseId?: string) {
       content: string;
       fileUrl?: string;
     }) => {
-      if (!user || !courseId) throw new Error('Not authenticated');
+      if (!courseId) throw new Error('No course ID');
+
+      // For non-authenticated users - encourage sign up
+      if (!user) {
+        toast({ 
+          title: 'Sign Up Required', 
+          description: 'Create an account to submit tasks and earn certificates!',
+          variant: 'destructive'
+        });
+        throw new Error('Authentication required for practical tasks');
+      }
 
       const { error } = await supabase
         .from('practical_task_submissions')
         .insert({
           user_id: user.id,
-          course_id: courseId,
           task_id: taskId,
           submission_type: submissionType,
           submission_content: content,
@@ -328,9 +484,32 @@ export function useLearningProgress(courseId?: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['course-progress'] });
-      toast({ title: 'Task Submitted!', description: 'Your practical task is being reviewed.' });
+      toast({ title: '✅ Task Submitted!', description: 'Your practical task is being reviewed by AI.' });
     },
   });
+
+  // Get combined progress (DB + local for display)
+  const getCombinedSectionProgress = useCallback(() => {
+    if (user && courseProgress?.sectionProgress) {
+      return courseProgress.sectionProgress;
+    }
+    if (!user && courseId) {
+      const local = getLocalProgress();
+      return local[courseId]?.sectionProgress || [];
+    }
+    return [];
+  }, [user, courseProgress, courseId]);
+
+  const getExamAttempts = useCallback(() => {
+    if (user && courseProgress?.examAttempts) {
+      return courseProgress.examAttempts;
+    }
+    if (!user && courseId) {
+      const local = getLocalProgress();
+      return local[courseId]?.examAttempts || [];
+    }
+    return [];
+  }, [user, courseProgress, courseId]);
 
   return {
     learningStats,
@@ -340,5 +519,9 @@ export function useLearningProgress(courseId?: string) {
     submitQuizAttempt,
     submitExamAttempt,
     submitPracticalTask,
+    getCombinedSectionProgress,
+    getExamAttempts,
+    refetchProgress,
+    isAuthenticated: !!user,
   };
 }
