@@ -1451,6 +1451,511 @@ export const learningCourses: LearningCourse[] = [
       submissionTypes: ['text', 'url', 'screenshot'],
       exampleSubmission: 'Built customer support agent using GPT + Zapier that handles Nigerian customer inquiries automatically.'
     }
+  },
+
+  // ==================== MORE ADVANCED COURSES ====================
+  {
+    id: 'advanced-react-patterns',
+    title: 'Advanced React Patterns & Performance',
+    description: 'Master advanced React patterns, performance optimization, custom hooks, and state management for production apps.',
+    category: 'web-development',
+    subcategory: 'React',
+    level: 'Advanced',
+    duration: '10 hours',
+    durationMinutes: 600,
+    thumbnail: 'https://img.youtube.com/vi/MdvzlDIdQ0o/maxresdefault.jpg',
+    videoUrl: 'https://www.youtube.com/watch?v=MdvzlDIdQ0o',
+    instructor: 'Jack Herrington',
+    isFree: true,
+    tags: ['react', 'advanced', 'patterns', 'performance', 'hooks'],
+    sections: [
+      {
+        id: 'react-patterns-intro',
+        title: 'Advanced Component Patterns',
+        description: 'Compound components, render props, and HOCs',
+        videoUrl: 'https://www.youtube.com/watch?v=MdvzlDIdQ0o&t=0s',
+        durationMinutes: 60,
+        quizQuestions: [
+          {
+            id: 'adv-react-q1',
+            question: 'What is the primary benefit of compound components?',
+            type: 'multiple_choice',
+            options: [
+              { text: 'They are faster', isCorrect: false },
+              { text: 'They provide implicit state sharing between related components', isCorrect: true },
+              { text: 'They use less memory', isCorrect: false },
+              { text: 'They are easier to style', isCorrect: false }
+            ],
+            explanation: 'Compound components share implicit state, allowing flexible API design like <Tabs> and <Tab> components.'
+          }
+        ]
+      }
+    ],
+    practicalTask: {
+      title: 'Build a Component Library',
+      description: 'Create reusable React components',
+      instructions: 'Build a mini component library with: (1) A compound component (e.g., Accordion), (2) A custom hook, (3) A performance-optimized list component. Document usage examples.',
+      submissionTypes: ['url', 'text'],
+      exampleSubmission: 'Built NaijaUI library with Accordion, Modal, and useDebounce hook.'
+    }
+  },
+  {
+    id: 'typescript-advanced',
+    title: 'Advanced TypeScript for Professionals',
+    description: 'Master TypeScript generics, utility types, conditional types, and advanced patterns for large-scale applications.',
+    category: 'web-development',
+    subcategory: 'JavaScript',
+    level: 'Advanced',
+    duration: '6 hours',
+    durationMinutes: 360,
+    thumbnail: 'https://img.youtube.com/vi/wD5WGkOEJRs/maxresdefault.jpg',
+    videoUrl: 'https://www.youtube.com/watch?v=wD5WGkOEJRs',
+    instructor: 'Matt Pocock',
+    isFree: true,
+    tags: ['typescript', 'advanced', 'generics', 'types'],
+    sections: [
+      {
+        id: 'ts-generics',
+        title: 'Generics Deep Dive',
+        description: 'Understanding and using TypeScript generics',
+        videoUrl: 'https://www.youtube.com/watch?v=wD5WGkOEJRs&t=0s',
+        durationMinutes: 45,
+        quizQuestions: [
+          {
+            id: 'ts-q1',
+            question: 'What do generics in TypeScript allow you to do?',
+            type: 'multiple_choice',
+            options: [
+              { text: 'Write faster code', isCorrect: false },
+              { text: 'Create reusable components that work with multiple types', isCorrect: true },
+              { text: 'Skip type checking', isCorrect: false },
+              { text: 'Access private variables', isCorrect: false }
+            ],
+            explanation: 'Generics let you write flexible, reusable code that maintains type safety across different types.'
+          }
+        ]
+      }
+    ],
+    practicalTask: {
+      title: 'Type-Safe API Client',
+      description: 'Build a fully typed API wrapper',
+      instructions: 'Create a type-safe API client library that: (1) Uses generics for responses, (2) Has proper error typing, (3) Supports different HTTP methods. Show type inference in action.',
+      submissionTypes: ['url', 'text'],
+      exampleSubmission: 'Built typed REST client for Nigerian bank APIs with full autocomplete support.'
+    }
+  },
+  {
+    id: 'advanced-python-automation',
+    title: 'Python Automation & Scripting',
+    description: 'Automate everything with Python. Web scraping, file automation, APIs, and building productivity tools.',
+    category: 'data-analysis',
+    subcategory: 'Python',
+    level: 'Advanced',
+    duration: '8 hours',
+    durationMinutes: 480,
+    thumbnail: 'https://img.youtube.com/vi/PXMJ6FS7llk/maxresdefault.jpg',
+    videoUrl: 'https://www.youtube.com/watch?v=PXMJ6FS7llk',
+    instructor: 'freeCodeCamp',
+    isFree: true,
+    tags: ['python', 'automation', 'scripting', 'web scraping'],
+    sections: [
+      {
+        id: 'python-automation-basics',
+        title: 'Automation Fundamentals',
+        description: 'Setting up Python for automation tasks',
+        videoUrl: 'https://www.youtube.com/watch?v=PXMJ6FS7llk&t=0s',
+        durationMinutes: 60,
+        quizQuestions: [
+          {
+            id: 'py-auto-q1',
+            question: 'Which library is commonly used for web scraping in Python?',
+            type: 'multiple_choice',
+            options: [
+              { text: 'Flask', isCorrect: false },
+              { text: 'BeautifulSoup', isCorrect: true },
+              { text: 'NumPy', isCorrect: false },
+              { text: 'TensorFlow', isCorrect: false }
+            ],
+            explanation: 'BeautifulSoup is a popular library for parsing HTML and extracting data from web pages.'
+          }
+        ]
+      }
+    ],
+    practicalTask: {
+      title: 'Build an Automation Script',
+      description: 'Create a useful automation tool',
+      instructions: 'Build a Python automation script that solves a real problem: (1) Web scraper for Nigerian job sites, (2) PDF invoice generator, or (3) Social media poster. Document and share.',
+      submissionTypes: ['url', 'file', 'text'],
+      exampleSubmission: 'Built scraper that collects Lagos property listings and exports to Excel daily.'
+    }
+  },
+  {
+    id: 'advanced-motion-graphics',
+    title: 'After Effects Motion Graphics',
+    description: 'Create professional motion graphics, animations, and visual effects for videos, ads, and social content.',
+    category: 'video-editing',
+    subcategory: 'After Effects',
+    level: 'Advanced',
+    duration: '12 hours',
+    durationMinutes: 720,
+    thumbnail: 'https://img.youtube.com/vi/ItvYmlFR6cU/maxresdefault.jpg',
+    videoUrl: 'https://www.youtube.com/watch?v=ItvYmlFR6cU',
+    instructor: 'Ben Marriott',
+    isFree: true,
+    tags: ['after effects', 'motion graphics', 'animation', 'vfx'],
+    sections: [
+      {
+        id: 'ae-basics',
+        title: 'After Effects Fundamentals',
+        description: 'Understanding the After Effects interface',
+        videoUrl: 'https://www.youtube.com/watch?v=ItvYmlFR6cU&t=0s',
+        durationMinutes: 90,
+        quizQuestions: [
+          {
+            id: 'ae-q1',
+            question: 'What is a "keyframe" in After Effects?',
+            type: 'multiple_choice',
+            options: [
+              { text: 'A type of layer', isCorrect: false },
+              { text: 'A marker for animation changes over time', isCorrect: true },
+              { text: 'An export setting', isCorrect: false },
+              { text: 'A camera type', isCorrect: false }
+            ],
+            explanation: 'Keyframes mark specific points in time where you set property values, and After Effects animates between them.'
+          }
+        ]
+      }
+    ],
+    practicalTask: {
+      title: 'Create a Motion Graphics Project',
+      description: 'Design animated content',
+      instructions: 'Create a 15-30 second motion graphics piece: (1) Logo animation, (2) Animated infographic, or (3) Social media ad. Export as MP4 and GIF.',
+      submissionTypes: ['url', 'file'],
+      exampleSubmission: 'Created animated logo reveal for Lagos fintech startup.'
+    }
+  },
+  {
+    id: 'advanced-copywriting',
+    title: 'High-Converting Copywriting',
+    description: 'Master the art of persuasive writing. Sales pages, email sequences, ads, and content that converts.',
+    category: 'writing',
+    subcategory: 'Copywriting',
+    level: 'Advanced',
+    duration: '5 hours',
+    durationMinutes: 300,
+    thumbnail: 'https://img.youtube.com/vi/RQMABvXfLQ4/maxresdefault.jpg',
+    videoUrl: 'https://www.youtube.com/watch?v=RQMABvXfLQ4',
+    instructor: 'Alex Cattoni',
+    isFree: true,
+    tags: ['copywriting', 'sales', 'marketing', 'persuasion'],
+    sections: [
+      {
+        id: 'copy-fundamentals',
+        title: 'Copywriting Psychology',
+        description: 'Understanding buyer psychology',
+        videoUrl: 'https://www.youtube.com/watch?v=RQMABvXfLQ4&t=0s',
+        durationMinutes: 45,
+        quizQuestions: [
+          {
+            id: 'copy-q1',
+            question: 'What is the AIDA framework in copywriting?',
+            type: 'multiple_choice',
+            options: [
+              { text: 'A software tool', isCorrect: false },
+              { text: 'Attention, Interest, Desire, Action', isCorrect: true },
+              { text: 'A font style', isCorrect: false },
+              { text: 'An AI writing model', isCorrect: false }
+            ],
+            explanation: 'AIDA guides copy structure: grab Attention, build Interest, create Desire, prompt Action.'
+          }
+        ]
+      }
+    ],
+    practicalTask: {
+      title: 'Write Converting Copy',
+      description: 'Create a sales page',
+      instructions: 'Write a complete sales page for a Nigerian product/service: (1) Headline, (2) Problem/solution, (3) Benefits, (4) Testimonials section, (5) Call to action.',
+      submissionTypes: ['text', 'url'],
+      exampleSubmission: 'Wrote landing page for Lagos coding bootcamp with 3 headline variations.'
+    }
+  },
+
+  // ==================== MOBILE DEVELOPMENT ====================
+  {
+    id: 'flutter-complete',
+    title: 'Flutter Complete Course 2024',
+    description: 'Build beautiful cross-platform mobile apps with Flutter. One codebase for iOS and Android.',
+    category: 'mobile-development',
+    subcategory: 'Flutter',
+    level: 'Beginner',
+    duration: '12 hours',
+    durationMinutes: 720,
+    thumbnail: 'https://img.youtube.com/vi/VPvVD8t02U8/maxresdefault.jpg',
+    videoUrl: 'https://www.youtube.com/watch?v=VPvVD8t02U8',
+    instructor: 'freeCodeCamp',
+    isFree: true,
+    tags: ['flutter', 'dart', 'mobile', 'ios', 'android'],
+    sections: [
+      {
+        id: 'flutter-intro',
+        title: 'Flutter Fundamentals',
+        description: 'Setting up Flutter and understanding widgets',
+        videoUrl: 'https://www.youtube.com/watch?v=VPvVD8t02U8&t=0s',
+        durationMinutes: 90,
+        quizQuestions: [
+          {
+            id: 'flutter-q1',
+            question: 'What programming language does Flutter use?',
+            type: 'multiple_choice',
+            options: [
+              { text: 'JavaScript', isCorrect: false },
+              { text: 'Dart', isCorrect: true },
+              { text: 'Swift', isCorrect: false },
+              { text: 'Kotlin', isCorrect: false }
+            ],
+            explanation: 'Flutter uses Dart, a language developed by Google that compiles to native code.'
+          }
+        ]
+      }
+    ],
+    practicalTask: {
+      title: 'Build a Flutter App',
+      description: 'Create a cross-platform mobile app',
+      instructions: 'Build a Flutter app with: (1) Multiple screens, (2) Navigation, (3) API integration or local storage. Target Nigerian use case (POS, delivery, etc.).',
+      submissionTypes: ['url', 'screenshot'],
+      exampleSubmission: 'Built expense tracker app for Nigerian small businesses with MPesa integration.'
+    }
+  },
+  {
+    id: 'react-native-2024',
+    title: 'React Native Full Course',
+    description: 'Build native mobile apps using React. Share code between React web and mobile applications.',
+    category: 'mobile-development',
+    subcategory: 'React Native',
+    level: 'Intermediate',
+    duration: '10 hours',
+    durationMinutes: 600,
+    thumbnail: 'https://img.youtube.com/vi/obH0Po_RdWk/maxresdefault.jpg',
+    videoUrl: 'https://www.youtube.com/watch?v=obH0Po_RdWk',
+    instructor: 'Academind',
+    isFree: true,
+    tags: ['react native', 'mobile', 'react', 'javascript'],
+    sections: [
+      {
+        id: 'rn-basics',
+        title: 'React Native Basics',
+        description: 'Core concepts and components',
+        videoUrl: 'https://www.youtube.com/watch?v=obH0Po_RdWk&t=0s',
+        durationMinutes: 60,
+        quizQuestions: [
+          {
+            id: 'rn-q1',
+            question: 'What is the main advantage of React Native over traditional mobile development?',
+            type: 'multiple_choice',
+            options: [
+              { text: 'It is faster', isCorrect: false },
+              { text: 'Write once, run on both iOS and Android', isCorrect: true },
+              { text: 'It uses less battery', isCorrect: false },
+              { text: 'It has better graphics', isCorrect: false }
+            ],
+            explanation: 'React Native lets you write one JavaScript codebase that runs natively on both iOS and Android.'
+          }
+        ]
+      }
+    ],
+    practicalTask: {
+      title: 'Build a React Native App',
+      description: 'Create a cross-platform app',
+      instructions: 'Build a React Native app with: (1) Bottom tab navigation, (2) At least 3 screens, (3) API integration. Test on both Android and iOS simulators.',
+      submissionTypes: ['url', 'screenshot'],
+      exampleSubmission: 'Built food delivery app UI with React Native for Lagos restaurants.'
+    }
+  },
+
+  // ==================== VIRTUAL ASSISTANCE ====================
+  {
+    id: 'va-complete',
+    title: 'Virtual Assistant Masterclass',
+    description: 'Learn everything to become a successful virtual assistant. Admin tasks, tools, client management.',
+    category: 'virtual-assistant',
+    subcategory: 'Admin Tasks',
+    level: 'Beginner',
+    duration: '4 hours',
+    durationMinutes: 240,
+    thumbnail: 'https://img.youtube.com/vi/qOWG3pT4x2E/maxresdefault.jpg',
+    videoUrl: 'https://www.youtube.com/watch?v=qOWG3pT4x2E',
+    instructor: 'VA Bootcamp',
+    isFree: true,
+    tags: ['virtual assistant', 'admin', 'remote work', 'productivity'],
+    sections: [
+      {
+        id: 'va-basics',
+        title: 'Getting Started as a VA',
+        description: 'Understanding the VA industry',
+        videoUrl: 'https://www.youtube.com/watch?v=qOWG3pT4x2E&t=0s',
+        durationMinutes: 45,
+        quizQuestions: [
+          {
+            id: 'va-q1',
+            question: 'What is a key skill for virtual assistants?',
+            type: 'multiple_choice',
+            options: [
+              { text: 'Programming', isCorrect: false },
+              { text: 'Time management and organization', isCorrect: true },
+              { text: 'Video editing', isCorrect: false },
+              { text: 'Graphic design', isCorrect: false }
+            ],
+            explanation: 'VAs need excellent organizational and time management skills to handle multiple clients and tasks.'
+          }
+        ]
+      }
+    ],
+    practicalTask: {
+      title: 'VA Portfolio',
+      description: 'Create your VA service offering',
+      instructions: 'Create a professional VA portfolio: (1) List your services, (2) Set your rates, (3) Create a sample work schedule, (4) Write client communication templates.',
+      submissionTypes: ['text', 'file'],
+      exampleSubmission: 'Created VA portfolio specializing in social media management for Nigerian businesses.'
+    }
+  },
+
+  // ==================== E-COMMERCE ====================
+  {
+    id: 'shopify-complete',
+    title: 'Shopify Store Complete Guide',
+    description: 'Build and launch a profitable Shopify store. Product selection, design, marketing, and scaling.',
+    category: 'ecommerce',
+    subcategory: 'Shopify',
+    level: 'Beginner',
+    duration: '6 hours',
+    durationMinutes: 360,
+    thumbnail: 'https://img.youtube.com/vi/qXWcH5fOYsY/maxresdefault.jpg',
+    videoUrl: 'https://www.youtube.com/watch?v=qXWcH5fOYsY',
+    instructor: 'Learn With Shopify',
+    isFree: true,
+    tags: ['shopify', 'ecommerce', 'dropshipping', 'online store'],
+    sections: [
+      {
+        id: 'shopify-setup',
+        title: 'Setting Up Your Store',
+        description: 'Creating your Shopify store from scratch',
+        videoUrl: 'https://www.youtube.com/watch?v=qXWcH5fOYsY&t=0s',
+        durationMinutes: 60,
+        quizQuestions: [
+          {
+            id: 'shopify-q1',
+            question: 'What is Shopify?',
+            type: 'multiple_choice',
+            options: [
+              { text: 'A social media platform', isCorrect: false },
+              { text: 'An e-commerce platform for building online stores', isCorrect: true },
+              { text: 'A payment processor', isCorrect: false },
+              { text: 'A shipping company', isCorrect: false }
+            ],
+            explanation: 'Shopify is a complete e-commerce platform that lets you create, manage, and scale an online store.'
+          }
+        ]
+      }
+    ],
+    practicalTask: {
+      title: 'Launch a Store',
+      description: 'Create a Shopify store',
+      instructions: 'Set up a Shopify store (free trial): (1) Add 5+ products, (2) Customize theme, (3) Set up payment, (4) Create 2 collections. Share store link.',
+      submissionTypes: ['url', 'screenshot'],
+      exampleSubmission: 'Launched Ankara fashion store: fashionnaija.myshopify.com'
+    }
+  },
+  {
+    id: 'dropshipping-advanced',
+    title: 'Advanced Dropshipping Strategies',
+    description: 'Scale your dropshipping business. Supplier relations, automation, branding, and six-figure scaling.',
+    category: 'ecommerce',
+    subcategory: 'Dropshipping',
+    level: 'Advanced',
+    duration: '5 hours',
+    durationMinutes: 300,
+    thumbnail: 'https://img.youtube.com/vi/lnUwF4t4gYc/maxresdefault.jpg',
+    videoUrl: 'https://www.youtube.com/watch?v=lnUwF4t4gYc',
+    instructor: 'Wholesale Ted',
+    isFree: true,
+    tags: ['dropshipping', 'ecommerce', 'scaling', 'business'],
+    sections: [
+      {
+        id: 'drop-scaling',
+        title: 'Scaling Strategies',
+        description: 'How to scale past $10k/month',
+        videoUrl: 'https://www.youtube.com/watch?v=lnUwF4t4gYc&t=0s',
+        durationMinutes: 45,
+        quizQuestions: [
+          {
+            id: 'drop-q1',
+            question: 'What is a private label product in dropshipping?',
+            type: 'multiple_choice',
+            options: [
+              { text: 'A product you manufacture yourself', isCorrect: false },
+              { text: 'A product with your own branding on generic items', isCorrect: true },
+              { text: 'A secret product no one knows about', isCorrect: false },
+              { text: 'A product sold only in private', isCorrect: false }
+            ],
+            explanation: 'Private labeling means putting your brand on products made by others, creating brand identity.'
+          }
+        ]
+      }
+    ],
+    practicalTask: {
+      title: 'Scaling Plan',
+      description: 'Create a business scaling strategy',
+      instructions: 'Create a complete scaling plan: (1) Product research (3 winning products), (2) Supplier comparison, (3) Branding strategy, (4) Marketing budget, (5) 6-month projection.',
+      submissionTypes: ['text', 'file'],
+      exampleSubmission: 'Created scaling plan for Nigerian tech accessories store with projected ₦2M monthly revenue.'
+    }
+  },
+
+  // ==================== FINANCE ====================
+  {
+    id: 'bookkeeping-basics',
+    title: 'Bookkeeping & Accounting Basics',
+    description: 'Learn bookkeeping fundamentals. Record transactions, manage accounts, and understand financial statements.',
+    category: 'finance',
+    subcategory: 'Bookkeeping',
+    level: 'Beginner',
+    duration: '5 hours',
+    durationMinutes: 300,
+    thumbnail: 'https://img.youtube.com/vi/Kl8M1JrfOAo/maxresdefault.jpg',
+    videoUrl: 'https://www.youtube.com/watch?v=Kl8M1JrfOAo',
+    instructor: 'Accounting Stuff',
+    isFree: true,
+    tags: ['bookkeeping', 'accounting', 'finance', 'business'],
+    sections: [
+      {
+        id: 'bookkeeping-basics',
+        title: 'Bookkeeping Fundamentals',
+        description: 'Understanding debits, credits, and ledgers',
+        videoUrl: 'https://www.youtube.com/watch?v=Kl8M1JrfOAo&t=0s',
+        durationMinutes: 60,
+        quizQuestions: [
+          {
+            id: 'book-q1',
+            question: 'In double-entry bookkeeping, every transaction affects:',
+            type: 'multiple_choice',
+            options: [
+              { text: 'Only one account', isCorrect: false },
+              { text: 'At least two accounts', isCorrect: true },
+              { text: 'Only cash accounts', isCorrect: false },
+              { text: 'Only expense accounts', isCorrect: false }
+            ],
+            explanation: 'Double-entry bookkeeping records each transaction in at least two accounts - a debit and a credit.'
+          }
+        ]
+      }
+    ],
+    practicalTask: {
+      title: 'Record Business Transactions',
+      description: 'Practice bookkeeping entries',
+      instructions: 'Create a simple ledger for a fictional Nigerian business. Record 20 transactions including: sales, purchases, expenses, and payments. Prepare a trial balance.',
+      submissionTypes: ['file', 'screenshot'],
+      exampleSubmission: 'Created complete ledger for Lagos bakery with monthly trial balance.'
+    }
   }
 ];
 
