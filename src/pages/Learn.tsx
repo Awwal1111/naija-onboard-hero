@@ -13,11 +13,13 @@ import {
   TrendingUp,
   Users,
   ArrowRight,
-  Award
+  Award,
+  Wrench
 } from 'lucide-react';
 import { SkillAssessmentQuiz } from '@/components/learn/SkillAssessmentQuiz';
 import { LearningPathResult } from '@/components/learn/LearningPathResult';
 import { EnhancedResourceLibrary } from '@/components/learn/EnhancedResourceLibrary';
+import { ToolsLibrary } from '@/components/learn/ToolsLibrary';
 import { learningCategories, learningCourses } from '@/lib/learningCourses';
 import { useNavigate } from 'react-router-dom';
 import { useLearningProgress } from '@/hooks/useLearningProgress';
@@ -121,24 +123,33 @@ const Learn = () => {
 
           {/* Main Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="w-full grid grid-cols-3">
+            <TabsList className="w-full grid grid-cols-4">
               <TabsTrigger value="discover" className="text-xs sm:text-sm">
-                <BookOpen className="h-4 w-4 mr-1 sm:mr-2" />
-                Discover
+                <BookOpen className="h-4 w-4 mr-1" />
+                <span className="hidden sm:inline">Courses</span>
+              </TabsTrigger>
+              <TabsTrigger value="tools" className="text-xs sm:text-sm">
+                <Wrench className="h-4 w-4 mr-1" />
+                <span className="hidden sm:inline">Tools</span>
               </TabsTrigger>
               <TabsTrigger value="assessment" className="text-xs sm:text-sm">
-                <Sparkles className="h-4 w-4 mr-1 sm:mr-2" />
-                AI Path
+                <Sparkles className="h-4 w-4 mr-1" />
+                <span className="hidden sm:inline">AI Path</span>
               </TabsTrigger>
               <TabsTrigger value="paths" className="text-xs sm:text-sm">
-                <Target className="h-4 w-4 mr-1 sm:mr-2" />
-                Categories
+                <Target className="h-4 w-4 mr-1" />
+                <span className="hidden sm:inline">Categories</span>
               </TabsTrigger>
             </TabsList>
 
             {/* Discover Tab */}
             <TabsContent value="discover" className="mt-4">
               <EnhancedResourceLibrary />
+            </TabsContent>
+
+            {/* Tools Tab */}
+            <TabsContent value="tools" className="mt-4">
+              <ToolsLibrary />
             </TabsContent>
 
             {/* AI Assessment Tab */}
