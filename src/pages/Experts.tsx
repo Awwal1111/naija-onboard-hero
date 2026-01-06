@@ -12,6 +12,7 @@ import { useExpertRatings } from '@/hooks/useExpertRatings'
 import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/useAuth'
+import { useProfile } from '@/hooks/useProfile'
 import ProfilePreview from '@/components/ProfilePreview'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ClassCard } from '@/components/ClassCard'
@@ -30,6 +31,7 @@ import { CategoryChips } from '@/components/experts/CategoryChips'
 import { ExpertFilters, SortOption } from '@/components/experts/ExpertFilters'
 import { ExpertBoostDialog } from '@/components/experts/ExpertBoostDialog'
 import { ExpertVerificationHub } from '@/components/experts/ExpertVerificationHub'
+import { AIExpertRecommendations } from '@/components/experts/AIExpertRecommendations'
 
 interface Expert {
   id: string
@@ -54,6 +56,7 @@ interface Expert {
 const Experts = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { profile } = useProfile()
   const { toast } = useToast()
   const [searchQuery, setSearchQuery] = useState('')
   const location = useLocation()
@@ -291,6 +294,14 @@ const Experts = () => {
                 }}
               />
             )}
+
+            {/* AI Expert Recommendations */}
+            <AIExpertRecommendations 
+              experts={personalizedExperts}
+              userState={profile?.state_name}
+              userProfession={profile?.profession}
+              onProfileClick={(userId) => setProfilePreview({ isOpen: true, userId })}
+            />
 
             {/* Featured Experts Carousel */}
             <FeaturedExperts 
