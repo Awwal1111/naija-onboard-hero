@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { BrandInput } from '@/components/ui/brand-input'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { useAuth } from '@/hooks/useAuth'
+import { useProfile } from '@/hooks/useProfile'
 import { usePersonalizedJobPosts, usePersonalizedGigs } from '@/hooks/usePersonalizedDiscovery'
 import { supabase } from '@/integrations/supabase/client'
 import { MoreMenuDrawer } from '@/components/MoreMenuDrawer'
@@ -18,12 +19,14 @@ import { GigCard } from '@/components/GigCard'
 import { MarketplaceExplainer } from '@/components/MarketplaceExplainer'
 import { CreateJobPostDialog } from '@/components/CreateJobPostDialog'
 import { GigCategoryChips } from '@/components/gigs/GigCategoryChips'
+import { AIGigRecommendations } from '@/components/gigs/AIGigRecommendations'
 import { getCategoryPlaceholder, normalizeCategory } from '@/lib/gigCategories'
 
 const Jobs = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { user } = useAuth()
+  const { profile } = useProfile()
   const { jobPosts, loading: jobsLoading } = usePersonalizedJobPosts(50)
   const { gigs, loading: gigsLoading } = usePersonalizedGigs(50)
   const [searchQuery, setSearchQuery] = useState('')
@@ -230,6 +233,15 @@ const Jobs = () => {
 
           {/* Gigs Tab Content */}
           <TabsContent value="gigs" className="mt-0 px-4">
+            {/* AI Recommendations */}
+            <div className="pt-3">
+              <AIGigRecommendations 
+                gigs={gigs} 
+                userState={profile?.state_name}
+                userProfession={profile?.profession}
+              />
+            </div>
+
             {/* Explainer Card */}
             {showGigExplainer && (
               <div className="pt-3">
