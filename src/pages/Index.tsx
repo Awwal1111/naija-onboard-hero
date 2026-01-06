@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { UnifiedSearchBar } from '@/components/UnifiedSearchBar'
+import { EnhancedSearchBar } from '@/components/EnhancedSearchBar'
 import { Logo } from '@/components/ui/logo'
 import { BrandButton } from '@/components/ui/brand-button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -73,7 +73,7 @@ const Index = () => {
                 </div>
 
                 <div className="max-w-2xl mb-4 sm:mb-6">
-                  <UnifiedSearchBar />
+                  <EnhancedSearchBar />
                 </div>
 
                 <div className="flex flex-col gap-3 sm:flex-row sm:gap-4 pt-2 sm:pt-4">

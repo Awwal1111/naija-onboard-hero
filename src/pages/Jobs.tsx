@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { ArrowLeft, MapPin, Clock, DollarSign, Users, Briefcase, Home, MessageCircle, Menu, Plus, Search, Eye, TrendingUp, Grid3X3, List, Package, Star, Zap } from 'lucide-react'
+import { ArrowLeft, MapPin, Clock, DollarSign, Users, Briefcase, Home, MessageCircle, Menu, Plus, Search, Eye, TrendingUp, Grid3X3, List, Package, Star, Zap, SlidersHorizontal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -12,14 +12,16 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
 import { usePersonalizedJobPosts, usePersonalizedGigs } from '@/hooks/usePersonalizedDiscovery'
+import { useSearchHistory } from '@/hooks/useSearchHistory'
 import { supabase } from '@/integrations/supabase/client'
 import { MoreMenuDrawer } from '@/components/MoreMenuDrawer'
 import { BookmarkButton } from '@/components/BookmarkButton'
-import { GigCard } from '@/components/GigCard'
 import { MarketplaceExplainer } from '@/components/MarketplaceExplainer'
 import { CreateJobPostDialog } from '@/components/CreateJobPostDialog'
 import { GigCategoryChips } from '@/components/gigs/GigCategoryChips'
-import { AIGigRecommendations } from '@/components/gigs/AIGigRecommendations'
+import { AIGigCarousel } from '@/components/gigs/AIGigCarousel'
+import { GigSortFilterBar, SortOption } from '@/components/gigs/GigSortFilterBar'
+import { GigCardCompact } from '@/components/gigs/GigCardCompact'
 import { getCategoryPlaceholder, normalizeCategory } from '@/lib/gigCategories'
 
 const Jobs = () => {
@@ -29,6 +31,7 @@ const Jobs = () => {
   const { profile } = useProfile()
   const { jobPosts, loading: jobsLoading } = usePersonalizedJobPosts(50)
   const { gigs, loading: gigsLoading } = usePersonalizedGigs(50)
+  const { addSearch } = useSearchHistory()
   const [searchQuery, setSearchQuery] = useState('')
   const [stateFilter, setStateFilter] = useState('all')
   const [categoryFilter, setCategoryFilter] = useState('all')
@@ -45,6 +48,11 @@ const Jobs = () => {
     return localStorage.getItem('hideJobExplainer') !== 'true'
   })
   const [showCreateJobDialog, setShowCreateJobDialog] = useState(false)
+  
+  // New filter states
+  const [sortBy, setSortBy] = useState<SortOption>('relevance')
+  const [priceRange, setPriceRange] = useState<[number, number] | null>(null)
+  const [expertOnly, setExpertOnly] = useState(false)
 
   useEffect(() => {
     if (user) {
@@ -95,17 +103,53 @@ const Jobs = () => {
     navigate(path)
   }
 
-  const filteredGigs = useMemo(() => {
-    return gigs.filter((gig: any) => {
+  // Enhanced filtering with sorting and price range
+  const filteredAndSortedGigs = useMemo(() => {
+    let filtered = gigs.filter((gig: any) => {
       const matchesSearch = gig.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                            gig.description?.toLowerCase().includes(searchQuery.toLowerCase())
       const normalizedGigCategory = normalizeCategory(gig.category)
       const matchesCategory = !categoryFilter || categoryFilter === 'all' || 
                              categoryFilter === 'All Categories' ||
                              normalizedGigCategory === categoryFilter
-      return matchesSearch && matchesCategory
+      const matchesPrice = !priceRange || (gig.price >= priceRange[0] && gig.price <= priceRange[1])
+      const matchesExpert = !expertOnly || gig.seller_is_expert
+      return matchesSearch && matchesCategory && matchesPrice && matchesExpert
     })
-  }, [gigs, searchQuery, categoryFilter])
+
+    // Sort results
+    switch (sortBy) {
+      case 'price_low':
+        filtered.sort((a, b) => (a.price || 0) - (b.price || 0))
+        break
+      case 'price_high':
+        filtered.sort((a, b) => (b.price || 0) - (a.price || 0))
+        break
+      case 'rating':
+        filtered.sort((a, b) => (b.average_rating || 0) - (a.average_rating || 0))
+        break
+      case 'newest':
+        filtered.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
+        break
+      case 'popular':
+        filtered.sort((a, b) => (b.review_count || 0) - (a.review_count || 0))
+        break
+      default: // relevance - keep original order (already sorted by relevance_score)
+        break
+    }
+
+    return filtered
+  }, [gigs, searchQuery, categoryFilter, priceRange, expertOnly, sortBy])
+
+  // Track search when user types and pauses
+  useEffect(() => {
+    if (searchQuery.length >= 3) {
+      const timer = setTimeout(() => {
+        addSearch(searchQuery, categoryFilter !== 'all' ? categoryFilter : undefined)
+      }, 1000)
+      return () => clearTimeout(timer)
+    }
+  }, [searchQuery, categoryFilter, addSearch])
 
   const filteredJobs = jobPosts.filter((job: any) => {
     const matchesSearch = job.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -116,6 +160,19 @@ const Jobs = () => {
                            job.required_skills?.some((skill: string) => skill.toLowerCase().includes(categoryFilter.toLowerCase()))
     return matchesSearch && matchesState && matchesCategory
   })
+
+  // Count active filters
+  const activeFilterCount = [
+    priceRange !== null,
+    expertOnly,
+    categoryFilter !== 'all'
+  ].filter(Boolean).length
+
+  const clearFilters = () => {
+    setPriceRange(null)
+    setExpertOnly(false)
+    setCategoryFilter('all')
+  }
 
   const loading = jobsLoading || gigsLoading
 
@@ -233,14 +290,28 @@ const Jobs = () => {
 
           {/* Gigs Tab Content */}
           <TabsContent value="gigs" className="mt-0 px-4">
-            {/* AI Recommendations */}
+            {/* AI Recommendations Carousel */}
             <div className="pt-3">
-              <AIGigRecommendations 
+              <AIGigCarousel 
                 gigs={gigs} 
                 userState={profile?.state_name}
                 userProfession={profile?.profession}
+                isPremium={profile?.is_premium}
               />
             </div>
+
+            {/* Sort & Filter Bar */}
+            <GigSortFilterBar
+              sortBy={sortBy}
+              onSortChange={setSortBy}
+              priceRange={priceRange}
+              onPriceRangeChange={setPriceRange}
+              expertOnly={expertOnly}
+              onExpertOnlyChange={setExpertOnly}
+              activeFilterCount={activeFilterCount}
+              onClearFilters={clearFilters}
+              totalResults={filteredAndSortedGigs.length}
+            />
 
             {/* Explainer Card */}
             {showGigExplainer && (
@@ -255,12 +326,15 @@ const Jobs = () => {
               </div>
             )}
             
-            {filteredGigs.length === 0 ? (
+            {filteredAndSortedGigs.length === 0 ? (
               <Card className="mt-4">
                 <CardContent className="py-12 text-center">
                   <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <h3 className="font-semibold mb-2">No Services Found</h3>
-                  <p className="text-sm text-muted-foreground mb-4">Be the first to offer a service!</p>
+                  <p className="text-sm text-muted-foreground mb-4">Try adjusting your filters</p>
+                  <Button variant="outline" onClick={clearFilters} className="mr-2">
+                    Clear Filters
+                  </Button>
                   <Button onClick={() => navigate('/post-job')}>
                     <Plus className="h-4 w-4 mr-2" />
                     Create Gig
@@ -268,21 +342,18 @@ const Jobs = () => {
                 </CardContent>
               </Card>
             ) : viewMode === 'grid' ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 py-3">
-                {filteredGigs.map((gig: any) => (
-                  <GigCard
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 py-3">
+                {filteredAndSortedGigs.map((gig: any) => (
+                  <GigCardCompact
                     key={gig.id}
                     id={gig.id}
                     title={gig.title}
-                    description={gig.description}
                     price={gig.price}
                     category={gig.category}
                     photo_urls={gig.photo_urls}
                     seller_name={gig.seller_name}
                     seller_picture={gig.seller_picture}
-                    seller_rating={gig.seller_rating}
                     seller_is_expert={gig.seller_is_expert}
-                    seller_id={gig.seller_id}
                     seller_state={gig.seller_state}
                     average_rating={gig.average_rating}
                     review_count={gig.review_count}
@@ -292,7 +363,7 @@ const Jobs = () => {
               </div>
             ) : (
               <div className="space-y-2 py-3">
-                {filteredGigs.map((gig: any) => (
+                {filteredAndSortedGigs.map((gig: any) => (
                   <Card 
                     key={gig.id} 
                     className="cursor-pointer hover:shadow-md transition-shadow"
@@ -307,7 +378,6 @@ const Jobs = () => {
                           alt={gig.title}
                           className="w-full h-full object-cover"
                         />
-                        {/* Boosted indicator */}
                         {(gig.boost_amount || 0) > 0 && (
                           <div className="absolute top-0.5 left-0.5">
                             <Badge className="bg-gradient-to-r from-orange-500 to-yellow-400 text-white text-[8px] h-4 px-1 gap-0 border-0">
