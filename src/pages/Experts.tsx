@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { Search, Filter, Star, MapPin, MessageCircle, Home, Users, DollarSign, Briefcase, Menu, Video, Plus, TrendingUp, Grid3X3, List, Shield, Zap } from 'lucide-react'
+import { Search, Filter, Star, MapPin, MessageCircle, Home, Users, DollarSign, Briefcase, Menu, Video, Plus, TrendingUp, Grid3X3, List, Shield, Zap, ChevronRight } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { MoreMenuDrawer } from '@/components/MoreMenuDrawer'
 import { BrandInput } from '@/components/ui/brand-input'
@@ -30,8 +30,8 @@ import { FeaturedExperts } from '@/components/experts/FeaturedExperts'
 import { CategoryChips } from '@/components/experts/CategoryChips'
 import { ExpertFilters, SortOption } from '@/components/experts/ExpertFilters'
 import { ExpertBoostDialog } from '@/components/experts/ExpertBoostDialog'
-import { ExpertVerificationHub } from '@/components/experts/ExpertVerificationHub'
-import { AIExpertRecommendations } from '@/components/experts/AIExpertRecommendations'
+import { ExpertVerificationBanner } from '@/components/experts/ExpertVerificationBanner'
+import { AIExpertCarousel } from '@/components/experts/AIExpertCarousel'
 
 interface Expert {
   id: string
@@ -279,9 +279,29 @@ const Experts = () => {
 
           {/* Expert List Tab */}
           <TabsContent value="experts" className="space-y-4">
-            {/* Expert Verification Hub - Only for experts */}
+            {/* Expert Verification Banner - Compact for experts */}
             {userProfile?.is_expert && (
-              <ExpertVerificationHub />
+              <ExpertVerificationBanner />
+            )}
+
+            {/* Apply as Expert CTA for non-experts */}
+            {user && !userProfile?.is_expert && (
+              <Card className="border-dashed border-primary/30 bg-primary/5">
+                <CardContent className="py-3 px-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Shield className="h-5 w-5 text-primary" />
+                      <div>
+                        <p className="font-medium text-sm">Become an Expert</p>
+                        <p className="text-xs text-muted-foreground">Offer your services & get clients</p>
+                      </div>
+                    </div>
+                    <Button size="sm" variant="outline" onClick={() => navigate('/expert-application')}>
+                      Apply
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             )}
 
             {/* Explainer Card */}
@@ -295,8 +315,8 @@ const Experts = () => {
               />
             )}
 
-            {/* AI Expert Recommendations */}
-            <AIExpertRecommendations 
+            {/* AI Expert Carousel */}
+            <AIExpertCarousel 
               experts={personalizedExperts}
               userState={profile?.state_name}
               userProfession={profile?.profession}

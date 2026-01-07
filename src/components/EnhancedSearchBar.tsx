@@ -253,7 +253,7 @@ export const EnhancedSearchBar = () => {
                       <IconComponent />
                       {type === 'gig' ? 'Services' : type.charAt(0).toUpperCase() + type.slice(1)}s
                     </div>
-                    {items.slice(0, 3).map((result) => (
+                    {items.slice(0, 4).map((result) => (
                       <button
                         key={result.id}
                         onClick={() => handleResultClick(result.url, result.title, result.type)}
@@ -272,14 +272,45 @@ export const EnhancedSearchBar = () => {
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm text-foreground truncate">{result.title}</div>
+                          <div className="font-medium text-sm text-foreground truncate flex items-center gap-1.5">
+                            {result.title}
+                            {result.is_premium && (
+                              <Badge className="bg-amber-500/10 text-amber-600 text-[9px] px-1 py-0">PRO</Badge>
+                            )}
+                          </div>
                           <div className="text-xs text-muted-foreground truncate">{result.subtitle}</div>
+                          {/* Show basic info preview */}
+                          {result.description && (
+                            <div className="text-[10px] text-muted-foreground/70 truncate mt-0.5">
+                              {result.description.substring(0, 60)}...
+                            </div>
+                          )}
+                          {/* Show metadata for specific types */}
+                          {result.metadata?.price && (
+                            <div className="text-[10px] font-medium text-primary mt-0.5">
+                              ₦{result.metadata.price.toLocaleString()}
+                            </div>
+                          )}
+                          {result.metadata?.rating && (
+                            <div className="text-[10px] text-amber-500 flex items-center gap-0.5 mt-0.5">
+                              ⭐ {result.metadata.rating.toFixed(1)}
+                            </div>
+                          )}
                         </div>
                       </button>
                     ))}
                   </div>
                 );
               })}
+              {/* View All Results Link */}
+              <div className="p-2">
+                <button
+                  onClick={() => handleSearchSubmit(searchQuery)}
+                  className="w-full text-center p-3 text-primary hover:bg-accent rounded-lg transition-colors text-sm font-medium"
+                >
+                  View all results for "{searchQuery}" →
+                </button>
+              </div>
             </div>
           )}
         </Card>
