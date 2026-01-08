@@ -28,6 +28,178 @@ import { AdminSetup } from '@/components/AdminSetup'
 import { AdminAnalyticsCharts } from '@/components/AdminAnalyticsCharts'
 import { AdminBroadcastDialog } from '@/components/AdminBroadcastDialog'
 import { AdminExpertVerification } from '@/components/AdminExpertVerification'
+import { Briefcase as BriefcaseIcon } from 'lucide-react'
+
+// Admin Gigs Management Section
+const AdminGigsSection = () => {
+  const [gigs, setGigs] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
+  const { toast } = useToast()
+
+  useEffect(() => {
+    fetchGigs()
+  }, [])
+
+  const fetchGigs = async () => {
+    try {
+      setLoading(true)
+      const { data, error } = await supabase
+        .from('jobs_services')
+        .select(`
+          *,
+          profiles(full_name, profile_picture_url)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(100)
+
+      if (error) throw error
+      setGigs(data || [])
+    } catch (error) {
+      console.error('Error fetching gigs:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleDeleteGig = async (gigId: string, gigTitle: string) => {
+    if (!confirm(`Are you sure you want to delete "${gigTitle}"? This action cannot be undone.`)) {
+      return
+    }
+
+    try {
+      const { error } = await supabase
+        .from('jobs_services')
+        .delete()
+        .eq('id', gigId)
+
+      if (error) throw error
+
+      toast({
+        title: "Gig Deleted",
+        description: `"${gigTitle}" has been removed from the platform`,
+      })
+
+      fetchGigs()
+    } catch (error) {
+      console.error('Error deleting gig:', error)
+      toast({
+        title: "Error",
+        description: "Failed to delete gig",
+        variant: "destructive"
+      })
+    }
+  }
+
+  const filteredGigs = gigs.filter(gig =>
+    gig.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    gig.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    gig.profiles?.full_name?.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  if (loading) {
+    return <div className="text-center py-8">Loading gigs...</div>
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-4 mb-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-3 h-4 w-4 text-text-secondary" />
+          <BrandInput
+            placeholder="Search gigs by title, description, or seller..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+      </div>
+
+      <div className="mb-4 p-4 bg-muted/30 rounded-lg grid grid-cols-3 gap-4">
+        <div>
+          <p className="text-sm text-text-secondary">Total Gigs</p>
+          <p className="text-2xl font-bold text-text-primary">{gigs.length}</p>
+        </div>
+        <div>
+          <p className="text-sm text-text-secondary">Active</p>
+          <p className="text-2xl font-bold text-green-600">{gigs.filter(g => g.status === 'active').length}</p>
+        </div>
+        <div>
+          <p className="text-sm text-text-secondary">Paused</p>
+          <p className="text-2xl font-bold text-yellow-600">{gigs.filter(g => g.status === 'paused').length}</p>
+        </div>
+      </div>
+
+      {filteredGigs.length === 0 ? (
+        <div className="text-center py-8">
+          <BriefcaseIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <p className="text-text-secondary">No gigs found</p>
+        </div>
+      ) : (
+        <div className="max-h-[500px] overflow-y-auto pr-2 space-y-4">
+          {filteredGigs.map((gig) => (
+            <Card key={gig.id} className="border-l-4 border-l-primary">
+              <CardContent className="pt-6">
+                <div className="flex justify-between items-start gap-4">
+                  <div className="flex gap-4 flex-1">
+                    {gig.photo_urls?.[0] && (
+                      <img 
+                        src={gig.photo_urls[0]} 
+                        alt={gig.title}
+                        className="w-20 h-20 object-cover rounded-lg"
+                      />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-semibold text-text-primary truncate">{gig.title}</h3>
+                        <Badge variant={gig.status === 'active' ? 'default' : 'secondary'} className="text-xs">
+                          {gig.status}
+                        </Badge>
+                        {gig.boost_amount > 0 && (
+                          <Badge variant="outline" className="text-xs text-primary border-primary">
+                            Boosted
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-text-secondary mb-2 line-clamp-2">{gig.description}</p>
+                      <div className="flex items-center gap-4 text-sm">
+                        <span className="text-primary font-semibold">NC {gig.price?.toLocaleString()}</span>
+                        <span className="text-text-secondary">by {gig.profiles?.full_name || 'Unknown'}</span>
+                        <span className="text-text-secondary">{gig.category}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem 
+                        onClick={() => window.open(`/gig/${gig.id}`, '_blank')}
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        View Gig
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => handleDeleteGig(gig.id, gig.title)}
+                        className="text-red-600"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete Gig (Spam)
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 // Marketplace Section Components
 const DonationsSection = () => {
@@ -1452,9 +1624,13 @@ const EnhancedAdminDashboard = () => {
 
           {/* Marketplace Tab */}
           <TabsContent value="marketplace" className="space-y-6">
-            <Tabs defaultValue="donations" className="w-full">
+            <Tabs defaultValue="gigs" className="w-full">
               <div className="overflow-x-auto mb-6">
                 <TabsList className="inline-flex w-full min-w-max">
+                  <TabsTrigger value="gigs">
+                    <BriefcaseIcon className="h-4 w-4 mr-2" />
+                    Gigs/Services
+                  </TabsTrigger>
                   <TabsTrigger value="donations">
                     <Heart className="h-4 w-4 mr-2" />
                     Donations
@@ -1477,6 +1653,20 @@ const EnhancedAdminDashboard = () => {
                   </TabsTrigger>
                 </TabsList>
               </div>
+
+              <TabsContent value="gigs" className="mt-0">
+                <Card>
+                  <CardHeader className="bg-muted/30">
+                    <CardTitle className="flex items-center gap-2">
+                      <BriefcaseIcon className="h-5 w-5 text-primary" />
+                      Gigs/Services Management
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-6">
+                    <AdminGigsSection />
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
               <TabsContent value="donations" className="mt-0">
                 <Card>
