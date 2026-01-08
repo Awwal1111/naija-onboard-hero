@@ -17,10 +17,12 @@ import {
   UserPlus,
   Coins,
   CheckCircle,
-  Clock
+  Clock,
+  Sparkles
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { ReferralProgressCard } from '@/components/ReferralProgressCard'
+import { InstantReferralReward } from '@/components/InstantReferralReward'
 
 interface Referral {
   id: string
@@ -175,34 +177,8 @@ export const Referrals = () => {
           totalEarnings={totalEarned}
         />
 
-        {/* Apply Referral Code */}
-        <Card className="border-accent/20">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Gift className="h-5 w-5 text-primary" />
-              <span>Have a Referral Code?</span>
-            </CardTitle>
-            <CardDescription>
-              Enter a friend's referral code to get started
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex space-x-2">
-              <Input
-                placeholder="Enter referral code"
-                value={referralCode}
-                onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
-                className="flex-1"
-              />
-              <Button 
-                onClick={submitReferralCode}
-                disabled={!referralCode.trim()}
-              >
-                Apply
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Instant Referral Reward Section */}
+        <InstantReferralReward />
 
         {/* Referral List */}
         <Card className="border-accent/20">
