@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   isMiniPayEnvironment, 
-  getMiniPayProvider, 
-  connectMiniPay, 
+  hasWalletProvider,
   getMiniPayAccount,
+  connectMiniPay,
   getMiniPayCUSDBalance,
   depositViaMiniPay
 } from '@/lib/minipay';
@@ -16,6 +16,7 @@ interface UseMiniPayReturn {
   account: string | null;
   cusdBalance: string;
   isLoading: boolean;
+  error: string | null;
   connect: () => Promise<boolean>;
   deposit: (amountNGN: number) => Promise<{ success: boolean; txHash?: string }>;
   refreshBalance: () => Promise<void>;
@@ -27,48 +28,87 @@ export const useMiniPay = (): UseMiniPayReturn => {
   const [account, setAccount] = useState<string | null>(null);
   const [cusdBalance, setCusdBalance] = useState('0');
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [masterWalletAddress, setMasterWalletAddress] = useState<string | null>(null);
+  const initRef = useRef(false);
 
-  // Detect MiniPay environment
+  // Initialize MiniPay detection and auto-connect
   useEffect(() => {
-    const detected = isMiniPayEnvironment();
-    setIsMiniPay(detected);
-    
-    if (detected) {
-      // Check if already connected
-      getMiniPayAccount().then(acc => {
+    if (initRef.current) return;
+    initRef.current = true;
+
+    const init = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        // Check if we're in MiniPay environment
+        const inMiniPay = isMiniPayEnvironment();
+        setIsMiniPay(inMiniPay);
+        console.log('[MiniPay] Environment detected:', inMiniPay);
+
+        // Check if wallet provider exists
+        if (!hasWalletProvider()) {
+          console.log('[MiniPay] No wallet provider found');
+          setIsLoading(false);
+          return;
+        }
+
+        // In MiniPay, the wallet is auto-connected
+        // Try to get the account directly
+        const acc = await getMiniPayAccount();
+        console.log('[MiniPay] Account:', acc);
+        
         if (acc) {
           setAccount(acc);
           setIsConnected(true);
-          getMiniPayCUSDBalance(acc).then(setCusdBalance);
-        }
-        setIsLoading(false);
-      });
-      
-      // Listen for account changes
-      const provider = getMiniPayProvider();
-      if (provider) {
-        const handleAccountsChanged = (accounts: unknown) => {
-          const accs = accounts as string[];
-          if (accs.length > 0) {
-            setAccount(accs[0]);
+          
+          // Fetch balance
+          const balance = await getMiniPayCUSDBalance(acc);
+          setCusdBalance(parseFloat(balance).toFixed(2));
+          console.log('[MiniPay] cUSD Balance:', balance);
+        } else if (inMiniPay) {
+          // In MiniPay but no account yet - try to request
+          const connected = await connectMiniPay();
+          if (connected) {
+            setAccount(connected);
             setIsConnected(true);
-            getMiniPayCUSDBalance(accs[0]).then(setCusdBalance);
-          } else {
-            setAccount(null);
-            setIsConnected(false);
-            setCusdBalance('0');
+            const balance = await getMiniPayCUSDBalance(connected);
+            setCusdBalance(parseFloat(balance).toFixed(2));
           }
-        };
-        
-        provider.on('accountsChanged', handleAccountsChanged);
-        
-        return () => {
-          provider.removeListener('accountsChanged', handleAccountsChanged);
-        };
+        }
+      } catch (err) {
+        console.error('[MiniPay] Init error:', err);
+        setError(err instanceof Error ? err.message : 'Failed to initialize');
+      } finally {
+        setIsLoading(false);
       }
-    } else {
-      setIsLoading(false);
+    };
+
+    init();
+
+    // Listen for account changes
+    if (typeof window !== 'undefined' && window.ethereum) {
+      const handleAccountsChanged = async (accounts: unknown) => {
+        const accs = accounts as string[];
+        console.log('[MiniPay] Accounts changed:', accs);
+        if (accs.length > 0) {
+          setAccount(accs[0]);
+          setIsConnected(true);
+          const balance = await getMiniPayCUSDBalance(accs[0]);
+          setCusdBalance(parseFloat(balance).toFixed(2));
+        } else {
+          setAccount(null);
+          setIsConnected(false);
+          setCusdBalance('0');
+        }
+      };
+
+      window.ethereum.on('accountsChanged', handleAccountsChanged);
+      
+      return () => {
+        window.ethereum?.removeListener('accountsChanged', handleAccountsChanged);
+      };
     }
   }, []);
 
@@ -81,7 +121,7 @@ export const useMiniPay = (): UseMiniPayReturn => {
           setMasterWalletAddress(data.address);
         }
       } catch (error) {
-        console.error('Failed to fetch master wallet:', error);
+        console.error('[MiniPay] Failed to fetch master wallet:', error);
       }
     };
     
@@ -90,20 +130,24 @@ export const useMiniPay = (): UseMiniPayReturn => {
 
   const connect = useCallback(async (): Promise<boolean> => {
     setIsLoading(true);
+    setError(null);
+    
     try {
       const acc = await connectMiniPay();
       if (acc) {
         setAccount(acc);
         setIsConnected(true);
         const balance = await getMiniPayCUSDBalance(acc);
-        setCusdBalance(balance);
-        toast.success('MiniPay connected!');
+        setCusdBalance(parseFloat(balance).toFixed(2));
+        toast.success('Wallet connected!');
         return true;
       }
+      setError('Failed to connect wallet');
       return false;
-    } catch (error) {
-      console.error('MiniPay connection failed:', error);
-      toast.error('Failed to connect MiniPay');
+    } catch (err) {
+      console.error('[MiniPay] Connection failed:', err);
+      setError(err instanceof Error ? err.message : 'Connection failed');
+      toast.error('Failed to connect wallet');
       return false;
     } finally {
       setIsLoading(false);
@@ -112,8 +156,12 @@ export const useMiniPay = (): UseMiniPayReturn => {
 
   const refreshBalance = useCallback(async () => {
     if (account) {
-      const balance = await getMiniPayCUSDBalance(account);
-      setCusdBalance(balance);
+      try {
+        const balance = await getMiniPayCUSDBalance(account);
+        setCusdBalance(parseFloat(balance).toFixed(2));
+      } catch (err) {
+        console.error('[MiniPay] Balance refresh failed:', err);
+      }
     }
   }, [account]);
 
@@ -123,7 +171,7 @@ export const useMiniPay = (): UseMiniPayReturn => {
       return { success: false };
     }
 
-    if (!isConnected) {
+    if (!isConnected || !account) {
       const connected = await connect();
       if (!connected) return { success: false };
     }
@@ -151,14 +199,14 @@ export const useMiniPay = (): UseMiniPayReturn => {
       }
       
       return result;
-    } catch (error) {
-      console.error('Deposit failed:', error);
+    } catch (err) {
+      console.error('[MiniPay] Deposit failed:', err);
       toast.error('Deposit failed');
       return { success: false };
     } finally {
       setIsLoading(false);
     }
-  }, [masterWalletAddress, isConnected, connect, refreshBalance]);
+  }, [masterWalletAddress, isConnected, account, connect, refreshBalance]);
 
   return {
     isMiniPay,
@@ -166,6 +214,7 @@ export const useMiniPay = (): UseMiniPayReturn => {
     account,
     cusdBalance,
     isLoading,
+    error,
     connect,
     deposit,
     refreshBalance
