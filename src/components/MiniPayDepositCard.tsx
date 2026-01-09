@@ -3,7 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { BrandButton } from '@/components/ui/brand-button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Wallet, Zap, CheckCircle, Loader2 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Wallet, Zap, CheckCircle, Loader2, AlertCircle } from 'lucide-react';
 import { useMiniPay } from '@/hooks/useMiniPay';
 
 interface MiniPayDepositCardProps {
@@ -11,11 +12,18 @@ interface MiniPayDepositCardProps {
 }
 
 export const MiniPayDepositCard = ({ onSuccess }: MiniPayDepositCardProps) => {
-  const { isMiniPay, isConnected, account, cusdBalance, isLoading, connect, deposit } = useMiniPay();
+  const { 
+    isMiniPay, 
+    isConnected, 
+    account, 
+    cusdBalance, 
+    isLoading, 
+    error, 
+    connect, 
+    deposit 
+  } = useMiniPay();
   const [amount, setAmount] = useState('');
   const [isDepositing, setIsDepositing] = useState(false);
-
-  if (!isMiniPay) return null;
 
   const handleDeposit = async () => {
     const amountNum = parseFloat(amount);
@@ -33,6 +41,43 @@ export const MiniPayDepositCard = ({ onSuccess }: MiniPayDepositCardProps) => {
 
   const quickAmounts = [1000, 2500, 5000, 10000];
 
+  // Show loading state
+  if (isLoading && !isConnected) {
+    return (
+      <Card className="border-green-500/30 bg-gradient-to-br from-green-500/10 to-emerald-500/5">
+        <CardContent className="py-8">
+          <div className="flex flex-col items-center justify-center space-y-4">
+            <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+            <p className="text-muted-foreground">Connecting wallet...</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Show error if connection failed
+  if (error && !isConnected) {
+    return (
+      <Card className="border-orange-500/30 bg-gradient-to-br from-orange-500/10 to-amber-500/5">
+        <CardContent className="py-6 space-y-4">
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              {error}. Please ensure you're using MiniPay or a Celo-compatible wallet.
+            </AlertDescription>
+          </Alert>
+          <BrandButton 
+            onClick={connect} 
+            className="w-full"
+          >
+            <Wallet className="h-4 w-4 mr-2" />
+            Try Again
+          </BrandButton>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="border-green-500/30 bg-gradient-to-br from-green-500/10 to-emerald-500/5">
       <CardHeader className="pb-3">
@@ -47,23 +92,28 @@ export const MiniPayDepositCard = ({ onSuccess }: MiniPayDepositCardProps) => {
           </Badge>
         </div>
         <CardDescription>
-          Deposit directly from your MiniPay wallet
+          Deposit cUSD directly from your wallet
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {!isConnected ? (
-          <BrandButton 
-            onClick={connect} 
-            disabled={isLoading}
-            className="w-full bg-green-600 hover:bg-green-700"
-          >
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-            ) : (
-              <Wallet className="h-4 w-4 mr-2" />
-            )}
-            Connect MiniPay
-          </BrandButton>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground text-center">
+              Connect your wallet to deposit funds
+            </p>
+            <BrandButton 
+              onClick={connect} 
+              disabled={isLoading}
+              className="w-full bg-green-600 hover:bg-green-700"
+            >
+              {isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Wallet className="h-4 w-4 mr-2" />
+              )}
+              Connect Wallet
+            </BrandButton>
+          </div>
         ) : (
           <>
             {/* Connected Status */}
