@@ -1,8 +1,25 @@
-import { ReactNode, useEffect, useState } from 'react'
-import { useAuth } from '@/hooks/useAuth'
+import { ReactNode, useEffect, useState, createContext, useContext } from 'react'
 import { isMiniPayEnvironment, getMiniPayAccount, hasWalletProvider } from '@/lib/minipay'
 import { supabase } from '@/integrations/supabase/client'
 import { Loader2 } from 'lucide-react'
+
+interface MiniPayContextType {
+  isMiniPay: boolean
+  walletAddress: string | null
+  isInitializing: boolean
+  userId: string | null
+  isRegistered: boolean
+}
+
+const MiniPayContext = createContext<MiniPayContextType>({
+  isMiniPay: false,
+  walletAddress: null,
+  isInitializing: true,
+  userId: null,
+  isRegistered: false
+})
+
+export const useMiniPayContext = () => useContext(MiniPayContext)
 
 interface MiniPayAuthWrapperProps {
   children: ReactNode
@@ -19,17 +36,12 @@ interface MiniPayAuthWrapperProps {
  * - Full auth only required for protected actions
  */
 export const MiniPayAuthWrapper = ({ children }: MiniPayAuthWrapperProps) => {
-  const { user, loading: authLoading } = useAuth()
-  const [miniPayState, setMiniPayState] = useState<{
-    isMiniPay: boolean
-    walletAddress: string | null
-    isInitializing: boolean
-    error: string | null
-  }>({
+  const [state, setState] = useState<MiniPayContextType>({
     isMiniPay: false,
     walletAddress: null,
     isInitializing: true,
-    error: null
+    userId: null,
+    isRegistered: false
   })
 
   useEffect(() => {
@@ -39,11 +51,12 @@ export const MiniPayAuthWrapper = ({ children }: MiniPayAuthWrapperProps) => {
       
       if (!inMiniPay) {
         // Not in MiniPay - let normal auth flow handle things
-        setMiniPayState({
+        setState({
           isMiniPay: false,
           walletAddress: null,
           isInitializing: false,
-          error: null
+          userId: null,
+          isRegistered: false
         })
         return
       }
@@ -53,11 +66,12 @@ export const MiniPayAuthWrapper = ({ children }: MiniPayAuthWrapperProps) => {
       // Check for wallet provider
       if (!hasWalletProvider()) {
         console.log('[MiniPayAuth] No wallet provider found')
-        setMiniPayState({
+        setState({
           isMiniPay: true,
           walletAddress: null,
           isInitializing: false,
-          error: 'Wallet not found'
+          userId: null,
+          isRegistered: false
         })
         return
       }
@@ -68,53 +82,60 @@ export const MiniPayAuthWrapper = ({ children }: MiniPayAuthWrapperProps) => {
         console.log('[MiniPayAuth] Wallet address:', address)
 
         if (address) {
-          // Store wallet address for app use
-          setMiniPayState({
-            isMiniPay: true,
-            walletAddress: address,
-            isInitializing: false,
-            error: null
-          })
-
           // Check if user exists with this wallet
           const { data: existingProfile } = await supabase
             .from('profiles')
-            .select('user_id, full_name')
-            .eq('celo_wallet_address', address.toLowerCase())
+            .select('user_id, full_name, celo_wallet_address')
+            .or(`celo_wallet_address.ilike.${address.toLowerCase()},minipay_address.ilike.${address.toLowerCase()}`)
             .maybeSingle()
 
           if (existingProfile) {
-            console.log('[MiniPayAuth] Found user with wallet:', existingProfile.user_id)
+            console.log('[MiniPayAuth] Found registered user:', existingProfile.user_id)
+            setState({
+              isMiniPay: true,
+              walletAddress: address,
+              isInitializing: false,
+              userId: existingProfile.user_id,
+              isRegistered: true
+            })
           } else {
             console.log('[MiniPayAuth] New MiniPay user - can browse freely')
+            setState({
+              isMiniPay: true,
+              walletAddress: address,
+              isInitializing: false,
+              userId: null,
+              isRegistered: false
+            })
           }
         } else {
-          setMiniPayState({
+          setState({
             isMiniPay: true,
             walletAddress: null,
             isInitializing: false,
-            error: null
+            userId: null,
+            isRegistered: false
           })
         }
       } catch (error) {
         console.error('[MiniPayAuth] Init error:', error)
-        setMiniPayState({
+        setState({
           isMiniPay: true,
           walletAddress: null,
           isInitializing: false,
-          error: error instanceof Error ? error.message : 'Connection failed'
+          userId: null,
+          isRegistered: false
         })
       }
     }
 
-    // Only run once auth loading is done or we're clearly in MiniPay
-    if (!authLoading || isMiniPayEnvironment()) {
-      initMiniPay()
-    }
-  }, [authLoading])
+    // Small delay to ensure window.ethereum is injected
+    const timer = setTimeout(initMiniPay, 100)
+    return () => clearTimeout(timer)
+  }, [])
 
   // Show loading only during initial MiniPay wallet detection
-  if (miniPayState.isMiniPay && miniPayState.isInitializing) {
+  if (state.isMiniPay && state.isInitializing) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-4">
@@ -125,31 +146,20 @@ export const MiniPayAuthWrapper = ({ children }: MiniPayAuthWrapperProps) => {
     )
   }
 
-  // If there's an error connecting wallet, show it but still allow browsing
-  if (miniPayState.isMiniPay && miniPayState.error && !miniPayState.walletAddress) {
-    console.log('[MiniPayAuth] Error but allowing browse:', miniPayState.error)
-  }
-
-  return <>{children}</>
+  return (
+    <MiniPayContext.Provider value={state}>
+      {children}
+    </MiniPayContext.Provider>
+  )
 }
 
 // Export a hook to get MiniPay wallet state in components
 export const useMiniPayWallet = () => {
-  const [walletAddress, setWalletAddress] = useState<string | null>(null)
-  const [isMiniPay, setIsMiniPay] = useState(false)
-
-  useEffect(() => {
-    const check = async () => {
-      const inMiniPay = isMiniPayEnvironment()
-      setIsMiniPay(inMiniPay)
-      
-      if (inMiniPay && hasWalletProvider()) {
-        const address = await getMiniPayAccount()
-        setWalletAddress(address)
-      }
-    }
-    check()
-  }, [])
-
-  return { walletAddress, isMiniPay }
+  const context = useContext(MiniPayContext)
+  return {
+    walletAddress: context.walletAddress,
+    isMiniPay: context.isMiniPay,
+    userId: context.userId,
+    isRegistered: context.isRegistered
+  }
 }

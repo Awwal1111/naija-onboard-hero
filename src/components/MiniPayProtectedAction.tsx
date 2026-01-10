@@ -1,10 +1,8 @@
 import { ReactNode, useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
-import { useMiniPay } from '@/hooks/useMiniPay'
+import { useMiniPayContext } from '@/components/MiniPayAuthWrapper'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { BrandButton } from '@/components/ui/brand-button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Wallet, UserCircle } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
@@ -25,18 +23,19 @@ export const MiniPayProtectedAction = ({
   onActionBlocked 
 }: MiniPayProtectedActionProps) => {
   const { user } = useAuth()
-  const { isMiniPay, account } = useMiniPay()
+  const { isMiniPay, walletAddress, isRegistered } = useMiniPayContext()
   const navigate = useNavigate()
   const [showDialog, setShowDialog] = useState(false)
 
   const handleProtectedClick = (e: React.MouseEvent) => {
-    if (user) return // User is authenticated, allow action
+    // User is authenticated via Supabase OR registered MiniPay user
+    if (user || (isMiniPay && isRegistered)) return
 
     e.preventDefault()
     e.stopPropagation()
 
-    if (isMiniPay) {
-      // In MiniPay: Show minimal sign-up dialog
+    if (isMiniPay && walletAddress) {
+      // In MiniPay with wallet: Show minimal sign-up dialog
       setShowDialog(true)
     } else {
       // Outside MiniPay: Redirect to login
@@ -53,7 +52,8 @@ export const MiniPayProtectedAction = ({
 
   const handleSignUp = () => {
     setShowDialog(false)
-    navigate('/signup')
+    // Pass wallet address to signup for linking
+    navigate('/signup', { state: { miniPayWallet: walletAddress } })
   }
 
   return (
@@ -67,35 +67,35 @@ export const MiniPayProtectedAction = ({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <UserCircle className="h-5 w-5 text-primary" />
-              Sign In Required
+              Complete Registration
             </DialogTitle>
             <DialogDescription>
-              To {actionName}, please sign in or create an account.
+              To {actionName}, please complete your registration.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 pt-4">
-            {account && (
+            {walletAddress && (
               <div className="p-3 bg-muted rounded-lg">
                 <div className="flex items-center gap-2 text-sm">
                   <Wallet className="h-4 w-4 text-primary" />
                   <span className="text-muted-foreground">Connected wallet:</span>
                 </div>
-                <p className="font-mono text-xs mt-1 truncate">{account}</p>
+                <p className="font-mono text-xs mt-1 truncate">{walletAddress}</p>
               </div>
             )}
 
             <div className="grid gap-3">
               <BrandButton onClick={handleSignUp} className="w-full">
-                Create Account
+                Complete Registration
               </BrandButton>
               <BrandButton onClick={handleSignIn} variant="outline" className="w-full">
-                Sign In
+                Already have an account? Sign In
               </BrandButton>
             </div>
 
             <p className="text-xs text-center text-muted-foreground">
-              Your wallet will be linked to your account for easy deposits.
+              Your MiniPay wallet will be linked to your account for instant deposits.
             </p>
           </div>
         </DialogContent>
