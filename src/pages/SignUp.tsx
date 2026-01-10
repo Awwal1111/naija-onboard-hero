@@ -1,28 +1,21 @@
 import React, { useState, useEffect } from 'react'
-import { Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '@/integrations/supabase/client'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Logo } from '@/components/ui/logo'
 import { BrandButton } from '@/components/ui/brand-button'
 import { SecureInput } from '@/components/ui/secure-input'
-import { Eye, EyeOff, User, Mail, Lock, Sparkles, Shield, Users, Wallet, CheckCircle } from 'lucide-react'
+import { Eye, EyeOff, User, Mail, Lock, Sparkles, Shield, Users } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/use-toast'
 import { validatePasswordStrength } from '@/lib/security'
 import { Progress } from '@/components/ui/progress'
-import { useMiniPayContext } from '@/components/MiniPayAuthWrapper'
 
 const SignUp = () => {
   const navigate = useNavigate()
-  const location = useLocation()
   const { toast } = useToast()
   const [searchParams] = useSearchParams()
   const inviteToken = searchParams.get('invite')
-  const { isMiniPay, walletAddress, refreshUserState } = useMiniPayContext()
-  
-  // Get wallet address from navigation state (from MiniPayProtectedAction)
-  const miniPayWalletFromState = (location.state as any)?.miniPayWallet
-  const effectiveWalletAddress = walletAddress || miniPayWalletFromState
   
   const [formData, setFormData] = useState({
     fullName: '',
@@ -188,30 +181,6 @@ const SignUp = () => {
       }
     }
     
-    // Link MiniPay wallet to the new account if available
-    if (!error && effectiveWalletAddress) {
-      try {
-        // Get the current user after signup
-        const { data: { user } } = await supabase.auth.getUser()
-        if (user) {
-          await supabase
-            .from('profiles')
-            .update({ 
-              minipay_address: effectiveWalletAddress.toLowerCase(),
-              celo_wallet_address: effectiveWalletAddress.toLowerCase()
-            })
-            .eq('user_id', user.id)
-          
-          console.log('[SignUp] Linked MiniPay wallet:', effectiveWalletAddress)
-          
-          // Refresh MiniPay context to recognize the user
-          await refreshUserState()
-        }
-      } catch (walletError) {
-        console.error('Error linking MiniPay wallet:', walletError)
-      }
-    }
-    
     setIsLoading(false)
     
     if (!error) {
@@ -249,19 +218,6 @@ const SignUp = () => {
               Create your account and start your journey today
             </p>
           </div>
-
-          {/* MiniPay Wallet Connected Banner */}
-          {effectiveWalletAddress && (
-            <div className="mb-6 p-4 bg-primary/10 border border-primary/20 rounded-xl">
-              <div className="flex items-center gap-2 mb-2">
-                <Wallet className="h-5 w-5 text-primary" />
-                <span className="font-medium text-sm">MiniPay Wallet Connected</span>
-                <CheckCircle className="h-4 w-4 text-green-500 ml-auto" />
-              </div>
-              <p className="font-mono text-xs text-muted-foreground truncate">{effectiveWalletAddress}</p>
-              <p className="text-xs text-muted-foreground mt-1">Your wallet will be automatically linked to your account</p>
-            </div>
-          )}
 
           {/* Trust Indicators */}
           <div className="grid grid-cols-3 gap-3 mb-8">

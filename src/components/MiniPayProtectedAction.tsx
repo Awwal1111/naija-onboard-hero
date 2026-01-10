@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useMiniPayContext } from '@/components/MiniPayAuthWrapper'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { BrandButton } from '@/components/ui/brand-button'
-import { Wallet, UserCircle, CheckCircle } from 'lucide-react'
+import { Wallet, UserCircle } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
 interface MiniPayProtectedActionProps {
@@ -14,9 +14,7 @@ interface MiniPayProtectedActionProps {
 
 /**
  * Wraps protected actions that require authentication.
- * In MiniPay environment: 
- *   - If registered: Allows action (no dialog)
- *   - If not registered: Shows registration dialog
+ * In MiniPay environment: Shows a minimal profile completion dialog
  * Outside MiniPay: Redirects to login page
  */
 export const MiniPayProtectedAction = ({ 
@@ -25,22 +23,19 @@ export const MiniPayProtectedAction = ({
   onActionBlocked 
 }: MiniPayProtectedActionProps) => {
   const { user } = useAuth()
-  const { isMiniPay, walletAddress, isRegistered, userProfile } = useMiniPayContext()
+  const { isMiniPay, walletAddress, isRegistered } = useMiniPayContext()
   const navigate = useNavigate()
   const [showDialog, setShowDialog] = useState(false)
 
   const handleProtectedClick = (e: React.MouseEvent) => {
-    // User is authenticated via Supabase OR is a registered MiniPay user
-    if (user || (isMiniPay && isRegistered)) {
-      // Allow the action to proceed
-      return
-    }
+    // User is authenticated via Supabase OR registered MiniPay user
+    if (user || (isMiniPay && isRegistered)) return
 
     e.preventDefault()
     e.stopPropagation()
 
     if (isMiniPay && walletAddress) {
-      // In MiniPay with wallet but not registered: Show sign-up dialog
+      // In MiniPay with wallet: Show minimal sign-up dialog
       setShowDialog(true)
     } else {
       // Outside MiniPay: Redirect to login
@@ -75,7 +70,7 @@ export const MiniPayProtectedAction = ({
               Complete Registration
             </DialogTitle>
             <DialogDescription>
-              To {actionName}, please complete your registration. Your wallet is already connected!
+              To {actionName}, please complete your registration.
             </DialogDescription>
           </DialogHeader>
 
@@ -85,7 +80,6 @@ export const MiniPayProtectedAction = ({
                 <div className="flex items-center gap-2 text-sm">
                   <Wallet className="h-4 w-4 text-primary" />
                   <span className="text-muted-foreground">Connected wallet:</span>
-                  <CheckCircle className="h-4 w-4 text-green-500 ml-auto" />
                 </div>
                 <p className="font-mono text-xs mt-1 truncate">{walletAddress}</p>
               </div>
@@ -101,7 +95,7 @@ export const MiniPayProtectedAction = ({
             </div>
 
             <p className="text-xs text-center text-muted-foreground">
-              Your MiniPay wallet will be automatically linked to your account for instant deposits.
+              Your MiniPay wallet will be linked to your account for instant deposits.
             </p>
           </div>
         </DialogContent>
