@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { EnhancedSearchBar } from '@/components/EnhancedSearchBar'
 import { Logo } from '@/components/ui/logo'
 import { BrandButton } from '@/components/ui/brand-button'
@@ -10,8 +10,16 @@ import heroImage from '@/assets/hero-image.jpg'
 
 import { LeaderboardSection } from '@/components/LeaderboardSection'
 import { SuccessStoriesSection } from '@/components/SuccessStoriesSection'
+import { useMiniPayContext } from '@/components/MiniPayAuthWrapper'
 
 const Index = () => {
+  const { isMiniPay, walletAddress } = useMiniPayContext()
+
+  // Auto-redirect MiniPay users to feed - no login screen needed
+  if (isMiniPay && walletAddress) {
+    return <Navigate to="/feed" replace />
+  }
+
   const handleSocialLink = (url: string) => {
     window.open(url, '_blank')
   }

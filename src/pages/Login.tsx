@@ -1,12 +1,20 @@
 import React, { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { Logo } from '@/components/ui/logo'
 import { BrandButton } from '@/components/ui/brand-button'
 import { Eye, EyeOff, Mail, Lock, Sparkles, Shield, Zap } from 'lucide-react'
 import { BrandInput } from '@/components/ui/brand-input'
 import { useAuth } from '@/hooks/useAuth'
+import { useMiniPayContext } from '@/components/MiniPayAuthWrapper'
 
 const Login = () => {
+  const { isMiniPay, walletAddress } = useMiniPayContext()
+  
+  // Redirect MiniPay users to feed - they don't need traditional login
+  if (isMiniPay && walletAddress) {
+    return <Navigate to="/feed" replace />
+  }
+
   const [formData, setFormData] = useState({
     email: '',
     password: ''
