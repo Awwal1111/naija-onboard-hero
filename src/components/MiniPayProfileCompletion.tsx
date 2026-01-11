@@ -1,13 +1,14 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { BrandButton } from '@/components/ui/brand-button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Wallet, CheckCircle, User, Briefcase, Mail, Loader2 } from 'lucide-react'
+import { Wallet, CheckCircle, User, Briefcase, Mail, Loader2, Globe, MapPin } from 'lucide-react'
 import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { useMiniPayContext } from './MiniPayAuthWrapper'
+import { useNigerianStates } from '@/hooks/useNigerianStates'
 
 interface MiniPayProfileCompletionProps {
   open: boolean
@@ -34,6 +35,31 @@ const PROFESSIONS = [
   'Other'
 ]
 
+const COUNTRIES = [
+  'Nigeria',
+  'Ghana',
+  'Kenya',
+  'South Africa',
+  'Tanzania',
+  'Uganda',
+  'Rwanda',
+  'Ethiopia',
+  'Egypt',
+  'Morocco',
+  'Cameroon',
+  'Ivory Coast',
+  'Senegal',
+  'United States',
+  'United Kingdom',
+  'Canada',
+  'Germany',
+  'France',
+  'Netherlands',
+  'India',
+  'Brazil',
+  'Other'
+]
+
 /**
  * MiniPayProfileCompletion is shown when a MiniPay user with incomplete profile
  * tries to perform a protected action. This is NOT a login/signup form.
@@ -47,13 +73,32 @@ export const MiniPayProfileCompletion = ({
 }: MiniPayProfileCompletionProps) => {
   const { walletAddress, userId, refreshUserState } = useMiniPayContext()
   const { toast } = useToast()
+  const { states, loadingStates, fetchLGAs } = useNigerianStates()
   
   const [formData, setFormData] = useState({
     fullName: '',
     profession: '',
-    email: ''
+    email: '',
+    country: '',
+    state: ''
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Fetch LGAs when state changes (Nigeria only)
+  useEffect(() => {
+    if (formData.country === 'Nigeria' && formData.state) {
+      fetchLGAs(formData.state)
+    }
+  }, [formData.state, formData.country, fetchLGAs])
+
+  // Reset state when country changes away from Nigeria
+  useEffect(() => {
+    if (formData.country !== 'Nigeria') {
+      setFormData(prev => ({ ...prev, state: '' }))
+    }
+  }, [formData.country])
+
+  const isNigeria = formData.country === 'Nigeria'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -76,6 +121,15 @@ export const MiniPayProfileCompletion = ({
       return
     }
 
+    if (!formData.country) {
+      toast({
+        title: "Country required",
+        description: "Please select your country",
+        variant: "destructive"
+      })
+      return
+    }
+
     if (!userId) {
       toast({
         title: "Error",
@@ -88,15 +142,24 @@ export const MiniPayProfileCompletion = ({
     setIsSubmitting(true)
 
     try {
+      // Build update object
+      const updateData: Record<string, any> = {
+        full_name: formData.fullName.trim(),
+        profession: formData.profession,
+        country: formData.country,
+        onboarding_completed: true,
+        updated_at: new Date().toISOString()
+      }
+
+      // Only add state for Nigeria
+      if (isNigeria && formData.state) {
+        updateData.state = formData.state
+      }
+
       // Update the user's profile
       const { error } = await supabase
         .from('profiles')
-        .update({
-          full_name: formData.fullName.trim(),
-          profession: formData.profession,
-          onboarding_completed: true,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('user_id', userId)
 
       if (error) {
@@ -134,7 +197,7 @@ export const MiniPayProfileCompletion = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[90vw] max-w-md">
+      <DialogContent className="w-[90vw] max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg">
             <User className="h-5 w-5 text-primary" />
@@ -145,7 +208,7 @@ export const MiniPayProfileCompletion = ({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-5 pt-4">
+        <form onSubmit={handleSubmit} className="space-y-4 pt-4">
           {/* Wallet Badge */}
           {walletAddress && (
             <div className="p-3 bg-primary/10 rounded-lg border border-primary/20">
@@ -194,6 +257,51 @@ export const MiniPayProfileCompletion = ({
               </SelectContent>
             </Select>
           </div>
+
+          {/* Country */}
+          <div className="space-y-2">
+            <Label htmlFor="country" className="flex items-center gap-2">
+              <Globe className="h-4 w-4" />
+              Country
+            </Label>
+            <Select
+              value={formData.country}
+              onValueChange={(value) => setFormData(prev => ({ ...prev, country: value }))}
+            >
+              <SelectTrigger className="h-11">
+                <SelectValue placeholder="Select your country" />
+              </SelectTrigger>
+              <SelectContent>
+                {COUNTRIES.map((country) => (
+                  <SelectItem key={country} value={country}>{country}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* State - Only for Nigeria */}
+          {isNigeria && (
+            <div className="space-y-2">
+              <Label htmlFor="state" className="flex items-center gap-2">
+                <MapPin className="h-4 w-4" />
+                State
+              </Label>
+              <Select
+                value={formData.state}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, state: value }))}
+                disabled={loadingStates}
+              >
+                <SelectTrigger className="h-11">
+                  <SelectValue placeholder={loadingStates ? "Loading..." : "Select your state"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {states.map((state) => (
+                    <SelectItem key={state.id} value={state.name}>{state.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {/* Email (Optional for MiniPay users) */}
           <div className="space-y-2">
