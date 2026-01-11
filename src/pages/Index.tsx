@@ -13,10 +13,12 @@ import { SuccessStoriesSection } from '@/components/SuccessStoriesSection'
 import { useMiniPayContext } from '@/components/MiniPayAuthWrapper'
 
 const Index = () => {
-  const { isMiniPay, walletAddress } = useMiniPayContext()
+  const { isMiniPay, walletAddress, isInitializing } = useMiniPayContext()
 
-  // Auto-redirect MiniPay users to feed - no login screen needed
-  if (isMiniPay && walletAddress) {
+  // MiniPay users go directly to feed - NO login screens
+  // This happens immediately when MiniPay is detected with a wallet
+  if (isMiniPay && !isInitializing) {
+    // Always redirect to feed in MiniPay - wallet = identity
     return <Navigate to="/feed" replace />
   }
 
