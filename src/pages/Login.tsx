@@ -1,18 +1,30 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { Logo } from '@/components/ui/logo'
 import { BrandButton } from '@/components/ui/brand-button'
-import { Eye, EyeOff, Mail, Lock, Sparkles, Shield, Zap } from 'lucide-react'
-import { BrandInput } from '@/components/ui/brand-input'
+import { Eye, EyeOff, Mail, Lock, Sparkles, Shield, Zap, Loader2 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useMiniPayContext } from '@/components/MiniPayAuthWrapper'
 
 const Login = () => {
-  const { isMiniPay, walletAddress } = useMiniPayContext()
+  const { isMiniPay, isInitializing } = useMiniPayContext()
   
-  // Redirect MiniPay users to feed - they don't need traditional login
-  if (isMiniPay && walletAddress) {
+  // MiniPay users NEVER see login screen - wallet = identity
+  // Redirect to feed immediately, user will be auto-created on wallet connect
+  if (isMiniPay && !isInitializing) {
     return <Navigate to="/feed" replace />
+  }
+
+  // Still initializing MiniPay
+  if (isMiniPay && isInitializing) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+          <p className="text-muted-foreground">Connecting wallet...</p>
+        </div>
+      </div>
+    )
   }
 
   const [formData, setFormData] = useState({
