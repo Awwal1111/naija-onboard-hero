@@ -4,7 +4,6 @@ import { Logo } from '@/components/ui/logo'
 import { BrandButton } from '@/components/ui/brand-button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
 import { Facebook, Youtube, Linkedin, MessageSquare, Phone, Users, Shield, ArrowRight, Briefcase, DollarSign, Clock, Award, Wallet, CreditCard, UserCheck, CheckCircle2, Building2, Network, Download } from 'lucide-react'
 import heroImage from '@/assets/hero-image.jpg'
 
@@ -13,12 +12,11 @@ import { SuccessStoriesSection } from '@/components/SuccessStoriesSection'
 import { useMiniPayContext } from '@/components/MiniPayAuthWrapper'
 
 const Index = () => {
-  const { isMiniPay, walletAddress, isInitializing } = useMiniPayContext()
+  const { isMiniPay } = useMiniPayContext()
 
   // MiniPay users go directly to feed - NO login screens
-  // This happens immediately when MiniPay is detected with a wallet
-  if (isMiniPay && !isInitializing) {
-    // Always redirect to feed in MiniPay - wallet = identity
+  // Use sync detection only - no isInitializing check that could cause loops
+  if (isMiniPay) {
     return <Navigate to="/feed" replace />
   }
 
@@ -390,33 +388,52 @@ const Index = () => {
 
               <div>
                 <h4 className="font-semibold mb-4">Contact</h4>
-                <ul className="space-y-2 text-sm text-muted-foreground">
+                <ul className="space-y-3 text-sm text-muted-foreground">
                   <li className="flex items-center gap-2">
                     <Phone className="w-4 h-4" />
-                    08167140857
+                    <button onClick={handleWhatsApp} className="hover:text-primary">
+                      08167140857
+                    </button>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <MessageSquare className="w-4 h-4" />
+                    <button onClick={handleWhatsApp} className="hover:text-primary">
+                      WhatsApp
+                    </button>
                   </li>
                 </ul>
-                <div className="flex gap-3 mt-4">
-                  <button onClick={() => handleSocialLink('https://facebook.com/naijalancers')} className="hover:text-primary">
-                    <Facebook className="w-5 h-5" />
-                  </button>
-                  <button onClick={() => handleSocialLink('https://youtube.com/@naijalancers')} className="hover:text-primary">
-                    <Youtube className="w-5 h-5" />
-                  </button>
-                  <button onClick={() => handleSocialLink('https://linkedin.com/company/naijalancers')} className="hover:text-primary">
-                    <Linkedin className="w-5 h-5" />
-                  </button>
-                  <button onClick={handleWhatsApp} className="hover:text-primary">
-                    <MessageSquare className="w-5 h-5" />
-                  </button>
-                </div>
               </div>
             </div>
 
-            <Separator className="mb-8" />
-
-            <div className="text-center text-sm text-muted-foreground">
-              <p>© 2024 NaijaLancers. CAC: BN8870047 | Secure payments by Quidax & Celo</p>
+            <div className="border-t border-border pt-8">
+              <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                <p className="text-sm text-muted-foreground">
+                  © {new Date().getFullYear()} NaijaLancers. All rights reserved.
+                </p>
+                <div className="flex gap-4">
+                  <button 
+                    onClick={() => handleSocialLink('https://www.facebook.com/groups/naijalancers')}
+                    className="text-muted-foreground hover:text-primary transition-colors"
+                    aria-label="Facebook"
+                  >
+                    <Facebook className="w-5 h-5" />
+                  </button>
+                  <button 
+                    onClick={() => handleSocialLink('https://www.youtube.com/@naijalancers')}
+                    className="text-muted-foreground hover:text-primary transition-colors"
+                    aria-label="YouTube"
+                  >
+                    <Youtube className="w-5 h-5" />
+                  </button>
+                  <button 
+                    onClick={() => handleSocialLink('https://linkedin.com/company/naijalancers')}
+                    className="text-muted-foreground hover:text-primary transition-colors"
+                    aria-label="LinkedIn"
+                  >
+                    <Linkedin className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>

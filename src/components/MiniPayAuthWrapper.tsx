@@ -1,7 +1,6 @@
-import { ReactNode, useEffect, useState, createContext, useContext, useCallback } from 'react'
-import { isMiniPayEnvironment, getMiniPayAccount, hasWalletProvider } from '@/lib/minipay'
+import { ReactNode, useState, createContext, useContext, useCallback, useRef } from 'react'
+import { detectMiniPaySync, getMiniPayAccount } from '@/lib/minipay'
 import { supabase } from '@/integrations/supabase/client'
-import { Loader2 } from 'lucide-react'
 
 interface MiniPayUserProfile {
   userId: string
@@ -15,23 +14,30 @@ interface MiniPayUserProfile {
 
 interface MiniPayContextType {
   isMiniPay: boolean
+  hasWalletProvider: boolean
   walletAddress: string | null
   isInitializing: boolean
   userId: string | null
   isRegistered: boolean
   userProfile: MiniPayUserProfile | null
+  initializeWallet: () => Promise<boolean>
   refreshUserState: () => Promise<void>
   pendingAction: string | null
   setPendingAction: (action: string | null) => void
 }
 
+// SYNC detection at module load - no async, no useEffect
+const initialDetection = detectMiniPaySync()
+
 const MiniPayContext = createContext<MiniPayContextType>({
-  isMiniPay: false,
+  isMiniPay: initialDetection.isMiniPay,
+  hasWalletProvider: initialDetection.hasProvider,
   walletAddress: null,
-  isInitializing: true,
+  isInitializing: false, // NOT true on mount - critical for preventing loops
   userId: null,
   isRegistered: false,
   userProfile: null,
+  initializeWallet: async () => false,
   refreshUserState: async () => {},
   pendingAction: null,
   setPendingAction: () => {}
@@ -43,85 +49,35 @@ interface MiniPayAuthWrapperProps {
   children: ReactNode
 }
 
-// Cache key for MiniPay user data
-const MINIPAY_CACHE_KEY = 'minipay_user_cache'
-const CACHE_EXPIRY_MS = 24 * 60 * 60 * 1000 // 24 hours
-
-interface CachedMiniPayUser {
-  walletAddress: string
-  odUserId: string
-  fullName: string | null
-  avatarUrl: string | null
-  profileCompleted: boolean
-  cachedAt: number
-}
-
-const getCachedUser = (): CachedMiniPayUser | null => {
-  try {
-    const cached = localStorage.getItem(MINIPAY_CACHE_KEY)
-    if (!cached) return null
-    
-    const data: CachedMiniPayUser = JSON.parse(cached)
-    // Check if cache is still valid
-    if (Date.now() - data.cachedAt > CACHE_EXPIRY_MS) {
-      localStorage.removeItem(MINIPAY_CACHE_KEY)
-      return null
-    }
-    return data
-  } catch {
-    return null
-  }
-}
-
-const setCachedUser = (user: Omit<CachedMiniPayUser, 'cachedAt'>) => {
-  try {
-    localStorage.setItem(MINIPAY_CACHE_KEY, JSON.stringify({
-      ...user,
-      cachedAt: Date.now()
-    }))
-  } catch {
-    // Ignore storage errors
-  }
-}
-
-const clearCachedUser = () => {
-  try {
-    localStorage.removeItem(MINIPAY_CACHE_KEY)
-  } catch {
-    // Ignore storage errors
-  }
-}
-
 /**
- * MiniPayAuthWrapper provides wallet-first authentication for MiniPay environment.
+ * MiniPayAuthWrapper - LAZY INITIALIZATION PATTERN
  * 
- * KEY PRINCIPLE: In MiniPay, wallet = identity
- * - No login/signup screens needed
- * - User is auto-created when wallet connects
- * - Profile completion is separate from authentication
+ * On load: ONLY sync environment detection
+ * - NO wallet calls
+ * - NO Supabase queries
+ * - NO localStorage access
+ * - NO auto user creation
  * 
- * Flow:
- * 1. Detect MiniPay environment
- * 2. Get wallet address automatically
- * 3. Check if wallet exists in profiles table
- * 4. If not exists: Create new user record (minimal data)
- * 5. If exists: Auto-authenticate and restore session
- * 6. Profile completion happens separately when user takes action
+ * Wallet/DB logic is DEFERRED to initializeWallet() 
+ * which is called when user takes an action requiring auth.
  */
 export const MiniPayAuthWrapper = ({ children }: MiniPayAuthWrapperProps) => {
-  const [state, setState] = useState<MiniPayContextType>({
-    isMiniPay: false,
-    walletAddress: null,
-    isInitializing: true,
-    userId: null,
+  // Use initial sync detection - stable across renders
+  const [state, setState] = useState({
+    isMiniPay: initialDetection.isMiniPay,
+    hasWalletProvider: initialDetection.hasProvider,
+    walletAddress: null as string | null,
+    isInitializing: false,
+    userId: null as string | null,
     isRegistered: false,
-    userProfile: null,
-    refreshUserState: async () => {},
-    pendingAction: null,
-    setPendingAction: () => {}
+    userProfile: null as MiniPayUserProfile | null
   })
 
   const [pendingAction, setPendingAction] = useState<string | null>(null)
+  
+  // Track if we've already initialized to prevent double init
+  const initializingRef = useRef(false)
+  const initializedRef = useRef(false)
 
   /**
    * Create a new user record with just wallet address
@@ -135,14 +91,13 @@ export const MiniPayAuthWrapper = ({ children }: MiniPayAuthWrapperProps) => {
       const walletUserId = `minipay_${walletAddress.toLowerCase().slice(2, 14)}_${Date.now().toString(36)}`
       
       // Create minimal profile record
-      // Note: We're using the wallet address as part of the user_id for MiniPay users
       const { data: newProfile, error } = await supabase
         .from('profiles')
         .insert({
           user_id: walletUserId,
           minipay_address: walletAddress.toLowerCase(),
           celo_wallet_address: walletAddress.toLowerCase(),
-          full_name: null, // Will be set during profile completion
+          full_name: null,
           profession: null,
           onboarding_completed: false,
           created_at: new Date().toISOString(),
@@ -158,7 +113,7 @@ export const MiniPayAuthWrapper = ({ children }: MiniPayAuthWrapperProps) => {
 
       console.log('[MiniPayAuth] Created new wallet user:', newProfile.user_id)
 
-      const userProfile: MiniPayUserProfile = {
+      return {
         userId: newProfile.user_id,
         fullName: newProfile.full_name,
         avatarUrl: newProfile.profile_picture_url,
@@ -167,17 +122,6 @@ export const MiniPayAuthWrapper = ({ children }: MiniPayAuthWrapperProps) => {
         profession: newProfile.profession,
         profileCompleted: newProfile.onboarding_completed || false
       }
-
-      // Cache the new user
-      setCachedUser({
-        walletAddress: walletAddress.toLowerCase(),
-        odUserId: newProfile.user_id,
-        fullName: null,
-        avatarUrl: null,
-        profileCompleted: false
-      })
-
-      return userProfile
     } catch (error) {
       console.error('[MiniPayAuth] Error in createWalletUser:', error)
       return null
@@ -186,42 +130,9 @@ export const MiniPayAuthWrapper = ({ children }: MiniPayAuthWrapperProps) => {
 
   /**
    * Check if wallet exists and load/create user
+   * Only called from initializeWallet - not on mount!
    */
-  const initializeWalletUser = useCallback(async (address: string) => {
-    // First check cache for faster recognition
-    const cached = getCachedUser()
-    if (cached && cached.walletAddress.toLowerCase() === address.toLowerCase()) {
-      console.log('[MiniPayAuth] Found cached user:', cached.odUserId)
-      
-      // Return cached data immediately, but verify in background
-      setState(prev => ({
-        ...prev,
-        isMiniPay: true,
-        walletAddress: address,
-        isInitializing: false,
-        userId: cached.odUserId,
-        isRegistered: true,
-        userProfile: {
-          userId: cached.odUserId,
-          fullName: cached.fullName,
-          avatarUrl: cached.avatarUrl,
-          walletBalance: 0,
-          email: null,
-          profession: null,
-          profileCompleted: cached.profileCompleted
-        }
-      }))
-      
-      // Verify and refresh in background
-      verifyAndRefreshUser(address, cached.odUserId)
-      return
-    }
-    
-    // No cache - check database
-    await verifyAndRefreshUser(address, null)
-  }, [])
-
-  const verifyAndRefreshUser = async (address: string, cachedUserId: string | null) => {
+  const loadOrCreateUser = async (address: string): Promise<void> => {
     try {
       // Check if wallet already exists in profiles
       const { data: existingProfile } = await supabase
@@ -235,18 +146,8 @@ export const MiniPayAuthWrapper = ({ children }: MiniPayAuthWrapperProps) => {
         
         const profileCompleted = !!(existingProfile.full_name && existingProfile.onboarding_completed)
         
-        // Update cache
-        setCachedUser({
-          walletAddress: address.toLowerCase(),
-          odUserId: existingProfile.user_id,
-          fullName: existingProfile.full_name,
-          avatarUrl: existingProfile.profile_picture_url,
-          profileCompleted
-        })
-        
         setState(prev => ({
           ...prev,
-          isMiniPay: true,
           walletAddress: address,
           isInitializing: false,
           userId: existingProfile.user_id,
@@ -262,31 +163,24 @@ export const MiniPayAuthWrapper = ({ children }: MiniPayAuthWrapperProps) => {
           }
         }))
       } else {
-        // Wallet doesn't exist - CREATE NEW USER automatically
+        // Wallet doesn't exist - create new user
         console.log('[MiniPayAuth] Wallet not found, creating new user...')
-        
-        // Clear any stale cache
-        if (cachedUserId) {
-          clearCachedUser()
-        }
         
         const newUserProfile = await createWalletUser(address)
         
         if (newUserProfile) {
           setState(prev => ({
             ...prev,
-            isMiniPay: true,
             walletAddress: address,
             isInitializing: false,
             userId: newUserProfile.userId,
-            isRegistered: true, // User is now registered (with wallet)
+            isRegistered: true,
             userProfile: newUserProfile
           }))
         } else {
-          // Failed to create user - allow browsing but not registered
+          // Failed to create user
           setState(prev => ({
             ...prev,
-            isMiniPay: true,
             walletAddress: address,
             isInitializing: false,
             userId: null,
@@ -296,10 +190,9 @@ export const MiniPayAuthWrapper = ({ children }: MiniPayAuthWrapperProps) => {
         }
       }
     } catch (error) {
-      console.error('[MiniPayAuth] Error verifying user:', error)
+      console.error('[MiniPayAuth] Error loading user:', error)
       setState(prev => ({
         ...prev,
-        isMiniPay: true,
         walletAddress: address,
         isInitializing: false,
         userId: null,
@@ -309,109 +202,122 @@ export const MiniPayAuthWrapper = ({ children }: MiniPayAuthWrapperProps) => {
     }
   }
 
-  const refreshUserState = useCallback(async () => {
-    if (!state.walletAddress) return
-    await verifyAndRefreshUser(state.walletAddress, state.userId)
-  }, [state.walletAddress, state.userId])
-
-  useEffect(() => {
-    const initMiniPay = async () => {
-      // Check if we're in MiniPay environment
-      const inMiniPay = isMiniPayEnvironment()
-      
-      if (!inMiniPay) {
-        // Not in MiniPay - let normal auth flow handle things
-        setState(prev => ({
-          ...prev,
-          isMiniPay: false,
-          walletAddress: null,
-          isInitializing: false,
-          userId: null,
-          isRegistered: false,
-          userProfile: null
-        }))
-        return
-      }
-
-      console.log('[MiniPayAuth] MiniPay environment detected')
-
-      // Check for wallet provider
-      if (!hasWalletProvider()) {
-        console.log('[MiniPayAuth] No wallet provider found')
-        setState(prev => ({
-          ...prev,
-          isMiniPay: true,
-          walletAddress: null,
-          isInitializing: false,
-          userId: null,
-          isRegistered: false,
-          userProfile: null
-        }))
-        return
-      }
-
-      try {
-        // Get wallet address - in MiniPay this is auto-connected
-        const address = await getMiniPayAccount()
-        console.log('[MiniPayAuth] Wallet address:', address)
-
-        if (address) {
-          // Initialize or create wallet user
-          await initializeWalletUser(address)
-        } else {
-          setState(prev => ({
-            ...prev,
-            isMiniPay: true,
-            walletAddress: null,
-            isInitializing: false,
-            userId: null,
-            isRegistered: false,
-            userProfile: null
-          }))
-        }
-      } catch (error) {
-        console.error('[MiniPayAuth] Init error:', error)
-        setState(prev => ({
-          ...prev,
-          isMiniPay: true,
-          walletAddress: null,
-          isInitializing: false,
-          userId: null,
-          isRegistered: false,
-          userProfile: null
-        }))
-      }
+  /**
+   * LAZY INITIALIZATION - Only call when user action requires auth
+   * This is the key to preventing MiniPay reload loops
+   */
+  const initializeWallet = useCallback(async (): Promise<boolean> => {
+    // Already initialized or initializing
+    if (initializedRef.current && state.walletAddress) {
+      return true
+    }
+    
+    if (initializingRef.current) {
+      // Wait for existing initialization
+      return new Promise((resolve) => {
+        const check = setInterval(() => {
+          if (!initializingRef.current) {
+            clearInterval(check)
+            resolve(!!state.walletAddress)
+          }
+        }, 100)
+      })
     }
 
-    // Small delay to ensure window.ethereum is injected
-    const timer = setTimeout(initMiniPay, 100)
-    return () => clearTimeout(timer)
-  }, [initializeWalletUser])
+    if (!state.isMiniPay || !state.hasWalletProvider) {
+      return false
+    }
 
-  // Update refreshUserState and setPendingAction in context whenever they change
-  useEffect(() => {
-    setState(prev => ({
-      ...prev,
-      refreshUserState,
-      setPendingAction,
-      pendingAction
-    }))
-  }, [refreshUserState, pendingAction])
+    initializingRef.current = true
+    setState(prev => ({ ...prev, isInitializing: true }))
 
-  // Show loading only during initial MiniPay wallet detection
-  if (state.isMiniPay && state.isInitializing) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-          <p className="text-muted-foreground">Connecting wallet...</p>
-        </div>
-      </div>
-    )
+    try {
+      console.log('[MiniPayAuth] Starting lazy wallet initialization...')
+      
+      // NOW we call the async wallet function
+      const address = await getMiniPayAccount()
+      console.log('[MiniPayAuth] Got wallet address:', address)
+
+      if (address) {
+        await loadOrCreateUser(address)
+        initializedRef.current = true
+        initializingRef.current = false
+        return true
+      } else {
+        setState(prev => ({
+          ...prev,
+          isInitializing: false,
+          walletAddress: null,
+          userId: null,
+          isRegistered: false,
+          userProfile: null
+        }))
+        initializingRef.current = false
+        return false
+      }
+    } catch (error) {
+      console.error('[MiniPayAuth] Wallet initialization error:', error)
+      setState(prev => ({
+        ...prev,
+        isInitializing: false,
+        walletAddress: null,
+        userId: null,
+        isRegistered: false,
+        userProfile: null
+      }))
+      initializingRef.current = false
+      return false
+    }
+  }, [state.isMiniPay, state.hasWalletProvider, state.walletAddress])
+
+  /**
+   * Refresh user data from database
+   */
+  const refreshUserState = useCallback(async () => {
+    if (!state.walletAddress) return
+    
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, profile_picture_url, wallet_balance, profession, onboarding_completed')
+        .or(`celo_wallet_address.ilike.${state.walletAddress.toLowerCase()},minipay_address.ilike.${state.walletAddress.toLowerCase()}`)
+        .maybeSingle()
+
+      if (profile) {
+        const profileCompleted = !!(profile.full_name && profile.onboarding_completed)
+        
+        setState(prev => ({
+          ...prev,
+          userId: profile.user_id,
+          isRegistered: true,
+          userProfile: {
+            userId: profile.user_id,
+            fullName: profile.full_name,
+            avatarUrl: profile.profile_picture_url,
+            walletBalance: profile.wallet_balance || 0,
+            email: null,
+            profession: profile.profession,
+            profileCompleted
+          }
+        }))
+      }
+    } catch (error) {
+      console.error('[MiniPayAuth] Error refreshing user state:', error)
+    }
+  }, [state.walletAddress])
+
+  // Build context value with stable references
+  const contextValue: MiniPayContextType = {
+    ...state,
+    initializeWallet,
+    refreshUserState,
+    pendingAction,
+    setPendingAction
   }
 
+  // NO loading screen on mount - app renders immediately
   return (
-    <MiniPayContext.Provider value={state}>
+    <MiniPayContext.Provider value={contextValue}>
       {children}
     </MiniPayContext.Provider>
   )
@@ -423,9 +329,12 @@ export const useMiniPayWallet = () => {
   return {
     walletAddress: context.walletAddress,
     isMiniPay: context.isMiniPay,
+    hasWalletProvider: context.hasWalletProvider,
     userId: context.userId,
     isRegistered: context.isRegistered,
     userProfile: context.userProfile,
+    isInitializing: context.isInitializing,
+    initializeWallet: context.initializeWallet,
     refreshUserState: context.refreshUserState,
     pendingAction: context.pendingAction,
     setPendingAction: context.setPendingAction

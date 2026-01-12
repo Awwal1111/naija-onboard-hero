@@ -3,6 +3,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useMiniPayContext } from '@/components/MiniPayAuthWrapper'
 import { MiniPayProfileCompletion } from '@/components/MiniPayProfileCompletion'
 import { useNavigate } from 'react-router-dom'
+import { Loader2 } from 'lucide-react'
 
 interface MiniPayProtectedActionProps {
   children: ReactNode
@@ -16,6 +17,7 @@ interface MiniPayProtectedActionProps {
  * Wraps protected actions that require authentication.
  * 
  * In MiniPay environment:
+ *   - LAZY: Wallet initialization happens on first protected action click
  *   - If user exists AND profile is complete: Allows action immediately
  *   - If user exists BUT profile incomplete: Shows profile completion dialog
  *   - After completion: Returns to original action (no redirect)
@@ -33,12 +35,20 @@ export const MiniPayProtectedAction = ({
   onActionAllowed
 }: MiniPayProtectedActionProps) => {
   const { user } = useAuth()
-  const { isMiniPay, isRegistered, userProfile, walletAddress } = useMiniPayContext()
+  const { 
+    isMiniPay, 
+    isRegistered, 
+    userProfile, 
+    walletAddress,
+    isInitializing,
+    initializeWallet 
+  } = useMiniPayContext()
   const navigate = useNavigate()
   const [showProfileCompletion, setShowProfileCompletion] = useState(false)
   const [pendingCallback, setPendingCallback] = useState<(() => void) | null>(null)
+  const [isConnecting, setIsConnecting] = useState(false)
 
-  const handleProtectedClick = (e: React.MouseEvent, originalOnClick?: (e: React.MouseEvent) => void) => {
+  const handleProtectedClick = async (e: React.MouseEvent, originalOnClick?: (e: React.MouseEvent) => void) => {
     // Case 1: Standard Supabase auth user (outside MiniPay or linked)
     if (user) {
       // Allow action - user is authenticated via Supabase
@@ -49,8 +59,16 @@ export const MiniPayProtectedAction = ({
 
     // Case 2: MiniPay environment
     if (isMiniPay) {
-      if (isRegistered && userProfile) {
-        // User exists in our system (wallet-based)
+      e.preventDefault()
+      e.stopPropagation()
+
+      // If already connecting, ignore
+      if (isConnecting || isInitializing) {
+        return
+      }
+
+      // Check if we already have wallet initialized
+      if (walletAddress && isRegistered && userProfile) {
         if (userProfile.profileCompleted) {
           // Profile is complete - allow action
           originalOnClick?.(e)
@@ -58,10 +76,6 @@ export const MiniPayProtectedAction = ({
           return
         } else {
           // Profile incomplete - show completion dialog
-          e.preventDefault()
-          e.stopPropagation()
-          
-          // Store the callback to execute after profile completion
           setPendingCallback(() => () => {
             originalOnClick?.(e)
             onActionAllowed?.()
@@ -70,26 +84,34 @@ export const MiniPayProtectedAction = ({
           onActionBlocked?.()
           return
         }
-      } else if (walletAddress) {
-        // Wallet connected but no user record (edge case - should auto-create)
-        // Show profile completion to create the user properly
-        e.preventDefault()
-        e.stopPropagation()
-        
-        setPendingCallback(() => () => {
-          originalOnClick?.(e)
-          onActionAllowed?.()
-        })
-        setShowProfileCompletion(true)
-        onActionBlocked?.()
-        return
-      } else {
-        // No wallet connected in MiniPay - unusual state
-        e.preventDefault()
-        e.stopPropagation()
-        onActionBlocked?.()
-        return
       }
+
+      // LAZY INITIALIZATION: Connect wallet now
+      setIsConnecting(true)
+      
+      try {
+        const success = await initializeWallet()
+        
+        if (success) {
+          // After initialization, check user state
+          // We need to re-check context after init (state may have updated)
+          // For now, show profile completion if new user
+          setPendingCallback(() => () => {
+            originalOnClick?.(e)
+            onActionAllowed?.()
+          })
+          setShowProfileCompletion(true)
+        } else {
+          // Wallet connection failed
+          onActionBlocked?.()
+        }
+      } catch (error) {
+        console.error('[MiniPayProtected] Init error:', error)
+        onActionBlocked?.()
+      } finally {
+        setIsConnecting(false)
+      }
+      return
     }
 
     // Case 3: Outside MiniPay, not authenticated
@@ -100,6 +122,7 @@ export const MiniPayProtectedAction = ({
   }
 
   const handleProfileComplete = () => {
+    setShowProfileCompletion(false)
     // Execute the pending action after profile completion
     if (pendingCallback) {
       pendingCallback()
@@ -113,7 +136,8 @@ export const MiniPayProtectedAction = ({
         onClick: (e: React.MouseEvent) => {
           const originalOnClick = (children as React.ReactElement<any>).props.onClick
           handleProtectedClick(e, originalOnClick)
-        }
+        },
+        disabled: isConnecting || isInitializing || (children as React.ReactElement<any>).props.disabled
       })
     : (
         <div onClick={(e) => handleProtectedClick(e)}>
@@ -123,7 +147,16 @@ export const MiniPayProtectedAction = ({
 
   return (
     <>
-      {wrappedChildren}
+      {isConnecting ? (
+        <div className="relative inline-flex items-center">
+          {wrappedChildren}
+          <div className="absolute inset-0 bg-background/50 flex items-center justify-center rounded">
+            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+          </div>
+        </div>
+      ) : (
+        wrappedChildren
+      )}
 
       <MiniPayProfileCompletion
         open={showProfileCompletion}

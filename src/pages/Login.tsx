@@ -2,29 +2,17 @@ import React, { useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { Logo } from '@/components/ui/logo'
 import { BrandButton } from '@/components/ui/brand-button'
-import { Eye, EyeOff, Mail, Lock, Sparkles, Shield, Zap, Loader2 } from 'lucide-react'
+import { Eye, EyeOff, Mail, Lock, Sparkles, Shield, Zap } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useMiniPayContext } from '@/components/MiniPayAuthWrapper'
 
 const Login = () => {
-  const { isMiniPay, isInitializing } = useMiniPayContext()
+  const { isMiniPay } = useMiniPayContext()
   
   // MiniPay users NEVER see login screen - wallet = identity
-  // Redirect to feed immediately, user will be auto-created on wallet connect
-  if (isMiniPay && !isInitializing) {
+  // Use sync detection only - no isInitializing check
+  if (isMiniPay) {
     return <Navigate to="/feed" replace />
-  }
-
-  // Still initializing MiniPay
-  if (isMiniPay && isInitializing) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-          <p className="text-muted-foreground">Connecting wallet...</p>
-        </div>
-      </div>
-    )
   }
 
   const [formData, setFormData] = useState({
@@ -34,7 +22,7 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
-  const { signIn, signInWithGoogle, user } = useAuth()
+  const { signIn, signInWithGoogle } = useAuth()
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
