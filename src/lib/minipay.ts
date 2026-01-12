@@ -34,34 +34,56 @@ declare global {
 }
 
 /**
- * Detect if the app is running inside MiniPay browser
- * MiniPay injects window.ethereum with isMiniPay = true
+ * SYNCHRONOUS MiniPay detection - NO async operations
+ * Safe to call during component initialization
  */
-export const isMiniPayEnvironment = (): boolean => {
-  if (typeof window === 'undefined') return false;
-  
-  // Primary check: MiniPay sets this flag
-  if (window.ethereum?.isMiniPay === true) return true;
-  
-  // Secondary check: User agent contains minipay or opera mini
-  const userAgent = navigator.userAgent.toLowerCase();
-  if (userAgent.includes('minipay') || userAgent.includes('opera mini')) return true;
-  
-  // Tertiary check: Has ethereum but not MetaMask (likely MiniPay)
-  // Only trust this if in a mobile context
-  if (window.ethereum && !window.ethereum.isMetaMask) {
-    const isMobile = /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent);
-    if (isMobile) return true;
+export const detectMiniPaySync = (): { isMiniPay: boolean; hasProvider: boolean } => {
+  if (typeof window === 'undefined') {
+    return { isMiniPay: false, hasProvider: false }
   }
   
-  return false;
+  try {
+    const hasProvider = !!window.ethereum
+    
+    // Primary check: MiniPay sets this flag
+    if (window.ethereum?.isMiniPay === true) {
+      return { isMiniPay: true, hasProvider: true }
+    }
+    
+    // Secondary check: User agent contains minipay or opera mini
+    const userAgent = navigator.userAgent.toLowerCase()
+    if (userAgent.includes('minipay') || userAgent.includes('opera mini')) {
+      return { isMiniPay: true, hasProvider }
+    }
+    
+    // Tertiary check: Has ethereum but not MetaMask (likely MiniPay) on mobile
+    if (window.ethereum && !window.ethereum.isMetaMask) {
+      const isMobile = /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent)
+      if (isMobile) {
+        return { isMiniPay: true, hasProvider: true }
+      }
+    }
+    
+    return { isMiniPay: false, hasProvider }
+  } catch {
+    return { isMiniPay: false, hasProvider: false }
+  }
+}
+
+/**
+ * Detect if the app is running inside MiniPay browser
+ * MiniPay injects window.ethereum with isMiniPay = true
+ * @deprecated Use detectMiniPaySync for initialization
+ */
+export const isMiniPayEnvironment = (): boolean => {
+  return detectMiniPaySync().isMiniPay
 };
 
 /**
  * Check if wallet provider exists (window.ethereum)
  */
 export const hasWalletProvider = (): boolean => {
-  return typeof window !== 'undefined' && !!window.ethereum;
+  return detectMiniPaySync().hasProvider
 };
 
 /**
@@ -79,6 +101,7 @@ export const createMiniPayWalletClient = () => {
 /**
  * Get connected wallet address using viem
  * In MiniPay, the wallet is auto-connected
+ * NOTE: This is an ASYNC function - only call on user action!
  */
 export const getMiniPayAccount = async (): Promise<string | null> => {
   try {
@@ -95,6 +118,7 @@ export const getMiniPayAccount = async (): Promise<string | null> => {
 
 /**
  * Request account access (for non-MiniPay environments)
+ * NOTE: This is an ASYNC function - only call on user action!
  */
 export const connectMiniPay = async (): Promise<string | null> => {
   if (!window.ethereum) return null;
@@ -203,22 +227,79 @@ export const sendCUSDViaMiniPay = async (
     return { success: true, txHash };
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Transaction failed';
-    console.error('[MiniPay] Transaction failed:', error);
+    console.error('[MiniPay] cUSD Transaction failed:', error);
     return { success: false, error: errorMessage };
   }
 };
 
 /**
- * MiniPay-optimized transaction for deposits
+ * Send USDT payment via MiniPay
+ */
+export const sendUSDTViaMiniPay = async (
+  toAddress: string, 
+  amountInUSDT: number
+): Promise<{ success: boolean; txHash?: string; error?: string }> => {
+  if (!window.ethereum) {
+    return { success: false, error: 'Wallet not available' };
+  }
+  
+  try {
+    // Get connected account
+    const accounts = await window.ethereum.request({ 
+      method: 'eth_accounts' 
+    }) as string[];
+    
+    const fromAddress = accounts[0];
+    if (!fromAddress) {
+      return { success: false, error: 'No connected account' };
+    }
+    
+    // Encode the transfer function call - USDT has 6 decimals
+    const data = encodeFunctionData({
+      abi: erc20Abi,
+      functionName: 'transfer',
+      args: [
+        toAddress as `0x${string}`,
+        parseUnits(amountInUSDT.toString(), 6)
+      ]
+    });
+    
+    // Send legacy transaction (MiniPay only supports legacy)
+    const txHash = await window.ethereum.request({
+      method: 'eth_sendTransaction',
+      params: [{
+        from: fromAddress,
+        to: USDT_ADDRESS,
+        data,
+        gas: '0x30d40' // 200000 gas limit
+      }]
+    }) as string;
+    
+    return { success: true, txHash };
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Transaction failed';
+    console.error('[MiniPay] USDT Transaction failed:', error);
+    return { success: false, error: errorMessage };
+  }
+};
+
+/**
+ * MiniPay-optimized transaction for deposits (sends to user wallet, not master)
  */
 export const depositViaMiniPay = async (
-  masterWalletAddress: string,
+  userWalletAddress: string,
   amountInNGN: number,
-  exchangeRate: number = 1600 // NGN per cUSD
+  exchangeRate: number = 1600, // NGN per USD
+  token: 'cusd' | 'usdt' = 'cusd'
 ): Promise<{ success: boolean; txHash?: string; ncAmount?: number; error?: string }> => {
-  const amountInCUSD = amountInNGN / exchangeRate;
+  const amountInStable = amountInNGN / exchangeRate;
   
-  const result = await sendCUSDViaMiniPay(masterWalletAddress, amountInCUSD);
+  let result;
+  if (token === 'usdt') {
+    result = await sendUSDTViaMiniPay(userWalletAddress, amountInStable);
+  } else {
+    result = await sendCUSDViaMiniPay(userWalletAddress, amountInStable);
+  }
   
   if (result.success) {
     return {

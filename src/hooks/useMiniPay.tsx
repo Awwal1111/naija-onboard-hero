@@ -5,7 +5,11 @@ import {
   getMiniPayAccount,
   connectMiniPay,
   getMiniPayCUSDBalance,
-  depositViaMiniPay
+  getMiniPayUSDTBalance,
+  sendCUSDViaMiniPay,
+  sendUSDTViaMiniPay,
+  CUSD_ADDRESS,
+  USDT_ADDRESS
 } from '@/lib/minipay';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -15,10 +19,12 @@ interface UseMiniPayReturn {
   isConnected: boolean;
   account: string | null;
   cusdBalance: string;
+  usdtBalance: string;
   isLoading: boolean;
   error: string | null;
+  userWalletAddress: string | null;
   connect: () => Promise<boolean>;
-  deposit: (amountNGN: number) => Promise<{ success: boolean; txHash?: string }>;
+  deposit: (amountNGN: number, token?: 'cusd' | 'usdt') => Promise<{ success: boolean; txHash?: string }>;
   refreshBalance: () => Promise<void>;
 }
 
@@ -27,9 +33,10 @@ export const useMiniPay = (): UseMiniPayReturn => {
   const [isConnected, setIsConnected] = useState(false);
   const [account, setAccount] = useState<string | null>(null);
   const [cusdBalance, setCusdBalance] = useState('0');
+  const [usdtBalance, setUsdtBalance] = useState('0');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [masterWalletAddress, setMasterWalletAddress] = useState<string | null>(null);
+  const [userWalletAddress, setUserWalletAddress] = useState<string | null>(null);
   const initRef = useRef(false);
 
   // Initialize MiniPay detection and auto-connect
@@ -63,18 +70,31 @@ export const useMiniPay = (): UseMiniPayReturn => {
           setAccount(acc);
           setIsConnected(true);
           
-          // Fetch balance
-          const balance = await getMiniPayCUSDBalance(acc);
-          setCusdBalance(parseFloat(balance).toFixed(2));
-          console.log('[MiniPay] cUSD Balance:', balance);
+          // Fetch both balances in parallel
+          const [cusdBal, usdtBal] = await Promise.all([
+            getMiniPayCUSDBalance(acc),
+            getMiniPayUSDTBalance(acc)
+          ]);
+          setCusdBalance(parseFloat(cusdBal).toFixed(2));
+          setUsdtBalance(parseFloat(usdtBal).toFixed(2));
+          console.log('[MiniPay] cUSD Balance:', cusdBal, 'USDT Balance:', usdtBal);
+          
+          // Fetch user's assigned wallet address from profile
+          await fetchUserWalletAddress(acc);
         } else if (inMiniPay) {
           // In MiniPay but no account yet - try to request
           const connected = await connectMiniPay();
           if (connected) {
             setAccount(connected);
             setIsConnected(true);
-            const balance = await getMiniPayCUSDBalance(connected);
-            setCusdBalance(parseFloat(balance).toFixed(2));
+            const [cusdBal, usdtBal] = await Promise.all([
+              getMiniPayCUSDBalance(connected),
+              getMiniPayUSDTBalance(connected)
+            ]);
+            setCusdBalance(parseFloat(cusdBal).toFixed(2));
+            setUsdtBalance(parseFloat(usdtBal).toFixed(2));
+            
+            await fetchUserWalletAddress(connected);
           }
         }
       } catch (err) {
@@ -95,12 +115,20 @@ export const useMiniPay = (): UseMiniPayReturn => {
         if (accs.length > 0) {
           setAccount(accs[0]);
           setIsConnected(true);
-          const balance = await getMiniPayCUSDBalance(accs[0]);
-          setCusdBalance(parseFloat(balance).toFixed(2));
+          const [cusdBal, usdtBal] = await Promise.all([
+            getMiniPayCUSDBalance(accs[0]),
+            getMiniPayUSDTBalance(accs[0])
+          ]);
+          setCusdBalance(parseFloat(cusdBal).toFixed(2));
+          setUsdtBalance(parseFloat(usdtBal).toFixed(2));
+          
+          await fetchUserWalletAddress(accs[0]);
         } else {
           setAccount(null);
           setIsConnected(false);
           setCusdBalance('0');
+          setUsdtBalance('0');
+          setUserWalletAddress(null);
         }
       };
 
@@ -112,21 +140,29 @@ export const useMiniPay = (): UseMiniPayReturn => {
     }
   }, []);
 
-  // Fetch master wallet address
-  useEffect(() => {
-    const fetchMasterWallet = async () => {
-      try {
-        const { data } = await supabase.functions.invoke('get-master-wallet-address');
-        if (data?.address) {
-          setMasterWalletAddress(data.address);
-        }
-      } catch (error) {
-        console.error('[MiniPay] Failed to fetch master wallet:', error);
+  // Fetch user's assigned Celo wallet address from their profile
+  const fetchUserWalletAddress = async (miniPayAddress: string) => {
+    try {
+      // First check if user exists with this MiniPay wallet
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('celo_wallet_address, user_id')
+        .or(`celo_wallet_address.ilike.${miniPayAddress.toLowerCase()},minipay_address.ilike.${miniPayAddress.toLowerCase()}`)
+        .maybeSingle();
+
+      if (profile?.celo_wallet_address) {
+        setUserWalletAddress(profile.celo_wallet_address);
+        console.log('[MiniPay] User wallet address:', profile.celo_wallet_address);
+      } else {
+        // User doesn't have an assigned wallet yet - they need to sign up
+        // For now, store their MiniPay address
+        console.log('[MiniPay] No assigned wallet found for this user');
+        setUserWalletAddress(null);
       }
-    };
-    
-    fetchMasterWallet();
-  }, []);
+    } catch (err) {
+      console.error('[MiniPay] Failed to fetch user wallet:', err);
+    }
+  };
 
   const connect = useCallback(async (): Promise<boolean> => {
     setIsLoading(true);
@@ -137,8 +173,15 @@ export const useMiniPay = (): UseMiniPayReturn => {
       if (acc) {
         setAccount(acc);
         setIsConnected(true);
-        const balance = await getMiniPayCUSDBalance(acc);
-        setCusdBalance(parseFloat(balance).toFixed(2));
+        const [cusdBal, usdtBal] = await Promise.all([
+          getMiniPayCUSDBalance(acc),
+          getMiniPayUSDTBalance(acc)
+        ]);
+        setCusdBalance(parseFloat(cusdBal).toFixed(2));
+        setUsdtBalance(parseFloat(usdtBal).toFixed(2));
+        
+        await fetchUserWalletAddress(acc);
+        
         toast.success('Wallet connected!');
         return true;
       }
@@ -157,17 +200,25 @@ export const useMiniPay = (): UseMiniPayReturn => {
   const refreshBalance = useCallback(async () => {
     if (account) {
       try {
-        const balance = await getMiniPayCUSDBalance(account);
-        setCusdBalance(parseFloat(balance).toFixed(2));
+        const [cusdBal, usdtBal] = await Promise.all([
+          getMiniPayCUSDBalance(account),
+          getMiniPayUSDTBalance(account)
+        ]);
+        setCusdBalance(parseFloat(cusdBal).toFixed(2));
+        setUsdtBalance(parseFloat(usdtBal).toFixed(2));
       } catch (err) {
         console.error('[MiniPay] Balance refresh failed:', err);
       }
     }
   }, [account]);
 
-  const deposit = useCallback(async (amountNGN: number): Promise<{ success: boolean; txHash?: string }> => {
-    if (!masterWalletAddress) {
-      toast.error('Master wallet not available');
+  const deposit = useCallback(async (
+    amountNGN: number, 
+    token: 'cusd' | 'usdt' = 'cusd'
+  ): Promise<{ success: boolean; txHash?: string }> => {
+    // User must have an assigned wallet to deposit
+    if (!userWalletAddress) {
+      toast.error('Please complete registration to get a wallet address');
       return { success: false };
     }
 
@@ -184,13 +235,28 @@ export const useMiniPay = (): UseMiniPayReturn => {
       });
       
       const exchangeRate = rateData?.rate || 1600;
+      const amountInStable = amountNGN / exchangeRate;
       
-      const result = await depositViaMiniPay(masterWalletAddress, amountNGN, exchangeRate);
+      console.log('[MiniPay] Depositing:', {
+        amountNGN,
+        amountInStable,
+        token,
+        toWallet: userWalletAddress,
+        exchangeRate
+      });
+
+      // Send to USER's assigned wallet, not master wallet
+      let result;
+      if (token === 'usdt') {
+        result = await sendUSDTViaMiniPay(userWalletAddress, amountInStable);
+      } else {
+        result = await sendCUSDViaMiniPay(userWalletAddress, amountInStable);
+      }
       
       if (result.success && result.txHash) {
         toast.success(`Deposit initiated! TX: ${result.txHash.slice(0, 10)}...`);
         
-        // Notify backend about the deposit
+        // Notify backend about the deposit - it will sweep and credit
         await supabase.functions.invoke('check-celo-deposits');
         
         await refreshBalance();
@@ -206,15 +272,17 @@ export const useMiniPay = (): UseMiniPayReturn => {
     } finally {
       setIsLoading(false);
     }
-  }, [masterWalletAddress, isConnected, account, connect, refreshBalance]);
+  }, [userWalletAddress, isConnected, account, connect, refreshBalance]);
 
   return {
     isMiniPay,
     isConnected,
     account,
     cusdBalance,
+    usdtBalance,
     isLoading,
     error,
+    userWalletAddress,
     connect,
     deposit,
     refreshBalance
