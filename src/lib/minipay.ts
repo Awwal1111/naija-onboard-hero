@@ -203,79 +203,22 @@ export const sendCUSDViaMiniPay = async (
     return { success: true, txHash };
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Transaction failed';
-    console.error('[MiniPay] cUSD Transaction failed:', error);
+    console.error('[MiniPay] Transaction failed:', error);
     return { success: false, error: errorMessage };
   }
 };
 
 /**
- * Send USDT payment via MiniPay
- */
-export const sendUSDTViaMiniPay = async (
-  toAddress: string, 
-  amountInUSDT: number
-): Promise<{ success: boolean; txHash?: string; error?: string }> => {
-  if (!window.ethereum) {
-    return { success: false, error: 'Wallet not available' };
-  }
-  
-  try {
-    // Get connected account
-    const accounts = await window.ethereum.request({ 
-      method: 'eth_accounts' 
-    }) as string[];
-    
-    const fromAddress = accounts[0];
-    if (!fromAddress) {
-      return { success: false, error: 'No connected account' };
-    }
-    
-    // Encode the transfer function call - USDT has 6 decimals
-    const data = encodeFunctionData({
-      abi: erc20Abi,
-      functionName: 'transfer',
-      args: [
-        toAddress as `0x${string}`,
-        parseUnits(amountInUSDT.toString(), 6)
-      ]
-    });
-    
-    // Send legacy transaction (MiniPay only supports legacy)
-    const txHash = await window.ethereum.request({
-      method: 'eth_sendTransaction',
-      params: [{
-        from: fromAddress,
-        to: USDT_ADDRESS,
-        data,
-        gas: '0x30d40' // 200000 gas limit
-      }]
-    }) as string;
-    
-    return { success: true, txHash };
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Transaction failed';
-    console.error('[MiniPay] USDT Transaction failed:', error);
-    return { success: false, error: errorMessage };
-  }
-};
-
-/**
- * MiniPay-optimized transaction for deposits (sends to user wallet, not master)
+ * MiniPay-optimized transaction for deposits
  */
 export const depositViaMiniPay = async (
-  userWalletAddress: string,
+  masterWalletAddress: string,
   amountInNGN: number,
-  exchangeRate: number = 1600, // NGN per USD
-  token: 'cusd' | 'usdt' = 'cusd'
+  exchangeRate: number = 1600 // NGN per cUSD
 ): Promise<{ success: boolean; txHash?: string; ncAmount?: number; error?: string }> => {
-  const amountInStable = amountInNGN / exchangeRate;
+  const amountInCUSD = amountInNGN / exchangeRate;
   
-  let result;
-  if (token === 'usdt') {
-    result = await sendUSDTViaMiniPay(userWalletAddress, amountInStable);
-  } else {
-    result = await sendCUSDViaMiniPay(userWalletAddress, amountInStable);
-  }
+  const result = await sendCUSDViaMiniPay(masterWalletAddress, amountInCUSD);
   
   if (result.success) {
     return {

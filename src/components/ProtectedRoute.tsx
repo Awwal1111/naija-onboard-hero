@@ -1,6 +1,6 @@
 import { useAuth } from '@/hooks/useAuth'
 import { Navigate } from 'react-router-dom'
-import { useMiniPayContext } from '@/components/MiniPayAuthWrapper'
+import { useMiniPay } from '@/hooks/useMiniPay'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
@@ -15,10 +15,10 @@ export const ProtectedRoute = ({
   allowMiniPayBrowsing = false 
 }: ProtectedRouteProps) => {
   const { user, loading, session } = useAuth()
-  const { isMiniPay, walletAddress, isRegistered } = useMiniPayContext()
+  const { isMiniPay } = useMiniPay()
 
-  // Show loading while auth is being determined (but not in MiniPay browsing mode)
-  if (loading && !(isMiniPay && allowMiniPayBrowsing)) {
+  // Show loading while auth is being determined
+  if (loading) {
     return (
       <div className="min-h-screen bg-gradient-subtle flex items-center justify-center">
         <div className="text-center">
@@ -30,23 +30,10 @@ export const ProtectedRoute = ({
   }
 
   // In MiniPay environment with browsing allowed, skip auth check
-  // Allow browsing if they have a wallet address (even if not registered)
-  if (isMiniPay && allowMiniPayBrowsing && walletAddress) {
+  if (isMiniPay && allowMiniPayBrowsing && !user && !session) {
     return <>{children}</>
   }
 
-  // If MiniPay user is registered, allow access
-  if (isMiniPay && isRegistered) {
-    return <>{children}</>
-  }
-
-  // MiniPay user with wallet but not in a browsable route and not registered
-  // Redirect to signup for protected actions
-  if (isMiniPay && !allowMiniPayBrowsing && !isRegistered && walletAddress) {
-    return <Navigate to="/signup" replace />
-  }
-
-  // Standard auth check for non-MiniPay users
   // Only redirect if we're sure there's no valid session
   if (!user && !session) {
     return <Navigate to={redirectTo} replace />
