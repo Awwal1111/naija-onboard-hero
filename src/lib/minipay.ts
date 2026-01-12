@@ -34,34 +34,56 @@ declare global {
 }
 
 /**
- * Detect if the app is running inside MiniPay browser
- * MiniPay injects window.ethereum with isMiniPay = true
+ * SYNCHRONOUS MiniPay detection - NO async operations
+ * Safe to call during component initialization
  */
-export const isMiniPayEnvironment = (): boolean => {
-  if (typeof window === 'undefined') return false;
-  
-  // Primary check: MiniPay sets this flag
-  if (window.ethereum?.isMiniPay === true) return true;
-  
-  // Secondary check: User agent contains minipay or opera mini
-  const userAgent = navigator.userAgent.toLowerCase();
-  if (userAgent.includes('minipay') || userAgent.includes('opera mini')) return true;
-  
-  // Tertiary check: Has ethereum but not MetaMask (likely MiniPay)
-  // Only trust this if in a mobile context
-  if (window.ethereum && !window.ethereum.isMetaMask) {
-    const isMobile = /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent);
-    if (isMobile) return true;
+export const detectMiniPaySync = (): { isMiniPay: boolean; hasProvider: boolean } => {
+  if (typeof window === 'undefined') {
+    return { isMiniPay: false, hasProvider: false }
   }
   
-  return false;
+  try {
+    const hasProvider = !!window.ethereum
+    
+    // Primary check: MiniPay sets this flag
+    if (window.ethereum?.isMiniPay === true) {
+      return { isMiniPay: true, hasProvider: true }
+    }
+    
+    // Secondary check: User agent contains minipay or opera mini
+    const userAgent = navigator.userAgent.toLowerCase()
+    if (userAgent.includes('minipay') || userAgent.includes('opera mini')) {
+      return { isMiniPay: true, hasProvider }
+    }
+    
+    // Tertiary check: Has ethereum but not MetaMask (likely MiniPay) on mobile
+    if (window.ethereum && !window.ethereum.isMetaMask) {
+      const isMobile = /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent)
+      if (isMobile) {
+        return { isMiniPay: true, hasProvider: true }
+      }
+    }
+    
+    return { isMiniPay: false, hasProvider }
+  } catch {
+    return { isMiniPay: false, hasProvider: false }
+  }
+}
+
+/**
+ * Detect if the app is running inside MiniPay browser
+ * MiniPay injects window.ethereum with isMiniPay = true
+ * @deprecated Use detectMiniPaySync for initialization
+ */
+export const isMiniPayEnvironment = (): boolean => {
+  return detectMiniPaySync().isMiniPay
 };
 
 /**
  * Check if wallet provider exists (window.ethereum)
  */
 export const hasWalletProvider = (): boolean => {
-  return typeof window !== 'undefined' && !!window.ethereum;
+  return detectMiniPaySync().hasProvider
 };
 
 /**
@@ -79,6 +101,7 @@ export const createMiniPayWalletClient = () => {
 /**
  * Get connected wallet address using viem
  * In MiniPay, the wallet is auto-connected
+ * NOTE: This is an ASYNC function - only call on user action!
  */
 export const getMiniPayAccount = async (): Promise<string | null> => {
   try {
@@ -95,6 +118,7 @@ export const getMiniPayAccount = async (): Promise<string | null> => {
 
 /**
  * Request account access (for non-MiniPay environments)
+ * NOTE: This is an ASYNC function - only call on user action!
  */
 export const connectMiniPay = async (): Promise<string | null> => {
   if (!window.ethereum) return null;

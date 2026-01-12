@@ -4,8 +4,7 @@ import { supabase } from '@/integrations/supabase/client'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Logo } from '@/components/ui/logo'
 import { BrandButton } from '@/components/ui/brand-button'
-import { SecureInput } from '@/components/ui/secure-input'
-import { Eye, EyeOff, User, Mail, Lock, Sparkles, Shield, Users, Wallet, CheckCircle, Loader2 } from 'lucide-react'
+import { Eye, EyeOff, User, Mail, Lock, Sparkles, Shield, Users } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/use-toast'
 import { validatePasswordStrength } from '@/lib/security'
@@ -13,24 +12,12 @@ import { Progress } from '@/components/ui/progress'
 import { useMiniPayContext } from '@/components/MiniPayAuthWrapper'
 
 const SignUp = () => {
-  const { isMiniPay, isInitializing } = useMiniPayContext()
+  const { isMiniPay } = useMiniPayContext()
   
   // MiniPay users NEVER see signup screen - wallet = identity
-  // They get auto-created when wallet connects, redirect to feed
-  if (isMiniPay && !isInitializing) {
+  // Use sync detection only - no isInitializing check
+  if (isMiniPay) {
     return <Navigate to="/feed" replace />
-  }
-
-  // Still initializing MiniPay
-  if (isMiniPay && isInitializing) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-          <p className="text-muted-foreground">Connecting wallet...</p>
-        </div>
-      </div>
-    )
   }
 
   const navigate = useNavigate()
@@ -92,7 +79,8 @@ const SignUp = () => {
           })
         })
     }
-  }, [inviteToken])
+  }, [inviteToken, toast])
+
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [passwordValidation, setPasswordValidation] = useState<{
@@ -449,8 +437,8 @@ const SignUp = () => {
                   className="w-full py-3"
                   type="button"
                 >
-                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="#0088cc">
-                    <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/>
                   </svg>
                   Sign Up via Telegram
                 </BrandButton>
@@ -458,9 +446,10 @@ const SignUp = () => {
               
               <BrandButton 
                 variant="secondary" 
-                className="w-full py-3"
+                className="w-full py-3" 
                 onClick={handleGoogleSignUp}
                 disabled={isLoading}
+                type="button"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
