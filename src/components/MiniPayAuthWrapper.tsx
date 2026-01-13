@@ -131,8 +131,20 @@ export const MiniPayAuthWrapper = ({ children }: MiniPayAuthWrapperProps) => {
   /**
    * Check if wallet exists and load/create user
    * Only called from initializeWallet - not on mount!
+   * 
+   * CRITICAL: This function calls setState() exactly ONCE to prevent
+   * MiniPay WebView flickering from multiple re-renders.
    */
   const loadOrCreateUser = async (address: string): Promise<void> => {
+    // Build complete next state in local variables - NO setState until the end
+    let nextState = {
+      walletAddress: address,
+      isInitializing: false,
+      userId: null as string | null,
+      isRegistered: false,
+      userProfile: null as MiniPayUserProfile | null
+    }
+
     try {
       // Check if wallet already exists in profiles
       const { data: existingProfile } = await supabase
@@ -146,10 +158,9 @@ export const MiniPayAuthWrapper = ({ children }: MiniPayAuthWrapperProps) => {
         
         const profileCompleted = !!(existingProfile.full_name && existingProfile.onboarding_completed)
         
-        setState(prev => ({
-          ...prev,
-          walletAddress: address,
-          isInitializing: false,
+        // Update local state object - NOT calling setState yet
+        nextState = {
+          ...nextState,
           userId: existingProfile.user_id,
           isRegistered: true,
           userProfile: {
@@ -161,7 +172,7 @@ export const MiniPayAuthWrapper = ({ children }: MiniPayAuthWrapperProps) => {
             profession: existingProfile.profession,
             profileCompleted
           }
-        }))
+        }
       } else {
         // Wallet doesn't exist - create new user
         console.log('[MiniPayAuth] Wallet not found, creating new user...')
@@ -169,37 +180,23 @@ export const MiniPayAuthWrapper = ({ children }: MiniPayAuthWrapperProps) => {
         const newUserProfile = await createWalletUser(address)
         
         if (newUserProfile) {
-          setState(prev => ({
-            ...prev,
-            walletAddress: address,
-            isInitializing: false,
+          // Update local state object - NOT calling setState yet
+          nextState = {
+            ...nextState,
             userId: newUserProfile.userId,
             isRegistered: true,
             userProfile: newUserProfile
-          }))
-        } else {
-          // Failed to create user
-          setState(prev => ({
-            ...prev,
-            walletAddress: address,
-            isInitializing: false,
-            userId: null,
-            isRegistered: false,
-            userProfile: null
-          }))
+          }
         }
+        // If createWalletUser fails, nextState already has defaults (null, false, null)
       }
     } catch (error) {
       console.error('[MiniPayAuth] Error loading user:', error)
-      setState(prev => ({
-        ...prev,
-        walletAddress: address,
-        isInitializing: false,
-        userId: null,
-        isRegistered: false,
-        userProfile: null
-      }))
+      // nextState already has error-safe defaults
     }
+
+    // ✅ SINGLE setState call - prevents MiniPay flickering
+    setState(prev => ({ ...prev, ...nextState }))
   }
 
   /**
