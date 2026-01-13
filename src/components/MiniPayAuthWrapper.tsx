@@ -202,45 +202,54 @@ export const MiniPayAuthWrapper = ({ children }: MiniPayAuthWrapperProps) => {
   /**
    * LAZY INITIALIZATION - Only call when user action requires auth
    * This is the key to preventing MiniPay reload loops
+   * 
+   * CRITICAL: Minimizes setState calls to prevent MiniPay WebView flickering.
+   * Uses refs for synchronization instead of state where possible.
    */
   const initializeWallet = useCallback(async (): Promise<boolean> => {
-    // Already initialized or initializing
+    // Already initialized - no state changes needed
     if (initializedRef.current && state.walletAddress) {
       return true
     }
     
+    // Already initializing - wait without triggering new state
     if (initializingRef.current) {
-      // Wait for existing initialization
       return new Promise((resolve) => {
         const check = setInterval(() => {
           if (!initializingRef.current) {
             clearInterval(check)
-            resolve(!!state.walletAddress)
+            resolve(initializedRef.current)
           }
         }, 100)
       })
     }
 
+    // Not in MiniPay - no state changes needed
     if (!state.isMiniPay || !state.hasWalletProvider) {
       return false
     }
 
+    // Mark as initializing using ref (no re-render)
     initializingRef.current = true
+    
+    // Single setState to show loading - this is unavoidable but controlled
     setState(prev => ({ ...prev, isInitializing: true }))
+
+    let success = false
 
     try {
       console.log('[MiniPayAuth] Starting lazy wallet initialization...')
       
-      // NOW we call the async wallet function
       const address = await getMiniPayAccount()
       console.log('[MiniPayAuth] Got wallet address:', address)
 
       if (address) {
+        // loadOrCreateUser handles its own single setState
         await loadOrCreateUser(address)
         initializedRef.current = true
-        initializingRef.current = false
-        return true
+        success = true
       } else {
+        // No address - build error state and set once
         setState(prev => ({
           ...prev,
           isInitializing: false,
@@ -249,11 +258,10 @@ export const MiniPayAuthWrapper = ({ children }: MiniPayAuthWrapperProps) => {
           isRegistered: false,
           userProfile: null
         }))
-        initializingRef.current = false
-        return false
       }
     } catch (error) {
       console.error('[MiniPayAuth] Wallet initialization error:', error)
+      // Error - build error state and set once
       setState(prev => ({
         ...prev,
         isInitializing: false,
@@ -262,9 +270,10 @@ export const MiniPayAuthWrapper = ({ children }: MiniPayAuthWrapperProps) => {
         isRegistered: false,
         userProfile: null
       }))
-      initializingRef.current = false
-      return false
     }
+
+    initializingRef.current = false
+    return success
   }, [state.isMiniPay, state.hasWalletProvider, state.walletAddress])
 
   /**
