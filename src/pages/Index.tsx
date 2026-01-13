@@ -12,10 +12,12 @@ import { SuccessStoriesSection } from '@/components/SuccessStoriesSection'
 import { useMiniPayContext } from '@/components/MiniPayAuthWrapper'
 
 const Index = () => {
+  // Use sync detection ONLY - no context that could cause re-renders
+  // This is critical for MiniPay to prevent flickering
   const { isMiniPay } = useMiniPayContext()
 
   // MiniPay users go directly to feed - NO login screens
-  // Use sync detection only - no isInitializing check that could cause loops
+  // This redirect happens ONCE on initial render
   if (isMiniPay) {
     return <Navigate to="/feed" replace />
   }

@@ -1,9 +1,16 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
+import { detectMiniPaySync } from '@/lib/minipay'
+
+// SYNC check at module load
+const isMiniPayEnv = detectMiniPaySync().isMiniPay
 
 /**
  * Global Presence Manager
+ * 
+ * CRITICAL: DISABLED in MiniPay to prevent re-renders and flickering
+ * MiniPay is extremely sensitive to Supabase realtime subscriptions
  * 
  * This component tracks user presence across the ENTIRE app, not just in chat.
  * It should be mounted at the app level (in App.tsx) to ensure presence is
@@ -11,9 +18,14 @@ import { useAuth } from '@/hooks/useAuth'
  */
 export const GlobalPresenceManager = () => {
   const { user } = useAuth()
+  const hasInitializedRef = useRef(false)
 
   useEffect(() => {
+    // SKIP in MiniPay - causes re-renders and flickering
+    if (isMiniPayEnv) return
     if (!user) return
+    if (hasInitializedRef.current) return
+    hasInitializedRef.current = true
 
     console.log('[Presence] Initializing global presence for user:', user.id)
 
