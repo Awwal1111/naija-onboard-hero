@@ -1,4 +1,4 @@
-import { ReactNode, useState, createContext, useContext, useCallback, useRef } from 'react'
+import { ReactNode, useState, createContext, useContext, useCallback, useRef, useEffect } from 'react'
 import { detectMiniPaySync, getMiniPayAccount } from '@/lib/minipay'
 import { supabase } from '@/integrations/supabase/client'
 
@@ -50,16 +50,40 @@ interface MiniPayAuthWrapperProps {
 }
 
 /**
- * MiniPayAuthWrapper - LAZY INITIALIZATION PATTERN
+ * Get wallet address SILENTLY - no popup, no user action needed
+ * MiniPay auto-injects the wallet, so eth_accounts returns immediately
+ */
+const getSilentWalletAddress = async (): Promise<string | null> => {
+  if (typeof window === 'undefined' || !window.ethereum) return null
+  
+  try {
+    // eth_accounts is READ-ONLY - no popup, no user approval needed
+    // In MiniPay, wallet is auto-connected so this returns the address
+    const accounts = await window.ethereum.request({ 
+      method: 'eth_accounts' 
+    }) as string[]
+    
+    return accounts[0] || null
+  } catch (error) {
+    console.error('[MiniPayAuth] Silent wallet check failed:', error)
+    return null
+  }
+}
+
+/**
+ * MiniPayAuthWrapper - SILENT REHYDRATION PATTERN
  * 
- * On load: ONLY sync environment detection
- * - NO wallet calls
- * - NO Supabase queries
- * - NO localStorage access
- * - NO auto user creation
+ * On load (MiniPay only):
+ * - Get wallet address silently (NO popup - eth_accounts)
+ * - Query profile by wallet address
+ * - Restore user state with SINGLE setState
  * 
- * Wallet/DB logic is DEFERRED to initializeWallet() 
- * which is called when user takes an action requiring auth.
+ * Rules:
+ * - Runs ONCE
+ * - No loading screen
+ * - No Supabase Auth
+ * - No presence
+ * - No polling/retries/timers
  */
 export const MiniPayAuthWrapper = ({ children }: MiniPayAuthWrapperProps) => {
   // Use initial sync detection - stable across renders
@@ -75,9 +99,94 @@ export const MiniPayAuthWrapper = ({ children }: MiniPayAuthWrapperProps) => {
 
   const [pendingAction, setPendingAction] = useState<string | null>(null)
   
-  // Track if we've already initialized to prevent double init
+  // Track if we've already rehydrated/initialized to prevent double runs
+  const hasRehydratedRef = useRef(false)
   const initializingRef = useRef(false)
   const initializedRef = useRef(false)
+
+  /**
+   * SILENT REHYDRATION - runs ONCE on mount in MiniPay
+   * Gets wallet address passively and loads user from DB
+   * NO loading state shown - completely invisible to user
+   */
+  useEffect(() => {
+    // Only run in MiniPay with wallet provider
+    if (!initialDetection.isMiniPay || !initialDetection.hasProvider) return
+    
+    // Only run once
+    if (hasRehydratedRef.current) return
+    hasRehydratedRef.current = true
+
+    const silentRehydrate = async () => {
+      try {
+        console.log('[MiniPayAuth] Starting silent rehydration...')
+        
+        // Get wallet address SILENTLY (no popup)
+        const address = await getSilentWalletAddress()
+        
+        if (!address) {
+          console.log('[MiniPayAuth] No wallet address found silently')
+          return // No state change needed - user will trigger init manually
+        }
+
+        console.log('[MiniPayAuth] Silent wallet found:', address)
+
+        // Build complete state in local variables
+        let nextState = {
+          walletAddress: address,
+          isInitializing: false,
+          userId: null as string | null,
+          isRegistered: false,
+          userProfile: null as MiniPayUserProfile | null
+        }
+
+        // Query profile by wallet address
+        const { data: existingProfile } = await supabase
+          .from('profiles')
+          .select('user_id, full_name, profile_picture_url, wallet_balance, profession, onboarding_completed')
+          .or(`celo_wallet_address.ilike.${address.toLowerCase()},minipay_address.ilike.${address.toLowerCase()}`)
+          .maybeSingle()
+
+        if (existingProfile) {
+          console.log('[MiniPayAuth] Found existing user:', existingProfile.user_id)
+          
+          const profileCompleted = !!(existingProfile.full_name && existingProfile.onboarding_completed)
+          
+          nextState = {
+            ...nextState,
+            userId: existingProfile.user_id,
+            isRegistered: true,
+            userProfile: {
+              userId: existingProfile.user_id,
+              fullName: existingProfile.full_name,
+              avatarUrl: existingProfile.profile_picture_url,
+              walletBalance: existingProfile.wallet_balance || 0,
+              email: null,
+              profession: existingProfile.profession,
+              profileCompleted
+            }
+          }
+          
+          // Mark as initialized since we found the user
+          initializedRef.current = true
+        } else {
+          console.log('[MiniPayAuth] No profile found for wallet - will create on action')
+          // Just store the wallet address, user creation happens on first action
+          nextState.walletAddress = address
+        }
+
+        // ✅ SINGLE setState call - prevents flickering
+        setState(prev => ({ ...prev, ...nextState }))
+        
+      } catch (error) {
+        console.error('[MiniPayAuth] Silent rehydration error:', error)
+        // No state change on error - app still works, user can trigger init manually
+      }
+    }
+
+    // Run immediately but don't block render
+    silentRehydrate()
+  }, []) // Empty deps - runs ONCE
 
   /**
    * Create a new user record with just wallet address
