@@ -26,6 +26,7 @@ import { MoreMenuDrawer } from '@/components/MoreMenuDrawer'
 import { UnifiedSearchBar } from '@/components/UnifiedSearchBar'
 import { NCConverter } from '@/components/NCConverter'
 import { QuickOnboarding } from '@/components/QuickOnboarding'
+import { useMiniPayContext } from '@/components/MiniPayAuthWrapper'
 
 import { supabase } from '@/integrations/supabase/client'
 
@@ -35,6 +36,13 @@ const MainFeed = () => {
   const { user } = useAuth()
   const { profile } = useProfile()
   const { isComplete, missingFields, shouldShowDialog } = useProfileCompletion()
+  
+  // MiniPay context for wallet-based identity
+  const { isMiniPay, userId: miniPayUserId, userProfile: miniPayProfile, isRegistered } = useMiniPayContext()
+  
+  // Effective user ID - either Supabase auth or MiniPay wallet-based
+  const effectiveUserId = isMiniPay ? miniPayUserId : user?.id
+  
   const { 
     posts, 
     stories,
@@ -62,18 +70,24 @@ const MainFeed = () => {
   const [showOnboarding, setShowOnboarding] = useState(false)
   
 
-  // Check for onboarding
+  // Check for onboarding - works for both MiniPay and regular users
   useEffect(() => {
+    // For MiniPay users, check if profile is incomplete
+    if (isMiniPay && isRegistered && miniPayProfile) {
+      if (!miniPayProfile.profileCompleted) {
+        setShowOnboarding(true)
+      }
+      return
+    }
+    
+    // For regular users
     if (profile && user) {
-      // Cast profile to any to access new columns
       const p = profile as any
-      
-      // Show onboarding if not completed
       if (p.onboarding_completed === false && !p.full_name) {
         setShowOnboarding(true)
       }
     }
-  }, [profile, user])
+  }, [profile, user, isMiniPay, isRegistered, miniPayProfile])
 
   const handleOnboardingComplete = () => {
     setShowOnboarding(false)
@@ -285,7 +299,7 @@ const MainFeed = () => {
             stories={stories}
             onCreateStory={handleCreateStory}
             onViewStory={viewStory}
-            currentUserId={user?.id}
+            currentUserId={effectiveUserId}
           />
 
           {/* Create Post Bar */}
@@ -295,9 +309,9 @@ const MainFeed = () => {
               className="flex items-center gap-3 cursor-pointer"
             >
               <Avatar className="h-10 w-10 ring-2 ring-primary/20">
-                <AvatarImage src={profile?.profile_picture_url} />
+                <AvatarImage src={isMiniPay ? miniPayProfile?.avatarUrl : profile?.profile_picture_url} />
                 <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
-                  {profile?.full_name?.charAt(0) || 'U'}
+                  {(isMiniPay ? miniPayProfile?.fullName?.charAt(0) : profile?.full_name?.charAt(0)) || 'U'}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 py-2.5 px-4 bg-muted/50 hover:bg-muted rounded-full transition-colors">
@@ -357,7 +371,7 @@ const MainFeed = () => {
                       onComment={addComment}
                       onJobApply={handleJobApply}
                       onProfileClick={handleProfileClick}
-                      currentUserId={user?.id}
+                      currentUserId={effectiveUserId}
                     />
                   ))}
                   <div className="py-8 text-center bg-muted/30">
