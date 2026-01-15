@@ -33,15 +33,31 @@ import { supabase } from '@/integrations/supabase/client'
 const MainFeed = () => {
   const navigate = useNavigate()
   const location = useLocation()
-  const { user } = useAuth()
+  const { user } = useAuth() // NOTE: Supabase auth is ignored in MiniPay
   const { profile } = useProfile()
   const { isComplete, missingFields, shouldShowDialog } = useProfileCompletion()
   
   // MiniPay context for wallet-based identity
-  const { isMiniPay, userId: miniPayUserId, userProfile: miniPayProfile, isRegistered } = useMiniPayContext()
+  const { 
+    isMiniPay, 
+    userId: miniPayUserId, 
+    userProfile: miniPayProfile, 
+    isRegistered, 
+    isInitializing,
+    initializeWallet 
+  } = useMiniPayContext()
   
   // Effective user ID - either Supabase auth or MiniPay wallet-based
   const effectiveUserId = isMiniPay ? miniPayUserId : user?.id
+  
+  // 🔧 CRITICAL FIX: Auto-initialize MiniPay wallet on feed page
+  // This ensures wallet user is created/loaded BEFORE queries run
+  useEffect(() => {
+    if (isMiniPay && !isRegistered && !isInitializing) {
+      console.log('[MainFeed] MiniPay detected but not registered - initializing wallet...')
+      initializeWallet()
+    }
+  }, [isMiniPay, isRegistered, isInitializing, initializeWallet])
   
   const { 
     posts, 
@@ -213,6 +229,31 @@ const MainFeed = () => {
 
   const handleRemoveReaction = (postId: string) => {
     toggleLike(postId)
+  }
+
+  // 🔧 LOADING GUARD: Show connecting state while MiniPay wallet initializes
+  // This ensures user creation completes before queries run
+  if (isMiniPay && isInitializing) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center pb-20">
+        <div className="text-center">
+          <Wallet className="w-8 h-8 text-primary mx-auto mb-4 animate-pulse" />
+          <p className="text-text-secondary">Connecting wallet...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // 🔧 LOADING GUARD: Wait for MiniPay registration before showing feed
+  if (isMiniPay && !isRegistered) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center pb-20">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 text-primary mx-auto mb-4 animate-spin" />
+          <p className="text-text-secondary">Setting up your account...</p>
+        </div>
+      </div>
+    )
   }
 
   if (loading) {
