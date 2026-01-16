@@ -173,7 +173,9 @@ export const MiniPayAuthWrapper = ({ children }: MiniPayAuthWrapperProps) => {
           // ✅ FIX: CREATE USER IMMEDIATELY instead of waiting
           console.log('[MiniPayAuth] No profile found - CREATING user now...')
           
-          const walletUserId = `minipay_${address.toLowerCase().slice(2, 14)}_${Date.now().toString(36)}`
+          // ✅ CRITICAL FIX: user_id column is UUID type, not string!
+          // Generate a proper UUID using crypto API
+          const walletUserId = crypto.randomUUID()
           
           const { data: newProfile, error } = await supabase
             .from('profiles')
@@ -183,9 +185,7 @@ export const MiniPayAuthWrapper = ({ children }: MiniPayAuthWrapperProps) => {
               celo_wallet_address: address.toLowerCase(),
               full_name: null,
               profession: null,
-              onboarding_completed: false,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
+              onboarding_completed: false
             })
             .select('user_id, full_name, profile_picture_url, wallet_balance, profession, onboarding_completed')
             .single()
@@ -237,8 +237,9 @@ export const MiniPayAuthWrapper = ({ children }: MiniPayAuthWrapperProps) => {
     try {
       console.log('[MiniPayAuth] Creating new wallet-based user for:', walletAddress)
       
-      // Generate a unique user ID for this wallet user
-      const walletUserId = `minipay_${walletAddress.toLowerCase().slice(2, 14)}_${Date.now().toString(36)}`
+      // ✅ CRITICAL FIX: user_id column is UUID type, not string!
+      // Generate a proper UUID using crypto API
+      const walletUserId = crypto.randomUUID()
       
       // Create minimal profile record
       const { data: newProfile, error } = await supabase
@@ -249,9 +250,7 @@ export const MiniPayAuthWrapper = ({ children }: MiniPayAuthWrapperProps) => {
           celo_wallet_address: walletAddress.toLowerCase(),
           full_name: null,
           profession: null,
-          onboarding_completed: false,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          onboarding_completed: false
         })
         .select('user_id, full_name, profile_picture_url, wallet_balance, profession, onboarding_completed')
         .single()
