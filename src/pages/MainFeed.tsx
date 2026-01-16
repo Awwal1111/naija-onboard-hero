@@ -51,13 +51,27 @@ const MainFeed = () => {
   const effectiveUserId = isMiniPay ? miniPayUserId : user?.id
   
   // 🔧 CRITICAL FIX: Auto-initialize MiniPay wallet on feed page
-  // This ensures wallet user is created/loaded BEFORE queries run
+  // This is a FALLBACK - silent rehydration should handle most cases
+  // But if it fails, this ensures wallet user is created/loaded
+  const [miniPayAttempted, setMiniPayAttempted] = useState(false)
+  const [miniPayTimeout, setMiniPayTimeout] = useState(false)
+  
   useEffect(() => {
-    if (isMiniPay && !isRegistered && !isInitializing) {
-      console.log('[MainFeed] MiniPay detected but not registered - initializing wallet...')
+    if (isMiniPay && !isRegistered && !isInitializing && !miniPayAttempted) {
+      console.log('[MainFeed] MiniPay detected but not registered - attempting initialization...')
+      setMiniPayAttempted(true)
       initializeWallet()
+      
+      // ✅ TIMEOUT FALLBACK: If registration still fails after 5 seconds, 
+      // stop blocking and show feed anyway - onboarding can handle the rest
+      const timeout = setTimeout(() => {
+        console.log('[MainFeed] MiniPay timeout reached - showing feed anyway')
+        setMiniPayTimeout(true)
+      }, 5000)
+      
+      return () => clearTimeout(timeout)
     }
-  }, [isMiniPay, isRegistered, isInitializing, initializeWallet])
+  }, [isMiniPay, isRegistered, isInitializing, initializeWallet, miniPayAttempted])
   
   const { 
     posts, 
@@ -232,7 +246,7 @@ const MainFeed = () => {
   }
 
   // 🔧 LOADING GUARD: Show connecting state while MiniPay wallet initializes
-  // This ensures user creation completes before queries run
+  // This is shown ONLY while actively initializing (brief moment)
   if (isMiniPay && isInitializing) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center pb-20">
@@ -244,8 +258,21 @@ const MainFeed = () => {
     )
   }
 
-  // 🔧 LOADING GUARD: Wait for MiniPay registration before showing feed
-  if (isMiniPay && !isRegistered) {
+  // 🔧 LOADING GUARD: Brief state while MiniPay registration completes
+  // This should only show for 1-2 seconds max since silent rehydration creates users immediately
+  // ESCAPE HATCH: If timeout (5s) is reached, stop blocking and show feed anyway
+  const shouldBlockForMiniPay = isMiniPay && !isRegistered && !miniPayTimeout
+  
+  if (shouldBlockForMiniPay && isInitializing) {
+    // Still actively trying to connect/register
+    return null // Already handled above by isInitializing check
+  }
+  
+  // If MiniPay is detected, not registered, and we haven't hit timeout yet, show setup screen
+  // BUT only if we haven't attempted yet (first load) or are still initializing
+  if (shouldBlockForMiniPay && !isInitializing) {
+    // Briefly show setup screen - but with the fix, this should resolve in 1-2 seconds
+    // The useEffect will trigger initializeWallet which will create/load user
     return (
       <div className="min-h-screen bg-background flex items-center justify-center pb-20">
         <div className="text-center">
@@ -255,6 +282,9 @@ const MainFeed = () => {
       </div>
     )
   }
+  
+  // ✅ After timeout OR registration complete, show feed
+  // This prevents infinite "Setting up your account..." loops
 
   if (loading) {
     return (
