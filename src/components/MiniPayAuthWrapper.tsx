@@ -170,9 +170,50 @@ export const MiniPayAuthWrapper = ({ children }: MiniPayAuthWrapperProps) => {
           // Mark as initialized since we found the user
           initializedRef.current = true
         } else {
-          console.log('[MiniPayAuth] No profile found for wallet - will create on action')
-          // Just store the wallet address, user creation happens on first action
-          nextState.walletAddress = address
+          // ✅ FIX: CREATE USER IMMEDIATELY instead of waiting
+          console.log('[MiniPayAuth] No profile found - CREATING user now...')
+          
+          const walletUserId = `minipay_${address.toLowerCase().slice(2, 14)}_${Date.now().toString(36)}`
+          
+          const { data: newProfile, error } = await supabase
+            .from('profiles')
+            .insert({
+              user_id: walletUserId,
+              minipay_address: address.toLowerCase(),
+              celo_wallet_address: address.toLowerCase(),
+              full_name: null,
+              profession: null,
+              onboarding_completed: false,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })
+            .select('user_id, full_name, profile_picture_url, wallet_balance, profession, onboarding_completed')
+            .single()
+
+          if (!error && newProfile) {
+            console.log('[MiniPayAuth] Created new user:', newProfile.user_id)
+            
+            nextState = {
+              ...nextState,
+              userId: newProfile.user_id,
+              isRegistered: true, // ✅ IMMEDIATELY REGISTERED
+              userProfile: {
+                userId: newProfile.user_id,
+                fullName: null,
+                avatarUrl: null,
+                walletBalance: 0,
+                email: null,
+                profession: null,
+                profileCompleted: false
+              }
+            }
+            
+            initializedRef.current = true
+          } else {
+            console.error('[MiniPayAuth] Failed to create user:', error)
+            // Still store wallet address so user can retry
+            nextState.walletAddress = address
+          }
         }
 
         // ✅ SINGLE setState call - prevents flickering
