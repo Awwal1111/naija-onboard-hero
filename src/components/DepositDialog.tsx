@@ -11,6 +11,8 @@ import { useProfile } from '@/hooks/useProfile'
 import { supabase } from '@/integrations/supabase/client'
 import { toast } from 'sonner'
 import { DepositMethods } from './DepositMethods'
+import { MiniPayDepositCard } from './MiniPayDepositCard'
+import { useMiniPay } from '@/hooks/useMiniPay'
 
 interface DepositDialogProps {
   open: boolean
@@ -20,10 +22,11 @@ interface DepositDialogProps {
 export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
   const { user } = useAuth()
   const { profile } = useProfile()
+  const { isMiniPay } = useMiniPay()
   const [walletAddress, setWalletAddress] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [creatingWallet, setCreatingWallet] = useState(false)
-  const [selectedMethod, setSelectedMethod] = useState<'main' | 'ramp' | 'crypto' | 'telegram'>('main')
+  const [selectedMethod, setSelectedMethod] = useState<'main' | 'ramp' | 'crypto' | 'telegram' | 'minipay'>('main')
 
   useEffect(() => {
     console.log('[DEPOSIT] 🎯 Effect triggered. User:', !!user, 'Profile:', !!profile)
@@ -114,12 +117,17 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
     window.dispatchEvent(event)
   }
 
-  const handleMethodSelect = (method: 'ramp' | 'crypto' | 'telegram') => {
+  const handleMethodSelect = (method: 'ramp' | 'crypto' | 'telegram' | 'minipay') => {
     if (method === 'ramp') {
       handleOpenQuidaxWidget()
     } else {
       setSelectedMethod(method)
     }
+  }
+
+  const handleMiniPaySuccess = () => {
+    onOpenChange(false)
+    setSelectedMethod('main')
   }
 
   const handleBack = () => {
@@ -140,15 +148,17 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
               </button>
             )}
             <div>
-              <DialogTitle className="flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2">
                 <Wallet className="h-5 w-5 text-primary" />
                 {selectedMethod === 'main' ? 'Add Funds' : 
                  selectedMethod === 'crypto' ? 'Crypto Deposit' : 
+                 selectedMethod === 'minipay' ? 'MiniPay Deposit' :
                  'Telegram Bot'}
               </DialogTitle>
               <DialogDescription>
                 {selectedMethod === 'main' ? 'Choose your preferred deposit method' :
                  selectedMethod === 'crypto' ? 'Send crypto to your wallet address' :
+                 selectedMethod === 'minipay' ? 'Deposit directly from MiniPay' :
                  'Deposit via Telegram bot'}
               </DialogDescription>
             </div>
@@ -271,6 +281,10 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
               </CardContent>
             </Card>
           </div>
+        )}
+
+        {selectedMethod === 'minipay' && (
+          <MiniPayDepositCard onSuccess={handleMiniPaySuccess} />
         )}
       </DialogContent>
     </Dialog>

@@ -1,16 +1,28 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { detectMiniPaySync } from '@/lib/minipay';
+
+// SYNC check at module load - prevents async calls in MiniPay
+const isMiniPayEnv = detectMiniPaySync().isMiniPay;
 
 /**
  * Custom hook to persist navigation state and restore it when the app comes back from background
- * This prevents the app from redirecting to the main dashboard when minimized or backgrounded
+ * 
+ * CRITICAL: In MiniPay, this hook is DISABLED to prevent navigation loops
+ * MiniPay is extremely sensitive to re-renders and navigation changes
  */
 export const useAppState = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const hasRunRef = useRef(false);
+
+  // DISABLE in MiniPay - causes flickering/reload loops
+  if (isMiniPayEnv) {
+    return null;
+  }
 
   useEffect(() => {
-    // Save current route on every navigation
+    // Save current route on every navigation (non-MiniPay only)
     const routeData = {
       path: location.pathname + location.search,
       timestamp: Date.now()
@@ -20,6 +32,10 @@ export const useAppState = () => {
   }, [location]);
 
   useEffect(() => {
+    // Only run once
+    if (hasRunRef.current) return;
+    hasRunRef.current = true;
+
     // Restore last route on mount (if app was killed and restarted)
     const restoreLastRoute = () => {
       try {
@@ -52,10 +68,7 @@ export const useAppState = () => {
       const currentPath = location.pathname + location.search;
       
       if (!document.hidden) {
-        // App is coming back to foreground
-        console.log('[AppState] App resumed');
-        
-        // Check if we need to restore the saved route
+        // App is coming back to foreground - only restore if needed
         try {
           const savedRoute = sessionStorage.getItem('lastRoute') || localStorage.getItem('lastRoute');
           if (savedRoute) {
@@ -64,10 +77,7 @@ export const useAppState = () => {
             
             // Only restore if less than 1 hour old and not on the saved route
             if (timeDiff < 60 * 60 * 1000 && routeData.path !== currentPath) {
-              console.log('[AppState] Restoring route from background:', routeData.path);
               navigate(routeData.path, { replace: true });
-            } else {
-              console.log('[AppState] Already on correct page:', currentPath);
             }
           }
         } catch (error) {
@@ -75,7 +85,6 @@ export const useAppState = () => {
         }
       } else {
         // App is going to background - save current state
-        console.log('[AppState] App going to background, saving state:', currentPath);
         const routeData = {
           path: currentPath,
           timestamp: Date.now()
@@ -95,16 +104,6 @@ export const useAppState = () => {
       localStorage.setItem('lastRoute', JSON.stringify(routeData));
     };
 
-    // Handle freeze/resume (mobile specific)
-    const handleFreeze = () => {
-      const routeData = {
-        path: location.pathname + location.search,
-        timestamp: Date.now()
-      };
-      sessionStorage.setItem('lastRoute', JSON.stringify(routeData));
-      localStorage.setItem('lastRoute', JSON.stringify(routeData));
-    };
-
     // Save state before page unload
     const handleBeforeUnload = () => {
       const routeData = {
@@ -115,12 +114,11 @@ export const useAppState = () => {
       localStorage.setItem('lastRoute', JSON.stringify(routeData));
     };
 
-    // Add all event listeners
+    // Add event listeners
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('blur', handleBlur);
     window.addEventListener('beforeunload', handleBeforeUnload);
     window.addEventListener('pagehide', handleBeforeUnload);
-    document.addEventListener('freeze', handleFreeze);
 
     // Cleanup
     return () => {
@@ -128,9 +126,8 @@ export const useAppState = () => {
       window.removeEventListener('blur', handleBlur);
       window.removeEventListener('beforeunload', handleBeforeUnload);
       window.removeEventListener('pagehide', handleBeforeUnload);
-      document.removeEventListener('freeze', handleFreeze);
     };
-  }, [location]);
+  }, [location, navigate]);
 
   return null;
 };
