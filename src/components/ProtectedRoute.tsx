@@ -1,21 +1,13 @@
 import { useAuth } from '@/hooks/useAuth'
 import { Navigate } from 'react-router-dom'
-import { useMiniPay } from '@/hooks/useMiniPay'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
   redirectTo?: string
-  /** If true, allows unauthenticated access in MiniPay environment (for browsing) */
-  allowMiniPayBrowsing?: boolean
 }
 
-export const ProtectedRoute = ({ 
-  children, 
-  redirectTo = '/login',
-  allowMiniPayBrowsing = false 
-}: ProtectedRouteProps) => {
+export const ProtectedRoute = ({ children, redirectTo = '/login' }: ProtectedRouteProps) => {
   const { user, loading, session } = useAuth()
-  const { isMiniPay } = useMiniPay()
 
   // Show loading while auth is being determined
   if (loading) {
@@ -27,11 +19,6 @@ export const ProtectedRoute = ({
         </div>
       </div>
     )
-  }
-
-  // In MiniPay environment with browsing allowed, skip auth check
-  if (isMiniPay && allowMiniPayBrowsing && !user && !session) {
-    return <>{children}</>
   }
 
   // Only redirect if we're sure there's no valid session

@@ -3,7 +3,6 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { MiniPayAuthWrapper } from "@/components/MiniPayAuthWrapper";
 import SmartAIAssistant from "@/components/SmartAIAssistant";
 import WalletInitializer from "@/components/WalletInitializer";
 import GlobalCallManager from "@/components/GlobalCallManager";
@@ -105,16 +104,15 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <WebRTCProvider>
-          <MiniPayAuthWrapper>
-            <AppStateManager />
-            <WalletInitializer />
-            <GlobalCallManager />
-            <GlobalPresenceManager />
-            <QuidaxRampManager />
-            <PWAInstallPrompt />
-            <PushNotificationManager />
-            <Routes>
-              <Route path="/" element={<Index />} />
+          <AppStateManager />
+          <WalletInitializer />
+          <GlobalCallManager />
+          <GlobalPresenceManager />
+          <QuidaxRampManager />
+          <PWAInstallPrompt />
+          <PushNotificationManager />
+          <Routes>
+            <Route path="/" element={<Index />} />
           <Route path="/install" element={<InstallApp />} />
           <Route path="/welcome" element={<Welcome />} />
           <Route path="/login" element={<Login />} />
@@ -122,21 +120,20 @@ const App = () => (
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
-          <Route path="/feed" element={<ProtectedRoute allowMiniPayBrowsing><MainFeed /></ProtectedRoute>} />
+          <Route path="/feed" element={<ProtectedRoute><MainFeed /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-          <Route path="/profile/:userId" element={<ProtectedRoute allowMiniPayBrowsing><Profile /></ProtectedRoute>} />
-          <Route path="/expert/:userId" element={<ProtectedRoute allowMiniPayBrowsing><ExpertProfile /></ProtectedRoute>} />
+          <Route path="/profile/:userId" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+          <Route path="/expert/:userId" element={<ProtectedRoute><ExpertProfile /></ProtectedRoute>} />
           <Route path="/expert-application" element={<ProtectedRoute><ExpertApplication /></ProtectedRoute>} />
           <Route path="/admin/expert-applications" element={<ProtectedRoute><AdminExpertApplications /></ProtectedRoute>} />
           <Route path="/admin/dashboard" element={<ProtectedRoute><EnhancedAdminDashboard /></ProtectedRoute>} />
-          <Route path="/search" element={<ProtectedRoute allowMiniPayBrowsing><Search /></ProtectedRoute>} />
+          <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
           <Route path="/post-job" element={<ProtectedRoute><PostJob /></ProtectedRoute>} />
-          {/* Browsable routes in MiniPay without auth */}
-          <Route path="/experts" element={<ProtectedRoute allowMiniPayBrowsing><Experts /></ProtectedRoute>} />
+          <Route path="/experts" element={<ProtectedRoute><Experts /></ProtectedRoute>} />
           <Route path="/expert-verification" element={<ProtectedRoute><ExpertVerification /></ProtectedRoute>} />
-          <Route path="/expert-class" element={<ProtectedRoute allowMiniPayBrowsing><ExpertClass /></ProtectedRoute>} />
+          <Route path="/expert-class" element={<ProtectedRoute><ExpertClass /></ProtectedRoute>} />
           <Route path="/expert-class/room/:classId" element={<ProtectedRoute><ClassRoom /></ProtectedRoute>} />
-          <Route path="/jobs" element={<ProtectedRoute allowMiniPayBrowsing><Jobs /></ProtectedRoute>} />
+          <Route path="/jobs" element={<ProtectedRoute><Jobs /></ProtectedRoute>} />
           <Route path="/my-gigs" element={<ProtectedRoute><MyGigs /></ProtectedRoute>} />
           <Route path="/edit-gig/:gigId" element={<ProtectedRoute><EditGig /></ProtectedRoute>} />
           <Route path="/surveys" element={<ProtectedRoute><Surveys /></ProtectedRoute>} />
@@ -147,10 +144,10 @@ const App = () => (
           <Route path="/earn/social-tasks" element={<ProtectedRoute><SocialMediaTasks /></ProtectedRoute>} />
           <Route path="/earn/referral-tasks" element={<ProtectedRoute><ReferralTasks /></ProtectedRoute>} />
           <Route path="/referral-tasks" element={<ProtectedRoute><ReferralTasks /></ProtectedRoute>} />
-          <Route path="/digital-products" element={<ProtectedRoute allowMiniPayBrowsing><DigitalProducts /></ProtectedRoute>} />
-          <Route path="/products/:id" element={<ProtectedRoute allowMiniPayBrowsing><ProductDetail /></ProtectedRoute>} />
-          <Route path="/courses" element={<ProtectedRoute allowMiniPayBrowsing><Courses /></ProtectedRoute>} />
-          <Route path="/courses/:id" element={<ProtectedRoute allowMiniPayBrowsing><CourseDetail /></ProtectedRoute>} />
+          <Route path="/digital-products" element={<ProtectedRoute><DigitalProducts /></ProtectedRoute>} />
+          <Route path="/products/:id" element={<ProtectedRoute><ProductDetail /></ProtectedRoute>} />
+          <Route path="/courses" element={<ProtectedRoute><Courses /></ProtectedRoute>} />
+          <Route path="/courses/:id" element={<ProtectedRoute><CourseDetail /></ProtectedRoute>} />
           <Route path="/fundraising" element={<Fundraising />} />
           <Route path="/fundraising/:id" element={<FundraisingDetail />} />
           <Route path="/faq" element={<FAQ />} />
@@ -199,12 +196,11 @@ const App = () => (
           <Route path="/campaign/:campaignId" element={<PublicCampaign />} />
           <Route path="/sitemap" element={<Sitemap />} />
           
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-            {/* AI Assistant - Available on all protected routes */}
-            <SmartAIAssistant />
-          </MiniPayAuthWrapper>
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+          {/* AI Assistant - Available on all protected routes */}
+          <SmartAIAssistant />
         </WebRTCProvider>
       </BrowserRouter>
     </TooltipProvider>
