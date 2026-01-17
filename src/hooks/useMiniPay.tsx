@@ -59,12 +59,13 @@ export const useMiniPay = (): UseMiniPayReturn => {
   const initRef = useRef(false);
 
   // Fetch user's assigned Celo wallet address from their profile
+  // NOTE: Only use celo_wallet_address - minipay_address column doesn't exist!
   const fetchUserWalletAddress = async (miniPayAddress: string): Promise<string | null> => {
     try {
       const { data: profile } = await supabase
         .from('profiles')
         .select('celo_wallet_address, user_id')
-        .or(`celo_wallet_address.ilike.${miniPayAddress.toLowerCase()},minipay_address.ilike.${miniPayAddress.toLowerCase()}`)
+        .ilike('celo_wallet_address', miniPayAddress.toLowerCase())
         .maybeSingle();
 
       if (profile?.celo_wallet_address) {
