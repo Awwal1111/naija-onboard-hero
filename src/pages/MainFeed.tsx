@@ -26,53 +26,15 @@ import { MoreMenuDrawer } from '@/components/MoreMenuDrawer'
 import { UnifiedSearchBar } from '@/components/UnifiedSearchBar'
 import { NCConverter } from '@/components/NCConverter'
 import { QuickOnboarding } from '@/components/QuickOnboarding'
-import { useMiniPayContext } from '@/components/MiniPayAuthWrapper'
 
 import { supabase } from '@/integrations/supabase/client'
 
 const MainFeed = () => {
   const navigate = useNavigate()
   const location = useLocation()
-  const { user } = useAuth() // NOTE: Supabase auth is ignored in MiniPay
+  const { user } = useAuth()
   const { profile } = useProfile()
   const { isComplete, missingFields, shouldShowDialog } = useProfileCompletion()
-  
-  // MiniPay context for wallet-based identity
-  const { 
-    isMiniPay, 
-    userId: miniPayUserId, 
-    userProfile: miniPayProfile, 
-    isRegistered, 
-    isInitializing,
-    initializeWallet 
-  } = useMiniPayContext()
-  
-  // Effective user ID - either Supabase auth or MiniPay wallet-based
-  const effectiveUserId = isMiniPay ? miniPayUserId : user?.id
-  
-  // 🔧 CRITICAL FIX: Auto-initialize MiniPay wallet on feed page
-  // This is a FALLBACK - silent rehydration should handle most cases
-  // But if it fails, this ensures wallet user is created/loaded
-  const [miniPayAttempted, setMiniPayAttempted] = useState(false)
-  const [miniPayTimeout, setMiniPayTimeout] = useState(false)
-  
-  useEffect(() => {
-    if (isMiniPay && !isRegistered && !isInitializing && !miniPayAttempted) {
-      console.log('[MainFeed] MiniPay detected but not registered - attempting initialization...')
-      setMiniPayAttempted(true)
-      initializeWallet()
-      
-      // ✅ TIMEOUT FALLBACK: If registration still fails after 5 seconds, 
-      // stop blocking and show feed anyway - onboarding can handle the rest
-      const timeout = setTimeout(() => {
-        console.log('[MainFeed] MiniPay timeout reached - showing feed anyway')
-        setMiniPayTimeout(true)
-      }, 5000)
-      
-      return () => clearTimeout(timeout)
-    }
-  }, [isMiniPay, isRegistered, isInitializing, initializeWallet, miniPayAttempted])
-  
   const { 
     posts, 
     stories,
@@ -100,24 +62,18 @@ const MainFeed = () => {
   const [showOnboarding, setShowOnboarding] = useState(false)
   
 
-  // Check for onboarding - works for both MiniPay and regular users
+  // Check for onboarding
   useEffect(() => {
-    // For MiniPay users, check if profile is incomplete
-    if (isMiniPay && isRegistered && miniPayProfile) {
-      if (!miniPayProfile.profileCompleted) {
-        setShowOnboarding(true)
-      }
-      return
-    }
-    
-    // For regular users
     if (profile && user) {
+      // Cast profile to any to access new columns
       const p = profile as any
+      
+      // Show onboarding if not completed
       if (p.onboarding_completed === false && !p.full_name) {
         setShowOnboarding(true)
       }
     }
-  }, [profile, user, isMiniPay, isRegistered, miniPayProfile])
+  }, [profile, user])
 
   const handleOnboardingComplete = () => {
     setShowOnboarding(false)
@@ -245,47 +201,6 @@ const MainFeed = () => {
     toggleLike(postId)
   }
 
-  // 🔧 LOADING GUARD: Show connecting state while MiniPay wallet initializes
-  // This is shown ONLY while actively initializing (brief moment)
-  if (isMiniPay && isInitializing) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center pb-20">
-        <div className="text-center">
-          <Wallet className="w-8 h-8 text-primary mx-auto mb-4 animate-pulse" />
-          <p className="text-text-secondary">Connecting wallet...</p>
-        </div>
-      </div>
-    )
-  }
-
-  // 🔧 LOADING GUARD: Brief state while MiniPay registration completes
-  // This should only show for 1-2 seconds max since silent rehydration creates users immediately
-  // ESCAPE HATCH: If timeout (5s) is reached, stop blocking and show feed anyway
-  const shouldBlockForMiniPay = isMiniPay && !isRegistered && !miniPayTimeout
-  
-  if (shouldBlockForMiniPay && isInitializing) {
-    // Still actively trying to connect/register
-    return null // Already handled above by isInitializing check
-  }
-  
-  // If MiniPay is detected, not registered, and we haven't hit timeout yet, show setup screen
-  // BUT only if we haven't attempted yet (first load) or are still initializing
-  if (shouldBlockForMiniPay && !isInitializing) {
-    // Briefly show setup screen - but with the fix, this should resolve in 1-2 seconds
-    // The useEffect will trigger initializeWallet which will create/load user
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center pb-20">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 text-primary mx-auto mb-4 animate-spin" />
-          <p className="text-text-secondary">Setting up your account...</p>
-        </div>
-      </div>
-    )
-  }
-  
-  // ✅ After timeout OR registration complete, show feed
-  // This prevents infinite "Setting up your account..." loops
-
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center pb-20">
@@ -370,7 +285,7 @@ const MainFeed = () => {
             stories={stories}
             onCreateStory={handleCreateStory}
             onViewStory={viewStory}
-            currentUserId={effectiveUserId}
+            currentUserId={user?.id}
           />
 
           {/* Create Post Bar */}
@@ -380,9 +295,9 @@ const MainFeed = () => {
               className="flex items-center gap-3 cursor-pointer"
             >
               <Avatar className="h-10 w-10 ring-2 ring-primary/20">
-                <AvatarImage src={isMiniPay ? miniPayProfile?.avatarUrl : profile?.profile_picture_url} />
+                <AvatarImage src={profile?.profile_picture_url} />
                 <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
-                  {(isMiniPay ? miniPayProfile?.fullName?.charAt(0) : profile?.full_name?.charAt(0)) || 'U'}
+                  {profile?.full_name?.charAt(0) || 'U'}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 py-2.5 px-4 bg-muted/50 hover:bg-muted rounded-full transition-colors">
@@ -442,7 +357,7 @@ const MainFeed = () => {
                       onComment={addComment}
                       onJobApply={handleJobApply}
                       onProfileClick={handleProfileClick}
-                      currentUserId={effectiveUserId}
+                      currentUserId={user?.id}
                     />
                   ))}
                   <div className="py-8 text-center bg-muted/30">

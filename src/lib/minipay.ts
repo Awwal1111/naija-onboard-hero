@@ -1,225 +1,157 @@
-// MiniPay Detection and Integration Utilities using Viem
-import { createWalletClient, custom, formatUnits, parseUnits, encodeFunctionData, type Hex } from 'viem';
-import { celo } from 'viem/chains';
+// MiniPay Detection and Integration Utilities
 
-// ERC20 Transfer ABI
-const erc20Abi = [
-  {
-    name: 'transfer',
-    type: 'function',
-    stateMutability: 'nonpayable',
-    inputs: [
-      { name: 'to', type: 'address' },
-      { name: 'amount', type: 'uint256' }
-    ],
-    outputs: [{ name: '', type: 'bool' }]
-  }
-] as const;
-
-// Contract addresses on Celo Mainnet
-export const CUSD_ADDRESS = '0x765DE816845861e75A25fCA122bb6898B8B1282a' as const;
-export const USDT_ADDRESS = '0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e' as const;
-export const USDC_ADDRESS = '0xcebA9300f2b948710d2653dD7B07f33A8B32118C' as const;
+export interface MiniPayProvider {
+  isMiniPay: boolean;
+  request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+  on: (event: string, callback: (...args: unknown[]) => void) => void;
+  removeListener: (event: string, callback: (...args: unknown[]) => void) => void;
+}
 
 declare global {
   interface Window {
-    ethereum?: {
-      isMiniPay?: boolean;
+    ethereum?: MiniPayProvider & {
       isMetaMask?: boolean;
-      request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
-      on: (event: string, callback: (...args: unknown[]) => void) => void;
-      removeListener: (event: string, callback: (...args: unknown[]) => void) => void;
     };
   }
 }
 
 /**
- * SYNCHRONOUS MiniPay detection - NO async operations
- * Safe to call during component initialization
- */
-export const detectMiniPaySync = (): { isMiniPay: boolean; hasProvider: boolean } => {
-  if (typeof window === 'undefined') {
-    return { isMiniPay: false, hasProvider: false }
-  }
-  
-  try {
-    const hasProvider = !!window.ethereum
-    
-    // Primary check: MiniPay sets this flag
-    if (window.ethereum?.isMiniPay === true) {
-      return { isMiniPay: true, hasProvider: true }
-    }
-    
-    // Secondary check: User agent contains minipay or opera mini
-    const userAgent = navigator.userAgent.toLowerCase()
-    if (userAgent.includes('minipay') || userAgent.includes('opera mini')) {
-      return { isMiniPay: true, hasProvider }
-    }
-    
-    // Tertiary check: Has ethereum but not MetaMask (likely MiniPay) on mobile
-    if (window.ethereum && !window.ethereum.isMetaMask) {
-      const isMobile = /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent)
-      if (isMobile) {
-        return { isMiniPay: true, hasProvider: true }
-      }
-    }
-    
-    return { isMiniPay: false, hasProvider }
-  } catch {
-    return { isMiniPay: false, hasProvider: false }
-  }
-}
-
-/**
  * Detect if the app is running inside MiniPay browser
- * MiniPay injects window.ethereum with isMiniPay = true
- * @deprecated Use detectMiniPaySync for initialization
  */
 export const isMiniPayEnvironment = (): boolean => {
-  return detectMiniPaySync().isMiniPay
-};
-
-/**
- * Check if wallet provider exists (window.ethereum)
- */
-export const hasWalletProvider = (): boolean => {
-  return detectMiniPaySync().hasProvider
-};
-
-/**
- * Create viem wallet client for MiniPay/Celo
- */
-export const createMiniPayWalletClient = () => {
-  if (!window.ethereum) return null;
+  if (typeof window === 'undefined') return false;
   
-  return createWalletClient({
-    chain: celo,
-    transport: custom(window.ethereum)
-  });
-};
-
-/**
- * Get connected wallet address using viem
- * In MiniPay, the wallet is auto-connected
- * NOTE: This is an ASYNC function - only call on user action!
- */
-export const getMiniPayAccount = async (): Promise<string | null> => {
-  try {
-    const client = createMiniPayWalletClient();
-    if (!client) return null;
-    
-    const addresses = await client.getAddresses();
-    return addresses[0] || null;
-  } catch (error) {
-    console.error('[MiniPay] Failed to get account:', error);
-    return null;
+  // Check for MiniPay-specific provider
+  const provider = window.ethereum;
+  if (provider?.isMiniPay) return true;
+  
+  // Check user agent for Opera Mini/MiniPay
+  const userAgent = navigator.userAgent.toLowerCase();
+  if (userAgent.includes('minipay') || userAgent.includes('opera mini')) return true;
+  
+  // Check for Celo-specific properties
+  if (provider && !provider.isMetaMask) {
+    // Additional heuristics for MiniPay detection
+    return true;
   }
+  
+  return false;
 };
 
 /**
- * Request account access (for non-MiniPay environments)
- * NOTE: This is an ASYNC function - only call on user action!
+ * Get MiniPay provider if available
+ */
+export const getMiniPayProvider = (): MiniPayProvider | null => {
+  if (typeof window === 'undefined') return null;
+  
+  const provider = window.ethereum;
+  if (provider?.isMiniPay) return provider;
+  
+  return null;
+};
+
+/**
+ * Request account access from MiniPay
  */
 export const connectMiniPay = async (): Promise<string | null> => {
-  if (!window.ethereum) return null;
+  const provider = getMiniPayProvider();
+  if (!provider) return null;
   
   try {
-    // Request accounts - in MiniPay this returns immediately
-    const accounts = await window.ethereum.request({ 
+    const accounts = await provider.request({ 
       method: 'eth_requestAccounts' 
     }) as string[];
     
     return accounts[0] || null;
   } catch (error) {
-    console.error('[MiniPay] Failed to connect:', error);
+    console.error('Failed to connect to MiniPay:', error);
     return null;
   }
 };
 
 /**
- * Get cUSD balance for an address using raw eth_call
+ * Get current connected account
  */
-export const getMiniPayCUSDBalance = async (address: string): Promise<string> => {
-  if (!window.ethereum) return '0';
+export const getMiniPayAccount = async (): Promise<string | null> => {
+  const provider = getMiniPayProvider();
+  if (!provider) return null;
   
   try {
-    // balanceOf(address) function selector + padded address
-    const data = `0x70a08231000000000000000000000000${address.slice(2).toLowerCase()}`;
+    const accounts = await provider.request({ 
+      method: 'eth_accounts' 
+    }) as string[];
     
-    const balance = await window.ethereum.request({
+    return accounts[0] || null;
+  } catch (error) {
+    console.error('Failed to get MiniPay accounts:', error);
+    return null;
+  }
+};
+
+/**
+ * Get cUSD balance from MiniPay wallet
+ */
+export const getMiniPayCUSDBalance = async (address: string): Promise<string> => {
+  const provider = getMiniPayProvider();
+  if (!provider) return '0';
+  
+  try {
+    // cUSD contract address on Celo mainnet
+    const CUSD_ADDRESS = '0x765DE816845861e75A25fCA122bb6898B8B1282a';
+    
+    // ERC20 balanceOf call
+    const data = `0x70a08231000000000000000000000000${address.slice(2)}`;
+    
+    const balance = await provider.request({
       method: 'eth_call',
       params: [{ to: CUSD_ADDRESS, data }, 'latest']
     }) as string;
     
+    // Convert from hex to decimal and format
     const balanceWei = BigInt(balance);
-    return formatUnits(balanceWei, 18);
+    const balanceFormatted = Number(balanceWei) / 1e18;
+    
+    return balanceFormatted.toFixed(2);
   } catch (error) {
-    console.error('[MiniPay] Failed to get cUSD balance:', error);
+    console.error('Failed to get cUSD balance:', error);
     return '0';
   }
 };
 
 /**
- * Get USDT balance for an address
- */
-export const getMiniPayUSDTBalance = async (address: string): Promise<string> => {
-  if (!window.ethereum) return '0';
-  
-  try {
-    const data = `0x70a08231000000000000000000000000${address.slice(2).toLowerCase()}`;
-    
-    const balance = await window.ethereum.request({
-      method: 'eth_call',
-      params: [{ to: USDT_ADDRESS, data }, 'latest']
-    }) as string;
-    
-    const balanceWei = BigInt(balance);
-    return formatUnits(balanceWei, 6); // USDT has 6 decimals
-  } catch (error) {
-    console.error('[MiniPay] Failed to get USDT balance:', error);
-    return '0';
-  }
-};
-
-/**
- * Send cUSD payment via MiniPay using viem
+ * Send cUSD payment via MiniPay
  */
 export const sendCUSDViaMiniPay = async (
   toAddress: string, 
   amountInCUSD: number
 ): Promise<{ success: boolean; txHash?: string; error?: string }> => {
-  if (!window.ethereum) {
-    return { success: false, error: 'Wallet not available' };
+  const provider = getMiniPayProvider();
+  if (!provider) {
+    return { success: false, error: 'MiniPay not available' };
   }
   
   try {
-    // Get connected account
-    const accounts = await window.ethereum.request({ 
-      method: 'eth_accounts' 
-    }) as string[];
-    
-    const fromAddress = accounts[0];
+    const fromAddress = await getMiniPayAccount();
     if (!fromAddress) {
       return { success: false, error: 'No connected account' };
     }
     
-    // Encode the transfer function call
-    const data = encodeFunctionData({
-      abi: erc20Abi,
-      functionName: 'transfer',
-      args: [
-        toAddress as `0x${string}`,
-        parseUnits(amountInCUSD.toString(), 18)
-      ]
-    });
+    // cUSD contract address on Celo mainnet
+    const CUSD_ADDRESS = '0x765DE816845861e75A25fCA122bb6898B8B1282a';
     
-    // Send legacy transaction (MiniPay only supports legacy)
-    const txHash = await window.ethereum.request({
+    // Convert amount to wei (18 decimals)
+    const amountWei = BigInt(Math.floor(amountInCUSD * 1e18));
+    const amountHex = '0x' + amountWei.toString(16).padStart(64, '0');
+    
+    // ERC20 transfer function signature + params
+    const transferData = `0xa9059cbb000000000000000000000000${toAddress.slice(2)}${amountHex.slice(2)}`;
+    
+    const txHash = await provider.request({
       method: 'eth_sendTransaction',
       params: [{
         from: fromAddress,
         to: CUSD_ADDRESS,
-        data,
+        data: transferData,
         gas: '0x30d40' // 200000 gas limit
       }]
     }) as string;
@@ -227,79 +159,22 @@ export const sendCUSDViaMiniPay = async (
     return { success: true, txHash };
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Transaction failed';
-    console.error('[MiniPay] cUSD Transaction failed:', error);
+    console.error('MiniPay transaction failed:', error);
     return { success: false, error: errorMessage };
   }
 };
 
 /**
- * Send USDT payment via MiniPay
- */
-export const sendUSDTViaMiniPay = async (
-  toAddress: string, 
-  amountInUSDT: number
-): Promise<{ success: boolean; txHash?: string; error?: string }> => {
-  if (!window.ethereum) {
-    return { success: false, error: 'Wallet not available' };
-  }
-  
-  try {
-    // Get connected account
-    const accounts = await window.ethereum.request({ 
-      method: 'eth_accounts' 
-    }) as string[];
-    
-    const fromAddress = accounts[0];
-    if (!fromAddress) {
-      return { success: false, error: 'No connected account' };
-    }
-    
-    // Encode the transfer function call - USDT has 6 decimals
-    const data = encodeFunctionData({
-      abi: erc20Abi,
-      functionName: 'transfer',
-      args: [
-        toAddress as `0x${string}`,
-        parseUnits(amountInUSDT.toString(), 6)
-      ]
-    });
-    
-    // Send legacy transaction (MiniPay only supports legacy)
-    const txHash = await window.ethereum.request({
-      method: 'eth_sendTransaction',
-      params: [{
-        from: fromAddress,
-        to: USDT_ADDRESS,
-        data,
-        gas: '0x30d40' // 200000 gas limit
-      }]
-    }) as string;
-    
-    return { success: true, txHash };
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Transaction failed';
-    console.error('[MiniPay] USDT Transaction failed:', error);
-    return { success: false, error: errorMessage };
-  }
-};
-
-/**
- * MiniPay-optimized transaction for deposits (sends to user wallet, not master)
+ * MiniPay-optimized transaction for deposits
  */
 export const depositViaMiniPay = async (
-  userWalletAddress: string,
+  masterWalletAddress: string,
   amountInNGN: number,
-  exchangeRate: number = 1600, // NGN per USD
-  token: 'cusd' | 'usdt' = 'cusd'
+  exchangeRate: number = 1600 // NGN per cUSD
 ): Promise<{ success: boolean; txHash?: string; ncAmount?: number; error?: string }> => {
-  const amountInStable = amountInNGN / exchangeRate;
+  const amountInCUSD = amountInNGN / exchangeRate;
   
-  let result;
-  if (token === 'usdt') {
-    result = await sendUSDTViaMiniPay(userWalletAddress, amountInStable);
-  } else {
-    result = await sendCUSDViaMiniPay(userWalletAddress, amountInStable);
-  }
+  const result = await sendCUSDViaMiniPay(masterWalletAddress, amountInCUSD);
   
   if (result.success) {
     return {

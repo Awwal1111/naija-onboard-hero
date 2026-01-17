@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from './useAuth'
 import { useToast } from './use-toast'
-import { useMiniPayContext } from '@/components/MiniPayAuthWrapper'
 
 export interface Profile {
   id: string
@@ -65,55 +64,14 @@ export const useProfile = () => {
   const { toast } = useToast()
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
-  
-  // MiniPay context - get userId from wallet-based auth
-  const { isMiniPay, userId: miniPayUserId, userProfile: miniPayProfile, isRegistered } = useMiniPayContext()
-
-  // Determine the effective user ID (Supabase auth OR MiniPay wallet-based)
-  const effectiveUserId = isMiniPay ? miniPayUserId : user?.id
 
   useEffect(() => {
-    // For MiniPay registered users, convert userProfile to Profile format
-    if (isMiniPay && isRegistered && miniPayProfile) {
-      // Fetch full profile from DB using MiniPay userId
-      fetchMiniPayProfile()
-      return
-    }
-    
-    // Standard Supabase auth flow
     if (user) {
       fetchProfile()
-    } else if (!isMiniPay) {
+    } else {
       setLoading(false)
     }
-  }, [user, isMiniPay, miniPayUserId, isRegistered])
-
-  const fetchMiniPayProfile = async () => {
-    if (!miniPayUserId) {
-      setLoading(false)
-      return
-    }
-
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', miniPayUserId)
-        .single()
-
-      if (error) {
-        console.error('[useProfile] MiniPay profile fetch error:', error)
-        setLoading(false)
-        return
-      }
-
-      setProfile(data)
-    } catch (error) {
-      console.error('Error fetching MiniPay profile:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  }, [user])
 
   const fetchProfile = async () => {
     if (!user) return
@@ -176,8 +134,7 @@ export const useProfile = () => {
   }
 
   const updateProfile = async (updates: Partial<Profile>) => {
-    // Use effectiveUserId for both MiniPay and regular users
-    if (!effectiveUserId) return { success: false, error: 'User not authenticated' }
+    if (!user) return { success: false, error: 'User not authenticated' }
 
     try {
       setLoading(true)
@@ -186,7 +143,7 @@ export const useProfile = () => {
       const { data: existingProfile } = await supabase
         .from('profiles')
         .select('id')
-        .eq('user_id', effectiveUserId)
+        .eq('user_id', user.id)
         .maybeSingle()
 
       let result
@@ -195,14 +152,14 @@ export const useProfile = () => {
         result = await supabase
           .from('profiles')
           .update(updates)
-          .eq('user_id', effectiveUserId)
+          .eq('user_id', user.id)
           .select()
           .single()
       } else {
         // Insert new profile if it doesn't exist
         result = await supabase
           .from('profiles')
-          .insert([{ user_id: effectiveUserId, ...updates }])
+          .insert([{ user_id: user.id, ...updates }])
           .select()
           .single()
       }

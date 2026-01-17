@@ -1,22 +1,15 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/integrations/supabase/client'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '@/hooks/use-toast'
-import { detectMiniPaySync } from '@/lib/minipay'
-
-// SYNC check at module load - NO async calls
-const isMiniPayEnv = detectMiniPaySync().isMiniPay
 
 export const useAuth = () => {
-  // In MiniPay, we skip most auth logic - wallet is identity
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
-  // In MiniPay, loading is always false to prevent flickering
-  const [loading, setLoading] = useState(!isMiniPayEnv)
+  const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
   const { toast } = useToast()
-  const hasInitializedRef = useRef(false)
 
   const authPaths = ['/login', '/signup', '/forgot-password', '/reset-password']
   const mainAppPaths = ['/feed', '/profile', '/chat', '/earn', '/experts', '/jobs']
@@ -75,16 +68,6 @@ export const useAuth = () => {
   }
 
   useEffect(() => {
-    // SKIP all auth logic in MiniPay - wallet is identity
-    if (isMiniPayEnv) {
-      setLoading(false)
-      return
-    }
-
-    // Prevent double initialization
-    if (hasInitializedRef.current) return
-    hasInitializedRef.current = true
-
     let isInitialLoad = true
     let refreshTimer: NodeJS.Timeout | null = null
     

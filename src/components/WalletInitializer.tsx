@@ -1,21 +1,12 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect } from 'react'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
-import { detectMiniPaySync } from '@/lib/minipay'
-
-// SYNC check at module load
-const isMiniPayEnv = detectMiniPaySync().isMiniPay
 
 const WalletInitializer: React.FC = () => {
   const { user } = useAuth()
-  const hasInitializedRef = useRef(false)
 
   useEffect(() => {
-    // SKIP in MiniPay - wallet is handled by MiniPayAuthWrapper
-    if (isMiniPayEnv) return
     if (!user) return
-    if (hasInitializedRef.current) return
-    hasInitializedRef.current = true
 
     const initializeWallet = async () => {
       try {
