@@ -140,11 +140,11 @@ export const MiniPayAuthWrapper = ({ children }: MiniPayAuthWrapperProps) => {
           userProfile: null as MiniPayUserProfile | null
         }
 
-        // Query profile by wallet address
+        // Query profile by wallet address (using ONLY celo_wallet_address - minipay_address column doesn't exist)
         const { data: existingProfile } = await supabase
           .from('profiles')
           .select('user_id, full_name, profile_picture_url, wallet_balance, profession, onboarding_completed')
-          .or(`celo_wallet_address.ilike.${address.toLowerCase()},minipay_address.ilike.${address.toLowerCase()}`)
+          .ilike('celo_wallet_address', address.toLowerCase())
           .maybeSingle()
 
         if (existingProfile) {
@@ -181,7 +181,6 @@ export const MiniPayAuthWrapper = ({ children }: MiniPayAuthWrapperProps) => {
             .from('profiles')
             .insert({
               user_id: walletUserId,
-              minipay_address: address.toLowerCase(),
               celo_wallet_address: address.toLowerCase(),
               full_name: null,
               profession: null,
@@ -241,12 +240,11 @@ export const MiniPayAuthWrapper = ({ children }: MiniPayAuthWrapperProps) => {
       // Generate a proper UUID using crypto API
       const walletUserId = crypto.randomUUID()
       
-      // Create minimal profile record
+      // Create minimal profile record (only celo_wallet_address - minipay_address column doesn't exist)
       const { data: newProfile, error } = await supabase
         .from('profiles')
         .insert({
           user_id: walletUserId,
-          minipay_address: walletAddress.toLowerCase(),
           celo_wallet_address: walletAddress.toLowerCase(),
           full_name: null,
           profession: null,
@@ -295,11 +293,11 @@ export const MiniPayAuthWrapper = ({ children }: MiniPayAuthWrapperProps) => {
     }
 
     try {
-      // Check if wallet already exists in profiles
+      // Check if wallet already exists in profiles (using ONLY celo_wallet_address)
       const { data: existingProfile } = await supabase
         .from('profiles')
         .select('user_id, full_name, profile_picture_url, wallet_balance, profession, onboarding_completed')
-        .or(`celo_wallet_address.ilike.${address.toLowerCase()},minipay_address.ilike.${address.toLowerCase()}`)
+        .ilike('celo_wallet_address', address.toLowerCase())
         .maybeSingle()
 
       if (existingProfile) {
@@ -435,7 +433,7 @@ export const MiniPayAuthWrapper = ({ children }: MiniPayAuthWrapperProps) => {
       const { data: profile } = await supabase
         .from('profiles')
         .select('user_id, full_name, profile_picture_url, wallet_balance, profession, onboarding_completed')
-        .or(`celo_wallet_address.ilike.${state.walletAddress.toLowerCase()},minipay_address.ilike.${state.walletAddress.toLowerCase()}`)
+        .ilike('celo_wallet_address', state.walletAddress.toLowerCase())
         .maybeSingle()
 
       if (profile) {
