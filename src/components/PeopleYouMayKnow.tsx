@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
-import { UserPlus, Check } from 'lucide-react'
-import { Card, CardContent } from '@/components/ui/card'
+import { UserPlus, Check, ChevronRight } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel'
@@ -15,6 +16,7 @@ interface PeopleYouMayKnowProps {
 }
 
 const PeopleYouMayKnow: React.FC<PeopleYouMayKnowProps> = ({ onProfileClick }) => {
+  const navigate = useNavigate()
   const { user } = useAuth()
   const { sendConnectionRequest } = useConnections()
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null)
@@ -23,6 +25,10 @@ const PeopleYouMayKnow: React.FC<PeopleYouMayKnowProps> = ({ onProfileClick }) =
 
   // Use personalized connection algorithm
   const { connections: suggestions, loading } = usePersonalizedConnections(10)
+  
+  const handleSeeAll = () => {
+    navigate('/connections?tab=suggestions')
+  }
 
   const handleConnect = async (userId: string) => {
     const result = await sendConnectionRequest(userId)
@@ -53,8 +59,19 @@ const PeopleYouMayKnow: React.FC<PeopleYouMayKnowProps> = ({ onProfileClick }) =
 
   return (
     <Card className="mb-6 overflow-hidden">
-      <CardContent className="p-4">
-        <h3 className="text-lg font-semibold mb-4">People You May Know</h3>
+      <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between">
+        <h3 className="text-lg font-semibold">People You May Know</h3>
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={handleSeeAll}
+          className="text-primary hover:text-primary/80 gap-1"
+        >
+          See All
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </CardHeader>
+      <CardContent className="p-4 pt-2">
 
         <Carousel
           opts={{
