@@ -7,8 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { useProfile } from '@/hooks/useProfile'
+import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/use-toast'
 import { useNigerianStates } from '@/hooks/useNigerianStates'
+import { useMiniPayContext } from '@/components/MiniPayAuthWrapper'
 import { 
   User, 
   MapPin, 
@@ -20,132 +22,201 @@ import {
   Award,
   DollarSign,
   Users,
-  BookOpen
+  BookOpen,
+  Globe,
+  Search,
+  Bot,
+  UserCheck,
+  ChevronLeft
 } from 'lucide-react'
+
+// Popular countries list
+const COUNTRIES = [
+  'Nigeria',
+  'United States',
+  'United Kingdom',
+  'Canada',
+  'Ghana',
+  'Kenya',
+  'South Africa',
+  'India',
+  'Germany',
+  'France',
+  'Australia',
+  'United Arab Emirates',
+  'Saudi Arabia',
+  'Netherlands',
+  'Singapore',
+  'Other'
+]
+
+type AccountType = 'freelancer' | 'client'
+type UserGoal = 'freelancer' | 'exploring' | 'hire'
 
 const Onboarding = () => {
   const navigate = useNavigate()
   const { toast } = useToast()
+  const { user } = useAuth()
   const { profile, updateProfile } = useProfile()
   const { states, lgas, loadingStates, loadingLGAs, fetchLGAs } = useNigerianStates()
+  const { isMiniPay, userId: miniPayUserId, refreshUserState } = useMiniPayContext()
+  
   const [currentStep, setCurrentStep] = useState(1)
-  const [selectedState, setSelectedState] = useState('')
-  const [selectedLGA, setSelectedLGA] = useState('')
-  const [area, setArea] = useState('')
-  const [purpose, setPurpose] = useState('')
   const [loading, setLoading] = useState(false)
+  
   const [formData, setFormData] = useState({
     full_name: '',
-    profession: ''
+    account_type: 'freelancer' as AccountType,
+    profession: '',
+    country: '',
+    state: '',
+    lga: '',
+    city: '',
+    remote: false,
+    goal: '' as UserGoal | ''
   })
+
+  const totalSteps = 3
+  const progress = (currentStep / totalSteps) * 100
+  const effectiveUserId = isMiniPay ? miniPayUserId : user?.id
+  const isNigeria = formData.country === 'Nigeria'
 
   // Update form data when profile loads
   useEffect(() => {
     if (profile) {
-      setFormData({
+      setFormData(prev => ({
+        ...prev,
         full_name: profile.full_name || '',
-        profession: profile.profession || ''
-      })
+        profession: profile.profession || '',
+        country: (profile as any).country || '',
+        state: (profile as any).state || (profile as any).state_name || '',
+        lga: (profile as any).lga || (profile as any).lga_name || '',
+        city: (profile as any).city || ''
+      }))
     }
   }, [profile])
 
-  const totalSteps = 3
-  const progress = (currentStep / totalSteps) * 100
-
-  // Fetch LGAs when state changes
+  // Fetch LGAs when state changes (Nigeria only)
   useEffect(() => {
-    if (selectedState) {
-      const stateName = states.find(s => s.id === selectedState)?.name
-      if (stateName) {
-        fetchLGAs(stateName)
+    if (isNigeria && formData.state) {
+      fetchLGAs(formData.state)
+    }
+  }, [formData.state, isNigeria])
+
+  // Auto-set remote for non-Nigeria
+  useEffect(() => {
+    if (formData.country && formData.country !== 'Nigeria') {
+      setFormData(prev => ({ ...prev, remote: true, state: '', lga: '' }))
+    } else if (formData.country === 'Nigeria') {
+      setFormData(prev => ({ ...prev, remote: false, city: '' }))
+    }
+  }, [formData.country])
+
+  const handleNext = () => {
+    // Validation per step
+    if (currentStep === 1) {
+      if (!formData.full_name.trim()) {
+        toast({ title: 'Please enter your name', variant: 'destructive' })
+        return
       }
-      setSelectedLGA('') // Reset LGA when state changes
-    }
-  }, [selectedState, states])
-
-  const handleNext = async () => {
-    if (!selectedState || !selectedLGA || !area.trim()) {
-      toast({
-        title: "Incomplete Information",
-        description: "Please fill in all required fields.",
-        variant: "destructive",
-      })
-      return
-    }
-    
-    setLoading(true)
-    
-    const selectedStateName = states.find(s => s.id === selectedState)?.name
-    const selectedLGAName = lgas.find(l => l.name === selectedLGA)?.name
-    
-    try {
-      // Update the user's profile with all onboarding data
-      const result = await updateProfile({
-        full_name: formData.full_name?.trim() || profile?.full_name || '',
-        profession: formData.profession?.trim() || '',
-        state_name: selectedStateName,
-        lga_name: selectedLGAName,
-        area: area.trim(),
-        state_id: selectedState
-      })
-
-      if (result?.success) {
-        toast({
-          title: "Welcome to NaijaLancers! 🎉",
-          description: "Your profile has been set up successfully.",
-        })
-        
-        // Small delay for toast to show, then navigate
-        setTimeout(() => {
-          navigate('/main-feed')
-        }, 500)
-      } else {
-        throw new Error(result?.error || 'Failed to update profile')
+      if (formData.account_type === 'freelancer' && !formData.profession.trim()) {
+        toast({ title: 'Please enter your profession', variant: 'destructive' })
+        return
       }
-    } catch (error: any) {
-      console.error('Onboarding error:', error)
-      toast({
-        title: "Setup Error",
-        description: error.message || "Failed to complete setup. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleContinue = () => {
-    if (currentStep === 1 && !formData.full_name.trim()) {
-      toast({
-        title: "Name Required",
-        description: "Please enter your full name to continue.",
-        variant: "destructive",
-      })
-      return
-    }
-    
-    if (currentStep === 2 && (!selectedState || !selectedLGA || !area.trim())) {
-      toast({
-        title: "Location Required",
-        description: "Please complete your location information.",
-        variant: "destructive",
-      })
-      return
     }
 
-    if (currentStep === 3 && !purpose) {
-      toast({
-        title: "Purpose Required",
-        description: "Please select why you're joining NaijaLancers.",
-        variant: "destructive",
-      })
-      return
+    if (currentStep === 2) {
+      if (!formData.country) {
+        toast({ title: 'Please select your country', variant: 'destructive' })
+        return
+      }
+      if (isNigeria && !formData.state) {
+        toast({ title: 'Please select your state', variant: 'destructive' })
+        return
+      }
     }
 
     if (currentStep < totalSteps) {
       setCurrentStep(currentStep + 1)
-    } else {
-      handleNext()
+    }
+  }
+
+  const handleGoalSelect = async (goal: UserGoal) => {
+    setFormData(prev => ({ ...prev, goal }))
+    
+    if (goal === 'exploring') {
+      // Just exploring - mark as completed, let them browse
+      toast({
+        title: 'Welcome! 👋',
+        description: 'Feel free to explore. You can update your profile anytime.'
+      })
+      navigate('/feed')
+      return
+    }
+
+    if (goal === 'hire') {
+      // Client flow - save and redirect to AI assistant
+      setLoading(true)
+      try {
+        await updateProfile({
+          full_name: formData.full_name.trim(),
+          profession: formData.profession.trim() || null,
+          country: formData.country,
+          state_name: isNigeria ? formData.state : null,
+          lga_name: isNigeria ? formData.lga : null,
+          city: !isNigeria ? formData.city : null,
+          remote_work: formData.remote,
+          account_type: 'client',
+          onboarding_completed: true
+        } as any)
+
+        if (isMiniPay) {
+          await refreshUserState()
+        }
+
+        toast({
+          title: "Let's find you the perfect freelancer! 🤖",
+          description: "Our AI will help match you with the right talent."
+        })
+
+        navigate('/ai-hire')
+      } catch (error) {
+        toast({ title: 'Error saving profile', variant: 'destructive' })
+      } finally {
+        setLoading(false)
+      }
+      return
+    }
+
+    // Freelancer flow - complete onboarding
+    setLoading(true)
+    try {
+      await updateProfile({
+        full_name: formData.full_name.trim(),
+        profession: formData.profession.trim() || null,
+        country: formData.country,
+        state_name: isNigeria ? formData.state : null,
+        lga_name: isNigeria ? formData.lga : null,
+        city: !isNigeria ? formData.city : null,
+        remote_work: formData.remote,
+        account_type: 'freelancer',
+        onboarding_completed: true
+      } as any)
+
+      if (isMiniPay) {
+        await refreshUserState()
+      }
+
+      toast({
+        title: 'Welcome to NaijaLancers! 🎉',
+        description: "You're all set. Start finding opportunities!"
+      })
+
+      navigate('/feed')
+    } catch (error) {
+      toast({ title: 'Error saving profile', variant: 'destructive' })
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -155,36 +226,9 @@ const Onboarding = () => {
     }
   }
 
-  const purposes = [
-    { 
-      value: 'To Browse', 
-      label: 'Browse & Explore', 
-      description: 'Discover talent and opportunities',
-      icon: Target,
-      color: 'text-blue-500'
-    },
-    { 
-      value: 'To Earn', 
-      label: 'Earn Money', 
-      description: 'Monetize your skills as a freelancer',
-      icon: DollarSign,
-      color: 'text-green-500'
-    },
-    { 
-      value: 'To Hire', 
-      label: 'Hire Talent', 
-      description: 'Find skilled professionals for your projects',
-      icon: Users,
-      color: 'text-purple-500'
-    },
-    { 
-      value: 'To Learn', 
-      label: 'Learn & Grow', 
-      description: 'Develop new skills and advance your career',
-      icon: BookOpen,
-      color: 'text-orange-500'
-    }
-  ]
+  const handleSkip = () => {
+    navigate('/feed')
+  }
 
   const steps = [
     { number: 1, title: 'About You', icon: User },
@@ -200,8 +244,8 @@ const Onboarding = () => {
           <Logo />
         </Link>
         <button
-          onClick={() => navigate('/feed')}
-          className="text-sm text-text-secondary hover:text-primary transition-colors"
+          onClick={handleSkip}
+          className="text-sm text-muted-foreground hover:text-primary transition-colors"
         >
           Skip for now
         </button>
@@ -212,17 +256,17 @@ const Onboarding = () => {
         <div className="space-y-3">
           <Progress value={progress} className="h-2" />
           <div className="flex justify-between items-center">
-            {steps.map((step, idx) => (
+            {steps.map((step) => (
               <div
                 key={step.number}
                 className={`flex items-center gap-2 ${
-                  currentStep >= step.number ? 'text-primary' : 'text-text-secondary'
+                  currentStep >= step.number ? 'text-primary' : 'text-muted-foreground'
                 }`}
               >
                 <div
                   className={`flex items-center justify-center w-8 h-8 rounded-full border-2 transition-all ${
                     currentStep >= step.number
-                      ? 'border-primary bg-primary text-white'
+                      ? 'border-primary bg-primary text-primary-foreground'
                       : 'border-border bg-background'
                   }`}
                 >
@@ -245,130 +289,202 @@ const Onboarding = () => {
       <div className="flex-1 flex items-center justify-center px-4 sm:px-6 py-8">
         <div className="w-full max-w-2xl">
           <div className="bg-card border border-border rounded-2xl shadow-lg p-6 sm:p-8 space-y-8 animate-fade-in">
-            {/* Step 1: Personal Info */}
+            
+            {/* Step 1: About You */}
             {currentStep === 1 && (
               <div className="space-y-6">
                 <div className="text-center space-y-2">
                   <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full mb-4">
                     <Sparkles className="h-8 w-8 text-primary" />
                   </div>
-                  <h1 className="text-2xl sm:text-3xl font-bold text-text-primary">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
                     Welcome to NaijaLancers! 🎉
                   </h1>
-                  <p className="text-text-secondary max-w-md mx-auto">
-                    Let's get you set up. Tell us a bit about yourself to personalize your experience.
+                  <p className="text-muted-foreground max-w-md mx-auto">
+                    Let's personalize your experience
                   </p>
                 </div>
 
                 <div className="space-y-4">
+                  {/* Full Name */}
                   <div>
-                    <label className="block text-sm font-medium mb-2 text-text-primary">
-                      Full Name *
-                    </label>
+                    <label className="block text-sm font-medium mb-2">Full Name *</label>
                     <BrandInput
                       value={formData.full_name}
                       onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
-                      placeholder="e.g., Chinedu Okafor"
+                      placeholder="Enter your full name"
                       required
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium mb-2 text-text-primary">
-                      Profession (Optional)
-                    </label>
-                    <BrandInput
-                      value={formData.profession}
-                      onChange={(e) => setFormData(prev => ({ ...prev, profession: e.target.value }))}
-                      placeholder="e.g., Graphic Designer, Developer, etc."
-                    />
-                  </div>
-
-                  <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
-                    <div className="flex gap-3">
-                      <Award className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium text-text-primary">
-                          {formData.full_name ? '✓ Name saved from your Google account' : 'Pro Tip'}
-                        </p>
-                        <p className="text-xs text-text-secondary">
-                          {formData.full_name 
-                            ? 'We automatically filled your name from Google. You can edit it if needed.'
-                            : 'Adding your profession helps us show you relevant opportunities and connect you with the right people.'
-                          }
-                        </p>
-                      </div>
+                  {/* Account Type */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">I am a...</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        onClick={() => setFormData(prev => ({ ...prev, account_type: 'freelancer' }))}
+                        className={`p-4 rounded-xl border-2 transition-all text-left ${
+                          formData.account_type === 'freelancer'
+                            ? 'border-primary bg-primary/5'
+                            : 'border-border hover:border-primary/50'
+                        }`}
+                      >
+                        <Briefcase className={`h-6 w-6 mb-2 ${formData.account_type === 'freelancer' ? 'text-primary' : 'text-muted-foreground'}`} />
+                        <p className="font-medium">Freelancer</p>
+                        <p className="text-xs text-muted-foreground">I offer services</p>
+                      </button>
+                      <button
+                        onClick={() => setFormData(prev => ({ ...prev, account_type: 'client' }))}
+                        className={`p-4 rounded-xl border-2 transition-all text-left ${
+                          formData.account_type === 'client'
+                            ? 'border-primary bg-primary/5'
+                            : 'border-border hover:border-primary/50'
+                        }`}
+                      >
+                        <UserCheck className={`h-6 w-6 mb-2 ${formData.account_type === 'client' ? 'text-primary' : 'text-muted-foreground'}`} />
+                        <p className="font-medium">Client</p>
+                        <p className="text-xs text-muted-foreground">I hire talent</p>
+                      </button>
                     </div>
                   </div>
+
+                  {/* Profession (for freelancers) */}
+                  {formData.account_type === 'freelancer' && (
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium">Your Profession *</label>
+                      <BrandInput
+                        value={formData.profession}
+                        onChange={(e) => setFormData(prev => ({ ...prev, profession: e.target.value }))}
+                        placeholder="e.g., Web Developer, Designer"
+                      />
+                      <div className="flex flex-wrap gap-2">
+                        {['Graphic Designer', 'Web Developer', 'Writer', 'Virtual Assistant', 'Video Editor'].map((prof) => (
+                          <button
+                            key={prof}
+                            onClick={() => setFormData(prev => ({ ...prev, profession: prof }))}
+                            className={`px-3 py-1.5 rounded-full text-xs transition-all ${
+                              formData.profession === prof
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-muted text-muted-foreground hover:bg-accent'
+                            }`}
+                          >
+                            {prof}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
 
-            {/* Step 2: Location */}
+            {/* Step 2: Location - GLOBAL READY */}
             {currentStep === 2 && (
               <div className="space-y-6">
                 <div className="text-center space-y-2">
                   <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full mb-4">
                     <MapPin className="h-8 w-8 text-primary" />
                   </div>
-                  <h1 className="text-2xl sm:text-3xl font-bold text-text-primary">
-                    Where are you located?
+                  <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+                    Your Location
                   </h1>
-                  <p className="text-text-secondary max-w-md mx-auto">
-                    We'll help you discover local opportunities and connect with professionals near you.
+                  <p className="text-muted-foreground max-w-md mx-auto">
+                    Connect with opportunities locally & globally
                   </p>
                 </div>
 
                 <div className="space-y-4">
+                  {/* Country Selection */}
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-text-primary">State *</label>
-                    <Select value={selectedState} onValueChange={setSelectedState}>
-                      <SelectTrigger className="w-full h-12 bg-input">
-                        <SelectValue placeholder="Select your state" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-background border border-border z-50 max-h-[300px]">
-                        {states.map((state) => (
-                          <SelectItem key={state.id} value={state.id} className="hover:bg-accent">
-                            {state.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-text-primary">Local Government Area (LGA) *</label>
-                    <Select 
-                      value={selectedLGA} 
-                      onValueChange={setSelectedLGA}
-                      disabled={!selectedState}
+                    <label className="text-sm font-medium flex items-center gap-2">
+                      <Globe className="h-4 w-4" />
+                      Country *
+                    </label>
+                    <Select
+                      value={formData.country}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, country: value }))}
                     >
                       <SelectTrigger className="w-full h-12 bg-input">
-                        <SelectValue placeholder={!selectedState ? "Select state first" : "Select your LGA"} />
+                        <SelectValue placeholder="Select your country" />
                       </SelectTrigger>
                       <SelectContent className="bg-background border border-border z-50 max-h-[300px]">
-                        {lgas.map((lga) => (
-                          <SelectItem key={lga.id} value={lga.name} className="hover:bg-accent">
-                            {lga.name}
+                        {COUNTRIES.map((country) => (
+                          <SelectItem key={country} value={country} className="hover:bg-accent">
+                            {country === 'Nigeria' ? '🇳🇬 ' : ''}{country}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
 
-                  <BrandInput
-                    label="Area/Street *"
-                    value={area}
-                    onChange={(e) => setArea(e.target.value)}
-                    placeholder="e.g., Ikeja GRA, VI, Surulere"
-                    required
-                  />
+                  {/* Nigeria-specific: State & LGA */}
+                  {isNigeria && (
+                    <>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">State *</label>
+                        <Select
+                          value={formData.state}
+                          onValueChange={(value) => setFormData(prev => ({ ...prev, state: value, lga: '' }))}
+                          disabled={loadingStates}
+                        >
+                          <SelectTrigger className="w-full h-12 bg-input">
+                            <SelectValue placeholder={loadingStates ? "Loading states..." : "Select your state"} />
+                          </SelectTrigger>
+                          <SelectContent className="bg-background border border-border z-50 max-h-[300px]">
+                            {states.map((state) => (
+                              <SelectItem key={state.id} value={state.name} className="hover:bg-accent">
+                                {state.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {formData.state && (
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Local Government (LGA)</label>
+                          <Select
+                            value={formData.lga}
+                            onValueChange={(value) => setFormData(prev => ({ ...prev, lga: value }))}
+                            disabled={loadingLGAs}
+                          >
+                            <SelectTrigger className="w-full h-12 bg-input">
+                              <SelectValue placeholder={loadingLGAs ? "Loading LGAs..." : "Select LGA (optional)"} />
+                            </SelectTrigger>
+                            <SelectContent className="bg-background border border-border z-50 max-h-[300px]">
+                              {lgas.map((lga) => (
+                                <SelectItem key={lga.id} value={lga.name} className="hover:bg-accent">
+                                  {lga.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* Non-Nigeria: City only */}
+                  {formData.country && !isNigeria && (
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">City (Optional)</label>
+                      <BrandInput
+                        placeholder="e.g., New York, London"
+                        value={formData.city}
+                        onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
+                      />
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Globe className="h-3 w-3" />
+                        You'll be shown remote opportunities globally
+                      </p>
+                    </div>
+                  )}
 
                   <div className="p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
                     <div className="flex gap-3">
                       <MapPin className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
                       <p className="text-xs text-blue-800 dark:text-blue-300">
-                        <strong>Privacy:</strong> Your exact location is private. We only use this to show you relevant local opportunities.
+                        <strong>Privacy:</strong> Your location helps us show relevant opportunities. We never share your exact address.
                       </p>
                     </div>
                   </div>
@@ -376,132 +492,112 @@ const Onboarding = () => {
               </div>
             )}
 
-            {/* Step 3: Purpose */}
+            {/* Step 3: Goal Selection */}
             {currentStep === 3 && (
               <div className="space-y-6">
                 <div className="text-center space-y-2">
                   <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full mb-4">
                     <Target className="h-8 w-8 text-primary" />
                   </div>
-                  <h1 className="text-2xl sm:text-3xl font-bold text-text-primary">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
                     What brings you here?
                   </h1>
-                  <p className="text-text-secondary max-w-md mx-auto">
-                    Select your primary goal so we can tailor your experience.
+                  <p className="text-muted-foreground max-w-md mx-auto">
+                    Select your primary goal
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {purposes.map((option) => {
-                    const Icon = option.icon
-                    return (
-                      <label
-                        key={option.value}
-                        className={`relative flex flex-col p-5 rounded-xl border-2 cursor-pointer transition-all hover:shadow-md ${
-                          purpose === option.value
-                            ? 'border-primary bg-primary/5 shadow-md'
-                            : 'border-border hover:border-primary/50'
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name="purpose"
-                          value={option.value}
-                          checked={purpose === option.value}
-                          onChange={(e) => setPurpose(e.target.value)}
-                          className="sr-only"
-                        />
-                        <div className="flex items-start gap-3">
-                          <div className={`p-2 rounded-lg bg-primary/10 ${option.color}`}>
-                            <Icon className="h-6 w-6" />
-                          </div>
-                          <div className="flex-1">
-                            <div className="font-semibold text-text-primary mb-1">
-                              {option.label}
-                            </div>
-                            <div className="text-sm text-text-secondary">
-                              {option.description}
-                            </div>
-                          </div>
-                        </div>
-                        {purpose === option.value && (
-                          <div className="absolute top-3 right-3">
-                            <CheckCircle2 className="h-5 w-5 text-primary" />
-                          </div>
-                        )}
-                      </label>
-                    )
-                  })}
-                </div>
-
-                {purpose === 'To Earn' && (
-                  <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border border-green-200 dark:border-green-800 rounded-lg">
-                    <div className="flex gap-3">
-                      <Award className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium text-green-800 dark:text-green-300">
-                          💡 Become a Verified Expert
+                <div className="space-y-3">
+                  {/* Freelancer Option */}
+                  <button
+                    onClick={() => handleGoalSelect('freelancer')}
+                    disabled={loading}
+                    className="w-full p-4 rounded-xl border-2 border-primary bg-primary/5 hover:bg-primary/10 transition-all text-left group"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center shrink-0">
+                        <Briefcase className="h-5 w-5 text-primary" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-foreground flex items-center gap-2">
+                          I'm a Freelancer
+                          <Badge variant="secondary" className="text-xs">Recommended</Badge>
                         </p>
-                        <p className="text-xs text-green-700 dark:text-green-400">
-                          Want to stand out? Apply to become a verified expert after setup and unlock premium features!
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Find clients, showcase skills, and earn money
                         </p>
                       </div>
+                      <ArrowRight className="h-5 w-5 text-primary opacity-0 group-hover:opacity-100 transition-opacity mt-2" />
                     </div>
-                  </div>
-                )}
+                  </button>
+
+                  {/* Hire Option */}
+                  <button
+                    onClick={() => handleGoalSelect('hire')}
+                    disabled={loading}
+                    className="w-full p-4 rounded-xl border-2 border-border hover:border-primary/50 transition-all text-left group"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center shrink-0">
+                        <Bot className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-foreground flex items-center gap-2">
+                          I Want to Hire
+                          <Badge variant="outline" className="text-xs border-purple-300 text-purple-600">AI-Powered</Badge>
+                        </p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Let our AI match you with perfect freelancers
+                        </p>
+                      </div>
+                      <ArrowRight className="h-5 w-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity mt-2" />
+                    </div>
+                  </button>
+
+                  {/* Just Browsing */}
+                  <button
+                    onClick={() => handleGoalSelect('exploring')}
+                    disabled={loading}
+                    className="w-full p-4 rounded-xl border-2 border-border hover:border-primary/50 transition-all text-left group"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center shrink-0">
+                        <Search className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-foreground">Just Browsing</p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Explore the platform first
+                        </p>
+                      </div>
+                      <ArrowRight className="h-5 w-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity mt-2" />
+                    </div>
+                  </button>
+                </div>
               </div>
             )}
 
-            {/* Action Buttons */}
-            <div className="flex gap-3 pt-4">
-              {currentStep > 1 && (
+            {/* Navigation Buttons */}
+            <div className="flex items-center justify-between pt-4 border-t border-border">
+              {currentStep > 1 ? (
                 <BrandButton
                   variant="outline"
                   onClick={handleBack}
-                  className="flex-1"
-                  size="lg"
+                  disabled={loading}
                 >
+                  <ChevronLeft className="h-4 w-4 mr-2" />
                   Back
                 </BrandButton>
+              ) : (
+                <div />
               )}
-              <BrandButton
-                onClick={handleContinue}
-                className="flex-1 group"
-                size="lg"
-                disabled={loading}
-              >
-                {loading ? (
-                  'Setting up...'
-                ) : currentStep === totalSteps ? (
-                  <>
-                    Complete Setup
-                    <CheckCircle2 className="ml-2 h-4 w-4" />
-                  </>
-                ) : (
-                  <>
-                    Continue
-                    <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                  </>
-                )}
-              </BrandButton>
-            </div>
-          </div>
 
-          {/* Trust Indicators */}
-          <div className="mt-8 text-center">
-            <div className="flex items-center justify-center gap-6 text-xs text-text-secondary">
-              <div className="flex items-center gap-1">
-                <CheckCircle2 className="h-4 w-4 text-green-500" />
-                <span>10,000+ Active Users</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <CheckCircle2 className="h-4 w-4 text-green-500" />
-                <span>100% Secure</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <CheckCircle2 className="h-4 w-4 text-green-500" />
-                <span>Free Forever</span>
-              </div>
+              {currentStep < totalSteps && (
+                <BrandButton onClick={handleNext} disabled={loading}>
+                  Continue
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </BrandButton>
+              )}
             </div>
           </div>
         </div>

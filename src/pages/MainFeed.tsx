@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Plus, Home, MessageCircle, Users, DollarSign, User, FileText, Briefcase, Award, Calendar, Vote, Hash, RefreshCw, MoreVertical, Settings, Wallet, Camera, Loader2 } from 'lucide-react'
+import { Plus, Home, MessageCircle, Users, DollarSign, User, FileText, Briefcase, Award, Calendar, Vote, Hash, RefreshCw, MoreVertical, Settings, Wallet, Camera } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Logo } from '@/components/ui/logo'
 import { BrandButton } from '@/components/ui/brand-button'
@@ -50,28 +50,17 @@ const MainFeed = () => {
   // Effective user ID - either Supabase auth or MiniPay wallet-based
   const effectiveUserId = isMiniPay ? miniPayUserId : user?.id
   
-  // 🔧 CRITICAL FIX: Auto-initialize MiniPay wallet on feed page
-  // This is a FALLBACK - silent rehydration should handle most cases
-  // But if it fails, this ensures wallet user is created/loaded
-  const [miniPayAttempted, setMiniPayAttempted] = useState(false)
-  const [miniPayTimeout, setMiniPayTimeout] = useState(false)
+  // ✅ NEW APPROACH: MiniPay users can browse IMMEDIATELY without blocking
+  // Wallet initialization happens lazily when they take protected actions
+  // This eliminates ALL blocking/loading screens for MiniPay users
   
+  // Trigger silent wallet init in background (non-blocking)
   useEffect(() => {
-    if (isMiniPay && !isRegistered && !isInitializing && !miniPayAttempted) {
-      console.log('[MainFeed] MiniPay detected but not registered - attempting initialization...')
-      setMiniPayAttempted(true)
-      initializeWallet()
-      
-      // ✅ TIMEOUT FALLBACK: If registration still fails after 5 seconds, 
-      // stop blocking and show feed anyway - onboarding can handle the rest
-      const timeout = setTimeout(() => {
-        console.log('[MainFeed] MiniPay timeout reached - showing feed anyway')
-        setMiniPayTimeout(true)
-      }, 5000)
-      
-      return () => clearTimeout(timeout)
+    if (isMiniPay && !isRegistered && !isInitializing) {
+      // Initialize in background - don't block UI
+      initializeWallet().catch(console.error)
     }
-  }, [isMiniPay, isRegistered, isInitializing, initializeWallet, miniPayAttempted])
+  }, [isMiniPay, isRegistered, isInitializing, initializeWallet])
   
   const { 
     posts, 
@@ -245,46 +234,9 @@ const MainFeed = () => {
     toggleLike(postId)
   }
 
-  // 🔧 LOADING GUARD: Show connecting state while MiniPay wallet initializes
-  // This is shown ONLY while actively initializing (brief moment)
-  if (isMiniPay && isInitializing) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center pb-20">
-        <div className="text-center">
-          <Wallet className="w-8 h-8 text-primary mx-auto mb-4 animate-pulse" />
-          <p className="text-text-secondary">Connecting wallet...</p>
-        </div>
-      </div>
-    )
-  }
-
-  // 🔧 LOADING GUARD: Brief state while MiniPay registration completes
-  // This should only show for 1-2 seconds max since silent rehydration creates users immediately
-  // ESCAPE HATCH: If timeout (5s) is reached, stop blocking and show feed anyway
-  const shouldBlockForMiniPay = isMiniPay && !isRegistered && !miniPayTimeout
-  
-  if (shouldBlockForMiniPay && isInitializing) {
-    // Still actively trying to connect/register
-    return null // Already handled above by isInitializing check
-  }
-  
-  // If MiniPay is detected, not registered, and we haven't hit timeout yet, show setup screen
-  // BUT only if we haven't attempted yet (first load) or are still initializing
-  if (shouldBlockForMiniPay && !isInitializing) {
-    // Briefly show setup screen - but with the fix, this should resolve in 1-2 seconds
-    // The useEffect will trigger initializeWallet which will create/load user
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center pb-20">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 text-primary mx-auto mb-4 animate-spin" />
-          <p className="text-text-secondary">Setting up your account...</p>
-        </div>
-      </div>
-    )
-  }
-  
-  // ✅ After timeout OR registration complete, show feed
-  // This prevents infinite "Setting up your account..." loops
+  // ✅ NEW: MiniPay users see content IMMEDIATELY - no blocking at all
+  // Wallet connection happens in background, protected actions trigger auth when needed
+  // This eliminates the "Setting up your account..." infinite loop
 
   if (loading) {
     return (
