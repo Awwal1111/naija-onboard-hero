@@ -34,20 +34,10 @@ export const ProtectedRoute = ({
 
   // ===== MiniPay Logic - NO LOADING STATE =====
   // In MiniPay, we NEVER show loading spinners - they cause flickering
+  // MiniPay users can ALWAYS browse - protected actions handled by MiniPayProtectedAction
   if (isMiniPay) {
-    // Allow all browsing by default in MiniPay
+    // ✅ FIX: Always allow access in MiniPay - no blocking
     // Protected actions are handled by MiniPayProtectedAction component
-    if (allowMiniPayBrowsing) {
-      return <>{children}</>
-    }
-
-    // MiniPay user is registered (has wallet-based account)
-    if (isRegistered && walletAddress) {
-      return <>{children}</>
-    }
-
-    // For strict protected routes without registration - allow access
-    // The MiniPayProtectedAction will handle auth when user takes action
     return <>{children}</>
   }
 

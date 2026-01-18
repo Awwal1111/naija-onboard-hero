@@ -111,7 +111,10 @@ export const MiniPayAuthWrapper = ({ children }: MiniPayAuthWrapperProps) => {
    */
   useEffect(() => {
     // Only run in MiniPay with wallet provider
-    if (!initialDetection.isMiniPay || !initialDetection.hasProvider) return
+    if (!initialDetection.isMiniPay || !initialDetection.hasProvider) {
+      console.log('[MiniPayAuth] Not in MiniPay or no provider, skipping rehydration')
+      return
+    }
     
     // Only run once
     if (hasRehydratedRef.current) return
@@ -125,8 +128,14 @@ export const MiniPayAuthWrapper = ({ children }: MiniPayAuthWrapperProps) => {
         const address = await getSilentWalletAddress()
         
         if (!address) {
-          console.log('[MiniPayAuth] No wallet address found silently')
-          return // No state change needed - user will trigger init manually
+          console.log('[MiniPayAuth] No wallet address found silently - user can browse and init later')
+          // ✅ FIX: Set isRegistered to true even without wallet so user can browse
+          setState(prev => ({ 
+            ...prev, 
+            isRegistered: true, // Allow browsing
+            isInitializing: false 
+          }))
+          return
         }
 
         console.log('[MiniPayAuth] Silent wallet found:', address)
@@ -210,8 +219,9 @@ export const MiniPayAuthWrapper = ({ children }: MiniPayAuthWrapperProps) => {
             initializedRef.current = true
           } else {
             console.error('[MiniPayAuth] Failed to create user:', error)
-            // Still store wallet address so user can retry
+            // ✅ FIX: Still allow browsing even if user creation fails
             nextState.walletAddress = address
+            nextState.isRegistered = true // Allow browsing
           }
         }
 
@@ -220,7 +230,12 @@ export const MiniPayAuthWrapper = ({ children }: MiniPayAuthWrapperProps) => {
         
       } catch (error) {
         console.error('[MiniPayAuth] Silent rehydration error:', error)
-        // No state change on error - app still works, user can trigger init manually
+        // ✅ FIX: Even on error, allow browsing
+        setState(prev => ({ 
+          ...prev, 
+          isRegistered: true, // Allow browsing
+          isInitializing: false 
+        }))
       }
     }
 

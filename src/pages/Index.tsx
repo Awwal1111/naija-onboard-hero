@@ -59,12 +59,12 @@ const Index = () => {
                 </Badge>
                 
                 <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold leading-tight">
-                  <span className="text-foreground">Nigeria's Trusted</span>
-                  <span className="block text-primary mt-1 sm:mt-2">Freelance Marketplace</span>
+                  <span className="text-foreground">Your Trusted</span>
+                  <span className="block text-primary mt-1 sm:mt-2">Global Freelance Marketplace</span>
                 </h1>
                 
                 <p className="text-base sm:text-lg lg:text-xl text-muted-foreground leading-relaxed">
-                  Connect with vetted professionals, secure payments through our banking partners, and grow your business with confidence.
+                  Connect with vetted professionals worldwide, secure payments through trusted partners, and grow your business with confidence.
                 </p>
 
                 <div className="flex flex-wrap gap-3 sm:gap-6 pt-2 sm:pt-4">
@@ -172,7 +172,7 @@ const Index = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground">
-                    Join thousands of verified Nigerian professionals
+                    Join thousands of verified professionals worldwide
                   </p>
                 </CardContent>
               </Card>
@@ -345,7 +345,7 @@ const Index = () => {
         <div className="container mx-auto px-6 text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to Get Started?</h2>
           <p className="text-xl mb-8 opacity-90">
-            Join thousands of Nigerians earning on NaijaLancers
+            Join thousands of professionals earning globally on NaijaLancers
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <BrandButton asChild size="lg" variant="secondary" className="text-lg px-8 py-6">
@@ -366,7 +366,7 @@ const Index = () => {
               <div>
                 <Logo />
                 <p className="text-sm text-muted-foreground mt-4">
-                  Nigeria's trusted marketplace. CAC: BN8870047
+                  Global freelance marketplace. CAC: BN8870047
                 </p>
               </div>
 
