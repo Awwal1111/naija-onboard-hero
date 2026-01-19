@@ -3,7 +3,6 @@ import { useQuery, useQueryClient, useInfiniteQuery } from '@tanstack/react-quer
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/use-toast'
-import { useMiniPayContext } from '@/components/MiniPayAuthWrapper'
 
 export interface Post {
   id: string
@@ -63,22 +62,16 @@ export const usePersonalizedFeed = () => {
   const { toast } = useToast()
   const queryClient = useQueryClient()
   const [searchQuery, setSearchQuery] = useState('')
-  
-  // MiniPay context - get userId from wallet-based auth
-  const { isMiniPay, userId: miniPayUserId, isRegistered } = useMiniPayContext()
-  
-  // Determine the effective user ID (Supabase auth OR MiniPay wallet-based)
-  const effectiveUserId = isMiniPay ? miniPayUserId : user?.id
-  
-  // For MiniPay, we consider the user "ready" if they have a userId (registered)
-  // For regular auth, we need a valid user object
-  const isUserReady = isMiniPay ? (isRegistered && !!miniPayUserId) : !!user
 
-  // Fetch stories with caching - works for both MiniPay and regular users
+  // Use Supabase auth only
+  const userId = user?.id
+  const isUserReady = !!user
+
+  // Fetch stories with caching
   const { data: stories = [], isLoading: storiesLoading } = useQuery({
-    queryKey: ['stories', effectiveUserId],
+    queryKey: ['stories', userId],
     queryFn: async () => {
-      if (!effectiveUserId) return []
+      if (!userId) return []
 
       const { data: storiesData, error } = await supabase
         .from('stories')
@@ -102,7 +95,7 @@ export const usePersonalizedFeed = () => {
       const { data: userViews } = await supabase
         .from('story_views')
         .select('story_id')
-        .eq('user_id', effectiveUserId)
+        .eq('user_id', userId)
         .in('story_id', storiesData.map(s => s.id))
 
       const viewedStoryIds = new Set(userViews?.map(view => view.story_id) || [])
@@ -127,18 +120,18 @@ export const usePersonalizedFeed = () => {
     isLoading: postsLoading,
     refetch: refetchPosts
   } = useInfiniteQuery({
-    queryKey: ['personalized-posts-v2', effectiveUserId],
+    queryKey: ['personalized-posts-v2', userId],
     queryFn: async ({ pageParam = 0 }) => {
-      if (!effectiveUserId) return { posts: [], nextPage: null }
+      if (!userId) return { posts: [], nextPage: null }
 
       const offset = pageParam * POSTS_PER_PAGE
 
-      console.log('[Feed] Fetching personalized feed for user:', effectiveUserId, 'offset:', offset)
+      console.log('[Feed] Fetching personalized feed for user:', userId, 'offset:', offset)
 
       // Use the personalized feed function
       const { data: personalizedPosts, error } = await supabase
         .rpc('get_personalized_feed', {
-          p_user_id: effectiveUserId,
+          p_user_id: userId,
           p_limit: POSTS_PER_PAGE,
           p_offset: offset
         })
@@ -217,7 +210,7 @@ export const usePersonalizedFeed = () => {
       const { data: userLikes } = await supabase
         .from('post_likes')
         .select('post_id')
-        .eq('user_id', effectiveUserId)
+        .eq('user_id', userId)
         .in('post_id', postIds)
 
       const likedPostIds = new Set(userLikes?.map(like => like.post_id) || [])
@@ -226,7 +219,7 @@ export const usePersonalizedFeed = () => {
       const { data: savedPosts } = await supabase
         .from('saved_posts')
         .select('post_id')
-        .eq('user_id', effectiveUserId)
+        .eq('user_id', userId)
         .in('post_id', postIds)
 
       const savedPostIds = new Set(savedPosts?.map(save => save.post_id) || [])
@@ -278,9 +271,9 @@ export const usePersonalizedFeed = () => {
 
   const loading = postsLoading || storiesLoading
 
-  // Post creation with cache invalidation - works for both MiniPay and regular users
+  // Post creation with cache invalidation
   const createPost = useCallback(async (content: string, contentType: string = 'status', visibility: string = 'public', title?: string, mediaUrls?: string[]) => {
-    if (!effectiveUserId) return { error: 'User not authenticated' }
+    if (!userId) return { error: 'User not authenticated' }
 
     console.log('[Feed] Creating post with media_urls:', mediaUrls)
 
@@ -288,7 +281,7 @@ export const usePersonalizedFeed = () => {
       const { data, error } = await supabase
         .from('posts')
         .insert({
-          user_id: effectiveUserId,
+          user_id: userId,
           content,
           content_type: contentType,
           visibility,
@@ -320,11 +313,11 @@ export const usePersonalizedFeed = () => {
       })
       return { error: error.message }
     }
-  }, [effectiveUserId, queryClient, toast])
+  }, [userId, queryClient, toast])
 
   // Story creation
   const createStory = useCallback(async (mediaUrl: string, mediaType: string, content?: string) => {
-    if (!effectiveUserId) return { error: 'User not authenticated' }
+    if (!userId) return { error: 'User not authenticated' }
 
     try {
       const expiresAt = new Date()
@@ -333,7 +326,7 @@ export const usePersonalizedFeed = () => {
       const { error } = await supabase
         .from('stories')
         .insert({
-          user_id: effectiveUserId,
+          user_id: userId,
           media_url: mediaUrl,
           media_type: mediaType,
           content,
@@ -358,17 +351,17 @@ export const usePersonalizedFeed = () => {
       })
       return { error: error.message }
     }
-  }, [effectiveUserId, queryClient, toast])
+  }, [userId, queryClient, toast])
 
   // Optimistic like toggle
   const toggleLike = useCallback(async (postId: string) => {
-    if (!effectiveUserId) return
+    if (!userId) return
 
     const post = posts.find(p => p.id === postId)
     if (!post) return
 
     // Optimistic update
-    queryClient.setQueryData(['personalized-posts-v2', effectiveUserId], (oldData: any) => {
+    queryClient.setQueryData(['personalized-posts-v2', userId], (oldData: any) => {
       if (!oldData) return oldData
 
       return {
@@ -394,30 +387,30 @@ export const usePersonalizedFeed = () => {
           .from('post_likes')
           .delete()
           .eq('post_id', postId)
-          .eq('user_id', effectiveUserId)
+          .eq('user_id', userId)
       } else {
         await supabase
           .from('post_likes')
           .insert({
             post_id: postId,
-            user_id: effectiveUserId
+            user_id: userId
           })
       }
     } catch (error) {
       queryClient.invalidateQueries({ queryKey: ['personalized-posts-v2'] })
       console.error('Error toggling like:', error)
     }
-  }, [effectiveUserId, posts, queryClient])
+  }, [userId, posts, queryClient])
 
   // Save post toggle
   const savePost = useCallback(async (postId: string) => {
-    if (!effectiveUserId) return { error: 'User not authenticated' }
+    if (!userId) return { error: 'User not authenticated' }
 
     const post = posts.find(p => p.id === postId)
     if (!post) return { error: 'Post not found' }
 
     // Optimistic update
-    queryClient.setQueryData(['personalized-posts-v2', effectiveUserId], (oldData: any) => {
+    queryClient.setQueryData(['personalized-posts-v2', userId], (oldData: any) => {
       if (!oldData) return oldData
 
       return {
@@ -437,13 +430,13 @@ export const usePersonalizedFeed = () => {
           .from('saved_posts')
           .delete()
           .eq('post_id', postId)
-          .eq('user_id', effectiveUserId)
+          .eq('user_id', userId)
       } else {
         await supabase
           .from('saved_posts')
           .insert({
             post_id: postId,
-            user_id: effectiveUserId
+            user_id: userId
           })
       }
 
@@ -462,17 +455,17 @@ export const usePersonalizedFeed = () => {
       })
       return { error: error.message }
     }
-  }, [effectiveUserId, posts, queryClient, toast])
+  }, [userId, posts, queryClient, toast])
 
   const addComment = useCallback(async (postId: string, content: string) => {
-    if (!effectiveUserId) return { error: 'User not authenticated' }
+    if (!userId) return { error: 'User not authenticated' }
 
     try {
       const { error } = await supabase
         .from('post_comments')
         .insert({
           post_id: postId,
-          user_id: effectiveUserId,
+          user_id: userId,
           content
         })
 
@@ -492,17 +485,17 @@ export const usePersonalizedFeed = () => {
       })
       return { error: error.message }
     }
-  }, [effectiveUserId, toast])
+  }, [userId, toast])
 
   const viewStory = useCallback(async (storyId: string) => {
-    if (!effectiveUserId) return
+    if (!userId) return
 
     try {
       await supabase
         .from('story_views')
         .upsert({
           story_id: storyId,
-          user_id: effectiveUserId
+          user_id: userId
         })
 
       queryClient.setQueryData(['stories', effectiveUserId], (oldStories: Story[] = []) => 

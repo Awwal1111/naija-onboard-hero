@@ -26,41 +26,14 @@ import { MoreMenuDrawer } from '@/components/MoreMenuDrawer'
 import { UnifiedSearchBar } from '@/components/UnifiedSearchBar'
 import { NCConverter } from '@/components/NCConverter'
 import { QuickOnboarding } from '@/components/QuickOnboarding'
-import { useMiniPayContext } from '@/components/MiniPayAuthWrapper'
-
 import { supabase } from '@/integrations/supabase/client'
 
 const MainFeed = () => {
   const navigate = useNavigate()
   const location = useLocation()
-  const { user } = useAuth() // NOTE: Supabase auth is ignored in MiniPay
+  const { user } = useAuth()
   const { profile } = useProfile()
   const { isComplete, missingFields, shouldShowDialog } = useProfileCompletion()
-  
-  // MiniPay context for wallet-based identity
-  const { 
-    isMiniPay, 
-    userId: miniPayUserId, 
-    userProfile: miniPayProfile, 
-    isRegistered, 
-    isInitializing,
-    initializeWallet 
-  } = useMiniPayContext()
-  
-  // Effective user ID - either Supabase auth or MiniPay wallet-based
-  const effectiveUserId = isMiniPay ? miniPayUserId : user?.id
-  
-  // ✅ NEW APPROACH: MiniPay users can browse IMMEDIATELY without blocking
-  // Wallet initialization happens lazily when they take protected actions
-  // This eliminates ALL blocking/loading screens for MiniPay users
-  
-  // Trigger silent wallet init in background (non-blocking)
-  useEffect(() => {
-    if (isMiniPay && !isRegistered && !isInitializing) {
-      // Initialize in background - don't block UI
-      initializeWallet().catch(console.error)
-    }
-  }, [isMiniPay, isRegistered, isInitializing, initializeWallet])
   
   const { 
     posts, 
@@ -89,24 +62,15 @@ const MainFeed = () => {
   const [showOnboarding, setShowOnboarding] = useState(false)
   
 
-  // Check for onboarding - works for both MiniPay and regular users
+  // Check for onboarding
   useEffect(() => {
-    // For MiniPay users, check if profile is incomplete
-    if (isMiniPay && isRegistered && miniPayProfile) {
-      if (!miniPayProfile.profileCompleted) {
-        setShowOnboarding(true)
-      }
-      return
-    }
-    
-    // For regular users
     if (profile && user) {
       const p = profile as any
       if (p.onboarding_completed === false && !p.full_name) {
         setShowOnboarding(true)
       }
     }
-  }, [profile, user, isMiniPay, isRegistered, miniPayProfile])
+  }, [profile, user])
 
   const handleOnboardingComplete = () => {
     setShowOnboarding(false)
@@ -322,7 +286,7 @@ const MainFeed = () => {
             stories={stories}
             onCreateStory={handleCreateStory}
             onViewStory={viewStory}
-            currentUserId={effectiveUserId}
+            currentUserId={user?.id}
           />
 
           {/* Create Post Bar */}
@@ -332,9 +296,9 @@ const MainFeed = () => {
               className="flex items-center gap-3 cursor-pointer"
             >
               <Avatar className="h-10 w-10 ring-2 ring-primary/20">
-                <AvatarImage src={isMiniPay ? miniPayProfile?.avatarUrl : profile?.profile_picture_url} />
+                <AvatarImage src={profile?.profile_picture_url} />
                 <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
-                  {(isMiniPay ? miniPayProfile?.fullName?.charAt(0) : profile?.full_name?.charAt(0)) || 'U'}
+                  {profile?.full_name?.charAt(0) || 'U'}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 py-2.5 px-4 bg-muted/50 hover:bg-muted rounded-full transition-colors">
@@ -394,7 +358,7 @@ const MainFeed = () => {
                       onComment={addComment}
                       onJobApply={handleJobApply}
                       onProfileClick={handleProfileClick}
-                      currentUserId={effectiveUserId}
+                      currentUserId={user?.id}
                     />
                   ))}
                   <div className="py-8 text-center bg-muted/30">
