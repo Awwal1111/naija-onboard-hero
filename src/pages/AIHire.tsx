@@ -82,7 +82,6 @@ export default function AIHire() {
   const { user } = useAuth()
   const { profile, updateProfile } = useProfile()
   const { toast } = useToast()
-  const { isMiniPay, userId: miniPayUserId, refreshUserState } = useMiniPayContext()
   
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
@@ -93,7 +92,6 @@ export default function AIHire() {
   const [isComplete, setIsComplete] = useState(false)
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const effectiveUserId = isMiniPay ? miniPayUserId : user?.id
 
   // Scroll to bottom on new messages
   useEffect(() => {

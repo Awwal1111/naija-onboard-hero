@@ -64,7 +64,6 @@ export const QuickOnboarding: React.FC<QuickOnboardingProps> = ({
   const { user } = useAuth()
   const { profile, updateProfile } = useProfile()
   const { toast } = useToast()
-  const { isMiniPay, userId: miniPayUserId, refreshUserState } = useMiniPayContext()
   const { states, lgas, loadingStates, loadingLGAs, fetchLGAs } = useNigerianStates()
   
   const [step, setStep] = useState(1)
@@ -83,7 +82,6 @@ export const QuickOnboarding: React.FC<QuickOnboardingProps> = ({
   })
 
   const totalSteps = 3
-  const effectiveUserId = isMiniPay ? miniPayUserId : user?.id
 
   // Pre-fill from existing profile
   useEffect(() => {

@@ -59,7 +59,6 @@ const Onboarding = () => {
   const { user } = useAuth()
   const { profile, updateProfile } = useProfile()
   const { states, lgas, loadingStates, loadingLGAs, fetchLGAs } = useNigerianStates()
-  const { isMiniPay, userId: miniPayUserId, refreshUserState } = useMiniPayContext()
   
   const [currentStep, setCurrentStep] = useState(1)
   const [loading, setLoading] = useState(false)
@@ -78,7 +77,6 @@ const Onboarding = () => {
 
   const totalSteps = 3
   const progress = (currentStep / totalSteps) * 100
-  const effectiveUserId = isMiniPay ? miniPayUserId : user?.id
   const isNigeria = formData.country === 'Nigeria'
 
   // Update form data when profile loads

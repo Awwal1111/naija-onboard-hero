@@ -1,47 +1,25 @@
 import { useAuth } from '@/hooks/useAuth'
 import { Navigate } from 'react-router-dom'
-import { useMiniPayContext } from '@/components/MiniPayAuthWrapper'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
   redirectTo?: string
-  /** If true, allows unauthenticated access in MiniPay environment (for browsing) */
-  allowMiniPayBrowsing?: boolean
-  /** If true, requires profile to be complete for MiniPay users */
-  requireCompleteProfile?: boolean
 }
 
 /**
- * ProtectedRoute handles access control for routes.
+ * ProtectedRoute - Standard Supabase Auth protection
  * 
- * MiniPay behavior:
- * - NEVER shows loading state (prevents flickering)
- * - With allowMiniPayBrowsing=true: Always allows access
- * - Wallet connection happens lazily on protected actions
- * 
- * Normal browser behavior:
- * - Requires Supabase authentication
- * - Redirects to login if not authenticated
+ * Works the same in MiniPay and regular browser:
+ * - User must be logged in via Supabase Auth
+ * - If not logged in, redirects to login page
+ * - MiniPay users log in normally like everyone else
  */
 export const ProtectedRoute = ({ 
   children, 
-  redirectTo = '/login',
-  allowMiniPayBrowsing = false,
-  requireCompleteProfile = false
+  redirectTo = '/login'
 }: ProtectedRouteProps) => {
   const { user, loading, session } = useAuth()
-  const { isMiniPay, walletAddress, isRegistered, userProfile } = useMiniPayContext()
 
-  // ===== MiniPay Logic - NO LOADING STATE =====
-  // In MiniPay, we NEVER show loading spinners - they cause flickering
-  // MiniPay users can ALWAYS browse - protected actions handled by MiniPayProtectedAction
-  if (isMiniPay) {
-    // ✅ FIX: Always allow access in MiniPay - no blocking
-    // Protected actions are handled by MiniPayProtectedAction component
-    return <>{children}</>
-  }
-
-  // ===== Normal Browser Logic =====
   // Show loading while auth is being determined
   if (loading) {
     return (
@@ -54,7 +32,7 @@ export const ProtectedRoute = ({
     )
   }
 
-  // Standard auth check for non-MiniPay users
+  // Require authentication
   if (!user && !session) {
     return <Navigate to={redirectTo} replace />
   }

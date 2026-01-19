@@ -1,19 +1,11 @@
 import React, { useState } from 'react'
-import { Link, Navigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { Logo } from '@/components/ui/logo'
 import { BrandButton } from '@/components/ui/brand-button'
 import { Eye, EyeOff, Mail, Lock, Sparkles, Shield, Zap } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
-import { useMiniPayContext } from '@/components/MiniPayAuthWrapper'
 
 const Login = () => {
-  const { isMiniPay } = useMiniPayContext()
-  
-  // MiniPay users NEVER see login screen - wallet = identity
-  // Use sync detection only - no isInitializing check
-  if (isMiniPay) {
-    return <Navigate to="/feed" replace />
-  }
 
   const [formData, setFormData] = useState({
     email: '',
