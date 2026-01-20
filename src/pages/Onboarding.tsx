@@ -168,10 +168,6 @@ const Onboarding = () => {
           onboarding_completed: true
         } as any)
 
-        if (isMiniPay) {
-          await refreshUserState()
-        }
-
         toast({
           title: "Let's find you the perfect freelancer! 🤖",
           description: "Our AI will help match you with the right talent."
@@ -200,10 +196,6 @@ const Onboarding = () => {
         account_type: 'freelancer',
         onboarding_completed: true
       } as any)
-
-      if (isMiniPay) {
-        await refreshUserState()
-      }
 
       toast({
         title: 'Welcome to NaijaLancers! 🎉',

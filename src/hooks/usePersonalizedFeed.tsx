@@ -498,7 +498,7 @@ export const usePersonalizedFeed = () => {
           user_id: userId
         })
 
-      queryClient.setQueryData(['stories', effectiveUserId], (oldStories: Story[] = []) => 
+      queryClient.setQueryData(['stories', userId], (oldStories: Story[] = []) => 
         oldStories.map(s => 
           s.id === storyId 
             ? { ...s, user_viewed: true, views_count: s.views_count + (s.user_viewed ? 0 : 1) }
@@ -508,7 +508,7 @@ export const usePersonalizedFeed = () => {
     } catch (error) {
       console.error('Error viewing story:', error)
     }
-  }, [effectiveUserId, queryClient])
+  }, [userId, queryClient])
 
   return {
     posts: filteredPosts,
