@@ -175,10 +175,6 @@ export const QuickOnboarding: React.FC<QuickOnboardingProps> = ({
           onboarding_completed: false // NOT completed yet - needs AI flow
         } as any)
 
-        if (isMiniPay) {
-          await refreshUserState()
-        }
-
         toast({
           title: "Let's find you the perfect freelancer! 🤖",
           description: "Our AI will help match you with the right talent."
@@ -213,10 +209,6 @@ export const QuickOnboarding: React.FC<QuickOnboardingProps> = ({
         account_type: 'freelancer',
         onboarding_completed: true
       } as any)
-
-      if (isMiniPay) {
-        await refreshUserState()
-      }
 
       toast({
         title: 'Welcome to NaijaLancers! 🎉',

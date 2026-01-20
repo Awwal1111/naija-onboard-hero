@@ -259,10 +259,6 @@ export default function AIHire() {
         onboarding_completed: true
       } as any)
 
-      if (isMiniPay) {
-        await refreshUserState()
-      }
-
       toast({
         title: 'Welcome aboard! 🎉',
         description: 'Your account is ready. Start hiring talent!'
