@@ -13,14 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-
-const NIGERIAN_STATES = [
-  'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno',
-  'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'Abuja', 'Gombe', 'Imo',
-  'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi', 'Kwara', 'Lagos', 'Nasarawa',
-  'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau', 'Rivers', 'Sokoto', 'Taraba',
-  'Yobe', 'Zamfara'
-];
+import { useUserCountry } from '@/hooks/useUserCountry';
 
 export type SortOption = 'relevance' | 'rating' | 'experience' | 'recent';
 
@@ -47,6 +40,8 @@ export const ExpertFilters: React.FC<ExpertFiltersProps> = ({
   onVerifiedChange,
   activeFiltersCount,
 }) => {
+  const { isNigerian, nigerianStates } = useUserCountry();
+  
   const sortLabels: Record<SortOption, string> = {
     relevance: 'Relevance',
     rating: 'Highest Rated',
@@ -69,25 +64,27 @@ export const ExpertFilters: React.FC<ExpertFiltersProps> = ({
 
       {/* Filter Row */}
       <div className="flex gap-2 items-center">
-        {/* State Filter */}
-        <Select value={stateFilter} onValueChange={onStateChange}>
-          <SelectTrigger className="flex-1 h-9 bg-input text-sm">
-            <SelectValue placeholder="All States" />
-          </SelectTrigger>
-          <SelectContent className="bg-background border border-border z-50 max-h-60">
-            <SelectItem value="all">All States</SelectItem>
-            {NIGERIAN_STATES.map((state) => (
-              <SelectItem key={state} value={state}>
-                {state}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {/* State Filter - Only show for Nigerian users */}
+        {isNigerian && (
+          <Select value={stateFilter} onValueChange={onStateChange}>
+            <SelectTrigger className="flex-1 h-9 bg-input text-sm">
+              <SelectValue placeholder="All States" />
+            </SelectTrigger>
+            <SelectContent className="bg-background border border-border z-50 max-h-60">
+              <SelectItem value="all">All States</SelectItem>
+              {nigerianStates.map((state) => (
+                <SelectItem key={state} value={state}>
+                  {state}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
 
         {/* Sort Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="h-9 gap-1.5">
+            <Button variant="outline" size="sm" className="h-9 gap-1.5 flex-1">
               <ArrowUpDown className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">{sortLabels[sortBy]}</span>
             </Button>

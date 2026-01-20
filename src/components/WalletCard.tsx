@@ -3,12 +3,17 @@ import { Plus, Minus, Eye, EyeOff, Send } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { BrandButton } from '@/components/ui/brand-button'
 import { useWallet, WalletBalance } from '@/hooks/useWallet'
+import { useUserCountry } from '@/hooks/useUserCountry'
 import { DepositDialog } from './DepositDialog'
 import { WithdrawalDialog } from './WithdrawalDialog'
 import { TransferDialog } from './TransferDialog'
 
+// NC is pegged 1:1 to NGN
+const NGN_TO_USD_RATE = 1600
+
 export const WalletCard = () => {
   const { balance, loading } = useWallet()
+  const { isNigerian } = useUserCountry()
   const [showBalance, setShowBalance] = useState(true)
   const [showDeposit, setShowDeposit] = useState(false)
   const [showWithdrawal, setShowWithdrawal] = useState(false)
@@ -18,11 +23,9 @@ export const WalletCard = () => {
     return `NC ${amount.toLocaleString()}`
   }
 
-  const formatNaira = (amount: number) => {
-    return new Intl.NumberFormat('en-NG', {
-      style: 'currency',
-      currency: 'NGN'
-    }).format(amount)
+  const formatUsd = (amount: number) => {
+    const usdAmount = amount / NGN_TO_USD_RATE
+    return `~$${usdAmount.toFixed(2)}`
   }
 
   return (
@@ -30,7 +33,7 @@ export const WalletCard = () => {
       <Card className="bg-gradient-to-br from-primary to-primary-glow border-none text-white">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg font-medium text-white/90">Naijacoin Wallet</CardTitle>
+            <CardTitle className="text-lg font-medium text-white/90">Wallet</CardTitle>
             <button
               onClick={() => setShowBalance(!showBalance)}
               className="p-1 hover:bg-white/10 rounded"
@@ -45,13 +48,20 @@ export const WalletCard = () => {
         </CardHeader>
         <CardContent className="pt-0">
           <div className="space-y-4">
-            <div className="text-3xl font-bold text-white">
-              {loading ? (
-                <div className="animate-pulse bg-white/20 h-8 w-32 rounded"></div>
-              ) : showBalance ? (
-                formatBalance(balance.total)
-              ) : (
-                '****'
+            <div>
+              <div className="text-3xl font-bold text-white">
+                {loading ? (
+                  <div className="animate-pulse bg-white/20 h-8 w-32 rounded"></div>
+                ) : showBalance ? (
+                  formatBalance(balance.total)
+                ) : (
+                  '****'
+                )}
+              </div>
+              {showBalance && !loading && (
+                <div className="text-sm text-white/70">
+                  {formatUsd(balance.total)} USD
+                </div>
               )}
             </div>
 
@@ -85,7 +95,7 @@ export const WalletCard = () => {
                 variant="outline"
                 size="sm"
                 onClick={() => setShowWithdrawal(true)}
-                disabled={balance.withdrawable < 3000}
+                disabled={balance.withdrawable < 100}
                 className="bg-white/10 border-white/20 text-white hover:bg-white/20 disabled:opacity-50"
               >
                 <Minus className="h-4 w-4 mr-1" />
@@ -93,9 +103,9 @@ export const WalletCard = () => {
               </BrandButton>
             </div>
             
-            {balance.withdrawable < 3000 && (
+            {balance.withdrawable < 100 && (
               <p className="text-xs text-white/70">
-                Minimum withdrawal: NC 3,000
+                Minimum withdrawal: NC 100 (~$0.06)
               </p>
             )}
           </div>

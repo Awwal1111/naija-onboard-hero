@@ -19,6 +19,7 @@ import { useNigerianStates } from "@/hooks/useNigerianStates";
 import { useSavedSearches } from "@/hooks/useSavedSearches";
 import { Separator } from "@/components/ui/separator";
 import ProfilePreview from "@/components/ProfilePreview";
+import { useUserCountry } from "@/hooks/useUserCountry";
 
 const Search = () => {
   const [query, setQuery] = useState("");
@@ -26,6 +27,7 @@ const Search = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [saveName, setSaveName] = useState("");
   const navigate = useNavigate();
+  const { isNigerian } = useUserCountry();
   
   // Filters
   const [minPrice, setMinPrice] = useState<number>(0);
@@ -41,7 +43,7 @@ const Search = () => {
   const { savedSearches, saveSearch, deleteSearch } = useSavedSearches();
   
   const hasActiveFilters = minPrice > 0 || maxPrice < 1000000 || selectedSkills.length > 0 || 
-                          selectedState || selectedLGA || minRating > 0;
+                          (isNigerian && (selectedState || selectedLGA)) || minRating > 0;
 
   const { data: searchResults, isLoading } = useQuery({
     queryKey: ["search", query, activeTab, minPrice, maxPrice, selectedSkills, selectedState, selectedLGA, minRating],
@@ -331,41 +333,43 @@ const Search = () => {
 
                 <Separator />
 
-                {/* Location */}
-                <div className="space-y-3">
-                  <Label>Location</Label>
-                  <Select value={selectedState} onValueChange={(val) => {
-                    setSelectedState(val);
-                    setSelectedLGA("");
-                    fetchLGAs(val);
-                  }}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select state" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {states.map(state => (
-                        <SelectItem key={state.id} value={state.name}>
-                          {state.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-
-                  {selectedState && (
-                    <Select value={selectedLGA} onValueChange={setSelectedLGA}>
+                {/* Location - Only show for Nigerian users */}
+                {isNigerian && (
+                  <div className="space-y-3">
+                    <Label>Location (Nigeria)</Label>
+                    <Select value={selectedState} onValueChange={(val) => {
+                      setSelectedState(val);
+                      setSelectedLGA("");
+                      fetchLGAs(val);
+                    }}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select LGA" />
+                        <SelectValue placeholder="Select state" />
                       </SelectTrigger>
                       <SelectContent>
-                        {lgas.map(lga => (
-                          <SelectItem key={lga.id} value={lga.name}>
-                            {lga.name}
+                        {states.map(state => (
+                          <SelectItem key={state.id} value={state.name}>
+                            {state.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                  )}
-                </div>
+
+                    {selectedState && (
+                      <Select value={selectedLGA} onValueChange={setSelectedLGA}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select LGA" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {lgas.map(lga => (
+                            <SelectItem key={lga.id} value={lga.name}>
+                              {lga.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                )}
 
                 <Separator />
 
