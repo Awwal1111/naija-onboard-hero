@@ -6,12 +6,16 @@ import { Wallet, ArrowUpRight, ArrowDownLeft, TrendingUp, Send, Download, Plus, 
 import { WalletBalance } from '@/hooks/useWallet'
 import { TransferDialog } from '@/components/TransferDialog'
 import { DepositDialog } from '@/components/DepositDialog'
+import { useUserCountry } from '@/hooks/useUserCountry'
 
 interface NaijaLanceWalletCardProps {
   balance: WalletBalance
   showBreakdown?: boolean
   className?: string
 }
+
+// NC is pegged 1:1 to NGN
+const NGN_TO_USD_RATE = 1600
 
 const NaijaLanceWalletCard: React.FC<NaijaLanceWalletCardProps> = ({ 
   balance, 
@@ -21,9 +25,15 @@ const NaijaLanceWalletCard: React.FC<NaijaLanceWalletCardProps> = ({
   const [showTransfer, setShowTransfer] = useState(false)
   const [showDeposit, setShowDeposit] = useState(false)
   const [showBalances, setShowBalances] = useState(true)
+  const { isNigerian } = useUserCountry()
 
   const formatCurrency = (amount: number) => {
     return `NC ${amount.toLocaleString()}`
+  }
+
+  const formatUsd = (amount: number) => {
+    const usdAmount = amount / NGN_TO_USD_RATE
+    return `~$${usdAmount.toFixed(2)}`
   }
 
   return (
@@ -33,7 +43,7 @@ const NaijaLanceWalletCard: React.FC<NaijaLanceWalletCardProps> = ({
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <Wallet className="h-5 w-5 text-primary" />
-              NaijaLance Wallet
+              Wallet
             </CardTitle>
             <Button
               variant="ghost"
@@ -54,7 +64,11 @@ const NaijaLanceWalletCard: React.FC<NaijaLanceWalletCardProps> = ({
               {showBalances ? formatCurrency(balance.total) : 'NC ****'}
             </p>
             <p className="text-sm text-muted-foreground">
-              {showBalances ? `₦${balance.total.toLocaleString()}` : '₦ ****'}
+              {showBalances ? (
+                isNigerian 
+                  ? `₦${balance.total.toLocaleString()}`
+                  : formatUsd(balance.total)
+              ) : '****'}
             </p>
           </div>
 
@@ -66,7 +80,7 @@ const NaijaLanceWalletCard: React.FC<NaijaLanceWalletCardProps> = ({
               variant="default"
             >
               <Plus className="h-4 w-4" />
-              Buy NC
+              Add Funds
             </Button>
             
             <Button
@@ -82,7 +96,7 @@ const NaijaLanceWalletCard: React.FC<NaijaLanceWalletCardProps> = ({
           {/* Exchange Rate Info */}
           <div className="text-center">
             <Badge variant="secondary" className="text-xs">
-              1 NC = ₦1 • Instant transactions
+              {isNigerian ? '1 NC = ₦1' : '1 NC ≈ $0.000625 USD'} • Instant transactions
             </Badge>
           </div>
         </CardContent>
