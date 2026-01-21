@@ -9,6 +9,8 @@ import { ExpertClass } from '@/hooks/useExpertClasses'
 import { format, formatDistanceToNow, differenceInSeconds } from 'date-fns'
 import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/use-toast'
+import { formatPriceCompact } from '@/components/CurrencyDisplay'
+import { useUserCountry } from '@/hooks/useUserCountry'
 
 interface ClassCardProps {
   classItem: ExpertClass
@@ -18,6 +20,7 @@ export const ClassCard: React.FC<ClassCardProps> = ({ classItem }) => {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { toast } = useToast()
+  const { isNigerian } = useUserCountry()
   const isExpert = classItem.expert_id === user?.id
   const [countdown, setCountdown] = useState('')
 
@@ -190,7 +193,7 @@ export const ClassCard: React.FC<ClassCardProps> = ({ classItem }) => {
             <Badge className="bg-green-500/90 hover:bg-green-500 text-white text-xs">FREE</Badge>
           ) : (
             <Badge className="bg-background/90 text-foreground text-xs">
-              ₦{classItem.price?.toLocaleString()}
+              {formatPriceCompact(classItem.price || 0, isNigerian)}
             </Badge>
           )}
         </div>

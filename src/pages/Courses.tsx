@@ -13,6 +13,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import EnhancedCourseDialog from "@/components/EnhancedCourseDialog";
 import { usePersonalizedCourses } from "@/hooks/usePersonalizedDiscovery";
 import { BookmarkButton } from "@/components/BookmarkButton";
+import { formatPriceForDisplay } from "@/components/CurrencyDisplay";
+import { useUserCountry } from "@/hooks/useUserCountry";
 
 export default function Courses() {
   const navigate = useNavigate();
@@ -26,6 +28,7 @@ export default function Courses() {
   const [stats, setStats] = useState({ created: 0, enrolled: 0, revenue: 0, students: 0 });
 
   const { courses, loading: isLoading } = usePersonalizedCourses(50);
+  const { isNigerian } = useUserCountry();
 
   useEffect(() => {
     if (user) fetchMyData();
@@ -95,7 +98,7 @@ export default function Courses() {
       </CardHeader>
       <CardContent className="p-3 pt-1 space-y-2">
         <div className="flex items-center justify-between">
-          <span className="text-lg font-bold text-primary">₦{course.price}NC</span>
+          <span className="text-lg font-bold text-primary">{formatPriceForDisplay(course.price, isNigerian)}</span>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <BookmarkButton type="course" itemId={course.id} />
             {course.average_rating > 0 && (
@@ -153,7 +156,7 @@ export default function Courses() {
           </Card>
           <Card className="bg-green-500/10 border-green-500/20">
             <CardContent className="pt-3 pb-3 text-center">
-              <div className="text-lg font-bold text-green-600">₦{stats.revenue}</div>
+              <div className="text-lg font-bold text-green-600">{formatPriceForDisplay(stats.revenue, isNigerian)}</div>
               <div className="text-[10px] text-muted-foreground">Revenue</div>
             </CardContent>
           </Card>
