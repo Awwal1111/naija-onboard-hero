@@ -5,7 +5,8 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { getCategoryPlaceholder, normalizeCategory } from '@/lib/gigCategories';
-
+import { useUserCountry } from '@/hooks/useUserCountry';
+import { formatPriceCompact } from '@/components/CurrencyDisplay';
 interface GigCardCompactProps {
   id: string;
   title: string;
@@ -39,6 +40,7 @@ export const GigCardCompact: React.FC<GigCardCompactProps> = ({
   className,
 }) => {
   const navigate = useNavigate();
+  const { isNigerian } = useUserCountry();
   
   const normalizedCategory = normalizeCategory(category);
   const hasUserImage = photo_urls && photo_urls.length > 0 && photo_urls[0] && !photo_urls[0].includes('placeholder');
@@ -108,7 +110,7 @@ export const GigCardCompact: React.FC<GigCardCompactProps> = ({
 
         {/* Price & Rating Row */}
         <div className="flex items-center justify-between pt-1 border-t border-border/50">
-          <span className="text-sm font-bold text-primary">₦{price.toLocaleString()}</span>
+          <span className="text-sm font-bold text-primary">{formatPriceCompact(price, isNigerian)}</span>
           <div className="flex items-center gap-0.5">
             <Star className={cn("h-3 w-3", displayRating > 0 ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground")} />
             <span className="text-[10px] font-medium">
