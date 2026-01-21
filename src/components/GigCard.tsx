@@ -6,7 +6,10 @@ import { Badge } from '@/components/ui/badge';
 import { BookmarkButton } from '@/components/BookmarkButton';
 import { cn } from '@/lib/utils';
 import { getCategoryPlaceholder, getCategoryIcon, normalizeCategory } from '@/lib/gigCategories';
+import { useUserCountry } from '@/hooks/useUserCountry';
 
+// NC is pegged 1:1 to NGN, approximate USD rate
+const NGN_TO_USD_RATE = 1600;
 export interface GigCardProps {
   id: string;
   title: string;
@@ -46,6 +49,16 @@ export const GigCard: React.FC<GigCardProps> = ({
   className,
 }) => {
   const navigate = useNavigate();
+  const { isNigerian } = useUserCountry();
+  
+  const formatPrice = (amount: number) => {
+    if (isNigerian) {
+      return `₦${amount.toLocaleString()}`;
+    }
+    // Show NC with USD equivalent for international users
+    const usdAmount = amount / NGN_TO_USD_RATE;
+    return `NC ${amount.toLocaleString()} (~$${usdAmount.toFixed(2)})`;
+  };
   
   const handleCardClick = () => {
     navigate(`/gig/${id}`);
@@ -163,7 +176,7 @@ export const GigCard: React.FC<GigCardProps> = ({
         {/* Price */}
         <div className="flex items-center justify-between">
           <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Starting at</span>
-          <span className="text-sm font-bold text-foreground">₦{price.toLocaleString()}</span>
+          <span className="text-sm font-bold text-foreground">{formatPrice(price)}</span>
         </div>
       </div>
     </div>
@@ -186,6 +199,15 @@ export const GigCardCompact: React.FC<GigCardProps> = ({
   className,
 }) => {
   const navigate = useNavigate();
+  const { isNigerian } = useUserCountry();
+  
+  const formatPrice = (amount: number) => {
+    if (isNigerian) {
+      return `₦${amount.toLocaleString()}`;
+    }
+    const usdAmount = amount / NGN_TO_USD_RATE;
+    return `~$${usdAmount.toFixed(2)}`;
+  };
   
   // Use uploaded image or category-specific placeholder
   const normalizedCategory = normalizeCategory(category);
@@ -240,7 +262,7 @@ export const GigCardCompact: React.FC<GigCardProps> = ({
             <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
             <span className="text-[11px] font-medium">{displayRating.toFixed(1)}</span>
           </div>
-          <span className="text-xs font-bold text-primary">₦{price.toLocaleString()}</span>
+          <span className="text-xs font-bold text-primary">{formatPrice(price)}</span>
         </div>
       </div>
     </div>

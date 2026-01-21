@@ -77,3 +77,26 @@ export const formatUsdOnly = (amount: number): string => {
   const usdAmount = amount / NGN_TO_USD_RATE
   return `$${usdAmount.toFixed(2)}`
 }
+
+/**
+ * Simple price formatter for use in components
+ * Shows ₦ for Nigerian users, NC with USD for international
+ */
+export const formatPriceForDisplay = (amount: number, isNigerian: boolean): string => {
+  if (isNigerian) {
+    return `₦${amount.toLocaleString()}`
+  }
+  const usdAmount = amount / NGN_TO_USD_RATE
+  return `NC ${amount.toLocaleString()} (~$${usdAmount.toFixed(2)})`
+}
+
+/**
+ * Compact price formatter - shorter format for tight spaces
+ */
+export const formatPriceCompact = (amount: number, isNigerian: boolean): string => {
+  if (isNigerian) {
+    return `₦${amount.toLocaleString()}`
+  }
+  const usdAmount = amount / NGN_TO_USD_RATE
+  return `~$${usdAmount.toFixed(2)}`
+}

@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Wallet, Zap, CheckCircle, Loader2, AlertCircle, DollarSign } from 'lucide-react';
 import { useMiniPay } from '@/hooks/useMiniPay';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 interface MiniPayDepositCardProps {
   onSuccess?: (amount: number) => void;
@@ -31,9 +32,15 @@ export const MiniPayDepositCard = ({ onSuccess }: MiniPayDepositCardProps) => {
   const [isDepositing, setIsDepositing] = useState(false);
   const [selectedToken, setSelectedToken] = useState<'cusd' | 'usdt'>('cusd');
 
+  // Minimum deposit: 100 NC
+  const MIN_DEPOSIT = 100;
+
   const handleDeposit = async () => {
     const amountNum = parseFloat(amount);
-    if (!amountNum || amountNum < 500) return;
+    if (!amountNum || amountNum < MIN_DEPOSIT) {
+      toast.error(`Minimum deposit is NC ${MIN_DEPOSIT}`);
+      return;
+    }
 
     // If user doesn't have a wallet address, they need to register
     if (!userWalletAddress) {
@@ -51,7 +58,7 @@ export const MiniPayDepositCard = ({ onSuccess }: MiniPayDepositCardProps) => {
     setIsDepositing(false);
   };
 
-  const quickAmounts = [1000, 2500, 5000, 10000];
+  const quickAmounts = [100, 500, 1000, 2500];
 
   // Show loading state
   if (isLoading && !isConnected) {
@@ -198,10 +205,10 @@ export const MiniPayDepositCard = ({ onSuccess }: MiniPayDepositCardProps) => {
             <div className="space-y-2">
               <Input
                 type="number"
-                placeholder="Enter amount (min ₦500)"
+                placeholder={`Enter amount (min NC ${MIN_DEPOSIT})`}
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                min={500}
+                min={MIN_DEPOSIT}
               />
               <p className="text-xs text-muted-foreground">
                 You'll receive: <span className="font-medium text-foreground">NC {parseFloat(amount || '0').toLocaleString()}</span>
@@ -211,7 +218,7 @@ export const MiniPayDepositCard = ({ onSuccess }: MiniPayDepositCardProps) => {
             {/* Deposit Button */}
             <BrandButton
               onClick={handleDeposit}
-              disabled={isDepositing || !amount || parseFloat(amount) < 500}
+              disabled={isDepositing || !amount || parseFloat(amount) < MIN_DEPOSIT}
               className="w-full bg-green-600 hover:bg-green-700"
             >
               {isDepositing ? (
