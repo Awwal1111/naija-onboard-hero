@@ -20,11 +20,14 @@ import {
   Briefcase
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { formatPriceForDisplay } from '@/components/CurrencyDisplay';
+import { useUserCountry } from '@/hooks/useUserCountry';
 
 const Orders = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { orders, loading } = useGigOrders();
+  const { isNigerian } = useUserCountry();
   const [activeTab, setActiveTab] = useState('all');
 
   if (!user) {
@@ -109,7 +112,7 @@ const Orders = () => {
 
               <div className="flex items-center justify-between mt-2">
                 <span className="text-sm font-semibold text-primary">
-                  ₦{order.amount.toLocaleString()}
+                  {formatPriceForDisplay(order.amount, isNigerian)}
                 </span>
                 <span className="text-xs text-muted-foreground">
                   {format(new Date(order.created_at), 'MMM d, yyyy')}

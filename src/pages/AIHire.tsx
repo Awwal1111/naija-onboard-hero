@@ -56,24 +56,19 @@ interface HiringContext {
 const HIRING_QUESTIONS = [
   {
     id: 'service',
-    question: "What service or task do you need help with?",
-    placeholder: "e.g., Logo design, Website development, Content writing...",
-    examples: ['Logo Design', 'Website', 'Writing', 'Video Editing', 'Virtual Assistant']
+    question: "What type of work do you need done?",
+    placeholder: "e.g., Logo design, Website, Writing, Video editing...",
+    options: ['Logo & Branding', 'Website/App', 'Writing & Content', 'Video & Animation', 'Marketing', 'Virtual Assistant', 'Other']
   },
   {
     id: 'budget',
-    question: "What's your budget range?",
-    options: ['Under ₦20,000', '₦20,000 - ₦50,000', '₦50,000 - ₦100,000', 'Over ₦100,000', 'Flexible / Not sure']
+    question: "What's your approximate budget?",
+    options: ['Under $50 (~NC 80,000)', '$50 - $100 (~NC 160,000)', '$100 - $300 (~NC 480,000)', 'Over $300', 'Flexible']
   },
   {
     id: 'urgency',
-    question: "How urgent is this project?",
-    options: ['ASAP (within days)', 'This week', 'This month', 'No rush - flexible timeline']
-  },
-  {
-    id: 'location',
-    question: "Do you need someone local or is remote okay?",
-    options: ['Remote is fine', 'Local (same city/area)', 'Either works']
+    question: "When do you need this completed?",
+    options: ['Within 3 days', 'Within a week', 'Within 2 weeks', 'Flexible timeline']
   }
 ]
 
@@ -129,7 +124,7 @@ export default function AIHire() {
     setMessages(prev => [...prev, userMsg])
     
     // Update hiring context based on current step
-    const contextKey = ['service_needed', 'budget', 'urgency', 'location_preference'][currentStep]
+    const contextKey = ['service_needed', 'budget', 'urgency'][currentStep]
     const newContext = { ...hiringContext, [contextKey]: response }
     setHiringContext(newContext)
     
@@ -374,7 +369,7 @@ export default function AIHire() {
                             </span>
                             <span className="flex items-center gap-1">
                               <DollarSign className="h-3 w-3" />
-                              ₦{freelancer.hourly_rate.toLocaleString()}/hr
+                              ~${(freelancer.hourly_rate / 1600).toFixed(0)}/hr
                             </span>
                           </div>
                         </div>

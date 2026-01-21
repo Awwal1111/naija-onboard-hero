@@ -14,6 +14,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import EnhancedProductDialog from "@/components/EnhancedProductDialog";
 import { usePersonalizedProducts } from "@/hooks/usePersonalizedDiscovery";
 import { BookmarkButton } from "@/components/BookmarkButton";
+import { formatPriceForDisplay } from "@/components/CurrencyDisplay";
+import { useUserCountry } from "@/hooks/useUserCountry";
 
 const categories: Array<"document" | "ebook" | "pdf" | "template" | "audio" | "video" | "other"> = ["document", "ebook", "pdf", "template", "audio", "video", "other"];
 
@@ -30,6 +32,7 @@ export default function DigitalProducts() {
   const [stats, setStats] = useState({ created: 0, purchased: 0, revenue: 0, downloads: 0 });
 
   const { products: allProducts, loading: isLoading } = usePersonalizedProducts(50);
+  const { isNigerian } = useUserCountry();
 
   useEffect(() => {
     if (user) fetchMyData();
@@ -101,7 +104,7 @@ export default function DigitalProducts() {
       </CardHeader>
       <CardContent className="p-3 pt-1">
         <div className="flex items-center justify-between">
-          <span className="text-lg font-bold text-primary">₦{product.price}NC</span>
+          <span className="text-lg font-bold text-primary">{formatPriceForDisplay(product.price, isNigerian)}</span>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <BookmarkButton type="product" itemId={product.id} />
             {product.average_rating > 0 && (
@@ -156,7 +159,7 @@ export default function DigitalProducts() {
           </Card>
           <Card className="bg-purple-500/10 border-purple-500/20">
             <CardContent className="pt-3 pb-3 text-center">
-              <div className="text-lg font-bold text-purple-600">₦{stats.revenue}</div>
+              <div className="text-lg font-bold text-purple-600">{formatPriceForDisplay(stats.revenue, isNigerian)}</div>
               <div className="text-[10px] text-muted-foreground">Revenue</div>
             </CardContent>
           </Card>
@@ -213,7 +216,7 @@ export default function DigitalProducts() {
                           <h3 className="font-semibold">{product.title}</h3>
                           <Badge variant="outline" className="text-xs capitalize mt-1">{product.category}</Badge>
                         </div>
-                        <span className="font-bold text-primary">₦{product.price}</span>
+                        <span className="font-bold text-primary">{formatPriceForDisplay(product.price, isNigerian)}</span>
                       </div>
                       <div className="flex items-center gap-4 text-xs text-muted-foreground">
                         <span className="flex items-center gap-1"><Eye className="h-3 w-3" />{product.download_count || 0} sales</span>

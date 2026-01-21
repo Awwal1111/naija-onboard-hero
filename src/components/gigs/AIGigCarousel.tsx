@@ -8,6 +8,8 @@ import { useProfile } from '@/hooks/useProfile';
 import { useSearchHistory } from '@/hooks/useSearchHistory';
 import { getCategoryPlaceholder, normalizeCategory } from '@/lib/gigCategories';
 import { cn } from '@/lib/utils';
+import { formatPriceForDisplay } from '@/components/CurrencyDisplay';
+import { useUserCountry } from '@/hooks/useUserCountry';
 
 interface GigData {
   id: string;
@@ -53,6 +55,7 @@ export const AIGigCarousel: React.FC<AIGigCarouselProps> = ({
   const navigate = useNavigate();
   const { user } = useAuth();
   const { profile } = useProfile();
+  const { isNigerian } = useUserCountry();
   const { getRecentCategories, getRecentQueries } = useSearchHistory();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -316,7 +319,9 @@ export const AIGigCarousel: React.FC<AIGigCarouselProps> = ({
             
             {/* Price & Rating */}
             <div className="flex items-center gap-1 mt-1">
-              <span className="text-xs font-bold text-primary">₦{gig.price?.toLocaleString()}</span>
+              <span className="text-xs font-bold text-primary">
+                {isNigerian ? `₦${gig.price?.toLocaleString()}` : `~$${((gig.price || 0) / 1600).toFixed(2)}`}
+              </span>
               {(gig.average_rating || 0) > 0 && (
                 <>
                   <span className="text-muted-foreground">•</span>
