@@ -18,7 +18,8 @@ import {
   User,
   DollarSign,
   Clock,
-  Globe
+  Globe,
+  Package
 } from 'lucide-react'
 import { useProfile } from '@/hooks/useProfile'
 import { useAuth } from '@/hooks/useAuth'
@@ -32,6 +33,7 @@ interface Message {
   content: string
   options?: string[]
   freelancers?: Freelancer[]
+  gigs?: Gig[]
 }
 
 interface Freelancer {
@@ -44,6 +46,18 @@ interface Freelancer {
   country: string
   hourly_rate: number
   is_expert: boolean
+}
+
+interface Gig {
+  id: string
+  title: string
+  description: string
+  price: number
+  delivery_days: number
+  seller_name: string
+  seller_picture: string | null
+  average_rating: number
+  photo_url: string | null
 }
 
 interface HiringContext {
@@ -155,7 +169,7 @@ export default function AIHire() {
     const searchingMsg: Message = {
       id: Date.now().toString(),
       role: 'assistant',
-      content: "Perfect! 🔍 Let me find the best freelancers for you based on skill, trust score, and activity level..."
+      content: "Perfect! 🔍 Let me find the best freelancers and service packages for you..."
     }
     setMessages(prev => [...prev, searchingMsg])
 
@@ -170,17 +184,58 @@ export default function AIHire() {
 
       if (error) throw error
 
-      // Filter by profession/service if provided
+      // Also query matching gigs (service packages)
+      const { data: gigs, error: gigsError } = await supabase
+        .from('jobs_services')
+        .select(`
+          id, title, description, price, delivery_days, average_rating, photo_urls,
+          user_id
+        `)
+        .eq('status', 'active')
+        .order('boost_amount', { ascending: false })
+        .limit(10)
+
+      // Filter freelancers by profession/service if provided
       let filteredFreelancers = freelancers || []
+      let filteredGigs = gigs || []
+      
       if (context.service_needed) {
         const searchTerm = context.service_needed.toLowerCase()
+        const searchWords = searchTerm.split(' ').filter(w => w.length > 2)
+        
         filteredFreelancers = filteredFreelancers.filter(f => 
-          f.profession?.toLowerCase().includes(searchTerm.split(' ')[0])
+          searchWords.some(word => f.profession?.toLowerCase().includes(word))
+        )
+        
+        filteredGigs = filteredGigs.filter(g => 
+          searchWords.some(word => 
+            g.title?.toLowerCase().includes(word) || 
+            g.description?.toLowerCase().includes(word)
+          )
         )
       }
 
-      // Take top 5
+      // Take top 5 of each
       filteredFreelancers = filteredFreelancers.slice(0, 5)
+      filteredGigs = filteredGigs.slice(0, 5)
+
+      // Get seller info for gigs
+      const sellerIds = filteredGigs.map(g => g.user_id).filter(Boolean)
+      let sellersMap: Record<string, { name: string; picture: string | null }> = {}
+      
+      if (sellerIds.length > 0) {
+        const { data: sellers } = await supabase
+          .from('profiles')
+          .select('user_id, full_name, profile_picture_url')
+          .in('user_id', sellerIds)
+        
+        sellers?.forEach(s => {
+          sellersMap[s.user_id] = {
+            name: s.full_name || 'Seller',
+            picture: s.profile_picture_url
+          }
+        })
+      }
 
       // Get ratings for matched freelancers
       const freelancerIds = filteredFreelancers.map(f => f.user_id)
@@ -220,15 +275,40 @@ export default function AIHire() {
         is_expert: f.is_expert || false
       }))
 
+      const formattedGigs: Gig[] = filteredGigs.map(g => ({
+        id: g.id,
+        title: g.title,
+        description: g.description,
+        price: g.price,
+        delivery_days: g.delivery_days || 7,
+        seller_name: sellersMap[g.user_id]?.name || 'Seller',
+        seller_picture: sellersMap[g.user_id]?.picture || null,
+        average_rating: g.average_rating || 0,
+        photo_url: g.photo_urls?.[0] || null
+      }))
+
       setMatchedFreelancers(formattedFreelancers)
 
-      // Show results message
+      // Show gigs first if available
+      if (formattedGigs.length > 0) {
+        const gigsMsg: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: `📦 I found ${formattedGigs.length} ready-to-order service packages that match your needs:`,
+          gigs: formattedGigs
+        }
+        setMessages(prev => [...prev, gigsMsg])
+      }
+
+      // Then show freelancers
       const resultsMsg: Message = {
-        id: (Date.now() + 1).toString(),
+        id: (Date.now() + 2).toString(),
         role: 'assistant',
         content: formattedFreelancers.length > 0 
-          ? `Great news! 🎉 I found ${formattedFreelancers.length} talented freelancers that match your needs. These are ranked by skill, trust score, and activity - not by location.\n\nHere are my top recommendations:`
-          : "I couldn't find exact matches, but here are some top-rated freelancers who might help:",
+          ? `👨‍💻 ${formattedFreelancers.length} talented freelancers for custom work:`
+          : formattedGigs.length === 0 
+            ? "I couldn't find exact matches. Try browsing all experts or gigs."
+            : "You can also reach out to these freelancers for custom work:",
         freelancers: formattedFreelancers
       }
       setMessages(prev => [...prev, resultsMsg])
@@ -331,6 +411,53 @@ export default function AIHire() {
                 </div>
               )}
 
+              {/* Gig Results */}
+              {msg.gigs && msg.gigs.length > 0 && (
+                <div className="space-y-3 mt-4">
+                  {msg.gigs.map((gig) => (
+                    <Card
+                      key={gig.id}
+                      className="p-3 cursor-pointer hover:bg-accent/50 transition-colors"
+                      onClick={() => navigate(`/gig/${gig.id}`)}
+                    >
+                      <div className="flex items-start gap-3">
+                        {gig.photo_url ? (
+                          <img
+                            src={gig.photo_url}
+                            alt={gig.title}
+                            className="w-14 h-14 object-cover rounded-lg shrink-0"
+                          />
+                        ) : (
+                          <div className="w-14 h-14 bg-muted rounded-lg flex items-center justify-center shrink-0">
+                            <Package className="h-6 w-6 text-muted-foreground" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm line-clamp-1">{gig.title}</p>
+                          <p className="text-xs text-muted-foreground">by {gig.seller_name}</p>
+                          <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
+                            <span className="font-semibold text-primary">
+                              NC {gig.price.toLocaleString()} (~${(gig.price / 1600).toFixed(0)})
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {gig.delivery_days}d
+                            </span>
+                            {gig.average_rating > 0 && (
+                              <span className="flex items-center gap-1">
+                                <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                                {gig.average_rating.toFixed(1)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+
               {/* Freelancer Results */}
               {msg.freelancers && msg.freelancers.length > 0 && (
                 <div className="space-y-3 mt-4">
@@ -360,7 +487,7 @@ export default function AIHire() {
                           <p className="text-xs text-muted-foreground">{freelancer.profession}</p>
                           <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
                             <span className="flex items-center gap-1">
-                              <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
+                              <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
                               {freelancer.rating.toFixed(1)}
                             </span>
                             <span className="flex items-center gap-1">
