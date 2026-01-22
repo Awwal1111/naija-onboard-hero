@@ -42,9 +42,19 @@ export const MiniPayDepositCard = ({ onSuccess }: MiniPayDepositCardProps) => {
       return;
     }
 
-    // If user doesn't have a wallet address, they need to register
+    // If user is not connected to MiniPay wallet, connect first
+    if (!isConnected) {
+      const connected = await connect();
+      if (!connected) {
+        toast.error('Please connect your MiniPay wallet first');
+        return;
+      }
+    }
+
+    // If user doesn't have a wallet address after connection, they need to log in first
     if (!userWalletAddress) {
-      navigate('/signup');
+      toast.error('Please log in to your account first to receive deposits');
+      navigate('/login');
       return;
     }
 
@@ -179,7 +189,7 @@ export const MiniPayDepositCard = ({ onSuccess }: MiniPayDepositCardProps) => {
               <Alert className="border-orange-500/50 bg-orange-500/10">
                 <AlertCircle className="h-4 w-4 text-orange-600" />
                 <AlertDescription className="text-sm">
-                  Complete your registration to receive a wallet address for deposits.
+                  Please log in to your NaijaLancers account to receive deposits.
                 </AlertDescription>
               </Alert>
             )}
@@ -226,7 +236,7 @@ export const MiniPayDepositCard = ({ onSuccess }: MiniPayDepositCardProps) => {
               ) : (
                 <Zap className="h-4 w-4 mr-2" />
               )}
-              {!userWalletAddress ? 'Register to Deposit' : `Deposit ${selectedToken.toUpperCase()} via MiniPay`}
+              {!userWalletAddress ? 'Log In to Deposit' : `Deposit ${selectedToken.toUpperCase()} via MiniPay`}
             </BrandButton>
 
             <p className="text-xs text-center text-muted-foreground">
