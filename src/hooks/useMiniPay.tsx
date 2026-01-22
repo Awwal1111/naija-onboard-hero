@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { 
   detectMiniPaySync,
   getMiniPayAccount,
@@ -10,6 +10,7 @@ import {
 } from '@/lib/minipay';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useAuth } from '@/hooks/useAuth';
 
 interface UseMiniPayReturn {
   isMiniPay: boolean;
@@ -42,6 +43,8 @@ const initialDetection = detectMiniPaySync();
  * This prevents MiniPay WebView flickering caused by async operations during startup.
  */
 export const useMiniPay = (): UseMiniPayReturn => {
+  const { user } = useAuth();
+  
   // Use sync detection - NO async useEffect on mount
   const [state, setState] = useState({
     isMiniPay: initialDetection.isMiniPay,
@@ -58,27 +61,53 @@ export const useMiniPay = (): UseMiniPayReturn => {
   // Track initialization to prevent double-init
   const initRef = useRef(false);
 
-  // Fetch user's assigned Celo wallet address from their profile
-  // NOTE: Only use celo_wallet_address - minipay_address column doesn't exist!
-  const fetchUserWalletAddress = async (miniPayAddress: string): Promise<string | null> => {
+  /**
+   * Fetch the LOGGED-IN user's wallet address from their profile
+   * This is where deposits will be sent - NOT matching by MiniPay address
+   */
+  const fetchLoggedInUserWallet = useCallback(async (): Promise<string | null> => {
+    if (!user?.id) {
+      console.log('[MiniPay] No logged-in user, cannot fetch wallet');
+      return null;
+    }
+    
     try {
-      const { data: profile } = await supabase
+      const { data: profile, error } = await supabase
         .from('profiles')
-        .select('celo_wallet_address, user_id')
-        .ilike('celo_wallet_address', miniPayAddress.toLowerCase())
-        .maybeSingle();
+        .select('celo_wallet_address')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error) {
+        console.error('[MiniPay] Error fetching profile:', error);
+        return null;
+      }
 
       if (profile?.celo_wallet_address) {
         console.log('[MiniPay] User wallet address:', profile.celo_wallet_address);
         return profile.celo_wallet_address;
       }
-      console.log('[MiniPay] No assigned wallet found for this user');
+      
+      // User doesn't have a wallet yet - try to create one
+      console.log('[MiniPay] No wallet found, attempting to create one...');
+      const { data: walletData, error: walletError } = await supabase.functions.invoke('create-user-wallet');
+      
+      if (walletError) {
+        console.error('[MiniPay] Failed to create wallet:', walletError);
+        return null;
+      }
+      
+      if (walletData?.address) {
+        console.log('[MiniPay] Created new wallet:', walletData.address);
+        return walletData.address;
+      }
+      
       return null;
     } catch (err) {
       console.error('[MiniPay] Failed to fetch user wallet:', err);
       return null;
     }
-  };
+  }, [user?.id]);
 
   /**
    * LAZY CONNECT - Only called when user explicitly triggers connection
@@ -128,11 +157,11 @@ export const useMiniPay = (): UseMiniPayReturn => {
       if (acc) {
         console.log('[MiniPay] Connected:', acc);
         
-        // Fetch balances and wallet address in parallel
+        // Fetch balances and logged-in user's wallet address in parallel
         const [cusdBal, usdtBal, walletAddr] = await Promise.all([
           getMiniPayCUSDBalance(acc).catch(() => '0'),
           getMiniPayUSDTBalance(acc).catch(() => '0'),
-          fetchUserWalletAddress(acc)
+          fetchLoggedInUserWallet()
         ]);
 
         nextState = {
@@ -162,7 +191,7 @@ export const useMiniPay = (): UseMiniPayReturn => {
       initRef.current = false;
       return false;
     }
-  }, [state.isConnected, state.account, state.hasProvider, state.isMiniPay]);
+  }, [state.isConnected, state.account, state.hasProvider, state.isMiniPay, fetchLoggedInUserWallet]);
 
   const refreshBalance = useCallback(async () => {
     if (!state.account) return;
