@@ -8,6 +8,8 @@ import { toast } from 'sonner'
 import { supabase } from '@/integrations/supabase/client'
 import { Loader2, Zap, Info } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Link } from 'react-router-dom'
+import { useProfile } from '@/hooks/useProfile'
 
 interface VTUElectricityDialogProps {
   open: boolean
@@ -17,6 +19,7 @@ interface VTUElectricityDialogProps {
 }
 
 export function VTUElectricityDialog({ open, onOpenChange, currentBalance, onSuccess }: VTUElectricityDialogProps) {
+  const { profile } = useProfile()
   const [loading, setLoading] = useState(false)
   const [verifying, setVerifying] = useState(false)
   const [provider, setProvider] = useState('')
@@ -25,6 +28,8 @@ export function VTUElectricityDialog({ open, onOpenChange, currentBalance, onSuc
   const [amount, setAmount] = useState('')
   const [customerName, setCustomerName] = useState('')
   const [pin, setPin] = useState('')
+  
+  const hasPin = Boolean((profile as any)?.transaction_pin)
 
   const providers = [
     { value: 'ikeja-electric', label: 'Ikeja Electric (IKEDC)' },
@@ -212,6 +217,13 @@ export function VTUElectricityDialog({ open, onOpenChange, currentBalance, onSuc
               maxLength={4}
               className="text-sm"
             />
+            {!hasPin ? (
+              <p className="text-xs text-destructive">
+                No PIN set. <Link to="/settings" className="underline text-primary">Set up in Settings</Link>
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground">Enter PIN to confirm</p>
+            )}
           </div>
 
           <Button
