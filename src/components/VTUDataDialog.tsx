@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, Wifi } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { useProfile } from '@/hooks/useProfile';
 
 interface VTUDataDialogProps {
   open: boolean;
@@ -33,6 +35,7 @@ const networks = [
 
 export const VTUDataDialog = ({ open, onOpenChange, currentBalance, onSuccess }: VTUDataDialogProps) => {
   const { toast } = useToast();
+  const { profile } = useProfile();
   const [loading, setLoading] = useState(false);
   const [loadingPlans, setLoadingPlans] = useState(false);
   const [network, setNetwork] = useState<string>('');
@@ -41,6 +44,8 @@ export const VTUDataDialog = ({ open, onOpenChange, currentBalance, onSuccess }:
   const [selectedPlan, setSelectedPlan] = useState<DataPlan | null>(null);
   const [pin, setPin] = useState<string>('');
   const [showPinInput, setShowPinInput] = useState(false);
+  
+  const hasPin = Boolean((profile as any)?.transaction_pin);
 
   useEffect(() => {
     if (network && open) {
@@ -256,9 +261,15 @@ export const VTUDataDialog = ({ open, onOpenChange, currentBalance, onSuccess }:
                   onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
                   maxLength={4}
                 />
-                <p className="text-xs text-muted-foreground">
-                  Enter your PIN to confirm purchase
-                </p>
+                {!hasPin ? (
+                  <p className="text-xs text-destructive">
+                    No PIN set. <Link to="/settings" className="underline text-primary">Set up in Settings</Link>
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Enter your PIN to confirm purchase
+                  </p>
+                )}
               </div>
               <div className="flex gap-2">
                 <Button 

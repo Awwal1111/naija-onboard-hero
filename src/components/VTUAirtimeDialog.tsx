@@ -6,6 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { Link } from 'react-router-dom';
+import { useProfile } from '@/hooks/useProfile';
 import { Loader2, Phone } from 'lucide-react';
 
 interface VTUAirtimeDialogProps {
@@ -24,12 +26,15 @@ const networks = [
 
 export const VTUAirtimeDialog = ({ open, onOpenChange, currentBalance, onSuccess }: VTUAirtimeDialogProps) => {
   const { toast } = useToast();
+  const { profile } = useProfile();
   const [loading, setLoading] = useState(false);
   const [network, setNetwork] = useState<string>('');
   const [amount, setAmount] = useState<string>('');
   const [phone, setPhone] = useState<string>('');
   const [pin, setPin] = useState<string>('');
   const [showPinInput, setShowPinInput] = useState(false);
+  
+  const hasPin = Boolean((profile as any)?.transaction_pin);
 
   const handleContinue = () => {
     if (!network || !amount || !phone) {
@@ -191,9 +196,15 @@ export const VTUAirtimeDialog = ({ open, onOpenChange, currentBalance, onSuccess
                   onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
                   maxLength={4}
                 />
-                <p className="text-xs text-muted-foreground">
-                  Enter your PIN to confirm purchase
-                </p>
+                {!hasPin ? (
+                  <p className="text-xs text-destructive">
+                    No PIN set. <Link to="/settings" className="underline text-primary">Set up in Settings</Link>
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Enter your PIN to confirm purchase
+                  </p>
+                )}
               </div>
               <div className="flex gap-2">
                 <Button 

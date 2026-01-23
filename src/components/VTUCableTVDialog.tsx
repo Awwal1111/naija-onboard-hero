@@ -8,6 +8,8 @@ import { toast } from 'sonner'
 import { supabase } from '@/integrations/supabase/client'
 import { Loader2, Tv, Info } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Link } from 'react-router-dom'
+import { useProfile } from '@/hooks/useProfile'
 
 interface VTUCableTVDialogProps {
   open: boolean
@@ -23,6 +25,7 @@ interface TVPlan {
 }
 
 export function VTUCableTVDialog({ open, onOpenChange, currentBalance, onSuccess }: VTUCableTVDialogProps) {
+  const { profile } = useProfile()
   const [loading, setLoading] = useState(false)
   const [verifying, setVerifying] = useState(false)
   const [loadingPlans, setLoadingPlans] = useState(false)
@@ -32,6 +35,8 @@ export function VTUCableTVDialog({ open, onOpenChange, currentBalance, onSuccess
   const [plans, setPlans] = useState<TVPlan[]>([])
   const [customerName, setCustomerName] = useState('')
   const [pin, setPin] = useState('')
+  
+  const hasPin = Boolean((profile as any)?.transaction_pin)
 
   const providers = [
     { value: 'dstv', label: 'DStv' },
@@ -224,6 +229,13 @@ export function VTUCableTVDialog({ open, onOpenChange, currentBalance, onSuccess
               maxLength={4}
               className="text-sm"
             />
+            {!hasPin ? (
+              <p className="text-xs text-destructive">
+                No PIN set. <Link to="/settings" className="underline text-primary">Set up in Settings</Link>
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground">Enter PIN to confirm</p>
+            )}
           </div>
 
           <Button

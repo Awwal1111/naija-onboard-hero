@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, TrendingUp } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { useProfile } from '@/hooks/useProfile';
 
 interface BettingFundDialogProps {
   open: boolean;
@@ -28,12 +30,15 @@ const bettingProviders = [
 
 export const BettingFundDialog = ({ open, onOpenChange, currentBalance, onSuccess }: BettingFundDialogProps) => {
   const { toast } = useToast();
+  const { profile } = useProfile();
   const [loading, setLoading] = useState(false);
   const [provider, setProvider] = useState<string>('');
   const [customerId, setCustomerId] = useState<string>('');
   const [amount, setAmount] = useState<string>('');
   const [pin, setPin] = useState<string>('');
   const [showPinInput, setShowPinInput] = useState(false);
+  
+  const hasPin = Boolean((profile as any)?.transaction_pin);
 
   const handleContinue = () => {
     if (!provider || !customerId || !amount) {
@@ -193,9 +198,15 @@ export const BettingFundDialog = ({ open, onOpenChange, currentBalance, onSucces
                   onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
                   maxLength={4}
                 />
-                <p className="text-xs text-muted-foreground">
-                  Enter your PIN to confirm funding
-                </p>
+                {!hasPin ? (
+                  <p className="text-xs text-destructive">
+                    No PIN set. <Link to="/settings" className="underline text-primary">Set up in Settings</Link>
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Enter your PIN to confirm funding
+                  </p>
+                )}
               </div>
               <div className="flex gap-2">
                 <Button 
