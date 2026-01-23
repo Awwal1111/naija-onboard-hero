@@ -697,6 +697,116 @@ export type Database = {
         }
         Relationships: []
       }
+      contest_submissions: {
+        Row: {
+          client_feedback: string | null
+          client_rating: number | null
+          contest_id: string
+          created_at: string | null
+          description: string | null
+          file_urls: string[]
+          freelancer_id: string
+          id: string
+          preview_url: string | null
+          status: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          client_feedback?: string | null
+          client_rating?: number | null
+          contest_id: string
+          created_at?: string | null
+          description?: string | null
+          file_urls: string[]
+          freelancer_id: string
+          id?: string
+          preview_url?: string | null
+          status?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          client_feedback?: string | null
+          client_rating?: number | null
+          contest_id?: string
+          created_at?: string | null
+          description?: string | null
+          file_urls?: string[]
+          freelancer_id?: string
+          id?: string
+          preview_url?: string | null
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contest_submissions_contest_id_fkey"
+            columns: ["contest_id"]
+            isOneToOne: false
+            referencedRelation: "contests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contests: {
+        Row: {
+          category: string
+          client_id: string
+          created_at: string | null
+          deadline: string
+          description: string
+          escrow_funded: boolean | null
+          id: string
+          max_submissions: number | null
+          prize_amount: number
+          requirements: string[] | null
+          status: string | null
+          style_preferences: string[] | null
+          title: string
+          updated_at: string | null
+          winner_id: string | null
+          winning_submission_id: string | null
+        }
+        Insert: {
+          category: string
+          client_id: string
+          created_at?: string | null
+          deadline: string
+          description: string
+          escrow_funded?: boolean | null
+          id?: string
+          max_submissions?: number | null
+          prize_amount: number
+          requirements?: string[] | null
+          status?: string | null
+          style_preferences?: string[] | null
+          title: string
+          updated_at?: string | null
+          winner_id?: string | null
+          winning_submission_id?: string | null
+        }
+        Update: {
+          category?: string
+          client_id?: string
+          created_at?: string | null
+          deadline?: string
+          description?: string
+          escrow_funded?: boolean | null
+          id?: string
+          max_submissions?: number | null
+          prize_amount?: number
+          requirements?: string[] | null
+          status?: string | null
+          style_preferences?: string[] | null
+          title?: string
+          updated_at?: string | null
+          winner_id?: string | null
+          winning_submission_id?: string | null
+        }
+        Relationships: []
+      }
       course_enrollments: {
         Row: {
           amount: number
@@ -3911,6 +4021,81 @@ export type Database = {
         }
         Relationships: []
       }
+      project_milestones: {
+        Row: {
+          amount: number
+          client_feedback: string | null
+          completed_at: string | null
+          created_at: string | null
+          deliverable_urls: string[] | null
+          description: string | null
+          due_date: string | null
+          freelancer_notes: string | null
+          id: string
+          max_revisions: number | null
+          order_id: string | null
+          order_index: number
+          released_at: string | null
+          revision_count: number | null
+          safepay_transaction_id: string | null
+          status: string | null
+          title: string
+        }
+        Insert: {
+          amount: number
+          client_feedback?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          deliverable_urls?: string[] | null
+          description?: string | null
+          due_date?: string | null
+          freelancer_notes?: string | null
+          id?: string
+          max_revisions?: number | null
+          order_id?: string | null
+          order_index: number
+          released_at?: string | null
+          revision_count?: number | null
+          safepay_transaction_id?: string | null
+          status?: string | null
+          title: string
+        }
+        Update: {
+          amount?: number
+          client_feedback?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          deliverable_urls?: string[] | null
+          description?: string | null
+          due_date?: string | null
+          freelancer_notes?: string | null
+          id?: string
+          max_revisions?: number | null
+          order_id?: string | null
+          order_index?: number
+          released_at?: string | null
+          revision_count?: number | null
+          safepay_transaction_id?: string | null
+          status?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_milestones_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "gig_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_milestones_safepay_transaction_id_fkey"
+            columns: ["safepay_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "safepay_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       push_subscriptions: {
         Row: {
           auth: string | null
@@ -5483,6 +5668,336 @@ export type Database = {
           last_update?: string
           pending_balance?: number | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      work_diary_entries: {
+        Row: {
+          activity_level: number | null
+          billable: boolean | null
+          created_at: string | null
+          description: string | null
+          duration_minutes: number | null
+          ended_at: string | null
+          hourly_rate: number | null
+          id: string
+          is_manual: boolean | null
+          order_id: string | null
+          screenshot_url: string | null
+          started_at: string
+          task_id: string | null
+          user_id: string
+          workroom_id: string | null
+        }
+        Insert: {
+          activity_level?: number | null
+          billable?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          ended_at?: string | null
+          hourly_rate?: number | null
+          id?: string
+          is_manual?: boolean | null
+          order_id?: string | null
+          screenshot_url?: string | null
+          started_at: string
+          task_id?: string | null
+          user_id: string
+          workroom_id?: string | null
+        }
+        Update: {
+          activity_level?: number | null
+          billable?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          ended_at?: string | null
+          hourly_rate?: number | null
+          id?: string
+          is_manual?: boolean | null
+          order_id?: string | null
+          screenshot_url?: string | null
+          started_at?: string
+          task_id?: string | null
+          user_id?: string
+          workroom_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_diary_entries_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "gig_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_diary_entries_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "workroom_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_diary_entries_workroom_id_fkey"
+            columns: ["workroom_id"]
+            isOneToOne: false
+            referencedRelation: "workrooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workroom_comments: {
+        Row: {
+          content: string
+          created_at: string | null
+          file_id: string | null
+          id: string
+          mentions: string[] | null
+          task_id: string | null
+          updated_at: string | null
+          user_id: string
+          workroom_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          file_id?: string | null
+          id?: string
+          mentions?: string[] | null
+          task_id?: string | null
+          updated_at?: string | null
+          user_id: string
+          workroom_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          file_id?: string | null
+          id?: string
+          mentions?: string[] | null
+          task_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+          workroom_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workroom_comments_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "workroom_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workroom_comments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "workroom_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workroom_comments_workroom_id_fkey"
+            columns: ["workroom_id"]
+            isOneToOne: false
+            referencedRelation: "workrooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workroom_files: {
+        Row: {
+          created_at: string | null
+          file_name: string
+          file_size: number | null
+          file_type: string | null
+          file_url: string
+          id: string
+          parent_file_id: string | null
+          task_id: string | null
+          uploaded_by: string
+          version: number | null
+          workroom_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          file_name: string
+          file_size?: number | null
+          file_type?: string | null
+          file_url: string
+          id?: string
+          parent_file_id?: string | null
+          task_id?: string | null
+          uploaded_by: string
+          version?: number | null
+          workroom_id: string
+        }
+        Update: {
+          created_at?: string | null
+          file_name?: string
+          file_size?: number | null
+          file_type?: string | null
+          file_url?: string
+          id?: string
+          parent_file_id?: string | null
+          task_id?: string | null
+          uploaded_by?: string
+          version?: number | null
+          workroom_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workroom_files_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "workroom_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workroom_files_workroom_id_fkey"
+            columns: ["workroom_id"]
+            isOneToOne: false
+            referencedRelation: "workrooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workroom_members: {
+        Row: {
+          hourly_rate: number | null
+          id: string
+          joined_at: string | null
+          permissions: string[] | null
+          role: string | null
+          user_id: string
+          workroom_id: string
+        }
+        Insert: {
+          hourly_rate?: number | null
+          id?: string
+          joined_at?: string | null
+          permissions?: string[] | null
+          role?: string | null
+          user_id: string
+          workroom_id: string
+        }
+        Update: {
+          hourly_rate?: number | null
+          id?: string
+          joined_at?: string | null
+          permissions?: string[] | null
+          role?: string | null
+          user_id?: string
+          workroom_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workroom_members_workroom_id_fkey"
+            columns: ["workroom_id"]
+            isOneToOne: false
+            referencedRelation: "workrooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workroom_tasks: {
+        Row: {
+          actual_hours: number | null
+          assigned_to: string | null
+          completed_at: string | null
+          created_at: string | null
+          created_by: string
+          description: string | null
+          due_date: string | null
+          estimated_hours: number | null
+          id: string
+          priority: string | null
+          status: string | null
+          title: string
+          updated_at: string | null
+          workroom_id: string
+        }
+        Insert: {
+          actual_hours?: number | null
+          assigned_to?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          created_by: string
+          description?: string | null
+          due_date?: string | null
+          estimated_hours?: number | null
+          id?: string
+          priority?: string | null
+          status?: string | null
+          title: string
+          updated_at?: string | null
+          workroom_id: string
+        }
+        Update: {
+          actual_hours?: number | null
+          assigned_to?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string
+          description?: string | null
+          due_date?: string | null
+          estimated_hours?: number | null
+          id?: string
+          priority?: string | null
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+          workroom_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workroom_tasks_workroom_id_fkey"
+            columns: ["workroom_id"]
+            isOneToOne: false
+            referencedRelation: "workrooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workrooms: {
+        Row: {
+          created_at: string | null
+          deadline: string | null
+          description: string | null
+          id: string
+          name: string
+          owner_id: string
+          project_type: string | null
+          spent_budget: number | null
+          status: string | null
+          total_budget: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          deadline?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          owner_id: string
+          project_type?: string | null
+          spent_budget?: number | null
+          status?: string | null
+          total_budget?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          deadline?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          owner_id?: string
+          project_type?: string | null
+          spent_budget?: number | null
+          status?: string | null
+          total_budget?: number | null
+          updated_at?: string | null
         }
         Relationships: []
       }
