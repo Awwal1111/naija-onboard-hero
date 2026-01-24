@@ -75,23 +75,28 @@ export default function PublicExpert() {
 
   const location = [expert.area, expert.lga_name, expert.state_name].filter(Boolean).join(', ');
 
+  const canonicalUrl = `https://naijalancers.name.ng/p/expert/${userId}`;
+
   return (
     <>
       <Helmet>
-        <title>{expert.full_name} - {expert.profession} | NaijaLancers</title>
-        <meta name="description" content={expert.bio || `Hire ${expert.full_name}, a professional ${expert.profession} on NaijaLancers`} />
+        <title>{expert.full_name} - {expert.profession} | NaijaLancers Expert</title>
+        <meta name="description" content={expert.bio || `Hire ${expert.full_name}, a professional ${expert.profession} on NaijaLancers. View their skills, ratings, and portfolio.`} />
+        <link rel="canonical" href={canonicalUrl} />
         
         {/* OpenGraph tags */}
-        <meta property="og:title" content={`${expert.full_name} - ${expert.profession}`} />
-        <meta property="og:description" content={expert.bio || `Professional ${expert.profession}`} />
-        <meta property="og:image" content={expert.profile_picture_url || '/logo.png'} />
+        <meta property="og:title" content={`${expert.full_name} - ${expert.profession} | NaijaLancers`} />
+        <meta property="og:description" content={expert.bio || `Professional ${expert.profession} available for hire`} />
+        <meta property="og:image" content={expert.profile_picture_url || 'https://naijalancers.name.ng/logo.png'} />
         <meta property="og:type" content="profile" />
+        <meta property="og:url" content={canonicalUrl} />
+        <meta property="og:site_name" content="NaijaLancers" />
         
         {/* Twitter Card tags */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={`${expert.full_name} - ${expert.profession}`} />
         <meta name="twitter:description" content={expert.bio || `Professional ${expert.profession}`} />
-        <meta name="twitter:image" content={expert.profile_picture_url || '/logo.png'} />
+        <meta name="twitter:image" content={expert.profile_picture_url || 'https://naijalancers.name.ng/logo.png'} />
         
         {/* Structured Data */}
         <script type="application/ld+json">
@@ -161,9 +166,14 @@ export default function PublicExpert() {
                 </div>
               )}
 
-              <Button onClick={() => navigate(`/profile/${userId}`)} size="lg" className="mt-4">
-                View Full Profile
-              </Button>
+              <div className="flex gap-3 mt-4">
+                <Button onClick={() => navigate(`/profile/${userId}`)} size="lg">
+                  View Full Profile
+                </Button>
+                <Button onClick={() => navigate('/signup')} variant="outline" size="lg">
+                  Join NaijaLancers
+                </Button>
+              </div>
             </div>
           </div>
         </Card>

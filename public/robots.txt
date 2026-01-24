@@ -1,3 +1,27 @@
+# NaijaLancers Robots.txt
+# Allow all crawlers to access public pages
+
 User-agent: *
-Disallow:
+Allow: /
+Allow: /p/
+Allow: /welcome
+Allow: /faq
+Allow: /fundraising
+Allow: /terms-conditions
+Allow: /privacy-policy
+
+# Disallow protected/auth routes
+Disallow: /feed
+Disallow: /profile
+Disallow: /chat
+Disallow: /settings
+Disallow: /admin
+Disallow: /onboarding
+Disallow: /dashboard
+Disallow: /analytics
+Disallow: /orders
+Disallow: /workrooms
+Disallow: /earn
+
+# Sitemap
 Sitemap: https://naijalancers.name.ng/sitemap.xml
