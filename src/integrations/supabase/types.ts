@@ -1416,6 +1416,48 @@ export type Database = {
         }
         Relationships: []
       }
+      developer_webhooks: {
+        Row: {
+          created_at: string
+          description: string | null
+          developer_id: string
+          events: string[]
+          failure_count: number | null
+          id: string
+          is_active: boolean | null
+          last_triggered_at: string | null
+          updated_at: string
+          webhook_secret: string
+          webhook_url: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          developer_id: string
+          events?: string[]
+          failure_count?: number | null
+          id?: string
+          is_active?: boolean | null
+          last_triggered_at?: string | null
+          updated_at?: string
+          webhook_secret: string
+          webhook_url: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          developer_id?: string
+          events?: string[]
+          failure_count?: number | null
+          id?: string
+          is_active?: boolean | null
+          last_triggered_at?: string | null
+          updated_at?: string
+          webhook_secret?: string
+          webhook_url?: string
+        }
+        Relationships: []
+      }
       digital_product_purchases: {
         Row: {
           amount: number
@@ -5845,6 +5887,59 @@ export type Database = {
         }
         Relationships: []
       }
+      webhook_logs: {
+        Row: {
+          created_at: string
+          delivered_at: string | null
+          delivery_duration_ms: number | null
+          error_message: string | null
+          event_type: string
+          id: string
+          payload: Json
+          response_body: string | null
+          response_status: number | null
+          retry_count: number | null
+          success: boolean | null
+          webhook_id: string
+        }
+        Insert: {
+          created_at?: string
+          delivered_at?: string | null
+          delivery_duration_ms?: number | null
+          error_message?: string | null
+          event_type: string
+          id?: string
+          payload: Json
+          response_body?: string | null
+          response_status?: number | null
+          retry_count?: number | null
+          success?: boolean | null
+          webhook_id: string
+        }
+        Update: {
+          created_at?: string
+          delivered_at?: string | null
+          delivery_duration_ms?: number | null
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          payload?: Json
+          response_body?: string | null
+          response_status?: number | null
+          retry_count?: number | null
+          success?: boolean | null
+          webhook_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_logs_webhook_id_fkey"
+            columns: ["webhook_id"]
+            isOneToOne: false
+            referencedRelation: "developer_webhooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       work_diary_entries: {
         Row: {
           activity_level: number | null
@@ -6246,6 +6341,7 @@ export type Database = {
       generate_certificate_id: { Args: never; Returns: string }
       generate_referral_code: { Args: never; Returns: string }
       generate_verification_token: { Args: never; Returns: string }
+      generate_webhook_secret: { Args: never; Returns: string }
       get_connected_profile_info: {
         Args: { target_user_id: string }
         Returns: {

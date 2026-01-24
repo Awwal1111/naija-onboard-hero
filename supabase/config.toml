@@ -188,3 +188,6 @@ verify_jwt = true
 
 [functions.developer-api]
 verify_jwt = false
+
+[functions.developer-webhook]
+verify_jwt = false
