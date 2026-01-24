@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Search, MessageCircle, Home, Users, DollarSign, Briefcase, Menu } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
@@ -25,6 +25,7 @@ interface ChatWithProfile {
     created_at: string
     sender_id: string
   }
+  unread_count: number
 }
 
 const ChatList = () => {
@@ -50,13 +51,7 @@ const ChatList = () => {
     navigate(path)
   }
 
-  useEffect(() => {
-    if (user) {
-      fetchChats()
-    }
-  }, [user])
-
-  const fetchChats = async () => {
+  const fetchChats = useCallback(async () => {
     if (!user) return
 
     try {
@@ -97,23 +92,34 @@ const ChatList = () => {
 
       if (messagesError) throw messagesError
 
-      // Combine data
-      const chatsWithProfiles: ChatWithProfile[] = chatsData.map(chat => {
-        const otherUserId = chat.user1_id === user.id ? chat.user2_id : chat.user1_id
-        const otherUser = profiles?.find(p => p.user_id === otherUserId)
-        const lastMessage = lastMessages?.find(m => m.chat_id === chat.id)
+      // Combine data with unread counts
+      const chatsWithProfiles: ChatWithProfile[] = await Promise.all(
+        chatsData.map(async (chat) => {
+          const otherUserId = chat.user1_id === user.id ? chat.user2_id : chat.user1_id
+          const otherUser = profiles?.find(p => p.user_id === otherUserId)
+          const lastMessage = lastMessages?.find(m => m.chat_id === chat.id)
 
-        return {
-          ...chat,
-          otherUser: otherUser || {
-            user_id: otherUserId,
-            full_name: 'Unknown User',
-            profession: '',
-            profile_picture_url: ''
-          },
-          lastMessage
-        }
-      })
+          // Get unread count - messages from other user that we haven't read
+          const { count: unreadCount } = await supabase
+            .from('messages')
+            .select('*', { count: 'exact', head: true })
+            .eq('chat_id', chat.id)
+            .eq('sender_id', otherUserId)
+            .is('read_at', null)
+
+          return {
+            ...chat,
+            otherUser: otherUser || {
+              user_id: otherUserId,
+              full_name: 'Unknown User',
+              profession: '',
+              profile_picture_url: ''
+            },
+            lastMessage,
+            unread_count: unreadCount || 0
+          }
+        })
+      )
 
       setChats(chatsWithProfiles)
     } catch (error) {
@@ -126,7 +132,58 @@ const ChatList = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [user, toast])
+
+  // Initial fetch
+  useEffect(() => {
+    if (user) {
+      fetchChats()
+    }
+  }, [user, fetchChats])
+
+  // Refresh when navigating back to this page
+  useEffect(() => {
+    if (user && location.pathname === '/chat') {
+      fetchChats()
+    }
+  }, [location.pathname, user, fetchChats])
+
+  // Refresh on visibility change (when user switches back to tab)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && user) {
+        fetchChats()
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [user, fetchChats])
+
+  // Real-time subscription for message updates
+  useEffect(() => {
+    if (!user) return
+
+    const channel = supabase
+      .channel('chatlist-messages-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'messages'
+        },
+        () => {
+          // Refetch chats when any message changes
+          fetchChats()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user, fetchChats])
 
   const filteredChats = chats.filter(chat =>
     chat.otherUser.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -220,12 +277,14 @@ const ChatList = () => {
               <div
                 key={chat.id}
                 onClick={() => navigate(`/chat/${chat.otherUser.user_id}`)}
-                className="bg-card border border-border rounded-2xl p-4 hover:shadow-md transition-all duration-200 cursor-pointer active:scale-[0.98]"
+                className={`bg-card border rounded-2xl p-4 hover:shadow-md transition-all duration-200 cursor-pointer active:scale-[0.98] ${
+                  chat.unread_count > 0 ? 'border-primary/30 bg-primary/5' : 'border-border'
+                }`}
               >
                 <div className="flex items-center gap-4">
-                  {/* Profile Picture */}
+                  {/* Profile Picture with Unread Badge */}
                   <div 
-                    className="shrink-0 cursor-pointer"
+                    className="shrink-0 cursor-pointer relative"
                     onClick={(e) => {
                       e.stopPropagation()
                       setProfilePreview({ isOpen: true, userId: chat.otherUser.user_id })
@@ -240,16 +299,25 @@ const ChatList = () => {
                         {chat.otherUser.full_name.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
+                    {chat.unread_count > 0 && (
+                      <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary text-primary-foreground text-xs font-bold rounded-full flex items-center justify-center">
+                        {chat.unread_count > 9 ? '9+' : chat.unread_count}
+                      </span>
+                    )}
                   </div>
                   
                   {/* Chat Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
-                      <h3 className="font-semibold text-text-primary truncate">
+                      <h3 className={`truncate ${
+                        chat.unread_count > 0 ? 'font-bold text-foreground' : 'font-semibold text-text-primary'
+                      }`}>
                         {chat.otherUser.full_name}
                       </h3>
                       {chat.lastMessage && (
-                        <span className="text-xs text-text-secondary ml-2">
+                        <span className={`text-xs ml-2 ${
+                          chat.unread_count > 0 ? 'text-primary font-medium' : 'text-text-secondary'
+                        }`}>
                           {formatTimeAgo(chat.lastMessage.created_at)}
                         </span>
                       )}
@@ -262,7 +330,9 @@ const ChatList = () => {
                     )}
                     
                     {chat.lastMessage ? (
-                      <p className="text-sm text-text-secondary truncate">
+                      <p className={`text-sm truncate ${
+                        chat.unread_count > 0 ? 'text-foreground font-medium' : 'text-text-secondary'
+                      }`}>
                         {chat.lastMessage.sender_id === user?.id ? 'You: ' : ''}
                         {chat.lastMessage.content}
                       </p>
