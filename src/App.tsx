@@ -14,6 +14,7 @@ import { PushNotificationManager } from "@/components/PushNotificationManager";
 import { OnboardingTour } from "@/components/OnboardingTour";
 import { useAppState } from "@/hooks/useAppState";
 import { WebRTCProvider } from "@/contexts/WebRTCContext";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import Welcome from "./pages/Welcome";
 import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
@@ -108,7 +109,8 @@ const AppStateManager = () => {
 };
 
 const App = () => (
-  <TooltipProvider>
+  <ErrorBoundary>
+    <TooltipProvider>
       <Toaster />
       <Sonner />
       <BrowserRouter>
@@ -227,6 +229,7 @@ const App = () => (
         </WebRTCProvider>
       </BrowserRouter>
     </TooltipProvider>
+  </ErrorBoundary>
 );
 
 export default App;
