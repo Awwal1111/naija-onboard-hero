@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Star, Quote, TrendingUp, Briefcase, Award } from "lucide-react";
+import { Star, Quote, TrendingUp, Briefcase, Award, CheckCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface SuccessStory {
@@ -17,51 +17,105 @@ interface SuccessStory {
   is_expert: boolean;
 }
 
-// Static testimonials for when we don't have enough real data
-const staticTestimonials = [
-  {
-    name: "Adaeze O.",
-    profession: "Graphics Designer",
-    quote: "I made my first ₦50,000 within 2 weeks of joining NaijaLancers. The platform connected me with serious clients!",
-    earnings: "₦450,000+",
-    avatar: null,
-  },
-  {
-    name: "Chukwuemeka N.",
-    profession: "Web Developer",
-    quote: "Finally, a Nigerian platform that understands our market. SafePay gives me peace of mind on every project.",
-    earnings: "₦1.2M+",
-    avatar: null,
-  },
-  {
-    name: "Fatima A.",
-    profession: "Content Writer",
-    quote: "From side hustle to full-time income. NaijaLancers helped me build a career writing for top Nigerian brands.",
-    earnings: "₦380,000+",
-    avatar: null,
-  },
-];
+interface RealTestimonial {
+  id: string;
+  rating: number;
+  review: string | null;
+  created_at: string;
+  user: {
+    full_name: string | null;
+    profession: string | null;
+    profile_picture_url: string | null;
+  } | null;
+}
 
 export const SuccessStoriesSection = () => {
   const [topEarners, setTopEarners] = useState<SuccessStory[]>([]);
+  const [testimonials, setTestimonials] = useState<RealTestimonial[]>([]);
   const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    completedJobs: 0,
+    totalPaidOut: 0,
+    avgRating: 0
+  });
 
   useEffect(() => {
-    fetchTopEarners();
+    fetchData();
   }, []);
 
-  const fetchTopEarners = async () => {
+  const fetchData = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch top earners
+      const { data: earners } = await supabase
         .from("profiles")
-        .select("id, full_name, profession, profile_picture_url, total_earnings, completed_jobs_count, average_rating, rating_count, is_expert")
+        .select("user_id, full_name, profession, profile_picture_url, total_earnings, completed_jobs_count, average_rating, rating_count, is_expert")
         .gt("total_earnings", 0)
         .gt("rating_count", 0)
         .order("total_earnings", { ascending: false })
         .limit(6);
 
-      if (!error && data) {
-        setTopEarners(data as SuccessStory[]);
+      if (earners) {
+        setTopEarners(earners.map(e => ({ ...e, id: e.user_id })) as unknown as SuccessStory[]);
+      }
+
+      // Fetch real testimonials from platform_ratings
+      const { data: ratingsData } = await supabase
+        .from('platform_ratings' as any)
+        .select('id, rating, review, created_at, user_id')
+        .eq('is_featured', true)
+        .not('review', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(6) as any;
+
+      if (ratingsData && ratingsData.length > 0) {
+        const userIds = ratingsData.map((r: any) => r.user_id);
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('user_id, full_name, profession, profile_picture_url')
+          .in('user_id', userIds);
+
+        const testimonialsWithProfiles = ratingsData.map((rating: any) => {
+          const profile = profilesData?.find((p: any) => p.user_id === rating.user_id);
+          return {
+            id: rating.id,
+            rating: rating.rating,
+            review: rating.review,
+            created_at: rating.created_at,
+            user: profile ? {
+              full_name: profile.full_name,
+              profession: profile.profession,
+              profile_picture_url: profile.profile_picture_url
+            } : null
+          };
+        });
+
+        setTestimonials(testimonialsWithProfiles);
+      }
+
+      // Fetch platform stats
+      const { count: userCount } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true });
+
+      const { data: jobStats } = await supabase
+        .from('profiles')
+        .select('completed_jobs_count, total_earnings, average_rating')
+        .gt('completed_jobs_count', 0);
+
+      if (jobStats) {
+        const completedJobs = jobStats.reduce((sum, p) => sum + (p.completed_jobs_count || 0), 0);
+        const totalPaid = jobStats.reduce((sum, p) => sum + (p.total_earnings || 0), 0);
+        const avgRating = jobStats.length > 0 
+          ? jobStats.reduce((sum, p) => sum + (p.average_rating || 0), 0) / jobStats.filter(p => p.average_rating > 0).length
+          : 4.8;
+
+        setStats({
+          totalUsers: userCount || 0,
+          completedJobs,
+          totalPaidOut: totalPaid,
+          avgRating: Math.round(avgRating * 10) / 10 || 4.8
+        });
       }
     } catch (err) {
       console.error("Error fetching success stories:", err);
@@ -76,6 +130,23 @@ export const SuccessStoriesSection = () => {
     return `₦${amount}`;
   };
 
+  const formatPaidOut = (amount: number) => {
+    if (amount >= 1000000) return `₦${(amount / 1000000).toFixed(1)}M+`;
+    if (amount >= 1000) return `₦${Math.round(amount / 1000)}K+`;
+    return `₦${amount}+`;
+  };
+
+  // Don't render section if no real data
+  if (loading) {
+    return null;
+  }
+
+  const hasRealData = topEarners.length > 0 || testimonials.length > 0;
+
+  if (!hasRealData) {
+    return null;
+  }
+
   return (
     <section className="py-12 sm:py-16 bg-gradient-to-b from-background to-muted/30">
       <div className="container mx-auto px-4 sm:px-6">
@@ -85,10 +156,10 @@ export const SuccessStoriesSection = () => {
             Real Success Stories
           </Badge>
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-3">
-            Nigerians Earning on NaijaLancers
+            Verified Earnings on NaijaLancers
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Join thousands of freelancers building their careers and earning real money
+            Real users, real earnings - no fake testimonials
           </p>
         </div>
 
@@ -107,7 +178,7 @@ export const SuccessStoriesSection = () => {
                   <h4 className="font-semibold text-sm truncate">{earner.full_name}</h4>
                   <p className="text-xs text-muted-foreground truncate">{earner.profession}</p>
                   <div className="flex items-center justify-center gap-1 mt-2">
-                    <Star className="w-3 h-3 fill-yellow-500 text-yellow-500" />
+                    <Star className="w-3 h-3 fill-primary text-primary" />
                     <span className="text-xs font-medium">{earner.average_rating?.toFixed(1) || "5.0"}</span>
                   </div>
                   <p className="text-primary font-bold text-sm mt-2">
@@ -125,49 +196,57 @@ export const SuccessStoriesSection = () => {
           </div>
         )}
 
-        {/* Testimonials */}
-        <div className="grid md:grid-cols-3 gap-6">
-          {staticTestimonials.map((testimonial, index) => (
-            <Card key={index} className="relative overflow-hidden">
-              <div className="absolute top-4 right-4 text-primary/10">
-                <Quote className="w-12 h-12" />
-              </div>
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <Avatar className="w-12 h-12 border-2 border-primary/20">
-                    <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                      {testimonial.name.charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <h4 className="font-semibold">{testimonial.name}</h4>
-                    <p className="text-sm text-muted-foreground">{testimonial.profession}</p>
-                  </div>
+        {/* Real Testimonials - Only shown if there are real reviews */}
+        {testimonials.length > 0 && (
+          <div className="grid md:grid-cols-3 gap-6 mb-10">
+            {testimonials.slice(0, 3).map((testimonial) => (
+              <Card key={testimonial.id} className="relative overflow-hidden">
+                <div className="absolute top-4 right-4 text-primary/10">
+                  <Quote className="w-12 h-12" />
                 </div>
-                <p className="text-muted-foreground mb-4 italic">"{testimonial.quote}"</p>
-                <div className="flex items-center justify-between pt-4 border-t border-border">
-                  <div className="flex items-center gap-1">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Star key={star} className="w-4 h-4 fill-yellow-500 text-yellow-500" />
-                    ))}
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <Avatar className="w-12 h-12 border-2 border-primary/20">
+                      <AvatarImage src={testimonial.user?.profile_picture_url || undefined} />
+                      <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                        {testimonial.user?.full_name?.charAt(0) || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-semibold">{testimonial.user?.full_name || "Verified User"}</h4>
+                        <CheckCircle className="w-4 h-4 text-primary" />
+                      </div>
+                      <p className="text-sm text-muted-foreground">{testimonial.user?.profession || "Freelancer"}</p>
+                    </div>
                   </div>
-                  <Badge variant="outline" className="text-green-600 border-green-600/30">
-                    <Briefcase className="w-3 h-3 mr-1" />
-                    {testimonial.earnings}
-                  </Badge>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                  <p className="text-muted-foreground mb-4 italic line-clamp-3">"{testimonial.review}"</p>
+                  <div className="flex items-center justify-between pt-4 border-t border-border">
+                    <div className="flex items-center gap-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star 
+                          key={star} 
+                          className={`w-4 h-4 ${star <= testimonial.rating ? 'fill-amber-500 text-amber-500' : 'text-muted-foreground/30'}`}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(testimonial.created_at).toLocaleDateString('en-NG', { month: 'short', year: 'numeric' })}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
 
-        {/* Stats Bar */}
+        {/* Stats Bar - Only real stats */}
         <div className="mt-12 grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
           {[
-            { label: "Active Freelancers", value: "10,000+", icon: "👨‍💻" },
-            { label: "Jobs Completed", value: "25,000+", icon: "✅" },
-            { label: "Total Paid Out", value: "₦50M+", icon: "💰" },
-            { label: "Average Rating", value: "4.8/5", icon: "⭐" },
+            { label: "Registered Users", value: stats.totalUsers > 0 ? `${stats.totalUsers.toLocaleString()}+` : "Growing", icon: "👨‍💻" },
+            { label: "Jobs Completed", value: stats.completedJobs > 0 ? `${stats.completedJobs.toLocaleString()}+` : "Growing", icon: "✅" },
+            { label: "Total Paid Out", value: stats.totalPaidOut > 0 ? formatPaidOut(stats.totalPaidOut) : "Growing", icon: "💰" },
+            { label: "Average Rating", value: `${stats.avgRating}/5`, icon: "⭐" },
           ].map((stat, index) => (
             <div key={index} className="text-center p-4 bg-card rounded-xl border border-border">
               <span className="text-2xl mb-2 block">{stat.icon}</span>

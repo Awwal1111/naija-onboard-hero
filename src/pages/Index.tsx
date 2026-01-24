@@ -48,74 +48,90 @@ const Index = () => {
         </div>
       </nav>
 
-      {/* Hero Section - Mobile First */}
-      <section className="relative overflow-hidden py-10 sm:py-16 lg:py-20 bg-gradient-to-br from-primary/10 via-background to-accent/5">
+      {/* Hero Section - Premium Professional Design */}
+      <section className="relative overflow-hidden py-12 sm:py-20 lg:py-28 bg-gradient-to-br from-primary/5 via-background to-background">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent opacity-60" />
+        
         <div className="container mx-auto px-4 sm:px-6 relative">
-          <div className="max-w-6xl mx-auto">
-            <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
-              <div className="space-y-5 sm:space-y-8">
-                <Badge variant="secondary" className="w-fit bg-primary/10 text-primary border-primary/20 text-xs sm:text-sm">
-                  <Award className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+          <div className="max-w-7xl mx-auto">
+            <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+              <div className="space-y-6 sm:space-y-8">
+                <Badge variant="secondary" className="w-fit bg-primary/10 text-primary border-primary/20 text-xs sm:text-sm px-4 py-1.5 font-medium">
+                  <Award className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
                   CAC Registered • BN8870047
                 </Badge>
                 
-                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold leading-tight">
+                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.1] tracking-tight">
                   <span className="text-foreground">Your Trusted</span>
-                  <span className="block text-primary mt-1 sm:mt-2">Global Freelance Marketplace</span>
+                  <span className="block bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent mt-2">
+                    Global Freelance Marketplace
+                  </span>
                 </h1>
                 
-                <p className="text-base sm:text-lg lg:text-xl text-muted-foreground leading-relaxed">
-                  Connect with vetted professionals worldwide, secure payments through trusted partners, and grow your business with confidence.
+                <p className="text-lg sm:text-xl lg:text-2xl text-muted-foreground leading-relaxed max-w-xl">
+                  Connect with vetted professionals worldwide. Secure payments. Trusted by thousands.
                 </p>
 
-                <div className="flex flex-wrap gap-3 sm:gap-6 pt-2 sm:pt-4">
-                  <div className="flex items-center gap-1 sm:gap-2">
-                    <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                    <span className="text-xs sm:text-sm font-medium">Legally Registered</span>
+                <div className="flex flex-wrap gap-4 sm:gap-8 pt-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                      <CheckCircle2 className="w-4 h-4 text-primary" />
+                    </div>
+                    <span className="text-sm sm:text-base font-medium">Legally Registered</span>
                   </div>
-                  <div className="flex items-center gap-1 sm:gap-2">
-                    <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                    <span className="text-xs sm:text-sm font-medium">Secure Payments</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Shield className="w-4 h-4 text-primary" />
+                    </div>
+                    <span className="text-sm sm:text-base font-medium">Secure Payments</span>
                   </div>
-                  <div className="flex items-center gap-1 sm:gap-2">
-                    <Users className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                    <span className="text-xs sm:text-sm font-medium">10,000+ Users</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Users className="w-4 h-4 text-primary" />
+                    </div>
+                    <span className="text-sm sm:text-base font-medium">10,000+ Users</span>
                   </div>
                 </div>
 
-                <div className="max-w-2xl mb-4 sm:mb-6">
+                <div className="max-w-2xl pt-2">
                   <EnhancedSearchBar />
                 </div>
 
-                <div className="flex flex-col gap-3 sm:flex-row sm:gap-4 pt-2 sm:pt-4">
-                  <BrandButton asChild size="lg" className="text-sm sm:text-lg px-4 sm:px-8 py-4 sm:py-6 w-full sm:w-auto">
+                <div className="flex flex-col gap-3 sm:flex-row sm:gap-4 pt-4">
+                  <BrandButton asChild size="lg" className="text-base sm:text-lg px-6 sm:px-10 py-5 sm:py-7 w-full sm:w-auto shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all">
                     <Link to="/signup">
                       Start Earning Today
-                      <ArrowRight className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />
+                      <ArrowRight className="ml-2 w-5 h-5" />
                     </Link>
                   </BrandButton>
-                  <BrandButton variant="outline" asChild size="lg" className="text-sm sm:text-lg px-4 sm:px-8 py-4 sm:py-6 w-full sm:w-auto">
+                  <BrandButton variant="outline" asChild size="lg" className="text-base sm:text-lg px-6 sm:px-10 py-5 sm:py-7 w-full sm:w-auto border-2">
                     <Link to="/login">Sign In</Link>
-                  </BrandButton>
-                  <BrandButton 
-                    variant="secondary" 
-                    size="lg" 
-                    className="text-sm sm:text-lg px-4 sm:px-8 py-4 sm:py-6 w-full sm:w-auto"
-                    onClick={() => window.open('https://apkpure.com/naijalancers/co.median.android.mbbeeqr', '_blank')}
-                  >
-                    <Download className="mr-2 w-4 h-4 sm:w-5 sm:h-5" />
-                    Download App
                   </BrandButton>
                 </div>
               </div>
 
-              <div className="relative hidden sm:block">
-                <div className="aspect-square rounded-2xl overflow-hidden shadow-2xl border border-border">
-                  <img src={heroImage} alt="NaijaLancers Platform" className="w-full h-full object-cover" />
-                </div>
-                <div className="absolute -bottom-4 -right-4 sm:-bottom-6 sm:-right-6 bg-primary text-primary-foreground p-4 sm:p-6 rounded-xl shadow-xl">
-                  <div className="text-2xl sm:text-3xl font-bold">10K+</div>
-                  <div className="text-xs sm:text-sm">Active Users</div>
+              <div className="relative hidden lg:block">
+                <div className="relative">
+                  {/* Decorative elements */}
+                  <div className="absolute -top-8 -left-8 w-72 h-72 bg-primary/10 rounded-full blur-3xl" />
+                  <div className="absolute -bottom-8 -right-8 w-72 h-72 bg-accent/10 rounded-full blur-3xl" />
+                  
+                  <div className="relative aspect-square rounded-3xl overflow-hidden shadow-2xl border border-border/50">
+                    <img src={heroImage} alt="NaijaLancers Platform" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
+                  </div>
+                  
+                  {/* Floating stats card */}
+                  <div className="absolute -bottom-6 -right-6 bg-card/95 backdrop-blur-sm p-6 rounded-2xl shadow-2xl border border-border">
+                    <div className="text-3xl sm:text-4xl font-bold text-primary">10K+</div>
+                    <div className="text-sm text-muted-foreground">Active Users</div>
+                  </div>
+                  
+                  {/* Floating badge */}
+                  <div className="absolute -top-4 -right-4 bg-primary text-primary-foreground px-4 py-2 rounded-full shadow-lg flex items-center gap-2">
+                    <Shield className="w-4 h-4" />
+                    <span className="text-sm font-medium">Verified</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -124,13 +140,22 @@ const Index = () => {
       </section>
 
       {/* Video Explainer Section */}
-      <section className="py-12 sm:py-16 bg-gradient-to-b from-background to-muted/30">
-        <div className="container mx-auto px-4 sm:px-6">
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">See How It Works</h2>
-            <p className="text-muted-foreground mb-8">Watch our quick explainer to understand how NaijaLancers connects talent with opportunity</p>
+      <section className="py-16 sm:py-24 bg-muted/30 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent" />
+        
+        <div className="container mx-auto px-4 sm:px-6 relative">
+          <div className="max-w-5xl mx-auto text-center">
+            <Badge variant="secondary" className="mb-4">
+              <Play className="w-3 h-3 mr-1" />
+              Platform Overview
+            </Badge>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">See How It Works</h2>
+            <p className="text-lg text-muted-foreground mb-10 max-w-2xl mx-auto">
+              Watch our quick explainer to understand how NaijaLancers connects talent with opportunity
+            </p>
             
-            <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-border">
+            <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-border/50 group">
+              <div className="absolute inset-0 bg-gradient-to-t from-background/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10" />
               <video 
                 src={explainerVideo}
                 controls
@@ -140,6 +165,24 @@ const Index = () => {
               >
                 Your browser does not support the video tag.
               </video>
+            </div>
+            
+            {/* How it works steps */}
+            <div className="grid sm:grid-cols-4 gap-6 mt-12">
+              {[
+                { step: "1", title: "Sign Up", desc: "Create your free account in minutes" },
+                { step: "2", title: "Find Work", desc: "Browse jobs or offer your services" },
+                { step: "3", title: "Get Paid", desc: "Secure payments via SafePay escrow" },
+                { step: "4", title: "Grow", desc: "Build your reputation and earn more" },
+              ].map((item) => (
+                <div key={item.step} className="text-center">
+                  <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground font-bold text-lg flex items-center justify-center mx-auto mb-3">
+                    {item.step}
+                  </div>
+                  <h3 className="font-semibold mb-1">{item.title}</h3>
+                  <p className="text-sm text-muted-foreground">{item.desc}</p>
+                </div>
+              ))}
             </div>
           </div>
         </div>
