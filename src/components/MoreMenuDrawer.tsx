@@ -1,6 +1,6 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useNavigate } from "react-router-dom";
-import { User, Briefcase, FileText, GraduationCap, Heart, AlertCircle, Banknote, Gift, BarChart3, Settings, Video, Wallet, Bookmark, Search, Trophy, Bell, Package, Sparkles, Users } from "lucide-react";
+import { User, Briefcase, FileText, GraduationCap, Heart, AlertCircle, Banknote, Gift, BarChart3, Settings, Video, Wallet, Bookmark, Search, Trophy, Bell, Package, Sparkles, Users, FolderKanban, Timer } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
 interface MoreMenuDrawerProps {
@@ -25,6 +25,9 @@ export const MoreMenuDrawer = ({ open, onOpenChange }: MoreMenuDrawerProps) => {
     { icon: Sparkles, label: "AI Hire Assistant", path: "/ai-hire", color: "text-primary", description: "Find freelancers with AI" },
     { icon: Users, label: "Find Experts", path: "/experts", color: "text-blue-500" },
     { icon: Briefcase, label: "Jobs & Gigs", path: "/jobs", color: "text-purple-500" },
+    { icon: Trophy, label: "Contests", path: "/contests", color: "text-yellow-500" },
+    { icon: FolderKanban, label: "WorkRooms", path: "/workrooms", color: "text-cyan-500" },
+    { icon: Timer, label: "Work Diary", path: "/work-diary", color: "text-green-500" },
     { icon: Video, label: "Expert Classes", path: "/expert-class", color: "text-indigo-500" },
     { icon: GraduationCap, label: "Courses", path: "/courses", color: "text-orange-500" },
     { icon: FileText, label: "Digital Products", path: "/digital-products", color: "text-green-500" },
