@@ -139,8 +139,8 @@ serve(async (req) => {
       { data: suspiciousActivity, error: suspError }
     ] = await Promise.all([
       supabase.from('article_submissions').select('*, profiles(full_name)').eq('status', 'pending').order('created_at', { ascending: false }).limit(20),
-      supabase.from('social_tasks_submissions').select('*, social_tasks(task_name), profiles(full_name)').eq('status', 'pending').order('created_at', { ascending: false }).limit(20),
-      supabase.from('referral_submissions').select('*, referral_tasks(title), profiles(full_name)').eq('status', 'pending').order('created_at', { ascending: false }).limit(20),
+      supabase.from('social_tasks_progress').select('*, social_tasks(platform, type, reward), profiles:earner_id(full_name)').eq('status', 'pending').order('created_at', { ascending: false }).limit(20),
+      supabase.from('referral_submissions').select('*, referral_tasks(title, reward), profiles:user_id(full_name)').eq('status', 'pending').order('created_at', { ascending: false }).limit(20),
       supabase.from('profiles').select('user_id, full_name, wallet_balance, created_at').order('created_at', { ascending: false }).limit(10),
       supabase.from('wallet_transactions').select('*, profiles(full_name)').order('created_at', { ascending: false }).limit(20),
       supabase.from('fundraisings').select('*, profiles(full_name)').eq('status', 'pending').limit(10),

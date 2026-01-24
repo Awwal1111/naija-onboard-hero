@@ -35,19 +35,25 @@ export const AdminReferralTasksSection = () => {
 
   const getImageUrl = async (mediaUrl: string): Promise<string> => {
     try {
+      // If it's already a full URL (http/https), return it directly
+      if (mediaUrl.startsWith('http://') || mediaUrl.startsWith('https://') || mediaUrl.startsWith('data:')) {
+        return mediaUrl
+      }
+      
+      // Otherwise, get a signed URL from storage
       const { data, error } = await supabase.storage
         .from('referral-tasks')
         .createSignedUrl(mediaUrl, 3600) // 1 hour expiry
       
       if (error) {
         console.error('Error getting signed URL:', error)
-        toast.error("Could not load image")
-        return ''
+        // Try returning the raw URL as fallback
+        return mediaUrl
       }
       return data.signedUrl
     } catch (error) {
       console.error('Exception getting signed URL:', error)
-      return ''
+      return mediaUrl // Return raw URL as fallback
     }
   }
 

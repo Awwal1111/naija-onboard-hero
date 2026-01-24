@@ -160,7 +160,7 @@ const ChatList = () => {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
   }, [user, fetchChats])
 
-  // Real-time subscription for message updates
+  // Real-time subscription for message updates (both INSERT and UPDATE for read status)
   useEffect(() => {
     if (!user) return
 
@@ -169,13 +169,27 @@ const ChatList = () => {
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'INSERT',
           schema: 'public',
           table: 'messages'
         },
         () => {
-          // Refetch chats when any message changes
+          // New message - refetch chats
           fetchChats()
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'messages'
+        },
+        (payload) => {
+          // Message updated (likely read_at changed) - refetch to update unread counts
+          if (payload.new && (payload.new as any).read_at) {
+            fetchChats()
+          }
         }
       )
       .subscribe()
