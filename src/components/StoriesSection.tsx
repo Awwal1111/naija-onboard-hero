@@ -267,25 +267,45 @@ const StoriesSection: React.FC<StoriesSectionProps> = ({
     }
   }
 
+  // Check if URL is valid
+  const isValidMediaUrl = (url: string | null | undefined): boolean => {
+    if (!url) return false
+    return url.startsWith('http') || url.startsWith('https') || url.startsWith('data:')
+  }
+
   // Render story preview thumbnail
   const renderStoryPreview = (story: Story) => {
-    if (story.media_url && (story.media_type?.startsWith('image') || story.media_type?.includes('image'))) {
+    const hasValidMedia = isValidMediaUrl(story.media_url)
+    
+    // Handle image stories
+    if (hasValidMedia && (story.media_type === 'image' || story.media_type?.startsWith('image') || story.media_type?.includes('image'))) {
       return (
         <img 
-          src={story.media_url} 
+          src={story.media_url!} 
           alt="Story preview"
           className="w-full h-full object-cover"
+          onError={(e) => {
+            // Fallback to profile picture or initials on error
+            const target = e.target as HTMLImageElement
+            target.style.display = 'none'
+          }}
         />
       )
-    } else if (story.media_url && story.media_type?.startsWith('video')) {
+    }
+    
+    // Handle video stories  
+    if (hasValidMedia && story.media_type?.startsWith('video')) {
       return (
         <video 
-          src={story.media_url} 
+          src={story.media_url!} 
           className="w-full h-full object-cover"
           muted
         />
       )
-    } else if (story.media_type === 'text' || story.content) {
+    }
+    
+    // Handle text stories
+    if (story.media_type === 'text' || story.content) {
       return (
         <div className={`w-full h-full flex items-center justify-center p-1 ${getBackgroundClass(story.background_color)}`}>
           <span className="text-white text-[8px] font-semibold text-center line-clamp-3 leading-tight">
@@ -293,19 +313,25 @@ const StoriesSection: React.FC<StoriesSectionProps> = ({
           </span>
         </div>
       )
-    } else {
-      return story.profiles?.profile_picture_url ? (
+    }
+    
+    // Fallback: Show profile picture or initials
+    if (story.profiles?.profile_picture_url) {
+      return (
         <img 
           src={story.profiles.profile_picture_url} 
           alt={story.profiles?.full_name}
           className="w-full h-full object-cover"
         />
-      ) : (
-        <div className="w-full h-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-xl">
-          {story.profiles?.full_name?.charAt(0) || 'U'}
-        </div>
       )
     }
+    
+    // Final fallback: initials
+    return (
+      <div className="w-full h-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-xl">
+        {story.profiles?.full_name?.charAt(0) || 'U'}
+      </div>
+    )
   }
   
   return (
