@@ -89,12 +89,17 @@ const CreateStoryDialog: React.FC<CreateStoryDialogProps> = ({
 
       let mediaUrl = null
 
-      // Upload media if provided
+      // Upload media if provided - ONLY images allowed for stories
       if (mediaFile) {
-        const isImageOrVideo = mediaFile.type.startsWith('image/') || mediaFile.type.startsWith('video/')
+        const isImage = mediaFile.type.startsWith('image/')
         
-        if (!isImageOrVideo) {
-          throw new Error('Only images and videos are supported for stories')
+        if (!isImage) {
+          toast({
+            title: "Images only",
+            description: "Stories only support image uploads",
+            variant: "destructive"
+          })
+          return
         }
         
         setUploading(true)
@@ -282,14 +287,14 @@ const CreateStoryDialog: React.FC<CreateStoryDialogProps> = ({
             </>
           )}
 
-          {/* Media Upload Options */}
+          {/* Media Upload - Images Only */}
           {storyType === 'media' && (
           <div className="space-y-3">
             <label className="text-sm font-medium text-text-primary mb-2 block">
-              Add media to your story
+              Add a photo to your story
             </label>
-            <div className="grid grid-cols-2 gap-2">
-              <label>
+            <div className="flex justify-center">
+              <label className="cursor-pointer">
                 <input
                   type="file"
                   accept="image/*"
@@ -299,69 +304,14 @@ const CreateStoryDialog: React.FC<CreateStoryDialogProps> = ({
                 <BrandButton 
                   type="button" 
                   variant="outline" 
-                  className="w-full flex items-center gap-2"
-                  size="sm"
+                  className="flex items-center gap-2 px-8"
+                  size="lg"
                 >
-                  <Camera className="h-4 w-4" />
-                  Photo
-                </BrandButton>
-              </label>
-              
-              <label>
-                <input
-                  type="file"
-                  accept="video/*"
-                  onChange={handleMediaUpload}
-                  className="hidden"
-                />
-                <BrandButton 
-                  type="button" 
-                  variant="outline" 
-                  className="w-full flex items-center gap-2"
-                  size="sm"
-                >
-                  <Video className="h-4 w-4" />
-                  Video
-                </BrandButton>
-              </label>
-
-              <label>
-                <input
-                  type="file"
-                  accept="audio/*"
-                  onChange={handleMediaUpload}
-                  className="hidden"
-                />
-                <BrandButton 
-                  type="button" 
-                  variant="outline" 
-                  className="w-full flex items-center gap-2"
-                  size="sm"
-                >
-                  <Music className="h-4 w-4" />
-                  Audio
-                </BrandButton>
-              </label>
-
-              <label>
-                <input
-                  type="file"
-                  accept=".pdf,.doc,.docx,.txt"
-                  onChange={handleMediaUpload}
-                  className="hidden"
-                />
-                <BrandButton 
-                  type="button" 
-                  variant="outline" 
-                  className="w-full flex items-center gap-2"
-                  size="sm"
-                >
-                  <FileText className="h-4 w-4" />
-                  Document
+                  <Camera className="h-5 w-5" />
+                  Choose Photo
                 </BrandButton>
               </label>
             </div>
-
             {/* Media Preview */}
             {mediaFile && (
               <div className="relative rounded-lg overflow-hidden border border-border">

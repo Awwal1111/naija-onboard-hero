@@ -310,11 +310,27 @@ export const useChat = (otherUserId: string) => {
       if (unreadMessages.length === 0) return
 
       const messageIds = unreadMessages.map(msg => msg.id)
+      const now = new Date().toISOString()
 
-      await supabase
+      // Update in database
+      const { error } = await supabase
         .from('messages')
-        .update({ read_at: new Date().toISOString() })
+        .update({ read_at: now })
         .in('id', messageIds)
+
+      if (error) {
+        console.error('Error marking messages as read:', error)
+        return
+      }
+
+      // Immediately update local state to reflect the change
+      setMessages(prev => 
+        prev.map(msg => 
+          messageIds.includes(msg.id) 
+            ? { ...msg, read_at: now }
+            : msg
+        )
+      )
     } catch (error) {
       console.error('Error marking messages as read:', error)
     }

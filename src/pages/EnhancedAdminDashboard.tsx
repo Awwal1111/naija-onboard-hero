@@ -68,12 +68,31 @@ const AdminGigsSection = () => {
     }
 
     try {
-      const { error } = await supabase
+      console.log('Attempting to delete gig:', gigId)
+      
+      // First try to delete related records that might block the deletion
+      // Delete gig FAQs
+      await supabase.from('gig_faqs').delete().eq('gig_id', gigId)
+      // Delete gig reviews
+      await supabase.from('gig_reviews').delete().eq('gig_id', gigId)
+      // Delete gig testimonials
+      await supabase.from('gig_testimonials').delete().eq('gig_id', gigId)
+      // Delete gig orders (if any pending)
+      await supabase.from('gig_orders').delete().eq('gig_id', gigId).eq('status', 'pending')
+      
+      // Now delete the gig
+      const { error, count } = await supabase
         .from('jobs_services')
         .delete()
         .eq('id', gigId)
+        .select()
 
-      if (error) throw error
+      if (error) {
+        console.error('Delete error:', error)
+        throw error
+      }
+
+      console.log('Delete successful, affected rows:', count)
 
       toast({
         title: "Gig Deleted",
@@ -81,11 +100,11 @@ const AdminGigsSection = () => {
       })
 
       fetchGigs()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting gig:', error)
       toast({
         title: "Error",
-        description: "Failed to delete gig",
+        description: error?.message || "Failed to delete gig. Check if there are orders or other dependencies.",
         variant: "destructive"
       })
     }
