@@ -9,6 +9,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Briefcase, MessageCircle, Package, Star, Clock, ArrowRight, Loader2 } from 'lucide-react';
 import { formatPriceForDisplay } from '@/components/CurrencyDisplay';
 import { useUserCountry } from '@/hooks/useUserCountry';
+import { useAuth } from '@/hooks/useAuth';
+import { initiateContextualChat } from '@/lib/chatContext';
 
 interface HireExpertDialogProps {
   open: boolean;
@@ -35,6 +37,7 @@ export const HireExpertDialog: React.FC<HireExpertDialogProps> = ({
   expertName
 }) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { isNigerian } = useUserCountry();
 
   // Fetch expert's gigs
@@ -60,8 +63,22 @@ export const HireExpertDialog: React.FC<HireExpertDialogProps> = ({
     navigate(`/gig/${gigId}`);
   };
 
-  const handleDirectMessage = () => {
+  const handleDirectMessage = async () => {
     onOpenChange(false);
+    
+    if (user) {
+      await initiateContextualChat({
+        currentUserId: user.id,
+        targetUserId: expertId,
+        context: {
+          context: 'expert',
+          context_label: 'From Expert Profile',
+          expert_id: expertId
+        },
+        autoMessage: `👋 Hi ${expertName}! I saw your expert profile and I'm interested in working with you.`
+      });
+    }
+    
     navigate(`/chat/${expertId}`);
   };
 

@@ -3,6 +3,19 @@ import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/use-toast'
 
+interface ChatContext {
+  context?: 'story' | 'gig' | 'expert' | 'job' | 'post' | 'profile'
+  context_label?: string
+  story_id?: string
+  story_content?: string
+  gig_id?: string
+  gig_title?: string
+  expert_id?: string
+  job_id?: string
+  job_title?: string
+  post_id?: string
+}
+
 interface BaseMessage {
   id: string
   chat_id: string
@@ -13,6 +26,7 @@ interface BaseMessage {
   reply_to_id?: string | null
   reply_to_content?: string | null
   reply_to_sender?: string | null
+  payload?: ChatContext | null
 }
 
 interface Message extends BaseMessage {
@@ -207,7 +221,8 @@ export const useChat = (otherUserId: string) => {
     content: string, 
     mediaUrl?: string | null, 
     mediaType?: string | null,
-    replyToId?: string | null
+    replyToId?: string | null,
+    chatContext?: ChatContext | null
   ) => {
     if (!chat || !user) {
       toast({
@@ -246,7 +261,8 @@ export const useChat = (otherUserId: string) => {
           media_type: mediaType || null,
           reply_to_id: replyToId || null,
           reply_to_content: replyToContent,
-          reply_to_sender: replyToSender
+          reply_to_sender: replyToSender,
+          payload: chatContext || null
         })
         .select()
         .single()

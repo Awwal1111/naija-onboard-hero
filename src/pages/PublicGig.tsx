@@ -25,6 +25,7 @@ import { GigTestimonialsSection } from '@/components/GigTestimonialsSection';
 import { GigFAQSection } from '@/components/GigFAQSection';
 import { useGigOrders } from '@/hooks/useGigOrders';
 import { ShareButtons } from '@/components/ShareButtons';
+import { initiateContextualChat } from '@/lib/chatContext';
 
 export default function PublicGig() {
   const { gigId } = useParams<{ gigId: string }>();
@@ -116,11 +117,24 @@ export default function PublicGig() {
     }
   };
 
-  const handleContactSeller = () => {
+  const handleContactSeller = async () => {
     if (!user) {
       navigate('/login');
       return;
     }
+    
+    // Send contextual message
+    await initiateContextualChat({
+      currentUserId: user.id,
+      targetUserId: gig?.user_id!,
+      context: {
+        context: 'gig',
+        context_label: 'From Gig',
+        gig_id: gig?.id,
+        gig_title: gig?.title || 'Gig'
+      }
+    });
+    
     navigate(`/chat/${gig?.user_id}`);
   };
 

@@ -13,6 +13,7 @@ import { Card } from '@/components/ui/card'
 import CallControls from '@/components/CallControls'
 import ActiveCallInterface from '@/components/ActiveCallInterface'
 import VoiceRecorder from '@/components/VoiceRecorder'
+import ChatContextBadge from '@/components/ChatContextBadge'
 
 // Simple emoji picker component
 const EmojiPicker = ({ onSelect, onClose }: { onSelect: (emoji: string) => void; onClose: () => void }) => {
@@ -261,12 +262,21 @@ const EnhancedChat = () => {
 
   const renderMessage = (message: any) => {
     const isOwn = message.sender_id === user?.id
+    const hasContext = message.payload?.context
     
     return (
       <div
         key={message.id}
-        className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-4`}
+        className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} mb-4`}
       >
+        {/* Context Badge - Show above message for context messages */}
+        {hasContext && (
+          <ChatContextBadge 
+            payload={message.payload} 
+            className={`mb-1 ${isOwn ? 'mr-2' : 'ml-2'}`}
+          />
+        )}
+        
         <div
           className={`max-w-[70%] px-4 py-2 rounded-2xl ${
             isOwn
