@@ -376,6 +376,7 @@ export type Database = {
       api_usage: {
         Row: {
           api_key: string
+          cost_nc: number | null
           created_at: string
           endpoint: string
           id: string
@@ -386,6 +387,7 @@ export type Database = {
         }
         Insert: {
           api_key: string
+          cost_nc?: number | null
           created_at?: string
           endpoint: string
           id?: string
@@ -396,6 +398,7 @@ export type Database = {
         }
         Update: {
           api_key?: string
+          cost_nc?: number | null
           created_at?: string
           endpoint?: string
           id?: string
@@ -1296,6 +1299,120 @@ export type Database = {
           streak_bonus?: number | null
           streak_count?: number | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      developer_escrows: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string | null
+          description: string | null
+          developer_id: string
+          escrow_id: string
+          funded_at: string | null
+          id: string
+          payee_external_id: string
+          payer_external_id: string
+          refunded_at: string | null
+          released_at: string | null
+          status: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string | null
+          description?: string | null
+          developer_id: string
+          escrow_id: string
+          funded_at?: string | null
+          id?: string
+          payee_external_id: string
+          payer_external_id: string
+          refunded_at?: string | null
+          released_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string | null
+          description?: string | null
+          developer_id?: string
+          escrow_id?: string
+          funded_at?: string | null
+          id?: string
+          payee_external_id?: string
+          payer_external_id?: string
+          refunded_at?: string | null
+          released_at?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
+      developer_video_rooms: {
+        Row: {
+          created_at: string
+          developer_id: string
+          ended_at: string | null
+          features: Json | null
+          id: string
+          max_participants: number | null
+          room_id: string
+          room_name: string
+          status: string | null
+        }
+        Insert: {
+          created_at?: string
+          developer_id: string
+          ended_at?: string | null
+          features?: Json | null
+          id?: string
+          max_participants?: number | null
+          room_id: string
+          room_name: string
+          status?: string | null
+        }
+        Update: {
+          created_at?: string
+          developer_id?: string
+          ended_at?: string | null
+          features?: Json | null
+          id?: string
+          max_participants?: number | null
+          room_id?: string
+          room_name?: string
+          status?: string | null
+        }
+        Relationships: []
+      }
+      developer_wallets: {
+        Row: {
+          created_at: string
+          developer_id: string
+          encrypted_private_key: string
+          external_user_id: string
+          id: string
+          updated_at: string
+          wallet_address: string
+        }
+        Insert: {
+          created_at?: string
+          developer_id: string
+          encrypted_private_key: string
+          external_user_id: string
+          id?: string
+          updated_at?: string
+          wallet_address: string
+        }
+        Update: {
+          created_at?: string
+          developer_id?: string
+          encrypted_private_key?: string
+          external_user_id?: string
+          id?: string
+          updated_at?: string
+          wallet_address?: string
         }
         Relationships: []
       }
@@ -6115,6 +6232,10 @@ export type Database = {
           p_fundraising_id: string
         }
         Returns: Json
+      }
+      deduct_nc_balance: {
+        Args: { p_amount: number; p_user_id: string }
+        Returns: boolean
       }
       expire_expert_boosts: { Args: never; Returns: undefined }
       file_dispute_safepay: {
