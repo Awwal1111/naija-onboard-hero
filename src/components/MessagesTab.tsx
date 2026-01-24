@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -6,7 +6,7 @@ import { MessageCircle, Search } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 
 interface ChatPreview {
   id: string
@@ -25,17 +25,12 @@ interface ChatPreview {
 const MessagesTab: React.FC = () => {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const [chats, setChats] = useState<ChatPreview[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
 
-  useEffect(() => {
-    if (user) {
-      fetchChats()
-    }
-  }, [user])
-
-  const fetchChats = async () => {
+  const fetchChats = useCallback(async () => {
     if (!user) return
 
     try {
@@ -95,7 +90,58 @@ const MessagesTab: React.FC = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [user])
+
+  // Initial fetch
+  useEffect(() => {
+    if (user) {
+      fetchChats()
+    }
+  }, [user, fetchChats])
+
+  // Refresh when navigating back to this page (route change)
+  useEffect(() => {
+    if (user && location.pathname === '/chat') {
+      fetchChats()
+    }
+  }, [location.pathname, user, fetchChats])
+
+  // Refresh on visibility change (when user switches back to tab)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && user) {
+        fetchChats()
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [user, fetchChats])
+
+  // Real-time subscription for message updates
+  useEffect(() => {
+    if (!user) return
+
+    const channel = supabase
+      .channel('messages-unread-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'messages'
+        },
+        () => {
+          // Refetch chats when any message changes (new message or read status update)
+          fetchChats()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user, fetchChats])
 
   const filteredChats = chats.filter(chat => 
     chat.other_user.full_name.toLowerCase().includes(searchQuery.toLowerCase())
