@@ -7,12 +7,29 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Logo } from '@/components/ui/logo';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   Code, Wallet, Video, Bell, Zap, Shield, MessageSquare, 
   ArrowRight, CheckCircle, Globe, Webhook, BookOpen, Terminal,
-  ChevronRight, ExternalLink, Copy, Github, Twitter
+  ChevronRight, ExternalLink, Copy, Github, Twitter, Play, Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
+
+// API Endpoints for testing
+const TEST_ENDPOINTS = [
+  { method: 'POST', path: '/wallet/create', body: '{\n  "external_user_id": "test_user_123"\n}' },
+  { method: 'GET', path: '/wallet/balance', body: '{\n  "address": "0x...",\n  "currency": "cusd"\n}' },
+  { method: 'POST', path: '/wallet/transfer', body: '{\n  "from_user_id": "user_1",\n  "to_address": "0x...",\n  "amount": 100,\n  "currency": "cusd"\n}' },
+  { method: 'POST', path: '/video/create-room', body: '{\n  "room_name": "my-meeting",\n  "max_participants": 10\n}' },
+  { method: 'POST', path: '/video/join-room', body: '{\n  "room_id": "room_123",\n  "user_id": "user_456",\n  "display_name": "John"\n}' },
+  { method: 'POST', path: '/vtu/airtime', body: '{\n  "phone_number": "08012345678",\n  "amount": 500,\n  "network": "mtn"\n}' },
+  { method: 'POST', path: '/payments/escrow/create', body: '{\n  "payer_id": "user_1",\n  "payee_id": "user_2",\n  "amount": 5000,\n  "description": "Freelance work"\n}' },
+  { method: 'GET', path: '/webhooks', body: '' },
+  { method: 'POST', path: '/webhooks', body: '{\n  "webhook_url": "https://your-app.com/webhook",\n  "events": ["wallet.created", "escrow.released"]\n}' },
+];
 
 const FEATURES = [
   {
@@ -134,10 +151,73 @@ app.post('/webhook', (req, res) => {
 
 export default function DeveloperDocs() {
   const [selectedLang, setSelectedLang] = useState<'curl' | 'javascript' | 'python'>('javascript');
+  
+  // API Playground state
+  const [apiKey, setApiKey] = useState('');
+  const [selectedEndpoint, setSelectedEndpoint] = useState(TEST_ENDPOINTS[0]);
+  const [requestBody, setRequestBody] = useState(TEST_ENDPOINTS[0].body);
+  const [response, setResponse] = useState<string | null>(null);
+  const [isTesting, setIsTesting] = useState(false);
 
   const copyCode = (code: string) => {
     navigator.clipboard.writeText(code);
     toast.success('Code copied to clipboard!');
+  };
+
+  const handleEndpointChange = (path: string) => {
+    const endpoint = TEST_ENDPOINTS.find(e => e.path === path);
+    if (endpoint) {
+      setSelectedEndpoint(endpoint);
+      setRequestBody(endpoint.body);
+      setResponse(null);
+    }
+  };
+
+  const testApi = async () => {
+    if (!apiKey.trim()) {
+      toast.error('Please enter your API key');
+      return;
+    }
+
+    setIsTesting(true);
+    setResponse(null);
+
+    try {
+      const url = `https://jxybqmquymxkvxxpiuhv.supabase.co/functions/v1/developer-api${selectedEndpoint.path}`;
+      
+      const options: RequestInit = {
+        method: selectedEndpoint.method,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey.trim()
+        }
+      };
+
+      if (selectedEndpoint.method !== 'GET' && requestBody.trim()) {
+        try {
+          options.body = JSON.stringify(JSON.parse(requestBody));
+        } catch {
+          toast.error('Invalid JSON in request body');
+          setIsTesting(false);
+          return;
+        }
+      }
+
+      const res = await fetch(url, options);
+      const data = await res.json();
+      setResponse(JSON.stringify(data, null, 2));
+      
+      if (res.ok) {
+        toast.success('API call successful!');
+      } else {
+        toast.error(data.error || 'API call failed');
+      }
+    } catch (error: any) {
+      setResponse(JSON.stringify({ error: error.message }, null, 2));
+      toast.error('Request failed');
+    } finally {
+      setIsTesting(false);
+    }
   };
 
   return (
@@ -163,6 +243,7 @@ export default function DeveloperDocs() {
           
           <nav className="hidden md:flex items-center gap-6">
             <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Features</a>
+            <a href="#playground" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Playground</a>
             <a href="#webhooks" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Webhooks</a>
             <a href="#docs" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Documentation</a>
             <a href="#pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Pricing</a>
@@ -312,8 +393,133 @@ export default function DeveloperDocs() {
         </div>
       </section>
 
+      {/* API Playground Section */}
+      <section id="playground" className="py-20 px-4">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 text-primary mb-4">
+              <Play className="h-5 w-5" />
+              <span className="font-medium">Interactive Playground</span>
+            </div>
+            <h2 className="text-3xl font-bold mb-4">Test the API Live</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Enter your API key and test any endpoint directly from this page.
+              Get your API key from the <Link to="/developer" className="text-primary hover:underline">Developer Portal</Link>.
+            </p>
+          </div>
+          
+          <Card className="overflow-hidden">
+            <CardHeader className="border-b bg-muted/30">
+              <CardTitle className="flex items-center gap-2">
+                <Terminal className="h-5 w-5" />
+                API Playground
+              </CardTitle>
+              <CardDescription>
+                Test API endpoints with your own API key
+              </CardDescription>
+            </CardHeader>
+            
+            <CardContent className="p-6 space-y-6">
+              {/* API Key Input */}
+              <div className="space-y-2">
+                <Label htmlFor="apiKey">Your API Key</Label>
+                <Input
+                  id="apiKey"
+                  type="password"
+                  placeholder="Enter your x-api-key..."
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  className="font-mono"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Don't have an API key? <Link to="/developer" className="text-primary hover:underline">Get one here</Link>
+                </p>
+              </div>
+
+              {/* Endpoint Selector */}
+              <div className="space-y-2">
+                <Label>Select Endpoint</Label>
+                <Select value={selectedEndpoint.path} onValueChange={handleEndpointChange}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TEST_ENDPOINTS.map((ep) => (
+                      <SelectItem key={ep.path} value={ep.path}>
+                        <span className="flex items-center gap-2">
+                          <Badge variant={ep.method === 'GET' ? 'secondary' : 'default'} className="text-xs">
+                            {ep.method}
+                          </Badge>
+                          <code className="text-sm">{ep.path}</code>
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Request Body */}
+              {selectedEndpoint.method !== 'GET' && (
+                <div className="space-y-2">
+                  <Label>Request Body (JSON)</Label>
+                  <Textarea
+                    value={requestBody}
+                    onChange={(e) => setRequestBody(e.target.value)}
+                    className="font-mono text-sm h-32"
+                    placeholder="{}"
+                  />
+                </div>
+              )}
+
+              {/* Test Button */}
+              <Button 
+                onClick={testApi} 
+                disabled={isTesting || !apiKey.trim()}
+                className="w-full gap-2"
+                size="lg"
+              >
+                {isTesting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Testing...
+                  </>
+                ) : (
+                  <>
+                    <Play className="h-4 w-4" />
+                    Send Request
+                  </>
+                )}
+              </Button>
+
+              {/* Response */}
+              {response && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label>Response</Label>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => copyCode(response)}
+                      className="h-7 text-xs"
+                    >
+                      <Copy className="h-3 w-3 mr-1" />
+                      Copy
+                    </Button>
+                  </div>
+                  <ScrollArea className="h-64 rounded-lg border bg-muted/30">
+                    <pre className="p-4 text-sm font-mono text-foreground">
+                      {response}
+                    </pre>
+                  </ScrollArea>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+
       {/* Webhooks Section */}
-      <section id="webhooks" className="py-20 px-4">
+      <section id="webhooks" className="py-20 px-4 bg-muted/30">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
             <div className="inline-flex items-center gap-2 text-primary mb-4">
