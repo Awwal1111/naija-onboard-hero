@@ -4,7 +4,7 @@ import { Logo } from '@/components/ui/logo'
 import { BrandButton } from '@/components/ui/brand-button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Facebook, Youtube, Linkedin, MessageSquare, Phone, Users, Shield, ArrowRight, Briefcase, DollarSign, Clock, Award, Wallet, CreditCard, UserCheck, CheckCircle2, Building2, Network, Download, Play } from 'lucide-react'
+import { Facebook, Youtube, Linkedin, MessageSquare, Phone, Users, Shield, ArrowRight, Briefcase, DollarSign, Clock, Award, Wallet, CreditCard, UserCheck, CheckCircle2, Building2, Network, Download, Play, Code2 } from 'lucide-react'
 import heroImage from '@/assets/hero-image.jpg'
 import explainerVideo from '@/assets/naijalancers-explainer.mp4'
 
@@ -39,6 +39,12 @@ const Index = () => {
       <nav className="flex items-center justify-between px-3 py-3 sm:px-6 sm:py-4 sticky top-0 bg-background/95 backdrop-blur-md border-b border-border z-50 shadow-sm">
         <Logo />
         <div className="flex items-center gap-2 sm:gap-4">
+          <BrandButton variant="ghost" asChild className="hidden sm:inline-flex text-sm px-3">
+            <Link to="/developers" className="flex items-center gap-1.5">
+              <Code2 className="w-4 h-4" />
+              Developers
+            </Link>
+          </BrandButton>
           <BrandButton variant="ghost" asChild className="text-sm sm:text-base px-2 sm:px-4">
             <Link to="/login">Log In</Link>
           </BrandButton>
@@ -427,7 +433,7 @@ const Index = () => {
       <footer className="bg-muted/50 border-t border-border py-12">
         <div className="container mx-auto px-6">
           <div className="max-w-6xl mx-auto">
-            <div className="grid md:grid-cols-4 gap-8 mb-8">
+            <div className="grid md:grid-cols-5 gap-8 mb-8">
               <div>
                 <Logo />
                 <p className="text-sm text-muted-foreground mt-4">
@@ -441,6 +447,16 @@ const Index = () => {
                   <li><Link to="/jobs" className="hover:text-primary">Find Jobs</Link></li>
                   <li><Link to="/experts" className="hover:text-primary">Hire Experts</Link></li>
                   <li><Link to="/earn" className="hover:text-primary">Earn Money</Link></li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="font-semibold mb-4">Developers</h4>
+                <ul className="space-y-2 text-sm text-muted-foreground">
+                  <li><Link to="/developers" className="hover:text-primary flex items-center gap-1.5"><Code2 className="w-3.5 h-3.5" /> API Documentation</Link></li>
+                  <li><Link to="/developers#playground" className="hover:text-primary">API Playground</Link></li>
+                  <li><Link to="/developers#webhooks" className="hover:text-primary">Webhooks</Link></li>
+                  <li><Link to="/developers#pricing" className="hover:text-primary">Pricing</Link></li>
                 </ul>
               </div>
 
