@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
+import { MilestonesSection } from '@/components/MilestonesSection';
 import { 
   Dialog,
   DialogContent,
@@ -324,6 +325,15 @@ const OrderDetail = () => {
             {renderActions()}
           </CardContent>
         </Card>
+
+        {/* Milestones Section */}
+        <MilestonesSection
+          orderId={orderId}
+          isBuyer={isBuyer}
+          isSeller={isSeller}
+          totalAmount={order.amount}
+          orderStatus={order.status}
+        />
 
         {/* Messages */}
         <Card>
