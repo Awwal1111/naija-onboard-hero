@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Plus, X, Eye, Users, ChevronDown, ChevronUp } from 'lucide-react'
+import { Plus, X, Eye, Users, ChevronDown, ChevronUp, Briefcase, MessageCircle } from 'lucide-react'
 import { Story } from '@/hooks/useFeed'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { supabase } from '@/integrations/supabase/client'
 import { useNavigate } from 'react-router-dom'
+import { useToast } from '@/hooks/use-toast'
 
 interface StoryViewer {
   user_id: string
@@ -32,12 +33,81 @@ const StoriesSection: React.FC<StoriesSectionProps> = ({
   currentUserId
 }) => {
   const navigate = useNavigate()
+  const { toast } = useToast()
   const [viewingStory, setViewingStory] = useState<Story | null>(null)
   const [currentStoryIndex, setCurrentStoryIndex] = useState(0)
   const [storyViewers, setStoryViewers] = useState<StoryViewer[]>([])
   const [showViewers, setShowViewers] = useState(false)
   const [loadingViewers, setLoadingViewers] = useState(false)
   const [userConnections, setUserConnections] = useState<Set<string>>(new Set())
+
+  // Handle Hire Me - Navigate to chat with story context
+  const handleHireMe = async (story: Story) => {
+    if (!currentUserId) {
+      toast({
+        title: "Login required",
+        description: "Please log in to send messages",
+        variant: "destructive"
+      })
+      return
+    }
+
+    try {
+      // Find or create chat
+      const { data: existingChat } = await supabase
+        .from('chats')
+        .select('id')
+        .or(`and(user1_id.eq.${currentUserId},user2_id.eq.${story.user_id}),and(user1_id.eq.${story.user_id},user2_id.eq.${currentUserId})`)
+        .maybeSingle()
+
+      let chatId = existingChat?.id
+
+      if (!chatId) {
+        // Create new chat
+        const { data: newChat, error } = await supabase
+          .from('chats')
+          .insert({
+            user1_id: currentUserId,
+            user2_id: story.user_id
+          })
+          .select()
+          .single()
+
+        if (error) throw error
+        chatId = newChat.id
+      }
+
+      // Send auto message with context
+      await supabase
+        .from('messages')
+        .insert({
+          chat_id: chatId,
+          sender_id: currentUserId,
+          content: `👋 Hi! I'm interested in connecting with you after seeing your story.`,
+          payload: {
+            context: 'story',
+            context_label: 'From Story',
+            story_id: story.id,
+            story_content: story.content?.substring(0, 100) || 'Media Story'
+          }
+        })
+
+      closeStoryViewer()
+      navigate(`/chat/${story.user_id}`)
+      
+      toast({
+        title: "Message sent!",
+        description: "You've initiated a conversation"
+      })
+    } catch (error) {
+      console.error('Error initiating chat:', error)
+      toast({
+        title: "Error",
+        description: "Failed to start conversation",
+        variant: "destructive"
+      })
+    }
+  }
 
   // Fetch user connections for story ranking
   useEffect(() => {
@@ -399,6 +469,32 @@ const StoriesSection: React.FC<StoriesSectionProps> = ({
                   <p className="text-white text-sm text-center bg-black/50 p-3 rounded-lg">
                     {viewingStory.content}
                   </p>
+                </div>
+              )}
+
+              {/* Bottom Bar - Hire Me / Message buttons for Other Users' Stories */}
+              {viewingStory.user_id !== currentUserId && (
+                <div className="absolute bottom-0 left-0 right-0 z-20 p-4 bg-gradient-to-t from-black/80 to-transparent">
+                  <div className="flex gap-3 justify-center">
+                    <Button
+                      onClick={() => handleHireMe(viewingStory)}
+                      className="bg-primary hover:bg-primary/90 text-white font-semibold px-6"
+                    >
+                      <Briefcase className="h-4 w-4 mr-2" />
+                      Hire Me
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        closeStoryViewer()
+                        navigate(`/chat/${viewingStory.user_id}`)
+                      }}
+                      variant="outline"
+                      className="border-white text-white hover:bg-white/20 font-semibold px-6"
+                    >
+                      <MessageCircle className="h-4 w-4 mr-2" />
+                      Message
+                    </Button>
+                  </div>
                 </div>
               )}
 
