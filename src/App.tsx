@@ -93,6 +93,11 @@ import OrderDetail from "./pages/OrderDetail";
 import CertificateView from "./pages/CertificateView";
 import VerifyCertificate from "./pages/VerifyCertificate";
 import ExpertVerification from "./pages/ExpertVerification";
+import Contests from "./pages/Contests";
+import ContestDetail from "./pages/ContestDetail";
+import WorkRooms from "./pages/WorkRooms";
+import WorkRoomDetail from "./pages/WorkRoomDetail";
+import WorkDiary from "./pages/WorkDiary";
 
 // Component to handle app state persistence
 const AppStateManager = () => {
@@ -189,6 +194,11 @@ const App = () => (
           <Route path="/verify-certificate/:certificateId" element={<VerifyCertificate />} />
           <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
           <Route path="/orders/:orderId" element={<ProtectedRoute><OrderDetail /></ProtectedRoute>} />
+          <Route path="/contests" element={<ProtectedRoute><Contests /></ProtectedRoute>} />
+          <Route path="/contests/:contestId" element={<ProtectedRoute><ContestDetail /></ProtectedRoute>} />
+          <Route path="/workrooms" element={<ProtectedRoute><WorkRooms /></ProtectedRoute>} />
+          <Route path="/workrooms/:roomId" element={<ProtectedRoute><WorkRoomDetail /></ProtectedRoute>} />
+          <Route path="/work-diary" element={<ProtectedRoute><WorkDiary /></ProtectedRoute>} />
           <Route path="/payment-success" element={<PaymentSuccess />} />
           <Route path="/payment-failed" element={<PaymentFailed />} />
           
