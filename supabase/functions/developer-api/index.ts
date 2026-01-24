@@ -131,6 +131,25 @@ async function deductBalance(userId: string, amount: number): Promise<boolean> {
   return !error && data === true;
 }
 
+// Trigger webhooks for developer events
+async function triggerWebhook(developerId: string, eventType: string, payload: any) {
+  try {
+    // Call the developer-webhook function to handle webhook delivery
+    await supabase.functions.invoke('developer-webhook', {
+      body: {
+        action: 'trigger',
+        developer_id: developerId,
+        event_type: eventType,
+        payload
+      }
+    });
+    console.log(`[API] Webhook triggered: ${eventType}`);
+  } catch (error) {
+    console.error('[API] Webhook trigger failed:', error);
+    // Don't fail the main operation if webhook fails
+  }
+}
+
 // ============= API HANDLERS =============
 
 // WALLET APIS
@@ -178,6 +197,13 @@ async function handleWalletCreate(developer: DeveloperProfile, body: any) {
     console.error('[API] Error saving wallet:', error);
     return { error: 'Failed to create wallet', status: 500 };
   }
+  
+  // Trigger webhook for wallet creation
+  triggerWebhook(developer.user_id, 'wallet.created', {
+    address: wallet.address,
+    external_user_id,
+    network: 'celo-mainnet'
+  });
   
   return {
     data: {
@@ -675,6 +701,16 @@ async function handleCreateEscrow(developer: DeveloperProfile, body: any) {
     return { error: 'Failed to create escrow', status: 500 };
   }
   
+  // Trigger webhook for escrow creation
+  triggerWebhook(developer.user_id, 'escrow.created', {
+    escrow_id: escrowId,
+    payer_external_id,
+    payee_external_id,
+    amount,
+    currency,
+    status: 'pending'
+  });
+  
   return {
     data: {
       escrow_id: escrowId,
@@ -717,6 +753,14 @@ async function handleReleaseEscrow(developer: DeveloperProfile, escrowId: string
   if (error) {
     return { error: 'Failed to release escrow', status: 500 };
   }
+  
+  // Trigger webhook for escrow release
+  triggerWebhook(developer.user_id, 'escrow.released', {
+    escrow_id: escrowId,
+    amount: escrow.amount,
+    payee_external_id: escrow.payee_external_id,
+    released_at: new Date().toISOString()
+  });
   
   return {
     data: {
@@ -871,11 +915,108 @@ serve(async (req) => {
         result = await handleCreateEscrow(developer, body);
         break;
       
+      // Webhook Management APIs
+      case 'webhooks':
+        if (method === 'GET') {
+          // List webhooks
+          const { data: webhooks } = await supabase
+            .from('developer_webhooks')
+            .select('id, webhook_url, events, is_active, description, created_at, last_triggered_at, failure_count')
+            .eq('developer_id', developer.user_id);
+          result = { data: { webhooks: webhooks || [] } };
+        } else if (method === 'POST') {
+          // Create webhook
+          const { url: webhookUrl, events, description: webhookDesc } = body;
+          if (!webhookUrl || !events?.length) {
+            result = { error: 'url and events array required', status: 400 };
+          } else {
+            const { data: secretData } = await supabase.rpc('generate_webhook_secret');
+            const { data: newWebhook, error: createErr } = await supabase
+              .from('developer_webhooks')
+              .insert({
+                developer_id: developer.user_id,
+                webhook_url: webhookUrl,
+                webhook_secret: secretData || `whsec_${crypto.randomUUID().replace(/-/g, '')}`,
+                events,
+                description: webhookDesc
+              })
+              .select('id, webhook_url, webhook_secret, events, is_active, description')
+              .single();
+            
+            if (createErr) {
+              result = { error: createErr.message, status: 400 };
+            } else {
+              result = { data: newWebhook };
+            }
+          }
+        } else {
+          result = { error: 'Method not allowed', status: 405 };
+        }
+        break;
+      
+      case 'webhooks/events':
+        // List available webhook events
+        result = {
+          data: {
+            events: [
+              { event: 'wallet.created', description: 'A new wallet was created' },
+              { event: 'wallet.deposit', description: 'Funds deposited into a wallet' },
+              { event: 'wallet.transfer', description: 'Transfer completed successfully' },
+              { event: 'escrow.created', description: 'New escrow payment created' },
+              { event: 'escrow.funded', description: 'Escrow was funded' },
+              { event: 'escrow.released', description: 'Escrow funds released' },
+              { event: 'escrow.refunded', description: 'Escrow was refunded' },
+              { event: 'vtu.airtime.success', description: 'Airtime purchase completed' },
+              { event: 'vtu.data.success', description: 'Data purchase completed' },
+              { event: 'video.room.created', description: 'Video room created' },
+              { event: 'video.room.ended', description: 'Video session ended' }
+            ]
+          }
+        };
+        break;
+      
       default:
-        // Check for dynamic routes like payments/escrow/{id}/release
+        // Check for dynamic routes
         if (endpoint.startsWith('payments/escrow/') && endpoint.endsWith('/release')) {
           const escrowId = pathParts[2];
           result = await handleReleaseEscrow(developer, escrowId);
+        } else if (endpoint.startsWith('webhooks/') && method === 'DELETE') {
+          // Delete webhook
+          const webhookId = pathParts[1];
+          const { error: delErr } = await supabase
+            .from('developer_webhooks')
+            .delete()
+            .eq('id', webhookId)
+            .eq('developer_id', developer.user_id);
+          
+          if (delErr) {
+            result = { error: 'Webhook not found', status: 404 };
+          } else {
+            result = { data: { deleted: true } };
+          }
+        } else if (endpoint.startsWith('webhooks/') && endpoint.endsWith('/test') && method === 'POST') {
+          // Test webhook
+          const webhookId = pathParts[1];
+          const { data: testResult, error: testErr } = await supabase.functions.invoke('developer-webhook', {
+            body: { action: 'test', webhook_id: webhookId }
+          });
+          
+          if (testErr) {
+            result = { error: testErr.message, status: 500 };
+          } else {
+            result = { data: testResult };
+          }
+        } else if (endpoint.startsWith('webhooks/') && endpoint.endsWith('/logs') && method === 'GET') {
+          // Get webhook logs
+          const webhookId = pathParts[1];
+          const { data: logs } = await supabase
+            .from('webhook_logs')
+            .select('*')
+            .eq('webhook_id', webhookId)
+            .order('created_at', { ascending: false })
+            .limit(50);
+          
+          result = { data: { logs: logs || [] } };
         } else {
           result = { 
             error: 'Endpoint not found', 

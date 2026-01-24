@@ -99,6 +99,7 @@ import WorkRooms from "./pages/WorkRooms";
 import WorkRoomDetail from "./pages/WorkRoomDetail";
 import WorkDiary from "./pages/WorkDiary";
 import DeveloperPortal from "./pages/DeveloperPortal";
+import DeveloperDocs from "./pages/DeveloperDocs";
 
 // Component to handle app state persistence
 const AppStateManager = () => {
@@ -143,6 +144,7 @@ const App = () => (
               <Route path="/faq" element={<FAQ />} />
               <Route path="/terms-conditions" element={<TermsConditions />} />
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+              <Route path="/developers" element={<DeveloperDocs />} />
               <Route path="/verify-certificate/:certificateId" element={<VerifyCertificate />} />
               <Route path="/payment-success" element={<PaymentSuccess />} />
               <Route path="/payment-failed" element={<PaymentFailed />} />
