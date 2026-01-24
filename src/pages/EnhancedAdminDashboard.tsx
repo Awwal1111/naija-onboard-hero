@@ -863,59 +863,32 @@ const AnalyticsContent = ({ dashboardStats }: { dashboardStats: any }) => {
 
   const fetchAnalyticsData = async () => {
     try {
-      // Fetch user growth data (last 30 days)
-      const userGrowthData = []
-      for (let i = 29; i >= 0; i--) {
-        const date = new Date()
-        date.setDate(date.getDate() - i)
-        const dateStr = date.toISOString().split('T')[0]
-        
-        const { data: signups } = await supabase
+      // Get date range for last 30 days
+      const endDate = new Date()
+      const startDate = new Date()
+      startDate.setDate(startDate.getDate() - 30)
+      
+      // Fetch all data in parallel with batch queries (much faster than 60+ individual queries)
+      const [
+        profilesData,
+        transactionsData,
+        postsCount,
+        jobsCount,
+        coursesCount,
+        productsCount,
+        fundraisingsCount
+      ] = await Promise.all([
+        // Get all profiles created in last 30 days
+        supabase
           .from('profiles')
-          .select('id')
-          .gte('created_at', `${dateStr}T00:00:00`)
-          .lt('created_at', `${dateStr}T23:59:59`)
-        
-        const { data: activeUsers } = await supabase
-          .from('profiles')
-          .select('id')
-          .gte('last_seen_at', `${dateStr}T00:00:00`)
-          .lt('last_seen_at', `${dateStr}T23:59:59`)
-        
-        if (i % 3 === 0) { // Show every 3rd day
-          userGrowthData.push({
-            date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-            signups: signups?.length || 0,
-            active: activeUsers?.length || 0
-          })
-        }
-      }
-
-      // Fetch revenue data (last 30 days)
-      const revenueData = []
-      for (let i = 29; i >= 0; i--) {
-        const date = new Date()
-        date.setDate(date.getDate() - i)
-        const dateStr = date.toISOString().split('T')[0]
-        
-        const { data: transactions } = await supabase
+          .select('created_at, updated_at')
+          .gte('created_at', startDate.toISOString()),
+        // Get all transactions in last 30 days
+        supabase
           .from('wallet_transactions')
-          .select('amount')
-          .gte('created_at', `${dateStr}T00:00:00`)
-          .lt('created_at', `${dateStr}T23:59:59`)
-        
-        const revenue = transactions?.reduce((sum, t) => sum + (t.amount > 0 ? t.amount : 0), 0) || 0
-        
-        if (i % 3 === 0) { // Show every 3rd day
-          revenueData.push({
-            date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-            revenue: revenue
-          })
-        }
-      }
-
-      // Activity breakdown
-      const [posts, jobs, courses, products, fundraisings] = await Promise.all([
+          .select('amount, created_at')
+          .gte('created_at', startDate.toISOString()),
+        // Activity counts
         supabase.from('posts').select('id', { count: 'exact', head: true }),
         supabase.from('job_posts').select('id', { count: 'exact', head: true }),
         supabase.from('courses').select('id', { count: 'exact', head: true }),
@@ -923,12 +896,53 @@ const AnalyticsContent = ({ dashboardStats }: { dashboardStats: any }) => {
         supabase.from('fundraisings').select('id', { count: 'exact', head: true })
       ])
 
+      const profiles = profilesData.data || []
+      const transactions = transactionsData.data || []
+
+      // Process user growth data by grouping locally
+      const userGrowthData: any[] = []
+      for (let i = 29; i >= 0; i--) {
+        const date = new Date()
+        date.setDate(date.getDate() - i)
+        const dateStr = date.toISOString().split('T')[0]
+        
+        const signups = profiles.filter(p => p.created_at?.startsWith(dateStr)).length
+        // Use updated_at as a proxy for activity (since last_seen_at doesn't exist)
+        const active = profiles.filter(p => p.updated_at?.startsWith(dateStr)).length
+        
+        if (i % 3 === 0) { // Show every 3rd day
+          userGrowthData.push({
+            date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+            signups,
+            active
+          })
+        }
+      }
+
+      // Process revenue data by grouping locally
+      const revenueData: any[] = []
+      for (let i = 29; i >= 0; i--) {
+        const date = new Date()
+        date.setDate(date.getDate() - i)
+        const dateStr = date.toISOString().split('T')[0]
+        
+        const dayTransactions = transactions.filter(t => t.created_at?.startsWith(dateStr))
+        const revenue = dayTransactions.reduce((sum, t) => sum + (t.amount > 0 ? t.amount : 0), 0)
+        
+        if (i % 3 === 0) { // Show every 3rd day
+          revenueData.push({
+            date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+            revenue
+          })
+        }
+      }
+
       const activityBreakdown = [
-        { name: 'Posts', value: posts.count || 0 },
-        { name: 'Jobs', value: jobs.count || 0 },
-        { name: 'Courses', value: courses.count || 0 },
-        { name: 'Products', value: products.count || 0 },
-        { name: 'Fundraising', value: fundraisings.count || 0 }
+        { name: 'Posts', value: postsCount.count || 0 },
+        { name: 'Jobs', value: jobsCount.count || 0 },
+        { name: 'Courses', value: coursesCount.count || 0 },
+        { name: 'Products', value: productsCount.count || 0 },
+        { name: 'Fundraising', value: fundraisingsCount.count || 0 }
       ]
 
       setAnalyticsData({
@@ -936,10 +950,10 @@ const AnalyticsContent = ({ dashboardStats }: { dashboardStats: any }) => {
         revenueData,
         activityBreakdown,
         platformHealth: {
-          activeUsers: dashboardStats.activeUsers,
-          totalRevenue: dashboardStats.totalRevenue,
-          totalJobs: dashboardStats.totalJobs,
-          totalExperts: dashboardStats.totalExperts
+          activeUsers: dashboardStats?.activeUsers || 0,
+          totalRevenue: dashboardStats?.totalRevenue || 0,
+          totalJobs: dashboardStats?.totalJobs || 0,
+          totalExperts: dashboardStats?.totalExperts || 0
         }
       })
       
@@ -951,7 +965,12 @@ const AnalyticsContent = ({ dashboardStats }: { dashboardStats: any }) => {
   }
 
   if (loading) {
-    return <div className="text-center py-8">Loading analytics...</div>
+    return (
+      <div className="text-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+        <p className="text-muted-foreground">Loading analytics...</p>
+      </div>
+    )
   }
 
   return (
