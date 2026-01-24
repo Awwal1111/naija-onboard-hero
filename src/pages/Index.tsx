@@ -4,8 +4,9 @@ import { Logo } from '@/components/ui/logo'
 import { BrandButton } from '@/components/ui/brand-button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Facebook, Youtube, Linkedin, MessageSquare, Phone, Users, Shield, ArrowRight, Briefcase, DollarSign, Clock, Award, Wallet, CreditCard, UserCheck, CheckCircle2, Building2, Network, Download } from 'lucide-react'
+import { Facebook, Youtube, Linkedin, MessageSquare, Phone, Users, Shield, ArrowRight, Briefcase, DollarSign, Clock, Award, Wallet, CreditCard, UserCheck, CheckCircle2, Building2, Network, Download, Play } from 'lucide-react'
 import heroImage from '@/assets/hero-image.jpg'
+import explainerVideo from '@/assets/naijalancers-explainer.mp4'
 
 import { LeaderboardSection } from '@/components/LeaderboardSection'
 import { SuccessStoriesSection } from '@/components/SuccessStoriesSection'
@@ -122,7 +123,28 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Trust & Verification Section */}
+      {/* Video Explainer Section */}
+      <section className="py-12 sm:py-16 bg-gradient-to-b from-background to-muted/30">
+        <div className="container mx-auto px-4 sm:px-6">
+          <div className="max-w-4xl mx-auto text-center">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">See How It Works</h2>
+            <p className="text-muted-foreground mb-8">Watch our quick explainer to understand how NaijaLancers connects talent with opportunity</p>
+            
+            <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-border">
+              <video 
+                src={explainerVideo}
+                controls
+                className="w-full aspect-video"
+                poster={heroImage}
+                preload="metadata"
+              >
+                Your browser does not support the video tag.
+              </video>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section className="py-16 bg-muted/30">
         <div className="container mx-auto px-6">
           <div className="max-w-6xl mx-auto">
