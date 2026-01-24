@@ -26,6 +26,8 @@ import { MoreMenuDrawer } from '@/components/MoreMenuDrawer'
 import { UnifiedSearchBar } from '@/components/UnifiedSearchBar'
 import { NCConverter } from '@/components/NCConverter'
 import { QuickOnboarding } from '@/components/QuickOnboarding'
+import { BannerAd } from '@/components/ads/BannerAd'
+import { FeedAd } from '@/components/ads/FeedAd'
 import { supabase } from '@/integrations/supabase/client'
 
 const MainFeed = () => {
@@ -336,6 +338,11 @@ const MainFeed = () => {
             </div>
           </div>
 
+          {/* Banner Ad - Top of Feed */}
+          <div className="px-4 py-3">
+            <BannerAd />
+          </div>
+
           {/* Main Feed */}
           {feedType === 'for-you' ? (
             <div className="divide-y divide-border">
@@ -349,17 +356,24 @@ const MainFeed = () => {
                 </div>
               ) : (
                 <>
-                  {filteredAndSortedPosts.map((post) => (
-                    <LinkedInPostCard
-                      key={post.id}
-                      post={post as any}
-                      onReact={handleReact}
-                      onRemoveReaction={handleRemoveReaction}
-                      onComment={addComment}
-                      onJobApply={handleJobApply}
-                      onProfileClick={handleProfileClick}
-                      currentUserId={user?.id}
-                    />
+                  {filteredAndSortedPosts.map((post, index) => (
+                    <React.Fragment key={post.id}>
+                      <LinkedInPostCard
+                        post={post as any}
+                        onReact={handleReact}
+                        onRemoveReaction={handleRemoveReaction}
+                        onComment={addComment}
+                        onJobApply={handleJobApply}
+                        onProfileClick={handleProfileClick}
+                        currentUserId={user?.id}
+                      />
+                      {/* Show in-feed ad after every 5 posts */}
+                      {(index + 1) % 5 === 0 && (
+                        <div className="p-4 bg-muted/20">
+                          <FeedAd index={Math.floor(index / 5)} />
+                        </div>
+                      )}
+                    </React.Fragment>
                   ))}
                   <div className="py-8 text-center bg-muted/30">
                     <span className="text-sm text-muted-foreground">You're all caught up!</span>

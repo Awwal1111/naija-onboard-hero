@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { ArrowLeft, Users, FileText, TrendingUp, DollarSign, Eye, Settings, AlertCircle, CheckCircle, Clock, Star, MessageCircle, Briefcase, Award, Calendar, BarChart3, PieChart, Activity, Search, Filter, MoreVertical, Trash2, Edit, Ban, Heart, Package, BookOpen, Target, AlertTriangle } from 'lucide-react'
+import { ArrowLeft, Users, FileText, TrendingUp, DollarSign, Eye, Settings, AlertCircle, CheckCircle, Clock, Star, MessageCircle, Briefcase, Award, Calendar, BarChart3, PieChart, Activity, Search, Filter, MoreVertical, Trash2, Edit, Ban, Heart, Package, BookOpen, Target, AlertTriangle, Megaphone } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Logo } from '@/components/ui/logo'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -28,6 +28,7 @@ import { AdminSetup } from '@/components/AdminSetup'
 import { AdminAnalyticsCharts } from '@/components/AdminAnalyticsCharts'
 import { AdminBroadcastDialog } from '@/components/AdminBroadcastDialog'
 import { AdminExpertVerification } from '@/components/AdminExpertVerification'
+import AdminAdsSection from '@/components/AdminAdsSection'
 import { Briefcase as BriefcaseIcon } from 'lucide-react'
 
 // Admin Gigs Management Section
@@ -1322,6 +1323,10 @@ const EnhancedAdminDashboard = () => {
               <TabsTrigger value="content">Content</TabsTrigger>
               <TabsTrigger value="applications">Applications</TabsTrigger>
               <TabsTrigger value="marketplace">Marketplace</TabsTrigger>
+              <TabsTrigger value="ads">
+                <Megaphone className="h-4 w-4 mr-1" />
+                Ads
+              </TabsTrigger>
               <TabsTrigger value="wallet">Wallet</TabsTrigger>
               <TabsTrigger value="analytics">Analytics</TabsTrigger>
               <TabsTrigger value="settings">Settings</TabsTrigger>
@@ -1757,6 +1762,21 @@ const EnhancedAdminDashboard = () => {
                 </Card>
               </TabsContent>
             </Tabs>
+          </TabsContent>
+
+          {/* Ads Management Tab */}
+          <TabsContent value="ads" className="space-y-6">
+            <Card>
+              <CardHeader className="bg-gradient-to-r from-primary/10 to-primary/5">
+                <CardTitle className="flex items-center gap-2">
+                  <Megaphone className="h-5 w-5 text-primary" />
+                  Native Ads Management
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <AdminAdsSection />
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Wallet Management Tab */}

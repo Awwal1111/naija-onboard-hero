@@ -122,6 +122,63 @@ export type Database = {
         }
         Relationships: []
       }
+      ads: {
+        Row: {
+          click_count: number
+          created_at: string
+          created_by: string | null
+          description: string | null
+          end_date: string | null
+          id: string
+          image_url: string
+          impression_count: number
+          is_active: boolean
+          link_url: string
+          placement: string
+          priority: number
+          start_date: string | null
+          target_pages: string[] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          click_count?: number
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          image_url: string
+          impression_count?: number
+          is_active?: boolean
+          link_url: string
+          placement?: string
+          priority?: number
+          start_date?: string | null
+          target_pages?: string[] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          click_count?: number
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          image_url?: string
+          impression_count?: number
+          is_active?: boolean
+          link_url?: string
+          placement?: string
+          priority?: number
+          start_date?: string | null
+          target_pages?: string[] | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ai_copilot_messages: {
         Row: {
           content: string
@@ -6383,6 +6440,8 @@ export type Database = {
         Args: { p_months?: number; p_user_id: string }
         Returns: Json
       }
+      track_ad_click: { Args: { ad_id: string }; Returns: undefined }
+      track_ad_impression: { Args: { ad_id: string }; Returns: undefined }
       transfer_funds: {
         Args: {
           amount: number
