@@ -98,6 +98,7 @@ import ContestDetail from "./pages/ContestDetail";
 import WorkRooms from "./pages/WorkRooms";
 import WorkRoomDetail from "./pages/WorkRoomDetail";
 import WorkDiary from "./pages/WorkDiary";
+import DeveloperPortal from "./pages/DeveloperPortal";
 
 // Component to handle app state persistence
 const AppStateManager = () => {
@@ -155,6 +156,7 @@ const App = () => (
               <Route path="/expert-application" element={<ProtectedRoute><ExpertApplication /></ProtectedRoute>} />
               <Route path="/admin/expert-applications" element={<ProtectedRoute><AdminExpertApplications /></ProtectedRoute>} />
               <Route path="/admin/dashboard" element={<ProtectedRoute><EnhancedAdminDashboard /></ProtectedRoute>} />
+              <Route path="/developer" element={<ProtectedRoute><DeveloperPortal /></ProtectedRoute>} />
               <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
               <Route path="/post-job" element={<ProtectedRoute><PostJob /></ProtectedRoute>} />
               <Route path="/experts" element={<ProtectedRoute><Experts /></ProtectedRoute>} />
