@@ -58,25 +58,59 @@ export const AccountTypeSettings = () => {
     try {
       setUpdating(true);
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        toast.error('Please log in to change account type');
+        return;
+      }
 
-      const updateData: any = { account_type: newType };
+      // Warn if switching away from developer with existing API key
+      if (settings?.account_type === 'developer' && newType !== 'developer' && settings?.api_key) {
+        if (!confirm('Switching from Developer will not delete your API key, but API access may be restricted. Continue?')) {
+          setUpdating(false);
+          return;
+        }
+      }
+
+      const updateData: Record<string, unknown> = { account_type: newType };
       
-      // Generate API key for developer accounts
+      // Generate API key for developer accounts if they don't have one
       if (newType === 'developer' && !settings?.api_key) {
-        const { data: keyData } = await supabase.rpc('generate_api_key');
+        console.log('Generating new API key for developer account...');
+        const { data: keyData, error: keyError } = await supabase.rpc('generate_api_key');
+        
+        if (keyError) {
+          console.error('Error generating API key:', keyError);
+          throw new Error('Failed to generate API key');
+        }
+        
+        if (!keyData) {
+          throw new Error('API key generation returned empty result');
+        }
+        
+        console.log('API key generated successfully:', keyData.substring(0, 10) + '...');
         updateData.api_key = keyData;
       }
 
+      console.log('Updating profile with:', { account_type: newType, has_api_key: !!updateData.api_key });
+      
       const { error } = await supabase
         .from('profiles')
         .update(updateData)
         .eq('user_id', user.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Profile update error:', error);
+        throw error;
+      }
       
+      // Refetch to confirm the update was successful
       await fetchSettings();
-      toast.success(`Account upgraded to ${newType}!`);
+      
+      if (newType === 'developer') {
+        toast.success('Developer account activated! Your API key is ready.');
+      } else {
+        toast.success(`Account changed to ${newType}!`);
+      }
     } catch (error: any) {
       console.error('Error updating account type:', error);
       toast.error(error.message || 'Failed to update account type');
@@ -86,22 +120,45 @@ export const AccountTypeSettings = () => {
   };
 
   const regenerateApiKey = async () => {
+    // Confirm before regenerating
+    if (!confirm('Are you sure you want to regenerate your API key?\n\nYour current key will stop working immediately. Any applications using it will need to be updated.')) {
+      return;
+    }
+    
     try {
       setUpdating(true);
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        toast.error('Please log in to regenerate API key');
+        return;
+      }
 
-      const { data: keyData } = await supabase.rpc('generate_api_key');
+      console.log('Regenerating API key...');
+      const { data: keyData, error: keyError } = await supabase.rpc('generate_api_key');
+      
+      if (keyError) {
+        console.error('Error generating API key:', keyError);
+        throw new Error('Failed to generate new API key');
+      }
+      
+      if (!keyData) {
+        throw new Error('API key generation returned empty result');
+      }
+      
+      console.log('New API key generated:', keyData.substring(0, 10) + '...');
       
       const { error } = await supabase
         .from('profiles')
         .update({ api_key: keyData })
         .eq('user_id', user.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Profile update error:', error);
+        throw error;
+      }
       
       await fetchSettings();
-      toast.success('API key regenerated!');
+      toast.success('API key regenerated! Your old key is now invalid.');
     } catch (error: any) {
       console.error('Error regenerating API key:', error);
       toast.error(error.message || 'Failed to regenerate API key');
