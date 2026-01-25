@@ -64,40 +64,47 @@ const AdminGigsSection = () => {
   }
 
   const handleDeleteGig = async (gigId: string, gigTitle: string) => {
-    if (!confirm(`Are you sure you want to delete "${gigTitle}"? This action cannot be undone.`)) {
+    // Check for active orders first
+    const { data: activeOrders } = await supabase
+      .from('gig_orders')
+      .select('id, status')
+      .eq('gig_id', gigId)
+      .in('status', ['pending', 'in_progress', 'delivered'])
+    
+    if (activeOrders && activeOrders.length > 0) {
+      toast({
+        title: "Cannot Delete",
+        description: `This gig has ${activeOrders.length} active order(s). Complete or cancel them first.`,
+        variant: "destructive"
+      })
+      return
+    }
+
+    if (!confirm(`Are you sure you want to delete "${gigTitle}"?\n\nNote: FAQs, reviews, testimonials, and completed order history will be preserved for platform analytics. Only the gig listing will be removed.`)) {
       return
     }
 
     try {
       console.log('Attempting to delete gig:', gigId)
       
-      // First try to delete related records that might block the deletion
-      // Delete gig FAQs
-      await supabase.from('gig_faqs').delete().eq('gig_id', gigId)
-      // Delete gig reviews
-      await supabase.from('gig_reviews').delete().eq('gig_id', gigId)
-      // Delete gig testimonials
-      await supabase.from('gig_testimonials').delete().eq('gig_id', gigId)
-      // Delete gig orders (if any pending)
-      await supabase.from('gig_orders').delete().eq('gig_id', gigId).eq('status', 'pending')
+      // IMPORTANT: Do NOT delete related data (FAQs, reviews, testimonials, order history)
+      // These are valuable for platform analytics and user trust
+      // Only mark the gig as deleted or remove the listing itself
       
-      // Now delete the gig
-      const { error, count } = await supabase
+      // Delete the gig - related records stay for historical purposes
+      const { error } = await supabase
         .from('jobs_services')
         .delete()
         .eq('id', gigId)
-        .select()
 
       if (error) {
         console.error('Delete error:', error)
         throw error
       }
 
-      console.log('Delete successful, affected rows:', count)
-
       toast({
         title: "Gig Deleted",
-        description: `"${gigTitle}" has been removed from the platform`,
+        description: `"${gigTitle}" has been removed. Historical data preserved.`,
       })
 
       fetchGigs()
@@ -105,7 +112,7 @@ const AdminGigsSection = () => {
       console.error('Error deleting gig:', error)
       toast({
         title: "Error",
-        description: error?.message || "Failed to delete gig. Check if there are orders or other dependencies.",
+        description: error?.message || "Failed to delete gig. There may be active orders or dependencies.",
         variant: "destructive"
       })
     }

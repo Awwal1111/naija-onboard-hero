@@ -273,37 +273,80 @@ export default function DeveloperPortal() {
   const upgradeToDevloper = async () => {
     try {
       setLoading(true);
-      const { data: keyData } = await supabase.rpc('generate_api_key');
       
-      await supabase
+      console.log('Upgrading to developer account...');
+      const { data: keyData, error: keyError } = await supabase.rpc('generate_api_key');
+      
+      if (keyError) {
+        console.error('Error generating API key:', keyError);
+        throw new Error('Failed to generate API key');
+      }
+      
+      if (!keyData) {
+        throw new Error('API key generation returned empty result');
+      }
+      
+      console.log('API key generated:', keyData.substring(0, 10) + '...');
+      
+      const { error: updateError } = await supabase
         .from('profiles')
         .update({ account_type: 'developer', api_key: keyData })
         .eq('user_id', user?.id);
       
+      if (updateError) {
+        console.error('Error updating profile:', updateError);
+        throw updateError;
+      }
+      
       setApiKey(keyData);
       setAccountType('developer');
-      toast.success('Welcome to the Developer Portal!');
-    } catch (error) {
-      toast.error('Failed to upgrade account');
+      toast.success('Welcome to the Developer Portal! Your API key is ready.');
+    } catch (error: any) {
+      console.error('Upgrade error:', error);
+      toast.error(error.message || 'Failed to upgrade account');
     } finally {
       setLoading(false);
     }
   };
 
   const regenerateApiKey = async () => {
+    // Confirm before regenerating
+    if (!confirm('Are you sure you want to regenerate your API key?\n\nYour current key will stop working immediately. Any applications using it will need to be updated.')) {
+      return;
+    }
+    
     try {
       setRegenerating(true);
-      const { data: keyData } = await supabase.rpc('generate_api_key');
       
-      await supabase
+      console.log('Regenerating API key...');
+      const { data: keyData, error: keyError } = await supabase.rpc('generate_api_key');
+      
+      if (keyError) {
+        console.error('Error generating API key:', keyError);
+        throw new Error('Failed to generate new API key');
+      }
+      
+      if (!keyData) {
+        throw new Error('API key generation returned empty result');
+      }
+      
+      console.log('New API key generated:', keyData.substring(0, 10) + '...');
+      
+      const { error: updateError } = await supabase
         .from('profiles')
         .update({ api_key: keyData })
         .eq('user_id', user?.id);
       
+      if (updateError) {
+        console.error('Error updating profile:', updateError);
+        throw updateError;
+      }
+      
       setApiKey(keyData);
-      toast.success('API key regenerated!');
-    } catch (error) {
-      toast.error('Failed to regenerate API key');
+      toast.success('API key regenerated! Your old key is now invalid.');
+    } catch (error: any) {
+      console.error('Regenerate error:', error);
+      toast.error(error.message || 'Failed to regenerate API key');
     } finally {
       setRegenerating(false);
     }

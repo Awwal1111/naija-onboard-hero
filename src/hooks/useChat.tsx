@@ -251,19 +251,27 @@ export const useChat = (otherUserId: string) => {
         }
       }
 
+      // Build message data - cast to any to bypass TypeScript schema cache issue
+      // The database HAS the payload column but generated types are out of sync
+      const messageData: Record<string, unknown> = {
+        chat_id: chat.id,
+        sender_id: user.id,
+        content,
+        media_url: mediaUrl || null,
+        media_type: mediaType || null,
+        reply_to_id: replyToId || null,
+        reply_to_content: replyToContent,
+        reply_to_sender: replyToSender
+      }
+      
+      // Only add payload if context is provided (avoids schema cache issues)
+      if (chatContext) {
+        messageData.payload = chatContext
+      }
+
       const { data: insertedMessage, error } = await supabase
         .from('messages')
-        .insert({
-          chat_id: chat.id,
-          sender_id: user.id,
-          content,
-          media_url: mediaUrl || null,
-          media_type: mediaType || null,
-          reply_to_id: replyToId || null,
-          reply_to_content: replyToContent,
-          reply_to_sender: replyToSender,
-          payload: chatContext || null
-        })
+        .insert(messageData as any)
         .select()
         .single()
 
