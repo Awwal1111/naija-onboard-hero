@@ -360,15 +360,21 @@ export default function DeveloperPortal() {
   };
 
   const testEndpoint = async () => {
-    if (!selectedEndpoint || !apiKey) return;
+    if (!selectedEndpoint || !apiKey) {
+      toast.error('API key is required to test endpoints');
+      return;
+    }
     
     setTesting(true);
     setTestResult(null);
     
     try {
       const body = JSON.parse(testInput);
-      const baseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-      const url = `${baseUrl}/functions/v1/developer-api${selectedEndpoint.path}`;
+      // Use the correct Supabase URL
+      const url = `https://jxybqmquymxkvxxpiuhv.supabase.co/functions/v1/developer-api${selectedEndpoint.path}`;
+      
+      console.log('Testing endpoint:', url);
+      console.log('Using API key:', apiKey.substring(0, 10) + '...');
       
       const response = await fetch(url, {
         method: selectedEndpoint.method,
@@ -380,9 +386,18 @@ export default function DeveloperPortal() {
       });
       
       const data = await response.json();
+      console.log('Test result:', data);
       setTestResult(JSON.stringify(data, null, 2));
+      
+      if (response.ok) {
+        toast.success('API call successful!');
+      } else {
+        toast.error(data.error || 'API call failed');
+      }
     } catch (error: any) {
+      console.error('Test error:', error);
       setTestResult(JSON.stringify({ error: error.message }, null, 2));
+      toast.error('Failed to test endpoint: ' + error.message);
     } finally {
       setTesting(false);
     }

@@ -66,25 +66,36 @@ interface DeveloperProfile {
   user_id: string;
   account_type: string;
   api_key: string;
-  nc_balance: number;
+  wallet_balance: number;
 }
 
 // Validate API key and get developer profile
 async function validateApiKey(apiKey: string): Promise<DeveloperProfile | null> {
-  if (!apiKey) return null;
-  
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('user_id, account_type, api_key, nc_balance')
-    .eq('api_key', apiKey)
-    .eq('account_type', 'developer')
-    .single();
-  
-  if (error || !data) {
-    console.log('[API] Invalid API key or not a developer account');
+  if (!apiKey) {
+    console.log('[API] No API key provided');
     return null;
   }
   
+  console.log('[API] Validating API key:', apiKey.substring(0, 10) + '...');
+  
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('user_id, account_type, api_key, wallet_balance')
+    .eq('api_key', apiKey)
+    .eq('account_type', 'developer')
+    .maybeSingle();
+  
+  if (error) {
+    console.log('[API] Database error during validation:', error.message);
+    return null;
+  }
+  
+  if (!data) {
+    console.log('[API] No matching developer profile found for this API key');
+    return null;
+  }
+  
+  console.log('[API] API key validated for user:', data.user_id);
   return data as DeveloperProfile;
 }
 
