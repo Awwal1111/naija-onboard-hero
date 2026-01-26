@@ -123,7 +123,7 @@ serve(async (req) => {
           from_amount: fiatAmount.toString(),
           merchant_reference: `NL_${Date.now()}_${user.id.slice(0, 8)}`,
           customer: {
-            email: user.email || profile?.email || "user@naijalancers.com",
+            email: user.email || profile?.email || "user@naijalancers.name.ng",
             first_name: profile?.full_name?.split(' ')[0] || "User",
             last_name: profile?.full_name?.split(' ').slice(1).join(' ') || "NaijaLancers"
           },

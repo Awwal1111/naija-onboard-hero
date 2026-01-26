@@ -16,7 +16,7 @@ const TermsConditions = () => {
   }
 
   const handleContactEmail = () => {
-    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=support@naijalancers.com&su=Terms%20and%20Conditions%20Inquiry&body=Hello%20NaijaLancers%20Team,%0D%0A%0D%0A`
+    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=support@naijalancers.name.ng&su=Terms%20and%20Conditions%20Inquiry&body=Hello%20NaijaLancers%20Team,%0D%0A%0D%0A`
     window.open(gmailUrl, '_blank')
   }
 
@@ -332,7 +332,7 @@ const TermsConditions = () => {
                   <div className="space-y-1 text-muted-foreground">
                     <p><strong>Company:</strong> NaijaLancers Limited</p>
                     <p><strong>CAC Registration:</strong> BN8870047</p>
-                    <p><strong>Email:</strong> support@naijalancers.com</p>
+                    <p><strong>Email:</strong> support@naijalancers.name.ng</p>
                     <p><strong>WhatsApp:</strong> +234 816 714 0857</p>
                   </div>
                 </section>

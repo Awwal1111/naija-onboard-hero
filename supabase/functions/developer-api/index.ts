@@ -855,7 +855,7 @@ serve(async (req) => {
         error: 'Insufficient NC balance',
         required: cost,
         current_balance: developer.nc_balance,
-        topup_url: 'https://naijalancers.com/settings/wallet'
+        topup_url: 'https://naijalancers.name.ng/settings/wallet'
       }),
       { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

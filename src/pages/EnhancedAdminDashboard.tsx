@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { ArrowLeft, Users, FileText, TrendingUp, DollarSign, Eye, Settings, AlertCircle, CheckCircle, Clock, Star, MessageCircle, Briefcase, Award, Calendar, BarChart3, PieChart, Activity, Search, Filter, MoreVertical, Trash2, Edit, Ban, Heart, Package, BookOpen, Target, AlertTriangle, Megaphone } from 'lucide-react'
+import { ArrowLeft, Users, FileText, TrendingUp, DollarSign, Eye, Settings, AlertCircle, CheckCircle, Clock, Star, MessageCircle, Briefcase, Award, Calendar, BarChart3, PieChart, Activity, Search, Filter, MoreVertical, Trash2, Edit, Ban, Heart, Package, BookOpen, Target, AlertTriangle, Megaphone, Code } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Logo } from '@/components/ui/logo'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -29,6 +29,7 @@ import { AdminAnalyticsCharts } from '@/components/AdminAnalyticsCharts'
 import { AdminBroadcastDialog } from '@/components/AdminBroadcastDialog'
 import { AdminExpertVerification } from '@/components/AdminExpertVerification'
 import AdminAdsSection from '@/components/AdminAdsSection'
+import AdminAPISalesSection from '@/components/AdminAPISalesSection'
 import { Briefcase as BriefcaseIcon } from 'lucide-react'
 
 // Admin Gigs Management Section
@@ -1354,6 +1355,10 @@ const EnhancedAdminDashboard = () => {
                 Ads
               </TabsTrigger>
               <TabsTrigger value="wallet">Wallet</TabsTrigger>
+              <TabsTrigger value="api-sales">
+                <Code className="h-4 w-4 mr-1" />
+                API Sales
+              </TabsTrigger>
               <TabsTrigger value="analytics">Analytics</TabsTrigger>
               <TabsTrigger value="settings">Settings</TabsTrigger>
             </TabsList>
@@ -1816,6 +1821,21 @@ const EnhancedAdminDashboard = () => {
             <Card>
               <CardContent className="pt-6">
                 <AdminManualDepositsSection />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* API Sales Tab */}
+          <TabsContent value="api-sales" className="space-y-6">
+            <Card>
+              <CardHeader className="bg-gradient-to-r from-blue-500/10 to-purple-500/10">
+                <CardTitle className="flex items-center gap-2">
+                  <Code className="h-5 w-5 text-blue-500" />
+                  API Sales & Developer Inquiries
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <AdminAPISalesSection />
               </CardContent>
             </Card>
           </TabsContent>
