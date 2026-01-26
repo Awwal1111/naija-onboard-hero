@@ -130,6 +130,13 @@ const App = () => (
               <Route path="/p/job/:jobId" element={<PublicJob />} />
               <Route path="/p/course/:courseId" element={<PublicCourse />} />
               <Route path="/p/campaign/:campaignId" element={<PublicCampaign />} />
+              
+              {/* Short URL aliases for better UX - redirect to the same components */}
+              <Route path="/gig/:gigId" element={<PublicGig />} />
+              <Route path="/job/:jobId" element={<PublicJob />} />
+              <Route path="/expert/:userId" element={<PublicExpert />} />
+              <Route path="/course/:courseId" element={<PublicCourse />} />
+              <Route path="/campaign/:campaignId" element={<PublicCampaign />} />
               <Route path="/sitemap.xml" element={<Sitemap />} />
               <Route path="/sitemap" element={<Sitemap />} />
               
