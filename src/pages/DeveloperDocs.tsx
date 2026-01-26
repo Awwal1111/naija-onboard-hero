@@ -91,12 +91,12 @@ const WEBHOOK_EVENTS = [
 ];
 
 const CODE_EXAMPLES = {
-  curl: `curl -X POST "https://api.naijalancers.com/v1/wallet/create" \\
+  curl: `curl -X POST "https://api.naijalancers.name.ng/v1/wallet/create" \\
   -H "Content-Type: application/json" \\
   -H "x-api-key: YOUR_API_KEY" \\
   -d '{"external_user_id": "user_123"}'`,
   
-  javascript: `const response = await fetch('https://api.naijalancers.com/v1/wallet/create', {
+  javascript: `const response = await fetch('https://api.naijalancers.name.ng/v1/wallet/create', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -113,7 +113,7 @@ console.log(wallet.address);`,
   python: `import requests
 
 response = requests.post(
-    'https://api.naijalancers.com/v1/wallet/create',
+    'https://api.naijalancers.name.ng/v1/wallet/create',
     headers={
         'Content-Type': 'application/json',
         'x-api-key': 'YOUR_API_KEY'
@@ -229,7 +229,7 @@ export default function DeveloperDocs() {
         <meta property="og:title" content="NaijaLancers Developer API" />
         <meta property="og:description" content="Build powerful applications with our Web3, Video, VTU, and Payment APIs" />
         <meta property="og:type" content="website" />
-        <link rel="canonical" href="https://naijalancers.com/developers" />
+        <link rel="canonical" href="https://naijalancers.name.ng/developers" />
       </Helmet>
 
       {/* Header */}
@@ -683,7 +683,7 @@ export default function DeveloperDocs() {
                     White-label options
                   </li>
                 </ul>
-                <a href="mailto:developers@naijalancers.com" className="block mt-6">
+                <a href="mailto:developers@naijalancers.name.ng" className="block mt-6">
                   <Button variant="outline" className="w-full">Contact Sales</Button>
                 </a>
               </CardContent>
@@ -756,7 +756,7 @@ export default function DeveloperDocs() {
                 <a href="https://twitter.com/naijalancers" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground transition-colors">
                   <Twitter className="h-5 w-5" />
                 </a>
-                <a href="mailto:developers@naijalancers.com" className="text-muted-foreground hover:text-foreground transition-colors">
+                <a href="mailto:developers@naijalancers.name.ng" className="text-muted-foreground hover:text-foreground transition-colors">
                   <Globe className="h-5 w-5" />
                 </a>
               </div>

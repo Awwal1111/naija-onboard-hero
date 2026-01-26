@@ -178,7 +178,7 @@ export default function CertificateView() {
                   This certificate was issued by NaijaLancers and can be verified at
                 </p>
                 <p className="text-xs text-primary font-mono">
-                  naijalancers.com/verify/{certificate.certificate_id}
+                  naijalancers.name.ng/verify/{certificate.certificate_id}
                 </p>
               </div>
             </CardContent>

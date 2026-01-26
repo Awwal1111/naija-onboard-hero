@@ -41,5 +41,5 @@ User-agent: *
 Crawl-delay: 1
 
 # Sitemap location
-Sitemap: https://naijalancers.com/sitemap.xml
+Sitemap: https://naijalancers.name.ng/sitemap.xml
 Sitemap: https://naija-onboard-hero.lovable.app/sitemap.xml

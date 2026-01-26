@@ -228,7 +228,7 @@ const TransactionsPDFDocument: React.FC<TransactionsPDFDocumentProps> = ({ data 
         </View>
 
         <Text style={styles.footer}>
-          NaijaLancers • Your trusted freelance platform • www.naijalancers.com
+          NaijaLancers • Your trusted freelance platform • www.naijalancers.name.ng
         </Text>
       </Page>
     </Document>

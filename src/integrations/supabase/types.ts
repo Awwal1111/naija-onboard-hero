@@ -373,6 +373,54 @@ export type Database = {
         }
         Relationships: []
       }
+      api_sales_inquiries: {
+        Row: {
+          admin_notes: string | null
+          company_name: string | null
+          contact_name: string
+          created_at: string | null
+          email: string
+          expected_volume: string | null
+          id: string
+          message: string | null
+          phone: string | null
+          status: string | null
+          updated_at: string | null
+          use_case: string | null
+          user_id: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          company_name?: string | null
+          contact_name: string
+          created_at?: string | null
+          email: string
+          expected_volume?: string | null
+          id?: string
+          message?: string | null
+          phone?: string | null
+          status?: string | null
+          updated_at?: string | null
+          use_case?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          company_name?: string | null
+          contact_name?: string
+          created_at?: string | null
+          email?: string
+          expected_volume?: string | null
+          id?: string
+          message?: string | null
+          phone?: string | null
+          status?: string | null
+          updated_at?: string | null
+          use_case?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       api_usage: {
         Row: {
           api_key: string
