@@ -4554,8 +4554,6 @@ export type Database = {
       referral_submissions: {
         Row: {
           admin_comment: string | null
-          approved_at: string | null
-          approved_by: string | null
           created_at: string
           id: string
           proof_url: string | null
@@ -4567,8 +4565,6 @@ export type Database = {
         }
         Insert: {
           admin_comment?: string | null
-          approved_at?: string | null
-          approved_by?: string | null
           created_at?: string
           id?: string
           proof_url?: string | null
@@ -4580,8 +4576,6 @@ export type Database = {
         }
         Update: {
           admin_comment?: string | null
-          approved_at?: string | null
-          approved_by?: string | null
           created_at?: string
           id?: string
           proof_url?: string | null
@@ -4603,51 +4597,33 @@ export type Database = {
       }
       referral_tasks: {
         Row: {
-          auto_approve_at: string | null
           created_at: string
-          creator_id: string | null
           description: string
-          done_slots: number | null
-          fee_paid: number | null
           id: string
           is_active: boolean
-          is_admin_created: boolean | null
           reward: number
           status: string
           title: string
-          total_slots: number | null
           updated_at: string
         }
         Insert: {
-          auto_approve_at?: string | null
           created_at?: string
-          creator_id?: string | null
           description: string
-          done_slots?: number | null
-          fee_paid?: number | null
           id?: string
           is_active?: boolean
-          is_admin_created?: boolean | null
           reward: number
           status?: string
           title: string
-          total_slots?: number | null
           updated_at?: string
         }
         Update: {
-          auto_approve_at?: string | null
           created_at?: string
-          creator_id?: string | null
           description?: string
-          done_slots?: number | null
-          fee_paid?: number | null
           id?: string
           is_active?: boolean
-          is_admin_created?: boolean | null
           reward?: number
           status?: string
           title?: string
-          total_slots?: number | null
           updated_at?: string
         }
         Relationships: []
@@ -6358,7 +6334,6 @@ export type Database = {
         Args: { p_admin_id: string; p_fundraising_id: string }
         Returns: Json
       }
-      auto_approve_user_task_submissions: { Args: never; Returns: undefined }
       auto_release_safepay: { Args: never; Returns: undefined }
       calculate_comment_engagement: {
         Args: { p_comment_id: string }

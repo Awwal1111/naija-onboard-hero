@@ -146,15 +146,12 @@ serve(async (req) => {
 
     console.log(`[MSG_NOTIFY] Notifying ${recipient_id} about message from ${sender_id}`);
 
-    // Check if recipient has premium subscription (required for SMS/Email - but NOT for Telegram)
+    // Check if recipient has premium subscription (required for SMS/Email)
     const { data: premiumCheck } = await supabase.rpc('check_premium_status', {
       p_user_id: recipient_id
     });
     const isPremium = premiumCheck === true;
     console.log(`[MSG_NOTIFY] Recipient premium status: ${isPremium}`);
-
-    // IMPORTANT: Telegram notifications are FREE for all users
-    // Only SMS and Email require premium subscription
 
     // Get sender profile
     const { data: sender } = await supabase

@@ -42,7 +42,6 @@ import { Referrals } from "./pages/Referrals";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentFailed from "./pages/PaymentFailed";
 import ReferralTasks from "./pages/ReferralTasks";
-import Tasks from "./pages/Tasks";
 import DigitalProducts from "./pages/DigitalProducts";
 import Courses from "./pages/Courses";
 import Fundraising from "./pages/Fundraising";
@@ -184,9 +183,8 @@ const App = () => (
               <Route path="/referrals" element={<ProtectedRoute><Referrals /></ProtectedRoute>} />
               <Route path="/earn" element={<ProtectedRoute><EnhancedEarn /></ProtectedRoute>} />
               <Route path="/earn/social-tasks" element={<ProtectedRoute><SocialMediaTasks /></ProtectedRoute>} />
-              <Route path="/earn/referral-tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
-              <Route path="/referral-tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
-              <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
+              <Route path="/earn/referral-tasks" element={<ProtectedRoute><ReferralTasks /></ProtectedRoute>} />
+              <Route path="/referral-tasks" element={<ProtectedRoute><ReferralTasks /></ProtectedRoute>} />
               <Route path="/digital-products" element={<ProtectedRoute><DigitalProducts /></ProtectedRoute>} />
               <Route path="/products/:id" element={<ProtectedRoute><ProductDetail /></ProtectedRoute>} />
               <Route path="/courses" element={<ProtectedRoute><Courses /></ProtectedRoute>} />

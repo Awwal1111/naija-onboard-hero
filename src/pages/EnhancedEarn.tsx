@@ -41,11 +41,11 @@ const EnhancedEarn = () => {
       category: 'tasks'
     },
     {
-      title: 'Tasks',
-      description: 'Complete or create tasks for rewards',
+      title: 'Referral Tasks',
+      description: 'Complete referral tasks for rewards',
       icon: Users,
-      reward: 'Min 20 NC/slot',
-      path: '/tasks',
+      reward: 'Varies by task',
+      path: '/earn/referral-tasks',
       category: 'tasks'
     },
     {

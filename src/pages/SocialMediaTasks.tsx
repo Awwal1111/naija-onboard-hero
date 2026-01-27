@@ -165,11 +165,23 @@ export const SocialMediaTasks = () => {
                 </CardContent>
               </Card>
 
-              {/* Task Creator option removed - Only admins can create tasks now */}
-              <div className="text-center pt-4 text-sm text-muted-foreground">
-                <p>Tasks are created by NaijaLancers admins.</p>
-                <p>Complete tasks above to earn NaijaCoin!</p>
-              </div>
+              <Card className="border-primary/30 cursor-pointer hover:border-primary/50 transition-colors" 
+                    onClick={() => setUserRole('tasker')}>
+                <CardHeader className="text-center">
+                  <div className="bg-primary/10 p-4 rounded-full w-fit mx-auto mb-4">
+                    <Plus className="h-8 w-8 text-primary" />
+                  </div>
+                  <CardTitle className="text-xl">Task Creator</CardTitle>
+                  <CardDescription>Create tasks for others to complete</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ul className="text-sm text-muted-foreground space-y-2">
+                    <li>• Get followers, likes, subscribers</li>
+                    <li>• Set your own budget and rewards</li>
+                    <li>• Track progress in real-time</li>
+                  </ul>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>
@@ -187,7 +199,9 @@ export const SocialMediaTasks = () => {
               <ArrowLeft className="h-5 w-5 text-text-secondary" />
             </button>
             <h1 className="text-lg font-bold text-primary">Available Tasks</h1>
-            <div className="w-12" /> {/* Spacer - removed task creation for users */}
+            <button onClick={() => setUserRole('tasker')} className="text-sm text-primary">
+              Create
+            </button>
           </header>
 
           {/* Task Feed */}
