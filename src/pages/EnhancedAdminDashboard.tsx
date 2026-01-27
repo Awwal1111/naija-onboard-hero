@@ -23,7 +23,7 @@ import { AdminSettingsTab } from '@/components/AdminSettingsTab'
 import { AdminWithdrawalsSection } from '@/components/AdminWithdrawalsSection'
 import { AdminDisputeManagement } from '@/components/AdminDisputeManagement'
 import { AdminManualDepositsSection } from '@/components/AdminManualDepositsSection'
-import { AdminAIAssistant } from '@/components/AdminAIAssistant'
+import { ActionableAdminAI } from '@/components/ActionableAdminAI'
 import { AdminSetup } from '@/components/AdminSetup'
 import { AdminAnalyticsCharts } from '@/components/AdminAnalyticsCharts'
 import { AdminBroadcastDialog } from '@/components/AdminBroadcastDialog'
@@ -1937,7 +1937,7 @@ const EnhancedAdminDashboard = () => {
         </DialogContent>
       </Dialog>
       
-      <AdminAIAssistant />
+      <ActionableAdminAI />
       <AdminBroadcastDialog open={showBroadcastDialog} onOpenChange={setShowBroadcastDialog} />
     </div>
   )
