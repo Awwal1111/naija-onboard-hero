@@ -1620,7 +1620,7 @@ const EnhancedAdminDashboard = () => {
                   <TabsTrigger value="expert">Expert Applications</TabsTrigger>
                   <TabsTrigger value="verification">Expert Verification</TabsTrigger>
                   <TabsTrigger value="social">Social Tasks</TabsTrigger>
-                  <TabsTrigger value="referral">Referral Tasks</TabsTrigger>
+                  <TabsTrigger value="referral">Tasks</TabsTrigger>
                   <TabsTrigger value="articles">Articles</TabsTrigger>
                   <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
                   <TabsTrigger value="disputes">Disputes</TabsTrigger>
