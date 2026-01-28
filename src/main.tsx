@@ -5,10 +5,16 @@ import './index.css'
 import { QueryProvider } from "./providers/QueryProvider"
 import { ThemeProvider } from "next-themes"
 import { LanguageProvider } from "./hooks/useLanguage"
+import { detectMiniPaySync } from './lib/minipay'
 
-// Register service worker for push notifications
-if ('serviceWorker' in navigator) {
+// SYNC detection at module load
+const isMiniPayEnv = detectMiniPaySync().isMiniPay;
+
+// Register service workers ONLY in non-MiniPay environments
+// Service workers can cause issues in MiniPay's WebView
+if (!isMiniPayEnv && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
+    // Register service worker for push notifications
     navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
       .then((registration) => {
         console.log('[Push] Service Worker registered successfully:', registration.scope);
@@ -16,12 +22,8 @@ if ('serviceWorker' in navigator) {
       .catch((error) => {
         console.error('[Push] Service Worker registration failed:', error);
       });
-  });
-}
-
-// Register PWA service worker
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
+    
+    // Register PWA service worker
     navigator.serviceWorker.register('/sw.js', { scope: '/' })
       .then((registration) => {
         console.log('[PWA] Service Worker registered successfully:', registration.scope);

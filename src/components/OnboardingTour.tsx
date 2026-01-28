@@ -8,6 +8,10 @@ import {
   Award, CheckCircle, ArrowRight, X 
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { detectMiniPaySync } from '@/lib/minipay';
+
+// SYNC detection at module load
+const isMiniPayEnv = detectMiniPaySync().isMiniPay;
 
 interface OnboardingStep {
   title: string;
@@ -68,6 +72,15 @@ const steps: OnboardingStep[] = [
 ];
 
 export const OnboardingTour = () => {
+  // CRITICAL: Disable in MiniPay to prevent re-renders
+  if (isMiniPayEnv) {
+    return null;
+  }
+
+  return <OnboardingTourInternal />;
+};
+
+const OnboardingTourInternal = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const navigate = useNavigate();
