@@ -2,6 +2,10 @@ import React, { createContext, useContext, useState, useEffect, useRef, useCallb
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/use-toast'
+import { detectMiniPaySync } from '@/lib/minipay'
+
+// SYNC detection at module load
+const isMiniPayEnv = detectMiniPaySync().isMiniPay;
 
 // ICE servers configuration with STUN + TURN servers for cross-platform NAT traversal
 // TURN servers are essential for iOS/Android calls across symmetric NAT (mobile networks)
@@ -96,7 +100,46 @@ export const useWebRTCContext = () => {
   return context
 }
 
+/**
+ * CRITICAL: In MiniPay, WebRTC is disabled to prevent flickering
+ * The provider returns a minimal context with no-op functions
+ */
 export const WebRTCProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // CRITICAL: In MiniPay, skip all WebRTC logic
+  if (isMiniPayEnv) {
+    const noopContext: WebRTCContextType = {
+      callState: { isInCall: false, callType: null, isCaller: false, remoteUserId: null, callId: null, status: 'idle' },
+      localStream: null,
+      remoteStream: null,
+      screenStream: null,
+      isMuted: false,
+      isVideoOff: false,
+      isScreenSharing: false,
+      incomingCall: null,
+      startCall: async () => {},
+      answerCall: async () => {},
+      rejectCall: () => {},
+      endCall: async () => {},
+      toggleMute: () => {},
+      toggleVideo: () => {},
+      switchToAudioOnly: () => {},
+      startScreenShare: async () => {},
+      stopScreenShare: async () => {},
+      dismissIncomingCall: () => {},
+      canScreenShare: false
+    };
+    
+    return (
+      <WebRTCContext.Provider value={noopContext}>
+        {children}
+      </WebRTCContext.Provider>
+    );
+  }
+
+  return <WebRTCProviderInternal>{children}</WebRTCProviderInternal>;
+};
+
+const WebRTCProviderInternal: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth()
   const { toast } = useToast()
   

@@ -5,13 +5,28 @@ import IncomingCallDialog from '@/components/IncomingCallDialog'
 import ActiveCallInterface from '@/components/ActiveCallInterface'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/integrations/supabase/client'
+import { detectMiniPaySync } from '@/lib/minipay'
+
+// SYNC detection at module load
+const isMiniPayEnv = detectMiniPaySync().isMiniPay;
 
 /**
  * GlobalCallManager - Manages incoming calls across the entire app
  * This component should be placed at the app level to handle calls from any page
  * Active calls are handled by individual chat pages
+ * 
+ * CRITICAL: Disabled in MiniPay to prevent flickering from WebRTC hooks
  */
 const GlobalCallManager = () => {
+  // CRITICAL: Skip in MiniPay - WebRTC causes re-renders
+  if (isMiniPayEnv) {
+    return null;
+  }
+
+  return <GlobalCallManagerInternal />;
+};
+
+const GlobalCallManagerInternal = () => {
   const { user } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()

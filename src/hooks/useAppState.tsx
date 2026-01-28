@@ -8,18 +8,25 @@ const isMiniPayEnv = detectMiniPaySync().isMiniPay;
 /**
  * Custom hook to persist navigation state and restore it when the app comes back from background
  * 
- * CRITICAL: In MiniPay, this hook is DISABLED to prevent navigation loops
- * MiniPay is extremely sensitive to re-renders and navigation changes
+ * CRITICAL: In MiniPay, this hook is COMPLETELY DISABLED
+ * We return early BEFORE any React hooks to prevent re-renders
  */
 export const useAppState = () => {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const hasRunRef = useRef(false);
-
-  // DISABLE in MiniPay - causes flickering/reload loops
+  // CRITICAL: Check MiniPay BEFORE any hooks to prevent re-renders
+  // This is a conditional hook call but safe because isMiniPayEnv is constant
   if (isMiniPayEnv) {
     return null;
   }
+
+  // Only call these hooks in non-MiniPay environment
+  return useAppStateInternal();
+};
+
+// Internal hook that only runs in non-MiniPay environments
+const useAppStateInternal = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const hasRunRef = useRef(false);
 
   useEffect(() => {
     // Save current route on every navigation (non-MiniPay only)

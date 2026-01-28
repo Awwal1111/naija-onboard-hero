@@ -1,8 +1,27 @@
 import { useEffect, useRef } from 'react'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
+import { detectMiniPaySync } from '@/lib/minipay'
 
+// SYNC detection at module load - NO async
+const isMiniPayEnv = detectMiniPaySync().isMiniPay;
+
+/**
+ * CRITICAL: This hook creates 10+ Supabase realtime channels
+ * In MiniPay, these channels cause constant re-renders and flickering
+ * We MUST disable this entirely in MiniPay
+ */
 export const usePushNotificationTriggers = () => {
+  // CRITICAL: Skip ALL subscriptions in MiniPay to prevent flickering
+  if (isMiniPayEnv) {
+    return;
+  }
+
+  return usePushNotificationTriggersInternal();
+};
+
+// Internal hook - only runs in non-MiniPay environments
+const usePushNotificationTriggersInternal = () => {
   const { user } = useAuth()
   const userChatsRef = useRef<string[]>([])
 

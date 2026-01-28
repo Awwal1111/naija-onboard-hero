@@ -4,8 +4,25 @@ import { useCookies } from '@/hooks/useCookies';
 import { Button } from './ui/button';
 import { X, Download } from 'lucide-react';
 import { Card } from './ui/card';
+import { detectMiniPaySync } from '@/lib/minipay';
 
+// SYNC detection at module load
+const isMiniPayEnv = detectMiniPaySync().isMiniPay;
+
+/**
+ * CRITICAL: In MiniPay, PWA install prompts are not relevant
+ * and the popup can cause UI issues
+ */
 export const PWAInstallPrompt = () => {
+  // CRITICAL: Skip in MiniPay - already inside MiniPay app
+  if (isMiniPayEnv) {
+    return null;
+  }
+
+  return <PWAInstallPromptInternal />;
+};
+
+const PWAInstallPromptInternal = () => {
   const { isInstallable, promptInstall } = usePWAInstall();
   const { getCookie, setCookie } = useCookies();
   const [showPrompt, setShowPrompt] = useState(false);

@@ -9,6 +9,10 @@ import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
 import { supabase } from '@/integrations/supabase/client'
 import { useLocation } from 'react-router-dom'
+import { detectMiniPaySync } from '@/lib/minipay'
+
+// SYNC detection at module load
+const isMiniPayEnv = detectMiniPaySync().isMiniPay;
 
 interface Message {
   id: string
@@ -21,7 +25,21 @@ interface SmartAIAssistantProps {
   context?: string
 }
 
+/**
+ * CRITICAL: In MiniPay, this component is HIDDEN
+ * The floating AI button causes re-renders that trigger flickering
+ */
 const SmartAIAssistant: React.FC<SmartAIAssistantProps> = ({ context }) => {
+  // CRITICAL: Return null BEFORE any hooks in MiniPay
+  if (isMiniPayEnv) {
+    return null;
+  }
+
+  return <SmartAIAssistantInternal context={context} />;
+};
+
+// Internal component - only renders in non-MiniPay environments
+const SmartAIAssistantInternal: React.FC<SmartAIAssistantProps> = ({ context }) => {
   const { user } = useAuth()
   const { profile } = useProfile()
   const { toast } = useToast()

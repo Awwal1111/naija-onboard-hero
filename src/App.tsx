@@ -15,6 +15,7 @@ import { OnboardingTour } from "@/components/OnboardingTour";
 import { useAppState } from "@/hooks/useAppState";
 import { WebRTCProvider } from "@/contexts/WebRTCContext";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { detectMiniPaySync } from "@/lib/minipay";
 import Welcome from "./pages/Welcome";
 import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
@@ -103,12 +104,29 @@ import WorkDiary from "./pages/WorkDiary";
 import DeveloperPortal from "./pages/DeveloperPortal";
 import DeveloperDocs from "./pages/DeveloperDocs";
 
-// Component to handle app state persistence
+// SYNC detection at module load - critical for stable MiniPay rendering
+const isMiniPayEnv = detectMiniPaySync().isMiniPay;
+
+// Component to handle app state persistence (disabled in MiniPay)
 const AppStateManager = () => {
   useAppState();
   return null;
 };
 
+/**
+ * Main App Component
+ * 
+ * CRITICAL: In MiniPay, many global components are disabled to prevent
+ * flickering caused by Supabase realtime subscriptions and heavy hooks.
+ * 
+ * Components disabled in MiniPay:
+ * - AppStateManager (navigation persistence)
+ * - GlobalPresenceManager (Supabase presence)
+ * - PWAInstallPrompt (not needed in MiniPay)
+ * - PushNotificationManager (realtime subscriptions)
+ * - SmartAIAssistant (floating AI button)
+ * - OnboardingTour (popup dialogs)
+ */
 const App = () => (
   <ErrorBoundary>
     <TooltipProvider>
