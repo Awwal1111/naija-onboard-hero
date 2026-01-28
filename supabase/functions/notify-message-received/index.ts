@@ -144,7 +144,10 @@ serve(async (req) => {
   try {
     const { message_id, sender_id, recipient_id, content, media_type }: NotificationPayload = await req.json();
 
+    console.log(`[MSG_NOTIFY] ========================================`);
     console.log(`[MSG_NOTIFY] Notifying ${recipient_id} about message from ${sender_id}`);
+    console.log(`[MSG_NOTIFY] Message ID: ${message_id}`);
+    console.log(`[MSG_NOTIFY] Content preview: ${content?.substring(0, 50)}...`);
 
     // Check if recipient has premium subscription (required for SMS/Email - but NOT for Telegram)
     const { data: premiumCheck } = await supabase.rpc('check_premium_status', {
@@ -157,18 +160,29 @@ serve(async (req) => {
     // Only SMS and Email require premium subscription
 
     // Get sender profile
-    const { data: sender } = await supabase
+    const { data: sender, error: senderError } = await supabase
       .from("profiles")
       .select("full_name, profession, is_expert")
       .eq("user_id", sender_id)
       .single();
 
+    if (senderError) {
+      console.log(`[MSG_NOTIFY] Sender profile error:`, senderError.message);
+    }
+    console.log(`[MSG_NOTIFY] Sender: ${sender?.full_name || 'Unknown'}`);
+
     // Get recipient profile with Telegram ID and phone number
-    const { data: recipient } = await supabase
+    const { data: recipient, error: recipientError } = await supabase
       .from("profiles")
       .select("full_name, telegram_user_id, phone_number")
       .eq("user_id", recipient_id)
       .single();
+
+    if (recipientError) {
+      console.log(`[MSG_NOTIFY] Recipient profile error:`, recipientError.message);
+    }
+    console.log(`[MSG_NOTIFY] Recipient: ${recipient?.full_name || 'Unknown'}`);
+    console.log(`[MSG_NOTIFY] Recipient Telegram ID: ${recipient?.telegram_user_id || 'NOT LINKED'}`);
 
     // Get recipient email from auth.users
     const { data: authUser } = await supabase.auth.admin.getUserById(recipient_id);
@@ -230,8 +244,10 @@ serve(async (req) => {
       email: false,
     };
 
-    // 1. Send Telegram notification (if linked)
+    // 1. Send Telegram notification (if linked) - FREE FOR ALL USERS
     if (recipient?.telegram_user_id) {
+      console.log(`[MSG_NOTIFY] 📱 Attempting Telegram to: ${recipient.telegram_user_id}`);
+      
       let notificationText = `💬 *New Message!*\n\n`;
       notificationText += `From: *${senderName}* (${senderTitle})\n\n`;
 
@@ -246,25 +262,54 @@ serve(async (req) => {
       notificationText += `🔔 Open the app to reply!`;
 
       try {
-        const response = await fetch(
-          `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chat_id: parseInt(recipient.telegram_user_id),
-              text: notificationText,
-              parse_mode: "Markdown"
-            })
-          }
-        );
+        const telegramUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+        console.log(`[MSG_NOTIFY] Telegram API URL: ${telegramUrl.substring(0, 50)}...`);
+        
+        const response = await fetch(telegramUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: parseInt(recipient.telegram_user_id),
+            text: notificationText,
+            parse_mode: "Markdown"
+          })
+        });
+        
+        const responseData = await response.json();
         
         if (response.ok) {
           results.telegram = true;
           console.log(`[MSG_NOTIFY] ✅ Telegram sent to ${recipient.full_name}`);
+        } else {
+          console.error(`[MSG_NOTIFY] ❌ Telegram API error:`, JSON.stringify(responseData));
         }
       } catch (error) {
-        console.error("[MSG_NOTIFY] Telegram error:", error);
+        console.error("[MSG_NOTIFY] ❌ Telegram fetch error:", error);
+      }
+    } else {
+      console.log(`[MSG_NOTIFY] ⚠️ Recipient has no Telegram linked - trying push notification`);
+      
+      // Try sending push notification as fallback
+      try {
+        const { data: pushResult, error: pushError } = await supabase.functions.invoke('send-push-notification', {
+          body: {
+            userId: recipient_id,
+            title: `💬 ${senderName}`,
+            body: displayContent,
+            data: { type: 'message', url: '/chats' }
+          }
+        });
+        
+        if (pushError) {
+          console.log(`[MSG_NOTIFY] Push notification error:`, pushError);
+        } else if (pushResult?.success) {
+          console.log(`[MSG_NOTIFY] ✅ Push notification sent as fallback`);
+          results.telegram = true; // Count as success for tracking
+        } else {
+          console.log(`[MSG_NOTIFY] Push notification not sent - user may not have enabled push`);
+        }
+      } catch (pushErr) {
+        console.log(`[MSG_NOTIFY] Push fallback failed:`, pushErr);
       }
     }
 
