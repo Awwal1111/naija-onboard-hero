@@ -402,11 +402,11 @@ export const ActionableAdminAI = () => {
   if (isMinimized) {
     return (
       <Card 
-        className="fixed bottom-4 right-4 w-16 h-16 cursor-pointer hover:shadow-lg transition-shadow" 
+        className="fixed bottom-4 right-4 w-14 h-14 sm:w-16 sm:h-16 cursor-pointer hover:shadow-lg transition-shadow z-50" 
         onClick={() => setIsMinimized(false)}
       >
         <div className="w-full h-full flex items-center justify-center relative">
-          <Sparkles className="h-6 w-6 text-primary" />
+          <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
           {alerts.length > 0 && (
             <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs bg-destructive">
               {alerts.length}
@@ -418,7 +418,7 @@ export const ActionableAdminAI = () => {
   }
 
   return (
-    <Card className="fixed bottom-4 right-4 w-[420px] max-h-[700px] flex flex-col shadow-xl z-50 border-primary/20">
+    <Card className="fixed bottom-4 right-4 left-4 sm:left-auto w-auto sm:w-[420px] max-h-[80vh] sm:max-h-[700px] flex flex-col shadow-xl z-50 border-primary/20">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 bg-gradient-to-r from-primary/10 to-transparent">
         <CardTitle className="text-lg font-semibold flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-primary" />
