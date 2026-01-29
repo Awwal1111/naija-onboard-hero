@@ -135,13 +135,15 @@ const App = () => (
       <BrowserRouter>
         <WebRTCProvider>
           <MiniPayAuthWrapper>
-            <AppStateManager />
-            <WalletInitializer />
-            <GlobalCallManager />
-            <GlobalPresenceManager />
-            <QuidaxRampManager />
-            <PWAInstallPrompt />
-            <PushNotificationManager />
+            {/* CRITICAL: These components are DISABLED in MiniPay to prevent flickering */}
+            {!isMiniPayEnv && <AppStateManager />}
+            {!isMiniPayEnv && <WalletInitializer />}
+            {!isMiniPayEnv && <GlobalCallManager />}
+            {!isMiniPayEnv && <GlobalPresenceManager />}
+            {!isMiniPayEnv && <QuidaxRampManager />}
+            {!isMiniPayEnv && <PWAInstallPrompt />}
+            {!isMiniPayEnv && <PushNotificationManager />}
+            {!isMiniPayEnv && <OnboardingTour />}
             <Routes>
               {/* PUBLIC SEO PAGES - Must be BEFORE protected routes to prevent redirect issues */}
               <Route path="/p/expert/:userId" element={<PublicExpert />} />
@@ -250,8 +252,8 @@ const App = () => (
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
-            {/* AI Assistant - Available on all protected routes */}
-            <SmartAIAssistant />
+            {/* AI Assistant - DISABLED in MiniPay */}
+            {!isMiniPayEnv && <SmartAIAssistant />}
           </MiniPayAuthWrapper>
         </WebRTCProvider>
       </BrowserRouter>
