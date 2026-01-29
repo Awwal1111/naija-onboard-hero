@@ -6,13 +6,27 @@ import { detectMiniPaySync } from '@/lib/minipay'
 // SYNC check at module load
 const isMiniPayEnv = detectMiniPaySync().isMiniPay
 
+/**
+ * WalletInitializer - Creates user wallet on first login
+ * 
+ * CRITICAL: In MiniPay, this component returns null immediately
+ * to prevent useAuth() hook from being called
+ */
 const WalletInitializer: React.FC = () => {
+  // CRITICAL: Return null BEFORE any hooks in MiniPay
+  if (isMiniPayEnv) {
+    return null
+  }
+  
+  return <WalletInitializerInternal />
+}
+
+// Internal component that only runs in non-MiniPay environments
+const WalletInitializerInternal: React.FC = () => {
   const { user } = useAuth()
   const hasInitializedRef = useRef(false)
 
   useEffect(() => {
-    // SKIP in MiniPay - wallet is handled by MiniPayAuthWrapper
-    if (isMiniPayEnv) return
     if (!user) return
     if (hasInitializedRef.current) return
     hasInitializedRef.current = true

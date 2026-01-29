@@ -40,21 +40,27 @@ if (!isMiniPayEnv && 'serviceWorker' in navigator) {
 }
 
 // Prevent mobile browser from refreshing on orientation change
-window.addEventListener('orientationchange', (e) => {
-  e.preventDefault();
-});
+// DISABLED in MiniPay - can cause flickering
+if (!isMiniPayEnv) {
+  window.addEventListener('orientationchange', (e) => {
+    e.preventDefault();
+  });
+}
 
 // Handle page lifecycle to prevent unnecessary reloads
-let isPageHidden = false;
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden) {
-    isPageHidden = true;
-    console.log('[Lifecycle] Page hidden - state preserved');
-  } else if (isPageHidden) {
-    isPageHidden = false;
-    console.log('[Lifecycle] Page visible - state restored');
-  }
-});
+// DISABLED in MiniPay - visibility changes can cause re-renders
+if (!isMiniPayEnv) {
+  let isPageHidden = false;
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      isPageHidden = true;
+      console.log('[Lifecycle] Page hidden - state preserved');
+    } else if (isPageHidden) {
+      isPageHidden = false;
+      console.log('[Lifecycle] Page visible - state restored');
+    }
+  });
+}
 
 createRoot(document.getElementById("root")!).render(
   <HelmetProvider>

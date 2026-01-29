@@ -10,16 +10,15 @@ import explainerVideo from '@/assets/naijalancers-explainer.mp4'
 
 import { LeaderboardSection } from '@/components/LeaderboardSection'
 import { SuccessStoriesSection } from '@/components/SuccessStoriesSection'
-import { useMiniPayContext } from '@/components/MiniPayAuthWrapper'
+import { detectMiniPaySync } from '@/lib/minipay'
+
+// SYNC detection at module load - NO context hooks
+const isMiniPayEnv = detectMiniPaySync().isMiniPay
 
 const Index = () => {
-  // Use sync detection ONLY - no context that could cause re-renders
-  // This is critical for MiniPay to prevent flickering
-  const { isMiniPay } = useMiniPayContext()
-
   // MiniPay users go directly to feed - NO login screens
-  // This redirect happens ONCE on initial render
-  if (isMiniPay) {
+  // This redirect happens ONCE on initial render using SYNC detection
+  if (isMiniPayEnv) {
     return <Navigate to="/feed" replace />
   }
 
