@@ -102,6 +102,36 @@ export const GIG_CATEGORIES = {
     keywords: ['business', 'consulting', 'strategy', 'startup', 'plan', 'pitch', 'investor', 'growth'],
     placeholder: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=300&fit=crop',
   },
+  'AI & Automation': {
+    icon: '🤖',
+    color: 'hsl(250, 80%, 55%)',
+    keywords: ['ai', 'artificial intelligence', 'automation', 'machine learning', 'ml', 'chatbot', 'bot', 'automate', 'workflow', 'rpa', 'zapier', 'make', 'n8n'],
+    placeholder: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400&h=300&fit=crop',
+  },
+  'AI Web & Support': {
+    icon: '🌐',
+    color: 'hsl(200, 85%, 50%)',
+    keywords: ['ai web', 'ai website', 'ai support', 'ai customer service', 'chatgpt', 'ai assistant', 'virtual agent', 'helpdesk ai', 'conversational ai'],
+    placeholder: 'https://images.unsplash.com/photo-1531746790731-6c087fecd65a?w=400&h=300&fit=crop',
+  },
+  'AI Training & Consulting': {
+    icon: '🎓',
+    color: 'hsl(280, 70%, 50%)',
+    keywords: ['ai training', 'ai consulting', 'ai coach', 'prompt engineering', 'ai strategy', 'ai implementation', 'ai mentor', 'machine learning training'],
+    placeholder: 'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=400&h=300&fit=crop',
+  },
+  'AI Video & Audio': {
+    icon: '🎥',
+    color: 'hsl(340, 80%, 50%)',
+    keywords: ['ai video', 'ai audio', 'text to speech', 'voice clone', 'ai voiceover', 'synthesia', 'elevenlabs', 'ai avatar', 'deepfake', 'ai music', 'ai sound'],
+    placeholder: 'https://images.unsplash.com/photo-1535016120720-40c646be5580?w=400&h=300&fit=crop',
+  },
+  'AI Data & BI': {
+    icon: '📊',
+    color: 'hsl(160, 70%, 40%)',
+    keywords: ['ai data', 'ai analytics', 'business intelligence', 'bi', 'data science', 'ai insights', 'predictive analytics', 'ai dashboard', 'data visualization ai'],
+    placeholder: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=300&fit=crop',
+  },
   'Other': {
     icon: '✨',
     color: 'hsl(270, 50%, 50%)',

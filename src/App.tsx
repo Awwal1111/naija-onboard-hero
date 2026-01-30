@@ -78,6 +78,9 @@ import PublicGig from "./pages/PublicGig";
 import PublicJob from "./pages/PublicJob";
 import PublicCourse from "./pages/PublicCourse";
 import PublicCampaign from "./pages/PublicCampaign";
+import PublicGigs from "./pages/PublicGigs";
+import PublicExperts from "./pages/PublicExperts";
+import PublicJobs from "./pages/PublicJobs";
 import Sitemap from "./pages/Sitemap";
 import InstallApp from "./pages/InstallApp";
 import AIChat from "./pages/AIChat";
@@ -151,6 +154,11 @@ const App = () => (
               <Route path="/p/job/:jobId" element={<PublicJob />} />
               <Route path="/p/course/:courseId" element={<PublicCourse />} />
               <Route path="/p/campaign/:campaignId" element={<PublicCampaign />} />
+              
+              {/* Public browse pages - no auth required */}
+              <Route path="/p/gigs" element={<PublicGigs />} />
+              <Route path="/p/experts" element={<PublicExperts />} />
+              <Route path="/p/jobs" element={<PublicJobs />} />
               
               {/* Short URL aliases for better UX - redirect to the same components */}
               <Route path="/gig/:gigId" element={<PublicGig />} />

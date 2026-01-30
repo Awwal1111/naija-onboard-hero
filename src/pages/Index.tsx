@@ -34,22 +34,50 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Navigation Bar - Mobile Optimized */}
-      <nav className="flex items-center justify-between px-3 py-3 sm:px-6 sm:py-4 sticky top-0 bg-background/95 backdrop-blur-md border-b border-border z-50 shadow-sm">
-        <Logo />
-        <div className="flex items-center gap-2 sm:gap-4">
-          <BrandButton variant="ghost" asChild className="hidden sm:inline-flex text-sm px-3">
-            <Link to="/developers" className="flex items-center gap-1.5">
-              <Code2 className="w-4 h-4" />
-              Developers
+      {/* Sticky Navigation + Search Bar */}
+      <nav className="sticky top-0 bg-background/95 backdrop-blur-md border-b border-border z-50 shadow-sm">
+        <div className="flex items-center justify-between px-3 py-3 sm:px-6 sm:py-4">
+          <Logo />
+          <div className="flex items-center gap-2 sm:gap-4">
+            <BrandButton variant="ghost" asChild className="hidden sm:inline-flex text-sm px-3">
+              <Link to="/developers" className="flex items-center gap-1.5">
+                <Code2 className="w-4 h-4" />
+                Developers
+              </Link>
+            </BrandButton>
+            <BrandButton variant="ghost" asChild className="text-sm sm:text-base px-2 sm:px-4">
+              <Link to="/login">Log In</Link>
+            </BrandButton>
+            <BrandButton asChild className="text-sm sm:text-base px-3 sm:px-4">
+              <Link to="/signup">Get Started</Link>
+            </BrandButton>
+          </div>
+        </div>
+        
+        {/* Floating Search + Quick Actions */}
+        <div className="px-3 pb-3 sm:px-6 sm:pb-4">
+          <div className="max-w-4xl mx-auto">
+            <EnhancedSearchBar />
+          </div>
+          {/* Quick browse chips */}
+          <div className="flex flex-wrap gap-2 justify-center mt-3">
+            <Link to="/p/gigs" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium bg-muted hover:bg-accent transition-colors">
+              <Briefcase className="w-3.5 h-3.5" />
+              Browse Gigs
             </Link>
-          </BrandButton>
-          <BrandButton variant="ghost" asChild className="text-sm sm:text-base px-2 sm:px-4">
-            <Link to="/login">Log In</Link>
-          </BrandButton>
-          <BrandButton asChild className="text-sm sm:text-base px-3 sm:px-4">
-            <Link to="/signup">Get Started</Link>
-          </BrandButton>
+            <Link to="/p/experts" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium bg-muted hover:bg-accent transition-colors">
+              <Users className="w-3.5 h-3.5" />
+              Find Experts
+            </Link>
+            <Link to="/p/jobs" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium bg-muted hover:bg-accent transition-colors">
+              <DollarSign className="w-3.5 h-3.5" />
+              View Jobs
+            </Link>
+            <Link to="/learn" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
+              <Award className="w-3.5 h-3.5" />
+              Free Courses
+            </Link>
+          </div>
         </div>
       </nav>
 
@@ -96,10 +124,6 @@ const Index = () => {
                     </div>
                     <span className="text-sm sm:text-base font-medium">10,000+ Users</span>
                   </div>
-                </div>
-
-                <div className="max-w-2xl pt-2">
-                  <EnhancedSearchBar />
                 </div>
 
                 <div className="flex flex-col gap-3 sm:flex-row sm:gap-4 pt-4">

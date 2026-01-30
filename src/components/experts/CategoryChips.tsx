@@ -19,6 +19,11 @@ const EXPERT_CATEGORIES = [
   { id: 'Accounting & Finance', label: 'Finance', icon: '💰' },
   { id: 'Legal Services', label: 'Legal', icon: '⚖️' },
   { id: 'Business Consulting', label: 'Consulting', icon: '💼' },
+  { id: 'AI & Automation', label: 'AI & Auto', icon: '🤖' },
+  { id: 'AI Web & Support', label: 'AI Support', icon: '🌐' },
+  { id: 'AI Training & Consulting', label: 'AI Training', icon: '🎓' },
+  { id: 'AI Video & Audio', label: 'AI Media', icon: '🎥' },
+  { id: 'AI Data & BI', label: 'AI Data', icon: '📊' },
 ];
 
 interface CategoryChipsProps {
