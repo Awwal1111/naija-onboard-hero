@@ -1,19 +1,29 @@
 import React, { useState, useEffect } from 'react'
-import { ArrowLeft, Upload, X } from 'lucide-react'
+import { ArrowLeft, Upload, X, Globe } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Logo } from '@/components/ui/logo'
 import { BrandButton } from '@/components/ui/brand-button'
 import { SecureInput } from '@/components/ui/secure-input'
+import { BrandInput } from '@/components/ui/brand-input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { useNigerianStates } from '@/hooks/useNigerianStates'
+import { useProfile } from '@/hooks/useProfile'
+
+// Countries list
+const COUNTRIES = [
+  'Nigeria', 'United States', 'United Kingdom', 'Canada', 'Ghana', 'Kenya',
+  'South Africa', 'India', 'Germany', 'France', 'Australia', 'United Arab Emirates',
+  'Saudi Arabia', 'Netherlands', 'Singapore', 'Other'
+]
 
 const ExpertApplication = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { toast } = useToast()
+  const { profile } = useProfile()
   const { states, lgas, loadingStates, loadingLGAs, fetchLGAs } = useNigerianStates()
   
   const [loading, setLoading] = useState(false)
@@ -26,10 +36,25 @@ const ExpertApplication = () => {
     custom_skill: '',
     years_experience: '',
     portfolio_link: '',
+    country: '',
     location_state: '',
     location_lga: '',
-    location_area: ''
+    location_area: '',
+    city: ''
   })
+
+  const isNigeria = formData.country === 'Nigeria'
+
+  // Pre-fill from profile
+  useEffect(() => {
+    if (profile) {
+      setFormData(prev => ({
+        ...prev,
+        full_name: profile.full_name || prev.full_name,
+        country: (profile as any).country || 'Nigeria'
+      }))
+    }
+  }, [profile])
 
   const skillCategories = [
     'Web Development',
@@ -51,19 +76,33 @@ const ExpertApplication = () => {
     'Engineering',
     'Legal Services',
     'Business Consulting',
+    'AI & Automation',
+    'AI Web & Support',
+    'AI Training & Consulting',
+    'AI Video & Audio',
+    'AI Data & BI',
     'Other'
   ]
 
-  // Fetch LGAs when state changes
+  // Fetch LGAs when state changes (Nigeria only)
   useEffect(() => {
-    if (formData.location_state) {
+    if (isNigeria && formData.location_state) {
       const stateName = states.find(s => s.id === formData.location_state)?.name
       if (stateName) {
         fetchLGAs(stateName)
       }
       setFormData(prev => ({ ...prev, location_lga: '' }))
     }
-  }, [formData.location_state, states])
+  }, [formData.location_state, states, isNigeria])
+
+  // Auto-clear Nigeria fields when switching to international
+  useEffect(() => {
+    if (formData.country && !isNigeria) {
+      setFormData(prev => ({ ...prev, location_state: '', location_lga: '' }))
+    } else if (isNigeria) {
+      setFormData(prev => ({ ...prev, city: '' }))
+    }
+  }, [formData.country, isNigeria])
 
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -78,8 +117,12 @@ const ExpertApplication = () => {
       return
     }
 
-    // Validate required fields
-    const requiredFields = ['full_name', 'phone_number', 'skill_category', 'years_experience', 'location_state', 'location_lga', 'location_area']
+    // Validate required fields - different for Nigeria vs International
+    const baseRequired = ['full_name', 'phone_number', 'skill_category', 'years_experience', 'country']
+    const nigeriaRequired = [...baseRequired, 'location_state', 'location_area']
+    const internationalRequired = [...baseRequired, 'location_area']
+    
+    const requiredFields = isNigeria ? nigeriaRequired : internationalRequired
     const missingFields = requiredFields.filter(field => !formData[field as keyof typeof formData])
     
     // Check if "Other" is selected but no custom skill provided
@@ -262,47 +305,88 @@ const ExpertApplication = () => {
           <div className="space-y-4">
             <h2 className="text-lg font-semibold text-text-primary">Location Information</h2>
             
+            {/* Country Selector */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-text-primary">State *</label>
-              <Select value={formData.location_state} onValueChange={(value) => handleInputChange('location_state', value)}>
+              <label className="text-sm font-medium text-text-primary flex items-center gap-2">
+                <Globe className="h-4 w-4" />
+                Country *
+              </label>
+              <Select value={formData.country} onValueChange={(value) => handleInputChange('country', value)}>
                 <SelectTrigger className="w-full h-10 bg-input">
-                  <SelectValue placeholder="Select your state" />
+                  <SelectValue placeholder="Select your country" />
                 </SelectTrigger>
                 <SelectContent className="bg-background border border-border z-50">
-                  {states.map((state) => (
-                    <SelectItem key={state.id} value={state.id} className="hover:bg-accent">
-                      {state.name}
+                  {COUNTRIES.map((country) => (
+                    <SelectItem key={country} value={country} className="hover:bg-accent">
+                      {country === 'Nigeria' ? '🇳🇬 ' : ''}{country}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-text-primary">Local Government Area *</label>
-              <Select 
-                value={formData.location_lga} 
-                onValueChange={(value) => handleInputChange('location_lga', value)}
-                disabled={!formData.location_state}
-              >
-                <SelectTrigger className="w-full h-10 bg-input">
-                  <SelectValue placeholder="Select your LGA" />
-                </SelectTrigger>
-                <SelectContent className="bg-background border border-border z-50">
-                  {lgas.map((lga) => (
-                    <SelectItem key={lga.id} value={lga.name} className="hover:bg-accent">
-                      {lga.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Nigeria-specific: State & LGA */}
+            {isNigeria && (
+              <>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-text-primary">State *</label>
+                  <Select value={formData.location_state} onValueChange={(value) => handleInputChange('location_state', value)}>
+                    <SelectTrigger className="w-full h-10 bg-input">
+                      <SelectValue placeholder="Select your state" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background border border-border z-50">
+                      {states.map((state) => (
+                        <SelectItem key={state.id} value={state.id} className="hover:bg-accent">
+                          {state.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-text-primary">Local Government Area</label>
+                  <Select 
+                    value={formData.location_lga} 
+                    onValueChange={(value) => handleInputChange('location_lga', value)}
+                    disabled={!formData.location_state}
+                  >
+                    <SelectTrigger className="w-full h-10 bg-input">
+                      <SelectValue placeholder="Select your LGA (optional)" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background border border-border z-50">
+                      {lgas.map((lga) => (
+                        <SelectItem key={lga.id} value={lga.name} className="hover:bg-accent">
+                          {lga.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
+            )}
+
+            {/* International: City */}
+            {formData.country && !isNigeria && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-text-primary">City (Optional)</label>
+                <BrandInput
+                  value={formData.city}
+                  onChange={(e) => handleInputChange('city', e.target.value)}
+                  placeholder="e.g., New York, London"
+                />
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Globe className="h-3 w-3" />
+                  You'll be shown as available for remote work globally
+                </p>
+              </div>
+            )}
 
             <SecureInput
               label="Area/Location *"
               value={formData.location_area}
               onChange={(e) => handleInputChange('location_area', e.target.value)}
-              placeholder="Enter your specific area/location"
+              placeholder={isNigeria ? "Enter your specific area/location" : "Enter your city/region"}
               validation="text"
               required
             />
