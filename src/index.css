@@ -1,4 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;700&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -10,34 +13,34 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 20%;
+    --background: 0 0% 96%;
+    --foreground: 0 0% 9%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 20%;
+    --card: 0 0% 98%;
+    --card-foreground: 0 0% 9%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 20%;
+    --popover: 0 0% 89%;
+    --popover-foreground: 0 0% 9%;
 
     /* NaijaLancers Brand Colors */
-    --primary: 120 100% 25%; /* Nigeria Green #008000 */
-    --primary-foreground: 0 0% 100%;
+    --primary: 161 93% 30%; /* Nigeria Green #008000 */
+    --primary-foreground: 151 80% 95%;
 
-    --secondary: 0 0% 96%;
-    --secondary-foreground: 0 0% 20%;
+    --secondary: 0 0% 32%;
+    --secondary-foreground: 0 0% 98%;
 
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 45%;
+    --muted: 0 0% 63%;
+    --muted-foreground: 0 0% 9%;
 
-    --accent: 0 0% 96%;
-    --accent-foreground: 0 0% 20%;
+    --accent: 166 76% 96%;
+    --accent-foreground: 173 80% 40%;
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 0 72% 50%;
+    --destructive-foreground: 0 85% 97%;
 
-    --border: 0 0% 90%;
-    --input: 0 0% 96%; /* Light grey for input backgrounds */
-    --ring: 120 100% 25%;
+    --border: 0 0% 83%;
+    --input: 0 0% 83%; /* Light grey for input backgrounds */
+    --ring: 161 93% 30%;
 
     /* Custom NaijaLancers tokens */
     --brand-green: 120 100% 25%;
@@ -51,57 +54,95 @@ All colors MUST be HSL.
     --social-gradient-start: 142 76% 36%;
     --social-gradient-end: 340 75% 55%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
     --button-radius: 8px;
 
     --sidebar-background: 0 0% 98%;
 
-    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-foreground: 0 0% 9%;
 
-    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary: 161 93% 30%;
 
-    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-primary-foreground: 151 80% 95%;
 
-    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent: 0 0% 32%;
 
-    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-accent-foreground: 0 0% 98%;
 
-    --sidebar-border: 220 13% 91%;
+    --sidebar-border: 0 0% 83%;
 
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-ring: 161 93% 30%;
+
+    --chart-1: 158 64% 51%;
+
+    --chart-2: 141 69% 58%;
+
+    --chart-3: 172 66% 50%;
+
+    --chart-4: 82 77% 55%;
+
+    --chart-5: 0 0% 45%;
+
+    --sidebar: 0 0% 98%;
+
+    --font-sans: 'Work Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+
+    --font-serif: 'Lora', ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
+
+    --font-mono: 'Inconsolata', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+
+    --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
+
+    --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
+
+    --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
+
+    --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
+
+    --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.1);
+
+    --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 4px 6px -1px hsl(0 0% 0% / 0.1);
+
+    --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 8px 10px -1px hsl(0 0% 0% / 0.1);
+
+    --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
+
+    --tracking-normal: 0em;
+
+    --spacing: 0.25rem;
   }
 
   .dark {
     /* NaijaLancers Dark Mode - Professional dark theme */
-    --background: 210 11% 8%; /* #121419 - Main background */
-    --foreground: 210 40% 98%; /* #ffffff - Main text */
+    --background: 0 0% 9%; /* #121419 - Main background */
+    --foreground: 0 0% 98%; /* #ffffff - Main text */
 
-    --card: 210 11% 11%; /* #1e1e1e - Card background */
-    --card-foreground: 210 40% 98%; /* #ffffff - Card text */
+    --card: 0 0% 14%; /* #1e1e1e - Card background */
+    --card-foreground: 0 0% 98%; /* #ffffff - Card text */
 
-    --popover: 210 11% 11%; /* #1e1e1e - Popover background */
-    --popover-foreground: 210 40% 98%; /* #ffffff - Popover text */
+    --popover: 0 0% 25%; /* #1e1e1e - Popover background */
+    --popover-foreground: 0 0% 98%; /* #ffffff - Popover text */
 
     /* Keep NaijaLancers green as primary in dark mode */
-    --primary: 142 76% 36%; /* #00cc66 - NaijaLancers green accent */
-    --primary-foreground: 210 11% 8%; /* Dark text on green */
+    --primary: 158 64% 51%; /* #00cc66 - NaijaLancers green accent */
+    --primary-foreground: 165 91% 9%; /* Dark text on green */
 
-    --secondary: 210 11% 15%; /* #1a1a1a - Secondary surfaces */
-    --secondary-foreground: 210 40% 98%; /* Light text */
+    --secondary: 0 0% 45%; /* #1a1a1a - Secondary surfaces */
+    --secondary-foreground: 0 0% 98%; /* Light text */
 
-    --muted: 210 11% 15%; /* #1a1a1a - Muted backgrounds */
-    --muted-foreground: 215 20% 70%; /* #cccccc - Muted text */
+    --muted: 0 0% 45%; /* #1a1a1a - Muted backgrounds */
+    --muted-foreground: 0 0% 98%; /* #cccccc - Muted text */
 
-    --accent: 210 11% 15%; /* #1a1a1a - Accent backgrounds */
-    --accent-foreground: 210 40% 98%; /* Light text */
+    --accent: 178 84% 10%; /* #1a1a1a - Accent backgrounds */
+    --accent-foreground: 172 66% 50%; /* Light text */
 
-    --destructive: 0 62% 50%; /* Red for destructive actions */
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%; /* Red for destructive actions */
+    --destructive-foreground: 0 85% 97%;
 
-    --border: 210 11% 20%; /* Borders */
-    --input: 210 11% 15%; /* Input backgrounds */
-    --ring: 142 76% 36%; /* Focus rings - green */
-    
+    --border: 0 0% 32%; /* Borders */
+    --input: 0 0% 32%; /* Input backgrounds */
+    --ring: 158 64% 51%; /* Focus rings - green */
+
     /* Custom dark mode tokens */
     --brand-green: 142 76% 36%; /* #00cc66 */
     --brand-green-hover: 142 76% 32%; /* Darker green on hover */
@@ -111,13 +152,27 @@ All colors MUST be HSL.
 
     /* Sidebar in dark mode */
     --sidebar-background: 210 11% 8%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 142 76% 36%;
-    --sidebar-primary-foreground: 210 11% 8%;
-    --sidebar-accent: 210 11% 15%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 210 11% 20%;
-    --sidebar-ring: 142 76% 36%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 158 64% 51%;
+    --sidebar-primary-foreground: 165 91% 9%;
+    --sidebar-accent: 172 66% 50%;
+    --sidebar-accent-foreground: 178 84% 10%;
+    --sidebar-border: 0 0% 32%;
+    --sidebar-ring: 158 64% 51%;
+    --chart-1: 156 71% 66%;
+    --chart-2: 141 76% 73%;
+    --chart-3: 170 76% 64%;
+    --chart-4: 81 84% 67%;
+    --chart-5: 0 0% 45%;
+    --sidebar: 0 0% 14%;
+    --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
+    --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
+    --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
+    --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
+    --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.1);
+    --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 4px 6px -1px hsl(0 0% 0% / 0.1);
+    --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 8px 10px -1px hsl(0 0% 0% / 0.1);
+    --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
   }
 }
 
@@ -132,18 +187,18 @@ All colors MUST be HSL.
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
-  
+
   /* Mobile-first text sizing */
   html {
     font-size: 14px;
   }
-  
+
   @media (min-width: 640px) {
     html {
       font-size: 15px;
     }
   }
-  
+
   @media (min-width: 768px) {
     html {
       font-size: 16px;
@@ -157,39 +212,39 @@ All colors MUST be HSL.
   .safe-area-top {
     padding-top: env(safe-area-inset-top, 0px);
   }
-  
+
   .safe-area-bottom {
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
-  
+
   .safe-area-x {
     padding-left: env(safe-area-inset-left, 0px);
     padding-right: env(safe-area-inset-right, 0px);
   }
-  
+
   /* Touch-friendly tap targets */
   .touch-target {
     min-height: 44px;
     min-width: 44px;
   }
-  
+
   /* Prevent text overflow on mobile */
   .text-balance {
     text-wrap: balance;
   }
-  
+
   /* Mobile scroll optimization */
   .scroll-smooth-touch {
     -webkit-overflow-scrolling: touch;
     scroll-behavior: smooth;
   }
-  
+
   /* Hide scrollbar but keep functionality */
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
-  
+
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
