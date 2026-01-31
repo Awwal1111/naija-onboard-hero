@@ -69,7 +69,11 @@ const Profile = () => {
     full_name: '',
     bio: '',
     profession: '',
-    phone_number: ''
+    phone_number: '',
+    whatsapp_number: '',
+    facebook_url: '',
+    google_meet_link: '',
+    sms_job_alerts: false
   })
 
   // Determine which profile to show
@@ -224,7 +228,11 @@ const Profile = () => {
         full_name: profile.full_name || '',
         bio: profile.bio || '',
         profession: profile.profession || '',
-        phone_number: profile.phone_number || ''
+        phone_number: profile.phone_number || '',
+        whatsapp_number: (profile as any).whatsapp_number || '',
+        facebook_url: (profile as any).facebook_url || '',
+        google_meet_link: (profile as any).google_meet_link || '',
+        sms_job_alerts: (profile as any).sms_job_alerts || false
       })
     }
     setIsEditDialogOpen(true)
@@ -914,7 +922,7 @@ const Profile = () => {
 
       {/* Edit Profile Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Profile</DialogTitle>
           </DialogHeader>
@@ -946,7 +954,88 @@ const Profile = () => {
                 className="flex min-h-[80px] w-full rounded-lg border border-border bg-input px-3 py-2 text-sm text-text-primary placeholder:text-text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               />
             </div>
-            <div className="flex gap-3">
+
+            {/* Communication Links - FREE for all users */}
+            <div className="border-t pt-4 space-y-3">
+              <h4 className="font-medium text-sm flex items-center gap-2">
+                <MessageCircle className="h-4 w-4 text-primary" />
+                Communication Links (Free)
+              </h4>
+              <p className="text-xs text-muted-foreground">
+                Add your contact links so clients can reach you directly
+              </p>
+              
+              <BrandInput
+                label="WhatsApp Number"
+                value={editForm.whatsapp_number}
+                onChange={(e) => setEditForm(prev => ({ ...prev, whatsapp_number: e.target.value }))}
+                placeholder="08012345678"
+              />
+              <BrandInput
+                label="Google Meet Link"
+                value={editForm.google_meet_link}
+                onChange={(e) => setEditForm(prev => ({ ...prev, google_meet_link: e.target.value }))}
+                placeholder="https://meet.google.com/..."
+              />
+              <BrandInput
+                label="Facebook Profile URL"
+                value={editForm.facebook_url}
+                onChange={(e) => setEditForm(prev => ({ ...prev, facebook_url: e.target.value }))}
+                placeholder="https://facebook.com/yourprofile"
+              />
+            </div>
+
+            {/* SMS Job Alerts - PAID feature */}
+            <div className="border-t pt-4 space-y-3">
+              <h4 className="font-medium text-sm flex items-center gap-2">
+                <Phone className="h-4 w-4 text-orange-500" />
+                SMS Job Alerts (Paid)
+              </h4>
+              <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3">
+                <div className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    id="sms_job_alerts"
+                    checked={editForm.sms_job_alerts}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        // Show warning
+                        const confirmed = window.confirm(
+                          `⚠️ SMS Job Alerts Charges:\n\n` +
+                          `🇳🇬 Nigeria: 10 NC per SMS\n` +
+                          `🌍 International: 25 NC per SMS\n\n` +
+                          `The cost will be deducted from your withdrawable balance.\n\n` +
+                          `Do you want to enable SMS alerts?`
+                        )
+                        if (confirmed) {
+                          setEditForm(prev => ({ ...prev, sms_job_alerts: true }))
+                        }
+                      } else {
+                        setEditForm(prev => ({ ...prev, sms_job_alerts: false }))
+                      }
+                    }}
+                    className="mt-1 h-4 w-4 rounded border-border"
+                  />
+                  <div className="flex-1">
+                    <label htmlFor="sms_job_alerts" className="font-medium text-sm cursor-pointer">
+                      Enable SMS Job Alerts
+                    </label>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Get SMS when new jobs match your skills
+                    </p>
+                    <div className="flex gap-3 mt-2 text-xs">
+                      <span className="bg-background px-2 py-1 rounded">🇳🇬 10 NC/SMS</span>
+                      <span className="bg-background px-2 py-1 rounded">🌍 25 NC/SMS</span>
+                    </div>
+                    <p className="text-xs text-orange-600 mt-2 font-medium">
+                      ⚠️ Charged from your withdrawable balance
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-2">
               <BrandButton variant="outline" className="flex-1" onClick={() => setIsEditDialogOpen(false)}>
                 Cancel
               </BrandButton>

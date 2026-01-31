@@ -33,6 +33,7 @@ export interface Profile {
   whatsapp_number?: string | null
   facebook_url?: string | null
   google_meet_link?: string | null
+  sms_job_alerts?: boolean
   created_at: string
   updated_at: string
 }
