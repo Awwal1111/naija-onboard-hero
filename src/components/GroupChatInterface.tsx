@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Send, Paperclip, Users, Pin, X, Check, CheckCheck, MoreVertical, MessageSquare } from 'lucide-react'
+import { ArrowLeft, Send, Paperclip, Users, Pin, X, Check, CheckCheck, MoreVertical, MessageSquare, MapPin } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -16,6 +16,8 @@ import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/use-toast'
 import { useFileUpload } from '@/hooks/useFileUpload'
+import { LocationShareButton } from '@/components/chat/LocationShareButton'
+import { LocationMessage, parseLocationMessage, createLocationMessageContent } from '@/components/chat/LocationMessage'
 
 interface GroupMessage {
   id: string
@@ -382,6 +384,41 @@ const GroupChatInterface: React.FC = () => {
     }
   }
 
+  // Handle location share in group
+  const handleLocationShare = async (location: { lat: number; lng: number; address: string }) => {
+    if (!groupId || !user || sending) return;
+    
+    setSending(true);
+    try {
+      const locationContent = createLocationMessageContent(location);
+      
+      const { error } = await supabase
+        .from('group_messages')
+        .insert({
+          group_id: groupId,
+          sender_id: user.id,
+          content: locationContent,
+          message_type: 'location'
+        });
+
+      if (error) throw error;
+      
+      toast({
+        title: "Location shared",
+        description: "Your location has been sent to the group"
+      });
+    } catch (error) {
+      console.error('Error sharing location:', error);
+      toast({
+        title: "Error",
+        description: "Failed to share location",
+        variant: "destructive"
+      });
+    } finally {
+      setSending(false);
+    }
+  };
+
   const formatTime = (dateString: string) => {
     const date = new Date(dateString)
     return date.toLocaleTimeString('en-US', { 
@@ -465,54 +502,64 @@ const GroupChatInterface: React.FC = () => {
                     </span>
                   )}
                   
-                  <Card className={`${
-                    message.sender_id === user?.id
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted'
-                  } ${message.is_pinned ? 'ring-2 ring-yellow-500' : ''}`}>
-                    <CardContent className="p-3">
-                      <p className="text-sm">{message.content}</p>
-                      
-                      {message.media_url && (
-                        <div className="mt-2">
-                          {message.message_type === 'image' ? (
-                            <img 
-                              src={message.media_url} 
-                              alt="Shared image"
-                              className="max-w-full rounded-lg"
-                            />
-                          ) : (
-                            <div className="flex items-center gap-2 p-2 bg-background/10 rounded">
-                              <Paperclip className="h-4 w-4" />
-                              <span className="text-sm">Attachment</span>
+                  {/* Check if this is a location message */}
+                  {(() => {
+                    const locationData = parseLocationMessage(message.content);
+                    if (locationData) {
+                      return <LocationMessage location={locationData} isOwn={message.sender_id === user?.id} />;
+                    }
+                    
+                    return (
+                      <Card className={`${
+                        message.sender_id === user?.id
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted'
+                      } ${message.is_pinned ? 'ring-2 ring-yellow-500' : ''}`}>
+                        <CardContent className="p-3">
+                          <p className="text-sm">{message.content}</p>
+                          
+                          {message.media_url && (
+                            <div className="mt-2">
+                              {message.message_type === 'image' ? (
+                                <img 
+                                  src={message.media_url} 
+                                  alt="Shared image"
+                                  className="max-w-full rounded-lg"
+                                />
+                              ) : (
+                                <div className="flex items-center gap-2 p-2 bg-background/10 rounded">
+                                  <Paperclip className="h-4 w-4" />
+                                  <span className="text-sm">Attachment</span>
+                                </div>
+                              )}
                             </div>
                           )}
-                        </div>
-                      )}
-                      
-                      <div className="flex items-center justify-between mt-2">
-                        <div className="flex items-center gap-1">
-                          <span className="text-xs opacity-70">
-                            {formatTime(message.created_at)}
-                          </span>
-                          {message.sender_id === user?.id && (
-                            <CheckCheck className="h-3 w-3 opacity-70" />
-                          )}
-                        </div>
-                        
-                        {/* Reaction summary */}
-                        {message.reactions_summary && Object.keys(message.reactions_summary).length > 0 && (
-                          <div className="flex gap-1">
-                            {Object.entries(message.reactions_summary).map(([reaction, count]) => (
-                              <span key={reaction} className="text-xs bg-background/20 px-1 rounded">
-                                {reaction === 'like' && '👍'} {count}
+                          
+                          <div className="flex items-center justify-between mt-2">
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs opacity-70">
+                                {formatTime(message.created_at)}
                               </span>
-                            ))}
+                              {message.sender_id === user?.id && (
+                                <CheckCheck className="h-3 w-3 opacity-70" />
+                              )}
+                            </div>
+                            
+                            {/* Reaction summary */}
+                            {message.reactions_summary && Object.keys(message.reactions_summary).length > 0 && (
+                              <div className="flex gap-1">
+                                {Object.entries(message.reactions_summary).map(([reaction, count]) => (
+                                  <span key={reaction} className="text-xs bg-background/20 px-1 rounded">
+                                    {reaction === 'like' && '👍'} {count as number}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
+                        </CardContent>
+                      </Card>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
@@ -576,6 +623,12 @@ const GroupChatInterface: React.FC = () => {
           >
             <Paperclip className="h-4 w-4" />
           </Button>
+          
+          {/* Location Share Button */}
+          <LocationShareButton
+            onLocationSelect={handleLocationShare}
+            disabled={sending || uploadProgress.isUploading}
+          />
           
           <div className="flex-1">
             <Input
