@@ -4999,6 +4999,42 @@ export type Database = {
           },
         ]
       }
+      skill_verifications: {
+        Row: {
+          attempts: number
+          created_at: string
+          id: string
+          is_verified: boolean
+          score: number
+          skill_name: string
+          updated_at: string
+          user_id: string
+          verified_at: string | null
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          is_verified?: boolean
+          score?: number
+          skill_name: string
+          updated_at?: string
+          user_id: string
+          verified_at?: string | null
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          is_verified?: boolean
+          score?: number
+          skill_name?: string
+          updated_at?: string
+          user_id?: string
+          verified_at?: string | null
+        }
+        Relationships: []
+      }
       skills: {
         Row: {
           created_at: string
