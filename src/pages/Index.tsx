@@ -10,6 +10,7 @@ import explainerVideo from '@/assets/naijalancers-explainer.mp4'
 
 import { LeaderboardSection } from '@/components/LeaderboardSection'
 import { SuccessStoriesSection } from '@/components/SuccessStoriesSection'
+import { FeaturedGigsSection } from '@/components/FeaturedGigsSection'
 import { detectMiniPaySync } from '@/lib/minipay'
 
 // SYNC detection at module load - NO context hooks
@@ -216,6 +217,9 @@ const Index = () => {
           </div>
         </div>
       </section>
+
+      {/* Featured Gigs Section */}
+      <FeaturedGigsSection />
 
       <section className="py-16 bg-muted/30">
         <div className="container mx-auto px-6">
