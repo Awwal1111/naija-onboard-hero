@@ -5434,6 +5434,57 @@ export type Database = {
         }
         Relationships: []
       }
+      support_tickets: {
+        Row: {
+          admin_response: string | null
+          category: string
+          created_at: string
+          description: string
+          email: string
+          id: string
+          name: string
+          priority: string | null
+          responded_at: string | null
+          responded_by: string | null
+          status: string | null
+          subject: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          admin_response?: string | null
+          category: string
+          created_at?: string
+          description: string
+          email: string
+          id?: string
+          name: string
+          priority?: string | null
+          responded_at?: string | null
+          responded_by?: string | null
+          status?: string | null
+          subject: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          admin_response?: string | null
+          category?: string
+          created_at?: string
+          description?: string
+          email?: string
+          id?: string
+          name?: string
+          priority?: string | null
+          responded_at?: string | null
+          responded_by?: string | null
+          status?: string | null
+          subject?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       survey_completions: {
         Row: {
           bitlabs_user_id: string

@@ -71,6 +71,8 @@ import JobDetail from "./pages/JobDetail";
 import SpinWheelGame from "./components/SpinWheelGame";
 import NaijaPredictor from "./components/NaijaPredictor";
 import FAQ from "./pages/FAQ";
+import HelpCenter from "./pages/HelpCenter";
+import RefundPolicy from "./pages/RefundPolicy";
 import Index from "./pages/Index";
 import Search from "./pages/Search";
 import PublicExpert from "./pages/PublicExpert";
@@ -181,8 +183,10 @@ const App = () => (
               <Route path="/fundraising" element={<Fundraising />} />
               <Route path="/fundraising/:id" element={<FundraisingDetail />} />
               <Route path="/faq" element={<FAQ />} />
+              <Route path="/help" element={<HelpCenter />} />
               <Route path="/terms-conditions" element={<TermsConditions />} />
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+              <Route path="/refund-policy" element={<RefundPolicy />} />
               <Route path="/developers" element={<DeveloperDocs />} />
               <Route path="/verify-certificate/:certificateId" element={<VerifyCertificate />} />
               <Route path="/payment-success" element={<PaymentSuccess />} />
