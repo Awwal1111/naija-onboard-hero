@@ -160,7 +160,7 @@ export const QuickOnboarding: React.FC<QuickOnboardingProps> = ({
     }
 
     if (goal === 'hire') {
-      // Client flow - save temporary state and redirect to AI assistant
+      // Client flow - save user_mode as 'client' and redirect to AI assistant
       setLoading(true)
       try {
         await updateProfile({
@@ -172,8 +172,12 @@ export const QuickOnboarding: React.FC<QuickOnboardingProps> = ({
           city: !isNigeria ? formData.city : null,
           remote_work: formData.remote,
           account_type: 'client',
+          user_mode: 'client', // Save user_mode for client
           onboarding_completed: false // NOT completed yet - needs AI flow
         } as any)
+
+        // Also update localStorage for immediate effect
+        localStorage.setItem('user_mode', 'client')
 
         toast({
           title: "Let's find you the perfect freelancer! 🤖",
@@ -195,9 +199,13 @@ export const QuickOnboarding: React.FC<QuickOnboardingProps> = ({
       return
     }
 
-    // Freelancer flow - complete onboarding
+    // Freelancer flow - complete onboarding and save user_mode
     setLoading(true)
     try {
+      // Determine user_mode based on account_type selection in step 1
+      const userMode = formData.account_type === 'client' ? 'client' : 
+                       formData.account_type === 'both' ? 'both' : 'freelancer'
+      
       await updateProfile({
         full_name: formData.full_name.trim(),
         profession: formData.profession.trim() || null,
@@ -206,13 +214,21 @@ export const QuickOnboarding: React.FC<QuickOnboardingProps> = ({
         lga: isNigeria ? formData.lga : null,
         city: !isNigeria ? formData.city : null,
         remote_work: formData.remote,
-        account_type: 'freelancer',
+        account_type: formData.account_type,
+        user_mode: userMode, // Save user_mode to profile
         onboarding_completed: true
       } as any)
 
+      // Also update localStorage for immediate effect
+      localStorage.setItem('user_mode', userMode)
+
       toast({
         title: 'Welcome to NaijaLancers! 🎉',
-        description: "You're all set. Start finding opportunities!"
+        description: userMode === 'client' 
+          ? "You're set up as a client. Start finding talent!"
+          : userMode === 'freelancer'
+          ? "You're all set. Start finding opportunities!"
+          : "You have full access to all features!"
       })
 
       onOpenChange(false)

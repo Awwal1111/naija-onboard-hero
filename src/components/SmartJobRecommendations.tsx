@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Briefcase, Sparkles, MapPin, Clock, ArrowRight, ChevronLeft, ChevronRight, Zap } from 'lucide-react';
+import { Briefcase, Sparkles, MapPin, Clock, ArrowRight, ChevronLeft, ChevronRight, Zap, Users } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { usePersonalizedJobPosts, usePersonalizedGigs } from '@/hooks/usePersonalizedDiscovery';
 import { useProfile } from '@/hooks/useProfile';
+import { useRoleFeatures } from '@/hooks/useRoleFeatures';
 import { formatDistanceToNow } from 'date-fns';
 
 interface SmartJobRecommendationsProps {
@@ -20,10 +21,25 @@ const SmartJobRecommendations: React.FC<SmartJobRecommendationsProps> = ({
 }) => {
   const navigate = useNavigate();
   const { profile } = useProfile();
+  const { isFreelancer, isClient, mode } = useRoleFeatures();
   const { jobPosts, loading: jobsLoading } = usePersonalizedJobPosts(maxItems);
   const { gigs, loading: gigsLoading } = usePersonalizedGigs(maxItems);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [activeTab, setActiveTab] = useState<'jobs' | 'gigs'>('jobs');
+  
+  // Default tab based on user role
+  // Freelancers see Jobs first, Clients see Gigs/Services first
+  const getDefaultTab = () => {
+    if (mode === 'client') return 'gigs';
+    return 'jobs';
+  };
+  
+  const [activeTab, setActiveTab] = useState<'jobs' | 'gigs'>(getDefaultTab());
+  
+  // Update default tab when mode changes
+  useEffect(() => {
+    setActiveTab(getDefaultTab());
+    setCurrentIndex(0);
+  }, [mode]);
 
   // Combine and sort by relevance score
   const items = activeTab === 'jobs' ? jobPosts : gigs;
@@ -68,12 +84,23 @@ const SmartJobRecommendations: React.FC<SmartJobRecommendationsProps> = ({
         <div className="flex items-center justify-between">
           <CardTitle className="text-base flex items-center gap-2">
             <div className="p-1.5 rounded-lg bg-primary/10">
-              <Sparkles className="h-4 w-4 text-primary" />
+              {mode === 'client' ? (
+                <Users className="h-4 w-4 text-primary" />
+              ) : (
+                <Sparkles className="h-4 w-4 text-primary" />
+              )}
             </div>
-            <span>AI-Matched For You</span>
+            <span>
+              {mode === 'client' 
+                ? 'Recommended Talent' 
+                : mode === 'freelancer' 
+                ? 'Jobs For You'
+                : 'AI-Matched For You'}
+            </span>
           </CardTitle>
           
-          {showGigs && (
+          {/* Show tabs only for 'both' mode, otherwise show single relevant view */}
+          {mode === 'both' && showGigs && (
             <div className="flex gap-1 p-0.5 bg-muted rounded-lg">
               <Button
                 size="sm"
@@ -89,13 +116,24 @@ const SmartJobRecommendations: React.FC<SmartJobRecommendationsProps> = ({
                 className="h-7 px-3 text-xs"
                 onClick={() => { setActiveTab('gigs'); setCurrentIndex(0); }}
               >
-                Gigs
+                Services
               </Button>
             </div>
           )}
         </div>
         
-        {profile?.profession && (
+        {/* Role-specific subtitle */}
+        {mode === 'freelancer' && profile?.profession && (
+          <p className="text-xs text-muted-foreground mt-1">
+            Based on your skills: <span className="font-medium text-foreground">{profile.profession}</span>
+          </p>
+        )}
+        {mode === 'client' && (
+          <p className="text-xs text-muted-foreground mt-1">
+            Top-rated freelancers matching your needs
+          </p>
+        )}
+        {mode === 'both' && profile?.profession && (
           <p className="text-xs text-muted-foreground mt-1">
             Based on your profile: <span className="font-medium text-foreground">{profile.profession}</span>
           </p>
