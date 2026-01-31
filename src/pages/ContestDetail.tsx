@@ -9,9 +9,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useContests, ContestSubmission } from "@/hooks/useContests";
 import { useAuth } from "@/hooks/useAuth";
-import { ArrowLeft, Trophy, Clock, Users, FileImage, Star, Upload, Check, Loader2 } from "lucide-react";
+import { ArrowLeft, Trophy, Clock, Users, FileImage, Star, Upload, Check, Loader2, Wallet, CheckCircle2, Shield, AlertCircle, DollarSign } from "lucide-react";
 import { toast } from "sonner";
 import { format, formatDistanceToNow, isPast } from "date-fns";
 
@@ -19,7 +20,7 @@ const ContestDetail = () => {
   const { contestId } = useParams<{ contestId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { contests, loading, submitToContest, getContestSubmissions, selectWinner } = useContests();
+  const { contests, loading, submitToContest, getContestSubmissions, selectWinner, shortlistSubmission, myContests, fetchContests } = useContests();
   
   const [submissions, setSubmissions] = useState<ContestSubmission[]>([]);
   const [submitDialogOpen, setSubmitDialogOpen] = useState(false);
@@ -29,16 +30,23 @@ const ContestDetail = () => {
   const [previewUrl, setPreviewUrl] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const contest = contests.find(c => c.id === contestId);
+  // Check both open contests and my contests
+  const contest = contests.find(c => c.id === contestId) || myContests.find(c => c.id === contestId);
   const isOwner = contest?.client_id === user?.id;
   const hasSubmitted = submissions.some(s => s.freelancer_id === user?.id);
   const isDeadlinePassed = contest ? isPast(new Date(contest.deadline)) : false;
+  const isCompleted = contest?.status === 'completed';
+  const winnerSubmission = submissions.find(s => s.status === 'winner');
 
   useEffect(() => {
     if (contestId) {
       loadSubmissions();
     }
-  }, [contestId]);
+    // Also fetch my contests to get full details if owner
+    if (user && !contest) {
+      fetchContests();
+    }
+  }, [contestId, user]);
 
   const loadSubmissions = async () => {
     if (!contestId) return;
@@ -81,11 +89,16 @@ const ContestDetail = () => {
   };
 
   const handleSelectWinner = async (submissionId: string, freelancerId: string) => {
-    if (!confirm("Are you sure you want to select this as the winner? The prize will be released to the freelancer.")) {
+    if (!confirm("Are you sure you want to select this as the winner? The prize (NC " + contest?.prize_amount?.toLocaleString() + ") will be automatically transferred to the freelancer's wallet.")) {
       return;
     }
     
     await selectWinner(contestId!, submissionId, freelancerId);
+    loadSubmissions();
+  };
+
+  const handleShortlist = async (submissionId: string) => {
+    await shortlistSubmission(contestId!, submissionId);
     loadSubmissions();
   };
 
@@ -156,7 +169,7 @@ const ContestDetail = () => {
           <Card>
             <CardContent className="p-4 text-center">
               <Trophy className="h-6 w-6 mx-auto text-yellow-500 mb-1" />
-              <p className="text-2xl font-bold">₦{contest.prize_amount.toLocaleString()}</p>
+              <p className="text-2xl font-bold">NC {contest.prize_amount.toLocaleString()}</p>
               <p className="text-xs text-muted-foreground">Prize</p>
             </CardContent>
           </Card>
@@ -179,6 +192,46 @@ const ContestDetail = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Escrow Status */}
+        {contest.escrow_funded && (
+          <Card className="bg-green-500/5 border-green-500/20">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-green-500/10">
+                <Shield className="h-5 w-5 text-green-600" />
+              </div>
+              <div className="flex-1">
+                <p className="font-medium text-green-700 dark:text-green-400">Prize Secured in Escrow</p>
+                <p className="text-sm text-muted-foreground">
+                  NC {contest.prize_amount.toLocaleString()} is held safely until a winner is selected
+                </p>
+              </div>
+              {isCompleted && (
+                <Badge className="bg-green-500">
+                  <CheckCircle2 className="h-3 w-3 mr-1" />
+                  Paid
+                </Badge>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Winner Announcement */}
+        {isCompleted && winnerSubmission && (
+          <Card className="bg-yellow-500/10 border-yellow-500/30">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <Trophy className="h-8 w-8 text-yellow-500" />
+                <div className="flex-1">
+                  <p className="font-bold text-lg">🎉 Winner: {winnerSubmission.freelancer_name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    "{winnerSubmission.title}" - Received NC {contest.prize_amount.toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Description */}
         <Card>
@@ -213,18 +266,25 @@ const ContestDetail = () => {
         </Card>
 
         {/* Submit Button (for freelancers) */}
-        {!isOwner && !hasSubmitted && !isDeadlinePassed && contest.status === 'open' && (
+        {!isOwner && !hasSubmitted && !isDeadlinePassed && contest.status === 'open' && contest.escrow_funded && (
           <Dialog open={submitDialogOpen} onOpenChange={setSubmitDialogOpen}>
             <DialogTrigger asChild>
               <Button className="w-full" size="lg">
                 <Upload className="h-5 w-5 mr-2" />
-                Submit Your Entry
+                Submit Your Entry (Prize: NC {contest.prize_amount.toLocaleString()})
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-md">
               <DialogHeader>
                 <DialogTitle>Submit Entry</DialogTitle>
               </DialogHeader>
+
+              <Alert className="bg-green-500/10 border-green-500/30">
+                <Shield className="h-4 w-4 text-green-600" />
+                <AlertDescription className="text-green-700 dark:text-green-400">
+                  Prize is secured! NC {contest.prize_amount.toLocaleString()} is held in escrow.
+                </AlertDescription>
+              </Alert>
               <div className="space-y-4 mt-4">
                 <Input
                   placeholder="Entry title"
@@ -354,8 +414,18 @@ const ContestDetail = () => {
                           )}
                         </div>
                         
-                        {isOwner && submission.status !== 'winner' && (
+                        {isOwner && submission.status !== 'winner' && !isCompleted && (
                           <div className="flex gap-2 mt-3">
+                            {submission.status !== 'shortlisted' && (
+                              <Button 
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleShortlist(submission.id)}
+                              >
+                                <Star className="h-4 w-4 mr-1" />
+                                Shortlist
+                              </Button>
+                            )}
                             <Button 
                               size="sm"
                               onClick={() => handleSelectWinner(submission.id, submission.freelancer_id)}
