@@ -17,9 +17,11 @@ Crawl-delay: 1
 # ===========================================
 Allow: /welcome
 Allow: /faq
+Allow: /help
 Allow: /fundraising
 Allow: /terms-conditions
 Allow: /privacy-policy
+Allow: /refund-policy
 Allow: /developers
 Allow: /install
 Allow: /login
