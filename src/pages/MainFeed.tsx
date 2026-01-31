@@ -28,6 +28,7 @@ import { NCConverter } from '@/components/NCConverter'
 import { QuickOnboarding } from '@/components/QuickOnboarding'
 import { BannerAd } from '@/components/ads/BannerAd'
 import { FeedAd } from '@/components/ads/FeedAd'
+import SmartJobRecommendations from '@/components/SmartJobRecommendations'
 import { supabase } from '@/integrations/supabase/client'
 
 const MainFeed = () => {
@@ -336,6 +337,11 @@ const MainFeed = () => {
                 Discover
               </button>
             </div>
+          </div>
+
+          {/* Smart Job Recommendations */}
+          <div className="px-4 py-3">
+            <SmartJobRecommendations maxItems={5} showGigs={true} />
           </div>
 
           {/* Banner Ad - Top of Feed */}

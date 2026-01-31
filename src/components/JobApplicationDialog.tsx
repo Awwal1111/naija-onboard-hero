@@ -1,12 +1,14 @@
 import React, { useState } from 'react'
-import { Upload, FileText, Calendar, DollarSign, X } from 'lucide-react'
+import { Upload, FileText, Calendar, DollarSign, X, Wand2, ChevronDown, ChevronUp } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { BrandInput } from '@/components/ui/brand-input'
 import { Label } from '@/components/ui/label'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/useAuth'
+import { useProfile } from '@/hooks/useProfile'
 import { supabase } from '@/integrations/supabase/client'
 
 interface JobPost {
@@ -34,8 +36,11 @@ const JobApplicationDialog: React.FC<JobApplicationDialogProps> = ({
   jobPost
 }) => {
   const { user } = useAuth()
+  const { profile } = useProfile()
   const { toast } = useToast()
   const [submitting, setSubmitting] = useState(false)
+  const [generatingAI, setGeneratingAI] = useState(false)
+  const [showAIWriter, setShowAIWriter] = useState(false)
   
   const [formData, setFormData] = useState({
     coverLetter: '',
@@ -219,6 +224,82 @@ const JobApplicationDialog: React.FC<JobApplicationDialogProps> = ({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* AI Proposal Writer */}
+          <Collapsible open={showAIWriter} onOpenChange={setShowAIWriter}>
+            <CollapsibleTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full gap-2 border-primary/30 bg-primary/5 hover:bg-primary/10"
+              >
+                <Wand2 className="h-4 w-4 text-primary" />
+                <span>AI Proposal Writer</span>
+                {showAIWriter ? <ChevronUp className="h-4 w-4 ml-auto" /> : <ChevronDown className="h-4 w-4 ml-auto" />}
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-3">
+              <div className="p-4 rounded-lg border border-primary/20 bg-primary/5 space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Let AI craft a compelling cover letter based on your profile and the job requirements.
+                </p>
+                <Button
+                  type="button"
+                  onClick={async () => {
+                    if (!profile?.full_name) {
+                      toast({
+                        title: "Profile required",
+                        description: "Please complete your profile first",
+                        variant: "destructive"
+                      });
+                      return;
+                    }
+                    setGeneratingAI(true);
+                    try {
+                      const { data, error } = await supabase.functions.invoke('ai-proposal-writer', {
+                        body: {
+                          jobTitle: jobPost?.title || '',
+                          jobDescription: 'Apply for this exciting opportunity',
+                          jobBudget: jobPost?.budget_min && jobPost?.budget_max 
+                            ? `${jobPost.currency || 'NGN'} ${jobPost.budget_min} - ${jobPost.budget_max}` 
+                            : undefined,
+                          freelancerName: profile.full_name,
+                          freelancerProfession: profile.profession,
+                          freelancerExperience: profile.bio,
+                          tone: 'professional'
+                        }
+                      });
+                      if (data?.success && data.proposal) {
+                        setFormData(prev => ({ ...prev, coverLetter: data.proposal }));
+                        toast({ title: "Proposal generated! ✨", description: "Review and customize before submitting" });
+                        setShowAIWriter(false);
+                      } else {
+                        throw new Error(data?.error || 'Failed to generate');
+                      }
+                    } catch (error: any) {
+                      toast({ title: "Generation failed", description: error.message, variant: "destructive" });
+                    } finally {
+                      setGeneratingAI(false);
+                    }
+                  }}
+                  disabled={generatingAI}
+                  className="w-full"
+                >
+                  {generatingAI ? (
+                    <>
+                      <div className="animate-spin w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full mr-2" />
+                      Crafting proposal...
+                    </>
+                  ) : (
+                    <>
+                      <Wand2 className="h-4 w-4 mr-2" />
+                      Generate AI Proposal
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+
           {/* Cover Letter */}
           <div className="space-y-2">
             <Label htmlFor="coverLetter">Cover Letter *</Label>
@@ -230,7 +311,7 @@ const JobApplicationDialog: React.FC<JobApplicationDialogProps> = ({
               className="min-h-[120px] resize-none"
               required
             />
-            <p className="text-xs text-text-secondary">
+            <p className="text-xs text-muted-foreground">
               {formData.coverLetter.length}/500 characters
             </p>
           </div>

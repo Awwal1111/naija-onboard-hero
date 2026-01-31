@@ -1,6 +1,6 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useNavigate } from "react-router-dom";
-import { User, Briefcase, FileText, GraduationCap, Heart, AlertCircle, Banknote, Gift, BarChart3, Settings, Video, Wallet, Bookmark, Search, Trophy, Bell, Package, Sparkles, Users, FolderKanban, Timer } from "lucide-react";
+import { User, Briefcase, FileText, GraduationCap, Heart, AlertCircle, Banknote, Gift, BarChart3, Settings, Video, Wallet, Bookmark, Search, Trophy, Bell, Package, Sparkles, Users, FolderKanban, Timer, UserCheck } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
 interface MoreMenuDrawerProps {
@@ -22,6 +22,7 @@ export const MoreMenuDrawer = ({ open, onOpenChange }: MoreMenuDrawerProps) => {
 
   const businessItems = [
     { icon: Package, label: "My Orders", path: "/orders", color: "text-teal-500" },
+    { icon: UserCheck, label: "Client Dashboard", path: "/client-dashboard", color: "text-emerald-500", description: "Manage hired freelancers" },
     { icon: Sparkles, label: "AI Hire Assistant", path: "/ai-hire", color: "text-primary", description: "Find freelancers with AI" },
     { icon: Users, label: "Find Experts", path: "/experts", color: "text-blue-500" },
     { icon: Briefcase, label: "Jobs & Gigs", path: "/jobs", color: "text-purple-500" },

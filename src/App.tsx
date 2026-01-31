@@ -106,6 +106,7 @@ import WorkRoomDetail from "./pages/WorkRoomDetail";
 import WorkDiary from "./pages/WorkDiary";
 import DeveloperPortal from "./pages/DeveloperPortal";
 import DeveloperDocs from "./pages/DeveloperDocs";
+import ClientDashboard from "./pages/ClientDashboard";
 
 // SYNC detection at module load - critical for stable MiniPay rendering
 const isMiniPayEnv = detectMiniPaySync().isMiniPay;
@@ -240,6 +241,7 @@ const App = () => (
               <Route path="/main-feed" element={<ProtectedRoute><MainFeed /></ProtectedRoute>} />
               <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/client-dashboard" element={<ProtectedRoute><ClientDashboard /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
               <Route path="/settings/pin" element={<ProtectedRoute><SetupPin /></ProtectedRoute>} />
               <Route path="/activity-log" element={<ProtectedRoute><ActivityLog /></ProtectedRoute>} />
