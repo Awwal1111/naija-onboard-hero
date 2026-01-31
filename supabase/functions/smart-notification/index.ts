@@ -195,14 +195,18 @@ serve(async (req) => {
     }
 
     // 8. Send SMS (if inactive 14+ days AND urgent priority AND has phone)
+    // SMS is charged: 10 NC for Nigeria, 25 NC for international
     if (profile?.phone_number && daysInactive >= 14 && priority === 'urgent') {
       console.log('[SMART_NOTIF] 5️⃣ Sending SMS notification (urgent, inactive 14+ days)...');
+      console.log('[SMART_NOTIF] Note: SMS will be charged from user balance');
       try {
         const smsMessage = `NaijaLancers: ${title} - ${message.substring(0, 100)}`;
         const { data: smsData, error: smsError } = await supabase.functions.invoke('send-sms', {
           body: {
             userId,
-            message: smsMessage
+            message: smsMessage,
+            smsType: 'notification', // Will be charged (10 NC Nigeria, 25 NC international)
+            skipCharge: false
           }
         });
 
@@ -211,7 +215,10 @@ serve(async (req) => {
         } else if (smsData?.success) {
           channels.push('sms');
           results.sms = smsData;
-          console.log('[SMART_NOTIF] ✅ SMS sent');
+          console.log('[SMART_NOTIF] ✅ SMS sent, cost:', smsData.cost, 'NC');
+        } else if (smsData?.error === 'Insufficient balance for SMS') {
+          console.log('[SMART_NOTIF] ⚠️ SMS skipped - insufficient balance');
+          results.sms = { skipped: true, reason: 'insufficient_balance' };
         }
       } catch (err) {
         console.error('[SMART_NOTIF] ❌ SMS failed:', err);
