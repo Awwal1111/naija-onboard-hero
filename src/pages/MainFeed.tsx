@@ -30,6 +30,7 @@ import { QuickOnboarding } from '@/components/QuickOnboarding'
 import { BannerAd } from '@/components/ads/BannerAd'
 import { FeedAd } from '@/components/ads/FeedAd'
 import SmartJobRecommendations from '@/components/SmartJobRecommendations'
+import UserModePrompt from '@/components/UserModePrompt'
 import { supabase } from '@/integrations/supabase/client'
 
 const MainFeed = () => {
@@ -478,6 +479,9 @@ const MainFeed = () => {
         onOpenChange={setShowOnboarding}
         onComplete={handleOnboardingComplete}
       />
+
+      {/* User Mode Prompt for existing users without mode set */}
+      <UserModePrompt />
 
     </>
   )

@@ -13,6 +13,7 @@ import { Users, Globe, Lock, Plus, X, Image, Video, FileText, Briefcase, Loader2
 import { useFileUpload } from '@/hooks/useFileUpload'
 import { useVideoUpload } from '@/hooks/useVideoUpload'
 import { useToast } from '@/hooks/use-toast'
+import { useRoleFeatures } from '@/hooks/useRoleFeatures'
 
 interface EnhancedCreatePostDialogProps {
   isOpen: boolean
@@ -34,6 +35,11 @@ const EnhancedCreatePostDialog: React.FC<EnhancedCreatePostDialogProps> = ({
   const { uploadFile, uploadProgress } = useFileUpload()
   const { uploadVideo, uploadProgress: videoProgress } = useVideoUpload()
   const { toast } = useToast()
+  const { isClient, mode } = useRoleFeatures()
+  
+  // Only clients and 'both' mode users can post jobs
+  const canPostJobs = isClient || mode === 'both'
+  
   const [postType, setPostType] = useState<'status' | 'job' | 'media'>('status')
   const [visibility, setVisibility] = useState<'public' | 'connections' | 'private'>('public')
   const [title, setTitle] = useState('')
@@ -225,7 +231,7 @@ ${jobData.skills.length > 0 ? `🎯 Skills: ${jobData.skills.join(', ')}` : ''}`
             </div>
           </div>
 
-          {/* Post type selector */}
+          {/* Post type selector - hide Job Post for freelancer-only users */}
           <div className="flex gap-2">
             <Button
               type="button"
@@ -237,16 +243,18 @@ ${jobData.skills.length > 0 ? `🎯 Skills: ${jobData.skills.join(', ')}` : ''}`
               <FileText className="h-4 w-4" />
               Status
             </Button>
-            <Button
-              type="button"
-              variant={postType === 'job' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setPostType('job')}
-              className="gap-2"
-            >
-              <Briefcase className="h-4 w-4" />
-              Job Post
-            </Button>
+            {canPostJobs && (
+              <Button
+                type="button"
+                variant={postType === 'job' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setPostType('job')}
+                className="gap-2"
+              >
+                <Briefcase className="h-4 w-4" />
+                Job Post
+              </Button>
+            )}
             <Button
               type="button"
               variant={postType === 'media' ? 'default' : 'outline'}
