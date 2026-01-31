@@ -727,6 +727,36 @@ export type Database = {
           },
         ]
       }
+      communication_analytics: {
+        Row: {
+          button_type: string
+          created_at: string
+          id: string
+          source_context: string | null
+          source_page: string | null
+          target_user_id: string
+          user_id: string
+        }
+        Insert: {
+          button_type: string
+          created_at?: string
+          id?: string
+          source_context?: string | null
+          source_page?: string | null
+          target_user_id: string
+          user_id: string
+        }
+        Update: {
+          button_type?: string
+          created_at?: string
+          id?: string
+          source_context?: string | null
+          source_page?: string | null
+          target_user_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       connection_requests: {
         Row: {
           created_at: string
@@ -4212,6 +4242,7 @@ export type Database = {
           transaction_pin: string | null
           updated_at: string
           user_id: string
+          user_mode: string | null
           verification_description: string | null
           verification_payment_status: string | null
           verification_reviewed_at: string | null
@@ -4295,6 +4326,7 @@ export type Database = {
           transaction_pin?: string | null
           updated_at?: string
           user_id: string
+          user_mode?: string | null
           verification_description?: string | null
           verification_payment_status?: string | null
           verification_reviewed_at?: string | null
@@ -4378,6 +4410,7 @@ export type Database = {
           transaction_pin?: string | null
           updated_at?: string
           user_id?: string
+          user_mode?: string | null
           verification_description?: string | null
           verification_payment_status?: string | null
           verification_reviewed_at?: string | null

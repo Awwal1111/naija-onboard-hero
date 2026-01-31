@@ -23,6 +23,7 @@ import { FaceVerificationDialog } from '@/components/FaceVerificationDialog'
 import { PhoneVerificationDialog } from '@/components/PhoneVerificationDialog'
 import { AccountTypeSettings } from '@/components/AccountTypeSettings'
 import { InternationalSettings } from '@/components/settings/InternationalSettings'
+import { UserModeSettings } from '@/components/settings/UserModeSettings'
 
 const BiometricToggle = () => {
   const { isAvailable, isEnabled, enableBiometric, disableBiometric, loading } = useBiometric()
@@ -262,6 +263,9 @@ const Settings = () => {
 
         {/* Account Type Settings */}
         <AccountTypeSettings />
+
+        {/* User Mode Settings - Freelancer/Client differentiation */}
+        <UserModeSettings />
 
         {/* International/Regional Settings - Currency, Timezone, Language */}
         <InternationalSettings />
