@@ -1,10 +1,20 @@
 # NaijaLancers Robots.txt
-# Allow all crawlers to access public pages
+# Optimized for SEO and Google indexing
+# Last updated: 2026-01-31
 
+# ===========================================
+# DEFAULT: Allow all major search engines
+# ===========================================
 User-agent: *
 Allow: /
 
-# Public landing & info pages
+# Crawl-delay for politeness (1 second between requests)
+Crawl-delay: 1
+
+# ===========================================
+# PUBLIC LANDING & MARKETING PAGES
+# High priority for indexing
+# ===========================================
 Allow: /welcome
 Allow: /faq
 Allow: /fundraising
@@ -15,8 +25,10 @@ Allow: /install
 Allow: /login
 Allow: /signup
 
-# PUBLIC SEO-OPTIMIZED PAGES (no auth required)
-# These use /p/ prefix for clean indexing
+# ===========================================
+# PUBLIC SEO-OPTIMIZED CONTENT PAGES
+# These use /p/ prefix for clean indexing - NO AUTH REQUIRED
+# ===========================================
 Allow: /p/
 Allow: /p/expert/
 Allow: /p/experts
@@ -27,57 +39,143 @@ Allow: /p/jobs
 Allow: /p/course/
 Allow: /p/campaign/
 
-# Short URL aliases (redirect to /p/ versions)
+# Short URL aliases (redirect to /p/ versions for better UX)
 Allow: /expert/
 Allow: /gig/
 Allow: /job/
 Allow: /course/
 Allow: /campaign/
 
-# Certificate verification (public)
+# ===========================================
+# CERTIFICATE VERIFICATION (Public)
+# ===========================================
 Allow: /verify-certificate/
 
-# Sitemap
+# ===========================================
+# SITEMAPS
+# ===========================================
 Allow: /sitemap
 Allow: /sitemap.xml
 
-# Disallow protected/auth-only routes
+# ===========================================
+# PROTECTED ROUTES - DO NOT INDEX
+# These require authentication
+# ===========================================
 Disallow: /feed
 Disallow: /main-feed
 Disallow: /profile
 Disallow: /chat
+Disallow: /chat/
 Disallow: /settings
 Disallow: /admin
+Disallow: /admin/
 Disallow: /onboarding
 Disallow: /dashboard
 Disallow: /client-dashboard
 Disallow: /analytics
 Disallow: /orders
+Disallow: /orders/
 Disallow: /workrooms
+Disallow: /workrooms/
+Disallow: /work-diary
+Disallow: /contests
+Disallow: /contests/
 Disallow: /earn
+Disallow: /earn/
 Disallow: /developer
 Disallow: /ai-hire
 Disallow: /copilot
-Disallow: /learn/course/
+Disallow: /learn/
 Disallow: /certificate/
 Disallow: /bookmarks
 Disallow: /notifications
 Disallow: /connections
 Disallow: /my-gigs
-Disallow: /edit-gig
+Disallow: /edit-gig/
 Disallow: /post-job
-Disallow: /contests
-Disallow: /work-diary
 Disallow: /activity-log
+Disallow: /expert-application
+Disallow: /expert-verification
+Disallow: /expert-class
+Disallow: /groups/
+Disallow: /call-history
+Disallow: /search
+Disallow: /leaderboard
+Disallow: /digital-products
+Disallow: /courses
+Disallow: /courses/
+Disallow: /products/
+Disallow: /jobs-enhanced
+Disallow: /emergency
+Disallow: /loan
+Disallow: /donations
+Disallow: /referrals
+Disallow: /referral-tasks
+Disallow: /tasks
+Disallow: /surveys
+Disallow: /cpx-surveys
+Disallow: /games/
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /payment-success
+Disallow: /payment-failed
 
-# Allow Googlebot to crawl images and assets
+# ===========================================
+# GOOGLEBOT-SPECIFIC RULES
+# Allow images and assets for rich results
+# ===========================================
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 0
+
 User-agent: Googlebot-Image
 Allow: /
 
-# Crawl-delay for politeness (1 second)
-User-agent: *
+# ===========================================
+# BINGBOT RULES
+# ===========================================
+User-agent: Bingbot
+Allow: /
 Crawl-delay: 1
 
-# Sitemap locations - both domains
+# ===========================================
+# SOCIAL MEDIA CRAWLERS
+# Allow for Open Graph previews
+# ===========================================
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: LinkedInBot
+Allow: /
+
+User-agent: WhatsApp
+Allow: /
+
+# ===========================================
+# BLOCK BAD BOTS
+# ===========================================
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
+
+# ===========================================
+# SITEMAP LOCATIONS
+# ===========================================
 Sitemap: https://naijalancers.name.ng/sitemap.xml
 Sitemap: https://naija-onboard-hero.lovable.app/sitemap.xml
+
+# ===========================================
+# HOST DIRECTIVE
+# ===========================================
+Host: https://naijalancers.name.ng
