@@ -1,5 +1,4 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react'
-import { useProfile } from './useProfile'
 import { supabase } from '@/integrations/supabase/client'
 
 export type CurrencyCode = 'NC' | 'USD' | 'EUR' | 'GBP' | 'NGN' | 'KES' | 'GHS' | 'ZAR' | 'INR' | 'AED'
@@ -44,28 +43,47 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
     const saved = localStorage.getItem('preferred_currency') as CurrencyCode
     return saved && CURRENCIES[saved] ? saved : 'NC'
   })
-  const { profile } = useProfile()
+  const [userId, setUserId] = useState<string | null>(null)
 
-  // Sync with profile when available
+  // Get user ID directly from Supabase auth (no Router dependency)
   useEffect(() => {
-    if (profile && (profile as any).preferred_currency) {
-      const profileCurrency = (profile as any).preferred_currency as CurrencyCode
-      if (CURRENCIES[profileCurrency]) {
-        setCurrencyState(profileCurrency)
-      }
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUserId(session?.user?.id || null)
+    })
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      setUserId(session?.user?.id || null)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  // Sync with profile when user is authenticated
+  useEffect(() => {
+    if (userId) {
+      supabase
+        .from('profiles')
+        .select('preferred_currency')
+        .eq('user_id', userId)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data?.preferred_currency && CURRENCIES[data.preferred_currency as CurrencyCode]) {
+            setCurrencyState(data.preferred_currency as CurrencyCode)
+          }
+        })
     }
-  }, [profile])
+  }, [userId])
 
   const setCurrency = async (code: CurrencyCode) => {
     setCurrencyState(code)
     localStorage.setItem('preferred_currency', code)
     
     // Save to profile if authenticated
-    if (profile) {
+    if (userId) {
       await supabase
         .from('profiles')
         .update({ preferred_currency: code } as any)
-        .eq('user_id', profile.user_id)
+        .eq('user_id', userId)
     }
   }
 
