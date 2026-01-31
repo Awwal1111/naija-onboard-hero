@@ -150,18 +150,26 @@ serve(async (req) => {
         }
       }
 
-      // 14+ days: Add SMS
+      // 14+ days: Add SMS (charged from user balance)
+      // 10 NC for Nigeria, 25 NC for international
       if (daysInactive >= 14 && user.phone_number) {
         try {
           const smsMsg = `NaijaLancers: ${title} ${personalizedContent.shortMessage || 'New opportunities waiting for you!'} Login now!`;
-          await supabase.functions.invoke('send-sms', {
+          const { data: smsResult } = await supabase.functions.invoke('send-sms', {
             body: {
               userId: user.user_id,
-              message: smsMsg.substring(0, 160) // SMS character limit
+              message: smsMsg.substring(0, 160), // SMS character limit
+              smsType: 'notification',
+              skipCharge: false // Charge from user's balance
             }
           });
-          smsSent++;
-          console.log('[ENGAGE] ✅ SMS sent to', user.full_name);
+          
+          if (smsResult?.success) {
+            smsSent++;
+            console.log('[ENGAGE] ✅ SMS sent to', user.full_name, 'cost:', smsResult.cost, 'NC');
+          } else if (smsResult?.error === 'Insufficient balance for SMS') {
+            console.log('[ENGAGE] ⚠️ SMS skipped for', user.full_name, '- insufficient balance');
+          }
         } catch (err) {
           console.error('[ENGAGE] ❌ SMS error for', user.full_name, err);
         }

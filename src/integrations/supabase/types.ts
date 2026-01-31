@@ -4230,6 +4230,7 @@ export type Database = {
           rating_count: number | null
           rating_skipped_at: string | null
           referral_code: string | null
+          sms_job_alerts: boolean | null
           state_id: string | null
           state_name: string | null
           telegram_user_id: string | null
@@ -4314,6 +4315,7 @@ export type Database = {
           rating_count?: number | null
           rating_skipped_at?: string | null
           referral_code?: string | null
+          sms_job_alerts?: boolean | null
           state_id?: string | null
           state_name?: string | null
           telegram_user_id?: string | null
@@ -4398,6 +4400,7 @@ export type Database = {
           rating_count?: number | null
           rating_skipped_at?: string | null
           referral_code?: string | null
+          sms_job_alerts?: boolean | null
           state_id?: string | null
           state_name?: string | null
           telegram_user_id?: string | null

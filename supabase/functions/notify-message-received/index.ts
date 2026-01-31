@@ -347,19 +347,33 @@ serve(async (req) => {
       }
     }
 
-    // 2. Send SMS notification (PREMIUM ONLY - if phone number exists)
-    if (isPremium && recipient?.phone_number) {
+    // 2. Send SMS notification (FREE for all users - communication is free)
+    // Using centralized send-sms function with skipCharge=true for messages
+    if (recipient?.phone_number) {
       const smsText = `NaijaLancers: ${senderName} sent you a message: "${displayContent}". Open the app to reply.`;
-      results.sms = await sendSMS(recipient.phone_number, smsText);
-    } else if (!isPremium && recipient?.phone_number) {
-      console.log(`[MSG_NOTIFY] SMS skipped - recipient not premium`);
+      
+      try {
+        const { data: smsResult } = await supabase.functions.invoke('send-sms', {
+          body: {
+            userId: recipientId,
+            message: smsText.substring(0, 160),
+            smsType: 'notification',
+            skipCharge: true // Communication is free
+          }
+        });
+        
+        results.sms = smsResult?.success || false;
+        if (smsResult?.success) {
+          console.log(`[MSG_NOTIFY] ✅ SMS sent (free communication)`);
+        }
+      } catch (smsErr) {
+        console.log(`[MSG_NOTIFY] SMS failed:`, smsErr);
+      }
     }
 
-    // 3. Send Email notification (PREMIUM ONLY - if email exists)
-    if (isPremium && recipientEmail) {
+    // 3. Send Email notification (FREE for all users - communication is free)
+    if (recipientEmail) {
       results.email = await sendEmail(recipientEmail, senderName, displayContent);
-    } else if (!isPremium && recipientEmail) {
-      console.log(`[MSG_NOTIFY] Email skipped - recipient not premium`);
     }
 
     // Log successful notification channels

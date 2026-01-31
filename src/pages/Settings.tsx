@@ -24,6 +24,7 @@ import { PhoneVerificationDialog } from '@/components/PhoneVerificationDialog'
 import { AccountTypeSettings } from '@/components/AccountTypeSettings'
 import { InternationalSettings } from '@/components/settings/InternationalSettings'
 import { UserModeSettings } from '@/components/settings/UserModeSettings'
+import { SMSNotificationSettings } from '@/components/settings/SMSNotificationSettings'
 
 const BiometricToggle = () => {
   const { isAvailable, isEnabled, enableBiometric, disableBiometric, loading } = useBiometric()
@@ -269,6 +270,9 @@ const Settings = () => {
 
         {/* International/Regional Settings - Currency, Timezone, Language */}
         <InternationalSettings />
+
+        {/* SMS Notification Settings with pricing */}
+        <SMSNotificationSettings />
 
         {/* Preferences Section */}
         <Card>
