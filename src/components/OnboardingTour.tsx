@@ -1,14 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { 
   Sparkles, Briefcase, Users, Wallet, MessageCircle, 
-  Award, CheckCircle, ArrowRight, X 
+  Award, CheckCircle, ArrowRight, X, Bot, Target, Shield,
+  PlusCircle, Search, BarChart3
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { detectMiniPaySync } from '@/lib/minipay';
+import { useUserMode } from '@/hooks/useUserMode';
 
 // SYNC detection at module load
 const isMiniPayEnv = detectMiniPaySync().isMiniPay;
@@ -21,25 +23,112 @@ interface OnboardingStep {
   path?: string;
 }
 
-const steps: OnboardingStep[] = [
+// Role-specific onboarding steps
+const freelancerSteps: OnboardingStep[] = [
+  {
+    title: "Welcome Freelancer! 🎉",
+    description: "Let's set you up to find great opportunities and grow your career.",
+    icon: <Sparkles className="h-12 w-12 text-primary" />
+  },
+  {
+    title: "Find Jobs & Gigs",
+    description: "Browse thousands of job opportunities posted by clients looking for your skills.",
+    icon: <Briefcase className="h-12 w-12 text-blue-500" />,
+    action: "Browse Jobs",
+    path: "/jobs"
+  },
+  {
+    title: "Create Your Gigs",
+    description: "Showcase your services with professional gig listings that attract clients.",
+    icon: <PlusCircle className="h-12 w-12 text-emerald-500" />,
+    action: "Create Gig",
+    path: "/my-gigs"
+  },
+  {
+    title: "Your Wallet & Earnings",
+    description: "Track earnings, withdraw funds, and manage your finances securely.",
+    icon: <Wallet className="h-12 w-12 text-amber-500" />,
+    action: "View Wallet",
+    path: "/earn"
+  },
+  {
+    title: "Get Verified",
+    description: "Earn trust badges by verifying your skills and identity to stand out.",
+    icon: <Award className="h-12 w-12 text-purple-500" />,
+    action: "Start Verification",
+    path: "/expert-verification"
+  },
+  {
+    title: "You're Ready! 🚀",
+    description: "Complete your profile to get discovered by clients worldwide.",
+    icon: <CheckCircle className="h-12 w-12 text-green-500" />,
+    action: "Complete Profile",
+    path: "/profile"
+  }
+];
+
+const clientSteps: OnboardingStep[] = [
+  {
+    title: "Welcome Client! 🎉",
+    description: "Let's help you find the perfect talent for your projects.",
+    icon: <Sparkles className="h-12 w-12 text-primary" />
+  },
+  {
+    title: "Find Expert Talent",
+    description: "Browse verified professionals across hundreds of skill categories.",
+    icon: <Users className="h-12 w-12 text-blue-500" />,
+    action: "Find Experts",
+    path: "/experts"
+  },
+  {
+    title: "Post a Job",
+    description: "Describe your project and receive proposals from qualified freelancers.",
+    icon: <Briefcase className="h-12 w-12 text-emerald-500" />,
+    action: "Post Job",
+    path: "/post-job"
+  },
+  {
+    title: "AI Hiring Assistant",
+    description: "Let our AI match you with the perfect freelancer for your needs.",
+    icon: <Bot className="h-12 w-12 text-purple-500" />,
+    action: "Try AI Hire",
+    path: "/ai-hire"
+  },
+  {
+    title: "Your Hiring Hub",
+    description: "Track spending, manage projects, and review applications in one place.",
+    icon: <Target className="h-12 w-12 text-amber-500" />,
+    action: "View Hub",
+    path: "/client-dashboard"
+  },
+  {
+    title: "Secure Payments",
+    description: "SafePay escrow protects your money until work is delivered.",
+    icon: <Shield className="h-12 w-12 text-green-500" />,
+    action: "Get Started",
+    path: "/profile"
+  }
+];
+
+const bothSteps: OnboardingStep[] = [
   {
     title: "Welcome to NaijaLancers! 🎉",
     description: "Nigeria's premier platform for freelancers and businesses. Let's show you around!",
     icon: <Sparkles className="h-12 w-12 text-primary" />
   },
   {
-    title: "Find Jobs & Gigs",
-    description: "Browse thousands of job opportunities or post your own projects to find skilled freelancers.",
+    title: "Find Jobs & Experts",
+    description: "Browse jobs as a freelancer or find talent as a client - you can do both!",
     icon: <Briefcase className="h-12 w-12 text-blue-500" />,
-    action: "Explore Jobs",
+    action: "Explore",
     path: "/jobs"
   },
   {
-    title: "Connect with Experts",
-    description: "Discover verified professionals in various fields or become an expert yourself!",
-    icon: <Users className="h-12 w-12 text-green-500" />,
-    action: "Find Experts",
-    path: "/experts"
+    title: "Create & Hire",
+    description: "Offer your services through gigs or post jobs to hire others.",
+    icon: <Users className="h-12 w-12 text-emerald-500" />,
+    action: "Get Started",
+    path: "/my-gigs"
   },
   {
     title: "Your Wallet",
@@ -50,21 +139,14 @@ const steps: OnboardingStep[] = [
   },
   {
     title: "Chat & Connect",
-    description: "Message other users, join groups, and even chat with our AI assistant for help!",
+    description: "Message users, join groups, and get help from our AI assistant!",
     icon: <MessageCircle className="h-12 w-12 text-purple-500" />,
     action: "Start Chatting",
     path: "/chat"
   },
   {
-    title: "Earn Rewards",
-    description: "Complete tasks, refer friends, and participate in activities to earn NC coins!",
-    icon: <Award className="h-12 w-12 text-pink-500" />,
-    action: "Start Earning",
-    path: "/earn"
-  },
-  {
     title: "You're All Set! 🚀",
-    description: "Your journey begins now. Complete your profile to get discovered by clients and experts.",
+    description: "Complete your profile to get discovered and start your journey.",
     icon: <CheckCircle className="h-12 w-12 text-green-500" />,
     action: "Complete Profile",
     path: "/profile"
@@ -85,6 +167,19 @@ const OnboardingTourInternal = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { mode } = useUserMode();
+
+  // Get role-specific steps
+  const steps = useMemo(() => {
+    switch (mode) {
+      case 'freelancer':
+        return freelancerSteps;
+      case 'client':
+        return clientSteps;
+      default:
+        return bothSteps;
+    }
+  }, [mode]);
 
   useEffect(() => {
     // Check if user has completed onboarding

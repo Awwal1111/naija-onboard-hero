@@ -9,6 +9,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
+import { useRoleFeatures } from '@/hooks/useRoleFeatures'
 import LinkedInPostCard from '@/components/LinkedInPostCard'
 import StoriesSection from '@/components/StoriesSection'
 import { usePersonalizedFeed } from '@/hooks/usePersonalizedFeed'
@@ -36,6 +37,7 @@ const MainFeed = () => {
   const location = useLocation()
   const { user } = useAuth()
   const { profile } = useProfile()
+  const { bottomNavItems: roleBasedNavItems, isFreelancer, isClient } = useRoleFeatures()
   const { isComplete, missingFields, shouldShowDialog } = useProfileCompletion()
   
   const { 
@@ -104,13 +106,8 @@ const MainFeed = () => {
     console.log('AI Help requested:', question)
   }
 
-  const bottomNavItems = [
-    { icon: Home, label: 'Feed', path: '/feed' },
-    { icon: MessageCircle, label: 'Chat', path: '/chat' },
-    { icon: Users, label: 'Expert', path: '/experts' },
-    { icon: Briefcase, label: 'Gig', path: '/jobs' },
-    { icon: DollarSign, label: 'Earn', path: '/earn' }
-  ]
+  // Use role-based navigation items from the hook
+  const bottomNavItems = roleBasedNavItems
 
   const handleNavigation = (path: string) => {
     navigate(path)
