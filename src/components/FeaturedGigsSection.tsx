@@ -32,7 +32,7 @@ export const FeaturedGigsSection = () => {
       const { data: gigsData, error } = await supabase
         .from('jobs_services')
         .select('id, title, description, price, category, photo_urls, user_id')
-        .eq('status', 'open')
+        .in('status', ['open', 'active'])
         .order('created_at', { ascending: false })
         .limit(6)
 
