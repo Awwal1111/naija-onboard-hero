@@ -66,16 +66,21 @@ export default function PublicCampaign() {
     }
   };
 
+  const canonicalUrl = `https://naijalancers.name.ng/p/campaign/${campaignId}`;
+
   return (
     <>
       <Helmet>
         <title>{campaign.title} - Fundraising Campaign | NaijaLancers</title>
         <meta name="description" content={campaign.description || `Support ${campaign.title} on NaijaLancers`} />
+        <link rel="canonical" href={canonicalUrl} />
         
         <meta property="og:title" content={campaign.title} />
         <meta property="og:description" content={campaign.description || campaign.title} />
         {campaign.featured_image_url && <meta property="og:image" content={campaign.featured_image_url} />}
         <meta property="og:type" content="article" />
+        <meta property="og:url" content={canonicalUrl} />
+        <meta property="og:site_name" content="NaijaLancers" />
         
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={campaign.title} />

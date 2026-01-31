@@ -78,16 +78,21 @@ export default function PublicCourse() {
     } : undefined
   };
 
+  const canonicalUrl = `https://naijalancers.name.ng/p/course/${courseId}`;
+
   return (
     <>
       <Helmet>
         <title>{course.title} - Online Course | NaijaLancers</title>
         <meta name="description" content={course.description || `Learn ${course.title} on NaijaLancers`} />
+        <link rel="canonical" href={canonicalUrl} />
         
         <meta property="og:title" content={course.title} />
         <meta property="og:description" content={course.description || course.title} />
         {course.thumbnail_url && <meta property="og:image" content={course.thumbnail_url} />}
         <meta property="og:type" content="article" />
+        <meta property="og:url" content={canonicalUrl} />
+        <meta property="og:site_name" content="NaijaLancers" />
         
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={course.title} />
