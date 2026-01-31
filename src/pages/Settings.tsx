@@ -74,8 +74,18 @@ const Settings = () => {
     tasks: true,
     expertStatus: true
   })
+  const [emailNotifications, setEmailNotifications] = useState(true)
+  const [emailDigestFrequency, setEmailDigestFrequency] = useState<'daily' | 'weekly' | 'monthly' | 'never'>('weekly')
   const [activityLog, setActivityLog] = useState<any[]>([])
   const [phoneVerifyOpen, setPhoneVerifyOpen] = useState(false)
+
+  // Load email preferences from profile
+  useEffect(() => {
+    if (profile) {
+      setEmailNotifications((profile as any).email_notifications !== false)
+      setEmailDigestFrequency((profile as any).email_digest_frequency || 'weekly')
+    }
+  }, [profile])
 
   useEffect(() => {
     // Load saved preferences
@@ -328,6 +338,74 @@ const Settings = () => {
                   </div>
                 ))}
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Email Notifications */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5" />
+              Email Notifications
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="font-medium text-text-primary">Email Alerts</h4>
+                <p className="text-sm text-text-secondary">Receive email notifications for important updates</p>
+              </div>
+              <Switch 
+                checked={emailNotifications}
+                onCheckedChange={async (checked) => {
+                  setEmailNotifications(checked)
+                  if (user) {
+                    await supabase.from('profiles').update({ email_notifications: checked }).eq('user_id', user.id)
+                    toast({ title: checked ? 'Email notifications enabled' : 'Email notifications disabled' })
+                  }
+                }}
+              />
+            </div>
+            
+            <Separator />
+            
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="font-medium text-text-primary">Weekly Digest</h4>
+                <p className="text-sm text-text-secondary">Get a summary of platform activity</p>
+              </div>
+              <Select 
+                value={emailDigestFrequency} 
+                onValueChange={async (v: 'daily' | 'weekly' | 'monthly' | 'never') => {
+                  setEmailDigestFrequency(v)
+                  if (user) {
+                    await supabase.from('profiles').update({ email_digest_frequency: v }).eq('user_id', user.id)
+                    toast({ title: `Digest frequency set to ${v}` })
+                  }
+                }}
+              >
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-background border border-border z-[100]">
+                  <SelectItem value="daily">Daily</SelectItem>
+                  <SelectItem value="weekly">Weekly</SelectItem>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                  <SelectItem value="never">Never</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="bg-muted/50 p-3 rounded-lg text-sm text-muted-foreground">
+              <p className="font-medium mb-1">📧 Email types you&apos;ll receive:</p>
+              <ul className="list-disc list-inside space-y-1 text-xs">
+                <li>Job alerts matching your skills</li>
+                <li>Application updates (accepted, shortlisted)</li>
+                <li>New messages from clients</li>
+                <li>Transaction receipts with PDF</li>
+                <li>Weekly digest with stats & opportunities</li>
+              </ul>
             </div>
           </CardContent>
         </Card>

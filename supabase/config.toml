@@ -197,3 +197,15 @@ verify_jwt = true
 
 [functions.ai-proposal-writer]
 verify_jwt = true
+
+[functions.send-weekly-digest]
+verify_jwt = false
+
+[functions.send-welcome-email]
+verify_jwt = false
+
+[functions.send-job-alert]
+verify_jwt = false
+
+[functions.send-engagement-emails]
+verify_jwt = false

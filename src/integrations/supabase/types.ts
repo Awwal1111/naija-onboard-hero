@@ -4077,6 +4077,8 @@ export type Database = {
           current_streak: number | null
           email_2fa_enabled: boolean | null
           email_confirmed: boolean | null
+          email_digest_frequency: string | null
+          email_notifications: boolean | null
           email_verification_sent_at: string | null
           email_verification_token: string | null
           email_verified: boolean | null
@@ -4096,6 +4098,7 @@ export type Database = {
           is_premium: boolean | null
           last_celo_balance: number | null
           last_cusd_balance: number | null
+          last_login: string | null
           last_signin_date: string | null
           last_usdt_balance: number | null
           lga_name: string | null
@@ -4153,6 +4156,8 @@ export type Database = {
           current_streak?: number | null
           email_2fa_enabled?: boolean | null
           email_confirmed?: boolean | null
+          email_digest_frequency?: string | null
+          email_notifications?: boolean | null
           email_verification_sent_at?: string | null
           email_verification_token?: string | null
           email_verified?: boolean | null
@@ -4172,6 +4177,7 @@ export type Database = {
           is_premium?: boolean | null
           last_celo_balance?: number | null
           last_cusd_balance?: number | null
+          last_login?: string | null
           last_signin_date?: string | null
           last_usdt_balance?: number | null
           lga_name?: string | null
@@ -4229,6 +4235,8 @@ export type Database = {
           current_streak?: number | null
           email_2fa_enabled?: boolean | null
           email_confirmed?: boolean | null
+          email_digest_frequency?: string | null
+          email_notifications?: boolean | null
           email_verification_sent_at?: string | null
           email_verification_token?: string | null
           email_verified?: boolean | null
@@ -4248,6 +4256,7 @@ export type Database = {
           is_premium?: boolean | null
           last_celo_balance?: number | null
           last_cusd_balance?: number | null
+          last_login?: string | null
           last_signin_date?: string | null
           last_usdt_balance?: number | null
           lga_name?: string | null
