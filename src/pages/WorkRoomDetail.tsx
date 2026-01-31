@@ -7,13 +7,15 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useWorkrooms, WorkroomTask, WorkroomFile, WorkroomComment } from "@/hooks/useWorkrooms";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useWorkrooms, WorkroomTask, WorkroomFile, WorkroomComment, WorkroomMember } from "@/hooks/useWorkrooms";
+import { useWorkDiary } from "@/hooks/useWorkDiary";
 import { useAuth } from "@/hooks/useAuth";
-import { ArrowLeft, Plus, Users, FileText, MessageSquare, Clock, CheckCircle2, Circle, Loader2, Upload } from "lucide-react";
+import { ArrowLeft, Plus, Users, FileText, MessageSquare, Clock, CheckCircle2, Circle, Loader2, Upload, Timer, Play, Square, DollarSign, UserPlus, AlertCircle, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -30,19 +32,37 @@ const WorkRoomDetail = () => {
     uploadFile,
     getFiles,
     addComment,
-    getComments
+    getComments,
+    getWorkroomMembers,
+    completeWorkroom
   } = useWorkrooms();
+
+  const {
+    activeEntry,
+    formattedTime,
+    startTimer,
+    stopTimer,
+    getPendingApprovals,
+    payForEntries
+  } = useWorkDiary();
 
   const [tasks, setTasks] = useState<WorkroomTask[]>([]);
   const [files, setFiles] = useState<WorkroomFile[]>([]);
   const [comments, setComments] = useState<WorkroomComment[]>([]);
+  const [members, setMembers] = useState<WorkroomMember[]>([]);
+  const [pendingTime, setPendingTime] = useState<any[]>([]);
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskDescription, setNewTaskDescription] = useState("");
   const [newTaskPriority, setNewTaskPriority] = useState<"low" | "medium" | "high">("medium");
+  const [newTaskAssignee, setNewTaskAssignee] = useState("");
   const [newTaskDialogOpen, setNewTaskDialogOpen] = useState(false);
   const [newComment, setNewComment] = useState("");
 
   const workroom = workrooms.find(w => w.id === roomId);
+  const isOwner = workroom?.owner_id === user?.id;
+  const isMember = members.some(m => m.user_id === user?.id);
+  const myMember = members.find(m => m.user_id === user?.id);
+  const isTimerRunningHere = activeEntry?.workroom_id === roomId;
 
   useEffect(() => {
     if (roomId) {
@@ -52,14 +72,22 @@ const WorkRoomDetail = () => {
 
   const loadData = async () => {
     if (!roomId) return;
-    const [tasksData, filesData, commentsData] = await Promise.all([
+    const [tasksData, filesData, commentsData, membersData] = await Promise.all([
       getTasks(roomId),
       getFiles(roomId),
-      getComments(roomId)
+      getComments(roomId),
+      getWorkroomMembers(roomId)
     ]);
     setTasks(tasksData);
     setFiles(filesData);
     setComments(commentsData);
+    setMembers(membersData);
+
+    // Load pending time approvals for owner
+    if (workroom?.owner_id === user?.id) {
+      const pending = await getPendingApprovals(roomId);
+      setPendingTime(pending);
+    }
   };
 
   const todoTasks = tasks.filter(t => t.status === 'todo');
@@ -72,12 +100,14 @@ const WorkRoomDetail = () => {
     await createTask(roomId, {
       title: newTaskTitle,
       description: newTaskDescription,
-      priority: newTaskPriority
+      priority: newTaskPriority,
+      assigned_to: newTaskAssignee || undefined
     });
     
     setNewTaskTitle("");
     setNewTaskDescription("");
     setNewTaskPriority("medium");
+    setNewTaskAssignee("");
     setNewTaskDialogOpen(false);
     loadData();
     toast.success("Task created!");
@@ -88,6 +118,28 @@ const WorkRoomDetail = () => {
     loadData();
     toast.success("Task updated!");
   };
+
+  const handleStartTimer = async () => {
+    if (!roomId) return;
+    await startTimer({
+      workroomId: roomId,
+      hourlyRate: myMember?.hourly_rate || workroom?.hourly_rate,
+      description: "Working on " + workroom?.name
+    });
+  };
+
+  const handleStopTimer = async () => {
+    await stopTimer();
+    loadData();
+  };
+
+  const handleCompleteProject = async () => {
+    if (!roomId) return;
+    if (confirm("Are you sure you want to mark this project as complete?")) {
+      await completeWorkroom(roomId);
+    }
+  };
+
 
   const handleAddComment = async () => {
     if (!newComment.trim() || !roomId) return;
@@ -213,10 +265,107 @@ const WorkRoomDetail = () => {
             <h1 className="text-xl font-bold">{workroom.name}</h1>
             <p className="text-sm text-muted-foreground">{workroom.description}</p>
           </div>
-          <Badge variant={workroom.status === 'active' ? 'default' : 'secondary'}>
-            {workroom.status}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant={workroom.status === 'active' ? 'default' : 'secondary'}>
+              {workroom.status}
+            </Badge>
+            {workroom.payment_type === 'hourly' && (
+              <Badge variant="outline" className="text-green-600 border-green-600">
+                <DollarSign className="h-3 w-3 mr-1" />
+                NC {workroom.hourly_rate}/hr
+              </Badge>
+            )}
+          </div>
         </div>
+
+        {/* Timer Card for Freelancers */}
+        {isMember && workroom.payment_type === 'hourly' && workroom.status === 'active' && (
+          <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <Timer className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-medium">Time Tracking</p>
+                    <p className="text-sm text-muted-foreground">
+                      {isTimerRunningHere ? 'Timer running...' : 'Start tracking your work'}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  {isTimerRunningHere && (
+                    <span className="text-2xl font-mono font-bold text-primary">{formattedTime}</span>
+                  )}
+                  {!activeEntry ? (
+                    <Button onClick={handleStartTimer}>
+                      <Play className="h-4 w-4 mr-1" />
+                      Start Timer
+                    </Button>
+                  ) : isTimerRunningHere ? (
+                    <Button variant="destructive" onClick={handleStopTimer}>
+                      <Square className="h-4 w-4 mr-1" />
+                      Stop
+                    </Button>
+                  ) : (
+                    <Button disabled variant="outline">
+                      Timer running elsewhere
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Pending Time Approvals for Owner */}
+        {isOwner && pendingTime.length > 0 && (
+          <Alert>
+            <Clock className="h-4 w-4" />
+            <AlertDescription className="flex items-center justify-between">
+              <span>{pendingTime.length} pending time entries need approval</span>
+              <Button size="sm" variant="outline" onClick={() => navigate('/work-diary')}>
+                Review Time
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Team Members */}
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Team ({members.length})
+              </CardTitle>
+              {isOwner && workroom.status === 'active' && (
+                <Button size="sm" variant="outline" onClick={handleCompleteProject}>
+                  <CheckCircle2 className="h-4 w-4 mr-1" />
+                  Complete Project
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {members.map(member => (
+                <div key={member.id} className="flex items-center gap-2 bg-muted rounded-full pl-1 pr-3 py-1">
+                  <Avatar className="h-6 w-6">
+                    <AvatarImage src={member.user_avatar} />
+                    <AvatarFallback className="text-xs">{member.user_name?.[0]}</AvatarFallback>
+                  </Avatar>
+                  <span className="text-sm">{member.user_name}</span>
+                  <Badge variant="outline" className="text-xs">{member.role}</Badge>
+                  {member.hourly_rate && (
+                    <span className="text-xs text-muted-foreground">NC {member.hourly_rate}/hr</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Tabs */}
         <Tabs defaultValue="tasks" className="w-full">
@@ -249,6 +398,7 @@ const WorkRoomDetail = () => {
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>Create New Task</DialogTitle>
+                    <DialogDescription>Assign work to team members</DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4 mt-4">
                     <Input
@@ -261,16 +411,30 @@ const WorkRoomDetail = () => {
                       value={newTaskDescription}
                       onChange={(e) => setNewTaskDescription(e.target.value)}
                     />
-                    <Select value={newTaskPriority} onValueChange={(v: "low" | "medium" | "high") => setNewTaskPriority(v)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Priority" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="low">Low Priority</SelectItem>
-                        <SelectItem value="medium">Medium Priority</SelectItem>
-                        <SelectItem value="high">High Priority</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <div className="grid grid-cols-2 gap-4">
+                      <Select value={newTaskPriority} onValueChange={(v: "low" | "medium" | "high") => setNewTaskPriority(v)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Priority" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="low">Low Priority</SelectItem>
+                          <SelectItem value="medium">Medium Priority</SelectItem>
+                          <SelectItem value="high">High Priority</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Select value={newTaskAssignee} onValueChange={setNewTaskAssignee}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Assign to" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {members.map(m => (
+                            <SelectItem key={m.user_id} value={m.user_id}>
+                              {m.user_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <Button onClick={handleCreateTask} className="w-full">
                       Create Task
                     </Button>

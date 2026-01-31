@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -6,13 +6,14 @@ import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useContests } from '@/hooks/useContests'
 import { useAuth } from '@/hooks/useAuth'
-import { Trophy, Clock, Users, DollarSign, Plus, ArrowLeft, Star, Filter } from 'lucide-react'
+import { Trophy, Clock, Users, DollarSign, Plus, ArrowLeft, Star, Filter, Wallet, AlertCircle, X } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
 const CATEGORIES = [
@@ -27,7 +28,7 @@ const CATEGORIES = [
 export default function Contests() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { contests, myContests, loading, createContest, fetchContests } = useContests()
+  const { contests, myContests, loading, createContest, fetchContests, userBalance, fetchUserBalance, cancelContest } = useContests()
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [formData, setFormData] = useState({
@@ -39,7 +40,17 @@ export default function Contests() {
     requirements: ''
   })
 
+  useEffect(() => {
+    if (user) {
+      fetchUserBalance()
+    }
+  }, [user])
+
+  const hasEnoughBalance = userBalance >= formData.prize_amount
+
   const handleCreateContest = async () => {
+    if (!hasEnoughBalance) return
+    
     const result = await createContest({
       ...formData,
       requirements: formData.requirements.split('\n').filter(Boolean),
@@ -54,6 +65,13 @@ export default function Contests() {
   const handleCategoryChange = (cat: string) => {
     setSelectedCategory(cat)
     fetchContests(cat === 'all' ? undefined : cat)
+  }
+
+  const handleCancelContest = async (contestId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (confirm('Are you sure you want to cancel this contest? The escrow funds will be refunded to your wallet.')) {
+      await cancelContest(contestId)
+    }
   }
 
   return (
@@ -80,8 +98,36 @@ export default function Contests() {
               <DialogContent className="max-w-lg">
                 <DialogHeader>
                   <DialogTitle>Create a Contest</DialogTitle>
+                  <DialogDescription>
+                    The prize amount will be held in escrow until a winner is selected.
+                  </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
+                  {/* Balance Display */}
+                  <Card className={`${hasEnoughBalance ? 'bg-green-500/10 border-green-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
+                    <CardContent className="p-3 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Wallet className={`h-5 w-5 ${hasEnoughBalance ? 'text-green-600' : 'text-red-600'}`} />
+                        <span className="text-sm">Your Balance</span>
+                      </div>
+                      <span className={`font-bold ${hasEnoughBalance ? 'text-green-600' : 'text-red-600'}`}>
+                        NC {userBalance.toLocaleString()}
+                      </span>
+                    </CardContent>
+                  </Card>
+
+                  {!hasEnoughBalance && (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        You need NC {(formData.prize_amount - userBalance).toLocaleString()} more to create this contest. 
+                        <Button variant="link" className="p-0 h-auto ml-1" onClick={() => navigate('/profile')}>
+                          Top up wallet →
+                        </Button>
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
                   <div>
                     <Label>Title</Label>
                     <Input value={formData.title} onChange={e => setFormData(p => ({ ...p, title: e.target.value }))} placeholder="Logo design for tech startup" />
@@ -103,7 +149,7 @@ export default function Contests() {
                       </Select>
                     </div>
                     <div>
-                      <Label>Prize (NC)</Label>
+                      <Label>Prize (NC) - Held in escrow</Label>
                       <Input type="number" value={formData.prize_amount} onChange={e => setFormData(p => ({ ...p, prize_amount: Number(e.target.value) }))} min={5000} />
                     </div>
                   </div>
@@ -115,8 +161,12 @@ export default function Contests() {
                     <Label>Requirements (one per line)</Label>
                     <Textarea value={formData.requirements} onChange={e => setFormData(p => ({ ...p, requirements: e.target.value }))} placeholder="PNG and SVG formats&#10;Minimalist style" rows={3} />
                   </div>
-                  <Button onClick={handleCreateContest} className="w-full" disabled={!formData.title || !formData.category || !formData.deadline}>
-                    Create Contest
+                  <Button 
+                    onClick={handleCreateContest} 
+                    className="w-full" 
+                    disabled={!formData.title || !formData.category || !formData.deadline || !hasEnoughBalance}
+                  >
+                    {hasEnoughBalance ? `Create Contest (NC ${formData.prize_amount.toLocaleString()} will be held)` : 'Insufficient Balance'}
                   </Button>
                 </div>
               </DialogContent>
@@ -195,14 +245,34 @@ export default function Contests() {
             </Card>
           ) : (
             myContests.map(contest => (
-              <Card key={contest.id} onClick={() => navigate(`/contests/${contest.id}`)}>
+              <Card key={contest.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate(`/contests/${contest.id}`)}>
                 <CardContent className="p-4">
-                  <div className="flex justify-between">
+                  <div className="flex justify-between items-start">
                     <div>
                       <h3 className="font-semibold">{contest.title}</h3>
-                      <Badge variant={contest.status === 'open' ? 'default' : 'secondary'}>{contest.status}</Badge>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge variant={contest.status === 'open' ? 'default' : 'secondary'}>{contest.status}</Badge>
+                        {contest.escrow_funded && (
+                          <Badge variant="outline" className="text-green-600 border-green-600">
+                            <Wallet className="h-3 w-3 mr-1" />
+                            Escrow Funded
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                    <p className="font-bold">NC {contest.prize_amount.toLocaleString()}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-bold">NC {contest.prize_amount.toLocaleString()}</p>
+                      {contest.status === 'open' && !contest.winner_id && (
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 text-muted-foreground hover:text-red-500"
+                          onClick={(e) => handleCancelContest(contest.id, e)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>

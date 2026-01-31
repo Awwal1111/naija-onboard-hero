@@ -805,6 +805,44 @@ export type Database = {
         }
         Relationships: []
       }
+      contest_activities: {
+        Row: {
+          activity_type: string
+          contest_id: string
+          created_at: string | null
+          description: string | null
+          id: string
+          metadata: Json | null
+          user_id: string
+        }
+        Insert: {
+          activity_type: string
+          contest_id: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          user_id: string
+        }
+        Update: {
+          activity_type?: string
+          contest_id?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contest_activities_contest_id_fkey"
+            columns: ["contest_id"]
+            isOneToOne: false
+            referencedRelation: "contests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contest_submissions: {
         Row: {
           client_feedback: string | null
@@ -865,10 +903,14 @@ export type Database = {
           created_at: string | null
           deadline: string
           description: string
+          escrow_amount_held: number | null
           escrow_funded: boolean | null
+          escrow_transaction_id: string | null
           id: string
           max_submissions: number | null
           prize_amount: number
+          prize_distributed_at: string | null
+          prize_distribution_status: string | null
           requirements: string[] | null
           status: string | null
           style_preferences: string[] | null
@@ -883,10 +925,14 @@ export type Database = {
           created_at?: string | null
           deadline: string
           description: string
+          escrow_amount_held?: number | null
           escrow_funded?: boolean | null
+          escrow_transaction_id?: string | null
           id?: string
           max_submissions?: number | null
           prize_amount: number
+          prize_distributed_at?: string | null
+          prize_distribution_status?: string | null
           requirements?: string[] | null
           status?: string | null
           style_preferences?: string[] | null
@@ -901,10 +947,14 @@ export type Database = {
           created_at?: string | null
           deadline?: string
           description?: string
+          escrow_amount_held?: number | null
           escrow_funded?: boolean | null
+          escrow_transaction_id?: string | null
           id?: string
           max_submissions?: number | null
           prize_amount?: number
+          prize_distributed_at?: string | null
+          prize_distribution_status?: string | null
           requirements?: string[] | null
           status?: string | null
           style_preferences?: string[] | null
@@ -6060,6 +6110,8 @@ export type Database = {
       work_diary_entries: {
         Row: {
           activity_level: number | null
+          approved_at: string | null
+          approved_by: string | null
           billable: boolean | null
           created_at: string | null
           description: string | null
@@ -6067,8 +6119,10 @@ export type Database = {
           ended_at: string | null
           hourly_rate: number | null
           id: string
+          is_approved: boolean | null
           is_manual: boolean | null
           order_id: string | null
+          payment_status: string | null
           screenshot_url: string | null
           started_at: string
           task_id: string | null
@@ -6077,6 +6131,8 @@ export type Database = {
         }
         Insert: {
           activity_level?: number | null
+          approved_at?: string | null
+          approved_by?: string | null
           billable?: boolean | null
           created_at?: string | null
           description?: string | null
@@ -6084,8 +6140,10 @@ export type Database = {
           ended_at?: string | null
           hourly_rate?: number | null
           id?: string
+          is_approved?: boolean | null
           is_manual?: boolean | null
           order_id?: string | null
+          payment_status?: string | null
           screenshot_url?: string | null
           started_at: string
           task_id?: string | null
@@ -6094,6 +6152,8 @@ export type Database = {
         }
         Update: {
           activity_level?: number | null
+          approved_at?: string | null
+          approved_by?: string | null
           billable?: boolean | null
           created_at?: string | null
           description?: string | null
@@ -6101,8 +6161,10 @@ export type Database = {
           ended_at?: string | null
           hourly_rate?: number | null
           id?: string
+          is_approved?: boolean | null
           is_manual?: boolean | null
           order_id?: string | null
+          payment_status?: string | null
           screenshot_url?: string | null
           started_at?: string
           task_id?: string | null
@@ -6126,6 +6188,57 @@ export type Database = {
           },
           {
             foreignKeyName: "work_diary_entries_workroom_id_fkey"
+            columns: ["workroom_id"]
+            isOneToOne: false
+            referencedRelation: "workrooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workroom_activities: {
+        Row: {
+          activity_type: string
+          created_at: string | null
+          description: string | null
+          id: string
+          metadata: Json | null
+          related_file_id: string | null
+          related_task_id: string | null
+          user_id: string
+          workroom_id: string
+        }
+        Insert: {
+          activity_type: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          related_file_id?: string | null
+          related_task_id?: string | null
+          user_id: string
+          workroom_id: string
+        }
+        Update: {
+          activity_type?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          related_file_id?: string | null
+          related_task_id?: string | null
+          user_id?: string
+          workroom_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workroom_activities_related_task_id_fkey"
+            columns: ["related_task_id"]
+            isOneToOne: false
+            referencedRelation: "workroom_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workroom_activities_workroom_id_fkey"
             columns: ["workroom_id"]
             isOneToOne: false
             referencedRelation: "workrooms"
@@ -6347,12 +6460,16 @@ export type Database = {
       }
       workrooms: {
         Row: {
+          contract_id: string | null
           created_at: string | null
           deadline: string | null
           description: string | null
+          hourly_rate: number | null
           id: string
+          job_id: string | null
           name: string
           owner_id: string
+          payment_type: string | null
           project_type: string | null
           spent_budget: number | null
           status: string | null
@@ -6360,12 +6477,16 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          contract_id?: string | null
           created_at?: string | null
           deadline?: string | null
           description?: string | null
+          hourly_rate?: number | null
           id?: string
+          job_id?: string | null
           name: string
           owner_id: string
+          payment_type?: string | null
           project_type?: string | null
           spent_budget?: number | null
           status?: string | null
@@ -6373,19 +6494,31 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          contract_id?: string | null
           created_at?: string | null
           deadline?: string | null
           description?: string | null
+          hourly_rate?: number | null
           id?: string
+          job_id?: string | null
           name?: string
           owner_id?: string
+          payment_type?: string | null
           project_type?: string | null
           spent_budget?: number | null
           status?: string | null
           total_budget?: number | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "workrooms_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
