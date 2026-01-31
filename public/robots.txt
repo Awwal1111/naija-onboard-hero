@@ -3,43 +3,81 @@
 
 User-agent: *
 Allow: /
+
+# Public landing & info pages
 Allow: /welcome
 Allow: /faq
 Allow: /fundraising
 Allow: /terms-conditions
 Allow: /privacy-policy
 Allow: /developers
-Allow: /experts
-Allow: /jobs
+Allow: /install
+Allow: /login
+Allow: /signup
+
+# PUBLIC SEO-OPTIMIZED PAGES (no auth required)
+# These use /p/ prefix for clean indexing
+Allow: /p/
+Allow: /p/expert/
+Allow: /p/experts
+Allow: /p/gig/
+Allow: /p/gigs
+Allow: /p/job/
+Allow: /p/jobs
+Allow: /p/course/
+Allow: /p/campaign/
+
+# Short URL aliases (redirect to /p/ versions)
+Allow: /expert/
 Allow: /gig/
 Allow: /job/
-Allow: /expert/
 Allow: /course/
 Allow: /campaign/
-Allow: /certificate/
 
-# Disallow protected/auth routes
+# Certificate verification (public)
+Allow: /verify-certificate/
+
+# Sitemap
+Allow: /sitemap
+Allow: /sitemap.xml
+
+# Disallow protected/auth-only routes
 Disallow: /feed
+Disallow: /main-feed
 Disallow: /profile
 Disallow: /chat
 Disallow: /settings
 Disallow: /admin
 Disallow: /onboarding
 Disallow: /dashboard
+Disallow: /client-dashboard
 Disallow: /analytics
 Disallow: /orders
 Disallow: /workrooms
 Disallow: /earn
 Disallow: /developer
+Disallow: /ai-hire
+Disallow: /copilot
+Disallow: /learn/course/
+Disallow: /certificate/
+Disallow: /bookmarks
+Disallow: /notifications
+Disallow: /connections
+Disallow: /my-gigs
+Disallow: /edit-gig
+Disallow: /post-job
+Disallow: /contests
+Disallow: /work-diary
+Disallow: /activity-log
 
-# Allow Googlebot to crawl images
+# Allow Googlebot to crawl images and assets
 User-agent: Googlebot-Image
 Allow: /
 
-# Crawl-delay for politeness
+# Crawl-delay for politeness (1 second)
 User-agent: *
 Crawl-delay: 1
 
-# Sitemap location
+# Sitemap locations - both domains
 Sitemap: https://naijalancers.name.ng/sitemap.xml
 Sitemap: https://naija-onboard-hero.lovable.app/sitemap.xml

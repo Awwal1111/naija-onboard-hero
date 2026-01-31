@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { Helmet } from 'react-helmet-async';
 import { Logo } from '@/components/ui/logo';
 import { BrandButton } from '@/components/ui/brand-button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -57,7 +58,43 @@ const PublicExperts = () => {
     return counts;
   }, [experts]);
 
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": "Verified Experts on NaijaLancers",
+    "description": "Browse verified professionals available for hire",
+    "numberOfItems": filteredExperts.length,
+    "itemListElement": filteredExperts.slice(0, 10).map((expert, index) => ({
+      "@type": "ListItem",
+      "position": index + 1,
+      "item": {
+        "@type": "Person",
+        "name": expert.full_name,
+        "jobTitle": expert.profession,
+        "url": `https://naijalancers.name.ng/p/expert/${expert.user_id}`
+      }
+    }))
+  };
+
   return (
+    <>
+      <Helmet>
+        <title>Hire Verified Experts & Professionals | NaijaLancers</title>
+        <meta name="description" content="Connect with verified Nigerian experts in design, development, marketing, consulting and more. Browse profiles, ratings and hire top talent for your projects." />
+        <link rel="canonical" href="https://naijalancers.name.ng/p/experts" />
+        
+        <meta property="og:title" content="Find & Hire Verified Experts | NaijaLancers" />
+        <meta property="og:description" content="Connect with top professionals. Browse verified experts in design, development, marketing and more." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://naijalancers.name.ng/p/experts" />
+        <meta property="og:site_name" content="NaijaLancers" />
+        
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content="Hire Verified Experts | NaijaLancers" />
+        <meta name="twitter:description" content="Connect with top Nigerian professionals" />
+        
+        <script type="application/ld+json">{JSON.stringify(structuredData)}</script>
+      </Helmet>
     <div className="min-h-screen bg-background">
       {/* Header */}
       <nav className="sticky top-0 bg-background/95 backdrop-blur-md border-b border-border z-50 shadow-sm">
@@ -167,6 +204,7 @@ const PublicExperts = () => {
         )}
       </div>
     </div>
+    </>
   );
 };
 

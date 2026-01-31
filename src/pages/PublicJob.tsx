@@ -80,15 +80,20 @@ export default function PublicJob() {
     } : undefined
   };
 
+  const canonicalUrl = `https://naijalancers.name.ng/p/job/${jobId}`;
+
   return (
     <>
       <Helmet>
         <title>{job.title} {job.company_name ? `at ${job.company_name}` : ''} | NaijaLancers</title>
         <meta name="description" content={job.description || `${job.title} job opportunity on NaijaLancers`} />
+        <link rel="canonical" href={canonicalUrl} />
         
         <meta property="og:title" content={job.title} />
         <meta property="og:description" content={job.description || job.title} />
         <meta property="og:type" content="article" />
+        <meta property="og:url" content={canonicalUrl} />
+        <meta property="og:site_name" content="NaijaLancers" />
         
         <meta name="twitter:card" content="summary" />
         <meta name="twitter:title" content={job.title} />

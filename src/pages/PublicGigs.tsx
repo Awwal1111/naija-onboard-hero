@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { Helmet } from 'react-helmet-async';
 import { Logo } from '@/components/ui/logo';
 import { BrandButton } from '@/components/ui/brand-button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -56,7 +57,43 @@ const PublicGigs = () => {
     return counts;
   }, [gigs]);
 
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": "Freelance Services on NaijaLancers",
+    "description": "Browse skilled freelancers offering services in various categories",
+    "numberOfItems": filteredGigs.length,
+    "itemListElement": filteredGigs.slice(0, 10).map((gig, index) => ({
+      "@type": "ListItem",
+      "position": index + 1,
+      "item": {
+        "@type": "Service",
+        "name": gig.title,
+        "description": gig.description,
+        "url": `https://naijalancers.name.ng/p/gig/${gig.id}`
+      }
+    }))
+  };
+
   return (
+    <>
+      <Helmet>
+        <title>Browse Services & Gigs - Hire Freelancers | NaijaLancers</title>
+        <meta name="description" content="Find skilled Nigerian freelancers offering services in design, development, writing, marketing and more. Browse verified gigs and hire talent today." />
+        <link rel="canonical" href="https://naijalancers.name.ng/p/gigs" />
+        
+        <meta property="og:title" content="Browse Freelance Services | NaijaLancers" />
+        <meta property="og:description" content="Find skilled freelancers for your projects. Design, development, writing, marketing and more." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://naijalancers.name.ng/p/gigs" />
+        <meta property="og:site_name" content="NaijaLancers" />
+        
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content="Browse Freelance Services | NaijaLancers" />
+        <meta name="twitter:description" content="Find skilled freelancers for your projects" />
+        
+        <script type="application/ld+json">{JSON.stringify(structuredData)}</script>
+      </Helmet>
     <div className="min-h-screen bg-background">
       {/* Header */}
       <nav className="sticky top-0 bg-background/95 backdrop-blur-md border-b border-border z-50 shadow-sm">
@@ -150,6 +187,7 @@ const PublicGigs = () => {
         )}
       </div>
     </div>
+    </>
   );
 };
 

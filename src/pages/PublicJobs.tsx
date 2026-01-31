@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { Helmet } from 'react-helmet-async';
 import { Logo } from '@/components/ui/logo';
 import { BrandButton } from '@/components/ui/brand-button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -51,7 +52,43 @@ const PublicJobs = () => {
     return ['all', ...cats];
   }, [jobs]);
 
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": "Job Opportunities on NaijaLancers",
+    "description": "Browse freelance and remote job opportunities in Nigeria",
+    "numberOfItems": filteredJobs.length,
+    "itemListElement": filteredJobs.slice(0, 10).map((job, index) => ({
+      "@type": "ListItem",
+      "position": index + 1,
+      "item": {
+        "@type": "JobPosting",
+        "title": job.title,
+        "description": job.description,
+        "url": `https://naijalancers.name.ng/p/job/${job.id}`
+      }
+    }))
+  };
+
   return (
+    <>
+      <Helmet>
+        <title>Find Jobs & Freelance Opportunities | NaijaLancers</title>
+        <meta name="description" content="Browse job opportunities and freelance projects in Nigeria. Find remote work, gig economy jobs, and project-based work across various industries." />
+        <link rel="canonical" href="https://naijalancers.name.ng/p/jobs" />
+        
+        <meta property="og:title" content="Job Opportunities | NaijaLancers" />
+        <meta property="og:description" content="Find freelance and remote job opportunities. Browse projects and apply today." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://naijalancers.name.ng/p/jobs" />
+        <meta property="og:site_name" content="NaijaLancers" />
+        
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content="Job Opportunities | NaijaLancers" />
+        <meta name="twitter:description" content="Find freelance and remote job opportunities" />
+        
+        <script type="application/ld+json">{JSON.stringify(structuredData)}</script>
+      </Helmet>
     <div className="min-h-screen bg-background">
       {/* Header */}
       <nav className="sticky top-0 bg-background/95 backdrop-blur-md border-b border-border z-50 shadow-sm">
@@ -160,6 +197,7 @@ const PublicJobs = () => {
         )}
       </div>
     </div>
+    </>
   );
 };
 
