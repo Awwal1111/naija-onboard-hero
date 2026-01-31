@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { ArrowLeft, Paperclip, Smile, Send, X, Image as ImageIcon, FileText, Video, ShieldOff, Mic, Zap } from 'lucide-react'
+import { ArrowLeft, Paperclip, Smile, Send, X, Image as ImageIcon, FileText, Video, ShieldOff, Mic, Zap, MapPin } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useChat } from '@/hooks/useChat'
@@ -18,6 +18,8 @@ import ChatContextBadge from '@/components/ChatContextBadge'
 import { TypingIndicator } from '@/components/TypingIndicator'
 import { ReadReceipt } from '@/components/ReadReceipt'
 import { QuickReplyTemplates } from '@/components/QuickReplyTemplates'
+import { LocationShareButton } from '@/components/chat/LocationShareButton'
+import { LocationMessage, parseLocationMessage, createLocationMessageContent } from '@/components/chat/LocationMessage'
 
 // Simple emoji picker component
 const EmojiPicker = ({ onSelect, onClose }: { onSelect: (emoji: string) => void; onClose: () => void }) => {
@@ -266,9 +268,31 @@ const EnhancedChat = () => {
     }
   }
 
+  // Handle location share
+  const handleLocationShare = async (location: { lat: number; lng: number; address: string }) => {
+    const locationContent = createLocationMessageContent(location);
+    try {
+      await sendMessage(locationContent, null, 'location');
+      toast({
+        title: "Location shared",
+        description: "Your location has been sent"
+      });
+    } catch (error) {
+      console.error('Error sharing location:', error);
+      toast({
+        title: "Error",
+        description: "Failed to share location",
+        variant: "destructive"
+      });
+    }
+  };
+
   const renderMessage = (message: any) => {
     const isOwn = message.sender_id === user?.id
     const hasContext = message.payload?.context
+    
+    // Check if this is a location message
+    const locationData = parseLocationMessage(message.content);
     
     return (
       <div
@@ -283,65 +307,70 @@ const EnhancedChat = () => {
           />
         )}
         
-        <div
-          className={`max-w-[70%] px-4 py-2 rounded-2xl ${
-            isOwn
-              ? 'bg-primary text-primary-foreground'
-              : 'bg-muted text-muted-foreground'
-          }`}
-        >
-          {/* Media content */}
-          {message.media_url && (
-            <div className="mb-2">
-              {message.media_type?.startsWith('image/') ? (
-                <img 
-                  src={message.media_url} 
-                  alt="Shared image" 
-                  className="max-w-full rounded-lg cursor-pointer"
-                  onClick={() => window.open(message.media_url, '_blank')}
-                />
-              ) : message.media_type?.startsWith('video/') ? (
-                <video 
-                  src={message.media_url} 
-                  className="max-w-full rounded-lg" 
-                  controls 
-                />
-              ) : message.media_type?.startsWith('audio/') ? (
-                <audio 
-                  src={message.media_url} 
-                  controls 
-                  className="max-w-full"
-                />
-              ) : (
-                <a 
-                  href={message.media_url} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 p-2 bg-background/20 rounded border"
-                >
-                  <FileText className="h-4 w-4" />
-                  <span className="text-sm">Download file</span>
-                </a>
-              )}
+        {/* Location Message */}
+        {locationData ? (
+          <LocationMessage location={locationData} isOwn={isOwn} />
+        ) : (
+          <div
+            className={`max-w-[70%] px-4 py-2 rounded-2xl ${
+              isOwn
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted text-muted-foreground'
+            }`}
+          >
+            {/* Media content */}
+            {message.media_url && (
+              <div className="mb-2">
+                {message.media_type?.startsWith('image/') ? (
+                  <img 
+                    src={message.media_url} 
+                    alt="Shared image" 
+                    className="max-w-full rounded-lg cursor-pointer"
+                    onClick={() => window.open(message.media_url, '_blank')}
+                  />
+                ) : message.media_type?.startsWith('video/') ? (
+                  <video 
+                    src={message.media_url} 
+                    className="max-w-full rounded-lg" 
+                    controls 
+                  />
+                ) : message.media_type?.startsWith('audio/') ? (
+                  <audio 
+                    src={message.media_url} 
+                    controls 
+                    className="max-w-full"
+                  />
+                ) : (
+                  <a 
+                    href={message.media_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 p-2 bg-background/20 rounded border"
+                  >
+                    <FileText className="h-4 w-4" />
+                    <span className="text-sm">Download file</span>
+                  </a>
+                )}
+              </div>
+            )}
+            
+            {/* Text content */}
+            {message.content && !locationData && (
+              <p className="text-sm">{message.content}</p>
+            )}
+            
+            <div className="flex items-center justify-end gap-1 mt-1">
+              <span className="text-xs opacity-70">
+                {new Date(message.created_at).toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </span>
+              {/* Read receipt for own messages */}
+              {isOwn && <ReadReceipt isRead={!!message.read_at} />}
             </div>
-          )}
-          
-          {/* Text content */}
-          {message.content && (
-            <p className="text-sm">{message.content}</p>
-          )}
-          
-          <div className="flex items-center justify-end gap-1 mt-1">
-            <span className="text-xs opacity-70">
-              {new Date(message.created_at).toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit'
-              })}
-            </span>
-            {/* Read receipt for own messages */}
-            {isOwn && <ReadReceipt isRead={!!message.read_at} />}
           </div>
-        </div>
+        )}
       </div>
     )
   }
@@ -554,6 +583,12 @@ const EnhancedChat = () => {
             >
               <Zap className={`h-5 w-5 ${showQuickReplies ? 'text-primary' : 'text-text-secondary'}`} />
             </button>
+            
+            {/* Location Share Button */}
+            <LocationShareButton
+              onLocationSelect={handleLocationShare}
+              disabled={uploading || !canSendMessage}
+            />
           </div>
           
           <div className="flex-1">
