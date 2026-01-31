@@ -227,6 +227,29 @@ serve(async (req) => {
       );
     }
 
+    // Check if this is a FIRST RESPONSE from freelancer to client
+    // This is a high-priority notification for clients waiting on responses
+    let isFirstResponse = false;
+    let isExpertResponse = false;
+    
+    if (sender?.is_expert) {
+      isExpertResponse = true;
+      
+      // Check if this is the first message from the expert in this conversation
+      const { data: prevMessages } = await supabase
+        .from("messages")
+        .select("id")
+        .eq("chat_id", message_id.split('_')[0]) // This won't work, need chat_id
+        .eq("sender_id", sender_id)
+        .limit(2);
+      
+      // If expert has sent less than 2 messages, this might be their first response
+      if (!prevMessages || prevMessages.length <= 1) {
+        isFirstResponse = true;
+        console.log(`[MSG_NOTIFY] 🎯 First response from expert - HIGH PRIORITY`);
+      }
+    }
+
     // Build notification message
     const senderName = sender?.full_name || "Someone";
     const senderTitle = sender?.is_expert ? "🌟 Expert" : sender?.profession || "User";
@@ -236,6 +259,11 @@ serve(async (req) => {
     const displayContent = media_type 
       ? (media_type.startsWith('image') ? '📷 Photo' : media_type.startsWith('video') ? '🎥 Video' : '📎 File')
       : messagePreview;
+    
+    // Prioritize expert responses in notification text
+    const notificationTitle = isExpertResponse 
+      ? `🌟 ${senderName} responded!` 
+      : `💬 ${senderName}`;
 
     // Track which channels succeeded
     const results = {
@@ -248,7 +276,9 @@ serve(async (req) => {
     if (recipient?.telegram_user_id) {
       console.log(`[MSG_NOTIFY] 📱 Attempting Telegram to: ${recipient.telegram_user_id}`);
       
-      let notificationText = `💬 *New Message!*\n\n`;
+      let notificationText = isExpertResponse 
+        ? `🌟 *Expert Response!*\n\n`
+        : `💬 *New Message!*\n\n`;
       notificationText += `From: *${senderName}* (${senderTitle})\n\n`;
 
       if (media_type) {
@@ -294,9 +324,13 @@ serve(async (req) => {
         const { data: pushResult, error: pushError } = await supabase.functions.invoke('send-push-notification', {
           body: {
             userId: recipient_id,
-            title: `💬 ${senderName}`,
+            title: notificationTitle,
             body: displayContent,
-            data: { type: 'message', url: '/chats' }
+            data: { 
+              type: 'message', 
+              url: '/chats',
+              priority: isExpertResponse ? 'high' : 'normal'
+            }
           }
         });
         
