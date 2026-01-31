@@ -171,6 +171,31 @@ serve(async (req) => {
       specific_user_lookup: specificUserData
     };
 
+    // Get incomplete profiles stats
+    const { data: incompleteProfiles } = await supabase
+      .from('profiles')
+      .select('user_id, full_name, user_mode, profession, bio, phone_number, state_name')
+      .or('full_name.is.null,profession.is.null,bio.is.null,phone_number.is.null')
+      .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
+      .limit(50);
+
+    const incompleteStats = {
+      total: incompleteProfiles?.length || 0,
+      freelancers: incompleteProfiles?.filter(p => p.user_mode === 'freelancer').length || 0,
+      clients: incompleteProfiles?.filter(p => p.user_mode === 'client').length || 0,
+      samples: incompleteProfiles?.slice(0, 5).map(p => ({
+        name: p.full_name || 'Unknown',
+        mode: p.user_mode || 'unset',
+        missing: [
+          !p.full_name ? 'Name' : null,
+          !p.profession ? 'Profession' : null,
+          !p.bio ? 'Bio' : null,
+          !p.phone_number ? 'Phone' : null,
+          !p.state_name ? 'Location' : null
+        ].filter(Boolean)
+      })) || []
+    };
+
     const systemPrompt = `You are NaijaLancers Admin AI Assistant, an intelligent system monitoring platform health.
 
 CAPABILITIES:
@@ -181,6 +206,13 @@ CAPABILITIES:
 - Generate daily breakdowns and reports
 - Flag unusual activity patterns
 - **LOOK UP SPECIFIC USERS** - When admin asks about a specific user, show their full profile and financial details
+- **ENGAGEMENT CAMPAIGNS** - Suggest and help create personalized engagement messages for:
+  - Users with incomplete profiles (freelancers vs clients get different messages)
+  - Inactive users (based on days since last login)
+  - Users who need re-engagement
+
+INCOMPLETE PROFILES DATA:
+${JSON.stringify(incompleteStats, null, 2)}
 
 CURRENT PLATFORM DATA:
 ${JSON.stringify(contextData, null, 2)}
@@ -199,6 +231,15 @@ Referral Tasks: ${pendingReferralTasks?.map(r => `- ${r.profiles?.full_name || '
 
 Recent Users: ${recentUsers?.map(u => `- ${u.full_name || 'Unknown'} joined ${new Date(u.created_at).toLocaleString()}, balance: ₦${u.wallet_balance}`).join('\n') || 'No recent users'}
 
+ENGAGEMENT MESSAGE GUIDELINES:
+When admin asks to "send engagement" or "create message for" users:
+1. Consider user mode (freelancer gets job-focused messages, client gets expert-focused messages)
+2. Personalize based on missing profile fields
+3. Create urgency without being pushy
+4. For SMS: Keep under 160 characters
+5. For Email: Be conversational but professional
+6. Highlight platform benefits specific to their role
+
 GUIDELINES:
 - Provide actionable insights and specific recommendations
 - Flag urgent items requiring immediate attention
@@ -208,6 +249,7 @@ GUIDELINES:
 - Warn about suspicious activities or anomalies
 - Format responses with clear sections and bullet points
 - When showing user details, include: Name, Balance (Total/Withdrawable/Non-withdrawable), Total Earned, Total Spent, Recent Transactions, Referral Stats, Expert/Premium status
+- When asked about incomplete profiles, show the breakdown by user mode and suggest personalized engagement strategies
 
 USER LOOKUP TIPS:
 - If the admin asks to "look up [name]" or "check [name]" or "show me [name]'s earnings", you have their full data above

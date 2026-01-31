@@ -209,3 +209,9 @@ verify_jwt = false
 
 [functions.send-engagement-emails]
 verify_jwt = false
+
+[functions.engage-incomplete-profiles]
+verify_jwt = false
+
+[functions.generate-engagement-message]
+verify_jwt = true

@@ -147,6 +147,7 @@ export const AdminAIDrawer = () => {
     { icon: <Shield className="h-3 w-3" />, label: "Security", command: "/security" },
     { icon: <Database className="h-3 w-3" />, label: "Analytics", command: "/analytics" },
     { icon: <FileCheck className="h-3 w-3" />, label: "Audit", command: "/audit" },
+    { icon: <Users className="h-3 w-3" />, label: "Incomplete", command: "/incomplete profiles - show users who haven't finished their profile and suggest engagement messages" },
   ];
 
   const executeAction = async (action: ActionButton) => {
