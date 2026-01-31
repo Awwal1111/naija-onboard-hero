@@ -22,6 +22,7 @@ import { UserBadges } from '@/components/UserBadges'
 import { FaceVerificationDialog } from '@/components/FaceVerificationDialog'
 import { PhoneVerificationDialog } from '@/components/PhoneVerificationDialog'
 import { AccountTypeSettings } from '@/components/AccountTypeSettings'
+import { InternationalSettings } from '@/components/settings/InternationalSettings'
 
 const BiometricToggle = () => {
   const { isAvailable, isEnabled, enableBiometric, disableBiometric, loading } = useBiometric()
@@ -262,35 +263,8 @@ const Settings = () => {
         {/* Account Type Settings */}
         <AccountTypeSettings />
 
-
-        {/* Language Selection - Top Priority */}
-
-        {/* Language Selection - Top Priority */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Languages className="h-5 w-5" />
-              {t('settings.language')}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <p className="text-sm text-text-secondary">Choose your preferred language</p>
-              <Select value={language} onValueChange={(v) => handleLanguageChange(v as 'en' | 'ha' | 'yo' | 'ig' | 'pcm')}>
-                <SelectTrigger className="w-full">
-                  <SelectValue>{languageNames[language]}</SelectValue>
-                </SelectTrigger>
-                <SelectContent className="bg-background border border-border z-[100]">
-                  <SelectItem value="en">🇬🇧 English</SelectItem>
-                  <SelectItem value="ha">🇳🇬 Hausa</SelectItem>
-                  <SelectItem value="yo">🇳🇬 Yoruba</SelectItem>
-                  <SelectItem value="ig">🇳🇬 Igbo</SelectItem>
-                  <SelectItem value="pcm">🇳🇬 Nigerian Pidgin</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
+        {/* International/Regional Settings - Currency, Timezone, Language */}
+        <InternationalSettings />
 
         {/* Preferences Section */}
         <Card>
