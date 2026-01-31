@@ -5,6 +5,10 @@ import { renderToBuffer } from 'npm:@react-pdf/renderer@3.4.4'
 import * as React from 'npm:react@18.3.1'
 import { TransactionReceipt } from './_templates/transaction-receipt.tsx'
 import { GeneralNotification } from './_templates/general-notification.tsx'
+import { WelcomeEmail } from './_templates/welcome-email.tsx'
+import { WeeklyDigest } from './_templates/weekly-digest.tsx'
+import { JobAlert } from './_templates/job-alert.tsx'
+import { EngagementEmail } from './_templates/engagement-email.tsx'
 import { TransactionReceiptPDF } from './_utils/pdf-generator.ts'
 
 const resend = new Resend(Deno.env.get('RESEND_API_KEY') as string)
@@ -21,7 +25,7 @@ interface NotificationRequest {
   message: string
   metadata?: any
   sendEmail?: boolean
-  emailTemplate?: 'transaction' | 'general'
+  emailTemplate?: 'transaction' | 'general' | 'welcome' | 'weekly_digest' | 'job_alert' | 'engagement'
   attachPDF?: boolean
 }
 
@@ -93,7 +97,7 @@ Deno.serve(async (req) => {
         if (emailTemplate === 'transaction' && metadata) {
           html = await renderAsync(
             React.createElement(TransactionReceipt, {
-              userName: profile.full_name || 'User',
+              userName: profile?.full_name || 'User',
               transactionType: metadata.transactionType || type,
               amount: metadata.amount || 'N/A',
               reference: metadata.reference || 'N/A',
@@ -107,7 +111,7 @@ Deno.serve(async (req) => {
           if (attachPDF) {
             console.log('Generating PDF receipt...')
             const pdfDoc = React.createElement(TransactionReceiptPDF, {
-              userName: profile.full_name || 'User',
+              userName: profile?.full_name || 'User',
               transactionType: metadata.transactionType || type,
               amount: metadata.amount || 'N/A',
               reference: metadata.reference || 'N/A',
@@ -122,10 +126,59 @@ Deno.serve(async (req) => {
               content: Array.from(new Uint8Array(pdfBuffer))
             }
           }
+        } else if (emailTemplate === 'welcome') {
+          html = await renderAsync(
+            React.createElement(WelcomeEmail, {
+              userName: profile?.full_name || 'User',
+              referrerName: metadata?.referrerName,
+              signupBonus: metadata?.signupBonus || 500,
+            })
+          )
+        } else if (emailTemplate === 'weekly_digest' && metadata) {
+          html = await renderAsync(
+            React.createElement(WeeklyDigest, {
+              userName: profile?.full_name || 'User',
+              weekStartDate: metadata.weekStartDate,
+              weekEndDate: metadata.weekEndDate,
+              stats: metadata.stats || { profileViews: 0, connectionRequests: 0, newMessages: 0 },
+              recommendedJobs: metadata.recommendedJobs || [],
+              topExperts: metadata.topExperts || [],
+              trendingSkills: metadata.trendingSkills || [],
+            })
+          )
+        } else if (emailTemplate === 'job_alert' && metadata) {
+          html = await renderAsync(
+            React.createElement(JobAlert, {
+              userName: profile?.full_name || 'User',
+              alertType: metadata.alertType,
+              jobTitle: metadata.jobTitle,
+              applicantName: metadata.applicantName,
+              applicantSkills: metadata.applicantSkills,
+              proposalMessage: metadata.proposalMessage,
+              budget: metadata.budget,
+              deadline: metadata.deadline,
+              applicationStatus: metadata.applicationStatus,
+              actionUrl: metadata.actionUrl || 'https://naijalancers.name.ng/jobs',
+            })
+          )
+        } else if (emailTemplate === 'engagement' && metadata) {
+          html = await renderAsync(
+            React.createElement(EngagementEmail, {
+              userName: profile?.full_name || 'User',
+              engagementType: metadata.engagementType,
+              profileCompletion: metadata.profileCompletion,
+              daysSinceLogin: metadata.daysSinceLogin,
+              pendingReviewItem: metadata.pendingReviewItem,
+              milestoneName: metadata.milestoneName,
+              milestoneReward: metadata.milestoneReward,
+              pendingAmount: metadata.pendingAmount,
+              actionUrl: metadata.actionUrl || 'https://naijalancers.name.ng/dashboard',
+            })
+          )
         } else {
           html = await renderAsync(
             React.createElement(GeneralNotification, {
-              userName: profile.full_name || 'User',
+              userName: profile?.full_name || 'User',
               title,
               message,
               actionUrl: metadata?.actionUrl,
