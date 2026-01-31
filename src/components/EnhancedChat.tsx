@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { ArrowLeft, Paperclip, Smile, Send, X, Image as ImageIcon, FileText, Video, ShieldOff, Mic } from 'lucide-react'
+import { ArrowLeft, Paperclip, Smile, Send, X, Image as ImageIcon, FileText, Video, ShieldOff, Mic, Zap } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useChat } from '@/hooks/useChat'
 import { useBlockUser } from '@/hooks/useBlockUser'
 import { useSecureFileUpload } from '@/hooks/useSecureFileUpload'
 import { useWebRTCContext } from '@/contexts/WebRTCContext'
+import { useTypingIndicator } from '@/hooks/useTypingIndicator'
 import { BrandButton } from '@/components/ui/brand-button'
 import { BrandInput } from '@/components/ui/brand-input'
 import { useToast } from '@/hooks/use-toast'
@@ -14,6 +15,9 @@ import CallControls from '@/components/CallControls'
 import ActiveCallInterface from '@/components/ActiveCallInterface'
 import VoiceRecorder from '@/components/VoiceRecorder'
 import ChatContextBadge from '@/components/ChatContextBadge'
+import { TypingIndicator } from '@/components/TypingIndicator'
+import { ReadReceipt } from '@/components/ReadReceipt'
+import { QuickReplyTemplates } from '@/components/QuickReplyTemplates'
 
 // Simple emoji picker component
 const EmojiPicker = ({ onSelect, onClose }: { onSelect: (emoji: string) => void; onClose: () => void }) => {
@@ -69,9 +73,10 @@ const EnhancedChat = () => {
   const navigate = useNavigate()
   const { userId } = useParams<{ userId: string }>()
   const { user } = useAuth()
-  const { messages, sendMessage, otherUser, loading } = useChat(userId!)
+  const { messages, sendMessage, otherUser, loading, chat } = useChat(userId!)
   const { isBlocked, isBlockedBy, canSendMessage } = useBlockUser(userId!)
   const { uploadFile, uploadProgress } = useSecureFileUpload()
+  const { isOtherTyping, setTyping } = useTypingIndicator(chat?.id || null, userId!)
   const { toast } = useToast()
   
   const [newMessage, setNewMessage] = useState('')
@@ -80,6 +85,7 @@ const EnhancedChat = () => {
   const [previewUrls, setPreviewUrls] = useState<string[]>([])
   const [uploading, setUploading] = useState(false)
   const [showVoiceRecorder, setShowVoiceRecorder] = useState(false)
+  const [showQuickReplies, setShowQuickReplies] = useState(false)
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -325,12 +331,16 @@ const EnhancedChat = () => {
             <p className="text-sm">{message.content}</p>
           )}
           
-          <p className="text-xs opacity-70 mt-1">
-            {new Date(message.created_at).toLocaleTimeString([], {
-              hour: '2-digit',
-              minute: '2-digit'
-            })}
-          </p>
+          <div className="flex items-center justify-end gap-1 mt-1">
+            <span className="text-xs opacity-70">
+              {new Date(message.created_at).toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
+            </span>
+            {/* Read receipt for own messages */}
+            {isOwn && <ReadReceipt isRead={!!message.read_at} />}
+          </div>
         </div>
       </div>
     )
@@ -444,6 +454,16 @@ const EnhancedChat = () => {
         ) : (
           messages.map(renderMessage)
         )}
+        
+        {/* Typing Indicator */}
+        {isOtherTyping && (
+          <div className="flex items-start mb-4">
+            <div className="bg-muted px-4 py-2 rounded-2xl">
+              <TypingIndicator userName={otherUser?.full_name?.split(' ')[0]} />
+            </div>
+          </div>
+        )}
+        
         <div ref={messagesEndRef} />
       </div>
 
@@ -470,6 +490,19 @@ const EnhancedChat = () => {
               />
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Quick Reply Templates */}
+      {showQuickReplies && (
+        <div className="px-4 py-2 border-t border-border">
+          <QuickReplyTemplates 
+            onSelect={(text) => {
+              setNewMessage(text);
+              setShowQuickReplies(false);
+            }}
+            context="general"
+          />
         </div>
       )}
 
@@ -511,12 +544,29 @@ const EnhancedChat = () => {
             >
               <Mic className={`h-5 w-5 ${showVoiceRecorder ? 'text-destructive' : 'text-text-secondary'}`} />
             </button>
+            
+            {/* Quick Replies Toggle */}
+            <button
+              type="button"
+              onClick={() => setShowQuickReplies(!showQuickReplies)}
+              className={`p-2 hover:bg-accent rounded-full ${showQuickReplies ? 'bg-primary/10' : ''}`}
+              title="Quick Replies"
+            >
+              <Zap className={`h-5 w-5 ${showQuickReplies ? 'text-primary' : 'text-text-secondary'}`} />
+            </button>
           </div>
           
           <div className="flex-1">
             <BrandInput
               value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
+              onChange={(e) => {
+                setNewMessage(e.target.value);
+                // Trigger typing indicator
+                if (e.target.value.length > 0) {
+                  setTyping(true);
+                }
+              }}
+              onBlur={() => setTyping(false)}
               placeholder="Type a message..."
               className="border-0 bg-muted resize-none"
               disabled={uploading}
