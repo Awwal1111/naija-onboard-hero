@@ -1,5 +1,4 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react'
-import { useProfile } from './useProfile'
 import { supabase } from '@/integrations/supabase/client'
 import { format, formatDistance, parseISO } from 'date-fns'
 import { toZonedTime, format as formatTz } from 'date-fns-tz'
@@ -43,25 +42,47 @@ export const TimezoneProvider = ({ children }: { children: ReactNode }) => {
     const saved = localStorage.getItem('user_timezone')
     return saved || Intl.DateTimeFormat().resolvedOptions().timeZone
   })
-  const { profile } = useProfile()
+  const [userId, setUserId] = useState<string | null>(null)
 
-  // Sync with profile when available
+  // Get user ID directly from Supabase auth (no Router dependency)
   useEffect(() => {
-    if (profile && (profile as any).timezone) {
-      setTimezoneState((profile as any).timezone)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUserId(session?.user?.id || null)
+    })
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      setUserId(session?.user?.id || null)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  // Sync with profile when user is authenticated
+  useEffect(() => {
+    if (userId) {
+      supabase
+        .from('profiles')
+        .select('timezone')
+        .eq('user_id', userId)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data?.timezone) {
+            setTimezoneState(data.timezone)
+          }
+        })
     }
-  }, [profile])
+  }, [userId])
 
   const setTimezone = async (tz: string) => {
     setTimezoneState(tz)
     localStorage.setItem('user_timezone', tz)
     
     // Save to profile if authenticated
-    if (profile) {
+    if (userId) {
       await supabase
         .from('profiles')
         .update({ timezone: tz } as any)
-        .eq('user_id', profile.user_id)
+        .eq('user_id', userId)
     }
   }
 
