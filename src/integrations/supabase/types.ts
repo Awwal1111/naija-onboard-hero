@@ -2938,6 +2938,39 @@ export type Database = {
         }
         Relationships: []
       }
+      ip_tracking: {
+        Row: {
+          action_type: string
+          created_at: string
+          flag_reason: string | null
+          id: string
+          ip_address: string
+          is_flagged: boolean | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action_type?: string
+          created_at?: string
+          flag_reason?: string | null
+          id?: string
+          ip_address: string
+          is_flagged?: boolean | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          flag_reason?: string | null
+          id?: string
+          ip_address?: string
+          is_flagged?: boolean | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       job_applications: {
         Row: {
           applicant_id: string
@@ -6562,6 +6595,7 @@ export type Database = {
         Args: { p_safepay_id: string }
         Returns: undefined
       }
+      check_ip_signup_limit: { Args: { check_ip: string }; Returns: Json }
       check_is_admin: {
         Args: never
         Returns: {
@@ -6889,6 +6923,15 @@ export type Database = {
       is_group_member_check: {
         Args: { p_group_id: string; p_user_id: string }
         Returns: boolean
+      }
+      log_ip_activity: {
+        Args: {
+          p_action_type?: string
+          p_ip_address: string
+          p_user_agent?: string
+          p_user_id?: string
+        }
+        Returns: string
       }
       lookup_user_by_email: { Args: { lookup_email: string }; Returns: Json }
       mark_safepay_complete: {

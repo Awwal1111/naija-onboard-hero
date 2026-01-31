@@ -3,12 +3,15 @@ import { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/integrations/supabase/client'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '@/hooks/use-toast'
+import { useIPProtection } from '@/hooks/useIPProtection'
+
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
   const { toast } = useToast()
+  const { checkSignupAllowed, logIPActivity } = useIPProtection()
   const hasInitializedRef = useRef(false)
 
   const authPaths = ['/login', '/signup', '/forgot-password', '/reset-password']
@@ -202,6 +205,18 @@ export const useAuth = () => {
   }, [navigate])
 
   const signUp = async (email: string, password: string, fullName?: string) => {
+    // Check IP-based rate limiting first
+    const ipCheck = await checkSignupAllowed()
+    if (!ipCheck.allowed) {
+      const error = { message: ipCheck.message || "Too many signups from your network. Please try again later." }
+      toast({
+        title: "Sign up blocked",
+        description: error.message,
+        variant: "destructive",
+      })
+      return { error }
+    }
+
     // Validate inputs before sending to Supabase
     if (!email || !email.trim()) {
       const error = { message: "Email is required" }
@@ -267,6 +282,8 @@ export const useAuth = () => {
             title: "Account created",
             description: "Welcome! Your account has been created successfully.",
           })
+          // Log IP activity for successful signup
+          logIPActivity(signInResult.data.user.id, 'signup')
           // Handle redirect for successful signup
           setTimeout(() => checkProfileAndRedirect(signInResult.data.user, true), 100)
         }
@@ -280,6 +297,8 @@ export const useAuth = () => {
 
       // Handle redirect for successful signup with session
       if (data.user) {
+        // Log IP activity for successful signup
+        logIPActivity(data.user.id, 'signup')
         setTimeout(() => checkProfileAndRedirect(data.user, true), 100)
       }
 
@@ -345,6 +364,13 @@ export const useAuth = () => {
       toast({
         title: "Welcome back!",
         description: "You've been signed in successfully.",
+      })
+      
+      // Log IP activity for login (get user from current session)
+      supabase.auth.getUser().then(({ data }) => {
+        if (data.user) {
+          logIPActivity(data.user.id, 'login')
+        }
       })
       
       // Send welcome notification via Telegram (non-blocking)
