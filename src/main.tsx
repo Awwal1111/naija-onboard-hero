@@ -5,6 +5,8 @@ import './index.css'
 import { QueryProvider } from "./providers/QueryProvider"
 import { ThemeProvider } from "next-themes"
 import { LanguageProvider } from "./hooks/useLanguage"
+import { CurrencyProvider } from "./hooks/useCurrency"
+import { TimezoneProvider } from "./hooks/useTimezone"
 import { detectMiniPaySync } from './lib/minipay'
 
 // SYNC detection at module load
@@ -67,7 +69,11 @@ createRoot(document.getElementById("root")!).render(
     <QueryProvider>
       <ThemeProvider defaultTheme="system" storageKey="naijalancers-theme" attribute="class">
         <LanguageProvider>
-          <App />
+          <CurrencyProvider>
+            <TimezoneProvider>
+              <App />
+            </TimezoneProvider>
+          </CurrencyProvider>
         </LanguageProvider>
       </ThemeProvider>
     </QueryProvider>

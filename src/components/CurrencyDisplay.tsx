@@ -1,27 +1,24 @@
 import React from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { useUserCountry } from '@/hooks/useUserCountry'
+import { useCurrency } from '@/hooks/useCurrency'
 
 interface CurrencyDisplayProps {
   amount: number
-  showUsdEquivalent?: boolean
+  showEquivalent?: boolean
   className?: string
   size?: 'sm' | 'md' | 'lg'
+  compact?: boolean
 }
-
-// NC is pegged 1:1 to NGN, approximate USD rate
-const NGN_TO_USD_RATE = 1600 // 1 USD ≈ 1600 NGN
 
 export const CurrencyDisplay: React.FC<CurrencyDisplayProps> = ({ 
   amount, 
-  showUsdEquivalent = true,
+  showEquivalent = true,
   className = '',
-  size = 'md'
+  size = 'md',
+  compact = false
 }) => {
-  const { isNigerian } = useUserCountry()
-  
-  const usdAmount = amount / NGN_TO_USD_RATE
+  const { currency, formatPreferred, currencies, convertFromNC } = useCurrency()
   
   const sizeClasses = {
     sm: 'text-sm',
@@ -29,64 +26,91 @@ export const CurrencyDisplay: React.FC<CurrencyDisplayProps> = ({
     lg: 'text-2xl font-bold'
   }
 
-  const formatNC = (amt: number) => `NC ${amt.toLocaleString()}`
-  const formatUSD = (amt: number) => `$${amt.toFixed(2)}`
-  const formatNGN = (amt: number) => `₦${amt.toLocaleString()}`
+  const ncDisplay = `NC ${amount.toLocaleString()}`
 
-  if (isNigerian) {
-    // For Nigerian users, show NC with Naira equivalent
+  // Compact mode - just show the amount in preferred currency
+  if (compact) {
+    if (currency === 'NC' || currency === 'NGN') {
+      return (
+        <span className={`${sizeClasses[size]} ${className}`}>
+          {currency === 'NGN' ? `₦${amount.toLocaleString()}` : ncDisplay}
+        </span>
+      )
+    }
+    const converted = convertFromNC(amount, currency)
+    return (
+      <span className={`${sizeClasses[size]} ${className}`}>
+        {currencies[currency].symbol}{converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+      </span>
+    )
+  }
+
+  // For NC or NGN, show simple NC with naira tooltip
+  if (currency === 'NC' || currency === 'NGN') {
     return (
       <Tooltip>
         <TooltipTrigger asChild>
           <span className={`${sizeClasses[size]} ${className}`}>
-            {formatNC(amount)}
+            {ncDisplay}
           </span>
         </TooltipTrigger>
         <TooltipContent>
-          <p>{formatNGN(amount)} (1 NC = ₦1)</p>
+          <p>₦{amount.toLocaleString()} (1 NC = ₦1)</p>
         </TooltipContent>
       </Tooltip>
     )
   }
 
-  // For international users, show NC with USD equivalent
+  // For international currencies, show converted amount with NC badge
+  const converted = convertFromNC(amount, currency)
+  
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
-      <span className={sizeClasses[size]}>{formatNC(amount)}</span>
-      {showUsdEquivalent && amount >= 100 && (
-        <Badge variant="secondary" className="text-xs">
-          ≈ {formatUSD(usdAmount)}
-        </Badge>
-      )}
-    </div>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div className={`flex items-center gap-2 ${className}`}>
+          <span className={sizeClasses[size]}>
+            {currencies[currency].symbol}{converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </span>
+          {showEquivalent && amount >= 100 && (
+            <Badge variant="secondary" className="text-xs">
+              NC {amount.toLocaleString()}
+            </Badge>
+          )}
+        </div>
+      </TooltipTrigger>
+      <TooltipContent>
+        <div className="text-xs space-y-1">
+          <p>NC {amount.toLocaleString()} (₦{amount.toLocaleString()})</p>
+          <p className="text-muted-foreground">
+            Rate: 1 {currency} = NC {currencies[currency].rateToNC.toLocaleString()}
+          </p>
+        </div>
+      </TooltipContent>
+    </Tooltip>
   )
 }
 
 /**
  * Format amount for display based on context
  */
-export const formatAmount = (amount: number, showUsd = false): string => {
-  const usdAmount = amount / NGN_TO_USD_RATE
-  if (showUsd) {
-    return `NC ${amount.toLocaleString()} (~$${usdAmount.toFixed(2)})`
-  }
+export const formatAmount = (amount: number, showEquivalent = false): string => {
   return `NC ${amount.toLocaleString()}`
 }
 
 export const formatUsdOnly = (amount: number): string => {
-  const usdAmount = amount / NGN_TO_USD_RATE
+  const usdAmount = amount / 1600 // NC to USD rate
   return `$${usdAmount.toFixed(2)}`
 }
 
 /**
  * Simple price formatter for use in components
- * Shows ₦ for Nigerian users, NC with USD for international
+ * Shows NC by default, can show in user's preferred currency
  */
 export const formatPriceForDisplay = (amount: number, isNigerian: boolean): string => {
   if (isNigerian) {
     return `₦${amount.toLocaleString()}`
   }
-  const usdAmount = amount / NGN_TO_USD_RATE
+  const usdAmount = amount / 1600
   return `NC ${amount.toLocaleString()} (~$${usdAmount.toFixed(2)})`
 }
 
@@ -97,6 +121,6 @@ export const formatPriceCompact = (amount: number, isNigerian: boolean): string 
   if (isNigerian) {
     return `₦${amount.toLocaleString()}`
   }
-  const usdAmount = amount / NGN_TO_USD_RATE
+  const usdAmount = amount / 1600
   return `~$${usdAmount.toFixed(2)}`
 }

@@ -4123,6 +4123,7 @@ export type Database = {
           celo_wallet_address: string | null
           completed_jobs_count: number | null
           connections_count: number | null
+          country_code: string | null
           created_at: string
           current_streak: number | null
           email_2fa_enabled: boolean | null
@@ -4154,9 +4155,11 @@ export type Database = {
           lga_name: string | null
           onboarding_completed: boolean | null
           open_to_work: boolean | null
+          phone_country_code: string | null
           phone_number: string | null
           phone_verified: boolean | null
           portfolio_videos: Json | null
+          preferred_currency: string | null
           premium_expires_at: string | null
           premium_subscribed_at: string | null
           profession: string | null
@@ -4168,6 +4171,7 @@ export type Database = {
           state_name: string | null
           telegram_user_id: string | null
           telegram_username: string | null
+          timezone: string | null
           total_earnings: number | null
           total_transactions: number | null
           totp_enabled: boolean | null
@@ -4202,6 +4206,7 @@ export type Database = {
           celo_wallet_address?: string | null
           completed_jobs_count?: number | null
           connections_count?: number | null
+          country_code?: string | null
           created_at?: string
           current_streak?: number | null
           email_2fa_enabled?: boolean | null
@@ -4233,9 +4238,11 @@ export type Database = {
           lga_name?: string | null
           onboarding_completed?: boolean | null
           open_to_work?: boolean | null
+          phone_country_code?: string | null
           phone_number?: string | null
           phone_verified?: boolean | null
           portfolio_videos?: Json | null
+          preferred_currency?: string | null
           premium_expires_at?: string | null
           premium_subscribed_at?: string | null
           profession?: string | null
@@ -4247,6 +4254,7 @@ export type Database = {
           state_name?: string | null
           telegram_user_id?: string | null
           telegram_username?: string | null
+          timezone?: string | null
           total_earnings?: number | null
           total_transactions?: number | null
           totp_enabled?: boolean | null
@@ -4281,6 +4289,7 @@ export type Database = {
           celo_wallet_address?: string | null
           completed_jobs_count?: number | null
           connections_count?: number | null
+          country_code?: string | null
           created_at?: string
           current_streak?: number | null
           email_2fa_enabled?: boolean | null
@@ -4312,9 +4321,11 @@ export type Database = {
           lga_name?: string | null
           onboarding_completed?: boolean | null
           open_to_work?: boolean | null
+          phone_country_code?: string | null
           phone_number?: string | null
           phone_verified?: boolean | null
           portfolio_videos?: Json | null
+          preferred_currency?: string | null
           premium_expires_at?: string | null
           premium_subscribed_at?: string | null
           profession?: string | null
@@ -4326,6 +4337,7 @@ export type Database = {
           state_name?: string | null
           telegram_user_id?: string | null
           telegram_username?: string | null
+          timezone?: string | null
           total_earnings?: number | null
           total_transactions?: number | null
           totp_enabled?: boolean | null
