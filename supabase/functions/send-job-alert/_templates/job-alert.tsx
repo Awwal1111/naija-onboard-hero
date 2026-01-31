@@ -168,6 +168,8 @@ export const JobAlert = ({
             <br />
             Nigeria's Digital Freelance Marketplace
             <br />
+            Founded by <strong>Awwal Dayyabu</strong>
+            <br />
             <Link href="https://naijalancers.name.ng/settings" style={unsubLink}>
               Manage notification settings
             </Link>
