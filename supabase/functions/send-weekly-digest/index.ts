@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
     // Get all active users with email notifications enabled
     const { data: users, error: usersError } = await supabaseClient
       .from('profiles')
-      .select('user_id, full_name')
+      .select('user_id, full_name, user_mode, skills')
       .eq('email_notifications', true)
 
     if (usersError) throw usersError
@@ -59,13 +59,21 @@ Deno.serve(async (req) => {
       .slice(0, 5)
       .map(([skill]) => skill)
 
-    // Get top experts this week
+    // Get top experts this week (for both freelancers to network and clients to hire)
     const { data: topExperts } = await supabaseClient
       .from('profiles')
       .select('full_name, expertise, average_rating')
       .eq('is_expert', true)
       .order('average_rating', { ascending: false })
-      .limit(3)
+      .limit(5)
+
+    // Get top freelancers for clients
+    const { data: topFreelancers } = await supabaseClient
+      .from('profiles')
+      .select('full_name, profession, average_rating')
+      .or('user_mode.eq.freelancer,user_mode.eq.both')
+      .order('average_rating', { ascending: false })
+      .limit(5)
 
     let sentCount = 0
     let errorCount = 0
@@ -78,8 +86,13 @@ Deno.serve(async (req) => {
         
         if (!userEmail) continue
 
+        // Determine user mode (default to 'both' if not set)
+        const userMode = (user.user_mode as 'freelancer' | 'client' | 'both') || 'both'
+        const isFreelancer = userMode === 'freelancer' || userMode === 'both'
+        const isClient = userMode === 'client' || userMode === 'both'
+
         // Get user-specific stats
-        const [profileViews, connectionRequests, messages, earnings] = await Promise.all([
+        const statsPromises = [
           supabaseClient
             .from('post_views')
             .select('id', { count: 'exact' })
@@ -95,36 +108,67 @@ Deno.serve(async (req) => {
             .select('id', { count: 'exact' })
             .eq('receiver_id', user.user_id)
             .gte('created_at', weekStart.toISOString()),
-          supabaseClient
-            .from('transactions')
-            .select('amount')
-            .eq('user_id', user.user_id)
-            .eq('type', 'credit')
-            .gte('created_at', weekStart.toISOString()),
-        ])
+        ]
 
-        const totalEarnings = earnings.data?.reduce((sum, t) => sum + (t.amount || 0), 0) || 0
+        // Freelancer-specific: earnings
+        if (isFreelancer) {
+          statsPromises.push(
+            supabaseClient
+              .from('transactions')
+              .select('amount')
+              .eq('user_id', user.user_id)
+              .eq('type', 'credit')
+              .gte('created_at', weekStart.toISOString())
+          )
+        }
 
-        // Get recommended jobs for this user
-        const { data: userProfile } = await supabaseClient
-          .from('profiles')
-          .select('skills')
-          .eq('user_id', user.user_id)
-          .single()
+        // Client-specific: jobs posted and applications received
+        if (isClient) {
+          statsPromises.push(
+            supabaseClient
+              .from('job_posts')
+              .select('id', { count: 'exact' })
+              .eq('client_id', user.user_id)
+              .gte('created_at', weekStart.toISOString()),
+            supabaseClient
+              .from('job_applications')
+              .select('id, job_posts!inner(client_id)', { count: 'exact' })
+              .eq('job_posts.client_id', user.user_id)
+              .gte('created_at', weekStart.toISOString())
+          )
+        }
 
-        const userSkills = userProfile?.skills || []
+        const results = await Promise.all(statsPromises)
         
-        const { data: recommendedJobs } = await supabaseClient
-          .from('job_posts')
-          .select('title, budget, required_skills')
-          .eq('status', 'open')
-          .limit(3)
+        const [profileViews, connectionRequests, messages] = results.slice(0, 3)
+        const earnings = isFreelancer && results[3] 
+          ? (results[3].data as any[])?.reduce((sum, t) => sum + (t.amount || 0), 0) || 0 
+          : 0
+        
+        let jobsPosted = 0
+        let applicationsReceived = 0
+        if (isClient) {
+          const clientStatsStart = isFreelancer ? 4 : 3
+          jobsPosted = results[clientStatsStart]?.count || 0
+          applicationsReceived = results[clientStatsStart + 1]?.count || 0
+        }
 
-        const jobsForEmail = recommendedJobs?.map(job => ({
-          title: job.title,
-          budget: `₦${job.budget?.toLocaleString() || 'Negotiable'}`,
-          skills: job.required_skills?.slice(0, 3) || [],
-        })) || []
+        // Get recommended jobs for freelancers
+        let jobsForEmail: any[] = []
+        if (isFreelancer) {
+          const userSkills = user.skills || []
+          const { data: recommendedJobs } = await supabaseClient
+            .from('job_posts')
+            .select('title, budget, required_skills')
+            .eq('status', 'open')
+            .limit(3)
+
+          jobsForEmail = recommendedJobs?.map(job => ({
+            title: job.title,
+            budget: `₦${job.budget?.toLocaleString() || 'Negotiable'}`,
+            skills: job.required_skills?.slice(0, 3) || [],
+          })) || []
+        }
 
         const expertsForEmail = topExperts?.map(exp => ({
           name: exp.full_name || 'Expert',
@@ -132,29 +176,47 @@ Deno.serve(async (req) => {
           rating: exp.average_rating || 4.5,
         })) || []
 
-        // Render email
+        const freelancersForEmail = topFreelancers?.map(f => ({
+          name: f.full_name || 'Freelancer',
+          expertise: f.profession || 'Professional',
+          rating: f.average_rating || 4.5,
+        })) || []
+
+        // Render email with role-specific content
         const html = await renderAsync(
           React.createElement(WeeklyDigest, {
             userName: user.full_name || 'User',
             weekStartDate,
             weekEndDate,
+            userMode,
             stats: {
               profileViews: profileViews.count || 0,
               connectionRequests: connectionRequests.count || 0,
               newMessages: messages.count || 0,
-              earnings: totalEarnings,
+              earnings: isFreelancer ? earnings : undefined,
+              jobsPosted: isClient ? jobsPosted : undefined,
+              applicationsReceived: isClient ? applicationsReceived : undefined,
             },
             recommendedJobs: jobsForEmail,
             topExperts: expertsForEmail,
             trendingSkills,
+            topFreelancers: isClient ? freelancersForEmail : [],
+            recentApplications: applicationsReceived,
           })
         )
+
+        // Customize subject line based on user mode
+        const subjectLine = userMode === 'client' 
+          ? `📊 Your Weekly Client Digest - ${weekStartDate} to ${weekEndDate}`
+          : userMode === 'freelancer'
+          ? `📊 Your Weekly Freelancer Digest - ${weekStartDate} to ${weekEndDate}`
+          : `📊 Your Weekly Digest - ${weekStartDate} to ${weekEndDate}`
 
         // Send email
         const { error: emailError } = await resend.emails.send({
           from: 'NaijaLancers <digest@naijalancers.name.ng>',
           to: [userEmail],
-          subject: `📊 Your Weekly Digest - ${weekStartDate} to ${weekEndDate}`,
+          subject: subjectLine,
           html,
         })
 
