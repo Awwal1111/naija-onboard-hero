@@ -83,6 +83,8 @@ export const TransactionReceipt = ({
           <br />
           Nigeria's Digital Freelance Marketplace
           <br />
+          Founded by <strong>Awwal Dayyabu</strong>
+          <br />
           Support: support@naijalancers.name.ng | WhatsApp: +234 816 714 0857
         </Text>
       </Container>
