@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, SlidersHorizontal, ArrowUpDown } from 'lucide-react';
+import { Search, SlidersHorizontal, ArrowUpDown, Globe } from 'lucide-react';
 import { BrandInput } from '@/components/ui/brand-input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { useUserCountry } from '@/hooks/useUserCountry';
+import { COUNTRIES } from '@/components/CountrySelect';
 
 export type SortOption = 'relevance' | 'rating' | 'experience' | 'recent';
 
@@ -22,6 +23,8 @@ interface ExpertFiltersProps {
   onSearchChange: (value: string) => void;
   stateFilter: string;
   onStateChange: (value: string) => void;
+  countryFilter?: string;
+  onCountryChange?: (value: string) => void;
   sortBy: SortOption;
   onSortChange: (value: SortOption) => void;
   verifiedOnly: boolean;
@@ -34,6 +37,8 @@ export const ExpertFilters: React.FC<ExpertFiltersProps> = ({
   onSearchChange,
   stateFilter,
   onStateChange,
+  countryFilter = 'ALL',
+  onCountryChange,
   sortBy,
   onSortChange,
   verifiedOnly,
@@ -41,6 +46,9 @@ export const ExpertFilters: React.FC<ExpertFiltersProps> = ({
   activeFiltersCount,
 }) => {
   const { isNigerian, nigerianStates } = useUserCountry();
+  
+  // Filter countries for the dropdown (exclude special options like REMOTE)
+  const countryOptions = COUNTRIES.filter(c => c.code !== 'REMOTE');
   
   const sortLabels: Record<SortOption, string> = {
     relevance: 'Relevance',
@@ -63,11 +71,30 @@ export const ExpertFilters: React.FC<ExpertFiltersProps> = ({
       </div>
 
       {/* Filter Row */}
-      <div className="flex gap-2 items-center">
-        {/* State Filter - Only show for Nigerian users */}
-        {isNigerian && (
+      <div className="flex gap-2 items-center flex-wrap">
+        {/* Country Filter - For clients to filter experts by country */}
+        {onCountryChange && (
+          <Select value={countryFilter} onValueChange={onCountryChange}>
+            <SelectTrigger className="w-[140px] h-9 bg-input text-sm">
+              <Globe className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+              <SelectValue placeholder="All Countries" />
+            </SelectTrigger>
+            <SelectContent className="bg-background border border-border z-50 max-h-60">
+              {countryOptions.map((country) => (
+                <SelectItem key={country.code} value={country.code}>
+                  <span className="flex items-center gap-2">
+                    {country.flag} {country.name}
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+
+        {/* State Filter - Only show for Nigerian users when Nigeria is selected */}
+        {isNigerian && countryFilter === 'NG' && (
           <Select value={stateFilter} onValueChange={onStateChange}>
-            <SelectTrigger className="flex-1 h-9 bg-input text-sm">
+            <SelectTrigger className="w-[130px] h-9 bg-input text-sm">
               <SelectValue placeholder="All States" />
             </SelectTrigger>
             <SelectContent className="bg-background border border-border z-50 max-h-60">
