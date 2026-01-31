@@ -31,6 +31,7 @@ import { AdminBroadcastDialog } from '@/components/AdminBroadcastDialog'
 import { AdminExpertVerification } from '@/components/AdminExpertVerification'
 import AdminAdsSection from '@/components/AdminAdsSection'
 import AdminAPISalesSection from '@/components/AdminAPISalesSection'
+import { CommunicationAnalyticsCard } from '@/components/admin/CommunicationAnalyticsCard'
 import { Briefcase as BriefcaseIcon } from 'lucide-react'
 
 // Admin Gigs Management Section
@@ -1406,6 +1407,9 @@ const EnhancedAdminDashboard = () => {
                   </Button>
                 </CardContent>
               </Card>
+
+              {/* Communication Analytics */}
+              <CommunicationAnalyticsCard />
 
               {/* Quick Actions */}
               <Card>

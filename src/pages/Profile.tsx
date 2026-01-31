@@ -38,7 +38,7 @@ import { EmailVerificationBanner } from '@/components/EmailVerificationBanner'
 import { TrustScoreCard } from '@/components/TrustScoreDisplay'
 import { calculateTrustScore } from '@/hooks/useTrustScore'
 import { PremiumSubscriptionDialog } from '@/components/PremiumSubscriptionDialog'
-import { PremiumContactButtons } from '@/components/PremiumContactButtons'
+import { ContactButtons } from '@/components/ContactButtons'
 import { ProfileVideoIntro } from '@/components/premium/ProfileVideoIntro'
 import { PortfolioVideos } from '@/components/premium/PortfolioVideos'
 import { PremiumFeatureGate } from '@/components/premium/PremiumFeatureGate'
@@ -651,65 +651,18 @@ const Profile = () => {
               </Card>
             )}
 
-            {/* Premium Contact Buttons - For owners: show with gate if not premium, for visitors: only show if profile is premium */}
-            {isOwnProfile ? (
+            {/* Contact Buttons - Free for all users, tracked for analytics */}
+            {(profile?.phone_number || profile?.whatsapp_number || profile?.google_meet_link || profile?.facebook_url || (isOwnProfile ? userEmail : profile?.email)) && (
               <Card className="mb-4">
                 <CardContent className="pt-4">
-                  {profile?.is_premium ? (
-                    <PremiumContactButtons
-                      phoneNumber={profile?.phone_number}
-                      email={userEmail}
-                      whatsappNumber={profile?.whatsapp_number}
-                      googleMeetLink={profile?.google_meet_link}
-                      facebookUrl={profile?.facebook_url}
-                      isPremium={true}
-                    />
-                  ) : (
-                    <PremiumFeatureGate
-                      isPremium={false}
-                      featureName="Premium Contact Buttons"
-                      featureDescription="Let clients reach you directly via WhatsApp, Phone, Email, and Google Meet. Upgrade to Premium to enable these contact options on your profile!"
-                      showLockIcon={false}
-                    >
-                      <div className="space-y-3 opacity-60">
-                        <div className="flex items-center gap-2">
-                          <Crown className="h-4 w-4 text-yellow-500" />
-                          <span className="text-sm font-medium text-muted-foreground">
-                            Premium Contact Options
-                          </span>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          <Button variant="outline" size="sm" disabled className="opacity-50">
-                            <MessageCircle className="h-4 w-4 mr-1" />
-                            WhatsApp
-                          </Button>
-                          <Button variant="outline" size="sm" disabled className="opacity-50">
-                            <Phone className="h-4 w-4 mr-1" />
-                            Call
-                          </Button>
-                          <Button variant="outline" size="sm" disabled className="opacity-50">
-                            <Mail className="h-4 w-4 mr-1" />
-                            Email
-                          </Button>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          Tap to upgrade and let clients contact you directly
-                        </p>
-                      </div>
-                    </PremiumFeatureGate>
-                  )}
-                </CardContent>
-              </Card>
-            ) : profile?.is_premium && (
-              <Card className="mb-4">
-                <CardContent className="pt-4">
-                  <PremiumContactButtons
+                  <ContactButtons
+                    userId={profile?.user_id || ''}
                     phoneNumber={profile?.phone_number}
-                    email={profile?.email}
+                    email={isOwnProfile ? userEmail : profile?.email}
                     whatsappNumber={profile?.whatsapp_number}
                     googleMeetLink={profile?.google_meet_link}
                     facebookUrl={profile?.facebook_url}
-                    isPremium={true}
+                    sourceContext="profile"
                   />
                 </CardContent>
               </Card>

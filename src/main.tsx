@@ -7,6 +7,7 @@ import { ThemeProvider } from "next-themes"
 import { LanguageProvider } from "./hooks/useLanguage"
 import { CurrencyProvider } from "./hooks/useCurrency"
 import { TimezoneProvider } from "./hooks/useTimezone"
+import { UserModeProvider } from "./hooks/useUserMode"
 import { detectMiniPaySync } from './lib/minipay'
 
 // SYNC detection at module load
@@ -71,7 +72,9 @@ createRoot(document.getElementById("root")!).render(
         <LanguageProvider>
           <CurrencyProvider>
             <TimezoneProvider>
-              <App />
+              <UserModeProvider>
+                <App />
+              </UserModeProvider>
             </TimezoneProvider>
           </CurrencyProvider>
         </LanguageProvider>
