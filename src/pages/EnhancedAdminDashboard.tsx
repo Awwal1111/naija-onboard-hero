@@ -33,6 +33,7 @@ import AdminAdsSection from '@/components/AdminAdsSection'
 import AdminAPISalesSection from '@/components/AdminAPISalesSection'
 import { CommunicationAnalyticsCard } from '@/components/admin/CommunicationAnalyticsCard'
 import { UserModeStatsCard } from '@/components/admin/UserModeStatsCard'
+import { IncompleteProfilesCard } from '@/components/admin/IncompleteProfilesCard'
 import { Briefcase as BriefcaseIcon } from 'lucide-react'
 
 // Admin Gigs Management Section
@@ -1414,6 +1415,9 @@ const EnhancedAdminDashboard = () => {
 
               {/* Communication Analytics */}
               <CommunicationAnalyticsCard />
+
+              {/* Incomplete Profiles Engagement */}
+              <IncompleteProfilesCard />
 
               {/* Quick Actions */}
               <Card>
