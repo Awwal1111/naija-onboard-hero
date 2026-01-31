@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { 
   ArrowLeft,
   Share,
@@ -18,11 +19,14 @@ import {
   Coins,
   CheckCircle,
   Clock,
-  Sparkles
+  Sparkles,
+  Trophy
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { ReferralProgressCard } from '@/components/ReferralProgressCard'
 import { InstantReferralReward } from '@/components/InstantReferralReward'
+import { ReferralTierCard } from '@/components/ReferralTierCard'
+import { ReferralLeaderboard } from '@/components/ReferralLeaderboard'
 
 interface Referral {
   id: string
@@ -176,6 +180,12 @@ export const Referrals = () => {
           completedReferrals={completedReferrals}
           totalEarnings={totalEarned}
         />
+
+        {/* Tier System */}
+        <ReferralTierCard completedReferrals={completedReferrals} />
+
+        {/* Leaderboard */}
+        <ReferralLeaderboard />
 
         {/* Instant Referral Reward Section */}
         <InstantReferralReward />

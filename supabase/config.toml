@@ -191,3 +191,9 @@ verify_jwt = false
 
 [functions.developer-webhook]
 verify_jwt = false
+
+[functions.skill-assessment]
+verify_jwt = true
+
+[functions.ai-proposal-writer]
+verify_jwt = true
