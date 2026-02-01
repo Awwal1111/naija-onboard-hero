@@ -42,7 +42,8 @@ import { ContactButtons } from '@/components/ContactButtons'
 import { ProfileVideoIntro } from '@/components/premium/ProfileVideoIntro'
 import { PortfolioVideos } from '@/components/premium/PortfolioVideos'
 import { PremiumFeatureGate } from '@/components/premium/PremiumFeatureGate'
-// ExpertVerificationSection moved to Experts page
+import { ProfileVisitorsCard } from '@/components/dashboard/ProfileVisitorsCard'
+import { trackProfileView } from '@/lib/profileViewTracker'
 
 const Profile = () => {
   const navigate = useNavigate()
@@ -127,6 +128,9 @@ const Profile = () => {
           // Check connection status
           const connected = await checkConnection(userId)
           setIsConnected(connected)
+          
+          // Track profile view (runs in background)
+          trackProfileView(userId)
         } catch (error: any) {
           console.error('Error fetching profile:', error)
           toast({
@@ -768,7 +772,9 @@ const Profile = () => {
           </TabsContent>
 
           {isOwnProfile && (
-            <TabsContent value="saved" className="mt-6">
+            <TabsContent value="saved" className="mt-6 space-y-6">
+              {/* Profile Visitors Card - See who viewed your profile */}
+              <ProfileVisitorsCard />
               <SavedPostsSection />
             </TabsContent>
           )}
