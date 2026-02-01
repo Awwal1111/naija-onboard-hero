@@ -91,8 +91,8 @@ const Index = () => {
             <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
               <div className="space-y-6 sm:space-y-8">
                 <Badge variant="secondary" className="w-fit bg-primary/10 text-primary border-primary/20 text-xs sm:text-sm px-4 py-1.5 font-medium">
-                  <Award className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
-                  CAC Registered • BN8870047
+                  <Shield className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
+                  Trusted Worldwide • Secure Payments
                 </Badge>
                 
                 <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.1] tracking-tight">
@@ -103,7 +103,7 @@ const Index = () => {
                 </h1>
                 
                 <p className="text-lg sm:text-xl lg:text-2xl text-muted-foreground leading-relaxed max-w-xl">
-                  Connect with vetted professionals worldwide. Secure payments. Trusted by thousands.
+                  Connect with vetted professionals worldwide. Secure escrow payments. Trusted by thousands.
                 </p>
 
                 <div className="flex flex-wrap gap-4 sm:gap-8 pt-2">
@@ -111,13 +111,13 @@ const Index = () => {
                     <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                       <CheckCircle2 className="w-4 h-4 text-primary" />
                     </div>
-                    <span className="text-sm sm:text-base font-medium">Legally Registered</span>
+                    <span className="text-sm sm:text-base font-medium">Verified Experts</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                       <Shield className="w-4 h-4 text-primary" />
                     </div>
-                    <span className="text-sm sm:text-base font-medium">Secure Payments</span>
+                    <span className="text-sm sm:text-base font-medium">SafePay Escrow</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
@@ -127,15 +127,19 @@ const Index = () => {
                   </div>
                 </div>
 
+                {/* Dual CTA for Clients and Freelancers */}
                 <div className="flex flex-col gap-3 sm:flex-row sm:gap-4 pt-4">
                   <BrandButton asChild size="lg" className="text-base sm:text-lg px-6 sm:px-10 py-5 sm:py-7 w-full sm:w-auto shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all">
-                    <Link to="/signup">
-                      Start Earning Today
-                      <ArrowRight className="ml-2 w-5 h-5" />
+                    <Link to="/signup?intent=hire">
+                      <Briefcase className="mr-2 w-5 h-5" />
+                      Hire Talent
                     </Link>
                   </BrandButton>
                   <BrandButton variant="outline" asChild size="lg" className="text-base sm:text-lg px-6 sm:px-10 py-5 sm:py-7 w-full sm:w-auto border-2">
-                    <Link to="/login">Sign In</Link>
+                    <Link to="/signup?intent=earn">
+                      <DollarSign className="mr-2 w-5 h-5" />
+                      Start Earning
+                    </Link>
                   </BrandButton>
                 </div>
               </div>
@@ -221,26 +225,31 @@ const Index = () => {
       {/* Featured Contests Section - Keep for marketing appeal */}
       <FeaturedContestsSection />
 
+      {/* For Clients Section - Hiring Focus */}
       <section className="py-16 bg-muted/30">
         <div className="container mx-auto px-6">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">Verified & Trusted Platform</h2>
-              <p className="text-lg text-muted-foreground">Officially registered and verified for your security</p>
+              <Badge variant="secondary" className="mb-4">
+                <Briefcase className="w-3 h-3 mr-1" />
+                For Clients
+              </Badge>
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">Find the Perfect Talent</h2>
+              <p className="text-lg text-muted-foreground">Access verified professionals ready to deliver quality work</p>
             </div>
 
             <div className="grid md:grid-cols-3 gap-8">
               <Card className="text-center">
                 <CardHeader>
                   <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-                    <Award className="w-8 h-8 text-primary" />
+                    <Users className="w-8 h-8 text-primary" />
                   </div>
-                  <CardTitle>CAC Registered</CardTitle>
-                  <CardDescription>Business Number: BN8870047</CardDescription>
+                  <CardTitle>AI-Powered Matching</CardTitle>
+                  <CardDescription>Smart recommendations</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground">
-                    Officially registered with the Corporate Affairs Commission of Nigeria
+                    Our AI matches you with the best talent based on your project requirements
                   </p>
                 </CardContent>
               </Card>
@@ -248,14 +257,14 @@ const Index = () => {
               <Card className="text-center">
                 <CardHeader>
                   <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-                    <CreditCard className="w-8 h-8 text-primary" />
+                    <Shield className="w-8 h-8 text-primary" />
                   </div>
-                  <CardTitle>Secure Banking</CardTitle>
-                  <CardDescription>Powered by Quidax</CardDescription>
+                  <CardTitle>SafePay Escrow</CardTitle>
+                  <CardDescription>Risk-free payments</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground">
-                    All transactions processed through regulated financial partners
+                    Funds are released only when you approve the completed work
                   </p>
                 </CardContent>
               </Card>
@@ -265,40 +274,54 @@ const Index = () => {
                   <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
                     <UserCheck className="w-8 h-8 text-primary" />
                   </div>
-                  <CardTitle>Verified Community</CardTitle>
-                  <CardDescription>10,000+ Active Members</CardDescription>
+                  <CardTitle>Verified Professionals</CardTitle>
+                  <CardDescription>Quality assured</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground">
-                    Join thousands of verified professionals worldwide
+                    Every expert is vetted with verified skills and portfolio reviews
                   </p>
                 </CardContent>
               </Card>
+            </div>
+            
+            <div className="text-center mt-8">
+              <BrandButton asChild size="lg">
+                <Link to="/ai-hire">
+                  <Users className="mr-2 w-5 h-5" />
+                  Find Talent with AI
+                  <ArrowRight className="ml-2 w-5 h-5" />
+                </Link>
+              </BrandButton>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Partners Section */}
+      {/* Global Trust Section */}
       <section className="py-16">
         <div className="container mx-auto px-6">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">Our Partners</h2>
-              <p className="text-lg text-muted-foreground">Working with trusted organizations</p>
+              <Badge variant="secondary" className="mb-4">
+                <DollarSign className="w-3 h-3 mr-1" />
+                For Freelancers
+              </Badge>
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">Grow Your Freelance Career</h2>
+              <p className="text-lg text-muted-foreground">Everything you need to succeed globally</p>
             </div>
 
             <div className="grid md:grid-cols-3 gap-8">
               <Card className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-                    <CreditCard className="w-8 h-8 text-primary" />
+                    <Wallet className="w-8 h-8 text-primary" />
                   </div>
-                  <CardTitle className="text-center">Quidax</CardTitle>
+                  <CardTitle className="text-center">Global Payments</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-center text-muted-foreground">
-                    Leading Nigerian cryptocurrency exchange providing secure payment infrastructure
+                    Get paid in multiple currencies with instant deposits and fast withdrawals
                   </p>
                 </CardContent>
               </Card>
@@ -308,11 +331,11 @@ const Index = () => {
                   <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
                     <Network className="w-8 h-8 text-primary" />
                   </div>
-                  <CardTitle className="text-center">Celo Network</CardTitle>
+                  <CardTitle className="text-center">Blockchain Powered</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-center text-muted-foreground">
-                    Mobile-first blockchain platform enabling fast and secure digital payments
+                    Secure crypto payments via Celo network with MiniPay integration
                   </p>
                 </CardContent>
               </Card>
@@ -320,13 +343,13 @@ const Index = () => {
               <Card className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-                    <Building2 className="w-8 h-8 text-primary" />
+                    <Award className="w-8 h-8 text-primary" />
                   </div>
-                  <CardTitle className="text-center">CAC Nigeria</CardTitle>
+                  <CardTitle className="text-center">Build Reputation</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-center text-muted-foreground">
-                    Registered with Corporate Affairs Commission (BN8870047)
+                    Earn badges, collect reviews, and become a verified expert
                   </p>
                 </CardContent>
               </Card>
@@ -464,7 +487,7 @@ const Index = () => {
               <div>
                 <Logo />
                 <p className="text-sm text-muted-foreground mt-4">
-                  Global freelance marketplace. CAC: BN8870047
+                  Global freelance marketplace trusted by thousands worldwide.
                 </p>
               </div>
 
