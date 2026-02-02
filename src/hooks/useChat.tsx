@@ -47,6 +47,10 @@ interface Profile {
   full_name: string
   profession: string
   profile_picture_url?: string
+  phone_number?: string | null
+  whatsapp_number?: string | null
+  google_meet_link?: string | null
+  facebook_url?: string | null
 }
 
 export const useChat = (otherUserId: string) => {
@@ -71,10 +75,10 @@ export const useChat = (otherUserId: string) => {
           throw new Error('Invalid user ID format')
         }
         
-        // Fetch other user's profile
+        // Fetch other user's profile with contact fields
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
-          .select('user_id, full_name, profession, profile_picture_url')
+          .select('user_id, full_name, profession, profile_picture_url, phone_number, whatsapp_number, google_meet_link, facebook_url')
           .eq('user_id', otherUserId)
           .maybeSingle()
 

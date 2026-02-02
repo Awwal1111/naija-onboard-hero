@@ -355,7 +355,7 @@ serve(async (req) => {
       try {
         const { data: smsResult } = await supabase.functions.invoke('send-sms', {
           body: {
-            userId: recipientId,
+            userId: recipient_id, // FIXED: was recipientId (typo)
             message: smsText.substring(0, 160),
             smsType: 'notification',
             skipCharge: true // Communication is free
