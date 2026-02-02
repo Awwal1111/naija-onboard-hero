@@ -20,6 +20,7 @@ import { ReadReceipt } from '@/components/ReadReceipt'
 import { QuickReplyTemplates } from '@/components/QuickReplyTemplates'
 import { LocationShareButton } from '@/components/chat/LocationShareButton'
 import { LocationMessage, parseLocationMessage, createLocationMessageContent } from '@/components/chat/LocationMessage'
+import { ChatContactBar } from '@/components/chat/ChatContactBar'
 
 // Simple emoji picker component
 const EmojiPicker = ({ onSelect, onClose }: { onSelect: (emoji: string) => void; onClose: () => void }) => {
@@ -473,6 +474,17 @@ const EnhancedChat = () => {
           />
         )}
       </header>
+
+      {/* Prominent Contact Bar - Always visible when user has contact info */}
+      {otherUser && (
+        <ChatContactBar
+          userId={otherUser.user_id}
+          phoneNumber={otherUser.phone_number}
+          whatsappNumber={otherUser.whatsapp_number}
+          googleMeetLink={otherUser.google_meet_link}
+          facebookUrl={otherUser.facebook_url}
+        />
+      )}
 
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto px-4 py-4">
