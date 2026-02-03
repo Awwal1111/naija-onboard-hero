@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Logo } from '@/components/ui/logo'
 import { BrandButton } from '@/components/ui/brand-button'
-import { Eye, EyeOff, User, Mail, Lock, Sparkles, Shield, Users } from 'lucide-react'
+import { Eye, EyeOff, User, Mail, Lock, Sparkles, Shield, Users, Wallet } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/use-toast'
 import { validatePasswordStrength } from '@/lib/security'
@@ -12,14 +12,9 @@ import { Progress } from '@/components/ui/progress'
 import { useMiniPayContext } from '@/components/MiniPayAuthWrapper'
 
 const SignUp = () => {
-  const { isMiniPay } = useMiniPayContext()
-  
-  // MiniPay users NEVER see signup screen - wallet = identity
-  // Use sync detection only - no isInitializing check
-  if (isMiniPay) {
-    return <Navigate to="/feed" replace />
-  }
-
+  // ALL HOOKS MUST BE AT THE TOP - before any conditional returns
+  const { isMiniPay, walletAddress, isConnecting } = useMiniPayContext()
+  const { user, loading: authLoading, signUp, signInWithGoogle } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const { toast } = useToast()
@@ -34,6 +29,13 @@ const SignUp = () => {
     acceptedTerms: false
   })
   const [invitationRole, setInvitationRole] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [passwordValidation, setPasswordValidation] = useState<{
+    isValid: boolean;
+    errors: string[];
+    strength: 'weak' | 'medium' | 'strong';
+  } | null>(null)
 
   useEffect(() => {
     if (inviteToken) {
@@ -81,14 +83,21 @@ const SignUp = () => {
     }
   }, [inviteToken, toast])
 
-  const [isLoading, setIsLoading] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
-  const [passwordValidation, setPasswordValidation] = useState<{
-    isValid: boolean;
-    errors: string[];
-    strength: 'weak' | 'medium' | 'strong';
-  } | null>(null)
-  const { signUp, signInWithGoogle } = useAuth()
+  // CONDITIONAL RETURNS AFTER ALL HOOKS
+  // Show loading spinner while determining auth state to prevent flickering
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full" />
+      </div>
+    )
+  }
+  
+  // If user is already authenticated, redirect to feed
+  if (user) {
+    return <Navigate to="/main-feed" replace />
+  }
+  
 
   const generateStrongPassword = () => {
     const chars = 'abcdefghijklmnopqrstuvwxyz';

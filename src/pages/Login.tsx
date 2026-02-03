@@ -1,12 +1,16 @@
 import React, { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { Logo } from '@/components/ui/logo'
 import { BrandButton } from '@/components/ui/brand-button'
 import { Eye, EyeOff, Mail, Lock, Sparkles, Shield, Zap } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
+import { useMiniPayContext } from '@/components/MiniPayAuthWrapper'
 
 const Login = () => {
-
+  // ALL HOOKS AT THE TOP
+  const { isMiniPay } = useMiniPayContext()
+  const { user, loading: authLoading, signIn, signInWithGoogle } = useAuth()
+  
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -14,7 +18,6 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
-  const { signIn, signInWithGoogle } = useAuth()
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -39,6 +42,21 @@ const Login = () => {
     setIsLoading(true)
     await signInWithGoogle()
     setIsLoading(false)
+  }
+
+  // CONDITIONAL RETURNS AFTER HOOKS
+  // Show loading while determining auth state to prevent flickering
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full" />
+      </div>
+    )
+  }
+  
+  // If user is already authenticated, redirect to feed
+  if (user) {
+    return <Navigate to="/main-feed" replace />
   }
 
   return (
