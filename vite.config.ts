@@ -9,6 +9,8 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+    // Allow ngrok hosts for MiniPay testing (per docs)
+    allowedHosts: [".ngrok.app", ".ngrok-free.dev", ".ngrok-free.app"],
   },
   build: {
     rollupOptions: {

@@ -60,6 +60,7 @@ export const useMiniPay = (): UseMiniPayReturn => {
 
   // Track initialization to prevent double-init
   const initRef = useRef(false);
+  const autoConnectRef = useRef(false);
 
   /**
    * Fetch the LOGGED-IN user's wallet address from their profile
@@ -192,6 +193,26 @@ export const useMiniPay = (): UseMiniPayReturn => {
       return false;
     }
   }, [state.isConnected, state.account, state.hasProvider, state.isMiniPay, fetchLoggedInUserWallet]);
+
+  /**
+   * AUTO-CONNECT on mount if in MiniPay (per docs: "Connect on page load")
+   * Placed AFTER connect() is defined to reference it correctly
+   */
+  useEffect(() => {
+    if (!initialDetection.isMiniPay) return;
+    if (!initialDetection.hasProvider) return;
+    if (autoConnectRef.current) return;
+    
+    autoConnectRef.current = true;
+    
+    // Auto-connect with small delay for provider to be ready
+    const timer = setTimeout(() => {
+      console.log('[MiniPay] Auto-connecting on page load per docs...');
+      connect();
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, [connect]);
 
   const refreshBalance = useCallback(async () => {
     if (!state.account) return;
