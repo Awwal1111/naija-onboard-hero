@@ -1,15 +1,22 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Wallet, Zap, CheckCircle } from 'lucide-react';
-import { useMiniPay } from '@/hooks/useMiniPay';
+import { Wallet, Zap, CheckCircle, Loader2 } from 'lucide-react';
+import { useMiniPayContext } from '@/components/MiniPayAuthWrapper';
 import { BrandButton } from './ui/brand-button';
 
 interface MiniPayBannerProps {
   onDepositClick?: () => void;
 }
 
+/**
+ * MiniPayBanner - Shows wallet status in MiniPay environment
+ * 
+ * Per MiniPay docs: "Never show a connect button"
+ * Connection happens automatically on page load.
+ * This banner shows the auto-connected wallet status.
+ */
 export const MiniPayBanner = ({ onDepositClick }: MiniPayBannerProps) => {
-  const { isMiniPay, isConnected, cusdBalance, connect, isLoading } = useMiniPay();
+  const { isMiniPay, walletAddress, cusdBalance, isConnecting } = useMiniPayContext();
 
   if (!isMiniPay) return null;
 
@@ -23,42 +30,37 @@ export const MiniPayBanner = ({ onDepositClick }: MiniPayBannerProps) => {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <p className="font-medium text-sm">MiniPay Connected</p>
+                <p className="font-medium text-sm">MiniPay Wallet</p>
                 <Badge className="bg-green-600 text-xs py-0">
                   <Zap className="h-3 w-3 mr-1" />
                   Fast
                 </Badge>
               </div>
-              {isConnected ? (
+              {isConnecting ? (
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Connecting...
+                </p>
+              ) : walletAddress ? (
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                   <CheckCircle className="h-3 w-3 text-green-500" />
                   Balance: ${cusdBalance} cUSD
                 </p>
               ) : (
                 <p className="text-xs text-muted-foreground">
-                  Tap to connect wallet
+                  Wallet ready
                 </p>
               )}
             </div>
           </div>
           
-          {isConnected ? (
+          {walletAddress && (
             <BrandButton 
               size="sm" 
               onClick={onDepositClick}
               className="bg-green-600 hover:bg-green-700"
             >
               Deposit
-            </BrandButton>
-          ) : (
-            <BrandButton 
-              size="sm" 
-              onClick={connect}
-              disabled={isLoading}
-              variant="outline"
-              className="border-green-500/50"
-            >
-              Connect
             </BrandButton>
           )}
         </div>

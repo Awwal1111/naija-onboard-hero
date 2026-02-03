@@ -1,5 +1,5 @@
-import { ReactNode, createContext, useContext, useCallback, useState } from 'react'
-import { detectMiniPaySync, getMiniPayAccount, getMiniPayCUSDBalance, getMiniPayUSDTBalance } from '@/lib/minipay'
+import { ReactNode, createContext, useContext, useCallback, useState, useEffect, useRef } from 'react'
+import { detectMiniPaySync, getMiniPayAccount, connectMiniPay, getMiniPayCUSDBalance, getMiniPayUSDTBalance } from '@/lib/minipay'
 
 interface MiniPayContextType {
   isMiniPay: boolean
@@ -8,6 +8,7 @@ interface MiniPayContextType {
   cusdBalance: string
   usdtBalance: string
   isConnecting: boolean
+  isAutoConnected: boolean
   connectWallet: () => Promise<string | null>
   refreshBalances: () => Promise<void>
 }
@@ -22,6 +23,7 @@ const MiniPayContext = createContext<MiniPayContextType>({
   cusdBalance: '0',
   usdtBalance: '0',
   isConnecting: false,
+  isAutoConnected: false,
   connectWallet: async () => null,
   refreshBalances: async () => {}
 })
@@ -33,24 +35,26 @@ interface MiniPayAuthWrapperProps {
 }
 
 /**
- * MiniPayAuthWrapper - SIMPLIFIED VERSION
+ * MiniPayAuthWrapper - Auto-connects wallet on page load per MiniPay docs
  * 
- * Purpose: Provide MiniPay wallet connection for DEPOSITS ONLY
+ * CRITICAL: Per MiniPay documentation:
+ * - "Never show a connect button in Mini Apps"
+ * - "Connection should happen automatically on page load"
  * 
- * Key changes:
- * - NO custom authentication (uses normal Supabase Auth)
- * - NO user profile management  
- * - ONLY handles wallet connection for deposits
- * - Users log in normally, then can deposit via MiniPay
+ * This wrapper auto-connects the injected wallet when in MiniPay environment.
  */
 export const MiniPayAuthWrapper = ({ children }: MiniPayAuthWrapperProps) => {
   const [walletAddress, setWalletAddress] = useState<string | null>(null)
   const [cusdBalance, setCusdBalance] = useState('0')
   const [usdtBalance, setUsdtBalance] = useState('0')
   const [isConnecting, setIsConnecting] = useState(false)
+  const [isAutoConnected, setIsAutoConnected] = useState(false)
+  
+  // Prevent double initialization
+  const initRef = useRef(false)
 
   /**
-   * Connect wallet - only called when user wants to deposit
+   * Connect wallet - can be called manually or auto on page load
    */
   const connectWallet = useCallback(async (): Promise<string | null> => {
     if (walletAddress) return walletAddress
@@ -59,10 +63,16 @@ export const MiniPayAuthWrapper = ({ children }: MiniPayAuthWrapperProps) => {
     setIsConnecting(true)
     
     try {
-      const address = await getMiniPayAccount()
+      // First try to get existing account (MiniPay may auto-expose)
+      let address = await getMiniPayAccount()
+      
+      // If no account, explicitly request connection
+      if (!address && initialDetection.isMiniPay) {
+        address = await connectMiniPay()
+      }
       
       if (address) {
-        // Fetch balances
+        // Fetch balances in parallel
         const [cusd, usdt] = await Promise.all([
           getMiniPayCUSDBalance(address).catch(() => '0'),
           getMiniPayUSDTBalance(address).catch(() => '0')
@@ -72,6 +82,7 @@ export const MiniPayAuthWrapper = ({ children }: MiniPayAuthWrapperProps) => {
         setCusdBalance(parseFloat(cusd).toFixed(2))
         setUsdtBalance(parseFloat(usdt).toFixed(2))
         
+        console.log('[MiniPay] Connected:', address)
         return address
       }
       
@@ -83,6 +94,32 @@ export const MiniPayAuthWrapper = ({ children }: MiniPayAuthWrapperProps) => {
       setIsConnecting(false)
     }
   }, [walletAddress])
+
+  /**
+   * AUTO-CONNECT on page load (per MiniPay documentation)
+   * "Connection should happen automatically on page load"
+   */
+  useEffect(() => {
+    // Only auto-connect in MiniPay environment
+    if (!initialDetection.isMiniPay) return
+    if (!initialDetection.hasProvider) return
+    if (initRef.current) return
+    
+    initRef.current = true
+    
+    const autoConnect = async () => {
+      console.log('[MiniPay] Auto-connecting on page load...')
+      const address = await connectWallet()
+      if (address) {
+        setIsAutoConnected(true)
+        console.log('[MiniPay] Auto-connected successfully:', address)
+      }
+    }
+    
+    // Small delay to ensure provider is fully injected
+    const timer = setTimeout(autoConnect, 100)
+    return () => clearTimeout(timer)
+  }, [connectWallet])
 
   /**
    * Refresh balances for connected wallet
@@ -110,6 +147,7 @@ export const MiniPayAuthWrapper = ({ children }: MiniPayAuthWrapperProps) => {
     cusdBalance,
     usdtBalance,
     isConnecting,
+    isAutoConnected,
     connectWallet,
     refreshBalances
   }
@@ -131,6 +169,7 @@ export const useMiniPayWallet = () => {
     cusdBalance: context.cusdBalance,
     usdtBalance: context.usdtBalance,
     isConnected: !!context.walletAddress,
+    isAutoConnected: context.isAutoConnected,
     connect: context.connectWallet
   }
 }
