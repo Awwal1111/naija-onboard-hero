@@ -9,11 +9,12 @@ import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { Progress } from '@/components/ui/progress'
-import { Users, Globe, Lock, Plus, X, Image, Video, FileText, Briefcase, Loader2 } from 'lucide-react'
+import { Users, Globe, Lock, Plus, X, Image, Video, FileText, Briefcase, Loader2, Sparkles } from 'lucide-react'
 import { useFileUpload } from '@/hooks/useFileUpload'
 import { useVideoUpload } from '@/hooks/useVideoUpload'
 import { useToast } from '@/hooks/use-toast'
 import { useRoleFeatures } from '@/hooks/useRoleFeatures'
+import { AIWritingAssistant } from '@/components/AIWritingAssistant'
 
 interface EnhancedCreatePostDialogProps {
   isOpen: boolean
@@ -405,9 +406,18 @@ ${jobData.skills.length > 0 ? `🎯 Skills: ${jobData.skills.join(', ')}` : ''}`
 
           {/* Content field */}
           <div>
-            <Label htmlFor="content">
-              {postType === 'job' ? 'Job Description *' : 'What\'s on your mind? *'}
-            </Label>
+            <div className="flex items-center justify-between mb-1">
+              <Label htmlFor="content">
+                {postType === 'job' ? 'Job Description *' : 'What\'s on your mind? *'}
+              </Label>
+              <AIWritingAssistant
+                text={content}
+                onApply={setContent}
+                context={postType === 'job' ? 'job' : 'post'}
+                contextData={{ profession: userProfile?.profession }}
+                variant="button"
+              />
+            </div>
             <Textarea
               id="content"
               value={content}

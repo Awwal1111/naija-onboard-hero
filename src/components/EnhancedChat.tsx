@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { ArrowLeft, Paperclip, Smile, Send, X, Image as ImageIcon, FileText, Video, ShieldOff, Mic, Zap, MapPin } from 'lucide-react'
+import { ArrowLeft, Paperclip, Smile, Send, X, Image as ImageIcon, FileText, Video, ShieldOff, Mic, Zap, MapPin, Sparkles } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useChat } from '@/hooks/useChat'
@@ -21,6 +21,7 @@ import { QuickReplyTemplates } from '@/components/QuickReplyTemplates'
 import { LocationShareButton } from '@/components/chat/LocationShareButton'
 import { LocationMessage, parseLocationMessage, createLocationMessageContent } from '@/components/chat/LocationMessage'
 import { ChatContactBar } from '@/components/chat/ChatContactBar'
+import { AIWritingAssistant } from '@/components/AIWritingAssistant'
 
 // Simple emoji picker component
 const EmojiPicker = ({ onSelect, onClose }: { onSelect: (emoji: string) => void; onClose: () => void }) => {
@@ -595,6 +596,14 @@ const EnhancedChat = () => {
             >
               <Zap className={`h-5 w-5 ${showQuickReplies ? 'text-primary' : 'text-text-secondary'}`} />
             </button>
+            
+            {/* AI Writing Assistant */}
+            <AIWritingAssistant
+              text={newMessage}
+              onApply={(text) => setNewMessage(text)}
+              context="message"
+              className="p-2"
+            />
             
             {/* Location Share Button */}
             <LocationShareButton
