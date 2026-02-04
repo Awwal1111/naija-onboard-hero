@@ -28,17 +28,26 @@ type WritingMode =
   | 'write_job_description'
   | 'improve_profile'
   | 'translate_pidgin'
-  | 'translate_english';
+  | 'translate_english'
+  | 'write_gig_description'
+  | 'write_gig_title'
+  | 'write_course_description'
+  | 'write_course_curriculum'
+  | 'write_contest_brief'
+  | 'write_application'
+  | 'improve_listing'
+  | 'add_keywords';
 
 interface AIWritingAssistantProps {
   text: string
   onApply: (newText: string) => void
-  context?: 'message' | 'post' | 'profile' | 'proposal' | 'job'
+  context?: 'message' | 'post' | 'profile' | 'proposal' | 'job' | 'gig' | 'course' | 'contest' | 'application'
   placeholder?: string
   contextData?: {
     profession?: string
     industry?: string
     tone?: string
+    category?: string
   }
   variant?: 'icon' | 'button' | 'inline'
   className?: string
@@ -109,15 +118,59 @@ const modeConfig: Record<WritingMode, { label: string; icon: React.ReactNode; de
     label: 'Translate to English', 
     icon: <Languages className="h-4 w-4" />,
     description: 'Standard English'
+  },
+  write_gig_description: { 
+    label: 'Write Gig Description', 
+    icon: <FileText className="h-4 w-4" />,
+    description: 'Create service listing'
+  },
+  write_gig_title: { 
+    label: 'Generate Gig Titles', 
+    icon: <Sparkles className="h-4 w-4" />,
+    description: 'Get catchy title ideas'
+  },
+  write_course_description: { 
+    label: 'Write Course Description', 
+    icon: <FileText className="h-4 w-4" />,
+    description: 'Create course overview'
+  },
+  write_course_curriculum: { 
+    label: 'Generate Curriculum', 
+    icon: <FileText className="h-4 w-4" />,
+    description: 'Plan course modules'
+  },
+  write_contest_brief: { 
+    label: 'Write Contest Brief', 
+    icon: <FileText className="h-4 w-4" />,
+    description: 'Create contest description'
+  },
+  write_application: { 
+    label: 'Write Application', 
+    icon: <Briefcase className="h-4 w-4" />,
+    description: 'Job application letter'
+  },
+  improve_listing: { 
+    label: 'Improve Listing', 
+    icon: <Wand2 className="h-4 w-4" />,
+    description: 'Optimize for conversions'
+  },
+  add_keywords: { 
+    label: 'Add Keywords', 
+    icon: <Sparkles className="h-4 w-4" />,
+    description: 'SEO optimization'
   }
 }
 
 const contextModes: Record<string, WritingMode[]> = {
   message: ['refine_message', 'make_professional', 'make_friendly', 'make_shorter', 'fix_grammar', 'translate_pidgin', 'translate_english'],
   post: ['refine_message', 'write_post', 'make_professional', 'make_shorter', 'make_longer', 'fix_grammar'],
-  profile: ['improve_profile', 'write_bio', 'make_professional', 'make_shorter', 'fix_grammar'],
+  profile: ['improve_profile', 'write_bio', 'make_professional', 'make_shorter', 'fix_grammar', 'add_keywords'],
   proposal: ['write_proposal', 'make_professional', 'refine_message', 'make_longer'],
-  job: ['write_job_description', 'improve_profile', 'make_professional']
+  job: ['write_job_description', 'improve_listing', 'make_professional', 'add_keywords'],
+  gig: ['write_gig_description', 'write_gig_title', 'improve_listing', 'make_professional', 'add_keywords', 'make_shorter'],
+  course: ['write_course_description', 'write_course_curriculum', 'improve_listing', 'add_keywords', 'make_professional'],
+  contest: ['write_contest_brief', 'improve_listing', 'make_professional', 'make_longer'],
+  application: ['write_application', 'write_proposal', 'make_professional', 'refine_message', 'add_keywords']
 }
 
 export const AIWritingAssistant: React.FC<AIWritingAssistantProps> = ({
