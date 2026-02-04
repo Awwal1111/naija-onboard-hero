@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Camera, Wallet, MoreVertical, Edit, Share, Settings, LogOut, Plus, ArrowLeft, Home, MessageCircle, Users, DollarSign, Phone, Mail, Award, Star, MapPin, Briefcase, UserPlus, Menu, Crown } from 'lucide-react'
+import { Camera, Wallet, MoreVertical, Edit, Share, Settings, LogOut, Plus, ArrowLeft, Home, MessageCircle, Users, DollarSign, Phone, Mail, Award, Star, MapPin, Briefcase, UserPlus, Menu, Crown, Sparkles } from 'lucide-react'
 import { useNavigate, useParams, useSearchParams, useLocation } from 'react-router-dom'
 import { MoreMenuDrawer } from '@/components/MoreMenuDrawer'
 import { Logo } from '@/components/ui/logo'
@@ -44,6 +44,7 @@ import { PortfolioVideos } from '@/components/premium/PortfolioVideos'
 import { PremiumFeatureGate } from '@/components/premium/PremiumFeatureGate'
 import { ProfileVisitorsCard } from '@/components/dashboard/ProfileVisitorsCard'
 import { trackProfileView } from '@/lib/profileViewTracker'
+import { AIWritingAssistant } from '@/components/AIWritingAssistant'
 
 const Profile = () => {
   const navigate = useNavigate()
@@ -952,7 +953,16 @@ const Profile = () => {
               placeholder="e.g., Freelance Designer"
             />
             <div className="space-y-2">
-              <label className="text-sm font-medium text-text-primary">Bio</label>
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-text-primary">Bio</label>
+                <AIWritingAssistant
+                  text={editForm.bio}
+                  onApply={(text) => setEditForm(prev => ({ ...prev, bio: text }))}
+                  context="profile"
+                  contextData={{ profession: editForm.profession }}
+                  variant="button"
+                />
+              </div>
               <textarea
                 value={editForm.bio}
                 onChange={(e) => setEditForm(prev => ({ ...prev, bio: e.target.value }))}

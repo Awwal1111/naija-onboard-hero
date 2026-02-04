@@ -221,3 +221,6 @@ verify_jwt = false
 
 [functions.telegram-weekly-summary]
 verify_jwt = false
+
+[functions.ai-writing-assistant]
+verify_jwt = false
