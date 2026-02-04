@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { AIWritingAssistant } from "@/components/AIWritingAssistant";
 
 interface EnhancedCourseDialogProps {
   trigger: React.ReactNode;
@@ -172,7 +173,16 @@ export default function EnhancedCourseDialog({ trigger }: EnhancedCourseDialogPr
       <DialogContent className="max-h-[90vh] overflow-y-auto max-w-3xl">
         <DialogHeader>
           <DialogTitle>Create Course</DialogTitle>
-          <p className="text-sm text-muted-foreground">Provide comprehensive details to attract students</p>
+          <div className="flex items-center gap-2 pt-2">
+            <AIWritingAssistant
+              text={formData.description}
+              onApply={(text) => setFormData({ ...formData, description: text })}
+              context="course"
+              contextData={{ profession: formData.course_category }}
+              variant="button"
+            />
+            <span className="text-xs text-muted-foreground">Let AI help you write compelling content</span>
+          </div>
         </DialogHeader>
         <div className="space-y-4 py-4">
           {/* Basic Information */}
@@ -245,7 +255,16 @@ export default function EnhancedCourseDialog({ trigger }: EnhancedCourseDialogPr
             </div>
 
             <div className="space-y-2">
-              <Label>Short Description</Label>
+              <div className="flex items-center justify-between">
+                <Label>Short Description</Label>
+                <AIWritingAssistant
+                  text={formData.description}
+                  onApply={(text) => setFormData({ ...formData, description: text })}
+                  context="course"
+                  contextData={{ profession: formData.course_category }}
+                  variant="icon"
+                />
+              </div>
               <Textarea
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}

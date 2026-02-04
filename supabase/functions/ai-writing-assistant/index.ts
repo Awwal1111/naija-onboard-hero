@@ -19,7 +19,15 @@ type WritingMode =
   | 'write_job_description'
   | 'improve_profile'
   | 'translate_pidgin'
-  | 'translate_english';
+  | 'translate_english'
+  | 'write_gig_description'
+  | 'write_gig_title'
+  | 'write_course_description'
+  | 'write_course_curriculum'
+  | 'write_contest_brief'
+  | 'write_application'
+  | 'improve_listing'
+  | 'add_keywords';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -97,7 +105,73 @@ ${context?.tone ? `Tone: ${context.tone}` : 'Professional but approachable'}`,
       
       translate_pidgin: `You are a Nigerian Pidgin English translator. Translate the following text to Nigerian Pidgin English. Make it natural and authentic, the way Nigerians actually speak Pidgin. Keep the meaning intact.`,
       
-      translate_english: `You are an English translator. Translate the following Nigerian Pidgin English to standard English. Keep the meaning and emotion intact while using proper English grammar.`
+      translate_english: `You are an English translator. Translate the following Nigerian Pidgin English to standard English. Keep the meaning and emotion intact while using proper English grammar.`,
+
+      write_gig_description: `You are an expert gig/service description writer for freelance marketplaces. Create a compelling, SEO-optimized gig description based on the following details. Include:
+- A powerful opening that hooks clients
+- Clear description of what you offer
+- What's included in the service
+- Your process/workflow
+- Why clients should choose you
+- Call to action
+Keep it under 500 words. Use bullet points for clarity.
+${context?.profession ? `Service type: ${context.profession}` : ''}`,
+
+      write_gig_title: `You are an expert at writing gig titles that attract clients. Create 3-5 catchy, SEO-optimized gig titles based on the following service description. Each title should:
+- Be under 60 characters
+- Include the key service
+- Start with "I will" format
+- Be specific and actionable
+${context?.profession ? `Category: ${context.profession}` : ''}`,
+
+      write_course_description: `You are an expert online course marketer. Create an engaging course description that sells. Include:
+- Hook that addresses the student's pain point
+- What they'll learn (specific outcomes)
+- Who it's for (target audience)
+- Why you're qualified to teach this
+- Call to action
+Make it scannable with short paragraphs.
+${context?.profession ? `Topic: ${context.profession}` : ''}`,
+
+      write_course_curriculum: `You are an expert curriculum designer. Create a well-structured course outline/curriculum based on the following topic. Include:
+- Module titles (5-8 modules)
+- Key lessons in each module (3-5 per module)
+- Learning objectives for each module
+- Suggested duration
+Make it progressive from beginner to advanced concepts.`,
+
+      write_contest_brief: `You are an expert at writing creative contest briefs. Create a clear, inspiring contest brief that attracts quality submissions. Include:
+- Project overview and goals
+- Style preferences and requirements
+- Deliverables expected
+- What makes a winning submission
+- Any technical requirements
+Make it motivating for designers/freelancers.`,
+
+      write_application: `You are an expert job application writer. Create a compelling job application/cover letter based on the following context. Include:
+- Personalized opening
+- Relevant experience highlights
+- Why you're a perfect fit
+- Enthusiasm for the opportunity
+- Professional closing
+Keep it concise but impactful.
+${context?.profession ? `Your profession: ${context.profession}` : ''}
+${context?.industry ? `Target industry: ${context.industry}` : ''}`,
+
+      improve_listing: `You are a marketplace listing optimization expert. Improve the following listing to be more compelling and discoverable. Focus on:
+- Better headline/title
+- Clearer value proposition
+- More persuasive language
+- Better structure
+- Keywords for searchability
+Keep the core offering the same.`,
+
+      add_keywords: `You are an SEO expert for marketplaces. Add relevant keywords and improve the following text for better discoverability. Include:
+- Industry-specific terms
+- Skill-related keywords
+- Problem-solving phrases
+- Action words
+Keep it natural - don't keyword stuff. Integrate keywords smoothly.`
     };
 
     const systemPrompt = systemPrompts[mode] || systemPrompts.refine_message;

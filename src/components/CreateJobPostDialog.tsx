@@ -6,11 +6,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { X, Loader2, Briefcase, MapPin, Calendar, DollarSign, Plus } from 'lucide-react';
+import { X, Loader2, Briefcase, MapPin, Calendar, DollarSign, Plus, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useNigerianStates } from '@/hooks/useNigerianStates';
+import { AIWritingAssistant } from '@/components/AIWritingAssistant';
 
 interface CreateJobPostDialogProps {
   open: boolean;
@@ -147,6 +148,15 @@ export const CreateJobPostDialog: React.FC<CreateJobPostDialogProps> = ({
             <Briefcase className="h-5 w-5 text-primary" />
             Post a Job
           </DialogTitle>
+          <div className="flex items-center gap-2 pt-2">
+            <AIWritingAssistant
+              text={formData.description}
+              onApply={(text) => handleInputChange('description', text)}
+              context="job"
+              variant="button"
+            />
+            <span className="text-xs text-muted-foreground">Let AI help you write</span>
+          </div>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -163,7 +173,15 @@ export const CreateJobPostDialog: React.FC<CreateJobPostDialogProps> = ({
 
           {/* Description */}
           <div className="space-y-1.5">
-            <label className="text-sm font-medium">Description *</label>
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium">Description *</label>
+              <AIWritingAssistant
+                text={formData.description}
+                onApply={(text) => handleInputChange('description', text)}
+                context="job"
+                variant="icon"
+              />
+            </div>
             <Textarea
               value={formData.description}
               onChange={(e) => handleInputChange('description', e.target.value)}

@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label'
 import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { useQueryClient } from '@tanstack/react-query'
+import { AIWritingAssistant } from '@/components/AIWritingAssistant'
 
 interface EditPostDialogProps {
   isOpen: boolean
@@ -99,7 +100,15 @@ const EditPostDialog: React.FC<EditPostDialogProps> = ({
           )}
 
           <div>
-            <Label htmlFor="content">Content</Label>
+            <div className="flex items-center justify-between mb-2">
+              <Label htmlFor="content">Content</Label>
+              <AIWritingAssistant
+                text={content}
+                onApply={(text) => setContent(text)}
+                context="post"
+                variant="icon"
+              />
+            </div>
             <Textarea
               id="content"
               value={content}

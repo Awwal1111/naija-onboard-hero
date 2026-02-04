@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react'
-import { ArrowLeft, Upload, X, Camera, Image as ImageIcon, Loader2 } from 'lucide-react'
+import { ArrowLeft, Upload, X, Camera, Image as ImageIcon, Loader2, Sparkles } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Logo } from '@/components/ui/logo'
 import { BrandButton } from '@/components/ui/brand-button'
@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
+import { AIWritingAssistant } from '@/components/AIWritingAssistant'
 
 const PostJob = () => {
   const navigate = useNavigate()
@@ -315,7 +316,16 @@ const PostJob = () => {
 
           {/* Basic Information */}
           <div className="space-y-4">
-            <h2 className="text-sm font-semibold">Basic Information</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold">Basic Information</h2>
+              <AIWritingAssistant
+                text={formData.title}
+                onApply={(text) => handleInputChange('title', text)}
+                context="gig"
+                contextData={{ profession: formData.category }}
+                variant="button"
+              />
+            </div>
             
             <BrandInput
               label="Service Title *"
@@ -355,7 +365,16 @@ const PostJob = () => {
 
           {/* Description */}
           <div className="space-y-3">
-            <h2 className="text-sm font-semibold">Description</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold">Description</h2>
+              <AIWritingAssistant
+                text={formData.description}
+                onApply={(text) => handleInputChange('description', text.slice(0, 500))}
+                context="gig"
+                contextData={{ profession: formData.category }}
+                variant="icon"
+              />
+            </div>
             
             <div className="space-y-2">
               <label className="text-sm font-medium">

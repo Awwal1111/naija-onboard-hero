@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
+import { AIWritingAssistant } from "@/components/AIWritingAssistant";
 
 interface EnhancedJobPostingDialogProps {
   trigger: React.ReactNode;
@@ -185,7 +186,16 @@ export default function EnhancedJobPostingDialog({ trigger, onJobCreated }: Enha
       <DialogContent className="max-h-[90vh] overflow-y-auto max-w-3xl">
         <DialogHeader>
           <DialogTitle>Post a Job Opening</DialogTitle>
-          <p className="text-sm text-muted-foreground">Fill in all details to attract qualified candidates</p>
+          <div className="flex items-center gap-2 pt-2">
+            <AIWritingAssistant
+              text={formData.description}
+              onApply={(text) => setFormData({ ...formData, description: text })}
+              context="job"
+              contextData={{ industry: formData.industry }}
+              variant="button"
+            />
+            <span className="text-xs text-muted-foreground">Let AI help you write job listings</span>
+          </div>
         </DialogHeader>
         <div className="space-y-4 py-4">
           {/* Basic Information */}
@@ -222,7 +232,16 @@ export default function EnhancedJobPostingDialog({ trigger, onJobCreated }: Enha
             </div>
 
             <div className="space-y-2">
-              <Label>Job Description *</Label>
+              <div className="flex items-center justify-between">
+                <Label>Job Description *</Label>
+                <AIWritingAssistant
+                  text={formData.description}
+                  onApply={(text) => setFormData({ ...formData, description: text })}
+                  context="job"
+                  contextData={{ industry: formData.industry }}
+                  variant="icon"
+                />
+              </div>
               <Textarea
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
