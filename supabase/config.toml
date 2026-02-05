@@ -224,3 +224,9 @@ verify_jwt = false
 
 [functions.ai-writing-assistant]
 verify_jwt = false
+
+[functions.ai-bug-report]
+verify_jwt = false
+
+[functions.send-bug-report]
+verify_jwt = false

@@ -468,6 +468,7 @@ const MainFeed = () => {
       <ProfileCompletionDialog 
         isOpen={shouldShowDialog}
         missingFields={missingFields}
+        onDismiss={() => {}}
       />
       
       {/* More Menu Drawer */}
