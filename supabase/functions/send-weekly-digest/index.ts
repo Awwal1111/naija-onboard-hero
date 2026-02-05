@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
     // Get all active users with email notifications enabled
     const { data: users, error: usersError } = await supabaseClient
       .from('profiles')
-      .select('user_id, full_name, user_mode, skills')
+      .select('user_id, full_name, user_mode, profession')
       .eq('email_notifications', true)
 
     if (usersError) throw usersError
@@ -156,7 +156,14 @@ Deno.serve(async (req) => {
         // Get recommended jobs for freelancers
         let jobsForEmail: any[] = []
         if (isFreelancer) {
-          const userSkills = user.skills || []
+          // Get user skills from skills table
+          const { data: userSkillsData } = await supabaseClient
+            .from('skills')
+            .select('skill_name')
+            .eq('user_id', user.user_id)
+
+          const userSkills = userSkillsData?.map(s => s.skill_name) || []
+          
           const { data: recommendedJobs } = await supabaseClient
             .from('job_posts')
             .select('title, budget, required_skills')
@@ -214,7 +221,7 @@ Deno.serve(async (req) => {
 
         // Send email
         const { error: emailError } = await resend.emails.send({
-          from: 'NaijaLancers <digest@naijalancers.name.ng>',
+          from: 'NaijaLancers <notifications@naijalancers.name.ng>',
           to: [userEmail],
           subject: subjectLine,
           html,

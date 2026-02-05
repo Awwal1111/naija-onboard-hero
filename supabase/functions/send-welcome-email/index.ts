@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
 
     // Send via Resend
     const { data, error } = await resend.emails.send({
-      from: 'NaijaLancers <welcome@naijalancers.name.ng>',
+      from: 'NaijaLancers <notifications@naijalancers.name.ng>',
       to: [email],
       subject: '🎉 Welcome to NaijaLancers - Your Freelance Journey Starts Now!',
       html,

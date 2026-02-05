@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
         )
 
         const { error } = await resend.emails.send({
-          from: 'NaijaLancers <engage@naijalancers.name.ng>',
+          from: 'NaijaLancers <notifications@naijalancers.name.ng>',
           to: [email],
           subject: `👤 Your profile is ${user.profile_completion || 0}% complete - finish it to get more jobs!`,
           html,
@@ -114,7 +114,7 @@ Deno.serve(async (req) => {
         )
 
         const { error } = await resend.emails.send({
-          from: 'NaijaLancers <engage@naijalancers.name.ng>',
+          from: 'NaijaLancers <notifications@naijalancers.name.ng>',
           to: [email],
           subject: `👋 We miss you! New opportunities are waiting`,
           html,
@@ -150,7 +150,7 @@ Deno.serve(async (req) => {
         )
 
         const { error } = await resend.emails.send({
-          from: 'NaijaLancers <engage@naijalancers.name.ng>',
+          from: 'NaijaLancers <notifications@naijalancers.name.ng>',
           to: [email],
           subject: `⭐ Rate your experience with "${gigTitle}"`,
           html,

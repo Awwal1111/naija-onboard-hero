@@ -108,7 +108,7 @@ Deno.serve(async (req) => {
 
     // Send email
     const { data, error } = await resend.emails.send({
-      from: 'NaijaLancers <jobs@naijalancers.name.ng>',
+      from: 'NaijaLancers <notifications@naijalancers.name.ng>',
       to: [userEmail],
       subject: subjects[request.alertType] || `Job Update: ${request.jobTitle}`,
       html,
