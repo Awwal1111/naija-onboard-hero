@@ -87,6 +87,24 @@ const CreateStoryDialog: React.FC<CreateStoryDialogProps> = ({
         throw new Error('User not authenticated')
       }
 
+      // Check if user already has an active story (limit to 1 per user)
+      const { data: existingStories, error: checkError } = await supabase
+        .from('stories')
+        .select('id')
+        .eq('user_id', user.user.id)
+        .gt('expires_at', new Date().toISOString())
+      
+      if (checkError) throw checkError
+      
+      if (existingStories && existingStories.length > 0) {
+        toast({
+          title: "Story limit reached",
+          description: "You already have an active story. Wait for it to expire (24 hours) or delete it first.",
+          variant: "destructive"
+        })
+        return
+      }
+
       let mediaUrl = null
 
       // Upload media if provided - ONLY images allowed for stories

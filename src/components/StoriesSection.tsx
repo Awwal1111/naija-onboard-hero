@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Plus, X, Eye, Users, ChevronDown, ChevronUp, Briefcase, MessageCircle } from 'lucide-react'
+import { Plus, X, Eye, Users, ChevronDown, ChevronUp, Briefcase, MessageCircle, Trash2 } from 'lucide-react'
 import { Story } from '@/hooks/useFeed'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -8,6 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { supabase } from '@/integrations/supabase/client'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '@/hooks/use-toast'
+import { useQueryClient } from '@tanstack/react-query'
 
 interface StoryViewer {
   user_id: string
@@ -34,6 +35,7 @@ const StoriesSection: React.FC<StoriesSectionProps> = ({
 }) => {
   const navigate = useNavigate()
   const { toast } = useToast()
+  const queryClient = useQueryClient()
   const [viewingStory, setViewingStory] = useState<Story | null>(null)
   const [currentStoryIndex, setCurrentStoryIndex] = useState(0)
   const [storyViewers, setStoryViewers] = useState<StoryViewer[]>([])
@@ -244,6 +246,37 @@ const StoriesSection: React.FC<StoriesSectionProps> = ({
     setStoryViewers([])
   }
 
+  // Delete own story
+  const handleDeleteStory = async (storyId: string) => {
+    if (!confirm('Delete this story? This cannot be undone.')) return
+    
+    try {
+      const { error } = await supabase
+        .from('stories')
+        .delete()
+        .eq('id', storyId)
+        .eq('user_id', currentUserId)
+      
+      if (error) throw error
+      
+      toast({
+        title: "Story deleted",
+        description: "Your story has been removed"
+      })
+      
+      // Refresh stories
+      queryClient.invalidateQueries({ queryKey: ['stories'] })
+      closeStoryViewer()
+    } catch (error) {
+      console.error('Error deleting story:', error)
+      toast({
+        title: "Error",
+        description: "Failed to delete story",
+        variant: "destructive"
+      })
+    }
+  }
+
   const handleViewerClick = (userId: string) => {
     closeStoryViewer()
     navigate(`/profile/${userId}`)
@@ -438,14 +471,27 @@ const StoriesSection: React.FC<StoriesSectionProps> = ({
                     {new Date(viewingStory.created_at).toLocaleTimeString()}
                   </span>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={closeStoryViewer}
-                  className="text-white hover:bg-white/20"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+                <div className="flex items-center gap-1">
+                  {/* Delete button for own stories */}
+                  {viewingStory.user_id === currentUserId && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDeleteStory(viewingStory.id)}
+                      className="text-destructive hover:bg-destructive/20"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={closeStoryViewer}
+                    className="text-white hover:bg-white/20"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
 
               {/* Story Content */}
