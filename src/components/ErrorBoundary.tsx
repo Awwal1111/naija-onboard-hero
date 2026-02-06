@@ -1,36 +1,97 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react'
-import { AlertTriangle, RefreshCw, Home, MessageCircle } from 'lucide-react'
+import { AlertTriangle, RefreshCw, Home, MessageCircle, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 interface Props {
   children: ReactNode
   fallback?: ReactNode
+  onError?: (error: Error, errorInfo: ErrorInfo) => void
 }
 
 interface State {
   hasError: boolean
   error: Error | null
   errorInfo: ErrorInfo | null
+  errorCount: number
+  lastErrorTime: number
 }
 
 class ErrorBoundary extends Component<Props, State> {
+  private retryTimeout: ReturnType<typeof setTimeout> | null = null
+  
   public state: State = {
     hasError: false,
     error: null,
-    errorInfo: null
+    errorInfo: null,
+    errorCount: 0,
+    lastErrorTime: 0
   }
 
-  public static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error, errorInfo: null }
+  public static getDerivedStateFromError(error: Error): Partial<State> {
+    return { hasError: true, error }
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo)
-    this.setState({ errorInfo })
+    const now = Date.now()
+    const timeSinceLastError = now - this.state.lastErrorTime
     
-    // Log to analytics/error tracking service
-    // You can integrate with services like Sentry here
+    // Reset error count if more than 30 seconds since last error
+    const newErrorCount = timeSinceLastError > 30000 ? 1 : this.state.errorCount + 1
+    
+    console.error('[ErrorBoundary] Caught error:', {
+      error: error.message,
+      stack: error.stack,
+      componentStack: errorInfo.componentStack,
+      errorCount: newErrorCount
+    })
+    
+    this.setState({ 
+      errorInfo,
+      errorCount: newErrorCount,
+      lastErrorTime: now
+    })
+    
+    // Call optional error handler
+    this.props.onError?.(error, errorInfo)
+    
+    // Auto-recovery: If this is a transient error (first occurrence),
+    // try to recover automatically after 2 seconds
+    if (newErrorCount === 1 && !this.isKnownFatalError(error)) {
+      this.retryTimeout = setTimeout(() => {
+        console.log('[ErrorBoundary] Attempting auto-recovery...')
+        this.handleRetry()
+      }, 2000)
+    }
+  }
+  
+  componentWillUnmount() {
+    if (this.retryTimeout) {
+      clearTimeout(this.retryTimeout)
+    }
+  }
+  
+  private isKnownFatalError(error: Error): boolean {
+    // Errors that should NOT auto-recover
+    const fatalPatterns = [
+      'ChunkLoadError',
+      'Loading chunk',
+      'Minified React error',
+      'Maximum update depth exceeded',
+      'Too many re-renders'
+    ]
+    
+    return fatalPatterns.some(pattern => 
+      error.message?.includes(pattern) || error.name?.includes(pattern)
+    )
+  }
+  
+  private handleRetry = () => {
+    this.setState({
+      hasError: false,
+      error: null,
+      errorInfo: null
+    })
   }
 
   private handleRefresh = () => {
@@ -50,6 +111,10 @@ class ErrorBoundary extends Component<Props, State> {
       console.error('Failed to clear storage:', e)
     }
     window.location.href = '/'
+  }
+  
+  private handleTryAgain = () => {
+    this.handleRetry()
   }
 
   public render() {
@@ -84,9 +149,15 @@ class ErrorBoundary extends Component<Props, State> {
               )}
               
               <div className="grid gap-3">
-                <Button onClick={this.handleRefresh} className="w-full" size="lg">
-                  <RefreshCw className="h-4 w-4 mr-2" />
+                {/* Show "Try Again" button that attempts recovery without reload */}
+                <Button onClick={this.handleTryAgain} className="w-full" size="lg">
+                  <RotateCcw className="h-4 w-4 mr-2" />
                   Try Again
+                </Button>
+                
+                <Button onClick={this.handleRefresh} variant="outline" className="w-full">
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Reload Page
                 </Button>
                 
                 <Button onClick={this.handleGoHome} variant="outline" className="w-full">
@@ -102,6 +173,15 @@ class ErrorBoundary extends Component<Props, State> {
                   Clear cache and refresh
                 </Button>
               </div>
+              
+              {this.state.errorCount > 2 && (
+                <div className="p-3 bg-warning/10 border border-warning/30 rounded-lg">
+                  <p className="text-sm text-warning">
+                    This error has occurred multiple times. If it persists, 
+                    try clearing cache or contact support.
+                  </p>
+                </div>
+              )}
               
               <div className="pt-4 border-t border-border">
                 <p className="text-sm text-muted-foreground text-center">
