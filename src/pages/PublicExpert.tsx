@@ -18,7 +18,7 @@ export default function PublicExpert() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('user_id, full_name, profession, bio, profile_picture_url, average_rating, state_name, area, lga_name, skills')
+        .select('user_id, full_name, profession, bio, profile_picture_url, average_rating, state_name, area, lga_name')
         .eq('user_id', userId)
         .eq('is_expert', true)
         .single();
