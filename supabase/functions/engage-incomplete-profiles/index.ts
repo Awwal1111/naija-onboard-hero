@@ -64,7 +64,7 @@ serve(async (req) => {
         bio,
         state_name,
         lga_name,
-        city,
+        area,
         user_mode,
         created_at,
         sms_job_alerts
@@ -99,9 +99,9 @@ serve(async (req) => {
       if (!profile.phone_number || profile.phone_number.trim() === '') missingFields.push('Phone Number');
       if (!profile.bio || profile.bio.trim() === '') missingFields.push('Bio');
       
-      // Location check - Nigeria uses state/lga, international uses city
+      // Location check - Nigeria uses state/lga, international uses area
       const hasNigerianLocation = profile.state_name && profile.lga_name;
-      const hasInternationalLocation = profile.city;
+      const hasInternationalLocation = profile.area;
       if (!hasNigerianLocation && !hasInternationalLocation) {
         missingFields.push('Location');
       }

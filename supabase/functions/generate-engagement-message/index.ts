@@ -46,14 +46,13 @@ serve(async (req) => {
         bio,
         state_name,
         lga_name,
-        city,
+        area,
         user_mode,
         is_expert,
         is_premium,
         wallet_balance,
         balance_withdrawable,
-        created_at,
-        skills
+        created_at
       `)
       .eq('user_id', userId)
       .single();
@@ -107,7 +106,7 @@ serve(async (req) => {
       fullName: profile.full_name,
       userMode: profile.user_mode || 'freelancer',
       profession: profile.profession,
-      location: profile.state_name || profile.city || 'Unknown',
+      location: profile.state_name || profile.area || 'Unknown',
       isExpert: profile.is_expert,
       isPremium: profile.is_premium,
       walletBalance: profile.wallet_balance || 0,
