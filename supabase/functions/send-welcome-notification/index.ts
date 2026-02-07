@@ -35,7 +35,7 @@ serve(async (req) => {
     // Get user profile
     const { data: profile } = await supabase
       .from("profiles")
-      .select("full_name, telegram_user_id, user_role, is_expert")
+      .select("full_name, telegram_user_id, user_mode, is_expert")
       .eq("user_id", user.id)
       .single();
 
