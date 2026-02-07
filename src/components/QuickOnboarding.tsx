@@ -93,7 +93,7 @@ export const QuickOnboarding: React.FC<QuickOnboardingProps> = ({
         country: (profile as any).country || '',
         state: (profile as any).state || '',
         lga: (profile as any).lga || '',
-        city: (profile as any).city || ''
+        city: (profile as any).area || ''
       }))
     }
   }, [profile])
@@ -166,14 +166,13 @@ export const QuickOnboarding: React.FC<QuickOnboardingProps> = ({
         await updateProfile({
           full_name: formData.full_name.trim(),
           profession: formData.profession.trim() || null,
-          country: formData.country,
-          state: isNigeria ? formData.state : null,
-          lga: isNigeria ? formData.lga : null,
-          city: !isNigeria ? formData.city : null,
-          remote_work: formData.remote,
+          country_code: formData.country,
+          state_name: isNigeria ? formData.state : null,
+          lga_name: isNigeria ? formData.lga : null,
+          area: !isNigeria ? formData.city : null,
           account_type: 'client',
-          user_mode: 'client', // Save user_mode for client
-          onboarding_completed: false // NOT completed yet - needs AI flow
+          user_mode: 'client',
+          onboarding_completed: false
         } as any)
 
         // Also update localStorage for immediate effect
@@ -209,13 +208,12 @@ export const QuickOnboarding: React.FC<QuickOnboardingProps> = ({
       await updateProfile({
         full_name: formData.full_name.trim(),
         profession: formData.profession.trim() || null,
-        country: formData.country,
-        state: isNigeria ? formData.state : null,
-        lga: isNigeria ? formData.lga : null,
-        city: !isNigeria ? formData.city : null,
-        remote_work: formData.remote,
+        country_code: formData.country,
+        state_name: isNigeria ? formData.state : null,
+        lga_name: isNigeria ? formData.lga : null,
+        area: !isNigeria ? formData.city : null,
         account_type: formData.account_type,
-        user_mode: userMode, // Save user_mode to profile
+        user_mode: userMode,
         onboarding_completed: true
       } as any)
 

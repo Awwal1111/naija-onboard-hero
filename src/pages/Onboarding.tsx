@@ -89,7 +89,7 @@ const Onboarding = () => {
         country: (profile as any).country || '',
         state: (profile as any).state || (profile as any).state_name || '',
         lga: (profile as any).lga || (profile as any).lga_name || '',
-        city: (profile as any).city || ''
+        city: (profile as any).area || ''
       }))
     }
   }, [profile])
@@ -159,11 +159,10 @@ const Onboarding = () => {
         await updateProfile({
           full_name: formData.full_name.trim(),
           profession: formData.profession.trim() || null,
-          country: formData.country,
+          country_code: formData.country,
           state_name: isNigeria ? formData.state : null,
           lga_name: isNigeria ? formData.lga : null,
-          city: !isNigeria ? formData.city : null,
-          remote_work: formData.remote,
+          area: !isNigeria ? formData.city : null,
           account_type: 'client',
           onboarding_completed: true
         } as any)
@@ -188,11 +187,10 @@ const Onboarding = () => {
       await updateProfile({
         full_name: formData.full_name.trim(),
         profession: formData.profession.trim() || null,
-        country: formData.country,
+        country_code: formData.country,
         state_name: isNigeria ? formData.state : null,
         lga_name: isNigeria ? formData.lga : null,
-        city: !isNigeria ? formData.city : null,
-        remote_work: formData.remote,
+        area: !isNigeria ? formData.city : null,
         account_type: 'freelancer',
         onboarding_completed: true
       } as any)
