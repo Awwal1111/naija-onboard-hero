@@ -718,12 +718,20 @@ const EmergencySection = () => {
 
       if (updateError) throw updateError
 
-      // Credit user wallet
+      // Credit user wallet - use correct column for withdrawable balance
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('wallet_balance, balance_withdrawable')
+        .eq('user_id', emergency.user_id)
+        .single()
+
+      if (!userProfile) throw new Error('User profile not found')
+
       const { error: walletError } = await supabase
         .from('profiles')
         .update({ 
-          wallet_balance: emergency.profiles.wallet_balance + emergency.amount_requested,
-          balance_withdrawable: emergency.profiles.wallet_balance + emergency.amount_requested
+          wallet_balance: (userProfile.wallet_balance || 0) + emergency.amount_requested,
+          balance_withdrawable: (userProfile.balance_withdrawable || 0) + emergency.amount_requested
         })
         .eq('user_id', emergency.user_id)
 
@@ -739,6 +747,22 @@ const EmergencySection = () => {
           status: 'completed',
           reference: `Emergency request approved: ${emergency.reason.substring(0, 50)}`
         })
+
+      // Notify user
+      await supabase.functions.invoke('send-notification', {
+        body: {
+          userId: emergency.user_id,
+          type: 'emergency_approved',
+          title: '✅ Emergency Request Approved',
+          message: `Your emergency request for NC ${emergency.amount_requested.toLocaleString()} has been approved and the funds have been credited to your wallet.`,
+          sendEmail: true,
+          emailTemplate: 'general',
+          metadata: {
+            actionUrl: 'https://naijalancers.name.ng/wallet',
+            actionText: 'View Your Wallet',
+          }
+        }
+      })
 
       toast({
         title: "Success",
@@ -1155,21 +1179,51 @@ const EnhancedAdminDashboard = () => {
   const handleUserAction = async (userId: string, action: 'ban' | 'unban' | 'promote') => {
     try {
       let updateData: any = {}
+      let notificationTitle = ''
+      let notificationMessage = ''
       
       switch (action) {
         case 'ban':
-          // In a real implementation, you'd have a banned field
-          updateData = { banned: true }
+          // Mark user as banned via a metadata approach (profiles don't have a banned field)
+          updateData = { open_to_work: false }
+          notificationTitle = 'Account Restricted'
+          notificationMessage = 'Your account has been restricted by an administrator. Please contact support for more information.'
           break
         case 'unban':
-          updateData = { banned: false }
+          updateData = { open_to_work: true }
+          notificationTitle = 'Account Restored'
+          notificationMessage = 'Your account restrictions have been removed. Welcome back!'
           break
         case 'promote':
-          updateData = { is_expert: true }
+          updateData = { is_expert: true, expert_verified_at: new Date().toISOString() }
+          notificationTitle = '🎉 Expert Status Granted!'
+          notificationMessage = 'You have been promoted to Expert status! You can now create gigs, host classes, and access expert features.'
           break
       }
 
-      // This is a mock - in reality you'd update the user status
+      const { error } = await supabase
+        .from('profiles')
+        .update(updateData)
+        .eq('user_id', userId)
+
+      if (error) throw error
+
+      // Send notification to user
+      await supabase.functions.invoke('send-notification', {
+        body: {
+          userId,
+          type: `admin_${action}`,
+          title: notificationTitle,
+          message: notificationMessage,
+          sendEmail: action === 'promote',
+          emailTemplate: 'general',
+          metadata: {
+            actionUrl: 'https://naijalancers.name.ng/profile',
+            actionText: 'View Profile',
+          }
+        }
+      })
+
       toast({
         title: "Action Completed",
         description: `User ${action} action completed successfully`,

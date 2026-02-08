@@ -65,15 +65,21 @@ export const AdminExpertVerification: React.FC = () => {
       
       if (error) throw error;
 
-      // Send notification to user
+      // Send notification to user (userId is the correct field name for send-notification)
       await supabase.functions.invoke('send-notification', {
         body: {
-          user_id: userId,
+          userId: userId,
           type: 'expert_verification',
-          title: status === 'verified' ? 'Verification Approved!' : 'Verification Rejected',
+          title: status === 'verified' ? 'Verification Approved! ✅' : 'Verification Update',
           message: status === 'verified' 
-            ? 'Congratulations! Your expert status has been verified. You now have access to all expert benefits.'
+            ? 'Congratulations! Your expert status has been verified. You now have access to all expert benefits including priority visibility and verified badge.'
             : `Your verification was not approved. ${feedback || 'Please contact support for more information.'}`,
+          sendEmail: true,
+          emailTemplate: 'general',
+          metadata: {
+            actionUrl: 'https://naijalancers.name.ng/expert-profile',
+            actionText: status === 'verified' ? 'View Your Expert Profile' : 'Update Your Profile',
+          }
         }
       });
     },
