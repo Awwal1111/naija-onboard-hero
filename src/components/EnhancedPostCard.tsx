@@ -242,6 +242,13 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
           color: 'bg-primary text-primary-foreground',
           borderColor: 'border-primary/30 shadow-sm shadow-primary/10'
         }
+      case 'gig':
+        return { 
+          icon: Briefcase, 
+          label: 'SERVICE / GIG', 
+          color: 'bg-blue-600 text-white',
+          borderColor: 'border-blue-600/30 shadow-sm shadow-blue-600/10'
+        }
       case 'achievement':
         return { 
           icon: Award, 

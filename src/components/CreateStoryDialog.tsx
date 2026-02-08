@@ -124,37 +124,51 @@ const CreateStoryDialog: React.FC<CreateStoryDialogProps> = ({
         setUploadProgress(20)
         
         try {
-          // Try Catbox first (no CORS issues with file uploads)
-          const { url, error } = await uploadToCatbox(mediaFile)
+          // Use Supabase Storage (stories bucket) - more reliable than Catbox
+          const fileExt = mediaFile.name.split('.').pop() || 'jpg'
+          const fileName = `${user.user.id}/${Date.now()}.${fileExt}`
+          
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('stories')
+            .upload(fileName, mediaFile, {
+              cacheControl: '3600',
+              upsert: false
+            })
           
           setUploadProgress(80)
           
-          if (url && !error) {
-            mediaUrl = url
-            setUploadProgress(100)
-            toast({
-              title: "Uploaded successfully",
-              description: "Media uploaded!"
-            })
-          } else {
-            // Fallback: Use data URL for smaller files (under 2MB)
-            if (mediaFile.size <= 2 * 1024 * 1024) {
+          if (uploadError) {
+            console.error('Supabase storage upload error:', uploadError)
+            // Fallback to Catbox
+            const { url, error } = await uploadToCatbox(mediaFile)
+            if (url && !error) {
+              mediaUrl = url
+            } else if (mediaFile.size <= 2 * 1024 * 1024) {
+              // Final fallback: base64 for small files
               mediaUrl = await new Promise<string>((resolve, reject) => {
                 const reader = new FileReader()
                 reader.onload = () => resolve(reader.result as string)
                 reader.onerror = reject
                 reader.readAsDataURL(mediaFile)
               })
-              setUploadProgress(100)
-              toast({
-                title: "Uploaded successfully",
-                description: "Media ready!"
-              })
             } else {
-              throw new Error(error || 'Upload failed. Try a smaller file (under 2MB).')
+              throw new Error('Upload failed. Please try a smaller image.')
             }
+          } else {
+            // Get public URL from Supabase
+            const { data: urlData } = supabase.storage
+              .from('stories')
+              .getPublicUrl(uploadData.path)
+            mediaUrl = urlData.publicUrl
           }
+          
+          setUploadProgress(100)
+          toast({
+            title: "Uploaded successfully",
+            description: "Image uploaded!"
+          })
         } catch (uploadError: any) {
+          console.error('Story upload error:', uploadError)
           // Final fallback for small files
           if (mediaFile.size <= 2 * 1024 * 1024) {
             mediaUrl = await new Promise<string>((resolve, reject) => {
@@ -165,7 +179,7 @@ const CreateStoryDialog: React.FC<CreateStoryDialogProps> = ({
             })
             setUploadProgress(100)
           } else {
-            throw new Error('Upload failed. Please try a smaller image/video (under 2MB).')
+            throw new Error('Upload failed. Please try a smaller image.')
           }
         }
         
