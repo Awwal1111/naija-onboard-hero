@@ -130,7 +130,7 @@ export const AdminReferralTasksSection = () => {
     }
   }
 
-  const handleApprove = async (submissionId: string, userId: string, reward: number) => {
+  const handleApprove = async (submissionId: string, userId: string, reward: number, taskTitle?: string) => {
     try {
       // Update submission status
       const { error: updateError } = await supabase
@@ -151,8 +151,8 @@ export const AdminReferralTasksSection = () => {
         const { error: walletError } = await supabase
           .from('profiles')
           .update({
-            wallet_balance: profile.wallet_balance + reward,
-            balance_withdrawable: profile.balance_withdrawable + reward
+            wallet_balance: (profile.wallet_balance || 0) + reward,
+            balance_withdrawable: (profile.balance_withdrawable || 0) + reward
           })
           .eq('user_id', userId)
 
@@ -169,6 +169,22 @@ export const AdminReferralTasksSection = () => {
         metadata: { task_id: submissionId }
       })
 
+      // Notify user about approval
+      await supabase.functions.invoke('send-notification', {
+        body: {
+          userId,
+          type: 'task_approved',
+          title: '✅ Task Approved!',
+          message: `Your submission for "${taskTitle || 'task'}" has been approved! ${reward} NC has been credited to your wallet.`,
+          sendEmail: true,
+          emailTemplate: 'general',
+          metadata: {
+            actionUrl: 'https://naijalancers.name.ng/wallet',
+            actionText: 'View Your Wallet',
+          }
+        }
+      })
+
       toast.success(`Approved! ${reward} NC credited to user`)
       fetchSubmissions()
     } catch (error) {
@@ -177,7 +193,7 @@ export const AdminReferralTasksSection = () => {
     }
   }
 
-  const handleReject = async (submissionId: string, userId: string, reason?: string) => {
+  const handleReject = async (submissionId: string, userId: string, taskTitle?: string, reason?: string) => {
     try {
       const { error } = await supabase
         .from('referral_submissions')
@@ -188,6 +204,21 @@ export const AdminReferralTasksSection = () => {
         .eq('id', submissionId)
 
       if (error) throw error
+
+      // Notify user about rejection
+      await supabase.functions.invoke('send-notification', {
+        body: {
+          userId,
+          type: 'task_rejected',
+          title: 'Task Submission Update',
+          message: `Your submission for "${taskTitle || 'task'}" was not approved. ${reason || 'Please review the requirements and try again.'}`,
+          metadata: {
+            actionUrl: 'https://naijalancers.name.ng/referral-tasks',
+            actionText: 'View Tasks',
+          }
+        }
+      })
+
       toast.success('Submission rejected')
       fetchSubmissions()
     } catch (error) {
@@ -278,7 +309,7 @@ export const AdminReferralTasksSection = () => {
               <div className="flex gap-2">
                 <Button
                   size="sm"
-                  onClick={() => handleApprove(submission.id, submission.user_id, submission.task?.reward || 0)}
+                  onClick={() => handleApprove(submission.id, submission.user_id, submission.task?.reward || 0, submission.task?.title)}
                   className="flex-1"
                 >
                   <CheckCircle className="h-4 w-4 mr-2" />
@@ -287,7 +318,7 @@ export const AdminReferralTasksSection = () => {
                 <Button
                   size="sm"
                   variant="destructive"
-                  onClick={() => handleReject(submission.id, submission.user_id)}
+                  onClick={() => handleReject(submission.id, submission.user_id, submission.task?.title)}
                   className="flex-1"
                 >
                   <XCircle className="h-4 w-4 mr-2" />

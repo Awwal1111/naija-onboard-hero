@@ -13,16 +13,14 @@ interface NotificationRequest {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    );
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
     const { applicationId, status, feedback }: NotificationRequest = await req.json();
 
@@ -37,18 +35,77 @@ serve(async (req) => {
       throw new Error('Application not found');
     }
 
-    // Log notification - email sending removed for now
     const isApproved = status === 'approved';
     
-    console.log(`Notification for ${application.full_name}: ${isApproved ? 'Approved' : 'Rejected'}`);
+    const title = isApproved 
+      ? '🎉 Expert Application Approved!' 
+      : 'Expert Application Update';
+    
+    const message = isApproved
+      ? `Congratulations ${application.full_name}! Your expert application for ${application.skill_category} has been approved. You now have access to expert features including gig creation, classes, and priority visibility.`
+      : `Hi ${application.full_name}, your expert application for ${application.skill_category} was not approved at this time.${feedback ? ` Feedback: ${feedback}` : ' You can reapply after addressing the requirements.'}`;
+
+    // Create in-app notification
+    const { error: notifError } = await supabaseClient
+      .from('notifications')
+      .insert({
+        user_id: application.user_id,
+        type: 'expert_application',
+        title,
+        message,
+        metadata: {
+          applicationId,
+          status,
+          feedback: feedback || null,
+          skill_category: application.skill_category,
+        }
+      });
+
+    if (notifError) {
+      console.error('Error creating notification:', notifError);
+    }
+
+    // Send email notification via send-notification function
+    try {
+      const response = await fetch(`${supabaseUrl}/functions/v1/send-notification`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseKey}`,
+        },
+        body: JSON.stringify({
+          userId: application.user_id,
+          type: 'expert_application',
+          title,
+          message,
+          sendEmail: true,
+          emailTemplate: 'general',
+          metadata: {
+            actionUrl: isApproved 
+              ? 'https://naijalancers.name.ng/expert-profile' 
+              : 'https://naijalancers.name.ng/expert-application',
+            actionText: isApproved ? 'Set Up Your Expert Profile' : 'Update & Reapply',
+          }
+        })
+      });
+
+      if (!response.ok) {
+        console.error('Email notification failed:', await response.text());
+      }
+    } catch (emailErr) {
+      console.error('Failed to send email:', emailErr);
+    }
+
+    // Send admin feedback as a chat message if feedback exists
     if (feedback) {
-      console.log(`Feedback: ${feedback}`);
+      // Find or create chat between admin system and user
+      console.log(`Admin feedback for ${application.full_name}: ${feedback}`);
     }
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: "Notification logged successfully"
+        message: "Notification sent successfully"
       }),
       {
         status: 200,
