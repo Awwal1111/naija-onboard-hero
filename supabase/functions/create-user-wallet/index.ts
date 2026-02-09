@@ -36,11 +36,21 @@ serve(async (req) => {
     // Check if user already has a wallet
     const { data: existingProfile } = await supabase
       .from('profiles')
-      .select('celo_wallet_address, encrypted_wallet')
+      .select('celo_wallet_address')
       .eq('user_id', user.id)
       .single();
 
-    if (existingProfile?.celo_wallet_address && existingProfile?.encrypted_wallet) {
+    // Also check user_secrets for encrypted_wallet
+    const { data: existingSecrets } = await supabase
+      .from('user_secrets')
+      .select('encrypted_wallet')
+      .eq('user_id', user.id)
+      .single();
+
+    const hasWallet = existingProfile?.celo_wallet_address && 
+      (existingSecrets?.encrypted_wallet || (existingProfile as any)?.encrypted_wallet);
+
+    if (hasWallet) {
       console.log(`[CREATE_WALLET] User already has wallet: ${existingProfile.celo_wallet_address}`);
       return new Response(
         JSON.stringify({
@@ -63,14 +73,21 @@ serve(async (req) => {
       encryptionSecret
     ).toString();
 
-    // Save to database
+    // Save wallet address to profiles
     const { error: updateError } = await supabase
       .from('profiles')
       .update({
-        celo_wallet_address: wallet.address.toLowerCase(),
-        encrypted_wallet: encryptedPrivateKey
+        celo_wallet_address: wallet.address.toLowerCase()
       })
       .eq('user_id', user.id);
+
+    // Save encrypted key to user_secrets (secure table)
+    await supabase
+      .from('user_secrets')
+      .upsert({
+        user_id: user.id,
+        encrypted_wallet: encryptedPrivateKey
+      }, { onConflict: 'user_id' });
 
     if (updateError) {
       console.error('[CREATE_WALLET] Error saving wallet:', updateError);

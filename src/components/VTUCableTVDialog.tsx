@@ -10,6 +10,7 @@ import { Loader2, Tv, Info } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Link } from 'react-router-dom'
 import { useProfile } from '@/hooks/useProfile'
+import { useUserSecrets } from '@/hooks/useUserSecrets'
 
 interface VTUCableTVDialogProps {
   open: boolean
@@ -36,7 +37,7 @@ export function VTUCableTVDialog({ open, onOpenChange, currentBalance, onSuccess
   const [customerName, setCustomerName] = useState('')
   const [pin, setPin] = useState('')
   
-  const hasPin = Boolean((profile as any)?.transaction_pin)
+  const { hasPin } = useUserSecrets()
 
   const providers = [
     { value: 'dstv', label: 'DStv' },

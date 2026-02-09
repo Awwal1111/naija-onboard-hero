@@ -12,6 +12,7 @@ import { useProfile } from '@/hooks/useProfile'
 import { useLanguage } from '@/hooks/useLanguage'
 import { useBiometric } from '@/hooks/useBiometric'
 import { supabase } from '@/integrations/supabase/client'
+import { useUserSecrets } from '@/hooks/useUserSecrets'
 import { Logo } from '@/components/ui/logo'
 import { Separator } from '@/components/ui/separator'
 import { PushNotificationToggle } from '@/components/PushNotificationToggle'
@@ -67,6 +68,7 @@ const Settings = () => {
   const { toast } = useToast()
   const { user, signOut } = useAuth()
   const { profile, updateProfile } = useProfile()
+  const { hasPin } = useUserSecrets()
   const { language, setLanguage, t, languageNames } = useLanguage()
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
   const [profileVisibility, setProfileVisibility] = useState<'public' | 'registered' | 'private'>('public')
@@ -609,7 +611,7 @@ const Settings = () => {
               </div>
               <Button variant="outline" size="sm" onClick={() => navigate('/settings/pin')}>
                 <Lock className="h-4 w-4 mr-2" />
-                {(profile as any)?.transaction_pin ? 'Change' : 'Set Up'}
+                {hasPin ? 'Change' : 'Set Up'}
               </Button>
             </div>
 

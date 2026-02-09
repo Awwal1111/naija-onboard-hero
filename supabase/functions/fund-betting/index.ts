@@ -77,10 +77,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check user's wallet balance and PIN
+    // Check user's wallet balance
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('wallet_balance, balance_withdrawable, transaction_pin')
+      .select('wallet_balance, balance_withdrawable')
       .eq('user_id', user.id)
       .single();
 
@@ -89,8 +89,17 @@ Deno.serve(async (req) => {
       throw new Error('Failed to fetch user profile');
     }
 
+    // Get PIN from user_secrets
+    const { data: secrets } = await supabase
+      .from('user_secrets')
+      .select('transaction_pin')
+      .eq('user_id', user.id)
+      .single();
+
+    const transactionPin = secrets?.transaction_pin || (profile as any)?.transaction_pin;
+
     // Verify PIN
-    if (!profile.transaction_pin || profile.transaction_pin !== pin) {
+    if (!transactionPin || transactionPin !== pin) {
       return new Response(
         JSON.stringify({ success: false, error: 'Invalid PIN' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

@@ -13,6 +13,7 @@ import { Coins, Send, AlertCircle, Wallet, Info, ArrowDownUp, Smartphone, Extern
 import { SecurePinInput } from './SecurePinInput'
 import { useWallet } from '@/hooks/useWallet'
 import { useProfile } from '@/hooks/useProfile'
+import { useUserSecrets } from '@/hooks/useUserSecrets'
 import { useCeloWallet } from '@/hooks/useCeloWallet'
 import { useMiniPay } from '@/hooks/useMiniPay'
 import { useUserCountry } from '@/hooks/useUserCountry'
@@ -28,6 +29,7 @@ interface WithdrawalDialogProps {
 export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: WithdrawalDialogProps) => {
   const { initiateWithdrawal } = useWallet()
   const { profile } = useProfile()
+  const { transactionPin } = useUserSecrets()
   const { address: celoAddress, celoBalance, cUsdBalance, usdtBalance, loading: walletLoading } = useCeloWallet()
   const { isMiniPay } = useMiniPay()
   const { isNigerian } = useUserCountry()
@@ -74,7 +76,7 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
 
   const handlePinVerified = async (pin: string) => {
     // Verify PIN
-    if (pin !== (profile as any)?.transaction_pin) {
+    if (pin !== transactionPin) {
       toast.error('Incorrect PIN')
       return
     }

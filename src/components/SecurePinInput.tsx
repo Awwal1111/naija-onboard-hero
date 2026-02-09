@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Fingerprint, Lock } from 'lucide-react'
 import { useBiometric } from '@/hooks/useBiometric'
-import { useProfile } from '@/hooks/useProfile'
+import { useUserSecrets } from '@/hooks/useUserSecrets'
 import { toast } from 'sonner'
 
 interface SecurePinInputProps {
@@ -23,10 +23,8 @@ export const SecurePinInput = ({
 }: SecurePinInputProps) => {
   const [pin, setPin] = useState('')
   const [loading, setLoading] = useState(false)
-  const { profile } = useProfile()
+  const { hasPin, transactionPin } = useUserSecrets()
   const { isEnabled: biometricEnabled, isAvailable: biometricAvailable, authenticate } = useBiometric()
-
-  const hasPin = Boolean((profile as any)?.transaction_pin)
 
   const handleBiometric = async () => {
     if (!biometricEnabled || !biometricAvailable) return
@@ -35,10 +33,9 @@ export const SecurePinInput = ({
     try {
       const success = await authenticate()
       if (success) {
-        // If biometric succeeds, get the actual PIN from profile
-        const actualPin = (profile as any)?.transaction_pin
-        if (actualPin) {
-          onVerified(actualPin)
+        // If biometric succeeds, get the actual PIN from secrets
+        if (transactionPin) {
+          onVerified(transactionPin)
         } else {
           toast.error('PIN not set. Please set up your PIN in Settings')
         }

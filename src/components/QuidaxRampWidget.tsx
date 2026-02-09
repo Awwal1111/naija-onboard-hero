@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { ArrowDownUp, Info } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
+import { useUserSecrets } from '@/hooks/useUserSecrets'
 import { SecurePinInput } from './SecurePinInput'
 import { supabase } from '@/integrations/supabase/client'
 import { toast } from 'sonner'
@@ -29,6 +30,7 @@ declare global {
 export const QuidaxRampWidget = ({ open, onOpenChange, mode }: QuidaxRampWidgetProps) => {
   const { user } = useAuth()
   const { profile } = useProfile()
+  const { transactionPin } = useUserSecrets()
   const [amount, setAmount] = useState('')
   const [loading, setLoading] = useState(false)
   const [walletAddress, setWalletAddress] = useState<string>('')
@@ -65,7 +67,7 @@ export const QuidaxRampWidget = ({ open, onOpenChange, mode }: QuidaxRampWidgetP
 
   const handlePinVerified = (pin: string) => {
     // Verify PIN
-    if (pin !== (profile as any)?.transaction_pin) {
+    if (pin !== transactionPin) {
       toast.error('Incorrect PIN')
       return
     }

@@ -58,20 +58,28 @@ serve(async (req) => {
       throw new Error('Missing required fields')
     }
 
-    // Get user profile and validate PIN
+    // Get user profile balance
     const { data: profile, error: profileError } = await supabaseClient
       .from('profiles')
-      .select('transaction_pin, balance_withdrawable')
+      .select('balance_withdrawable')
       .eq('user_id', user.id)
       .single()
 
     if (profileError) throw profileError
 
-    if (!profile.transaction_pin) {
+    // Get PIN from user_secrets table
+    const { data: secrets, error: secretsError } = await supabaseClient
+      .from('user_secrets')
+      .select('transaction_pin')
+      .eq('user_id', user.id)
+      .single()
+
+    const transactionPin = secrets?.transaction_pin || (profile as any)?.transaction_pin
+    if (!transactionPin) {
       throw new Error('Please set up your transaction PIN first')
     }
 
-    if (profile.transaction_pin !== pin) {
+    if (transactionPin !== pin) {
       throw new Error('Incorrect PIN')
     }
 

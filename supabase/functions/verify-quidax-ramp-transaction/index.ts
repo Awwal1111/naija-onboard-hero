@@ -85,9 +85,18 @@ serve(async (req) => {
     // Get user profile with wallet info
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('wallet_balance, balance_withdrawable, celo_wallet_address, encrypted_wallet, full_name')
+      .select('wallet_balance, balance_withdrawable, celo_wallet_address, full_name')
       .eq('user_id', user.id)
       .single()
+
+    // Get encrypted_wallet from user_secrets
+    const { data: secrets } = await supabase
+      .from('user_secrets')
+      .select('encrypted_wallet')
+      .eq('user_id', user.id)
+      .single()
+    
+    const encryptedWallet = secrets?.encrypted_wallet || (profile as any)?.encrypted_wallet
 
     if (profileError || !profile) {
       throw new Error('Failed to fetch user profile')
@@ -224,7 +233,7 @@ serve(async (req) => {
       })
 
       // ===== SWEEP FUNDS TO MASTER WALLET =====
-      if (profile.encrypted_wallet && profile.celo_wallet_address) {
+      if (encryptedWallet && profile.celo_wallet_address) {
         console.log(`[VERIFY_QUIDAX] Attempting sweep to master wallet...`)
         
         try {
@@ -246,7 +255,7 @@ serve(async (req) => {
           if (masterAddressData && masterKeyData) {
             const masterAddress = masterAddressData.value
             const masterPrivateKey = CryptoJS.AES.decrypt(masterKeyData.value, encryptionSecret).toString(CryptoJS.enc.Utf8)
-            const userPrivateKey = CryptoJS.AES.decrypt(profile.encrypted_wallet, encryptionSecret).toString(CryptoJS.enc.Utf8)
+            const userPrivateKey = CryptoJS.AES.decrypt(encryptedWallet, encryptionSecret).toString(CryptoJS.enc.Utf8)
 
             if (masterPrivateKey && userPrivateKey) {
               const masterWallet = new ethers.Wallet(masterPrivateKey, provider)
