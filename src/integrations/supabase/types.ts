@@ -6005,6 +6005,42 @@ export type Database = {
         }
         Relationships: []
       }
+      user_secrets: {
+        Row: {
+          api_key: string | null
+          backup_codes: string[] | null
+          created_at: string
+          encrypted_wallet: string | null
+          id: string
+          totp_secret: string | null
+          transaction_pin: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          api_key?: string | null
+          backup_codes?: string[] | null
+          created_at?: string
+          encrypted_wallet?: string | null
+          id?: string
+          totp_secret?: string | null
+          transaction_pin?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          api_key?: string | null
+          backup_codes?: string[] | null
+          created_at?: string
+          encrypted_wallet?: string | null
+          id?: string
+          totp_secret?: string | null
+          transaction_pin?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_section_progress: {
         Row: {
           completed_at: string | null
@@ -6963,6 +6999,27 @@ export type Database = {
           is_expert: boolean
           profession: string
           profile_picture_url: string
+          user_id: string
+        }[]
+      }
+      get_safe_public_profile: {
+        Args: { target_user_id: string }
+        Returns: {
+          area: string
+          average_rating: number
+          bio: string
+          completed_jobs_count: number
+          connections_count: number
+          created_at: string
+          expert_verified_at: string
+          full_name: string
+          is_boosted: boolean
+          is_expert: boolean
+          lga_name: string
+          profession: string
+          profile_picture_url: string
+          rating_count: number
+          state_name: string
           user_id: string
         }[]
       }
