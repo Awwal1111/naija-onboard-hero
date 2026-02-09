@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Loader2, TrendingUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useProfile } from '@/hooks/useProfile';
+import { useUserSecrets } from '@/hooks/useUserSecrets';
 
 interface BettingFundDialogProps {
   open: boolean;
@@ -38,7 +39,7 @@ export const BettingFundDialog = ({ open, onOpenChange, currentBalance, onSucces
   const [pin, setPin] = useState<string>('');
   const [showPinInput, setShowPinInput] = useState(false);
   
-  const hasPin = Boolean((profile as any)?.transaction_pin);
+  const { hasPin } = useUserSecrets();
 
   const handleContinue = () => {
     if (!provider || !customerId || !amount) {

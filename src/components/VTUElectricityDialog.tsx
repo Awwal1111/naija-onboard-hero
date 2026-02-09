@@ -10,6 +10,7 @@ import { Loader2, Zap, Info } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Link } from 'react-router-dom'
 import { useProfile } from '@/hooks/useProfile'
+import { useUserSecrets } from '@/hooks/useUserSecrets'
 
 interface VTUElectricityDialogProps {
   open: boolean
@@ -29,7 +30,7 @@ export function VTUElectricityDialog({ open, onOpenChange, currentBalance, onSuc
   const [customerName, setCustomerName] = useState('')
   const [pin, setPin] = useState('')
   
-  const hasPin = Boolean((profile as any)?.transaction_pin)
+  const { hasPin } = useUserSecrets()
 
   const providers = [
     { value: 'ikeja-electric', label: 'Ikeja Electric (IKEDC)' },

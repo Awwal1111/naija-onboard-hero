@@ -35,7 +35,25 @@ export const SetupPin = () => {
   const [loading, setLoading] = useState(false)
   const [showResetDialog, setShowResetDialog] = useState(false)
 
-  const hasExistingPin = Boolean((profile as any)?.transaction_pin)
+  const [hasExistingPin, setHasExistingPin] = useState(false)
+  const [storedPin, setStoredPin] = useState<string | null>(null)
+
+  // Fetch PIN from user_secrets table
+  useEffect(() => {
+    const fetchPin = async () => {
+      if (!user) return
+      const { data } = await supabase
+        .from('user_secrets')
+        .select('transaction_pin')
+        .eq('user_id', user.id)
+        .single()
+      
+      const pin = data?.transaction_pin || (profile as any)?.transaction_pin
+      setStoredPin(pin || null)
+      setHasExistingPin(Boolean(pin))
+    }
+    fetchPin()
+  }, [user, profile])
   
   // Initialize mode based on whether PIN exists
   useEffect(() => {
@@ -49,9 +67,8 @@ export const SetupPin = () => {
     setLoading(true)
     try {
       const { error } = await supabase
-        .from('profiles')
-        .update({ transaction_pin: null })
-        .eq('user_id', user?.id)
+        .from('user_secrets')
+        .upsert({ user_id: user?.id, transaction_pin: null }, { onConflict: 'user_id' })
 
       if (error) throw error
 
@@ -92,7 +109,7 @@ export const SetupPin = () => {
         return
       }
 
-      if (currentPin !== (profile as any).transaction_pin) {
+      if (currentPin !== storedPin) {
         toast({
           title: "Incorrect PIN",
           description: "The current PIN you entered is incorrect",
@@ -156,9 +173,8 @@ export const SetupPin = () => {
       setLoading(true)
       try {
         const { error } = await supabase
-          .from('profiles')
-          .update({ transaction_pin: newPin })
-          .eq('user_id', user?.id)
+          .from('user_secrets')
+          .upsert({ user_id: user?.id, transaction_pin: newPin }, { onConflict: 'user_id' })
 
         if (error) throw error
 

@@ -8,6 +8,7 @@ import { SecurePinInput } from './SecurePinInput'
 import { useSafePay } from '@/hooks/useSafePay'
 import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
+import { useUserSecrets } from '@/hooks/useUserSecrets'
 import { useWallet } from '@/hooks/useWallet'
 import { toast } from 'sonner'
 
@@ -19,6 +20,7 @@ interface SafePayDialogProps {
 const SafePayDialog: React.FC<SafePayDialogProps> = ({ otherUserId, otherUserName }) => {
   const { user } = useAuth()
   const { profile } = useProfile()
+  const { transactionPin } = useUserSecrets()
   const { 
     activeTransaction, 
     loading, 
@@ -54,7 +56,7 @@ const SafePayDialog: React.FC<SafePayDialogProps> = ({ otherUserId, otherUserNam
 
   const handlePinVerified = async (pin: string) => {
     // Verify PIN
-    if (pin !== (profile as any)?.transaction_pin) {
+    if (pin !== transactionPin) {
       toast.error('Incorrect PIN')
       return
     }

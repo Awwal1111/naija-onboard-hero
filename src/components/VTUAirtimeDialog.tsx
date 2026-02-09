@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
 import { useProfile } from '@/hooks/useProfile';
+import { useUserSecrets } from '@/hooks/useUserSecrets';
 import { Loader2, Phone } from 'lucide-react';
 
 interface VTUAirtimeDialogProps {
@@ -34,7 +35,7 @@ export const VTUAirtimeDialog = ({ open, onOpenChange, currentBalance, onSuccess
   const [pin, setPin] = useState<string>('');
   const [showPinInput, setShowPinInput] = useState(false);
   
-  const hasPin = Boolean((profile as any)?.transaction_pin);
+  const { hasPin } = useUserSecrets();
 
   const handleContinue = () => {
     if (!network || !amount || !phone) {

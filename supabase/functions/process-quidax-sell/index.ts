@@ -74,9 +74,18 @@ serve(async (req) => {
     // Get user profile to verify and deduct balance
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('wallet_balance, balance_withdrawable, celo_wallet_address, encrypted_wallet')
+      .select('wallet_balance, balance_withdrawable, celo_wallet_address')
       .eq('user_id', user.id)
       .single()
+
+    // Get encrypted_wallet from user_secrets
+    const { data: secrets } = await supabase
+      .from('user_secrets')
+      .select('encrypted_wallet')
+      .eq('user_id', user.id)
+      .single()
+    
+    const encryptedWallet = secrets?.encrypted_wallet || (profile as any)?.encrypted_wallet
 
     if (profileError) {
       throw new Error('Failed to fetch user profile')
@@ -132,9 +141,9 @@ serve(async (req) => {
     let walletSource = 'master'
     
     // Check if user has their own wallet with USDT
-    if (profile.celo_wallet_address && profile.encrypted_wallet) {
+    if (profile.celo_wallet_address && encryptedWallet) {
       try {
-        const decryptedUserKey = CryptoJS.AES.decrypt(profile.encrypted_wallet, encryptionSecret).toString(CryptoJS.enc.Utf8)
+        const decryptedUserKey = CryptoJS.AES.decrypt(encryptedWallet, encryptionSecret).toString(CryptoJS.enc.Utf8)
         if (decryptedUserKey) {
           const userWallet = new ethers.Wallet(decryptedUserKey, provider)
           const usdtContract = new ethers.Contract(USDT_ADDRESS, USDT_ABI, userWallet)

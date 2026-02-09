@@ -70,9 +70,18 @@ serve(async (req) => {
     // Get user profile and check balance
     const { data: profile } = await supabase
       .from("profiles")
-      .select("wallet_balance, balance_withdrawable, full_name, telegram_user_id, celo_wallet_address, encrypted_wallet")
+      .select("wallet_balance, balance_withdrawable, full_name, telegram_user_id, celo_wallet_address")
       .eq("user_id", user.id)
       .single();
+
+    // Get encrypted_wallet from user_secrets
+    const { data: secrets } = await supabase
+      .from("user_secrets")
+      .select("encrypted_wallet")
+      .eq("user_id", user.id)
+      .single();
+    
+    const encryptedWallet = secrets?.encrypted_wallet || (profile as any)?.encrypted_wallet;
 
     if (!profile || profile.balance_withdrawable < ncAmount) {
       throw new Error("Insufficient withdrawable balance");
@@ -194,13 +203,13 @@ serve(async (req) => {
       let walletSource = "master"; // "user" or "master"
       
       // STEP 1: Check if user has their own wallet with funds
-      if (profile.celo_wallet_address && profile.encrypted_wallet) {
+      if (profile.celo_wallet_address && encryptedWallet) {
         try {
           console.log(`[WITHDRAWAL] 🔍 User has personal wallet: ${profile.celo_wallet_address}`);
           
           // Decrypt user's private key
           const decryptedUserKey = CryptoJS.AES.decrypt(
-            profile.encrypted_wallet,
+            encryptedWallet,
             encryptionSecret
           ).toString(CryptoJS.enc.Utf8);
           
