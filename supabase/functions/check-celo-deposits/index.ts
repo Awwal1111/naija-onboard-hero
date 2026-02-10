@@ -362,8 +362,9 @@ serve(async (req) => {
     try {
       const encryptionSecret = Deno.env.get("WALLET_ENCRYPTION_SECRET") || "default_secret";
       
+      // Get encrypted_wallet from user_secrets (migrated from profiles)
       const { data: userWalletData } = await supabase
-        .from("profiles")
+        .from("user_secrets")
         .select("encrypted_wallet")
         .eq("user_id", user_id)
         .single();
