@@ -1193,6 +1193,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
           },
+          {
+            foreignKeyName: "course_reviews_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       course_sections: {
@@ -1345,6 +1352,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "courses_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
             referencedColumns: ["user_id"]
           },
         ]
@@ -1720,6 +1734,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
           },
+          {
+            foreignKeyName: "digital_products_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       disputed_chat_snapshots: {
@@ -1787,6 +1808,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
           },
+          {
+            foreignKeyName: "donations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       emergency_requests: {
@@ -1835,6 +1863,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "emergency_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
             referencedColumns: ["user_id"]
           },
         ]
@@ -2049,10 +2084,24 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
           {
+            foreignKeyName: "expert_ratings_expert_id_fkey"
+            columns: ["expert_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "expert_ratings_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "expert_ratings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
             referencedColumns: ["user_id"]
           },
         ]
@@ -2333,6 +2382,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "fundraisings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
             referencedColumns: ["user_id"]
           },
         ]
@@ -3915,6 +3971,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
           },
+          {
+            foreignKeyName: "posts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       practical_task_submissions: {
@@ -4014,6 +4077,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "predictor_bets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
             referencedColumns: ["user_id"]
           },
         ]
@@ -4141,6 +4211,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
           },
+          {
+            foreignKeyName: "product_reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       profile_views: {
@@ -4170,11 +4247,9 @@ export type Database = {
       profiles: {
         Row: {
           account_type: string | null
-          api_key: string | null
           area: string | null
           average_rating: number | null
           avg_response_time_seconds: number | null
-          backup_codes: string[] | null
           balance_non_withdrawable: number | null
           balance_withdrawable: number
           bio: string | null
@@ -4194,9 +4269,7 @@ export type Database = {
           email_digest_frequency: string | null
           email_notifications: boolean | null
           email_verification_sent_at: string | null
-          email_verification_token: string | null
           email_verified: boolean | null
-          encrypted_wallet: string | null
           expert_verified_at: string | null
           face_verified: boolean | null
           face_verified_at: string | null
@@ -4239,8 +4312,6 @@ export type Database = {
           total_earnings: number | null
           total_transactions: number | null
           totp_enabled: boolean | null
-          totp_secret: string | null
-          transaction_pin: string | null
           updated_at: string
           user_id: string
           user_mode: string | null
@@ -4255,11 +4326,9 @@ export type Database = {
         }
         Insert: {
           account_type?: string | null
-          api_key?: string | null
           area?: string | null
           average_rating?: number | null
           avg_response_time_seconds?: number | null
-          backup_codes?: string[] | null
           balance_non_withdrawable?: number | null
           balance_withdrawable?: number
           bio?: string | null
@@ -4279,9 +4348,7 @@ export type Database = {
           email_digest_frequency?: string | null
           email_notifications?: boolean | null
           email_verification_sent_at?: string | null
-          email_verification_token?: string | null
           email_verified?: boolean | null
-          encrypted_wallet?: string | null
           expert_verified_at?: string | null
           face_verified?: boolean | null
           face_verified_at?: string | null
@@ -4324,8 +4391,6 @@ export type Database = {
           total_earnings?: number | null
           total_transactions?: number | null
           totp_enabled?: boolean | null
-          totp_secret?: string | null
-          transaction_pin?: string | null
           updated_at?: string
           user_id: string
           user_mode?: string | null
@@ -4340,11 +4405,9 @@ export type Database = {
         }
         Update: {
           account_type?: string | null
-          api_key?: string | null
           area?: string | null
           average_rating?: number | null
           avg_response_time_seconds?: number | null
-          backup_codes?: string[] | null
           balance_non_withdrawable?: number | null
           balance_withdrawable?: number
           bio?: string | null
@@ -4364,9 +4427,7 @@ export type Database = {
           email_digest_frequency?: string | null
           email_notifications?: boolean | null
           email_verification_sent_at?: string | null
-          email_verification_token?: string | null
           email_verified?: boolean | null
-          encrypted_wallet?: string | null
           expert_verified_at?: string | null
           face_verified?: boolean | null
           face_verified_at?: string | null
@@ -4409,8 +4470,6 @@ export type Database = {
           total_earnings?: number | null
           total_transactions?: number | null
           totp_enabled?: boolean | null
-          totp_secret?: string | null
-          transaction_pin?: string | null
           updated_at?: string
           user_id?: string
           user_mode?: string | null
@@ -4845,10 +4904,24 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
           {
+            foreignKeyName: "referrals_referee_id_fkey"
+            columns: ["referee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "referrals_referrer_id_fkey"
             columns: ["referrer_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "referrals_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
             referencedColumns: ["user_id"]
           },
         ]
@@ -4955,10 +5028,24 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
           {
+            foreignKeyName: "safepay_transactions_buyer_fk"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "safepay_transactions_cancel_approver_fk"
             columns: ["cancel_approved_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "safepay_transactions_cancel_approver_fk"
+            columns: ["cancel_approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
             referencedColumns: ["user_id"]
           },
           {
@@ -4969,10 +5056,24 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
           {
+            foreignKeyName: "safepay_transactions_cancel_requester_fk"
+            columns: ["cancel_requester_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "safepay_transactions_seller_fk"
             columns: ["seller_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "safepay_transactions_seller_fk"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
             referencedColumns: ["user_id"]
           },
         ]
@@ -5009,6 +5110,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "saved_jobs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
             referencedColumns: ["user_id"]
           },
         ]
@@ -5278,6 +5386,13 @@ export type Database = {
             columns: ["earner_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "social_tasks_progress_earner_id_fkey"
+            columns: ["earner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
             referencedColumns: ["user_id"]
           },
           {
@@ -5714,10 +5829,24 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
           {
+            foreignKeyName: "transactions_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "transactions_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "transactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
             referencedColumns: ["user_id"]
           },
         ]
@@ -6197,6 +6326,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "wallet_transactions_user_fk"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
             referencedColumns: ["user_id"]
           },
         ]
@@ -6690,7 +6826,171 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      expert_applications_public: {
+        Row: {
+          id: string | null
+          location_area: string | null
+          location_lga: string | null
+          location_state: string | null
+          portfolio_link: string | null
+          reviewed_at: string | null
+          skill_category: string | null
+          status: string | null
+          submitted_at: string | null
+          user_id: string | null
+          work_samples_urls: string[] | null
+          years_experience: number | null
+        }
+        Insert: {
+          id?: string | null
+          location_area?: string | null
+          location_lga?: string | null
+          location_state?: string | null
+          portfolio_link?: string | null
+          reviewed_at?: string | null
+          skill_category?: string | null
+          status?: string | null
+          submitted_at?: string | null
+          user_id?: string | null
+          work_samples_urls?: string[] | null
+          years_experience?: number | null
+        }
+        Update: {
+          id?: string | null
+          location_area?: string | null
+          location_lga?: string | null
+          location_state?: string | null
+          portfolio_link?: string | null
+          reviewed_at?: string | null
+          skill_category?: string | null
+          status?: string | null
+          submitted_at?: string | null
+          user_id?: string | null
+          work_samples_urls?: string[] | null
+          years_experience?: number | null
+        }
+        Relationships: []
+      }
+      profiles_public: {
+        Row: {
+          account_type: string | null
+          area: string | null
+          average_rating: number | null
+          bio: string | null
+          boost_expires_at: string | null
+          business_name: string | null
+          business_verified: boolean | null
+          completed_jobs_count: number | null
+          connections_count: number | null
+          country_code: string | null
+          created_at: string | null
+          expert_verified_at: string | null
+          facebook_url: string | null
+          full_name: string | null
+          google_meet_link: string | null
+          id: string | null
+          intro_video_thumbnail: string | null
+          intro_video_url: string | null
+          is_boosted: boolean | null
+          is_expert: boolean | null
+          is_premium: boolean | null
+          lga_name: string | null
+          open_to_work: boolean | null
+          portfolio_videos: Json | null
+          premium_expires_at: string | null
+          profession: string | null
+          profile_picture_url: string | null
+          rating_count: number | null
+          referral_code: string | null
+          state_name: string | null
+          total_earnings: number | null
+          total_transactions: number | null
+          updated_at: string | null
+          user_id: string | null
+          user_mode: string | null
+          verification_status: string | null
+          whatsapp_number: string | null
+        }
+        Insert: {
+          account_type?: string | null
+          area?: string | null
+          average_rating?: number | null
+          bio?: string | null
+          boost_expires_at?: string | null
+          business_name?: string | null
+          business_verified?: boolean | null
+          completed_jobs_count?: number | null
+          connections_count?: number | null
+          country_code?: string | null
+          created_at?: string | null
+          expert_verified_at?: string | null
+          facebook_url?: string | null
+          full_name?: string | null
+          google_meet_link?: string | null
+          id?: string | null
+          intro_video_thumbnail?: string | null
+          intro_video_url?: string | null
+          is_boosted?: boolean | null
+          is_expert?: boolean | null
+          is_premium?: boolean | null
+          lga_name?: string | null
+          open_to_work?: boolean | null
+          portfolio_videos?: Json | null
+          premium_expires_at?: string | null
+          profession?: string | null
+          profile_picture_url?: string | null
+          rating_count?: number | null
+          referral_code?: string | null
+          state_name?: string | null
+          total_earnings?: number | null
+          total_transactions?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+          user_mode?: string | null
+          verification_status?: string | null
+          whatsapp_number?: string | null
+        }
+        Update: {
+          account_type?: string | null
+          area?: string | null
+          average_rating?: number | null
+          bio?: string | null
+          boost_expires_at?: string | null
+          business_name?: string | null
+          business_verified?: boolean | null
+          completed_jobs_count?: number | null
+          connections_count?: number | null
+          country_code?: string | null
+          created_at?: string | null
+          expert_verified_at?: string | null
+          facebook_url?: string | null
+          full_name?: string | null
+          google_meet_link?: string | null
+          id?: string | null
+          intro_video_thumbnail?: string | null
+          intro_video_url?: string | null
+          is_boosted?: boolean | null
+          is_expert?: boolean | null
+          is_premium?: boolean | null
+          lga_name?: string | null
+          open_to_work?: boolean | null
+          portfolio_videos?: Json | null
+          premium_expires_at?: string | null
+          profession?: string | null
+          profile_picture_url?: string | null
+          rating_count?: number | null
+          referral_code?: string | null
+          state_name?: string | null
+          total_earnings?: number | null
+          total_transactions?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+          user_mode?: string | null
+          verification_status?: string | null
+          whatsapp_number?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       accept_admin_invitation: { Args: { p_token: string }; Returns: Json }
@@ -7000,6 +7300,43 @@ export type Database = {
           profession: string
           profile_picture_url: string
           user_id: string
+        }[]
+      }
+      get_public_profiles: {
+        Args: { user_ids?: string[] }
+        Returns: {
+          account_type: string
+          area: string
+          average_rating: number
+          bio: string
+          business_name: string
+          business_verified: boolean
+          celo_wallet_address: string
+          completed_jobs_count: number
+          connections_count: number
+          country_code: string
+          created_at: string
+          expert_verified_at: string
+          facebook_url: string
+          full_name: string
+          id: string
+          intro_video_thumbnail: string
+          intro_video_url: string
+          is_boosted: boolean
+          is_expert: boolean
+          is_premium: boolean
+          lga_name: string
+          open_to_work: boolean
+          profession: string
+          profile_picture_url: string
+          rating_count: number
+          referral_code: string
+          state_name: string
+          updated_at: string
+          user_id: string
+          user_mode: string
+          verification_status: string
+          whatsapp_number: string
         }[]
       }
       get_safe_public_profile: {

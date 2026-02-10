@@ -36,17 +36,23 @@ export const AccountTypeSettings = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('account_type, api_key, business_name, business_registration_number, business_verified')
-        .eq('user_id', user.id)
-        .single();
+      const [{ data: profileData, error: profileError }, { data: secretsData }] = await Promise.all([
+        supabase.from('profiles').select('account_type, business_name, business_registration_number, business_verified').eq('user_id', user.id).single(),
+        supabase.from('user_secrets').select('api_key').eq('user_id', user.id).single()
+      ]);
 
-      if (error) throw error;
+      if (profileError) throw profileError;
       
-      setSettings(data as AccountSettings);
-      setBusinessName(data?.business_name || '');
-      setBusinessRegNumber(data?.business_registration_number || '');
+      const combined = {
+        account_type: (profileData as any)?.account_type || 'personal',
+        api_key: secretsData?.api_key || null,
+        business_name: (profileData as any)?.business_name || null,
+        business_registration_number: (profileData as any)?.business_registration_number || null,
+        business_verified: (profileData as any)?.business_verified || false,
+      } as AccountSettings;
+      setSettings(combined);
+      setBusinessName(combined.business_name || '');
+      setBusinessRegNumber(combined.business_registration_number || '');
     } catch (error) {
       console.error('Error fetching settings:', error);
     } finally {
@@ -148,9 +154,8 @@ export const AccountTypeSettings = () => {
       console.log('New API key generated:', keyData.substring(0, 10) + '...');
       
       const { error } = await supabase
-        .from('profiles')
-        .update({ api_key: keyData })
-        .eq('user_id', user.id);
+        .from('user_secrets')
+        .upsert({ user_id: user.id, api_key: keyData }, { onConflict: 'user_id' });
 
       if (error) {
         console.error('Profile update error:', error);

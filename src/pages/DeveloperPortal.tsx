@@ -235,16 +235,15 @@ export default function DeveloperPortal() {
 
   const fetchDeveloperData = async () => {
     try {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('api_key, account_type, wallet_balance')
-        .eq('user_id', user?.id)
-        .single();
+      const [{ data: profile }, { data: secrets }] = await Promise.all([
+        supabase.from('profiles').select('account_type, wallet_balance').eq('user_id', user?.id).single(),
+        supabase.from('user_secrets').select('api_key').eq('user_id', user?.id).single()
+      ]);
       
       if (profile) {
-        setApiKey(profile.api_key);
-        setAccountType(profile.account_type || 'personal');
-        setNcBalance(profile.wallet_balance || 0);
+        setApiKey(secrets?.api_key || null);
+        setAccountType((profile as any).account_type || 'personal');
+        setNcBalance((profile as any).wallet_balance || 0);
       }
 
       // Get usage stats
@@ -288,10 +287,11 @@ export default function DeveloperPortal() {
       
       console.log('API key generated:', keyData.substring(0, 10) + '...');
       
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ account_type: 'developer', api_key: keyData })
-        .eq('user_id', user?.id);
+      const [{ error: updateError }, { error: secretError }] = await Promise.all([
+        supabase.from('profiles').update({ account_type: 'developer' } as any).eq('user_id', user?.id),
+        supabase.from('user_secrets').upsert({ user_id: user?.id, api_key: keyData }, { onConflict: 'user_id' })
+      ]);
+      if (secretError) throw secretError;
       
       if (updateError) {
         console.error('Error updating profile:', updateError);
@@ -333,9 +333,8 @@ export default function DeveloperPortal() {
       console.log('New API key generated:', keyData.substring(0, 10) + '...');
       
       const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ api_key: keyData })
-        .eq('user_id', user?.id);
+        .from('user_secrets')
+        .upsert({ user_id: user?.id, api_key: keyData }, { onConflict: 'user_id' });
       
       if (updateError) {
         console.error('Error updating profile:', updateError);
