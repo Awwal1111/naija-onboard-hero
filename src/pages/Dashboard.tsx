@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useTrustScore } from '@/hooks/useTrustScore';
+import { ProfileVisitorsCard } from '@/components/dashboard/ProfileVisitorsCard';
 import { 
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend 
@@ -349,6 +350,9 @@ const Dashboard = () => {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4 mt-4">
+            {/* Profile Visitors Card */}
+            <ProfileVisitorsCard />
+
             {charts.engagementTrend.length > 0 && (
               <Card>
                 <CardHeader><CardTitle className="text-base flex items-center gap-2"><TrendingUp className="h-4 w-4" />Engagement (7 Days)</CardTitle></CardHeader>

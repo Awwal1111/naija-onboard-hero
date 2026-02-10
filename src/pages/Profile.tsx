@@ -45,6 +45,7 @@ import { PremiumFeatureGate } from '@/components/premium/PremiumFeatureGate'
 import { ProfileVisitorsCard } from '@/components/dashboard/ProfileVisitorsCard'
 import { trackProfileView } from '@/lib/profileViewTracker'
 import { AIWritingAssistant } from '@/components/AIWritingAssistant'
+import { ProfileActivityFeed } from '@/components/ProfileActivityFeed'
 
 const Profile = () => {
   const navigate = useNavigate()
@@ -531,15 +532,25 @@ const Profile = () => {
           </div>
         </div>
 
-        {/* Tabs Section - Compact */}
-        <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 h-12 p-1 bg-card border border-border rounded-xl mb-4">
+        {/* Tabs Section */}
+        <Tabs defaultValue="activity" className="w-full">
+          <TabsList className="grid w-full grid-cols-5 h-12 p-1 bg-card border border-border rounded-xl mb-4">
+            <TabsTrigger value="activity" className="text-sm">Activity</TabsTrigger>
             <TabsTrigger value="overview" className="text-sm">Overview</TabsTrigger>
             {isOwnProfile && <TabsTrigger value="saved" className="text-sm">Saved</TabsTrigger>}
             <TabsTrigger value="skills" className="text-sm">Skills</TabsTrigger>
             <TabsTrigger value="portfolio" className="text-sm">Portfolio</TabsTrigger>
             {!isOwnProfile && <TabsTrigger value="reviews" className="text-sm">Reviews</TabsTrigger>}
           </TabsList>
+          
+          <TabsContent value="activity" className="space-y-4">
+            <ProfileActivityFeed 
+              userId={profile?.user_id || ''}
+              fullName={profile?.full_name || 'User'}
+              profilePicture={profile?.profile_picture_url}
+              profession={profile?.profession}
+            />
+          </TabsContent>
           
           <TabsContent value="overview" className="space-y-6">
             {/* Trust Score Card */}
@@ -774,8 +785,6 @@ const Profile = () => {
 
           {isOwnProfile && (
             <TabsContent value="saved" className="mt-6 space-y-6">
-              {/* Profile Visitors Card - See who viewed your profile */}
-              <ProfileVisitorsCard />
               <SavedPostsSection />
             </TabsContent>
           )}
