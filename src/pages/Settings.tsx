@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { ArrowLeft, Trash2, Eye, Globe, Users, Lock, Moon, Sun, Bell, Languages, Shield, HelpCircle, FileText, User, Activity, TrendingUp, CheckCircle, ShieldCheck, Phone, Mail, Camera, Fingerprint } from 'lucide-react'
+import { ArrowLeft, Trash2, Eye, Globe, Users, Lock, Moon, Sun, Bell, Languages, Shield, HelpCircle, FileText, User, Activity, TrendingUp, CheckCircle, ShieldCheck, Phone, Mail, Camera, Fingerprint, IdCard } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -22,6 +22,8 @@ import { EmailVerificationStatus } from '@/components/EmailVerificationBanner'
 import { UserBadges } from '@/components/UserBadges'
 import { FaceVerificationDialog } from '@/components/FaceVerificationDialog'
 import { PhoneVerificationDialog } from '@/components/PhoneVerificationDialog'
+import { IdentityVerificationDialog } from '@/components/IdentityVerificationDialog'
+import { LoginHistoryCard } from '@/components/LoginHistoryCard'
 import { AccountTypeSettings } from '@/components/AccountTypeSettings'
 import { InternationalSettings } from '@/components/settings/InternationalSettings'
 import { UserModeSettings } from '@/components/settings/UserModeSettings'
@@ -554,22 +556,54 @@ const Settings = () => {
                   <Camera className={`h-4 w-4 ${(profile as any)?.face_verified ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`} />
                 </div>
                 <div>
-                  <h4 className="font-medium text-foreground">Identity</h4>
-                  <p className="text-xs text-muted-foreground">Face verification</p>
+                  <h4 className="font-medium text-foreground">Face Selfie</h4>
+                  <p className="text-xs text-muted-foreground">Open-source face verification</p>
                 </div>
               </div>
               <FaceVerificationDialog 
                 isVerified={(profile as any)?.face_verified}
                 onVerified={() => {
                   toast({
-                    title: "Identity Verified",
-                    description: "Your face has been verified successfully!",
+                    title: "Face Verified",
+                    description: "Your selfie has been verified successfully!",
+                  });
+                }}
+              />
+            </div>
+
+            <Separator />
+
+            {/* NIN/BVN Identity Verification */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-full ${(profile as any)?.identity_verified ? 'bg-green-100 dark:bg-green-900/30' : 'bg-muted'}`}>
+                  <IdCard className={`h-4 w-4 ${(profile as any)?.identity_verified ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`} />
+                </div>
+                <div>
+                  <h4 className="font-medium text-foreground">Government ID</h4>
+                  <p className="text-xs text-muted-foreground">
+                    {(profile as any)?.identity_verified 
+                      ? 'NIN/BVN verified'
+                      : 'NIN or BVN verification (Nigerian users)'}
+                  </p>
+                </div>
+              </div>
+              <IdentityVerificationDialog 
+                isVerified={(profile as any)?.identity_verified}
+                country={(profile as any)?.verification_country || 'NG'}
+                onVerified={() => {
+                  toast({
+                    title: "ID Verified!",
+                    description: "Your government ID has been verified successfully!",
                   });
                 }}
               />
             </div>
           </CardContent>
         </Card>
+
+        {/* Login History */}
+        <LoginHistoryCard />
 
         {/* Biometric Authentication - Standalone Card for Visibility */}
         <Card className="border-primary/20 bg-primary/5">

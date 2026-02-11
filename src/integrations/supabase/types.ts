@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      action_restrictions: {
+        Row: {
+          action_name: string
+          created_at: string
+          description: string | null
+          id: string
+          required_level: string
+        }
+        Insert: {
+          action_name: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          required_level?: string
+        }
+        Update: {
+          action_name?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          required_level?: string
+        }
+        Relationships: []
+      }
       admin_invitations: {
         Row: {
           accepted_at: string | null
@@ -3024,6 +3048,84 @@ export type Database = {
         }
         Relationships: []
       }
+      identity_verifications: {
+        Row: {
+          ai_risk_factors: Json | null
+          ai_risk_score: number | null
+          api_report_id: string | null
+          created_at: string
+          expires_at: string | null
+          face_match_passed: boolean | null
+          face_match_score: number | null
+          id: string
+          id_number_hash: string | null
+          id_number_last4: string | null
+          rejection_reason: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          verification_photo_url: string | null
+          verification_type: string
+          verified_at: string | null
+          verified_dob: string | null
+          verified_first_name: string | null
+          verified_gender: string | null
+          verified_last_name: string | null
+          verified_middle_name: string | null
+          verified_state: string | null
+        }
+        Insert: {
+          ai_risk_factors?: Json | null
+          ai_risk_score?: number | null
+          api_report_id?: string | null
+          created_at?: string
+          expires_at?: string | null
+          face_match_passed?: boolean | null
+          face_match_score?: number | null
+          id?: string
+          id_number_hash?: string | null
+          id_number_last4?: string | null
+          rejection_reason?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          verification_photo_url?: string | null
+          verification_type: string
+          verified_at?: string | null
+          verified_dob?: string | null
+          verified_first_name?: string | null
+          verified_gender?: string | null
+          verified_last_name?: string | null
+          verified_middle_name?: string | null
+          verified_state?: string | null
+        }
+        Update: {
+          ai_risk_factors?: Json | null
+          ai_risk_score?: number | null
+          api_report_id?: string | null
+          created_at?: string
+          expires_at?: string | null
+          face_match_passed?: boolean | null
+          face_match_score?: number | null
+          id?: string
+          id_number_hash?: string | null
+          id_number_last4?: string | null
+          rejection_reason?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          verification_photo_url?: string | null
+          verification_type?: string
+          verified_at?: string | null
+          verified_dob?: string | null
+          verified_first_name?: string | null
+          verified_gender?: string | null
+          verified_last_name?: string | null
+          verified_middle_name?: string | null
+          verified_state?: string | null
+        }
+        Relationships: []
+      }
       ip_tracking: {
         Row: {
           action_type: string
@@ -3446,6 +3548,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      login_history: {
+        Row: {
+          browser: string | null
+          city: string | null
+          country: string | null
+          created_at: string
+          device_type: string | null
+          id: string
+          ip_address: string | null
+          login_method: string | null
+          os: string | null
+          success: boolean | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          browser?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          device_type?: string | null
+          id?: string
+          ip_address?: string | null
+          login_method?: string | null
+          os?: string | null
+          success?: boolean | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          browser?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          device_type?: string | null
+          id?: string
+          ip_address?: string | null
+          login_method?: string | null
+          os?: string | null
+          success?: boolean | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       manual_deposits: {
         Row: {
@@ -4271,6 +4418,7 @@ export type Database = {
           email_verification_sent_at: string | null
           email_verified: boolean | null
           expert_verified_at: string | null
+          face_selfie_url: string | null
           face_verified: boolean | null
           face_verified_at: string | null
           facebook_url: string | null
@@ -4278,6 +4426,8 @@ export type Database = {
           google_meet_link: string | null
           has_rated_platform: boolean | null
           id: string
+          identity_verified: boolean | null
+          identity_verified_at: string | null
           intro_video_thumbnail: string | null
           intro_video_url: string | null
           is_boosted: boolean | null
@@ -4286,9 +4436,11 @@ export type Database = {
           last_celo_balance: number | null
           last_cusd_balance: number | null
           last_login: string | null
+          last_login_at: string | null
           last_signin_date: string | null
           last_usdt_balance: number | null
           lga_name: string | null
+          login_count: number | null
           onboarding_completed: boolean | null
           open_to_work: boolean | null
           phone_country_code: string | null
@@ -4303,6 +4455,7 @@ export type Database = {
           rating_count: number | null
           rating_skipped_at: string | null
           referral_code: string | null
+          risk_score: number | null
           sms_job_alerts: boolean | null
           state_id: string | null
           state_name: string | null
@@ -4315,7 +4468,9 @@ export type Database = {
           updated_at: string
           user_id: string
           user_mode: string | null
+          verification_country: string | null
           verification_description: string | null
+          verification_level: string | null
           verification_payment_status: string | null
           verification_reviewed_at: string | null
           verification_reviewed_by: string | null
@@ -4350,6 +4505,7 @@ export type Database = {
           email_verification_sent_at?: string | null
           email_verified?: boolean | null
           expert_verified_at?: string | null
+          face_selfie_url?: string | null
           face_verified?: boolean | null
           face_verified_at?: string | null
           facebook_url?: string | null
@@ -4357,6 +4513,8 @@ export type Database = {
           google_meet_link?: string | null
           has_rated_platform?: boolean | null
           id?: string
+          identity_verified?: boolean | null
+          identity_verified_at?: string | null
           intro_video_thumbnail?: string | null
           intro_video_url?: string | null
           is_boosted?: boolean | null
@@ -4365,9 +4523,11 @@ export type Database = {
           last_celo_balance?: number | null
           last_cusd_balance?: number | null
           last_login?: string | null
+          last_login_at?: string | null
           last_signin_date?: string | null
           last_usdt_balance?: number | null
           lga_name?: string | null
+          login_count?: number | null
           onboarding_completed?: boolean | null
           open_to_work?: boolean | null
           phone_country_code?: string | null
@@ -4382,6 +4542,7 @@ export type Database = {
           rating_count?: number | null
           rating_skipped_at?: string | null
           referral_code?: string | null
+          risk_score?: number | null
           sms_job_alerts?: boolean | null
           state_id?: string | null
           state_name?: string | null
@@ -4394,7 +4555,9 @@ export type Database = {
           updated_at?: string
           user_id: string
           user_mode?: string | null
+          verification_country?: string | null
           verification_description?: string | null
+          verification_level?: string | null
           verification_payment_status?: string | null
           verification_reviewed_at?: string | null
           verification_reviewed_by?: string | null
@@ -4429,6 +4592,7 @@ export type Database = {
           email_verification_sent_at?: string | null
           email_verified?: boolean | null
           expert_verified_at?: string | null
+          face_selfie_url?: string | null
           face_verified?: boolean | null
           face_verified_at?: string | null
           facebook_url?: string | null
@@ -4436,6 +4600,8 @@ export type Database = {
           google_meet_link?: string | null
           has_rated_platform?: boolean | null
           id?: string
+          identity_verified?: boolean | null
+          identity_verified_at?: string | null
           intro_video_thumbnail?: string | null
           intro_video_url?: string | null
           is_boosted?: boolean | null
@@ -4444,9 +4610,11 @@ export type Database = {
           last_celo_balance?: number | null
           last_cusd_balance?: number | null
           last_login?: string | null
+          last_login_at?: string | null
           last_signin_date?: string | null
           last_usdt_balance?: number | null
           lga_name?: string | null
+          login_count?: number | null
           onboarding_completed?: boolean | null
           open_to_work?: boolean | null
           phone_country_code?: string | null
@@ -4461,6 +4629,7 @@ export type Database = {
           rating_count?: number | null
           rating_skipped_at?: string | null
           referral_code?: string | null
+          risk_score?: number | null
           sms_job_alerts?: boolean | null
           state_id?: string | null
           state_name?: string | null
@@ -4473,7 +4642,9 @@ export type Database = {
           updated_at?: string
           user_id?: string
           user_mode?: string | null
+          verification_country?: string | null
           verification_description?: string | null
+          verification_level?: string | null
           verification_payment_status?: string | null
           verification_reviewed_at?: string | null
           verification_reviewed_by?: string | null
@@ -7018,6 +7189,10 @@ export type Database = {
         Args: { p_safepay_id: string }
         Returns: undefined
       }
+      check_action_allowed: {
+        Args: { p_action: string; p_user_id: string }
+        Returns: Json
+      }
       check_ip_signup_limit: { Args: { check_ip: string }; Returns: Json }
       check_is_admin: {
         Args: never
@@ -7372,6 +7547,7 @@ export type Database = {
         }[]
       }
       get_system_setting: { Args: { setting_key: string }; Returns: string }
+      get_verification_level: { Args: { p_user_id: string }; Returns: string }
       grant_admin_role: { Args: { target_user_id: string }; Returns: boolean }
       has_purchased_product: {
         Args: { p_product_id: string; p_user_id: string }

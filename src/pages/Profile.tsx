@@ -557,9 +557,9 @@ const Profile = () => {
             {profile && (
               <TrustScoreCard
                 trustScore={calculateTrustScore({
-                  emailVerified: (profile as any)?.email_confirmed,
-                  phoneVerified: (profile as any)?.phone_verified,
-                  faceVerified: (profile as any)?.face_verified,
+                  emailVerified: !!(profile as any)?.email_verified,
+                  phoneVerified: !!(profile as any)?.phone_verified,
+                  faceVerified: !!(profile as any)?.face_verified,
                   averageRating: profile?.average_rating,
                   ratingCount: profile?.rating_count,
                   createdAt: profile?.created_at,
