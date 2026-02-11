@@ -110,9 +110,16 @@ import WorkDiary from "./pages/WorkDiary";
 import DeveloperPortal from "./pages/DeveloperPortal";
 import DeveloperDocs from "./pages/DeveloperDocs";
 import ClientDashboard from "./pages/ClientDashboard";
+import { useLoginLogger } from "@/hooks/useLoginLogger";
 
 // SYNC detection at module load - critical for stable MiniPay rendering
 const isMiniPayEnv = detectMiniPaySync().isMiniPay;
+
+// Component to handle login logging
+const LoginLogger = () => {
+  useLoginLogger();
+  return null;
+};
 
 // Component to handle app state persistence (disabled in MiniPay)
 const AppStateManager = () => {
@@ -145,6 +152,7 @@ const App = () => (
           <MiniPayAuthWrapper>
             {/* CRITICAL: These components are DISABLED in MiniPay to prevent flickering */}
             {!isMiniPayEnv && <AppStateManager />}
+            {!isMiniPayEnv && <LoginLogger />}
             {!isMiniPayEnv && <WalletInitializer />}
             {!isMiniPayEnv && <GlobalCallManager />}
             {!isMiniPayEnv && <GlobalPresenceManager />}
