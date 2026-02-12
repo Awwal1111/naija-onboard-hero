@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { MessageCircle, Share2, Heart, Eye, MoreHorizontal, MapPin, Briefcase, Award, Calendar, Send, Bookmark, BookmarkCheck, Flag, Link2, Copy, Edit, Trash2, Zap } from 'lucide-react'
 import { EnhancedPost } from '@/hooks/useEnhancedFeed'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
@@ -234,6 +235,9 @@ const LinkedInPostCard: React.FC<LinkedInPostCardProps> = ({
         const jobBudget = post.metadata?.job?.budget
         return (
           <div className="mx-4 mb-3 p-4 bg-primary/5 border border-primary/10 rounded-xl">
+            <Badge variant="outline" className="text-[10px] mb-2 border-blue-500/30 text-blue-600 dark:text-blue-400">
+              HIRING — JOB POST
+            </Badge>
             <div className="flex items-start gap-3">
               <div className="p-2.5 bg-primary/10 rounded-xl">
                 <Briefcase className="h-5 w-5 text-primary" />
