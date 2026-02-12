@@ -1,11 +1,12 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { User, Briefcase, FileText, GraduationCap, Heart, AlertCircle, Banknote, Gift, BarChart3, Settings, Video, Wallet, Bookmark, Search, Trophy, Bell, Package, Sparkles, Users, FolderKanban, Timer, UserCheck, Award, Bot, PlusCircle, Target, ShoppingBag, Bug, HelpCircle } from "lucide-react";
+import { User, Briefcase, FileText, GraduationCap, Heart, AlertCircle, Banknote, Gift, BarChart3, Settings, Video, Wallet, Bookmark, Search, Trophy, Bell, Package, Sparkles, Users, FolderKanban, Timer, UserCheck, Award, Bot, PlusCircle, Target, ShoppingBag, Bug, HelpCircle, ShieldAlert } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useRoleFeatures } from "@/hooks/useRoleFeatures";
 import { Badge } from "@/components/ui/badge";
 import BugReportDialog from "@/components/BugReportDialog";
+import { supabase } from "@/integrations/supabase/client";
 
 interface MoreMenuDrawerProps {
   open: boolean;
@@ -16,6 +17,17 @@ export const MoreMenuDrawer = ({ open, onOpenChange }: MoreMenuDrawerProps) => {
   const navigate = useNavigate();
   const { mode, isFreelancer, isClient } = useRoleFeatures();
   const [showBugReport, setShowBugReport] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const checkAdmin = async () => {
+      try {
+        const { data } = await supabase.rpc('is_admin_user');
+        setIsAdmin(!!data);
+      } catch { setIsAdmin(false); }
+    };
+    if (open) checkAdmin();
+  }, [open]);
 
   // Role labels for display
   const modeLabel = mode === 'freelancer' ? 'Freelancer' : mode === 'client' ? 'Client' : 'Freelancer & Client';
@@ -255,6 +267,17 @@ export const MoreMenuDrawer = ({ open, onOpenChange }: MoreMenuDrawerProps) => {
                 <Bug className="h-5 w-5 text-destructive" />
                 <span className="text-sm font-medium">Report a Bug</span>
               </button>
+              
+              {/* Admin Panel - only visible to admins */}
+              {isAdmin && (
+                <button
+                  onClick={() => handleNavigation('/admin/dashboard')}
+                  className="w-full flex items-center gap-4 p-3 rounded-lg hover:bg-accent transition-colors"
+                >
+                  <ShieldAlert className="h-5 w-5 text-primary" />
+                  <span className="text-sm font-medium">Admin Panel</span>
+                </button>
+              )}
             </div>
           </div>
         </div>

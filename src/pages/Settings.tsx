@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react'
-import { ArrowLeft, Trash2, Eye, Globe, Users, Lock, Moon, Sun, Bell, Languages, Shield, HelpCircle, FileText, User, Activity, TrendingUp, CheckCircle, ShieldCheck, Phone, Mail, Camera, Fingerprint, IdCard } from 'lucide-react'
+import { ArrowLeft, Trash2, Eye, Globe, Users, Lock, Moon, Sun, Bell, Languages, Shield, HelpCircle, FileText, User, Activity, TrendingUp, CheckCircle, ShieldCheck, Phone, Mail, Camera, Fingerprint, IdCard, ShieldAlert } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
@@ -83,10 +84,8 @@ const Settings = () => {
   })
   const [emailNotifications, setEmailNotifications] = useState(true)
   const [emailDigestFrequency, setEmailDigestFrequency] = useState<'daily' | 'weekly' | 'monthly' | 'never'>('weekly')
-  const [activityLog, setActivityLog] = useState<any[]>([])
   const [phoneVerifyOpen, setPhoneVerifyOpen] = useState(false)
 
-  // Load email preferences from profile
   useEffect(() => {
     if (profile) {
       setEmailNotifications((profile as any).email_notifications !== false)
@@ -95,78 +94,23 @@ const Settings = () => {
   }, [profile])
 
   useEffect(() => {
-    // Load saved preferences
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' || 'light'
     const savedNotifications = localStorage.getItem('notifications')
-    
     setTheme(savedTheme)
-    if (savedNotifications) {
-      setNotifications(JSON.parse(savedNotifications))
-    }
-    
-    // Apply theme
+    if (savedNotifications) setNotifications(JSON.parse(savedNotifications))
     document.documentElement.classList.toggle('dark', savedTheme === 'dark')
-    
-    // Load activity log
-    loadActivityLog()
   }, [])
-
-  const loadActivityLog = async () => {
-    if (!user) return
-    
-    try {
-      // Fetch user's recent activities
-      const { data: posts } = await supabase
-        .from('posts')
-        .select('id, content_type, created_at')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(10)
-
-      const { data: jobs } = await supabase
-        .from('job_posts')
-        .select('id, title, created_at')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(5)
-
-      const activities = [
-        ...posts?.map(post => ({
-          type: 'post',
-          description: `Posted a ${post.content_type}`,
-          timestamp: post.created_at
-        })) || [],
-        ...jobs?.map(job => ({
-          type: 'job',
-          description: `Posted job: ${job.title}`,
-          timestamp: job.created_at
-        })) || []
-      ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-
-      setActivityLog(activities)
-    } catch (error) {
-      console.error('Error loading activity log:', error)
-    }
-  }
 
   const handleThemeChange = (newTheme: 'light' | 'dark') => {
     setTheme(newTheme)
     localStorage.setItem('theme', newTheme)
     document.documentElement.classList.toggle('dark', newTheme === 'dark')
-    
-    toast({
-      title: "Theme Updated",
-      description: `Switched to ${newTheme} mode`
-    })
+    toast({ title: "Theme Updated", description: `Switched to ${newTheme} mode` })
   }
 
   const handleLanguageChange = (newLanguage: 'en' | 'ha' | 'yo' | 'ig' | 'pcm') => {
     setLanguage(newLanguage)
-    
-    toast({
-      title: t('message.success'),
-      description: `${t('settings.language')}: ${languageNames[newLanguage]}`
-    })
+    toast({ title: t('message.success'), description: `${t('settings.language')}: ${languageNames[newLanguage]}` })
   }
 
   const handleNotificationChange = (key: keyof NotificationPreferences, value: boolean) => {
@@ -177,42 +121,21 @@ const Settings = () => {
 
   const handleProfileVisibilityChange = async (visibility: 'public' | 'registered' | 'private') => {
     setProfileVisibility(visibility)
-    
-    // Update in database if needed
-    await updateProfile({ 
-      // You might want to add a visibility field to the profiles table
-      bio: profile?.bio || '' 
-    })
-    
-    toast({
-      title: "Privacy Updated",
-      description: `Profile visibility set to ${visibility}`
-    })
+    await updateProfile({ bio: profile?.bio || '' })
+    toast({ title: "Privacy Updated", description: `Profile visibility set to ${visibility}` })
   }
 
   const handleDeleteAccount = async () => {
     const confirmed = confirm("Are you sure you want to permanently delete your account? This action cannot be undone.")
-    
     if (confirmed) {
       try {
-        // Delete user account (this might need an admin function)
         const { error } = await supabase.auth.admin.deleteUser(user?.id || '')
-        
         if (error) throw error
-        
-        toast({
-          title: "Account Deleted",
-          description: "Your account has been permanently deleted"
-        })
-        
+        toast({ title: "Account Deleted", description: "Your account has been permanently deleted" })
         await signOut()
         navigate('/')
       } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to delete account. Please contact support.",
-          variant: "destructive"
-        })
+        toast({ title: "Error", description: "Failed to delete account. Please contact support.", variant: "destructive" })
       }
     }
   }
@@ -223,91 +146,141 @@ const Settings = () => {
       <header className="bg-background border-b border-border px-6 py-4 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-4">
           <button onClick={() => navigate(-1)}>
-            <ArrowLeft className="h-6 w-6 text-text-secondary hover:text-text-primary transition-colors" />
+            <ArrowLeft className="h-6 w-6 text-muted-foreground hover:text-foreground transition-colors" />
           </button>
-          <h1 className="text-xl font-semibold text-text-primary">App Settings</h1>
+          <h1 className="text-xl font-semibold">App Settings</h1>
         </div>
         <Logo />
       </header>
 
-      <div className="px-6 py-6 max-w-2xl mx-auto space-y-6">
-        {/* Account Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
+      <div className="px-4 py-6 max-w-2xl mx-auto">
+        <Tabs defaultValue="account" className="w-full">
+          <TabsList className="w-full grid grid-cols-4 mb-6">
+            <TabsTrigger value="account" className="text-xs sm:text-sm">
+              <User className="h-4 w-4 mr-1 hidden sm:inline" />
               Account
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="font-medium text-text-primary">Analytics</h4>
-                <p className="text-sm text-text-secondary">View your performance metrics</p>
-              </div>
-              <Button variant="outline" onClick={() => navigate('/analytics')}>
-                <TrendingUp className="h-4 w-4 mr-2" />
-                View Analytics
-              </Button>
-            </div>
-            
-            <Separator />
-            
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="font-medium text-text-primary">Activity Log</h4>
-                <p className="text-sm text-text-secondary">View your recent actions</p>
-              </div>
-              <Button variant="outline" onClick={() => navigate('/activity-log')}>
-                <Activity className="h-4 w-4 mr-2" />
-                View Log
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+            </TabsTrigger>
+            <TabsTrigger value="notifications" className="text-xs sm:text-sm">
+              <Bell className="h-4 w-4 mr-1 hidden sm:inline" />
+              Alerts
+            </TabsTrigger>
+            <TabsTrigger value="verification" className="text-xs sm:text-sm">
+              <ShieldCheck className="h-4 w-4 mr-1 hidden sm:inline" />
+              Verify
+            </TabsTrigger>
+            <TabsTrigger value="security" className="text-xs sm:text-sm">
+              <Shield className="h-4 w-4 mr-1 hidden sm:inline" />
+              Security
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Account Type Settings */}
-        <AccountTypeSettings />
+          {/* ===== ACCOUNT TAB ===== */}
+          <TabsContent value="account" className="space-y-6">
+            {/* Account Actions */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="h-5 w-5" />
+                  Account
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-medium">Analytics</h4>
+                    <p className="text-sm text-muted-foreground">View your performance metrics</p>
+                  </div>
+                  <Button variant="outline" onClick={() => navigate('/analytics')}>
+                    <TrendingUp className="h-4 w-4 mr-2" />
+                    View
+                  </Button>
+                </div>
+                <Separator />
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-medium">Activity Log</h4>
+                    <p className="text-sm text-muted-foreground">View your recent actions</p>
+                  </div>
+                  <Button variant="outline" onClick={() => navigate('/activity-log')}>
+                    <Activity className="h-4 w-4 mr-2" />
+                    View
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
 
-        {/* User Mode Settings - Freelancer/Client differentiation */}
-        <UserModeSettings />
+            <AccountTypeSettings />
+            <UserModeSettings />
+            <InternationalSettings />
 
-        {/* International/Regional Settings - Currency, Timezone, Language */}
-        <InternationalSettings />
+            {/* Preferences */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Sun className="h-5 w-5" />
+                  Preferences
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-medium">Theme</h4>
+                    <p className="text-sm text-muted-foreground">Light or dark mode</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Sun className={`h-4 w-4 ${theme === 'light' ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <Switch 
+                      checked={theme === 'dark'} 
+                      onCheckedChange={(checked) => handleThemeChange(checked ? 'dark' : 'light')}
+                    />
+                    <Moon className={`h-4 w-4 ${theme === 'dark' ? 'text-primary' : 'text-muted-foreground'}`} />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-        {/* SMS Notification Settings with pricing */}
-        <SMSNotificationSettings />
+            {/* About */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <HelpCircle className="h-5 w-5" />
+                  About
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <button onClick={() => navigate('/terms-conditions')} className="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-accent transition-colors">
+                  <FileText className="h-5 w-5 text-muted-foreground" />
+                  <span>Terms & Conditions</span>
+                </button>
+                <button onClick={() => navigate('/help-support')} className="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-accent transition-colors">
+                  <HelpCircle className="h-5 w-5 text-muted-foreground" />
+                  <span>Help & Support</span>
+                </button>
+              </CardContent>
+            </Card>
 
-        {/* Preferences Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Bell className="h-5 w-5" />
-              Preferences
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
+            {/* Danger Zone */}
+            <Card className="border-destructive/30">
+              <CardContent className="pt-6">
+                <Button variant="destructive" onClick={handleDeleteAccount} className="w-full">
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Account
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-            {/* Theme */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="font-medium text-text-primary">Theme</h4>
-                <p className="text-sm text-text-secondary">Light or dark mode</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Sun className={`h-4 w-4 ${theme === 'light' ? 'text-primary' : 'text-text-secondary'}`} />
-                <Switch 
-                  checked={theme === 'dark'} 
-                  onCheckedChange={(checked) => handleThemeChange(checked ? 'dark' : 'light')}
-                />
-                <Moon className={`h-4 w-4 ${theme === 'dark' ? 'text-primary' : 'text-text-secondary'}`} />
-              </div>
-            </div>
-
-            {/* Notification Preferences */}
-            <div>
-              <h4 className="font-medium text-text-primary mb-3">Notification Preferences</h4>
-              <div className="space-y-3">
+          {/* ===== NOTIFICATIONS TAB ===== */}
+          <TabsContent value="notifications" className="space-y-6">
+            {/* In-App Notifications */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Bell className="h-5 w-5" />
+                  Notification Preferences
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
                 {Object.entries({
                   chats: 'Chat Messages',
                   jobs: 'New Job Posts',
@@ -316,375 +289,329 @@ const Settings = () => {
                   expertStatus: 'Expert Status Updates'
                 }).map(([key, label]) => (
                   <div key={key} className="flex items-center justify-between">
-                    <span className="text-sm text-text-secondary">{label}</span>
+                    <span className="text-sm text-muted-foreground">{label}</span>
                     <Switch 
                       checked={notifications[key as keyof NotificationPreferences]}
                       onCheckedChange={(checked) => handleNotificationChange(key as keyof NotificationPreferences, checked)}
                     />
                   </div>
                 ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
 
-        {/* Email Notifications */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Mail className="h-5 w-5" />
-              Email Notifications
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="font-medium text-text-primary">Email Alerts</h4>
-                <p className="text-sm text-text-secondary">Receive email notifications for important updates</p>
-              </div>
-              <Switch 
-                checked={emailNotifications}
-                onCheckedChange={async (checked) => {
-                  setEmailNotifications(checked)
-                  if (user) {
-                    await supabase.from('profiles').update({ email_notifications: checked }).eq('user_id', user.id)
-                    toast({ title: checked ? 'Email notifications enabled' : 'Email notifications disabled' })
-                  }
-                }}
-              />
-            </div>
+            {/* Email Notifications */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Mail className="h-5 w-5" />
+                  Email Notifications
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-medium">Email Alerts</h4>
+                    <p className="text-sm text-muted-foreground">Receive email notifications</p>
+                  </div>
+                  <Switch 
+                    checked={emailNotifications}
+                    onCheckedChange={async (checked) => {
+                      setEmailNotifications(checked)
+                      if (user) {
+                        await supabase.from('profiles').update({ email_notifications: checked }).eq('user_id', user.id)
+                        toast({ title: checked ? 'Email notifications enabled' : 'Email notifications disabled' })
+                      }
+                    }}
+                  />
+                </div>
+                <Separator />
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-medium">Digest Frequency</h4>
+                    <p className="text-sm text-muted-foreground">Summary of platform activity</p>
+                  </div>
+                  <Select 
+                    value={emailDigestFrequency} 
+                    onValueChange={async (v: 'daily' | 'weekly' | 'monthly' | 'never') => {
+                      setEmailDigestFrequency(v)
+                      if (user) {
+                        await supabase.from('profiles').update({ email_digest_frequency: v }).eq('user_id', user.id)
+                        toast({ title: `Digest frequency set to ${v}` })
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background border border-border z-[100]">
+                      <SelectItem value="daily">Daily</SelectItem>
+                      <SelectItem value="weekly">Weekly</SelectItem>
+                      <SelectItem value="monthly">Monthly</SelectItem>
+                      <SelectItem value="never">Never</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Push Notifications */}
+            <PushNotificationToggle />
             
-            <Separator />
-            
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="font-medium text-text-primary">Weekly Digest</h4>
-                <p className="text-sm text-text-secondary">Get a summary of platform activity</p>
-              </div>
-              <Select 
-                value={emailDigestFrequency} 
-                onValueChange={async (v: 'daily' | 'weekly' | 'monthly' | 'never') => {
-                  setEmailDigestFrequency(v)
-                  if (user) {
-                    await supabase.from('profiles').update({ email_digest_frequency: v }).eq('user_id', user.id)
-                    toast({ title: `Digest frequency set to ${v}` })
-                  }
-                }}
-              >
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-background border border-border z-[100]">
-                  <SelectItem value="daily">Daily</SelectItem>
-                  <SelectItem value="weekly">Weekly</SelectItem>
-                  <SelectItem value="monthly">Monthly</SelectItem>
-                  <SelectItem value="never">Never</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {/* SMS Settings */}
+            <SMSNotificationSettings />
 
-            <div className="bg-muted/50 p-3 rounded-lg text-sm text-muted-foreground">
-              <p className="font-medium mb-1">📧 Email types you&apos;ll receive:</p>
-              <ul className="list-disc list-inside space-y-1 text-xs">
-                <li>Job alerts matching your skills</li>
-                <li>Application updates (accepted, shortlisted)</li>
-                <li>New messages from clients</li>
-                <li>Transaction receipts with PDF</li>
-                <li>Weekly digest with stats & opportunities</li>
-              </ul>
-            </div>
-          </CardContent>
-        </Card>
+            {/* Test Notifications */}
+            <TestNotifications />
+          </TabsContent>
 
-        {/* Push Notifications */}
-        <PushNotificationToggle />
+          {/* ===== VERIFICATION TAB ===== */}
+          <TabsContent value="verification" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ShieldCheck className="h-5 w-5" />
+                  Verification Status
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Current Badges */}
+                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                  <div>
+                    <h4 className="font-medium">Your Badges</h4>
+                    <p className="text-xs text-muted-foreground mt-1">Earned verification badges</p>
+                  </div>
+                  <UserBadges 
+                    badges={{
+                      isExpert: profile?.is_expert,
+                      emailVerified: (profile as any)?.email_verified,
+                      phoneVerified: (profile as any)?.phone_verified,
+                      faceVerified: (profile as any)?.face_verified,
+                      averageRating: profile?.average_rating,
+                      ratingCount: profile?.rating_count,
+                      avgResponseTimeSeconds: (profile as any)?.avg_response_time_seconds
+                    }}
+                    size="md"
+                  />
+                </div>
 
-        {/* Test Notifications */}
-        <TestNotifications />
+                <Separator />
 
-        {/* Privacy & Security */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5" />
-              Privacy & Security
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="font-medium text-text-primary">Profile Visibility</h4>
-                <p className="text-sm text-text-secondary">Control who can see your profile</p>
-              </div>
-              <Select value={profileVisibility} onValueChange={handleProfileVisibilityChange}>
-                <SelectTrigger className="w-48">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="public">
-                    <div className="flex items-center gap-2">
-                      <Globe className="h-4 w-4" />
-                      Public
+                {/* Email Verification */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-full ${(profile as any)?.email_verified ? 'bg-green-100 dark:bg-green-900/30' : 'bg-amber-100 dark:bg-amber-900/30'}`}>
+                      <Mail className={`h-4 w-4 ${(profile as any)?.email_verified ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`} />
                     </div>
-                  </SelectItem>
-                  <SelectItem value="registered">
-                    <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4" />
-                      Registered Users Only
+                    <div>
+                      <h4 className="font-medium">Email</h4>
+                      <p className="text-xs text-muted-foreground">{user?.email}</p>
                     </div>
-                  </SelectItem>
-                  <SelectItem value="private">
-                    <div className="flex items-center gap-2">
-                      <Lock className="h-4 w-4" />
-                      Private
+                  </div>
+                  <EmailVerificationStatus 
+                    email={user?.email}
+                    isVerified={(profile as any)?.email_verified}
+                  />
+                </div>
+
+                <Separator />
+
+                {/* Phone Verification */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-full ${(profile as any)?.phone_verified ? 'bg-green-100 dark:bg-green-900/30' : 'bg-muted'}`}>
+                      <Phone className={`h-4 w-4 ${(profile as any)?.phone_verified ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`} />
                     </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <Separator />
-            
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="font-medium text-text-primary">Public on Google</h4>
-                <p className="text-sm text-text-secondary">Allow your profile to appear in Google search results</p>
-              </div>
-              <Switch 
-                checked={(profile as any)?.public_on_google ?? true}
-                onCheckedChange={async (checked) => {
-                  await updateProfile({ public_on_google: checked } as any);
-                  toast({
-                    title: "SEO Settings Updated",
-                    description: checked ? "Your profile will appear in search results" : "Your profile is hidden from search engines"
-                  });
-                }}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Verification Status Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ShieldCheck className="h-5 w-5" />
-              Verification Status
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Current Badges */}
-            <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-              <div>
-                <h4 className="font-medium text-foreground">Your Badges</h4>
-                <p className="text-xs text-muted-foreground mt-1">Earned verification badges</p>
-              </div>
-              <UserBadges 
-                badges={{
-                  isExpert: profile?.is_expert,
-                  emailVerified: (profile as any)?.email_verified,
-                  phoneVerified: (profile as any)?.phone_verified,
-                  faceVerified: (profile as any)?.face_verified,
-                  averageRating: profile?.average_rating,
-                  ratingCount: profile?.rating_count,
-                  avgResponseTimeSeconds: (profile as any)?.avg_response_time_seconds
-                }}
-                size="md"
-              />
-            </div>
-
-            <Separator />
-
-            {/* Email Verification */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-full ${(profile as any)?.email_verified ? 'bg-green-100 dark:bg-green-900/30' : 'bg-amber-100 dark:bg-amber-900/30'}`}>
-                  <Mail className={`h-4 w-4 ${(profile as any)?.email_verified ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`} />
+                    <div>
+                      <h4 className="font-medium">Phone Number</h4>
+                      <p className="text-xs text-muted-foreground">
+                        {(profile as any)?.phone_verified 
+                          ? (profile as any)?.phone_number || 'Verified'
+                          : 'Verify via code sent to Telegram'
+                        }
+                      </p>
+                    </div>
+                  </div>
+                  {(profile as any)?.phone_verified ? (
+                    <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                      <CheckCircle className="h-4 w-4" />
+                      <span className="text-sm font-medium">Verified</span>
+                    </div>
+                  ) : (
+                    <Button variant="outline" size="sm" onClick={() => setPhoneVerifyOpen(true)}>
+                      Verify Phone
+                    </Button>
+                  )}
                 </div>
-                <div>
-                  <h4 className="font-medium text-foreground">Email</h4>
-                  <p className="text-xs text-muted-foreground">{user?.email}</p>
+
+                <PhoneVerificationDialog 
+                  open={phoneVerifyOpen} 
+                  onOpenChange={setPhoneVerifyOpen}
+                />
+
+                <Separator />
+
+                {/* Face Verification */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-full ${(profile as any)?.face_verified ? 'bg-green-100 dark:bg-green-900/30' : 'bg-muted'}`}>
+                      <Camera className={`h-4 w-4 ${(profile as any)?.face_verified ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`} />
+                    </div>
+                    <div>
+                      <h4 className="font-medium">Face Selfie</h4>
+                      <p className="text-xs text-muted-foreground">Open-source face verification</p>
+                    </div>
+                  </div>
+                  <FaceVerificationDialog 
+                    isVerified={(profile as any)?.face_verified}
+                    onVerified={() => {
+                      toast({ title: "Face Verified", description: "Your selfie has been verified successfully!" })
+                    }}
+                  />
                 </div>
-              </div>
-              <EmailVerificationStatus 
-                email={user?.email}
-                isVerified={(profile as any)?.email_verified}
-              />
-            </div>
 
-            <Separator />
+                <Separator />
 
-            {/* Phone Verification */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-full ${(profile as any)?.phone_verified ? 'bg-green-100 dark:bg-green-900/30' : 'bg-muted'}`}>
-                  <Phone className={`h-4 w-4 ${(profile as any)?.phone_verified ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`} />
+                {/* NIN/BVN Identity Verification */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-full ${(profile as any)?.identity_verified ? 'bg-green-100 dark:bg-green-900/30' : 'bg-muted'}`}>
+                      <IdCard className={`h-4 w-4 ${(profile as any)?.identity_verified ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`} />
+                    </div>
+                    <div>
+                      <h4 className="font-medium">Government ID</h4>
+                      <p className="text-xs text-muted-foreground">
+                        {(profile as any)?.identity_verified 
+                          ? 'NIN/BVN verified'
+                          : 'NIN or BVN verification (Nigerian users)'}
+                      </p>
+                    </div>
+                  </div>
+                  <IdentityVerificationDialog 
+                    isVerified={(profile as any)?.identity_verified}
+                    onVerified={() => {
+                      toast({ title: "ID Verified!", description: "Your government ID has been verified successfully!" })
+                    }}
+                  />
                 </div>
-                <div>
-                  <h4 className="font-medium text-foreground">Phone Number</h4>
-                  <p className="text-xs text-muted-foreground">
-                    {(profile as any)?.phone_verified 
-                      ? (profile as any)?.phone_number || 'Verified'
-                      : 'Verify via code sent to Telegram'
-                    }
-                  </p>
+              </CardContent>
+            </Card>
+
+            {/* Login History */}
+            <LoginHistoryCard />
+          </TabsContent>
+
+          {/* ===== SECURITY TAB ===== */}
+          <TabsContent value="security" className="space-y-6">
+            {/* Privacy */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5" />
+                  Privacy
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-medium">Profile Visibility</h4>
+                    <p className="text-sm text-muted-foreground">Control who can see your profile</p>
+                  </div>
+                  <Select value={profileVisibility} onValueChange={handleProfileVisibilityChange}>
+                    <SelectTrigger className="w-48">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="public">
+                        <div className="flex items-center gap-2">
+                          <Globe className="h-4 w-4" />
+                          Public
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="registered">
+                        <div className="flex items-center gap-2">
+                          <Users className="h-4 w-4" />
+                          Registered Only
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="private">
+                        <div className="flex items-center gap-2">
+                          <Lock className="h-4 w-4" />
+                          Private
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-              </div>
-              {(profile as any)?.phone_verified ? (
-                <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
-                  <CheckCircle className="h-4 w-4" />
-                  <span className="text-sm font-medium">Verified</span>
+
+                <Separator />
+                
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-medium">Public on Google</h4>
+                    <p className="text-sm text-muted-foreground">Allow profile in search results</p>
+                  </div>
+                  <Switch 
+                    checked={(profile as any)?.public_on_google ?? true}
+                    onCheckedChange={async (checked) => {
+                      await updateProfile({ public_on_google: checked } as any)
+                      toast({
+                        title: "SEO Settings Updated",
+                        description: checked ? "Your profile will appear in search results" : "Your profile is hidden from search engines"
+                      })
+                    }}
+                  />
                 </div>
-              ) : (
-                <Button variant="outline" size="sm" onClick={() => setPhoneVerifyOpen(true)}>
-                  Verify Phone
-                </Button>
-              )}
-            </div>
+              </CardContent>
+            </Card>
 
-            <PhoneVerificationDialog 
-              open={phoneVerifyOpen} 
-              onOpenChange={setPhoneVerifyOpen}
-            />
-
-            <Separator />
-
-            {/* Face Verification */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-full ${(profile as any)?.face_verified ? 'bg-green-100 dark:bg-green-900/30' : 'bg-muted'}`}>
-                  <Camera className={`h-4 w-4 ${(profile as any)?.face_verified ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`} />
+            {/* Biometric Authentication */}
+            <Card className="border-primary/20 bg-primary/5">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Fingerprint className="h-5 w-5 text-primary" />
+                  Biometric Authentication
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <p className="font-medium">Fingerprint / Face ID</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Use biometrics to authorize transactions
+                    </p>
+                  </div>
+                  <BiometricToggle />
                 </div>
-                <div>
-                  <h4 className="font-medium text-foreground">Face Selfie</h4>
-                  <p className="text-xs text-muted-foreground">Open-source face verification</p>
+              </CardContent>
+            </Card>
+
+            {/* Security Features */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ShieldAlert className="h-5 w-5" />
+                  Security Features
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex-1">
+                    <h4 className="font-medium">Transaction PIN</h4>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Secure payments with 4-digit PIN
+                    </p>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => navigate('/settings/pin')}>
+                    <Lock className="h-4 w-4 mr-2" />
+                    {hasPin ? 'Change' : 'Set Up'}
+                  </Button>
                 </div>
-              </div>
-              <FaceVerificationDialog 
-                isVerified={(profile as any)?.face_verified}
-                onVerified={() => {
-                  toast({
-                    title: "Face Verified",
-                    description: "Your selfie has been verified successfully!",
-                  });
-                }}
-              />
-            </div>
-
-            <Separator />
-
-            {/* NIN/BVN Identity Verification */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-full ${(profile as any)?.identity_verified ? 'bg-green-100 dark:bg-green-900/30' : 'bg-muted'}`}>
-                  <IdCard className={`h-4 w-4 ${(profile as any)?.identity_verified ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`} />
-                </div>
-                <div>
-                  <h4 className="font-medium text-foreground">Government ID</h4>
-                  <p className="text-xs text-muted-foreground">
-                    {(profile as any)?.identity_verified 
-                      ? 'NIN/BVN verified'
-                      : 'NIN or BVN verification (Nigerian users)'}
-                  </p>
-                </div>
-              </div>
-              <IdentityVerificationDialog 
-                isVerified={(profile as any)?.identity_verified}
-                onVerified={() => {
-                  toast({
-                    title: "ID Verified!",
-                    description: "Your government ID has been verified successfully!",
-                  });
-                }}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Login History */}
-        <LoginHistoryCard />
-
-        {/* Biometric Authentication - Standalone Card for Visibility */}
-        <Card className="border-primary/20 bg-primary/5">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Fingerprint className="h-5 w-5 text-primary" />
-              Biometric Authentication
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <p className="font-medium text-foreground">Fingerprint / Face ID</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Use your device's biometrics to quickly authorize transactions
-                </p>
-              </div>
-              <BiometricToggle />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Security Features Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5" />
-              Security Features
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Transaction PIN */}
-            <div className="flex items-center justify-between p-4 border rounded-lg">
-              <div className="flex-1">
-                <h4 className="font-medium text-text-primary">Transaction PIN</h4>
-                <p className="text-xs text-text-secondary mt-1">
-                  Secure payments & withdrawals with 4-digit PIN
-                </p>
-              </div>
-              <Button variant="outline" size="sm" onClick={() => navigate('/settings/pin')}>
-                <Lock className="h-4 w-4 mr-2" />
-                {hasPin ? 'Change' : 'Set Up'}
-              </Button>
-            </div>
-
-            <Separator />
-
-            {/* Two-Factor Authentication */}
-            <TwoFactorSetup />
-          </CardContent>
-        </Card>
-
-        {/* About Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <HelpCircle className="h-5 w-5" />
-              About
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <button 
-              onClick={() => navigate('/terms-conditions')}
-              className="flex items-center justify-between w-full p-3 rounded-lg hover:bg-accent transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <FileText className="h-5 w-5 text-text-secondary" />
-                <span className="text-text-primary">Terms & Conditions</span>
-              </div>
-            </button>
-            
-            <button 
-              onClick={() => navigate('/help-support')}
-              className="flex items-center justify-between w-full p-3 rounded-lg hover:bg-accent transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <HelpCircle className="h-5 w-5 text-text-secondary" />
-                <span className="text-text-primary">Help & Support</span>
-              </div>
-            </button>
-          </CardContent>
-        </Card>
+                <Separator />
+                <TwoFactorSetup />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   )

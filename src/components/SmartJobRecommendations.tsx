@@ -149,6 +149,9 @@ const SmartJobRecommendations: React.FC<SmartJobRecommendationsProps> = ({
           >
             <div className="flex items-start justify-between mb-3">
               <div className="flex-1">
+                <Badge variant="outline" className="text-[10px] mb-2 border-blue-500/30 text-blue-600 dark:text-blue-400">
+                  HIRING — JOB POST
+                </Badge>
                 <h3 className="font-semibold text-sm line-clamp-2 mb-1">
                   {currentItem.title}
                 </h3>
@@ -219,6 +222,9 @@ const SmartJobRecommendations: React.FC<SmartJobRecommendationsProps> = ({
             className="p-4 bg-background rounded-xl border cursor-pointer hover:shadow-md transition-all"
             onClick={() => navigate(`/gig/${currentItem.id}`)}
           >
+            <Badge variant="outline" className="text-[10px] mb-2 border-emerald-500/30 text-emerald-600 dark:text-emerald-400">
+              SERVICE / GIG
+            </Badge>
             <div className="flex gap-3">
               {currentItem.photo_urls?.[0] && (
                 <div className="w-20 h-14 rounded-lg overflow-hidden bg-muted flex-shrink-0">
