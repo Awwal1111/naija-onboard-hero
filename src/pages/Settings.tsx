@@ -590,7 +590,6 @@ const Settings = () => {
               </div>
               <IdentityVerificationDialog 
                 isVerified={(profile as any)?.identity_verified}
-                country={(profile as any)?.verification_country || 'NG'}
                 onVerified={() => {
                   toast({
                     title: "ID Verified!",

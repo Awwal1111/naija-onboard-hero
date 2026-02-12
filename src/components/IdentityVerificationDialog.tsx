@@ -9,18 +9,18 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useProfile } from '@/hooks/useProfile';
+import { useUserCountry } from '@/hooks/useUserCountry';
 
 interface IdentityVerificationDialogProps {
   isVerified?: boolean;
   onVerified?: () => void;
-  country?: string;
 }
 
 export const IdentityVerificationDialog: React.FC<IdentityVerificationDialogProps> = ({
   isVerified = false,
   onVerified,
-  country = 'NG',
 }) => {
+  const { isNigerian, loading: countryLoading } = useUserCountry();
   const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState<'select' | 'input' | 'selfie' | 'verifying' | 'result'>('select');
   const [verificationType, setVerificationType] = useState<'nin' | 'bvn'>('nin');
@@ -78,20 +78,20 @@ export const IdentityVerificationDialog: React.FC<IdentityVerificationDialogProp
   }, [stopCamera]);
 
   const handleVerify = async () => {
-    if (!idNumber || !consent) return;
+    if (isNigerian && (!idNumber || !consent)) return;
+    if (!isNigerian && !selfieImage) return;
 
     setIsVerifying(true);
     setError(null);
     setStep('verifying');
 
     try {
+      const body = isNigerian
+        ? { type: verificationType, id_number: idNumber, consent: true, selfie_base64: selfieImage, country: 'NG' }
+        : { type: 'selfie_only', consent: true, selfie_base64: selfieImage, country: 'INTL' };
+
       const { data, error: fnError } = await supabase.functions.invoke('verify-identity', {
-        body: {
-          type: verificationType,
-          id_number: idNumber,
-          consent: true,
-          selfie_base64: selfieImage,
-        },
+        body,
       });
 
       if (fnError) throw fnError;
@@ -136,7 +136,7 @@ export const IdentityVerificationDialog: React.FC<IdentityVerificationDialogProp
     );
   }
 
-  const isNigerian = country === 'NG';
+  // isNigerian is now derived from useUserCountry hook automatically
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) handleClose(); else setIsOpen(true); }}>
@@ -152,10 +152,12 @@ export const IdentityVerificationDialog: React.FC<IdentityVerificationDialogProp
             <Shield className="h-5 w-5 text-primary" />
             Identity Verification
           </DialogTitle>
-          <DialogDescription>
-            {isNigerian 
-              ? 'Verify your identity using NIN or BVN to unlock full platform features.'
-              : 'Upload a government-issued ID to verify your identity.'}
+         <DialogDescription>
+            {countryLoading 
+              ? 'Detecting your location...'
+              : isNigerian 
+                ? 'Verify your identity using NIN or BVN to unlock full platform features.'
+                : 'Take a selfie for face verification to unlock platform features. Advanced ID verification coming soon.'}
           </DialogDescription>
         </DialogHeader>
 
