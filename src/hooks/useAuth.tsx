@@ -77,6 +77,7 @@ export const useAuth = () => {
 
     let isInitialLoad = true
     let refreshTimer: NodeJS.Timeout | null = null
+    let isMounted = true
     
     // Check if we've already done the initial auth redirect in this session
     const hasInitialRedirect = sessionStorage.getItem('hasAuthRedirect') === 'true'
@@ -113,6 +114,8 @@ export const useAuth = () => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        if (!isMounted) return
+        
         // Ignore repeated INITIAL_SESSION events to prevent render loops
         if (event === 'INITIAL_SESSION') {
           setSession(session)
@@ -170,7 +173,15 @@ export const useAuth = () => {
     )
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (!isMounted) return
+      
+      if (error) {
+        console.error('Error getting session:', error)
+        setLoading(false)
+        return
+      }
+      
       if (session?.user) {
         setSession(session)
         setUser(session.user)
@@ -196,9 +207,13 @@ export const useAuth = () => {
       }
       
       isInitialLoad = false
+    }).catch((error) => {
+      console.error('Failed to get session:', error)
+      if (isMounted) setLoading(false)
     })
 
     return () => {
+      isMounted = false
       subscription.unsubscribe()
       if (refreshTimer) clearTimeout(refreshTimer)
     }

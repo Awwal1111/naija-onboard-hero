@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
-import { Coins, Send, AlertCircle, Wallet, Info, ArrowDownUp, Smartphone, ExternalLink, Copy, Check } from 'lucide-react'
+import { Coins, Send, AlertCircle, Wallet, Info, ArrowDownUp, Smartphone, ExternalLink, Copy, Check, ShieldAlert } from 'lucide-react'
 import { SecurePinInput } from './SecurePinInput'
 import { useWallet } from '@/hooks/useWallet'
 import { useProfile } from '@/hooks/useProfile'
@@ -17,6 +17,7 @@ import { useUserSecrets } from '@/hooks/useUserSecrets'
 import { useCeloWallet } from '@/hooks/useCeloWallet'
 import { useMiniPay } from '@/hooks/useMiniPay'
 import { useUserCountry } from '@/hooks/useUserCountry'
+import { useVerification } from '@/hooks/useVerification'
 import { supabase } from '@/integrations/supabase/client'
 import { toast } from 'sonner'
 
@@ -33,6 +34,10 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
   const { address: celoAddress, celoBalance, cUsdBalance, usdtBalance, loading: walletLoading } = useCeloWallet()
   const { isMiniPay } = useMiniPay()
   const { isNigerian } = useUserCountry()
+  const { requireAction, status: verificationStatus } = useVerification()
+
+  // Block withdrawal for unverified users
+  const isVerifiedForWithdrawal = verificationStatus && (verificationStatus.level === 'verified' || verificationStatus.level === 'fully_verified')
 
   // Crypto withdrawal state
   const [cryptoWalletAddress, setCryptoWalletAddress] = useState('')
@@ -43,6 +48,9 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
   const [copiedAddress, setCopiedAddress] = useState(false)
 
   const handleContinueToPIN = () => {
+    // Check verification before allowing withdrawal
+    if (!requireAction('withdraw_funds', 'withdraw funds')) return
+
     if (!cryptoWalletAddress) {
       toast.error("Please enter a valid wallet address")
       return
