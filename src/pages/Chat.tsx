@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { ArrowLeft, Smile, Send, UserX, UserCheck, Circle, X, Check, CheckCheck, Image as ImageIcon, Loader2, Mic, Phone, Lock, Play, Pause, Video, ShieldCheck } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
+import { useVerification } from '@/hooks/useVerification'
 import { useChat } from '@/hooks/useChat'
 import { useBlockUser } from '@/hooks/useBlockUser'
 import { useUserPresence } from '@/hooks/useUserPresence'
@@ -33,6 +34,7 @@ const Chat = () => {
   const navigate = useNavigate()
   const { userId } = useParams<{ userId: string }>()
   const { user } = useAuth()
+  const { requireAction } = useVerification()
   const { messages, sendMessage, otherUser, loading } = useChat(userId!)
   const { isBlocked, isBlockedBy, canSendMessage, blockUser, unblockUser, loading: blockLoading } = useBlockUser(userId!)
   const { getOnlineStatus } = useUserPresence()
@@ -115,6 +117,7 @@ const Chat = () => {
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
     if ((!newMessage.trim() && !selectedFile) || !userId || !canSendMessage) return
+    if (!requireAction('send_message', 'send messages')) return
 
     setUploading(true)
     try {
@@ -161,6 +164,7 @@ const Chat = () => {
 
   const handleSendVoiceMessage = async (audioBlob: Blob, duration: number) => {
     if (!userId || !canSendMessage) return
+    if (!requireAction('send_message', 'send voice messages')) return
 
     setUploading(true)
     try {
@@ -444,14 +448,22 @@ const Chat = () => {
             </button>
             <div className="h-6 w-px bg-border" />
             <button
-              onClick={() => startCall(userId, 'voice')}
+              onClick={() => {
+                if (requireAction('make_call', 'make voice calls')) {
+                  startCall(userId, 'voice')
+                }
+              }}
               className="p-2 hover:bg-muted rounded-full transition-colors"
               title="Voice call"
             >
               <Phone className="h-5 w-5 text-green-600" />
             </button>
             <button
-              onClick={() => startCall(userId, 'video')}
+              onClick={() => {
+                if (requireAction('make_call', 'make video calls')) {
+                  startCall(userId, 'video')
+                }
+              }}
               className="p-2 hover:bg-muted rounded-full transition-colors"
               title="Video call"
             >

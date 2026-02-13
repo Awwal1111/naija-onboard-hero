@@ -26,10 +26,10 @@ if (!isMiniPayEnv && 'serviceWorker' in navigator) {
         console.error('[Push] Service Worker registration failed:', error);
       });
     
-    // Register PWA service worker
-    navigator.serviceWorker.register('/sw.js', { scope: '/' })
+    // Register service worker for push notifications and PWA
+    navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
       .then((registration) => {
-        console.log('[PWA] Service Worker registered successfully:', registration.scope);
+        console.log('[SW] Service Worker registered successfully:', registration.scope);
         
         // Check for updates periodically
         setInterval(() => {
@@ -37,7 +37,7 @@ if (!isMiniPayEnv && 'serviceWorker' in navigator) {
         }, 60 * 60 * 1000); // Check every hour
       })
       .catch((error) => {
-        console.log('[PWA] Service Worker registration failed:', error);
+        console.error('[SW] Service Worker registration failed:', error);
       });
   });
 }

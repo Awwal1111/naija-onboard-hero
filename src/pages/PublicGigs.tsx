@@ -32,7 +32,7 @@ const PublicGigs = () => {
       const { data, error } = await supabase
         .from('jobs_services')
         .select('id, title, description, price, category, status, created_at, photo_urls')
-        .eq('status', 'open')
+        .in('status', ['open', 'active'])
         .order('created_at', { ascending: false })
         .limit(50);
       
