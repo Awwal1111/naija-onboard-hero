@@ -17,16 +17,6 @@ const isMiniPayEnv = detectMiniPaySync().isMiniPay;
 // Service workers can cause issues in MiniPay's WebView
 if (!isMiniPayEnv && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    // Register service worker for push notifications
-    navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
-      .then((registration) => {
-        console.log('[Push] Service Worker registered successfully:', registration.scope);
-      })
-      .catch((error) => {
-        console.error('[Push] Service Worker registration failed:', error);
-      });
-    
-    // Register service worker for push notifications and PWA
     navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
       .then((registration) => {
         console.log('[SW] Service Worker registered successfully:', registration.scope);
@@ -34,7 +24,7 @@ if (!isMiniPayEnv && 'serviceWorker' in navigator) {
         // Check for updates periodically
         setInterval(() => {
           registration.update();
-        }, 60 * 60 * 1000); // Check every hour
+        }, 60 * 60 * 1000);
       })
       .catch((error) => {
         console.error('[SW] Service Worker registration failed:', error);

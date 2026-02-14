@@ -111,21 +111,12 @@ export const useAuth = () => {
       }
     }
     
-    // Set up auth state listener FIRST
+    // Use onAuthStateChange as the SOLE source of truth
+    // INITIAL_SESSION event provides the existing session on load
+    // This eliminates the race condition from redundant getSession() calls
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (!isMounted) return
-        
-        // Ignore repeated INITIAL_SESSION events to prevent render loops
-        if (event === 'INITIAL_SESSION') {
-          setSession(session)
-          setUser(session?.user ?? null)
-          setLoading(false)
-          if (session) {
-            scheduleTokenRefresh(session)
-          }
-          return
-        }
         
         console.log('Auth state change:', event, session?.user?.id)
         setSession(session)
@@ -137,80 +128,42 @@ export const useAuth = () => {
           scheduleTokenRefresh(session)
         }
 
+        if (event === 'INITIAL_SESSION') {
+          // Handle initial session - redirect if needed
+          if (session?.user) {
+            const currentPath = window.location.pathname
+            if (!hasInitialRedirect && (currentPath === '/' || authPaths.includes(currentPath))) {
+              sessionStorage.setItem('hasAuthRedirect', 'true')
+              setTimeout(() => checkProfileAndRedirect(session.user), 100)
+            }
+          }
+          isInitialLoad = false
+          return
+        }
+
         if (event === 'SIGNED_IN' && session?.user) {
-          // Only redirect if user is on auth/landing pages (not on main app pages)
           const currentPath = window.location.pathname
           const isOnAuthPage = currentPath === '/' || authPaths.includes(currentPath)
           
-          // Redirect on sign in events (not initial load, only if on auth pages)
           if (!isInitialLoad && isOnAuthPage) {
             setTimeout(() => checkProfileAndRedirect(session.user), 100)
           }
         } else if (event === 'SIGNED_OUT') {
-          // Clear refresh timer on sign out
           if (refreshTimer) clearTimeout(refreshTimer)
           setSession(null)
           setUser(null)
           const currentPath = window.location.pathname
-          // Only redirect to login if on protected routes
           if (!authPaths.includes(currentPath) && currentPath !== '/' && currentPath !== '/onboarding') {
             navigate('/login')
           }
         } else if (event === 'TOKEN_REFRESHED') {
-          // Token was refreshed successfully
           console.log('Token refreshed successfully')
-          setSession(session)
-          setUser(session?.user ?? null)
           if (session) {
             scheduleTokenRefresh(session)
           }
-        } else if (event === 'USER_UPDATED') {
-          // User data updated
-          setSession(session)
-          setUser(session?.user ?? null)
         }
       }
     )
-
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      if (!isMounted) return
-      
-      if (error) {
-        console.error('Error getting session:', error)
-        setLoading(false)
-        return
-      }
-      
-      if (session?.user) {
-        setSession(session)
-        setUser(session.user)
-        setLoading(false)
-        
-        // Schedule token refresh for existing session
-        scheduleTokenRefresh(session)
-        
-        // Redirect authenticated users away from welcome/auth pages
-        // But only on first load, not when app resumes from background
-        const currentPath = window.location.pathname
-        if (!hasInitialRedirect && (currentPath === '/' || authPaths.includes(currentPath))) {
-          sessionStorage.setItem('hasAuthRedirect', 'true')
-          setTimeout(() => checkProfileAndRedirect(session.user), 100)
-        }
-      } else {
-        setLoading(false)
-        // Redirect unauthenticated users to welcome page if on protected routes
-        const currentPath = window.location.pathname
-        if (mainAppPaths.some(path => currentPath.startsWith(path)) || currentPath === '/onboarding') {
-          navigate('/')
-        }
-      }
-      
-      isInitialLoad = false
-    }).catch((error) => {
-      console.error('Failed to get session:', error)
-      if (isMounted) setLoading(false)
-    })
 
     return () => {
       isMounted = false
