@@ -1,8 +1,7 @@
-import { useAuth } from '@/hooks/useAuth'
 import { Navigate } from 'react-router-dom'
+import { useAuthContext } from '@/contexts/AuthContext'
 import { detectMiniPaySync } from '@/lib/minipay'
 
-// SYNC detection at module load
 const isMiniPayEnv = detectMiniPaySync().isMiniPay
 
 interface ProtectedRouteProps {
@@ -11,68 +10,30 @@ interface ProtectedRouteProps {
 }
 
 /**
- * ProtectedRoute - Standard Supabase Auth protection
+ * ProtectedRoute - Uses centralized AuthContext (NOT useAuth hook)
+ * to avoid creating multiple auth subscriptions.
  * 
- * CRITICAL for MiniPay:
- * - Uses wrapper + internal pattern to avoid hook calls before MiniPay check
- * - Shows simple loading state in MiniPay to prevent re-render cascades
+ * This is the key fix: previously each ProtectedRoute called useAuth()
+ * which created its own onAuthStateChange subscription, causing 14+
+ * duplicate events and navigation conflicts on refresh.
  */
 export const ProtectedRoute = ({ 
   children, 
   redirectTo = '/login'
 }: ProtectedRouteProps) => {
-  // In MiniPay, use simplified loading/auth check to prevent re-renders
-  if (isMiniPayEnv) {
-    return <ProtectedRouteMiniPay redirectTo={redirectTo}>{children}</ProtectedRouteMiniPay>
-  }
-  
-  return <ProtectedRouteStandard redirectTo={redirectTo}>{children}</ProtectedRouteStandard>
-}
+  const { user, session, loading } = useAuthContext()
 
-// Standard route protection for non-MiniPay
-const ProtectedRouteStandard = ({ 
-  children, 
-  redirectTo = '/login'
-}: ProtectedRouteProps) => {
-  const { user, loading, session } = useAuth()
-
-  // Show loading while auth is being determined
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading...</p>
+          <div className={`animate-spin rounded-full ${isMiniPayEnv ? 'h-6 w-6' : 'h-8 w-8'} border-b-2 border-primary mx-auto mb-4`}></div>
+          {!isMiniPayEnv && <p className="text-muted-foreground">Loading...</p>}
         </div>
       </div>
     )
   }
 
-  // Require authentication
-  if (!user && !session) {
-    return <Navigate to={redirectTo} replace />
-  }
-
-  return <>{children}</>
-}
-
-// Simplified route protection for MiniPay to minimize re-renders
-const ProtectedRouteMiniPay = ({ 
-  children, 
-  redirectTo = '/login'
-}: ProtectedRouteProps) => {
-  const { user, loading, session } = useAuth()
-
-  // In MiniPay, show minimal loading UI
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-      </div>
-    )
-  }
-
-  // Require authentication
   if (!user && !session) {
     return <Navigate to={redirectTo} replace />
   }

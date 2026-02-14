@@ -15,6 +15,8 @@ import { PushNotificationManager } from "@/components/PushNotificationManager";
 import { OnboardingTour } from "@/components/OnboardingTour";
 import { useAppState } from "@/hooks/useAppState";
 import { WebRTCProvider } from "@/contexts/WebRTCContext";
+import { AuthProvider } from "@/contexts/AuthContext";
+import AuthRedirectHandler from "@/components/AuthRedirectHandler";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { detectMiniPaySync } from "@/lib/minipay";
 import Welcome from "./pages/Welcome";
@@ -148,19 +150,22 @@ const App = () => (
       <Sonner />
       <GlobalErrorHandler />
       <BrowserRouter>
-        <WebRTCProvider>
-          <MiniPayAuthWrapper>
-            {/* CRITICAL: These components are DISABLED in MiniPay to prevent flickering */}
-            {!isMiniPayEnv && <AppStateManager />}
-            {!isMiniPayEnv && <LoginLogger />}
-            {!isMiniPayEnv && <WalletInitializer />}
-            {!isMiniPayEnv && <GlobalCallManager />}
-            {!isMiniPayEnv && <GlobalPresenceManager />}
-            {!isMiniPayEnv && <QuidaxRampManager />}
-            {!isMiniPayEnv && <PWAInstallPrompt />}
-            {!isMiniPayEnv && <PushNotificationManager />}
-            {!isMiniPayEnv && <OnboardingTour />}
-            <Routes>
+        <AuthProvider>
+          <WebRTCProvider>
+            <MiniPayAuthWrapper>
+              {/* Auth redirect handler - single instance */}
+              {!isMiniPayEnv && <AuthRedirectHandler />}
+              {/* CRITICAL: These components are DISABLED in MiniPay to prevent flickering */}
+              {!isMiniPayEnv && <AppStateManager />}
+              {!isMiniPayEnv && <LoginLogger />}
+              {!isMiniPayEnv && <WalletInitializer />}
+              {!isMiniPayEnv && <GlobalCallManager />}
+              {!isMiniPayEnv && <GlobalPresenceManager />}
+              {!isMiniPayEnv && <QuidaxRampManager />}
+              {!isMiniPayEnv && <PWAInstallPrompt />}
+              {!isMiniPayEnv && <PushNotificationManager />}
+              {!isMiniPayEnv && <OnboardingTour />}
+              <Routes>
               {/* PUBLIC SEO PAGES - Must be BEFORE protected routes to prevent redirect issues */}
               <Route path="/p/expert/:userId" element={<PublicExpert />} />
               <Route path="/p/gig/:gigId" element={<PublicGig />} />
@@ -280,6 +285,7 @@ const App = () => (
             {!isMiniPayEnv && <SmartAIAssistant />}
           </MiniPayAuthWrapper>
         </WebRTCProvider>
+      </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </ErrorBoundary>
