@@ -13,7 +13,23 @@ serve(async (req) => {
   }
 
   try {
-    const { category, severity, title, description, stepsToReproduce, userContext } = await req.json();
+    // Validate basic input to prevent abuse (no auth required for bug reports)
+    const body = await req.json();
+    const { category, severity, title, description, stepsToReproduce, userContext } = body;
+
+    // Basic input validation
+    if (!description || typeof description !== 'string' || description.length > 5000) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid or missing description' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    if (title && (typeof title !== 'string' || title.length > 500)) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid title' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     console.log('AI Bug Report request:', { category, severity, title });
 
