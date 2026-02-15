@@ -1,6 +1,7 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Analytics } from "@vercel/analytics/react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { MiniPayAuthWrapper } from "@/components/MiniPayAuthWrapper";
@@ -287,6 +288,7 @@ const App = () => (
         </WebRTCProvider>
       </AuthProvider>
       </BrowserRouter>
+      <Analytics />
     </TooltipProvider>
   </ErrorBoundary>
 );
