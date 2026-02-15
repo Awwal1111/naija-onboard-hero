@@ -13,24 +13,8 @@ import { detectMiniPaySync } from './lib/minipay'
 // SYNC detection at module load
 const isMiniPayEnv = detectMiniPaySync().isMiniPay;
 
-// Register service workers ONLY in non-MiniPay environments
-// Service workers can cause issues in MiniPay's WebView
-if (!isMiniPayEnv && 'serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
-      .then((registration) => {
-        console.log('[SW] Service Worker registered successfully:', registration.scope);
-        
-        // Check for updates periodically
-        setInterval(() => {
-          registration.update();
-        }, 60 * 60 * 1000);
-      })
-      .catch((error) => {
-        console.error('[SW] Service Worker registration failed:', error);
-      });
-  });
-}
+// Service worker is handled automatically by VitePWA plugin (registerType: 'autoUpdate')
+// Do NOT manually register a service worker here - it conflicts with VitePWA's sw.js
 
 // Prevent mobile browser from refreshing on orientation change
 // DISABLED in MiniPay - can cause flickering
