@@ -50,6 +50,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     }
 
+    // CRITICAL FIX: Explicitly check for existing session on mount.
+    // onAuthStateChange may fire INITIAL_SESSION *before* the listener is registered
+    // in some browsers/service-worker scenarios, leaving the app stuck in loading=true.
+    supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
+      if (!isMounted) return
+      console.log('Auth getSession:', existingSession?.user?.id ? '(has user)' : '(no user)')
+      setSession(existingSession)
+      setUser(existingSession?.user ?? null)
+      setLoading(false)
+      if (existingSession) {
+        scheduleTokenRefresh(existingSession)
+      }
+    })
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, sess) => {
         if (!isMounted) return
