@@ -166,8 +166,9 @@ serve(async (req) => {
       }
     }
 
-    // 7. Send email (if inactive 7+ days OR high priority)
-    if (userEmail && (daysInactive >= 7 || priority === 'high' || priority === 'urgent')) {
+    // 7. Send email - LinkedIn strategy: ALWAYS email users for engagement
+    // Only skip if user is currently online (they'll see it in-app)
+    if (userEmail && (!isOnline || priority === 'high' || priority === 'urgent')) {
       console.log('[SMART_NOTIF] 4️⃣ Sending email notification...');
       try {
         const { data: emailData, error: emailError } = await supabase.functions.invoke('send-notification', {

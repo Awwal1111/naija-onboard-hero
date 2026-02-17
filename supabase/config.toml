@@ -236,3 +236,6 @@ verify_jwt = true
 
 [functions.log-login]
 verify_jwt = true
+
+[functions.send-daily-email-digest]
+verify_jwt = false
