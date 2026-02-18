@@ -174,8 +174,8 @@ Disallow: /
 # ===========================================
 # SITEMAP LOCATIONS
 # ===========================================
+Sitemap: https://jxybqmquymxkvxxpiuhv.supabase.co/functions/v1/generate-sitemap
 Sitemap: https://naijalancers.name.ng/sitemap.xml
-Sitemap: https://naija-onboard-hero.lovable.app/sitemap.xml
 
 # ===========================================
 # HOST DIRECTIVE
