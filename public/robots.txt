@@ -174,7 +174,6 @@ Disallow: /
 # ===========================================
 # SITEMAP LOCATIONS
 # ===========================================
-Sitemap: https://jxybqmquymxkvxxpiuhv.supabase.co/functions/v1/generate-sitemap
 Sitemap: https://naijalancers.name.ng/sitemap.xml
 
 # ===========================================
