@@ -33,11 +33,18 @@ export default defineConfig(({ mode }) => ({
       registerType: 'autoUpdate',
       workbox: {
         maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10 MB
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,jpeg,gif,woff,woff2}'],
-        // CRITICAL: Do NOT cache Supabase API responses
-        // Caching auth tokens and API data causes stale data on refresh
-        navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/api/, /^\/functions/],
+        // CRITICAL FIX: Do NOT precache HTML - it causes stale app on refresh
+        // Only cache static assets (JS, CSS, images, fonts)
+        globPatterns: ['**/*.{js,css,ico,png,svg,jpg,jpeg,gif,woff,woff2}'],
+        // No navigateFallback - let the browser fetch index.html from network
+        // This prevents serving stale HTML that references outdated JS bundles
+        navigateFallbackDenylist: [/.*/],
+        // Force immediate activation of new service workers
+        skipWaiting: true,
+        clientsClaim: true,
+        // Clean up old caches from previous SW versions
+        cleanupOutdatedCaches: true,
+        // No runtime caching - all API/auth calls go to network
         runtimeCaching: []
       },
       manifest: {
