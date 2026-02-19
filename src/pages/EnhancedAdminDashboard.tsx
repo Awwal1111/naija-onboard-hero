@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { ArrowLeft, Users, FileText, TrendingUp, DollarSign, Eye, Settings, AlertCircle, CheckCircle, Clock, Star, MessageCircle, Briefcase, Award, Calendar, BarChart3, PieChart, Activity, Search, Filter, MoreVertical, Trash2, Edit, Ban, Heart, Package, BookOpen, Target, AlertTriangle, Megaphone, Code } from 'lucide-react'
+import { ArrowLeft, Users, FileText, TrendingUp, DollarSign, Eye, Settings, AlertCircle, CheckCircle, Clock, Star, MessageCircle, Briefcase, Award, Calendar, BarChart3, PieChart, Activity, Search, Filter, MoreVertical, Trash2, Edit, Ban, Heart, Package, BookOpen, Target, AlertTriangle, Megaphone, Code, Ticket, Gauge } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Logo } from '@/components/ui/logo'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -32,6 +32,8 @@ import { AdminExpertVerification } from '@/components/AdminExpertVerification'
 import AdminAdsSection from '@/components/AdminAdsSection'
 import AdminAPISalesSection from '@/components/AdminAPISalesSection'
 import { CommunicationAnalyticsCard } from '@/components/admin/CommunicationAnalyticsCard'
+import { AdminAPIUsageSection } from '@/components/admin/AdminAPIUsageSection'
+import { AdminSupportTicketsSection } from '@/components/admin/AdminSupportTicketsSection'
 import { UserModeStatsCard } from '@/components/admin/UserModeStatsCard'
 import { IncompleteProfilesCard } from '@/components/admin/IncompleteProfilesCard'
 import { Briefcase as BriefcaseIcon } from 'lucide-react'
@@ -1417,6 +1419,14 @@ const EnhancedAdminDashboard = () => {
                 <Code className="h-4 w-4 mr-1" />
                 API Sales
               </TabsTrigger>
+              <TabsTrigger value="api-usage">
+                <Gauge className="h-4 w-4 mr-1" />
+                API Usage
+              </TabsTrigger>
+              <TabsTrigger value="support">
+                <Ticket className="h-4 w-4 mr-1" />
+                Support
+              </TabsTrigger>
               <TabsTrigger value="analytics">Analytics</TabsTrigger>
               <TabsTrigger value="settings">Settings</TabsTrigger>
             </TabsList>
@@ -1904,6 +1914,36 @@ const EnhancedAdminDashboard = () => {
               </CardHeader>
               <CardContent className="pt-6">
                 <AdminAPISalesSection />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* API Usage Tab */}
+          <TabsContent value="api-usage" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Gauge className="h-5 w-5 text-purple-500" />
+                  API Usage & Call Rates
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <AdminAPIUsageSection />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Support Tickets Tab */}
+          <TabsContent value="support" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Ticket className="h-5 w-5 text-orange-500" />
+                  Customer Support Tickets
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <AdminSupportTicketsSection />
               </CardContent>
             </Card>
           </TabsContent>
