@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { 
   Code, Wallet, Video, Bell, Zap, Shield, MessageSquare, 
   ArrowRight, CheckCircle, Globe, Webhook, BookOpen, Terminal,
-  ChevronRight, ExternalLink, Copy, Github, Twitter, Play, Loader2
+  ChevronRight, ExternalLink, Copy, Github, Twitter, Play, Loader2, AlertCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -90,13 +90,20 @@ const WEBHOOK_EVENTS = [
   { event: 'video.room.ended', description: 'A video session ended' },
 ];
 
+const API_BASE_URL = 'https://jxybqmquymxkvxxpiuhv.supabase.co/functions/v1/developer-api';
+
 const CODE_EXAMPLES = {
-  curl: `curl -X POST "https://api.naijalancers.name.ng/v1/wallet/create" \\
+  curl: `# Base URL: ${API_BASE_URL}
+
+curl -X POST "${API_BASE_URL}/wallet/create" \\
   -H "Content-Type: application/json" \\
   -H "x-api-key: YOUR_API_KEY" \\
   -d '{"external_user_id": "user_123"}'`,
   
-  javascript: `const response = await fetch('https://api.naijalancers.name.ng/v1/wallet/create', {
+  javascript: `// Base URL (use this, NOT api.naijalancers.name.ng)
+const BASE_URL = '${API_BASE_URL}';
+
+const response = await fetch(\`\${BASE_URL}/wallet/create\`, {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -112,8 +119,11 @@ console.log(wallet.address);`,
 
   python: `import requests
 
+# Base URL (use this, NOT api.naijalancers.name.ng)
+BASE_URL = '${API_BASE_URL}'
+
 response = requests.post(
-    'https://api.naijalancers.name.ng/v1/wallet/create',
+    f'{BASE_URL}/wallet/create',
     headers={
         'Content-Type': 'application/json',
         'x-api-key': 'YOUR_API_KEY'
@@ -358,6 +368,29 @@ export default function DeveloperDocs() {
               Get started in minutes with our simple API
             </p>
           </div>
+
+          {/* Important: Base URL Notice */}
+          <Card className="mb-6 border-primary/50 bg-primary/5">
+            <CardContent className="pt-6">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg shrink-0">
+                  <AlertCircle className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold mb-1">⚠️ Important: Correct Base URL</h3>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    All API requests must use this base URL. Do <strong>NOT</strong> use <code className="bg-destructive/10 text-destructive px-1 rounded">api.naijalancers.name.ng</code> — that domain does not exist.
+                  </p>
+                  <div className="bg-background border rounded-lg p-3 flex items-center justify-between gap-2">
+                    <code className="text-sm font-mono text-primary break-all">{API_BASE_URL}</code>
+                    <Button variant="ghost" size="sm" onClick={() => copyCode(API_BASE_URL)} className="shrink-0">
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
           
           <Card className="overflow-hidden">
             <div className="border-b bg-muted/50 px-4 py-3 flex items-center justify-between">
