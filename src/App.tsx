@@ -1,10 +1,10 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { MiniPayAuthWrapper } from "@/components/MiniPayAuthWrapper";
-import SmartAIAssistant from "@/components/SmartAIAssistant";
 import WalletInitializer from "@/components/WalletInitializer";
 import GlobalCallManager from "@/components/GlobalCallManager";
 import GlobalPresenceManager from "@/components/GlobalPresenceManager";
@@ -19,130 +19,154 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import AuthRedirectHandler from "@/components/AuthRedirectHandler";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { detectMiniPaySync } from "@/lib/minipay";
-import Welcome from "./pages/Welcome";
-import Login from "./pages/Login";
-import SignUp from "./pages/SignUp";
-import ForgotPassword from "./pages/ForgotPassword";
-import ResetPassword from "./pages/ResetPassword";
-import Onboarding from "./pages/Onboarding";
-import MainFeed from "./pages/MainFeed";
-import Profile from "./pages/Profile";
-import PostJob from "./pages/PostJob";
-import Experts from "./pages/Experts";
-import Jobs from "./pages/Jobs";
-import MyGigs from "./pages/MyGigs";
-import EditGig from "./pages/EditGig";
-import Chat from './pages/Chat'
-import ChatPage from "./pages/ChatPage";
-import CallHistoryPage from "./pages/CallHistoryPage";
-import GroupChat from "./pages/GroupChat";
-import Connections from "./pages/Connections";
-import EnhancedEarn from "./pages/EnhancedEarn";
-import { SocialMediaTasks } from "./pages/SocialMediaTasks";
-import { Surveys } from "./pages/Surveys";
-import { CpxSurveys } from "./pages/CpxSurveys";
-import { GuessNumberGame } from "./pages/GuessNumberGame";
-import { Referrals } from "./pages/Referrals";
-import PaymentSuccess from "./pages/PaymentSuccess";
-import PaymentFailed from "./pages/PaymentFailed";
-import ReferralTasks from "./pages/ReferralTasks";
-import Tasks from "./pages/Tasks";
-import DigitalProducts from "./pages/DigitalProducts";
-import Courses from "./pages/Courses";
-import Fundraising from "./pages/Fundraising";
-import Emergency from "./pages/Emergency";
-import Loan from "./pages/Loan";
-import Donations from "./pages/Donations";
-import JobsEnhanced from "./pages/JobsEnhanced";
-import ExpertProfile from "./pages/ExpertProfile";
-import ExpertApplication from "./pages/ExpertApplication";
-import AdminExpertApplications from "./pages/AdminExpertApplications";
-import ClassRoom from "./pages/ClassRoom";
-import TermsConditions from "./pages/TermsConditions";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
-import Settings from "./pages/Settings";
-import SetupPin from "./pages/SetupPin";
-import ActivityLog from "./pages/ActivityLog";
-import EnhancedAdminDashboard from "./pages/EnhancedAdminDashboard";
-import Articles from "./pages/Articles";
-import NotFound from "./pages/NotFound";
-import NigerianTrivia from "./components/NigerianTrivia";
-import FundraisingDetail from "./pages/FundraisingDetail";
-import ProductDetail from "./pages/ProductDetail";
-import CourseDetail from "./pages/CourseDetail";
-import JobDetail from "./pages/JobDetail";
-import SpinWheelGame from "./components/SpinWheelGame";
-import NaijaPredictor from "./components/NaijaPredictor";
-import FAQ from "./pages/FAQ";
-import HelpCenter from "./pages/HelpCenter";
-import RefundPolicy from "./pages/RefundPolicy";
-import Index from "./pages/Index";
-import Search from "./pages/Search";
-import PublicExpert from "./pages/PublicExpert";
-import PublicGig from "./pages/PublicGig";
-import PublicJob from "./pages/PublicJob";
-import PublicCourse from "./pages/PublicCourse";
-import PublicCampaign from "./pages/PublicCampaign";
-import PublicGigs from "./pages/PublicGigs";
-import PublicExperts from "./pages/PublicExperts";
-import PublicJobs from "./pages/PublicJobs";
-import Sitemap from "./pages/Sitemap";
-import InstallApp from "./pages/InstallApp";
-import AIChat from "./pages/AIChat";
-import AIHire from "./pages/AIHire";
-import Analytics from "./pages/Analytics";
-import Dashboard from "./pages/Dashboard";
-import Bookmarks from "./pages/Bookmarks";
-import CopilotPage from "./pages/CopilotPage";
-import Leaderboard from "./pages/Leaderboard";
-import Learn from "./pages/Learn";
-import LearnCourse from "./pages/LearnCourse";
-import ExpertClass from "./pages/ExpertClass";
-import Notifications from "./pages/Notifications";
-import Orders from "./pages/Orders";
-import OrderDetail from "./pages/OrderDetail";
-import CertificateView from "./pages/CertificateView";
-import VerifyCertificate from "./pages/VerifyCertificate";
-import ExpertVerification from "./pages/ExpertVerification";
-import Contests from "./pages/Contests";
-import ContestDetail from "./pages/ContestDetail";
-import WorkRooms from "./pages/WorkRooms";
-import WorkRoomDetail from "./pages/WorkRoomDetail";
-import WorkDiary from "./pages/WorkDiary";
-import DeveloperPortal from "./pages/DeveloperPortal";
-import DeveloperDocs from "./pages/DeveloperDocs";
-import ClientDashboard from "./pages/ClientDashboard";
 import { useLoginLogger } from "@/hooks/useLoginLogger";
 
-// SYNC detection at module load - critical for stable MiniPay rendering
+// Loading fallback
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-screen bg-background">
+    <div className="flex flex-col items-center gap-3">
+      <div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin" />
+      <p className="text-sm text-muted-foreground">Loading...</p>
+    </div>
+  </div>
+);
+
+// ===== LAZY LOADED PAGES =====
+// Auth pages (small, load fast)
+const Welcome = lazy(() => import("./pages/Welcome"));
+const Login = lazy(() => import("./pages/Login"));
+const SignUp = lazy(() => import("./pages/SignUp"));
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const Onboarding = lazy(() => import("./pages/Onboarding"));
+
+// Core pages
+const Index = lazy(() => import("./pages/Index"));
+const MainFeed = lazy(() => import("./pages/MainFeed"));
+const Profile = lazy(() => import("./pages/Profile"));
+const Search = lazy(() => import("./pages/Search"));
+const Settings = lazy(() => import("./pages/Settings"));
+const SetupPin = lazy(() => import("./pages/SetupPin"));
+const ActivityLog = lazy(() => import("./pages/ActivityLog"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const ClientDashboard = lazy(() => import("./pages/ClientDashboard"));
+const Analytics = lazy(() => import("./pages/Analytics"));
+const Notifications = lazy(() => import("./pages/Notifications"));
+const Bookmarks = lazy(() => import("./pages/Bookmarks"));
+
+// Jobs & Gigs
+const PostJob = lazy(() => import("./pages/PostJob"));
+const Jobs = lazy(() => import("./pages/Jobs"));
+const JobsEnhanced = lazy(() => import("./pages/JobsEnhanced"));
+const JobDetail = lazy(() => import("./pages/JobDetail"));
+const MyGigs = lazy(() => import("./pages/MyGigs"));
+const EditGig = lazy(() => import("./pages/EditGig"));
+
+// Experts
+const Experts = lazy(() => import("./pages/Experts"));
+const ExpertProfile = lazy(() => import("./pages/ExpertProfile"));
+const ExpertApplication = lazy(() => import("./pages/ExpertApplication"));
+const ExpertVerification = lazy(() => import("./pages/ExpertVerification"));
+const ExpertClass = lazy(() => import("./pages/ExpertClass"));
+const ClassRoom = lazy(() => import("./pages/ClassRoom"));
+
+// Chat & Communication
+const Chat = lazy(() => import('./pages/Chat'));
+const ChatPage = lazy(() => import("./pages/ChatPage"));
+const CallHistoryPage = lazy(() => import("./pages/CallHistoryPage"));
+const GroupChat = lazy(() => import("./pages/GroupChat"));
+const Connections = lazy(() => import("./pages/Connections"));
+const AIChat = lazy(() => import("./pages/AIChat"));
+const AIHire = lazy(() => import("./pages/AIHire"));
+const CopilotPage = lazy(() => import("./pages/CopilotPage"));
+
+// Earn & Games
+const EnhancedEarn = lazy(() => import("./pages/EnhancedEarn"));
+const SocialMediaTasks = lazy(() => import("./pages/SocialMediaTasks").then(m => ({ default: m.SocialMediaTasks })));
+const Surveys = lazy(() => import("./pages/Surveys").then(m => ({ default: m.Surveys })));
+const CpxSurveys = lazy(() => import("./pages/CpxSurveys").then(m => ({ default: m.CpxSurveys })));
+const GuessNumberGame = lazy(() => import("./pages/GuessNumberGame").then(m => ({ default: m.GuessNumberGame })));
+const Referrals = lazy(() => import("./pages/Referrals").then(m => ({ default: m.Referrals })));
+const Tasks = lazy(() => import("./pages/Tasks"));
+const ReferralTasks = lazy(() => import("./pages/ReferralTasks"));
+const Articles = lazy(() => import("./pages/Articles"));
+const NigerianTrivia = lazy(() => import("./components/NigerianTrivia"));
+const SpinWheelGame = lazy(() => import("./components/SpinWheelGame"));
+const NaijaPredictor = lazy(() => import("./components/NaijaPredictor"));
+
+// Commerce
+const DigitalProducts = lazy(() => import("./pages/DigitalProducts"));
+const ProductDetail = lazy(() => import("./pages/ProductDetail"));
+const Courses = lazy(() => import("./pages/Courses"));
+const CourseDetail = lazy(() => import("./pages/CourseDetail"));
+const Orders = lazy(() => import("./pages/Orders"));
+const OrderDetail = lazy(() => import("./pages/OrderDetail"));
+
+// Finance
+const Fundraising = lazy(() => import("./pages/Fundraising"));
+const FundraisingDetail = lazy(() => import("./pages/FundraisingDetail"));
+const Emergency = lazy(() => import("./pages/Emergency"));
+const Loan = lazy(() => import("./pages/Loan"));
+const Donations = lazy(() => import("./pages/Donations"));
+const PaymentSuccess = lazy(() => import("./pages/PaymentSuccess"));
+const PaymentFailed = lazy(() => import("./pages/PaymentFailed"));
+
+// Learn
+const Learn = lazy(() => import("./pages/Learn"));
+const LearnCourse = lazy(() => import("./pages/LearnCourse"));
+const Leaderboard = lazy(() => import("./pages/Leaderboard"));
+const CertificateView = lazy(() => import("./pages/CertificateView"));
+const VerifyCertificate = lazy(() => import("./pages/VerifyCertificate"));
+
+// Contests & Work
+const Contests = lazy(() => import("./pages/Contests"));
+const ContestDetail = lazy(() => import("./pages/ContestDetail"));
+const WorkRooms = lazy(() => import("./pages/WorkRooms"));
+const WorkRoomDetail = lazy(() => import("./pages/WorkRoomDetail"));
+const WorkDiary = lazy(() => import("./pages/WorkDiary"));
+
+// Admin & Developer
+const EnhancedAdminDashboard = lazy(() => import("./pages/EnhancedAdminDashboard"));
+const AdminExpertApplications = lazy(() => import("./pages/AdminExpertApplications"));
+const DeveloperPortal = lazy(() => import("./pages/DeveloperPortal"));
+const DeveloperDocs = lazy(() => import("./pages/DeveloperDocs"));
+
+// Public SEO pages
+const PublicExpert = lazy(() => import("./pages/PublicExpert"));
+const PublicGig = lazy(() => import("./pages/PublicGig"));
+const PublicJob = lazy(() => import("./pages/PublicJob"));
+const PublicCourse = lazy(() => import("./pages/PublicCourse"));
+const PublicCampaign = lazy(() => import("./pages/PublicCampaign"));
+const PublicGigs = lazy(() => import("./pages/PublicGigs"));
+const PublicExperts = lazy(() => import("./pages/PublicExperts"));
+const PublicJobs = lazy(() => import("./pages/PublicJobs"));
+const Sitemap = lazy(() => import("./pages/Sitemap"));
+const InstallApp = lazy(() => import("./pages/InstallApp"));
+
+// Static pages
+const FAQ = lazy(() => import("./pages/FAQ"));
+const HelpCenter = lazy(() => import("./pages/HelpCenter"));
+const TermsConditions = lazy(() => import("./pages/TermsConditions"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const RefundPolicy = lazy(() => import("./pages/RefundPolicy"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+
+// Lazy load heavy components
+const SmartAIAssistant = lazy(() => import("@/components/SmartAIAssistant"));
+
+// SYNC detection at module load
 const isMiniPayEnv = detectMiniPaySync().isMiniPay;
 
-// Component to handle login logging
 const LoginLogger = () => {
   useLoginLogger();
   return null;
 };
 
-// Component to handle app state persistence (disabled in MiniPay)
 const AppStateManager = () => {
   useAppState();
   return null;
 };
 
-/**
- * Main App Component
- * 
- * CRITICAL: In MiniPay, many global components are disabled to prevent
- * flickering caused by Supabase realtime subscriptions and heavy hooks.
- * 
- * Components disabled in MiniPay:
- * - AppStateManager (navigation persistence)
- * - GlobalPresenceManager (Supabase presence)
- * - PWAInstallPrompt (not needed in MiniPay)
- * - PushNotificationManager (realtime subscriptions)
- * - SmartAIAssistant (floating AI button)
- * - OnboardingTour (popup dialogs)
- */
 const App = () => (
   <ErrorBoundary>
     <TooltipProvider>
@@ -153,9 +177,7 @@ const App = () => (
         <AuthProvider>
           <WebRTCProvider>
             <MiniPayAuthWrapper>
-              {/* Auth redirect handler - single instance */}
               {!isMiniPayEnv && <AuthRedirectHandler />}
-              {/* CRITICAL: These components are DISABLED in MiniPay to prevent flickering */}
               {!isMiniPayEnv && <AppStateManager />}
               {!isMiniPayEnv && <LoginLogger />}
               {!isMiniPayEnv && <WalletInitializer />}
@@ -165,127 +187,130 @@ const App = () => (
               {!isMiniPayEnv && <PWAInstallPrompt />}
               {!isMiniPayEnv && <PushNotificationManager />}
               {!isMiniPayEnv && <OnboardingTour />}
-              <Routes>
-              {/* PUBLIC SEO PAGES - Must be BEFORE protected routes to prevent redirect issues */}
-              <Route path="/p/expert/:userId" element={<PublicExpert />} />
-              <Route path="/p/gig/:gigId" element={<PublicGig />} />
-              <Route path="/p/job/:jobId" element={<PublicJob />} />
-              <Route path="/p/course/:courseId" element={<PublicCourse />} />
-              <Route path="/p/campaign/:campaignId" element={<PublicCampaign />} />
-              
-              {/* Public browse pages - no auth required */}
-              <Route path="/p/gigs" element={<PublicGigs />} />
-              <Route path="/p/experts" element={<PublicExperts />} />
-              <Route path="/p/jobs" element={<PublicJobs />} />
-              
-              {/* Short URL aliases for better UX - redirect to the same components */}
-              <Route path="/gig/:gigId" element={<PublicGig />} />
-              <Route path="/job/:jobId" element={<PublicJob />} />
-              <Route path="/expert/:userId" element={<PublicExpert />} />
-              <Route path="/course/:courseId" element={<PublicCourse />} />
-              <Route path="/campaign/:campaignId" element={<PublicCampaign />} />
-              <Route path="/sitemap.xml" element={<Sitemap />} />
-              <Route path="/sitemap" element={<Sitemap />} />
-              
-              {/* Public pages - no auth required */}
-              <Route path="/" element={<Index />} />
-              <Route path="/install" element={<InstallApp />} />
-              <Route path="/welcome" element={<Welcome />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<SignUp />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/fundraising" element={<Fundraising />} />
-              <Route path="/fundraising/:id" element={<FundraisingDetail />} />
-              <Route path="/faq" element={<FAQ />} />
-              <Route path="/help" element={<HelpCenter />} />
-              <Route path="/terms-conditions" element={<TermsConditions />} />
-              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-              <Route path="/refund-policy" element={<RefundPolicy />} />
-              <Route path="/developers" element={<DeveloperDocs />} />
-              <Route path="/verify-certificate/:certificateId" element={<VerifyCertificate />} />
-              <Route path="/payment-success" element={<PaymentSuccess />} />
-              <Route path="/payment-failed" element={<PaymentFailed />} />
-              
-              {/* Protected routes - require authentication */}
-              <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
-              <Route path="/feed" element={<ProtectedRoute><MainFeed /></ProtectedRoute>} />
-              <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-              <Route path="/profile/:userId" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-              <Route path="/expert/:userId" element={<ProtectedRoute><ExpertProfile /></ProtectedRoute>} />
-              <Route path="/expert-application" element={<ProtectedRoute><ExpertApplication /></ProtectedRoute>} />
-              <Route path="/admin/expert-applications" element={<ProtectedRoute><AdminExpertApplications /></ProtectedRoute>} />
-              <Route path="/admin/dashboard" element={<ProtectedRoute><EnhancedAdminDashboard /></ProtectedRoute>} />
-              <Route path="/developer" element={<ProtectedRoute><DeveloperPortal /></ProtectedRoute>} />
-              <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
-              <Route path="/post-job" element={<ProtectedRoute><PostJob /></ProtectedRoute>} />
-              <Route path="/experts" element={<ProtectedRoute><Experts /></ProtectedRoute>} />
-              <Route path="/expert-verification" element={<ProtectedRoute><ExpertVerification /></ProtectedRoute>} />
-              <Route path="/expert-class" element={<ProtectedRoute><ExpertClass /></ProtectedRoute>} />
-              <Route path="/expert-class/room/:classId" element={<ProtectedRoute><ClassRoom /></ProtectedRoute>} />
-              <Route path="/jobs" element={<ProtectedRoute><Jobs /></ProtectedRoute>} />
-              <Route path="/my-gigs" element={<ProtectedRoute><MyGigs /></ProtectedRoute>} />
-              <Route path="/edit-gig/:gigId" element={<ProtectedRoute><EditGig /></ProtectedRoute>} />
-              <Route path="/surveys" element={<ProtectedRoute><Surveys /></ProtectedRoute>} />
-              <Route path="/cpx-surveys" element={<ProtectedRoute><CpxSurveys /></ProtectedRoute>} />
-              <Route path="/games/guess-number" element={<ProtectedRoute><GuessNumberGame /></ProtectedRoute>} />
-              <Route path="/referrals" element={<ProtectedRoute><Referrals /></ProtectedRoute>} />
-              <Route path="/earn" element={<ProtectedRoute><EnhancedEarn /></ProtectedRoute>} />
-              <Route path="/earn/social-tasks" element={<ProtectedRoute><SocialMediaTasks /></ProtectedRoute>} />
-              <Route path="/earn/referral-tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
-              <Route path="/referral-tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
-              <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
-              <Route path="/digital-products" element={<ProtectedRoute><DigitalProducts /></ProtectedRoute>} />
-              <Route path="/products/:id" element={<ProtectedRoute><ProductDetail /></ProtectedRoute>} />
-              <Route path="/courses" element={<ProtectedRoute><Courses /></ProtectedRoute>} />
-              <Route path="/courses/:id" element={<ProtectedRoute><CourseDetail /></ProtectedRoute>} />
-              <Route path="/jobs/:id" element={<ProtectedRoute><JobDetail /></ProtectedRoute>} />
-              <Route path="/emergency" element={<ProtectedRoute><Emergency /></ProtectedRoute>} />
-              <Route path="/loan" element={<ProtectedRoute><Loan /></ProtectedRoute>} />
-              <Route path="/donations" element={<ProtectedRoute><Donations /></ProtectedRoute>} />
-              <Route path="/jobs-enhanced" element={<ProtectedRoute><JobsEnhanced /></ProtectedRoute>} />
-              <Route path="/earn/guess-number" element={<ProtectedRoute><GuessNumberGame /></ProtectedRoute>} />
-              <Route path="/earn/trivia" element={<ProtectedRoute><NigerianTrivia /></ProtectedRoute>} />
-              <Route path="/earn/spin-wheel" element={<ProtectedRoute><SpinWheelGame /></ProtectedRoute>} />
-              <Route path="/earn/predictor" element={<ProtectedRoute><NaijaPredictor /></ProtectedRoute>} />
-              <Route path="/earn/articles" element={<ProtectedRoute><Articles /></ProtectedRoute>} />
-              <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
-              <Route path="/chat/ai" element={<ProtectedRoute><AIChat /></ProtectedRoute>} />
-              <Route path="/ai-hire" element={<ProtectedRoute><AIHire /></ProtectedRoute>} />
-              <Route path="/chat/copilot" element={<ProtectedRoute><CopilotPage /></ProtectedRoute>} />
-              <Route path="/chat/:userId" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
-              <Route path="/call-history" element={<ProtectedRoute><CallHistoryPage /></ProtectedRoute>} />
-              <Route path="/groups/:groupId" element={<ProtectedRoute><GroupChat /></ProtectedRoute>} />
-              <Route path="/connections" element={<ProtectedRoute><Connections /></ProtectedRoute>} />
-              <Route path="/main-feed" element={<ProtectedRoute><MainFeed /></ProtectedRoute>} />
-              <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
-              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-              <Route path="/client-dashboard" element={<ProtectedRoute><ClientDashboard /></ProtectedRoute>} />
-              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-              <Route path="/settings/pin" element={<ProtectedRoute><SetupPin /></ProtectedRoute>} />
-              <Route path="/activity-log" element={<ProtectedRoute><ActivityLog /></ProtectedRoute>} />
-              <Route path="/bookmarks" element={<ProtectedRoute><Bookmarks /></ProtectedRoute>} />
-              <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
-              <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
-              <Route path="/learn" element={<ProtectedRoute><Learn /></ProtectedRoute>} />
-              <Route path="/learn/course/:courseId" element={<ProtectedRoute><LearnCourse /></ProtectedRoute>} />
-              <Route path="/certificate/:certificateId" element={<ProtectedRoute><CertificateView /></ProtectedRoute>} />
-              <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
-              <Route path="/orders/:orderId" element={<ProtectedRoute><OrderDetail /></ProtectedRoute>} />
-              <Route path="/contests" element={<ProtectedRoute><Contests /></ProtectedRoute>} />
-              <Route path="/contests/:contestId" element={<ProtectedRoute><ContestDetail /></ProtectedRoute>} />
-              <Route path="/workrooms" element={<ProtectedRoute><WorkRooms /></ProtectedRoute>} />
-              <Route path="/workrooms/:roomId" element={<ProtectedRoute><WorkRoomDetail /></ProtectedRoute>} />
-              <Route path="/work-diary" element={<ProtectedRoute><WorkDiary /></ProtectedRoute>} />
+              <Suspense fallback={<PageLoader />}>
+                <Routes>
+                {/* PUBLIC SEO PAGES */}
+                <Route path="/p/expert/:userId" element={<PublicExpert />} />
+                <Route path="/p/gig/:gigId" element={<PublicGig />} />
+                <Route path="/p/job/:jobId" element={<PublicJob />} />
+                <Route path="/p/course/:courseId" element={<PublicCourse />} />
+                <Route path="/p/campaign/:campaignId" element={<PublicCampaign />} />
+                <Route path="/p/gigs" element={<PublicGigs />} />
+                <Route path="/p/experts" element={<PublicExperts />} />
+                <Route path="/p/jobs" element={<PublicJobs />} />
+                
+                {/* Short URL aliases */}
+                <Route path="/gig/:gigId" element={<PublicGig />} />
+                <Route path="/job/:jobId" element={<PublicJob />} />
+                <Route path="/expert/:userId" element={<PublicExpert />} />
+                <Route path="/course/:courseId" element={<PublicCourse />} />
+                <Route path="/campaign/:campaignId" element={<PublicCampaign />} />
+                <Route path="/sitemap.xml" element={<Sitemap />} />
+                <Route path="/sitemap" element={<Sitemap />} />
+                
+                {/* Public pages */}
+                <Route path="/" element={<Index />} />
+                <Route path="/install" element={<InstallApp />} />
+                <Route path="/welcome" element={<Welcome />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<SignUp />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/fundraising" element={<Fundraising />} />
+                <Route path="/fundraising/:id" element={<FundraisingDetail />} />
+                <Route path="/faq" element={<FAQ />} />
+                <Route path="/help" element={<HelpCenter />} />
+                <Route path="/terms-conditions" element={<TermsConditions />} />
+                <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                <Route path="/refund-policy" element={<RefundPolicy />} />
+                <Route path="/developers" element={<DeveloperDocs />} />
+                <Route path="/verify-certificate/:certificateId" element={<VerifyCertificate />} />
+                <Route path="/payment-success" element={<PaymentSuccess />} />
+                <Route path="/payment-failed" element={<PaymentFailed />} />
+                
+                {/* Protected routes */}
+                <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+                <Route path="/feed" element={<ProtectedRoute><MainFeed /></ProtectedRoute>} />
+                <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                <Route path="/profile/:userId" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                <Route path="/expert/:userId" element={<ProtectedRoute><ExpertProfile /></ProtectedRoute>} />
+                <Route path="/expert-application" element={<ProtectedRoute><ExpertApplication /></ProtectedRoute>} />
+                <Route path="/admin/expert-applications" element={<ProtectedRoute><AdminExpertApplications /></ProtectedRoute>} />
+                <Route path="/admin/dashboard" element={<ProtectedRoute><EnhancedAdminDashboard /></ProtectedRoute>} />
+                <Route path="/developer" element={<ProtectedRoute><DeveloperPortal /></ProtectedRoute>} />
+                <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
+                <Route path="/post-job" element={<ProtectedRoute><PostJob /></ProtectedRoute>} />
+                <Route path="/experts" element={<ProtectedRoute><Experts /></ProtectedRoute>} />
+                <Route path="/expert-verification" element={<ProtectedRoute><ExpertVerification /></ProtectedRoute>} />
+                <Route path="/expert-class" element={<ProtectedRoute><ExpertClass /></ProtectedRoute>} />
+                <Route path="/expert-class/room/:classId" element={<ProtectedRoute><ClassRoom /></ProtectedRoute>} />
+                <Route path="/jobs" element={<ProtectedRoute><Jobs /></ProtectedRoute>} />
+                <Route path="/my-gigs" element={<ProtectedRoute><MyGigs /></ProtectedRoute>} />
+                <Route path="/edit-gig/:gigId" element={<ProtectedRoute><EditGig /></ProtectedRoute>} />
+                <Route path="/surveys" element={<ProtectedRoute><Surveys /></ProtectedRoute>} />
+                <Route path="/cpx-surveys" element={<ProtectedRoute><CpxSurveys /></ProtectedRoute>} />
+                <Route path="/games/guess-number" element={<ProtectedRoute><GuessNumberGame /></ProtectedRoute>} />
+                <Route path="/referrals" element={<ProtectedRoute><Referrals /></ProtectedRoute>} />
+                <Route path="/earn" element={<ProtectedRoute><EnhancedEarn /></ProtectedRoute>} />
+                <Route path="/earn/social-tasks" element={<ProtectedRoute><SocialMediaTasks /></ProtectedRoute>} />
+                <Route path="/earn/referral-tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
+                <Route path="/referral-tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
+                <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
+                <Route path="/digital-products" element={<ProtectedRoute><DigitalProducts /></ProtectedRoute>} />
+                <Route path="/products/:id" element={<ProtectedRoute><ProductDetail /></ProtectedRoute>} />
+                <Route path="/courses" element={<ProtectedRoute><Courses /></ProtectedRoute>} />
+                <Route path="/courses/:id" element={<ProtectedRoute><CourseDetail /></ProtectedRoute>} />
+                <Route path="/jobs/:id" element={<ProtectedRoute><JobDetail /></ProtectedRoute>} />
+                <Route path="/emergency" element={<ProtectedRoute><Emergency /></ProtectedRoute>} />
+                <Route path="/loan" element={<ProtectedRoute><Loan /></ProtectedRoute>} />
+                <Route path="/donations" element={<ProtectedRoute><Donations /></ProtectedRoute>} />
+                <Route path="/jobs-enhanced" element={<ProtectedRoute><JobsEnhanced /></ProtectedRoute>} />
+                <Route path="/earn/guess-number" element={<ProtectedRoute><GuessNumberGame /></ProtectedRoute>} />
+                <Route path="/earn/trivia" element={<ProtectedRoute><NigerianTrivia /></ProtectedRoute>} />
+                <Route path="/earn/spin-wheel" element={<ProtectedRoute><SpinWheelGame /></ProtectedRoute>} />
+                <Route path="/earn/predictor" element={<ProtectedRoute><NaijaPredictor /></ProtectedRoute>} />
+                <Route path="/earn/articles" element={<ProtectedRoute><Articles /></ProtectedRoute>} />
+                <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+                <Route path="/chat/ai" element={<ProtectedRoute><AIChat /></ProtectedRoute>} />
+                <Route path="/ai-hire" element={<ProtectedRoute><AIHire /></ProtectedRoute>} />
+                <Route path="/chat/copilot" element={<ProtectedRoute><CopilotPage /></ProtectedRoute>} />
+                <Route path="/chat/:userId" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+                <Route path="/call-history" element={<ProtectedRoute><CallHistoryPage /></ProtectedRoute>} />
+                <Route path="/groups/:groupId" element={<ProtectedRoute><GroupChat /></ProtectedRoute>} />
+                <Route path="/connections" element={<ProtectedRoute><Connections /></ProtectedRoute>} />
+                <Route path="/main-feed" element={<ProtectedRoute><MainFeed /></ProtectedRoute>} />
+                <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                <Route path="/client-dashboard" element={<ProtectedRoute><ClientDashboard /></ProtectedRoute>} />
+                <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+                <Route path="/settings/pin" element={<ProtectedRoute><SetupPin /></ProtectedRoute>} />
+                <Route path="/activity-log" element={<ProtectedRoute><ActivityLog /></ProtectedRoute>} />
+                <Route path="/bookmarks" element={<ProtectedRoute><Bookmarks /></ProtectedRoute>} />
+                <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+                <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
+                <Route path="/learn" element={<ProtectedRoute><Learn /></ProtectedRoute>} />
+                <Route path="/learn/course/:courseId" element={<ProtectedRoute><LearnCourse /></ProtectedRoute>} />
+                <Route path="/certificate/:certificateId" element={<ProtectedRoute><CertificateView /></ProtectedRoute>} />
+                <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
+                <Route path="/orders/:orderId" element={<ProtectedRoute><OrderDetail /></ProtectedRoute>} />
+                <Route path="/contests" element={<ProtectedRoute><Contests /></ProtectedRoute>} />
+                <Route path="/contests/:contestId" element={<ProtectedRoute><ContestDetail /></ProtectedRoute>} />
+                <Route path="/workrooms" element={<ProtectedRoute><WorkRooms /></ProtectedRoute>} />
+                <Route path="/workrooms/:roomId" element={<ProtectedRoute><WorkRoomDetail /></ProtectedRoute>} />
+                <Route path="/work-diary" element={<ProtectedRoute><WorkDiary /></ProtectedRoute>} />
 
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-            {/* AI Assistant - DISABLED in MiniPay */}
-            {!isMiniPayEnv && <SmartAIAssistant />}
-          </MiniPayAuthWrapper>
-        </WebRTCProvider>
-      </AuthProvider>
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+              </Suspense>
+              {/* AI Assistant - lazy loaded & DISABLED in MiniPay */}
+              {!isMiniPayEnv && (
+                <Suspense fallback={null}>
+                  <SmartAIAssistant />
+                </Suspense>
+              )}
+            </MiniPayAuthWrapper>
+          </WebRTCProvider>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </ErrorBoundary>
