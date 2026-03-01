@@ -359,9 +359,15 @@ serve(async (req) => {
     }
 
     // Update profile
+    // Determine verification level based on what's been verified
+    // NIN/BVN + selfie = fully_verified, NIN/BVN only = verified
+    const hasSelfi = !!selfieUrl;
+    const newLevel = hasSelfi ? 'fully_verified' : 'verified';
+
     const profileUpdate: Record<string, any> = {
       identity_verified: true,
       identity_verified_at: new Date().toISOString(),
+      verification_level: newLevel,
       verification_country: 'NG',
       risk_score: riskScore,
       updated_at: new Date().toISOString(),
@@ -369,12 +375,17 @@ serve(async (req) => {
 
     if (selfieUrl) {
       profileUpdate.face_selfie_url = selfieUrl;
+      profileUpdate.face_verified = true;
     }
 
-    await supabase
+    const { error: profileError } = await supabase
       .from('profiles')
       .update(profileUpdate)
       .eq('user_id', user.id);
+
+    if (profileError) {
+      console.error('[verify-identity] Profile update error:', profileError);
+    }
 
     console.log(`[verify-identity] Successfully verified ${type} for user: ${user.id}`);
 
