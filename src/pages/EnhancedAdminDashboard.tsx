@@ -34,6 +34,7 @@ import AdminAPISalesSection from '@/components/AdminAPISalesSection'
 import { CommunicationAnalyticsCard } from '@/components/admin/CommunicationAnalyticsCard'
 import { AdminAPIUsageSection } from '@/components/admin/AdminAPIUsageSection'
 import { AdminSupportTicketsSection } from '@/components/admin/AdminSupportTicketsSection'
+import { AdminMiniAppsSection } from '@/components/admin/AdminMiniAppsSection'
 import { UserModeStatsCard } from '@/components/admin/UserModeStatsCard'
 import { IncompleteProfilesCard } from '@/components/admin/IncompleteProfilesCard'
 import { Briefcase as BriefcaseIcon } from 'lucide-react'
@@ -1427,6 +1428,10 @@ const EnhancedAdminDashboard = () => {
                 <Ticket className="h-4 w-4 mr-1" />
                 Support
               </TabsTrigger>
+              <TabsTrigger value="mini-apps">
+                <Package className="h-4 w-4 mr-1" />
+                Mini Apps
+              </TabsTrigger>
               <TabsTrigger value="analytics">Analytics</TabsTrigger>
               <TabsTrigger value="settings">Settings</TabsTrigger>
             </TabsList>
@@ -1944,6 +1949,21 @@ const EnhancedAdminDashboard = () => {
               </CardHeader>
               <CardContent className="pt-6">
                 <AdminSupportTicketsSection />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Mini Apps Management Tab */}
+          <TabsContent value="mini-apps" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Package className="h-5 w-5 text-primary" />
+                  Mini Apps Management
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <AdminMiniAppsSection />
               </CardContent>
             </Card>
           </TabsContent>

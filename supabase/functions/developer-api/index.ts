@@ -70,6 +70,7 @@ interface DeveloperProfile {
 }
 
 // Validate API key and get developer profile
+// FIXED: API keys are stored in user_secrets table, NOT profiles
 async function validateApiKey(apiKey: string): Promise<DeveloperProfile | null> {
   if (!apiKey) {
     console.log('[API] No API key provided');
@@ -78,25 +79,48 @@ async function validateApiKey(apiKey: string): Promise<DeveloperProfile | null> 
   
   console.log('[API] Validating API key:', apiKey.substring(0, 10) + '...');
   
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('user_id, account_type, api_key, wallet_balance')
+  // Step 1: Find the API key in user_secrets
+  const { data: secretData, error: secretError } = await supabase
+    .from('user_secrets')
+    .select('user_id, api_key')
     .eq('api_key', apiKey)
+    .maybeSingle();
+  
+  if (secretError) {
+    console.log('[API] Database error looking up API key:', secretError.message);
+    return null;
+  }
+  
+  if (!secretData) {
+    console.log('[API] No matching API key found in user_secrets');
+    return null;
+  }
+  
+  // Step 2: Verify the user has a developer account type in profiles
+  const { data: profileData, error: profileError } = await supabase
+    .from('profiles')
+    .select('user_id, account_type, wallet_balance')
+    .eq('user_id', secretData.user_id)
     .eq('account_type', 'developer')
     .maybeSingle();
   
-  if (error) {
-    console.log('[API] Database error during validation:', error.message);
+  if (profileError) {
+    console.log('[API] Database error checking profile:', profileError.message);
     return null;
   }
   
-  if (!data) {
-    console.log('[API] No matching developer profile found for this API key');
+  if (!profileData) {
+    console.log('[API] User found but account_type is not developer');
     return null;
   }
   
-  console.log('[API] API key validated for user:', data.user_id);
-  return data as DeveloperProfile;
+  console.log('[API] API key validated for user:', profileData.user_id);
+  return {
+    user_id: profileData.user_id,
+    account_type: profileData.account_type,
+    api_key: secretData.api_key,
+    wallet_balance: profileData.wallet_balance
+  } as DeveloperProfile;
 }
 
 // Check and update rate limits

@@ -1,0 +1,288 @@
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { X, ArrowLeft, MoreVertical, Shield } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { useAuth } from '@/hooks/useAuth'
+import { useProfile } from '@/hooks/useProfile'
+import { supabase } from '@/integrations/supabase/client'
+import { toast } from 'sonner'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+
+interface MiniApp {
+  id: string
+  app_name: string
+  app_description: string
+  app_icon_url: string | null
+  app_url: string
+  sdk_app_id: string
+}
+
+interface MiniAppViewerProps {
+  app: MiniApp
+  onClose: () => void
+}
+
+/**
+ * MiniAppViewer - Opens mini apps in a full-screen iframe with SDK communication
+ * 
+ * SDK Protocol (postMessage):
+ * Parent → Child: { type: "njl_identify", jwt, user }
+ * Child → Parent: { type: "njl_charge", amount, description, requestId }
+ * Parent → Child: { type: "njl_charge_result", success, txRef, requestId }
+ */
+export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
+  const { user } = useAuth()
+  const { profile } = useProfile()
+  const iframeRef = useRef<HTMLIFrameElement>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [showChargeDialog, setShowChargeDialog] = useState(false)
+  const [pendingCharge, setPendingCharge] = useState<{
+    amount: number
+    description: string
+    requestId: string
+  } | null>(null)
+
+  // Generate a simple signed identity token for the mini app
+  const generateIdentityPayload = useCallback(() => {
+    if (!user || !profile) return null
+    return {
+      type: 'njl_identify',
+      user: {
+        user_id: user.id,
+        full_name: profile.full_name || '',
+        email: user.email || '',
+        profile_picture_url: profile.profile_picture_url || '',
+      },
+      app_id: app.sdk_app_id,
+      timestamp: Date.now()
+    }
+  }, [user, profile, app.sdk_app_id])
+
+  // Handle messages from mini app iframe
+  useEffect(() => {
+    const handleMessage = async (event: MessageEvent) => {
+      const data = event.data
+      if (!data?.type?.startsWith('njl_')) return
+
+      console.log('[MiniApp SDK] Received:', data.type)
+
+      if (data.type === 'njl_ready') {
+        // Mini app is ready, send identity
+        const identity = generateIdentityPayload()
+        if (identity && iframeRef.current?.contentWindow) {
+          iframeRef.current.contentWindow.postMessage(identity, '*')
+        }
+      }
+
+      if (data.type === 'njl_charge') {
+        // Mini app wants to charge the user
+        const { amount, description, requestId } = data
+        if (!amount || amount <= 0) {
+          iframeRef.current?.contentWindow?.postMessage({
+            type: 'njl_charge_result',
+            success: false,
+            error: 'Invalid amount',
+            requestId
+          }, '*')
+          return
+        }
+
+        setPendingCharge({ amount, description: description || 'Mini App Purchase', requestId })
+        setShowChargeDialog(true)
+      }
+    }
+
+    window.addEventListener('message', handleMessage)
+    return () => window.removeEventListener('message', handleMessage)
+  }, [generateIdentityPayload])
+
+  const handleConfirmCharge = async () => {
+    if (!pendingCharge || !user) return
+
+    try {
+      // Check balance
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('wallet_balance')
+        .eq('user_id', user.id)
+        .single()
+
+      if (!profileData || (profileData as any).wallet_balance < pendingCharge.amount) {
+        toast.error('Insufficient NC balance')
+        iframeRef.current?.contentWindow?.postMessage({
+          type: 'njl_charge_result',
+          success: false,
+          error: 'Insufficient balance',
+          requestId: pendingCharge.requestId
+        }, '*')
+        setShowChargeDialog(false)
+        setPendingCharge(null)
+        return
+      }
+
+      // Deduct balance
+      await supabase
+        .from('profiles')
+        .update({ 
+          wallet_balance: (profileData as any).wallet_balance - pendingCharge.amount 
+        })
+        .eq('user_id', user.id)
+
+      // Record transaction
+      const txRef = 'njl_tx_' + crypto.randomUUID().replace(/-/g, '').slice(0, 16)
+      
+      await supabase.from('mini_app_transactions').insert({
+        mini_app_id: app.id,
+        user_id: user.id,
+        amount: pendingCharge.amount,
+        description: pendingCharge.description,
+        tx_ref: txRef
+      })
+
+      await supabase.from('wallet_transactions').insert({
+        user_id: user.id,
+        kind: 'mini_app_payment',
+        amount: -pendingCharge.amount,
+        status: 'completed',
+        reference: `${app.app_name}: ${pendingCharge.description}`
+      })
+
+      // Notify the mini app
+      iframeRef.current?.contentWindow?.postMessage({
+        type: 'njl_charge_result',
+        success: true,
+        txRef,
+        requestId: pendingCharge.requestId
+      }, '*')
+
+      toast.success(`₦${pendingCharge.amount}NC paid to ${app.app_name}`)
+    } catch (err) {
+      console.error('[MiniApp] Charge failed:', err)
+      iframeRef.current?.contentWindow?.postMessage({
+        type: 'njl_charge_result',
+        success: false,
+        error: 'Payment failed',
+        requestId: pendingCharge.requestId
+      }, '*')
+      toast.error('Payment failed')
+    }
+
+    setShowChargeDialog(false)
+    setPendingCharge(null)
+  }
+
+  // Track install/open
+  useEffect(() => {
+    supabase
+      .from('mini_apps')
+      .update({ install_count: (app as any).install_count + 1 })
+      .eq('id', app.id)
+      .then(() => {})
+  }, [app.id])
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0, y: '100%' }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: '100%' }}
+        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+        className="fixed inset-0 z-[100] bg-background flex flex-col"
+      >
+        {/* Header */}
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-card">
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            {app.app_icon_url ? (
+              <img src={app.app_icon_url} alt="" className="w-7 h-7 rounded-lg" />
+            ) : (
+              <div className="w-7 h-7 rounded-lg bg-primary/20 flex items-center justify-center">
+                <span className="text-xs font-bold text-primary">{app.app_name.charAt(0)}</span>
+              </div>
+            )}
+            <div className="min-w-0">
+              <h3 className="text-sm font-semibold text-foreground truncate">{app.app_name}</h3>
+              <div className="flex items-center gap-1">
+                <Shield className="h-3 w-3 text-green-500" />
+                <span className="text-[10px] text-green-600">Verified by NaijaLancers</span>
+              </div>
+            </div>
+          </div>
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <X className="h-5 w-5" />
+          </Button>
+        </div>
+
+        {/* Loading */}
+        {isLoading && (
+          <div className="absolute inset-0 top-14 flex items-center justify-center bg-background z-10">
+            <div className="text-center">
+              <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-3" />
+              <p className="text-sm text-muted-foreground">Loading {app.app_name}...</p>
+            </div>
+          </div>
+        )}
+
+        {/* Iframe */}
+        <iframe
+          ref={iframeRef}
+          src={app.app_url}
+          className="flex-1 w-full border-0"
+          sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+          onLoad={() => {
+            setIsLoading(false)
+            // Send identity after load
+            const identity = generateIdentityPayload()
+            if (identity && iframeRef.current?.contentWindow) {
+              setTimeout(() => {
+                iframeRef.current?.contentWindow?.postMessage(identity, '*')
+              }, 500)
+            }
+          }}
+        />
+
+        {/* Charge Confirmation Dialog */}
+        <Dialog open={showChargeDialog} onOpenChange={setShowChargeDialog}>
+          <DialogContent className="max-w-sm">
+            <div className="text-center space-y-4">
+              <div className="w-14 h-14 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center">
+                {app.app_icon_url ? (
+                  <img src={app.app_icon_url} alt="" className="w-10 h-10 rounded-xl" />
+                ) : (
+                  <span className="text-xl font-bold text-primary">{app.app_name.charAt(0)}</span>
+                )}
+              </div>
+              <div>
+                <h3 className="font-semibold text-foreground">{app.app_name}</h3>
+                <p className="text-sm text-muted-foreground mt-1">wants to charge your wallet</p>
+              </div>
+              <div className="bg-muted rounded-xl p-4">
+                <p className="text-2xl font-bold text-foreground">₦{pendingCharge?.amount}NC</p>
+                <p className="text-sm text-muted-foreground mt-1">{pendingCharge?.description}</p>
+              </div>
+              <div className="flex gap-3">
+                <Button variant="outline" className="flex-1" onClick={() => {
+                  setShowChargeDialog(false)
+                  iframeRef.current?.contentWindow?.postMessage({
+                    type: 'njl_charge_result',
+                    success: false,
+                    error: 'User cancelled',
+                    requestId: pendingCharge?.requestId
+                  }, '*')
+                  setPendingCharge(null)
+                }}>
+                  Cancel
+                </Button>
+                <Button className="flex-1" onClick={handleConfirmCharge}>
+                  Pay ₦{pendingCharge?.amount}NC
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </motion.div>
+    </AnimatePresence>
+  )
+}
