@@ -31,6 +31,7 @@ import { BannerAd } from '@/components/ads/BannerAd'
 import { FeedAd } from '@/components/ads/FeedAd'
 import SmartJobRecommendations from '@/components/SmartJobRecommendations'
 import UserModePrompt from '@/components/UserModePrompt'
+import { MiniAppCarousel } from '@/components/miniapps/MiniAppCarousel'
 import { supabase } from '@/integrations/supabase/client'
 
 const MainFeed = () => {
@@ -281,6 +282,9 @@ const MainFeed = () => {
               <UnifiedSearchBar />
             </div>
           </header>
+
+          {/* Mini Apps Carousel - Above Stories for visibility */}
+          <MiniAppCarousel />
 
           {/* Stories Section */}
           <StoriesSection

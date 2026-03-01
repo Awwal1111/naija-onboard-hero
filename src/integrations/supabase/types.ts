@@ -3702,6 +3702,125 @@ export type Database = {
           },
         ]
       }
+      mini_app_transactions: {
+        Row: {
+          amount: number
+          created_at: string | null
+          description: string | null
+          id: string
+          mini_app_id: string
+          status: string | null
+          tx_ref: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          mini_app_id: string
+          status?: string | null
+          tx_ref?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          mini_app_id?: string
+          status?: string | null
+          tx_ref?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mini_app_transactions_mini_app_id_fkey"
+            columns: ["mini_app_id"]
+            isOneToOne: false
+            referencedRelation: "mini_apps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mini_apps: {
+        Row: {
+          admin_notes: string | null
+          app_description: string
+          app_icon_url: string | null
+          app_name: string
+          app_url: string
+          approved_at: string | null
+          approved_by: string | null
+          category: string | null
+          created_at: string | null
+          developer_id: string
+          id: string
+          install_count: number | null
+          is_featured: boolean | null
+          rating: number | null
+          review_count: number | null
+          sdk_app_id: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          app_description: string
+          app_icon_url?: string | null
+          app_name: string
+          app_url: string
+          approved_at?: string | null
+          approved_by?: string | null
+          category?: string | null
+          created_at?: string | null
+          developer_id: string
+          id?: string
+          install_count?: number | null
+          is_featured?: boolean | null
+          rating?: number | null
+          review_count?: number | null
+          sdk_app_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          app_description?: string
+          app_icon_url?: string | null
+          app_name?: string
+          app_url?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          category?: string | null
+          created_at?: string | null
+          developer_id?: string
+          id?: string
+          install_count?: number | null
+          is_featured?: boolean | null
+          rating?: number | null
+          review_count?: number | null
+          sdk_app_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mini_apps_developer_id_fkey"
+            columns: ["developer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "mini_apps_developer_id_fkey"
+            columns: ["developer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string

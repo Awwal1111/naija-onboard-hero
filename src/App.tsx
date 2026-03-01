@@ -130,6 +130,7 @@ const EnhancedAdminDashboard = lazy(() => import("./pages/EnhancedAdminDashboard
 const AdminExpertApplications = lazy(() => import("./pages/AdminExpertApplications"));
 const DeveloperPortal = lazy(() => import("./pages/DeveloperPortal"));
 const DeveloperDocs = lazy(() => import("./pages/DeveloperDocs"));
+const MiniAppsMarketplace = lazy(() => import("./pages/MiniAppsMarketplace"));
 
 // Public SEO pages
 const PublicExpert = lazy(() => import("./pages/PublicExpert"));
@@ -238,6 +239,7 @@ const App = () => (
                 <Route path="/admin/expert-applications" element={<ProtectedRoute><AdminExpertApplications /></ProtectedRoute>} />
                 <Route path="/admin/dashboard" element={<ProtectedRoute><EnhancedAdminDashboard /></ProtectedRoute>} />
                 <Route path="/developer" element={<ProtectedRoute><DeveloperPortal /></ProtectedRoute>} />
+                <Route path="/mini-apps" element={<ProtectedRoute><MiniAppsMarketplace /></ProtectedRoute>} />
                 <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
                 <Route path="/post-job" element={<ProtectedRoute><PostJob /></ProtectedRoute>} />
                 <Route path="/experts" element={<ProtectedRoute><Experts /></ProtectedRoute>} />
