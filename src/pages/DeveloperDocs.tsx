@@ -14,7 +14,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { 
   Code, Wallet, Video, Bell, Zap, Shield, MessageSquare, 
   ArrowRight, CheckCircle, Globe, Webhook, BookOpen, Terminal,
-  ChevronRight, ExternalLink, Copy, Github, Twitter, Play, Loader2, AlertCircle
+  ChevronRight, ExternalLink, Copy, Github, Twitter, Play, Loader2, AlertCircle,
+  Sparkles, Box, CreditCard, FileCode
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -91,6 +92,55 @@ const WEBHOOK_EVENTS = [
 ];
 
 const API_BASE_URL = 'https://jxybqmquymxkvxxpiuhv.supabase.co/functions/v1/developer-api';
+
+const MINIAPP_SDK_EXAMPLE = `<!-- Include in your Mini App's HTML -->
+<script>
+// 1. Tell NaijaLancers your app is ready
+window.parent.postMessage({ type: 'njl_ready' }, '*');
+
+// 2. Listen for user identity from the parent app
+window.addEventListener('message', (event) => {
+  const data = event.data;
+  
+  if (data.type === 'njl_identify') {
+    // You now have the user's info
+    console.log('User ID:', data.user.user_id);
+    console.log('Name:', data.user.full_name);
+    console.log('Email:', data.user.email);
+    console.log('Avatar:', data.user.profile_picture_url);
+  }
+  
+  if (data.type === 'njl_charge_result') {
+    if (data.success) {
+      console.log('Payment successful! Ref:', data.txRef);
+      // Unlock the feature / deliver the product
+    } else {
+      console.log('Payment failed:', data.error);
+    }
+  }
+});
+
+// 3. Charge the user (triggers confirmation dialog in parent)
+function chargeUser(amount, description) {
+  const requestId = 'req_' + Math.random().toString(36).slice(2);
+  window.parent.postMessage({
+    type: 'njl_charge',
+    amount: amount,        // in NC (₦ equivalent)
+    description: description,
+    requestId: requestId
+  }, '*');
+}
+
+// Example: charge ₦500NC for premium feature
+chargeUser(500, 'Premium Access - 30 Days');
+</script>`;
+
+const MINIAPP_SDK_EVENTS = [
+  { direction: '← Parent sends', event: 'njl_identify', description: 'Sent automatically when your app loads. Contains user_id, full_name, email, profile_picture_url.' },
+  { direction: '→ App sends', event: 'njl_ready', description: 'Send this when your app is ready to receive the identity payload.' },
+  { direction: '→ App sends', event: 'njl_charge', description: 'Request a payment. Fields: amount (number), description (string), requestId (string).' },
+  { direction: '← Parent sends', event: 'njl_charge_result', description: 'Payment result. Fields: success (bool), txRef (string), error (string), requestId (string).' },
+];
 
 const CODE_EXAMPLES = {
   curl: `# Base URL: ${API_BASE_URL}
@@ -253,6 +303,7 @@ export default function DeveloperDocs() {
           
           <nav className="hidden md:flex items-center gap-6">
             <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Features</a>
+            <a href="#miniapp-sdk" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Mini App SDK</a>
             <a href="#playground" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Playground</a>
             <a href="#webhooks" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Webhooks</a>
             <a href="#docs" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Documentation</a>
