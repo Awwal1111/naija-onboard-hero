@@ -32,6 +32,7 @@ import { FeedAd } from '@/components/ads/FeedAd'
 import SmartJobRecommendations from '@/components/SmartJobRecommendations'
 import UserModePrompt from '@/components/UserModePrompt'
 import { MiniAppCarousel } from '@/components/miniapps/MiniAppCarousel'
+import { DepositDialog } from '@/components/DepositDialog'
 import { supabase } from '@/integrations/supabase/client'
 
 const MainFeed = () => {
@@ -67,7 +68,7 @@ const MainFeed = () => {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [pullStartY, setPullStartY] = useState(0)
   const [showOnboarding, setShowOnboarding] = useState(false)
-  
+  const [showDepositDialog, setShowDepositDialog] = useState(false)
 
   // Check for onboarding
   useEffect(() => {
@@ -284,7 +285,14 @@ const MainFeed = () => {
           </header>
 
           {/* Mini Apps Carousel - Above Stories for visibility */}
-          <MiniAppCarousel />
+          <MiniAppCarousel onInternalAction={(action) => {
+            if (action === 'airtime') navigate('/earn') // TODO: dedicated airtime page
+            if (action === 'bank_transfer') {
+              const event = new CustomEvent('open-quidax-widget', { detail: { mode: 'sell' } })
+              window.dispatchEvent(event)
+            }
+            if (action === 'crypto_deposit') setShowDepositDialog(true)
+          }} />
 
           {/* Stories Section */}
           <StoriesSection
@@ -437,6 +445,9 @@ const MainFeed = () => {
         onClose={() => setProfilePreview({ isOpen: false, userId: null })}
         profileId={profilePreview.userId || ''}
       />
+
+      {/* Crypto Deposit Dialog */}
+      <DepositDialog open={showDepositDialog} onOpenChange={setShowDepositDialog} />
 
       {/* Bottom Navigation - Responsive design */}
       <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border px-1 sm:px-4 py-1.5 sm:py-2 safe-area-bottom z-50">

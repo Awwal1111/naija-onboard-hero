@@ -2,139 +2,66 @@ import { useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { detectMiniPaySync } from '@/lib/minipay';
 
-// SYNC check at module load - prevents async calls in MiniPay
 const isMiniPayEnv = detectMiniPaySync().isMiniPay;
 
 /**
- * Custom hook to persist navigation state and restore it when the app comes back from background
+ * useAppState - persists navigation state for cold restarts only.
  * 
- * CRITICAL: In MiniPay, this hook is COMPLETELY DISABLED
- * We return early BEFORE any React hooks to prevent re-renders
+ * FIXED: No longer navigates on visibility change (warm resume).
+ * The React tree stays mounted when minimizing/resuming, so the user
+ * is already on the correct page. Navigation on resume was causing
+ * unnecessary re-renders and "refresh" appearance.
+ * 
+ * Only restores route on TRUE cold start (app killed by OS).
  */
 export const useAppState = () => {
-  // CRITICAL: Check MiniPay BEFORE any hooks to prevent re-renders
-  // This is a conditional hook call but safe because isMiniPayEnv is constant
-  if (isMiniPayEnv) {
-    return null;
-  }
-
-  // Only call these hooks in non-MiniPay environment
+  if (isMiniPayEnv) return null;
   return useAppStateInternal();
 };
 
-// Internal hook that only runs in non-MiniPay environments
 const useAppStateInternal = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const hasRunRef = useRef(false);
+  const hasRestoredRef = useRef(false);
 
+  // Save current route on every navigation
   useEffect(() => {
-    // Save current route on every navigation (non-MiniPay only)
     const routeData = {
       path: location.pathname + location.search,
       timestamp: Date.now()
     };
-    sessionStorage.setItem('lastRoute', JSON.stringify(routeData));
-    localStorage.setItem('lastRoute', JSON.stringify(routeData));
+    try {
+      sessionStorage.setItem('lastRoute', JSON.stringify(routeData));
+      localStorage.setItem('lastRoute', JSON.stringify(routeData));
+    } catch {}
   }, [location]);
 
+  // Restore route ONLY on cold start (first mount, no session marker)
   useEffect(() => {
-    // Only run once
-    if (hasRunRef.current) return;
-    hasRunRef.current = true;
+    if (hasRestoredRef.current) return;
+    hasRestoredRef.current = true;
 
-    // Restore last route on mount (if app was killed and restarted)
-    const restoreLastRoute = () => {
-      try {
-        const savedRoute = sessionStorage.getItem('lastRoute') || localStorage.getItem('lastRoute');
-        if (savedRoute) {
-          const routeData = JSON.parse(savedRoute);
-          const timeDiff = Date.now() - routeData.timestamp;
-          // Only restore if less than 1 hour old and not already on that route
-          if (timeDiff < 60 * 60 * 1000 && routeData.path !== location.pathname + location.search) {
-            console.log('[AppState] Restoring last route:', routeData.path);
-            navigate(routeData.path, { replace: true });
-          }
-        }
-      } catch (error) {
-        console.error('[AppState] Error restoring route:', error);
-      }
-    };
+    // If sessionStorage has 'appMounted', this is a warm resume (React tree survived)
+    // Only restore if sessionStorage is empty (cold start - app was killed)
+    if (sessionStorage.getItem('appMounted')) return;
+    sessionStorage.setItem('appMounted', 'true');
 
-    // Only restore on initial mount (check if app was just launched)
-    const hasRestoredRef = sessionStorage.getItem('hasRestored');
-    if (!hasRestoredRef) {
-      restoreLastRoute();
-      sessionStorage.setItem('hasRestored', 'true');
-    }
-  }, []); // Only run once on mount
-
-  useEffect(() => {
-    // Handle page visibility changes (app minimize/resume)
-    const handleVisibilityChange = () => {
+    try {
+      const saved = localStorage.getItem('lastRoute');
+      if (!saved) return;
+      const { path, timestamp } = JSON.parse(saved);
+      const age = Date.now() - timestamp;
       const currentPath = location.pathname + location.search;
       
-      if (!document.hidden) {
-        // App is coming back to foreground - only restore if needed
-        try {
-          const savedRoute = sessionStorage.getItem('lastRoute') || localStorage.getItem('lastRoute');
-          if (savedRoute) {
-            const routeData = JSON.parse(savedRoute);
-            const timeDiff = Date.now() - routeData.timestamp;
-            
-            // Only restore if less than 1 hour old and not on the saved route
-            if (timeDiff < 60 * 60 * 1000 && routeData.path !== currentPath) {
-              navigate(routeData.path, { replace: true });
-            }
-          }
-        } catch (error) {
-          console.error('[AppState] Error restoring on resume:', error);
-        }
-      } else {
-        // App is going to background - save current state
-        const routeData = {
-          path: currentPath,
-          timestamp: Date.now()
-        };
-        sessionStorage.setItem('lastRoute', JSON.stringify(routeData));
-        localStorage.setItem('lastRoute', JSON.stringify(routeData));
+      // Only restore if < 30 min old AND different from current route
+      if (age < 30 * 60 * 1000 && path !== currentPath && path !== '/' && path !== '/login') {
+        console.log('[AppState] Cold start - restoring:', path);
+        navigate(path, { replace: true });
       }
-    };
-
-    // Handle focus/blur events
-    const handleBlur = () => {
-      const routeData = {
-        path: location.pathname + location.search,
-        timestamp: Date.now()
-      };
-      sessionStorage.setItem('lastRoute', JSON.stringify(routeData));
-      localStorage.setItem('lastRoute', JSON.stringify(routeData));
-    };
-
-    // Save state before page unload
-    const handleBeforeUnload = () => {
-      const routeData = {
-        path: location.pathname + location.search,
-        timestamp: Date.now()
-      };
-      sessionStorage.setItem('lastRoute', JSON.stringify(routeData));
-      localStorage.setItem('lastRoute', JSON.stringify(routeData));
-    };
-
-    // Add event listeners
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('blur', handleBlur);
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    window.addEventListener('pagehide', handleBeforeUnload);
-
-    // Cleanup
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('blur', handleBlur);
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      window.removeEventListener('pagehide', handleBeforeUnload);
-    };
-  }, [location, navigate]);
+    } catch (e) {
+      console.error('[AppState] Restore error:', e);
+    }
+  }, []);
 
   return null;
 };

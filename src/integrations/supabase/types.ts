@@ -3757,7 +3757,9 @@ export type Database = {
           developer_id: string
           id: string
           install_count: number | null
+          internal_action: string | null
           is_featured: boolean | null
+          is_internal: boolean | null
           rating: number | null
           review_count: number | null
           sdk_app_id: string | null
@@ -3777,7 +3779,9 @@ export type Database = {
           developer_id: string
           id?: string
           install_count?: number | null
+          internal_action?: string | null
           is_featured?: boolean | null
+          is_internal?: boolean | null
           rating?: number | null
           review_count?: number | null
           sdk_app_id?: string | null
@@ -3797,7 +3801,9 @@ export type Database = {
           developer_id?: string
           id?: string
           install_count?: number | null
+          internal_action?: string | null
           is_featured?: boolean | null
+          is_internal?: boolean | null
           rating?: number | null
           review_count?: number | null
           sdk_app_id?: string | null
