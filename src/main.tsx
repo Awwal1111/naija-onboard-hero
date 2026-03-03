@@ -9,9 +9,13 @@ import { CurrencyProvider } from "./hooks/useCurrency"
 import { TimezoneProvider } from "./hooks/useTimezone"
 import { UserModeProvider } from "./hooks/useUserMode"
 import { detectMiniPaySync } from './lib/minipay'
+import { clearReloadTracking } from './utils/chunkErrorHandler'
 
 // SYNC detection at module load
 const isMiniPayEnv = detectMiniPaySync().isMiniPay;
+
+// App loaded successfully - clear any chunk reload tracking
+clearReloadTracking();
 
 // Service worker is handled automatically by VitePWA plugin (registerType: 'autoUpdate')
 // Do NOT manually register a service worker here - it conflicts with VitePWA's sw.js

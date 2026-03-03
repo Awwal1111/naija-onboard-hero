@@ -1,19 +1,25 @@
 import { useEffect } from 'react'
 import { toast } from 'sonner'
+import { handleChunkError } from '@/utils/chunkErrorHandler'
 
 /**
  * Global Error Handler Component
  * 
  * Catches unhandled promise rejections and global errors
  * to prevent the app from crashing silently.
- * 
- * This is a safety net - individual components should still
- * use try/catch in their async handlers.
  */
 export const GlobalErrorHandler = () => {
   useEffect(() => {
     // Handle unhandled promise rejections
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      const error = event.reason instanceof Error ? event.reason : new Error(String(event.reason))
+      
+      // CRITICAL: Handle chunk load errors - attempt recovery reload
+      if (handleChunkError(error)) {
+        event.preventDefault()
+        return
+      }
+      
       console.error('[GlobalErrorHandler] Unhandled rejection:', event.reason)
       
       // Prevent the default browser behavior (console error)
@@ -46,12 +52,13 @@ export const GlobalErrorHandler = () => {
       }
     }
 
-    // Handle global errors (synchronous)
+    // Handle global errors (synchronous) - also catch chunk errors
     const handleGlobalError = (event: ErrorEvent) => {
+      if (event.error && handleChunkError(event.error)) {
+        event.preventDefault()
+        return
+      }
       console.error('[GlobalErrorHandler] Global error:', event.error)
-      
-      // Don't prevent default for global errors - let error boundary catch them
-      // But log them for debugging
     }
 
     // Handle network offline/online events
