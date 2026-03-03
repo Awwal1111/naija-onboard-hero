@@ -2,6 +2,7 @@ import React, { Component, ErrorInfo, ReactNode } from 'react'
 import { AlertTriangle, RefreshCw, Home, MessageCircle, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { handleChunkError } from '@/utils/chunkErrorHandler'
 
 interface Props {
   children: ReactNode
@@ -33,6 +34,12 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    // CRITICAL: Handle chunk load errors FIRST - attempt reload recovery
+    if (handleChunkError(error)) {
+      // handleChunkError will reload the page; don't render error UI
+      return;
+    }
+    
     const now = Date.now()
     const timeSinceLastError = now - this.state.lastErrorTime
     
@@ -55,14 +62,8 @@ class ErrorBoundary extends Component<Props, State> {
     // Call optional error handler
     this.props.onError?.(error, errorInfo)
     
-    // Auto-recovery: If this is a transient error (first occurrence),
-    // try to recover automatically after 2 seconds
-    if (newErrorCount === 1 && !this.isKnownFatalError(error)) {
-      this.retryTimeout = setTimeout(() => {
-        console.log('[ErrorBoundary] Attempting auto-recovery...')
-        this.handleRetry()
-      }, 2000)
-    }
+    // REMOVED: Auto-recovery was causing reload loops.
+    // Users can click "Try Again" manually instead.
   }
   
   componentWillUnmount() {
@@ -103,14 +104,23 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   private handleClearAndRefresh = () => {
-    // Clear local storage and session storage
+    // Clear ALL storage and unregister service workers to fully reset
     try {
       localStorage.clear()
       sessionStorage.clear()
     } catch (e) {
       console.error('Failed to clear storage:', e)
     }
-    window.location.href = '/'
+    // Unregister service workers to prevent stale cache issues
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        registrations.forEach((reg) => reg.unregister());
+      }).finally(() => {
+        window.location.href = '/login'
+      });
+    } else {
+      window.location.href = '/login'
+    }
   }
   
   private handleTryAgain = () => {
