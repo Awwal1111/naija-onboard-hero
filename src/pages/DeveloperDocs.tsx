@@ -15,7 +15,7 @@ import {
   Code, Wallet, Video, Bell, Zap, Shield, MessageSquare, 
   ArrowRight, CheckCircle, Globe, Webhook, BookOpen, Terminal,
   ChevronRight, ExternalLink, Copy, Github, Twitter, Play, Loader2, AlertCircle,
-  Sparkles, Box, CreditCard, FileCode
+  Sparkles, Box, CreditCard, FileCode, Plus
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -663,6 +663,116 @@ export default function DeveloperDocs() {
               </CardContent>
             </Card>
           </div>
+        </div>
+      </section>
+
+      {/* Mini App SDK Section */}
+      <section id="miniapp-sdk" className="py-20 px-4">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 text-primary mb-4">
+              <Sparkles className="h-5 w-5" />
+              <span className="font-medium">Mini App Platform</span>
+            </div>
+            <h2 className="text-3xl font-bold mb-4">Build Mini Apps for NaijaLancers</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Create apps that run inside NaijaLancers. Access user identity, charge NC payments, 
+              and reach thousands of users. 90% revenue goes to you.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-8 mb-12">
+            {/* SDK Events Table */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">SDK Events (postMessage)</CardTitle>
+                <CardDescription>Communication between your app and NaijaLancers</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {MINIAPP_SDK_EVENTS.map((item, i) => (
+                    <div key={i} className="p-3 rounded-lg bg-muted/50 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Badge variant={item.direction.startsWith('←') ? 'secondary' : 'default'} className="text-[10px]">
+                          {item.direction}
+                        </Badge>
+                        <code className="text-xs font-mono text-primary font-bold">{item.event}</code>
+                      </div>
+                      <p className="text-xs text-muted-foreground">{item.description}</p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Rules & Guidelines */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Rules & Guidelines</CardTitle>
+                <CardDescription>Requirements for Mini App approval</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-3 text-sm">
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                    <span>Must be hosted on <strong>HTTPS</strong></span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                    <span>Must work inside an <strong>iframe</strong> (no X-Frame-Options deny)</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                    <span>No adult, gambling, or illegal content</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                    <span>Revenue split: <strong>90%</strong> to developer, <strong>10%</strong> platform fee</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                    <span>Admin review required before going live</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                    <span>Provide a square icon (128×128px+) and clear description</span>
+                  </li>
+                </ul>
+                <div className="mt-6">
+                  <Link to="/mini-apps">
+                    <Button className="w-full gap-2">
+                      <Plus className="h-4 w-4" />
+                      Submit Your Mini App
+                    </Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* SDK Code Example */}
+          <Card className="overflow-hidden">
+            <div className="border-b bg-muted/50 px-4 py-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Code className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Integration Example</span>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => copyCode(MINIAPP_SDK_EXAMPLE)}
+                className="h-7 text-xs"
+              >
+                <Copy className="h-3 w-3 mr-1" />
+                Copy
+              </Button>
+            </div>
+            <ScrollArea className="h-[400px]">
+              <pre className="p-4 text-sm">
+                <code className="text-foreground">{MINIAPP_SDK_EXAMPLE}</code>
+              </pre>
+            </ScrollArea>
+          </Card>
         </div>
       </section>
 
