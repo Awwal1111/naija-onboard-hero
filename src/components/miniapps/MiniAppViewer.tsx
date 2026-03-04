@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { X, ArrowLeft, MoreVertical, Shield } from 'lucide-react'
+import { X, ArrowLeft, Shield } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
@@ -26,9 +26,15 @@ interface MiniAppViewerProps {
  * MiniAppViewer - Opens mini apps in a full-screen iframe with SDK communication
  * 
  * SDK Protocol (postMessage):
- * Parent → Child: { type: "njl_identify", jwt, user }
+ * Parent → Child: { type: "njl_identify", user }
+ * Child → Parent: { type: "njl_ready" } → triggers njl_identify
  * Child → Parent: { type: "njl_charge", amount, description, requestId }
  * Parent → Child: { type: "njl_charge_result", success, txRef, requestId }
+ * Child → Parent: { type: "njl_balance", requestId }
+ * Parent → Child: { type: "njl_balance_result", balance, requestId }
+ * 
+ * Payment split: 90% developer, 10% platform commission
+ * Deduction order: withdrawable balance first, then non-withdrawable
  */
 export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
   const { user } = useAuth()
@@ -42,7 +48,10 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
     requestId: string
   } | null>(null)
 
-  // Generate a simple signed identity token for the mini app
+  const postToIframe = useCallback((data: Record<string, unknown>) => {
+    iframeRef.current?.contentWindow?.postMessage(data, '*')
+  }, [])
+
   const generateIdentityPayload = useCallback(() => {
     if (!user || !profile) return null
     return {
@@ -58,35 +67,59 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
     }
   }, [user, profile, app.sdk_app_id])
 
+  // Handle balance query from mini app
+  const handleBalanceQuery = useCallback(async (requestId: string) => {
+    if (!user) return
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('wallet_balance')
+        .eq('user_id', user.id)
+        .single()
+
+      postToIframe({
+        type: 'njl_balance_result',
+        balance: (data as any)?.wallet_balance || 0,
+        requestId
+      })
+    } catch {
+      postToIframe({
+        type: 'njl_balance_result',
+        balance: 0,
+        error: 'Failed to fetch balance',
+        requestId
+      })
+    }
+  }, [user, postToIframe])
+
   // Handle messages from mini app iframe
   useEffect(() => {
-    const handleMessage = async (event: MessageEvent) => {
+    const handleMessage = (event: MessageEvent) => {
       const data = event.data
       if (!data?.type?.startsWith('njl_')) return
 
       console.log('[MiniApp SDK] Received:', data.type)
 
       if (data.type === 'njl_ready') {
-        // Mini app is ready, send identity
         const identity = generateIdentityPayload()
-        if (identity && iframeRef.current?.contentWindow) {
-          iframeRef.current.contentWindow.postMessage(identity, '*')
-        }
+        if (identity) postToIframe(identity)
+      }
+
+      if (data.type === 'njl_balance') {
+        handleBalanceQuery(data.requestId)
       }
 
       if (data.type === 'njl_charge') {
-        // Mini app wants to charge the user
         const { amount, description, requestId } = data
         if (!amount || amount <= 0) {
-          iframeRef.current?.contentWindow?.postMessage({
+          postToIframe({
             type: 'njl_charge_result',
             success: false,
             error: 'Invalid amount',
             requestId
-          }, '*')
+          })
           return
         }
-
         setPendingCharge({ amount, description: description || 'Mini App Purchase', requestId })
         setShowChargeDialog(true)
       }
@@ -94,76 +127,51 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
 
     window.addEventListener('message', handleMessage)
     return () => window.removeEventListener('message', handleMessage)
-  }, [generateIdentityPayload])
+  }, [generateIdentityPayload, handleBalanceQuery, postToIframe])
 
   const handleConfirmCharge = async () => {
     if (!pendingCharge || !user) return
 
     try {
-      // Check balance
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('wallet_balance')
-        .eq('user_id', user.id)
-        .single()
+      const txRef = 'njl_tx_' + crypto.randomUUID().replace(/-/g, '').slice(0, 16)
 
-      if (!profileData || (profileData as any).wallet_balance < pendingCharge.amount) {
-        toast.error('Insufficient NC balance')
-        iframeRef.current?.contentWindow?.postMessage({
+      // Use the server-side function for atomic payment with commission split
+      const { data, error } = await supabase.rpc('process_mini_app_payment', {
+        p_user_id: user.id,
+        p_mini_app_id: app.id,
+        p_amount: pendingCharge.amount,
+        p_description: pendingCharge.description,
+        p_tx_ref: txRef
+      })
+
+      const result = data as any
+
+      if (error || !result?.success) {
+        const errMsg = result?.error || error?.message || 'Payment failed'
+        toast.error(errMsg)
+        postToIframe({
           type: 'njl_charge_result',
           success: false,
-          error: 'Insufficient balance',
+          error: errMsg,
           requestId: pendingCharge.requestId
-        }, '*')
-        setShowChargeDialog(false)
-        setPendingCharge(null)
-        return
-      }
-
-      // Deduct balance
-      await supabase
-        .from('profiles')
-        .update({ 
-          wallet_balance: (profileData as any).wallet_balance - pendingCharge.amount 
         })
-        .eq('user_id', user.id)
-
-      // Record transaction
-      const txRef = 'njl_tx_' + crypto.randomUUID().replace(/-/g, '').slice(0, 16)
-      
-      await supabase.from('mini_app_transactions').insert({
-        mini_app_id: app.id,
-        user_id: user.id,
-        amount: pendingCharge.amount,
-        description: pendingCharge.description,
-        tx_ref: txRef
-      })
-
-      await supabase.from('wallet_transactions').insert({
-        user_id: user.id,
-        kind: 'mini_app_payment',
-        amount: -pendingCharge.amount,
-        status: 'completed',
-        reference: `${app.app_name}: ${pendingCharge.description}`
-      })
-
-      // Notify the mini app
-      iframeRef.current?.contentWindow?.postMessage({
-        type: 'njl_charge_result',
-        success: true,
-        txRef,
-        requestId: pendingCharge.requestId
-      }, '*')
-
-      toast.success(`₦${pendingCharge.amount}NC paid to ${app.app_name}`)
+      } else {
+        postToIframe({
+          type: 'njl_charge_result',
+          success: true,
+          txRef: result.tx_ref,
+          requestId: pendingCharge.requestId
+        })
+        toast.success(`₦${pendingCharge.amount}NC paid to ${app.app_name}`)
+      }
     } catch (err) {
       console.error('[MiniApp] Charge failed:', err)
-      iframeRef.current?.contentWindow?.postMessage({
+      postToIframe({
         type: 'njl_charge_result',
         success: false,
         error: 'Payment failed',
         requestId: pendingCharge.requestId
-      }, '*')
+      })
       toast.error('Payment failed')
     }
 
@@ -233,12 +241,9 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
           sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
           onLoad={() => {
             setIsLoading(false)
-            // Send identity after load
             const identity = generateIdentityPayload()
-            if (identity && iframeRef.current?.contentWindow) {
-              setTimeout(() => {
-                iframeRef.current?.contentWindow?.postMessage(identity, '*')
-              }, 500)
+            if (identity) {
+              setTimeout(() => postToIframe(identity), 500)
             }
           }}
         />
@@ -265,12 +270,12 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
               <div className="flex gap-3">
                 <Button variant="outline" className="flex-1" onClick={() => {
                   setShowChargeDialog(false)
-                  iframeRef.current?.contentWindow?.postMessage({
+                  postToIframe({
                     type: 'njl_charge_result',
                     success: false,
                     error: 'User cancelled',
                     requestId: pendingCharge?.requestId
-                  }, '*')
+                  })
                   setPendingCharge(null)
                 }}>
                   Cancel

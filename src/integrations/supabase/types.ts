@@ -3705,8 +3705,11 @@ export type Database = {
       mini_app_transactions: {
         Row: {
           amount: number
+          commission_amount: number | null
           created_at: string | null
           description: string | null
+          developer_amount: number | null
+          developer_credited: boolean | null
           id: string
           mini_app_id: string
           status: string | null
@@ -3715,8 +3718,11 @@ export type Database = {
         }
         Insert: {
           amount: number
+          commission_amount?: number | null
           created_at?: string | null
           description?: string | null
+          developer_amount?: number | null
+          developer_credited?: boolean | null
           id?: string
           mini_app_id: string
           status?: string | null
@@ -3725,8 +3731,11 @@ export type Database = {
         }
         Update: {
           amount?: number
+          commission_amount?: number | null
           created_at?: string | null
           description?: string | null
+          developer_amount?: number | null
+          developer_credited?: boolean | null
           id?: string
           mini_app_id?: string
           status?: string | null
@@ -3753,6 +3762,7 @@ export type Database = {
           approved_at: string | null
           approved_by: string | null
           category: string | null
+          commission_rate: number | null
           created_at: string | null
           developer_id: string
           id: string
@@ -3764,6 +3774,7 @@ export type Database = {
           review_count: number | null
           sdk_app_id: string | null
           status: string | null
+          total_earnings: number | null
           updated_at: string | null
         }
         Insert: {
@@ -3775,6 +3786,7 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           category?: string | null
+          commission_rate?: number | null
           created_at?: string | null
           developer_id: string
           id?: string
@@ -3786,6 +3798,7 @@ export type Database = {
           review_count?: number | null
           sdk_app_id?: string | null
           status?: string | null
+          total_earnings?: number | null
           updated_at?: string | null
         }
         Update: {
@@ -3797,6 +3810,7 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           category?: string | null
+          commission_rate?: number | null
           created_at?: string | null
           developer_id?: string
           id?: string
@@ -3808,6 +3822,7 @@ export type Database = {
           review_count?: number | null
           sdk_app_id?: string | null
           status?: string | null
+          total_earnings?: number | null
           updated_at?: string | null
         }
         Relationships: [
@@ -7719,6 +7734,16 @@ export type Database = {
       mark_safepay_complete: {
         Args: { p_safepay_id: string }
         Returns: undefined
+      }
+      process_mini_app_payment: {
+        Args: {
+          p_amount: number
+          p_description: string
+          p_mini_app_id: string
+          p_tx_ref: string
+          p_user_id: string
+        }
+        Returns: Json
       }
       propose_safepay: {
         Args: { p_amount: number; p_buyer_id: string; p_seller_id: string }
