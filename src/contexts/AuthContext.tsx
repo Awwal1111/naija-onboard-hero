@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react'
 import { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/integrations/supabase/client'
 
@@ -6,12 +6,16 @@ interface AuthContextType {
   user: User | null
   session: Session | null
   loading: boolean
+  authTimedOut: boolean
+  retryAuth: () => void
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   session: null,
   loading: true,
+  authTimedOut: false,
+  retryAuth: () => {},
 })
 
 export const useAuthContext = () => useContext(AuthContext)
@@ -19,17 +23,56 @@ export const useAuthContext = () => useContext(AuthContext)
 /**
  * AuthProvider - SINGLE source of truth for auth state.
  * 
- * CRITICAL: This replaces having useAuth() create separate subscriptions
- * in every ProtectedRoute. Now there is exactly ONE onAuthStateChange listener.
+ * CRITICAL FIX: Added a hard timeout so the app NEVER gets stuck on "Loading..."
+ * If getSession() or onAuthStateChange don't resolve within AUTH_TIMEOUT_MS,
+ * loading is set to false and the user is treated as unauthenticated.
+ * 
+ * This prevents the infinite loading loop that occurs on refresh when:
+ * - Service worker serves stale responses
+ * - Network is slow/intermittent
+ * - Supabase SDK has connectivity issues
  */
+const AUTH_TIMEOUT_MS = 8_000 // 8 seconds max wait
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
+  const [authTimedOut, setAuthTimedOut] = useState(false)
+  const loadingResolved = useRef(false)
+  const isMounted = useRef(true)
+
+  const resolveLoading = (sess: Session | null) => {
+    if (!isMounted.current || loadingResolved.current) return
+    loadingResolved.current = true
+    setSession(sess)
+    setUser(sess?.user ?? null)
+    setLoading(false)
+    setAuthTimedOut(false)
+  }
+
+  const retryAuth = () => {
+    console.log('[AuthProvider] Manual retry triggered')
+    loadingResolved.current = false
+    setLoading(true)
+    setAuthTimedOut(false)
+    
+    supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
+      if (!isMounted.current) return
+      resolveLoading(existingSession)
+    }).catch((err) => {
+      console.error('[AuthProvider] Retry getSession failed:', err)
+      if (isMounted.current) {
+        loadingResolved.current = true
+        setLoading(false)
+        setAuthTimedOut(true)
+      }
+    })
+  }
 
   useEffect(() => {
+    isMounted.current = true
     let refreshTimer: NodeJS.Timeout | null = null
-    let isMounted = true
 
     const scheduleTokenRefresh = (sess: Session) => {
       if (refreshTimer) clearTimeout(refreshTimer)
@@ -41,7 +84,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           if (error) {
             console.error('Failed to refresh session:', error)
             await supabase.auth.signOut()
-          } else if (data.session && isMounted) {
+          } else if (data.session && isMounted.current) {
             setSession(data.session)
             setUser(data.session.user)
             scheduleTokenRefresh(data.session)
@@ -50,28 +93,44 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     }
 
-    // CRITICAL FIX: Explicitly check for existing session on mount.
-    // onAuthStateChange may fire INITIAL_SESSION *before* the listener is registered
-    // in some browsers/service-worker scenarios, leaving the app stuck in loading=true.
+    // CRITICAL: Hard timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      if (!loadingResolved.current && isMounted.current) {
+        console.warn('[AuthProvider] Auth loading timed out after', AUTH_TIMEOUT_MS, 'ms')
+        loadingResolved.current = true
+        setLoading(false)
+        setAuthTimedOut(true)
+      }
+    }, AUTH_TIMEOUT_MS)
+
+    // Get existing session
     supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
-      if (!isMounted) return
+      if (!isMounted.current) return
       console.log('Auth getSession:', existingSession?.user?.id ? '(has user)' : '(no user)')
-      setSession(existingSession)
-      setUser(existingSession?.user ?? null)
-      setLoading(false)
+      resolveLoading(existingSession)
       if (existingSession) {
         scheduleTokenRefresh(existingSession)
+      }
+    }).catch((err) => {
+      console.error('[AuthProvider] getSession failed:', err)
+      if (isMounted.current) {
+        resolveLoading(null)
+        setAuthTimedOut(true)
       }
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, sess) => {
-        if (!isMounted) return
+        if (!isMounted.current) return
         console.log('Auth state change:', event, sess?.user?.id ? '(has user)' : '(no user)')
         
-        setSession(sess)
-        setUser(sess?.user ?? null)
-        setLoading(false)
+        // If loading hasn't resolved yet, resolve it now
+        if (!loadingResolved.current) {
+          resolveLoading(sess)
+        } else {
+          setSession(sess)
+          setUser(sess?.user ?? null)
+        }
 
         if (sess) {
           scheduleTokenRefresh(sess)
@@ -86,14 +145,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     )
 
     return () => {
-      isMounted = false
+      isMounted.current = false
+      clearTimeout(timeoutId)
       subscription.unsubscribe()
       if (refreshTimer) clearTimeout(refreshTimer)
     }
   }, [])
 
   return (
-    <AuthContext.Provider value={{ user, session, loading }}>
+    <AuthContext.Provider value={{ user, session, loading, authTimedOut, retryAuth }}>
       {children}
     </AuthContext.Provider>
   )
