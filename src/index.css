@@ -11,6 +11,11 @@
 All colors MUST be HSL.
 */
 
+/* Prevent native pull-to-refresh which causes full page reload */
+html, body {
+  overscroll-behavior-y: contain;
+}
+
 @layer base {
   :root {
     --background: 0 0% 96%;

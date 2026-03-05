@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -20,16 +20,43 @@ import AuthRedirectHandler from "@/components/AuthRedirectHandler";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { detectMiniPaySync } from "@/lib/minipay";
 import { useLoginLogger } from "@/hooks/useLoginLogger";
+import { RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-// Loading fallback
-const PageLoader = () => (
-  <div className="flex items-center justify-center min-h-screen bg-background">
-    <div className="flex flex-col items-center gap-3">
-      <div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin" />
-      <p className="text-sm text-muted-foreground">Loading...</p>
+// Loading fallback with timeout recovery
+const PageLoader = () => {
+  const [timedOut, setTimedOut] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setTimedOut(true), 12_000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (timedOut) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="text-center max-w-xs space-y-4 p-4">
+          <p className="text-sm text-muted-foreground">
+            Page is taking too long to load.
+          </p>
+          <Button onClick={() => window.location.reload()} size="sm" variant="outline">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Reload
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-background">
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin" />
+        <p className="text-sm text-muted-foreground">Loading...</p>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 // ===== LAZY LOADED PAGES =====
 // Auth pages (small, load fast)
