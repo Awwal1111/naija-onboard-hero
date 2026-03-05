@@ -64,10 +64,10 @@ export const useNotifications = () => {
     try {
       console.log('Starting push notification setup...')
       
-      // Register service worker
-      const registration = await navigator.serviceWorker.register('/service-worker.js')
-      await navigator.serviceWorker.ready
-      console.log('Service Worker registered and ready:', registration)
+      // Use the existing VitePWA service worker instead of registering a separate one
+      // Registering '/service-worker.js' conflicts with VitePWA's 'sw.js'
+      const registration = await navigator.serviceWorker.ready
+      console.log('Service Worker ready:', registration)
 
       // Request notification permission
       const permission = await Notification.requestPermission()
