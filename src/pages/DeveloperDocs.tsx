@@ -98,12 +98,11 @@ const MINIAPP_SDK_EXAMPLE = `<!-- Include in your Mini App's HTML -->
 // 1. Tell NaijaLancers your app is ready
 window.parent.postMessage({ type: 'njl_ready' }, '*');
 
-// 2. Listen for user identity from the parent app
+// 2. Listen for events from the parent app
 window.addEventListener('message', (event) => {
   const data = event.data;
   
   if (data.type === 'njl_identify') {
-    // You now have the user's info
     console.log('User ID:', data.user.user_id);
     console.log('Name:', data.user.full_name);
     console.log('Email:', data.user.email);
@@ -113,33 +112,72 @@ window.addEventListener('message', (event) => {
   if (data.type === 'njl_charge_result') {
     if (data.success) {
       console.log('Payment successful! Ref:', data.txRef);
-      // Unlock the feature / deliver the product
     } else {
       console.log('Payment failed:', data.error);
     }
   }
+
+  if (data.type === 'njl_balance_result') {
+    console.log('User balance:', data.balance, 'NC');
+  }
+
+  if (data.type === 'njl_payout_result') {
+    if (data.success) {
+      console.log('Payout sent! Ref:', data.txRef);
+    } else {
+      console.log('Payout failed:', data.error);
+    }
+  }
 });
 
-// 3. Charge the user (triggers confirmation dialog in parent)
-function chargeUser(amount, description) {
+// 3. Charge the user (with charge type)
+function chargeUser(amount, description, chargeType) {
   const requestId = 'req_' + Math.random().toString(36).slice(2);
   window.parent.postMessage({
     type: 'njl_charge',
-    amount: amount,        // in NC (₦ equivalent)
+    amount: amount,
+    description: description,
+    charge_type: chargeType, // 'one_time' | 'subscription' | 'tip' | 'purchase'
+    requestId: requestId
+  }, '*');
+}
+
+// 4. Query user's NC balance
+function getBalance() {
+  const requestId = 'bal_' + Math.random().toString(36).slice(2);
+  window.parent.postMessage({
+    type: 'njl_balance',
+    requestId: requestId
+  }, '*');
+}
+
+// 5. Send money back to user (refund, reward, savings return)
+function payoutUser(amount, description) {
+  const requestId = 'po_' + Math.random().toString(36).slice(2);
+  window.parent.postMessage({
+    type: 'njl_payout',
+    amount: amount,
     description: description,
     requestId: requestId
   }, '*');
 }
 
-// Example: charge ₦500NC for premium feature
-chargeUser(500, 'Premium Access - 30 Days');
+// Examples:
+chargeUser(500, 'Premium Access - 30 Days', 'subscription');
+chargeUser(100, 'Buy In-Game Coins', 'purchase');
+getBalance();
+payoutUser(200, 'Savings withdrawal');
 </script>`;
 
 const MINIAPP_SDK_EVENTS = [
   { direction: '← Parent sends', event: 'njl_identify', description: 'Sent automatically when your app loads. Contains user_id, full_name, email, profile_picture_url.' },
   { direction: '→ App sends', event: 'njl_ready', description: 'Send this when your app is ready to receive the identity payload.' },
-  { direction: '→ App sends', event: 'njl_charge', description: 'Request a payment. Fields: amount (number), description (string), requestId (string).' },
-  { direction: '← Parent sends', event: 'njl_charge_result', description: 'Payment result. Fields: success (bool), txRef (string), error (string), requestId (string).' },
+  { direction: '→ App sends', event: 'njl_charge', description: 'Request a payment. Fields: amount, description, charge_type (one_time|subscription|tip|purchase), requestId.' },
+  { direction: '← Parent sends', event: 'njl_charge_result', description: 'Payment result. Fields: success, txRef, error, requestId.' },
+  { direction: '→ App sends', event: 'njl_balance', description: 'Query user NC balance. Fields: requestId.' },
+  { direction: '← Parent sends', event: 'njl_balance_result', description: 'Balance result. Fields: balance, requestId.' },
+  { direction: '→ App sends', event: 'njl_payout', description: 'Send money to user (refunds, rewards, savings). Fields: amount, description, requestId.' },
+  { direction: '← Parent sends', event: 'njl_payout_result', description: 'Payout result. Fields: success, txRef, error, requestId.' },
 ];
 
 const CODE_EXAMPLES = {

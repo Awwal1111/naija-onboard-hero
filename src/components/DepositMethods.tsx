@@ -51,7 +51,7 @@ export const DepositMethods = ({ onSelectMethod }: DepositMethodsProps) => {
             Bank Deposit
           </CardTitle>
           <CardDescription>
-            Instant funding via secure banking • Min: ₦3,000
+            Instant funding via secure banking • Amount in NC
           </CardDescription>
         </CardHeader>
         <CardContent>

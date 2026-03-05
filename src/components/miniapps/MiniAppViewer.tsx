@@ -28,13 +28,16 @@ interface MiniAppViewerProps {
  * SDK Protocol (postMessage):
  * Parent → Child: { type: "njl_identify", user }
  * Child → Parent: { type: "njl_ready" } → triggers njl_identify
- * Child → Parent: { type: "njl_charge", amount, description, requestId }
+ * Child → Parent: { type: "njl_charge", amount, description, charge_type, requestId }
  * Parent → Child: { type: "njl_charge_result", success, txRef, requestId }
  * Child → Parent: { type: "njl_balance", requestId }
  * Parent → Child: { type: "njl_balance_result", balance, requestId }
+ * Child → Parent: { type: "njl_payout", amount, description, requestId }
+ * Parent → Child: { type: "njl_payout_result", success, txRef, requestId }
  * 
+ * charge_type: 'one_time' | 'subscription' | 'tip' | 'purchase'
  * Payment split: 90% developer, 10% platform commission
- * Deduction order: withdrawable balance first, then non-withdrawable
+ * Payout: developer sends money back to user (refunds, rewards, savings returns)
  */
 export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
   const { user } = useAuth()
@@ -42,7 +45,14 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [showChargeDialog, setShowChargeDialog] = useState(false)
+  const [showPayoutDialog, setShowPayoutDialog] = useState(false)
   const [pendingCharge, setPendingCharge] = useState<{
+    amount: number
+    description: string
+    requestId: string
+    chargeType: string
+  } | null>(null)
+  const [pendingPayout, setPendingPayout] = useState<{
     amount: number
     description: string
     requestId: string
@@ -110,7 +120,7 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
       }
 
       if (data.type === 'njl_charge') {
-        const { amount, description, requestId } = data
+        const { amount, description, requestId, charge_type } = data
         if (!amount || amount <= 0) {
           postToIframe({
             type: 'njl_charge_result',
@@ -120,8 +130,23 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
           })
           return
         }
-        setPendingCharge({ amount, description: description || 'Mini App Purchase', requestId })
+        setPendingCharge({ amount, description: description || 'Mini App Purchase', requestId, chargeType: charge_type || 'one_time' })
         setShowChargeDialog(true)
+      }
+
+      if (data.type === 'njl_payout') {
+        const { amount, description, requestId } = data
+        if (!amount || amount <= 0) {
+          postToIframe({
+            type: 'njl_payout_result',
+            success: false,
+            error: 'Invalid amount',
+            requestId
+          })
+          return
+        }
+        setPendingPayout({ amount, description: description || 'Payout', requestId })
+        setShowPayoutDialog(true)
       }
     }
 
@@ -177,6 +202,55 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
 
     setShowChargeDialog(false)
     setPendingCharge(null)
+  }
+
+  const handleConfirmPayout = async () => {
+    if (!pendingPayout || !user) return
+
+    try {
+      const txRef = 'njl_po_' + crypto.randomUUID().replace(/-/g, '').slice(0, 16)
+
+      const { data, error } = await supabase.rpc('process_mini_app_payout', {
+        p_mini_app_id: app.id,
+        p_user_id: user.id,
+        p_amount: pendingPayout.amount,
+        p_description: pendingPayout.description,
+        p_tx_ref: txRef
+      })
+
+      const result = data as any
+
+      if (error || !result?.success) {
+        const errMsg = result?.error || error?.message || 'Payout failed'
+        toast.error(errMsg)
+        postToIframe({
+          type: 'njl_payout_result',
+          success: false,
+          error: errMsg,
+          requestId: pendingPayout.requestId
+        })
+      } else {
+        postToIframe({
+          type: 'njl_payout_result',
+          success: true,
+          txRef: result.tx_ref,
+          requestId: pendingPayout.requestId
+        })
+        toast.success(`₦${pendingPayout.amount}NC received from ${app.app_name}`)
+      }
+    } catch (err) {
+      console.error('[MiniApp] Payout failed:', err)
+      postToIframe({
+        type: 'njl_payout_result',
+        success: false,
+        error: 'Payout failed',
+        requestId: pendingPayout.requestId
+      })
+      toast.error('Payout failed')
+    }
+
+    setShowPayoutDialog(false)
+    setPendingPayout(null)
   }
 
   // Track install/open
@@ -262,9 +336,11 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
               <div>
                 <h3 className="font-semibold text-foreground">{app.app_name}</h3>
                 <p className="text-sm text-muted-foreground mt-1">wants to charge your wallet</p>
-              </div>
-              <div className="bg-muted rounded-xl p-4">
-                <p className="text-2xl font-bold text-foreground">₦{pendingCharge?.amount}NC</p>
+                {pendingCharge?.chargeType && pendingCharge.chargeType !== 'one_time' && (
+                  <span className="inline-block mt-1 text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full capitalize">
+                    {pendingCharge.chargeType.replace('_', ' ')}
+                  </span>
+                )}
                 <p className="text-sm text-muted-foreground mt-1">{pendingCharge?.description}</p>
               </div>
               <div className="flex gap-3">
@@ -282,6 +358,46 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
                 </Button>
                 <Button className="flex-1" onClick={handleConfirmCharge}>
                   Pay ₦{pendingCharge?.amount}NC
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Payout Confirmation Dialog */}
+        <Dialog open={showPayoutDialog} onOpenChange={setShowPayoutDialog}>
+          <DialogContent className="max-w-sm">
+            <div className="text-center space-y-4">
+              <div className="w-14 h-14 mx-auto rounded-2xl bg-emerald-500/10 flex items-center justify-center">
+                {app.app_icon_url ? (
+                  <img src={app.app_icon_url} alt="" className="w-10 h-10 rounded-xl" />
+                ) : (
+                  <span className="text-xl font-bold text-primary">{app.app_name.charAt(0)}</span>
+                )}
+              </div>
+              <div>
+                <h3 className="font-semibold text-foreground">{app.app_name}</h3>
+                <p className="text-sm text-muted-foreground mt-1">wants to send you money</p>
+              </div>
+              <div className="bg-muted rounded-xl p-4">
+                <p className="text-2xl font-bold text-emerald-600">+₦{pendingPayout?.amount}NC</p>
+                <p className="text-sm text-muted-foreground mt-1">{pendingPayout?.description}</p>
+              </div>
+              <div className="flex gap-3">
+                <Button variant="outline" className="flex-1" onClick={() => {
+                  setShowPayoutDialog(false)
+                  postToIframe({
+                    type: 'njl_payout_result',
+                    success: false,
+                    error: 'User declined',
+                    requestId: pendingPayout?.requestId
+                  })
+                  setPendingPayout(null)
+                }}>
+                  Decline
+                </Button>
+                <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700" onClick={handleConfirmPayout}>
+                  Accept ₦{pendingPayout?.amount}NC
                 </Button>
               </div>
             </div>
