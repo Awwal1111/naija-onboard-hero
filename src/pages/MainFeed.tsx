@@ -286,9 +286,9 @@ const MainFeed = () => {
 
           {/* Mini Apps Carousel - Above Stories for visibility */}
           <MiniAppCarousel onInternalAction={(action) => {
-            if (action === 'airtime') navigate('/earn') // TODO: dedicated airtime page
-            if (action === 'bank_transfer') {
-              const event = new CustomEvent('open-quidax-widget', { detail: { mode: 'sell' } })
+            if (action === 'bills') navigate('/earn?tab=bills')
+            if (action === 'bank_deposit') {
+              const event = new CustomEvent('open-quidax-widget', { detail: { mode: 'buy' } })
               window.dispatchEvent(event)
             }
             if (action === 'crypto_deposit') setShowDepositDialog(true)

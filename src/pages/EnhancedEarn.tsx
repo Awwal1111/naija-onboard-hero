@@ -29,7 +29,9 @@ const EnhancedEarn = () => {
   const [showBettingDialog, setShowBettingDialog] = useState(false)
   const [showElectricityDialog, setShowElectricityDialog] = useState(false)
   const [showCableTVDialog, setShowCableTVDialog] = useState(false)
-  const [activeTab, setActiveTab] = useState('earn')
+  const searchParams = new URLSearchParams(location.search)
+  const initialTab = searchParams.get('tab') || 'earn'
+  const [activeTab, setActiveTab] = useState(initialTab)
 
   const earningMethods = [
     {

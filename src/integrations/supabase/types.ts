@@ -3705,6 +3705,7 @@ export type Database = {
       mini_app_transactions: {
         Row: {
           amount: number
+          charge_type: string | null
           commission_amount: number | null
           created_at: string | null
           description: string | null
@@ -3718,6 +3719,7 @@ export type Database = {
         }
         Insert: {
           amount: number
+          charge_type?: string | null
           commission_amount?: number | null
           created_at?: string | null
           description?: string | null
@@ -3731,6 +3733,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          charge_type?: string | null
           commission_amount?: number | null
           created_at?: string | null
           description?: string | null
@@ -7736,6 +7739,16 @@ export type Database = {
         Returns: undefined
       }
       process_mini_app_payment: {
+        Args: {
+          p_amount: number
+          p_description: string
+          p_mini_app_id: string
+          p_tx_ref: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      process_mini_app_payout: {
         Args: {
           p_amount: number
           p_description: string

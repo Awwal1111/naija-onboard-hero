@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/integrations/supabase/client'
-import { ChevronRight, Star, Sparkles, Phone, Building2, Wallet } from 'lucide-react'
+import { ChevronRight, Star, Sparkles, Receipt, Building2, Wallet } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { MiniAppViewer } from './MiniAppViewer'
 
@@ -20,9 +20,9 @@ interface MiniApp {
   internal_action?: string
 }
 
-const INTERNAL_ICONS: Record<string, typeof Phone> = {
-  airtime: Phone,
-  bank_transfer: Building2,
+const INTERNAL_ICONS: Record<string, typeof Receipt> = {
+  bills: Receipt,
+  bank_deposit: Building2,
   crypto_deposit: Wallet,
 }
 
