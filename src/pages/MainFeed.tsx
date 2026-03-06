@@ -33,6 +33,7 @@ import SmartJobRecommendations from '@/components/SmartJobRecommendations'
 import UserModePrompt from '@/components/UserModePrompt'
 import { MiniAppCarousel } from '@/components/miniapps/MiniAppCarousel'
 import { DepositDialog } from '@/components/DepositDialog'
+import { EscrowSearchDialog } from '@/components/EscrowSearchDialog'
 import { supabase } from '@/integrations/supabase/client'
 
 const MainFeed = () => {
@@ -69,6 +70,7 @@ const MainFeed = () => {
   const [pullStartY, setPullStartY] = useState(0)
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [showDepositDialog, setShowDepositDialog] = useState(false)
+  const [showEscrowSearch, setShowEscrowSearch] = useState(false)
 
   // Check for onboarding
   useEffect(() => {
@@ -292,6 +294,8 @@ const MainFeed = () => {
               window.dispatchEvent(event)
             }
             if (action === 'crypto_deposit') setShowDepositDialog(true)
+            if (action === 'deposit_naira') setShowDepositDialog(true)
+            if (action === 'escrow') setShowEscrowSearch(true)
           }} />
 
           {/* Stories Section */}
@@ -448,6 +452,7 @@ const MainFeed = () => {
 
       {/* Crypto Deposit Dialog */}
       <DepositDialog open={showDepositDialog} onOpenChange={setShowDepositDialog} />
+      <EscrowSearchDialog open={showEscrowSearch} onOpenChange={setShowEscrowSearch} />
 
       {/* Bottom Navigation - Responsive design */}
       <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border px-1 sm:px-4 py-1.5 sm:py-2 safe-area-bottom z-50">
