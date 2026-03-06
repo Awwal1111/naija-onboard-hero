@@ -294,6 +294,8 @@ const MainFeed = () => {
               window.dispatchEvent(event)
             }
             if (action === 'crypto_deposit') setShowDepositDialog(true)
+            if (action === 'deposit_naira') setShowDepositDialog(true)
+            if (action === 'escrow') setShowEscrowSearch(true)
           }} />
 
           {/* Stories Section */}
