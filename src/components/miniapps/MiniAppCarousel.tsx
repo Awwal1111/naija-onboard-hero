@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/integrations/supabase/client'
-import { ChevronRight, Star, Sparkles, Receipt, Building2, Wallet } from 'lucide-react'
+import { ChevronRight, Star, Sparkles, Receipt, Building2, Wallet, CreditCard, Shield } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { MiniAppViewer } from './MiniAppViewer'
 
@@ -20,10 +20,85 @@ interface MiniApp {
   internal_action?: string
 }
 
+const INTERNAL_MINI_APPS: MiniApp[] = [
+  {
+    id: 'internal-bills',
+    app_name: 'Bills',
+    app_description: 'Pay bills and airtime',
+    app_icon_url: null,
+    app_url: '',
+    category: 'finance',
+    install_count: 0,
+    rating: 5,
+    sdk_app_id: 'bills',
+    developer_id: 'system',
+    is_internal: true,
+    internal_action: 'bills',
+  },
+  {
+    id: 'internal-bank-deposit',
+    app_name: 'Bank Deposit',
+    app_description: 'Deposit via bank',
+    app_icon_url: null,
+    app_url: '',
+    category: 'finance',
+    install_count: 0,
+    rating: 5,
+    sdk_app_id: 'bank_deposit',
+    developer_id: 'system',
+    is_internal: true,
+    internal_action: 'bank_deposit',
+  },
+  {
+    id: 'internal-deposit-naira',
+    app_name: 'Deposit Naira',
+    app_description: 'Deposit with Naira',
+    app_icon_url: null,
+    app_url: '',
+    category: 'finance',
+    install_count: 0,
+    rating: 5,
+    sdk_app_id: 'deposit_naira',
+    developer_id: 'system',
+    is_internal: true,
+    internal_action: 'deposit_naira',
+  },
+  {
+    id: 'internal-crypto-deposit',
+    app_name: 'Crypto Deposit',
+    app_description: 'Deposit via crypto',
+    app_icon_url: null,
+    app_url: '',
+    category: 'finance',
+    install_count: 0,
+    rating: 5,
+    sdk_app_id: 'crypto_deposit',
+    developer_id: 'system',
+    is_internal: true,
+    internal_action: 'crypto_deposit',
+  },
+  {
+    id: 'internal-escrow',
+    app_name: 'Escrow',
+    app_description: 'Secure payments with escrow',
+    app_icon_url: null,
+    app_url: '',
+    category: 'finance',
+    install_count: 0,
+    rating: 5,
+    sdk_app_id: 'escrow',
+    developer_id: 'system',
+    is_internal: true,
+    internal_action: 'escrow',
+  },
+]
+
 const INTERNAL_ICONS: Record<string, typeof Receipt> = {
   bills: Receipt,
   bank_deposit: Building2,
   crypto_deposit: Wallet,
+  deposit_naira: CreditCard,
+  escrow: Shield,
 }
 
 interface MiniAppCarouselProps {
@@ -47,13 +122,15 @@ export const MiniAppCarousel = ({ onInternalAction }: MiniAppCarouselProps) => {
         .order('install_count', { ascending: false })
         .limit(10)
 
-      if (data?.length) setApps(data as MiniApp[])
+      // Combine internal apps first, then DB apps (excluding any DB internals)
+      const dbApps = (data || []).filter((a: any) => !a.is_internal) as MiniApp[]
+      setApps([...INTERNAL_MINI_APPS, ...dbApps])
     }
     fetchApps()
   }, [])
 
   useEffect(() => {
-    if (apps.length <= 1) return
+    if (apps.length <= 4) return
     intervalRef.current = setInterval(() => {
       setActiveIndex(prev => (prev + 1) % apps.length)
     }, 4000)
@@ -122,7 +199,7 @@ export const MiniAppCarousel = ({ onInternalAction }: MiniAppCarouselProps) => {
                         <span className="text-xl font-bold text-primary">{app.app_name.charAt(0)}</span>
                       )}
                     </motion.div>
-                    {app.rating >= 4 && (
+                    {!app.is_internal && app.rating >= 4 && (
                       <div className="absolute -top-1 -right-1 bg-yellow-400 rounded-full p-0.5">
                         <Star className="h-2.5 w-2.5 text-white fill-white" />
                       </div>
