@@ -33,6 +33,7 @@ import SmartJobRecommendations from '@/components/SmartJobRecommendations'
 import UserModePrompt from '@/components/UserModePrompt'
 import { MiniAppCarousel } from '@/components/miniapps/MiniAppCarousel'
 import { DepositDialog } from '@/components/DepositDialog'
+import { EscrowSearchDialog } from '@/components/EscrowSearchDialog'
 import { supabase } from '@/integrations/supabase/client'
 
 const MainFeed = () => {
