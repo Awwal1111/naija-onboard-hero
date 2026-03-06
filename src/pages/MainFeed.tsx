@@ -70,6 +70,7 @@ const MainFeed = () => {
   const [pullStartY, setPullStartY] = useState(0)
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [showDepositDialog, setShowDepositDialog] = useState(false)
+  const [showEscrowSearch, setShowEscrowSearch] = useState(false)
 
   // Check for onboarding
   useEffect(() => {
