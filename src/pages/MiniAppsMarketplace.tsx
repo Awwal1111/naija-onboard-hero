@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
-import { ArrowLeft, Star, Download, Search, Plus, Sparkles } from 'lucide-react'
+import { ArrowLeft, Star, Download, Search, Plus, Sparkles, Receipt, Building2, Wallet, CreditCard, Shield, RefreshCw } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -26,6 +26,24 @@ interface MiniApp {
   status: string
 }
 
+const INTERNAL_ICONS: Record<string, typeof Receipt> = {
+  bills: Receipt,
+  bank_deposit: Building2,
+  crypto_deposit: Wallet,
+  deposit_naira: CreditCard,
+  escrow: Shield,
+  nc_converter: RefreshCw,
+}
+
+const MARKETPLACE_INTERNAL_APPS: MiniApp[] = [
+  { id: 'int-bills', app_name: 'Bills', app_description: 'Pay bills, airtime & data', app_icon_url: null, app_url: '', category: 'finance', install_count: 0, rating: 5, review_count: 0, sdk_app_id: 'bills', developer_id: 'system', status: 'approved' },
+  { id: 'int-bank', app_name: 'Bank Deposit', app_description: 'Deposit via bank transfer', app_icon_url: null, app_url: '', category: 'finance', install_count: 0, rating: 5, review_count: 0, sdk_app_id: 'bank_deposit', developer_id: 'system', status: 'approved' },
+  { id: 'int-naira', app_name: 'Deposit Naira', app_description: 'Deposit with Naira', app_icon_url: null, app_url: '', category: 'finance', install_count: 0, rating: 5, review_count: 0, sdk_app_id: 'deposit_naira', developer_id: 'system', status: 'approved' },
+  { id: 'int-crypto', app_name: 'Crypto Deposit', app_description: 'Deposit via crypto', app_icon_url: null, app_url: '', category: 'finance', install_count: 0, rating: 5, review_count: 0, sdk_app_id: 'crypto_deposit', developer_id: 'system', status: 'approved' },
+  { id: 'int-escrow', app_name: 'Escrow', app_description: 'Secure escrow payments', app_icon_url: null, app_url: '', category: 'finance', install_count: 0, rating: 5, review_count: 0, sdk_app_id: 'escrow', developer_id: 'system', status: 'approved' },
+  { id: 'int-converter', app_name: 'NC Converter', app_description: 'Convert 100 non-withdrawable NC to 5 withdrawable NC', app_icon_url: null, app_url: '', category: 'finance', install_count: 0, rating: 5, review_count: 0, sdk_app_id: 'nc_converter', developer_id: 'system', status: 'approved' },
+]
+
 const MiniAppsMarketplace = () => {
   const [apps, setApps] = useState<MiniApp[]>([])
   const [myApps, setMyApps] = useState<MiniApp[]>([])
@@ -44,7 +62,9 @@ const MiniAppsMarketplace = () => {
       .order('is_featured', { ascending: false })
       .order('install_count', { ascending: false })
 
-    if (data) setApps(data as MiniApp[])
+    const internalIds = new Set(MARKETPLACE_INTERNAL_APPS.map(a => a.sdk_app_id))
+    const dbApps = (data || []).filter((a: any) => !internalIds.has(a.sdk_app_id)) as MiniApp[]
+    setApps([...MARKETPLACE_INTERNAL_APPS, ...dbApps])
   }
 
   const fetchMyApps = async () => {
