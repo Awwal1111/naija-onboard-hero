@@ -46,10 +46,14 @@ interface MiniAppViewerProps {
 export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
   const { user } = useAuth()
   const { profile } = useProfile()
+  const { hasPin, transactionPin } = useUserSecrets()
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [showChargeDialog, setShowChargeDialog] = useState(false)
   const [showPayoutDialog, setShowPayoutDialog] = useState(false)
+  const [showPinDialog, setShowPinDialog] = useState(false)
+  const [pinInput, setPinInput] = useState('')
+  const [pendingPinRequest, setPendingPinRequest] = useState<{ reason: string; requestId: string } | null>(null)
   const [pendingCharge, setPendingCharge] = useState<{
     amount: number
     description: string
