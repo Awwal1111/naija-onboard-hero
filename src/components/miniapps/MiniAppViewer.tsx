@@ -1,12 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { X, ArrowLeft, Shield } from 'lucide-react'
+import { X, ArrowLeft, Shield, Fingerprint } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
+import { useUserSecrets } from '@/hooks/useUserSecrets'
 import { supabase } from '@/integrations/supabase/client'
 import { toast } from 'sonner'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 interface MiniApp {
   id: string
