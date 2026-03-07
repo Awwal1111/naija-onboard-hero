@@ -169,11 +169,16 @@ const MiniAppsMarketplace = () => {
                 className="bg-card border border-border rounded-xl p-4 flex items-start gap-3 text-left hover:border-primary/50 transition-colors"
               >
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                  {app.app_icon_url ? (
-                    <img src={app.app_icon_url} alt="" className="w-full h-full object-cover rounded-xl" />
-                  ) : (
-                    <span className="text-lg font-bold text-primary">{app.app_name.charAt(0)}</span>
-                  )}
+                  {(() => {
+                    const InternalIcon = INTERNAL_ICONS[app.sdk_app_id]
+                    if (app.id.startsWith('int-') && InternalIcon) {
+                      return <InternalIcon className="h-6 w-6 text-primary" />
+                    }
+                    if (app.app_icon_url) {
+                      return <img src={app.app_icon_url} alt="" className="w-full h-full object-cover rounded-xl" />
+                    }
+                    return <span className="text-lg font-bold text-primary">{app.app_name.charAt(0)}</span>
+                  })()}
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-foreground text-sm truncate">{app.app_name}</h3>
