@@ -177,7 +177,7 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
 
     window.addEventListener('message', handleMessage)
     return () => window.removeEventListener('message', handleMessage)
-  }, [generateIdentityPayload, handleBalanceQuery, postToIframe])
+  }, [generateIdentityPayload, handleBalanceQuery, postToIframe, hasPin])
 
   const handleConfirmCharge = async () => {
     if (!pendingCharge || !user) return
@@ -423,6 +423,69 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
                 </Button>
                 <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700" onClick={handleConfirmPayout}>
                   Accept ₦{pendingPayout?.amount}NC
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+        {/* PIN Verification Dialog */}
+        <Dialog open={showPinDialog} onOpenChange={setShowPinDialog}>
+          <DialogContent className="max-w-sm">
+            <div className="text-center space-y-4">
+              <div className="w-14 h-14 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center">
+                <Fingerprint className="h-7 w-7 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-foreground">{app.app_name}</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  wants to {pendingPinRequest?.reason}
+                </p>
+                <p className="text-xs text-muted-foreground mt-2">Enter your transaction PIN</p>
+              </div>
+              <Input
+                type="password"
+                inputMode="numeric"
+                maxLength={6}
+                placeholder="••••••"
+                className="text-center text-2xl tracking-[0.5em]"
+                value={pinInput}
+                onChange={e => setPinInput(e.target.value.replace(/\D/g, ''))}
+              />
+              <div className="flex gap-3">
+                <Button variant="outline" className="flex-1" onClick={() => {
+                  setShowPinDialog(false)
+                  postToIframe({
+                    type: 'njl_verify_pin_result',
+                    success: false,
+                    error: 'User cancelled',
+                    requestId: pendingPinRequest?.requestId
+                  })
+                  setPendingPinRequest(null)
+                }}>
+                  Cancel
+                </Button>
+                <Button className="flex-1" onClick={() => {
+                  if (pinInput === transactionPin) {
+                    postToIframe({
+                      type: 'njl_verify_pin_result',
+                      success: true,
+                      requestId: pendingPinRequest?.requestId
+                    })
+                    toast.success('Identity verified')
+                  } else {
+                    postToIframe({
+                      type: 'njl_verify_pin_result',
+                      success: false,
+                      error: 'Incorrect PIN',
+                      requestId: pendingPinRequest?.requestId
+                    })
+                    toast.error('Incorrect PIN')
+                  }
+                  setShowPinDialog(false)
+                  setPendingPinRequest(null)
+                  setPinInput('')
+                }}>
+                  Verify
                 </Button>
               </div>
             </div>
