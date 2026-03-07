@@ -36,7 +36,9 @@ interface MiniAppViewerProps {
  * Parent → Child: { type: "njl_balance_result", balance, requestId }
  * Child → Parent: { type: "njl_payout", amount, description, requestId }
  * Parent → Child: { type: "njl_payout_result", success, txRef, requestId }
- * 
+ * Child → Parent: { type: "njl_verify_pin", reason, requestId }
+ * Parent → Child: { type: "njl_verify_pin_result", success, requestId }
+ *
  * charge_type: 'one_time' | 'subscription' | 'tip' | 'purchase'
  * Payment split: 90% developer, 10% platform commission
  * Payout: developer sends money back to user (refunds, rewards, savings returns)
