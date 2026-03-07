@@ -34,6 +34,7 @@ import UserModePrompt from '@/components/UserModePrompt'
 import { MiniAppCarousel } from '@/components/miniapps/MiniAppCarousel'
 import { DepositDialog } from '@/components/DepositDialog'
 import { EscrowSearchDialog } from '@/components/EscrowSearchDialog'
+import { NCConverterDialog } from '@/components/miniapps/NCConverterDialog'
 import { supabase } from '@/integrations/supabase/client'
 
 const MainFeed = () => {
@@ -71,6 +72,7 @@ const MainFeed = () => {
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [showDepositDialog, setShowDepositDialog] = useState(false)
   const [showEscrowSearch, setShowEscrowSearch] = useState(false)
+  const [showNCConverter, setShowNCConverter] = useState(false)
 
   // Check for onboarding
   useEffect(() => {
@@ -296,6 +298,7 @@ const MainFeed = () => {
             if (action === 'crypto_deposit') setShowDepositDialog(true)
             if (action === 'deposit_naira') setShowDepositDialog(true)
             if (action === 'escrow') setShowEscrowSearch(true)
+            if (action === 'nc_converter') setShowNCConverter(true)
           }} />
 
           {/* Stories Section */}
@@ -453,6 +456,7 @@ const MainFeed = () => {
       {/* Crypto Deposit Dialog */}
       <DepositDialog open={showDepositDialog} onOpenChange={setShowDepositDialog} />
       <EscrowSearchDialog open={showEscrowSearch} onOpenChange={setShowEscrowSearch} />
+      <NCConverterDialog open={showNCConverter} onClose={() => setShowNCConverter(false)} />
 
       {/* Bottom Navigation - Responsive design */}
       <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border px-1 sm:px-4 py-1.5 sm:py-2 safe-area-bottom z-50">

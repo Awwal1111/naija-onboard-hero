@@ -1,12 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { X, ArrowLeft, Shield } from 'lucide-react'
+import { X, ArrowLeft, Shield, Fingerprint } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
+import { useUserSecrets } from '@/hooks/useUserSecrets'
 import { supabase } from '@/integrations/supabase/client'
 import { toast } from 'sonner'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 interface MiniApp {
   id: string
@@ -34,7 +36,9 @@ interface MiniAppViewerProps {
  * Parent → Child: { type: "njl_balance_result", balance, requestId }
  * Child → Parent: { type: "njl_payout", amount, description, requestId }
  * Parent → Child: { type: "njl_payout_result", success, txRef, requestId }
- * 
+ * Child → Parent: { type: "njl_verify_pin", reason, requestId }
+ * Parent → Child: { type: "njl_verify_pin_result", success, requestId }
+ *
  * charge_type: 'one_time' | 'subscription' | 'tip' | 'purchase'
  * Payment split: 90% developer, 10% platform commission
  * Payout: developer sends money back to user (refunds, rewards, savings returns)
@@ -42,10 +46,14 @@ interface MiniAppViewerProps {
 export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
   const { user } = useAuth()
   const { profile } = useProfile()
+  const { hasPin, transactionPin } = useUserSecrets()
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [showChargeDialog, setShowChargeDialog] = useState(false)
   const [showPayoutDialog, setShowPayoutDialog] = useState(false)
+  const [showPinDialog, setShowPinDialog] = useState(false)
+  const [pinInput, setPinInput] = useState('')
+  const [pendingPinRequest, setPendingPinRequest] = useState<{ reason: string; requestId: string } | null>(null)
   const [pendingCharge, setPendingCharge] = useState<{
     amount: number
     description: string
@@ -148,11 +156,28 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
         setPendingPayout({ amount, description: description || 'Payout', requestId })
         setShowPayoutDialog(true)
       }
+
+      if (data.type === 'njl_verify_pin') {
+        const { reason, requestId } = data
+        if (!hasPin) {
+          postToIframe({
+            type: 'njl_verify_pin_result',
+            success: false,
+            error: 'No PIN set. Please set up in Settings.',
+            requestId
+          })
+          toast.error('Set up your transaction PIN in Settings first')
+          return
+        }
+        setPendingPinRequest({ reason: reason || 'verify your identity', requestId })
+        setPinInput('')
+        setShowPinDialog(true)
+      }
     }
 
     window.addEventListener('message', handleMessage)
     return () => window.removeEventListener('message', handleMessage)
-  }, [generateIdentityPayload, handleBalanceQuery, postToIframe])
+  }, [generateIdentityPayload, handleBalanceQuery, postToIframe, hasPin])
 
   const handleConfirmCharge = async () => {
     if (!pendingCharge || !user) return
@@ -398,6 +423,69 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
                 </Button>
                 <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700" onClick={handleConfirmPayout}>
                   Accept ₦{pendingPayout?.amount}NC
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+        {/* PIN Verification Dialog */}
+        <Dialog open={showPinDialog} onOpenChange={setShowPinDialog}>
+          <DialogContent className="max-w-sm">
+            <div className="text-center space-y-4">
+              <div className="w-14 h-14 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center">
+                <Fingerprint className="h-7 w-7 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-foreground">{app.app_name}</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  wants to {pendingPinRequest?.reason}
+                </p>
+                <p className="text-xs text-muted-foreground mt-2">Enter your transaction PIN</p>
+              </div>
+              <Input
+                type="password"
+                inputMode="numeric"
+                maxLength={6}
+                placeholder="••••••"
+                className="text-center text-2xl tracking-[0.5em]"
+                value={pinInput}
+                onChange={e => setPinInput(e.target.value.replace(/\D/g, ''))}
+              />
+              <div className="flex gap-3">
+                <Button variant="outline" className="flex-1" onClick={() => {
+                  setShowPinDialog(false)
+                  postToIframe({
+                    type: 'njl_verify_pin_result',
+                    success: false,
+                    error: 'User cancelled',
+                    requestId: pendingPinRequest?.requestId
+                  })
+                  setPendingPinRequest(null)
+                }}>
+                  Cancel
+                </Button>
+                <Button className="flex-1" onClick={() => {
+                  if (pinInput === transactionPin) {
+                    postToIframe({
+                      type: 'njl_verify_pin_result',
+                      success: true,
+                      requestId: pendingPinRequest?.requestId
+                    })
+                    toast.success('Identity verified')
+                  } else {
+                    postToIframe({
+                      type: 'njl_verify_pin_result',
+                      success: false,
+                      error: 'Incorrect PIN',
+                      requestId: pendingPinRequest?.requestId
+                    })
+                    toast.error('Incorrect PIN')
+                  }
+                  setShowPinDialog(false)
+                  setPendingPinRequest(null)
+                  setPinInput('')
+                }}>
+                  Verify
                 </Button>
               </div>
             </div>

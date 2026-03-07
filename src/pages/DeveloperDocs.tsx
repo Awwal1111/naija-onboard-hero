@@ -162,11 +162,22 @@ function payoutUser(amount, description) {
   }, '*');
 }
 
+// 6. Verify user identity via PIN (for sensitive actions)
+function verifyPin(reason) {
+  const requestId = 'pin_' + Math.random().toString(36).slice(2);
+  window.parent.postMessage({
+    type: 'njl_verify_pin',
+    reason: reason,
+    requestId: requestId
+  }, '*');
+}
+
 // Examples:
 chargeUser(500, 'Premium Access - 30 Days', 'subscription');
 chargeUser(100, 'Buy In-Game Coins', 'purchase');
 getBalance();
 payoutUser(200, 'Savings withdrawal');
+verifyPin('confirm withdrawal');
 </script>`;
 
 const MINIAPP_SDK_EVENTS = [
@@ -178,6 +189,8 @@ const MINIAPP_SDK_EVENTS = [
   { direction: '← Parent sends', event: 'njl_balance_result', description: 'Balance result. Fields: balance, requestId.' },
   { direction: '→ App sends', event: 'njl_payout', description: 'Send money to user (refunds, rewards, savings). Fields: amount, description, requestId.' },
   { direction: '← Parent sends', event: 'njl_payout_result', description: 'Payout result. Fields: success, txRef, error, requestId.' },
+  { direction: '→ App sends', event: 'njl_verify_pin', description: 'Request PIN verification for sensitive actions. Fields: reason, requestId.' },
+  { direction: '← Parent sends', event: 'njl_verify_pin_result', description: 'PIN verification result. Fields: success, error, requestId.' },
 ];
 
 const CODE_EXAMPLES = {

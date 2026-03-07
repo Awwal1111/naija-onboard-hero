@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/integrations/supabase/client'
-import { ChevronRight, Star, Sparkles, Receipt, Building2, Wallet, CreditCard, Shield } from 'lucide-react'
+import { ChevronRight, Star, Sparkles, Receipt, Building2, Wallet, CreditCard, Shield, RefreshCw } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { MiniAppViewer } from './MiniAppViewer'
 
@@ -91,6 +91,20 @@ const INTERNAL_MINI_APPS: MiniApp[] = [
     is_internal: true,
     internal_action: 'escrow',
   },
+  {
+    id: 'internal-nc-converter',
+    app_name: 'NC Converter',
+    app_description: 'Convert 100 non-withdrawable NC to 5 withdrawable NC',
+    app_icon_url: null,
+    app_url: '',
+    category: 'finance',
+    install_count: 0,
+    rating: 5,
+    sdk_app_id: 'nc_converter',
+    developer_id: 'system',
+    is_internal: true,
+    internal_action: 'nc_converter',
+  },
 ]
 
 const INTERNAL_ICONS: Record<string, typeof Receipt> = {
@@ -99,6 +113,7 @@ const INTERNAL_ICONS: Record<string, typeof Receipt> = {
   crypto_deposit: Wallet,
   deposit_naira: CreditCard,
   escrow: Shield,
+  nc_converter: RefreshCw,
 }
 
 interface MiniAppCarouselProps {
@@ -122,8 +137,9 @@ export const MiniAppCarousel = ({ onInternalAction }: MiniAppCarouselProps) => {
         .order('install_count', { ascending: false })
         .limit(10)
 
-      // Combine internal apps first, then DB apps (excluding any DB internals)
-      const dbApps = (data || []).filter((a: any) => !a.is_internal) as MiniApp[]
+      // Combine internal apps first, then DB apps (excluding duplicates by sdk_app_id)
+      const internalIds = new Set(INTERNAL_MINI_APPS.map(a => a.sdk_app_id))
+      const dbApps = (data || []).filter((a: any) => !a.is_internal && !internalIds.has(a.sdk_app_id)) as MiniApp[]
       setApps([...INTERNAL_MINI_APPS, ...dbApps])
     }
     fetchApps()
@@ -133,7 +149,7 @@ export const MiniAppCarousel = ({ onInternalAction }: MiniAppCarouselProps) => {
     if (apps.length <= 4) return
     intervalRef.current = setInterval(() => {
       setActiveIndex(prev => (prev + 1) % apps.length)
-    }, 4000)
+    }, 8000)
     return () => clearInterval(intervalRef.current)
   }, [apps.length])
 
