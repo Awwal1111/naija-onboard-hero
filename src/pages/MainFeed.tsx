@@ -456,6 +456,7 @@ const MainFeed = () => {
       {/* Crypto Deposit Dialog */}
       <DepositDialog open={showDepositDialog} onOpenChange={setShowDepositDialog} />
       <EscrowSearchDialog open={showEscrowSearch} onOpenChange={setShowEscrowSearch} />
+      <NCConverterDialog open={showNCConverter} onClose={() => setShowNCConverter(false)} />
 
       {/* Bottom Navigation - Responsive design */}
       <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border px-1 sm:px-4 py-1.5 sm:py-2 safe-area-bottom z-50">
