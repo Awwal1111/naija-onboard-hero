@@ -156,6 +156,23 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
         setPendingPayout({ amount, description: description || 'Payout', requestId })
         setShowPayoutDialog(true)
       }
+
+      if (data.type === 'njl_verify_pin') {
+        const { reason, requestId } = data
+        if (!hasPin) {
+          postToIframe({
+            type: 'njl_verify_pin_result',
+            success: false,
+            error: 'No PIN set. Please set up in Settings.',
+            requestId
+          })
+          toast.error('Set up your transaction PIN in Settings first')
+          return
+        }
+        setPendingPinRequest({ reason: reason || 'verify your identity', requestId })
+        setPinInput('')
+        setShowPinDialog(true)
+      }
     }
 
     window.addEventListener('message', handleMessage)
