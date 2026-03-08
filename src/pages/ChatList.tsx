@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Search, MessageCircle, Home, Users, DollarSign, Briefcase, Menu } from 'lucide-react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { Search } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/integrations/supabase/client'
 import { BrandInput } from '@/components/ui/brand-input'
 import { useToast } from '@/hooks/use-toast'
-import { MoreMenuDrawer } from '@/components/MoreMenuDrawer'
+import { BottomNavBar } from '@/components/BottomNavBar'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import ProfilePreview from '@/components/ProfilePreview'
 
@@ -36,20 +36,7 @@ const ChatList = () => {
   const [chats, setChats] = useState<ChatWithProfile[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const [moreMenuOpen, setMoreMenuOpen] = useState(false)
   const [profilePreview, setProfilePreview] = useState<{ isOpen: boolean; userId: string | null }>({ isOpen: false, userId: null })
-
-  const bottomNavItems = [
-    { icon: Home, label: 'Feed', path: '/feed' },
-    { icon: MessageCircle, label: 'Chat', path: '/chat' },
-    { icon: Users, label: 'Expert', path: '/experts' },
-    { icon: Briefcase, label: 'Gig', path: '/jobs' },
-    { icon: DollarSign, label: 'Earn', path: '/earn' }
-  ]
-
-  const handleNavigation = (path: string) => {
-    navigate(path)
-  }
 
   const fetchChats = useCallback(async () => {
     if (!user) return
@@ -363,33 +350,7 @@ const ChatList = () => {
         )}
       </div>
 
-      {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border px-1 sm:px-4 py-1.5 sm:py-2 safe-area-bottom z-50">
-        <div className="flex justify-around items-center max-w-md mx-auto">
-          {bottomNavItems.map((item) => (
-            <button
-              key={item.label}
-              onClick={() => handleNavigation(item.path)}
-              className={`flex flex-col items-center gap-0.5 sm:gap-1 py-1.5 sm:py-2 px-2 sm:px-3 rounded-xl transition-colors ${
-                location.pathname === item.path
-                  ? 'text-primary bg-primary/10'
-                  : 'text-text-secondary hover:text-primary hover:bg-primary/5'
-              }`}
-            >
-              <item.icon className="h-5 w-5 sm:h-6 sm:w-6" />
-              <span className="text-[10px] sm:text-xs font-medium">{item.label}</span>
-            </button>
-          ))}
-          <button
-            onClick={() => setMoreMenuOpen(true)}
-            className="flex flex-col items-center gap-0.5 sm:gap-1 py-1.5 sm:py-2 px-2 sm:px-3 rounded-xl transition-colors text-text-secondary hover:text-primary hover:bg-primary/5"
-          >
-            <Menu className="h-5 w-5 sm:h-6 sm:w-6" />
-            <span className="text-[10px] sm:text-xs font-medium">More</span>
-          </button>
-        </div>
-      </div>
-      <MoreMenuDrawer open={moreMenuOpen} onOpenChange={setMoreMenuOpen} />
+      <BottomNavBar />
       
       {/* Profile Preview */}
       <ProfilePreview
