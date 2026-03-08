@@ -144,114 +144,104 @@ export const usePersonalizedFeed = () => {
         
         clearTimeout(timeoutId)
 
-      if (error) {
-        console.error('[Feed] Personalized feed RPC error:', error)
-        // Fallback to regular posts if function fails
-        const { data: fallbackPosts } = await supabase
-          .from('posts')
-          .select('*')
-          .eq('status', 'active')
-          .order('created_at', { ascending: false })
-          .range(offset, offset + POSTS_PER_PAGE - 1)
-        
-        console.log('[Feed] Using fallback posts:', fallbackPosts?.length || 0)
-        
-        if (!fallbackPosts || fallbackPosts.length === 0) {
+        if (error) {
+          console.error('[Feed] Personalized feed RPC error:', error)
+          // Fallback to regular posts if function fails
+          const { data: fallbackPosts } = await supabase
+            .from('posts')
+            .select('*')
+            .eq('status', 'active')
+            .order('created_at', { ascending: false })
+            .range(offset, offset + POSTS_PER_PAGE - 1)
+          
+          console.log('[Feed] Using fallback posts:', fallbackPosts?.length || 0)
+          
+          if (!fallbackPosts || fallbackPosts.length === 0) {
+            return { posts: [], nextPage: null }
+          }
+
+          const fallbackUserIds = [...new Set(fallbackPosts.map((post: any) => post.user_id))]
+          const { data: fallbackProfiles } = await supabase
+            .from('profiles')
+            .select('user_id, full_name, profession, profile_picture_url, is_expert, average_rating, rating_count, email_verified, phone_verified, face_verified, avg_response_time_seconds')
+            .in('user_id', fallbackUserIds)
+
+          const fallbackProfilesMap = new Map(fallbackProfiles?.map(p => [p.user_id, p]) || [])
+
+          const enrichedFallback = fallbackPosts.map((post: any) => ({
+            ...post,
+            profiles: fallbackProfilesMap.get(post.user_id) || null,
+            user_liked: false,
+            user_saved: false
+          }))
+
+          return { posts: enrichedFallback, nextPage: null }
+        }
+
+        console.log('[Feed] Personalized posts received:', personalizedPosts?.length || 0)
+
+        if (!personalizedPosts || personalizedPosts.length === 0) {
           return { posts: [], nextPage: null }
         }
 
-        // Fetch profiles for fallback posts
-        const fallbackUserIds = [...new Set(fallbackPosts.map((post: any) => post.user_id))]
-        const { data: fallbackProfiles } = await supabase
+        if (personalizedPosts.length > 0) {
+          console.log('[Feed] First post from RPC:', {
+            id: personalizedPosts[0].id,
+            user_id: personalizedPosts[0].user_id,
+            relevance_score: personalizedPosts[0].relevance_score,
+            boost_amount: personalizedPosts[0].boost_amount
+          })
+        }
+
+        const userIds = [...new Set(personalizedPosts.map((post: any) => post.user_id))]
+        
+        const { data: profiles, error: profilesError } = await supabase
           .from('profiles')
           .select('user_id, full_name, profession, profile_picture_url, is_expert, average_rating, rating_count, email_verified, phone_verified, face_verified, avg_response_time_seconds')
-          .in('user_id', fallbackUserIds)
+          .in('user_id', userIds)
 
-        const fallbackProfilesMap = new Map(fallbackProfiles?.map(p => [p.user_id, p]) || [])
-
-        const enrichedFallback = fallbackPosts.map((post: any) => ({
-          ...post,
-          profiles: fallbackProfilesMap.get(post.user_id) || null,
-          user_liked: false,
-          user_saved: false
-        }))
-
-        return { posts: enrichedFallback, nextPage: null }
-      }
-
-      console.log('[Feed] Personalized posts received:', personalizedPosts?.length || 0)
-
-      if (!personalizedPosts || personalizedPosts.length === 0) {
-        return { posts: [], nextPage: null }
-      }
-
-      // Log first post to debug
-      if (personalizedPosts.length > 0) {
-        console.log('[Feed] First post from RPC:', {
-          id: personalizedPosts[0].id,
-          user_id: personalizedPosts[0].user_id,
-          relevance_score: personalizedPosts[0].relevance_score,
-          boost_amount: personalizedPosts[0].boost_amount
-        })
-      }
-
-      // Get user IDs for profile fetching
-      const userIds = [...new Set(personalizedPosts.map((post: any) => post.user_id))]
-      console.log('[Feed] Fetching profiles for user IDs:', userIds)
-      
-      // Fetch profiles with all badge fields
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('user_id, full_name, profession, profile_picture_url, is_expert, average_rating, rating_count, email_verified, phone_verified, face_verified, avg_response_time_seconds')
-        .in('user_id', userIds)
-
-      if (profilesError) {
-        console.error('[Feed] Profiles fetch error:', profilesError)
-      }
-      
-      console.log('[Feed] Profiles fetched:', profiles?.length || 0, profiles?.map(p => ({ user_id: p.user_id, name: p.full_name })))
-
-      const profilesMap = new Map(profiles?.map(p => [p.user_id, p]) || [])
-
-      // Check which posts the user has liked
-      const postIds = personalizedPosts.map((p: any) => p.id)
-      const { data: userLikes } = await supabase
-        .from('post_likes')
-        .select('post_id')
-        .eq('user_id', userId)
-        .in('post_id', postIds)
-
-      const likedPostIds = new Set(userLikes?.map(like => like.post_id) || [])
-
-      // Check saved posts
-      const { data: savedPosts } = await supabase
-        .from('saved_posts')
-        .select('post_id')
-        .eq('user_id', userId)
-        .in('post_id', postIds)
-
-      const savedPostIds = new Set(savedPosts?.map(save => save.post_id) || [])
-
-      const enrichedPosts: Post[] = personalizedPosts.map((post: any) => {
-        const profile = profilesMap.get(post.user_id)
-        return {
-          ...post,
-          profiles: profile || null,
-          user_liked: likedPostIds.has(post.id),
-          user_saved: savedPostIds.has(post.id),
-          user_reaction: likedPostIds.has(post.id) ? 'like' : undefined
+        if (profilesError) {
+          console.error('[Feed] Profiles fetch error:', profilesError)
         }
-      })
-      
-      console.log('[Feed] Enriched posts:', enrichedPosts.length, enrichedPosts.map(p => ({
-        id: p.id,
-        name: p.profiles?.full_name,
-        score: p.relevance_score
-      })))
 
-      return {
-        posts: enrichedPosts,
-        nextPage: enrichedPosts.length === POSTS_PER_PAGE ? pageParam + 1 : null
+        const profilesMap = new Map(profiles?.map(p => [p.user_id, p]) || [])
+
+        const postIds = personalizedPosts.map((p: any) => p.id)
+        const { data: userLikes } = await supabase
+          .from('post_likes')
+          .select('post_id')
+          .eq('user_id', userId)
+          .in('post_id', postIds)
+
+        const likedPostIds = new Set(userLikes?.map(like => like.post_id) || [])
+
+        const { data: savedPosts } = await supabase
+          .from('saved_posts')
+          .select('post_id')
+          .eq('user_id', userId)
+          .in('post_id', postIds)
+
+        const savedPostIds = new Set(savedPosts?.map(save => save.post_id) || [])
+
+        const enrichedPosts: Post[] = personalizedPosts.map((post: any) => {
+          const profile = profilesMap.get(post.user_id)
+          return {
+            ...post,
+            profiles: profile || null,
+            user_liked: likedPostIds.has(post.id),
+            user_saved: savedPostIds.has(post.id),
+            user_reaction: likedPostIds.has(post.id) ? 'like' : undefined
+          }
+        })
+
+        return {
+          posts: enrichedPosts,
+          nextPage: enrichedPosts.length === POSTS_PER_PAGE ? pageParam + 1 : null
+        }
+      } catch (err: any) {
+        clearTimeout(timeoutId)
+        console.error('[Feed] Feed fetch failed or timed out:', err?.message || err)
+        return { posts: [], nextPage: null }
       }
     },
     getNextPageParam: (lastPage) => lastPage.nextPage,
