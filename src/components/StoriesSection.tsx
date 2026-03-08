@@ -376,10 +376,10 @@ const StoriesSection: React.FC<StoriesSectionProps> = ({
             <div className="flex flex-col items-center gap-2 shrink-0">
               <button
                 onClick={onCreateStory}
-                className="relative w-20 h-20 rounded-full overflow-hidden"
+                className="relative w-20 h-20 rounded-full overflow-hidden group"
               >
-                <div className="w-full h-full rounded-full border-2 border-dashed border-primary bg-muted flex items-center justify-center hover:bg-primary/10 transition-colors">
-                  <Plus className="h-8 w-8 text-primary" />
+                <div className="w-full h-full rounded-full border-2 border-dashed border-primary bg-muted flex items-center justify-center group-hover:bg-primary/10 group-hover:border-solid transition-all duration-200">
+                  <Plus className="h-8 w-8 text-primary group-hover:scale-110 transition-transform duration-200" />
                 </div>
               </button>
               <span className="text-xs font-medium text-foreground">Your Story</span>
@@ -390,7 +390,7 @@ const StoriesSection: React.FC<StoriesSectionProps> = ({
               <div key={story.id} className="flex flex-col items-center gap-2 shrink-0">
                 <button
                   onClick={() => handleStoryClick(story, index)}
-                  className={`w-20 h-20 rounded-full p-[3px] ${
+                  className={`w-20 h-20 rounded-full p-[3px] transition-transform duration-200 hover:scale-105 ${
                     story.user_viewed 
                       ? 'bg-muted' 
                       : 'bg-gradient-to-tr from-primary via-primary-glow to-primary'
@@ -411,7 +411,7 @@ const StoriesSection: React.FC<StoriesSectionProps> = ({
               <div key={story.id} className="flex flex-col items-center gap-2 shrink-0">
                 <button
                   onClick={() => handleStoryClick(story, sortedStories.userStories.length + index)}
-                  className={`w-20 h-20 rounded-full p-[3px] relative ${
+                  className={`w-20 h-20 rounded-full p-[3px] relative transition-transform duration-200 hover:scale-105 ${
                     story.user_viewed 
                       ? 'bg-muted' 
                       : 'bg-gradient-to-tr from-primary via-primary-glow to-primary'
@@ -434,6 +434,22 @@ const StoriesSection: React.FC<StoriesSectionProps> = ({
                 </span>
               </div>
             ))}
+
+            {/* Empty state prompt when no stories */}
+            {allStories.length === 0 && (
+              <button
+                onClick={onCreateStory}
+                className="flex items-center gap-3 px-4 py-3 rounded-xl bg-muted/50 border border-dashed border-border hover:border-primary/50 hover:bg-primary/5 transition-all duration-200 shrink-0"
+              >
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Plus className="h-5 w-5 text-primary" />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-medium text-foreground">Be the first today!</p>
+                  <p className="text-xs text-muted-foreground">Share a story with your network</p>
+                </div>
+              </button>
+            )}
           </div>
         </div>
       </div>

@@ -397,12 +397,20 @@ const MainFeed = () => {
           {feedType === 'for-you' ? (
             <div className="divide-y divide-border">
               {filteredAndSortedPosts.length === 0 ? (
-                <div className="py-16 text-center">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-                    <FileText className="h-8 w-8 text-muted-foreground" />
+                <div className="py-20 text-center px-6">
+                  <div className="w-20 h-20 mx-auto mb-5 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
+                    <FileText className="h-10 w-10 text-primary/60" />
                   </div>
-                  <h3 className="text-lg font-semibold text-foreground mb-2">No posts yet</h3>
-                  <p className="text-muted-foreground text-sm">Be the first to share something!</p>
+                  <h3 className="text-lg font-bold text-foreground mb-2">No posts to show</h3>
+                  <p className="text-muted-foreground text-sm mb-6 max-w-[240px] mx-auto">
+                    {selectedCategory !== 'all' 
+                      ? `No ${selectedCategory} posts found. Try a different filter.`
+                      : 'Your feed is empty. Start by sharing something or connecting with others!'}
+                  </p>
+                  <BrandButton onClick={() => setShowCreatePost(true)} className="px-6">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create a Post
+                  </BrandButton>
                 </div>
               ) : (
                 <>
@@ -425,8 +433,12 @@ const MainFeed = () => {
                       )}
                     </React.Fragment>
                   ))}
-                  <div className="py-8 text-center bg-muted/30">
-                    <span className="text-sm text-muted-foreground">You're all caught up!</span>
+                  <div className="py-10 text-center bg-gradient-to-b from-transparent to-muted/20">
+                    <div className="w-10 h-10 mx-auto mb-3 rounded-full bg-primary/10 flex items-center justify-center">
+                      <RefreshCw className="h-5 w-5 text-primary/50" />
+                    </div>
+                    <span className="text-sm font-medium text-muted-foreground">You're all caught up! ✨</span>
+                    <p className="text-xs text-muted-foreground/60 mt-1">Check back later for new posts</p>
                   </div>
                 </>
               )}
