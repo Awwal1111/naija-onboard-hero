@@ -17,11 +17,17 @@ export const DeferredManagers = () => {
 
   useEffect(() => {
     const ric = window.requestIdleCallback
-    const schedule = ric ? (cb: IdleRequestCallback) => ric(cb, { timeout: 3000 }) : (cb: () => void) => setTimeout(cb, 1500)
-    const id = schedule(() => setReady(true), { timeout: 3000 })
+    let handle: number
+    if (ric) {
+      handle = ric(() => setReady(true), { timeout: 3000 })
+    } else {
+      handle = window.setTimeout(() => setReady(true), 1500)
+    }
     return () => {
-      if (window.cancelIdleCallback) {
-        window.cancelIdleCallback(id as number)
+      if (ric && window.cancelIdleCallback) {
+        window.cancelIdleCallback(handle)
+      } else {
+        clearTimeout(handle)
       }
     }
   }, [])
