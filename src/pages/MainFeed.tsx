@@ -61,6 +61,13 @@ const MainFeed = () => {
     savePost,
     refreshFeed
   } = usePersonalizedFeed()
+  // Skeleton timeout: never show skeleton longer than 6 seconds
+  const [skeletonTimedOut, setSkeletonTimedOut] = useState(false)
+  useEffect(() => {
+    const timer = setTimeout(() => setSkeletonTimedOut(true), 6000)
+    return () => clearTimeout(timer)
+  }, [])
+
   const [searchQuery, setSearchQuery] = useState('')
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
   const [showCreatePost, setShowCreatePost] = useState(false)
