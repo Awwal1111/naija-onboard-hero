@@ -36,6 +36,7 @@ import { DepositDialog } from '@/components/DepositDialog'
 import { EscrowSearchDialog } from '@/components/EscrowSearchDialog'
 import { NCConverterDialog } from '@/components/miniapps/NCConverterDialog'
 import { supabase } from '@/integrations/supabase/client'
+import { PlatformRatingDialog } from '@/components/PlatformRatingDialog'
 
 const MainFeed = () => {
   const navigate = useNavigate()
