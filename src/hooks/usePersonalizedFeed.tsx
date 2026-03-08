@@ -131,32 +131,48 @@ export const usePersonalizedFeed = () => {
       // Helper to fetch fallback posts directly from the posts table
       const fetchFallbackPosts = async () => {
         console.log('[Feed] Using fallback: fetching posts directly')
-        const { data: fallbackPosts } = await supabase
+        const { data: fallbackPosts, error: fbError } = await supabase
           .from('posts')
           .select('*')
           .eq('status', 'active')
           .order('created_at', { ascending: false })
           .range(offset, offset + POSTS_PER_PAGE - 1)
 
-        console.log('[Feed] Fallback posts:', fallbackPosts?.length || 0)
+        console.log('[Feed] Fallback posts:', fallbackPosts?.length || 0, 'error:', fbError?.message || 'none')
 
         if (!fallbackPosts || fallbackPosts.length === 0) {
           return { posts: [], nextPage: null }
         }
 
         const fallbackUserIds = [...new Set(fallbackPosts.map((post: any) => post.user_id))]
-        const { data: fallbackProfiles } = await supabase
-          .from('profiles')
-          .select('user_id, full_name, profession, profile_picture_url, is_expert, average_rating, rating_count, email_verified, phone_verified, face_verified, avg_response_time_seconds')
-          .in('user_id', fallbackUserIds)
+        
+        const [profilesRes, likesRes, savedRes] = await Promise.all([
+          supabase
+            .from('profiles')
+            .select('user_id, full_name, profession, profile_picture_url, is_expert, average_rating, rating_count, email_verified, phone_verified, face_verified, avg_response_time_seconds')
+            .in('user_id', fallbackUserIds),
+          supabase
+            .from('post_likes')
+            .select('post_id')
+            .eq('user_id', userId)
+            .in('post_id', fallbackPosts.map((p: any) => p.id)),
+          supabase
+            .from('saved_posts')
+            .select('post_id')
+            .eq('user_id', userId)
+            .in('post_id', fallbackPosts.map((p: any) => p.id))
+        ])
 
-        const fallbackProfilesMap = new Map(fallbackProfiles?.map(p => [p.user_id, p]) || [])
+        const fallbackProfilesMap = new Map(profilesRes.data?.map(p => [p.user_id, p]) || [])
+        const likedIds = new Set(likesRes.data?.map(l => l.post_id) || [])
+        const savedIds = new Set(savedRes.data?.map(s => s.post_id) || [])
 
         const enrichedFallback = fallbackPosts.map((post: any) => ({
           ...post,
           profiles: fallbackProfilesMap.get(post.user_id) || null,
-          user_liked: false,
-          user_saved: false
+          user_liked: likedIds.has(post.id),
+          user_saved: savedIds.has(post.id),
+          user_reaction: likedIds.has(post.id) ? 'like' : undefined
         }))
 
         return { 
@@ -196,7 +212,8 @@ export const usePersonalizedFeed = () => {
         console.log('[Feed] Personalized posts received:', personalizedPosts?.length || 0)
 
         if (!personalizedPosts || personalizedPosts.length === 0) {
-          return { posts: [], nextPage: null }
+          console.log('[Feed] RPC returned 0 posts, trying fallback')
+          return await fetchFallbackPosts()
         }
 
         if (personalizedPosts.length > 0) {
