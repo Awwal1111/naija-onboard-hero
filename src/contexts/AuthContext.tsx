@@ -32,7 +32,7 @@ export const useAuthContext = () => useContext(AuthContext)
  * - Network is slow/intermittent
  * - Supabase SDK has connectivity issues
  */
-const AUTH_TIMEOUT_MS = 5_000 // 5 seconds max wait (reduced from 8s)
+const AUTH_TIMEOUT_MS = 8_000 // 8 seconds max wait
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null)
@@ -141,7 +141,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     )
 
-    // Fallback: If INITIAL_SESSION hasn't fired within 1.5s, try getSession
+    // Fallback: If INITIAL_SESSION hasn't fired within 3s, try getSession
     const fallbackId = setTimeout(() => {
       if (!loadingResolved.current && isMounted.current) {
         console.log('[AuthProvider] INITIAL_SESSION not received, falling back to getSession')
@@ -154,7 +154,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           if (isMounted.current) resolveLoading(null)
         })
       }
-    }, 1500)
+    }, 3000)
 
     return () => {
       isMounted.current = false
