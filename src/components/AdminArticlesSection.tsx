@@ -38,50 +38,15 @@ export const AdminArticlesSection = () => {
   }
 
   useEffect(() => {
-    const loadImageUrls = async () => {
-      const urlsToLoad: string[] = []
-      
-      // Find all images that need loading
-      for (const submission of submissions) {
-        if (submission.screenshot_url && 
-            !imageUrls[submission.screenshot_url] && 
-            !loadingImages.has(submission.screenshot_url)) {
-          urlsToLoad.push(submission.screenshot_url)
-        }
+    const urls: Record<string, string> = {}
+    for (const submission of submissions) {
+      if (submission.screenshot_url && !imageUrls[submission.screenshot_url]) {
+        urls[submission.screenshot_url] = getImageUrl(submission.screenshot_url)
       }
-
-      if (urlsToLoad.length === 0) return
-
-      // Mark as loading
-      setLoadingImages(prev => {
-        const newSet = new Set(prev)
-        urlsToLoad.forEach(url => newSet.add(url))
-        return newSet
-      })
-
-      // Load all URLs
-      const urls: Record<string, string> = {}
-      await Promise.all(
-        urlsToLoad.map(async (mediaUrl) => {
-          const url = await getImageUrl(mediaUrl)
-          if (url) urls[mediaUrl] = url
-        })
-      )
-
-      // Update state
-      if (Object.keys(urls).length > 0) {
-        setImageUrls(prev => ({ ...prev, ...urls }))
-      }
-      
-      // Clear loading state
-      setLoadingImages(prev => {
-        const newSet = new Set(prev)
-        urlsToLoad.forEach(url => newSet.delete(url))
-        return newSet
-      })
     }
-
-    loadImageUrls()
+    if (Object.keys(urls).length > 0) {
+      setImageUrls(prev => ({ ...prev, ...urls }))
+    }
   }, [submissions])
 
   const handleCreateArticle = async () => {
