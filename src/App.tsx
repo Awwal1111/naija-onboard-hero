@@ -7,7 +7,6 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { MiniPayAuthWrapper } from "@/components/MiniPayAuthWrapper";
 import { DeferredManagers } from "@/components/DeferredManagers";
 import GlobalErrorHandler from "@/components/GlobalErrorHandler";
-import { OnboardingTour } from "@/components/OnboardingTour";
 import { useAppState } from "@/hooks/useAppState";
 import { WebRTCProvider } from "@/contexts/WebRTCContext";
 import { AuthProvider } from "@/contexts/AuthContext";
