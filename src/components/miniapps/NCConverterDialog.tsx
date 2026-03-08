@@ -17,7 +17,7 @@ export const NCConverterDialog = ({ open, onClose }: NCConverterDialogProps) => 
   const { profile, refetch } = useProfile()
   const [loading, setLoading] = useState(false)
 
-  const nonWithdrawable = (profile as any)?.balance_non_withdrawable || 0
+  const nonWithdrawable = profile?.balance_non_withdrawable || 0
   const canConvert = nonWithdrawable >= 100
 
   const handleConvert = async () => {
@@ -25,32 +25,24 @@ export const NCConverterDialog = ({ open, onClose }: NCConverterDialogProps) => 
     setLoading(true)
 
     try {
-      // Deduct 100 non-withdrawable, add 5 withdrawable
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          balance_non_withdrawable: nonWithdrawable - 100,
-          wallet_balance: ((profile as any)?.wallet_balance || 0) - 100 + 5,
-          balance_withdrawable: ((profile as any)?.balance_withdrawable || 0) + 5,
-        })
-        .eq('user_id', user.id)
+      const { data, error } = await supabase.rpc('convert_nc_balance', {
+        p_user_id: user.id,
+        p_input_amount: 100,
+        p_output_amount: 5,
+      })
 
       if (error) throw error
 
-      // Log transaction
-      await supabase.from('wallet_transactions').insert({
-        user_id: user.id,
-        kind: 'nc_conversion',
-        amount: 5,
-        status: 'completed',
-        reference: 'Converted 100 non-withdrawable NC → 5 withdrawable NC',
-      })
+      const result = data as { success: boolean; error?: string }
+      if (!result.success) {
+        throw new Error(result.error || 'Conversion failed')
+      }
 
       toast.success('Converted 100 NC → 5 withdrawable NC!')
       refetch()
-    } catch (err) {
+    } catch (err: any) {
       console.error(err)
-      toast.error('Conversion failed')
+      toast.error(err.message || 'Conversion failed')
     } finally {
       setLoading(false)
     }

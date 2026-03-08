@@ -14,10 +14,12 @@ export interface Profile {
   connections_count: number
   wallet_balance: number
   balance_withdrawable?: number
+  balance_non_withdrawable?: number
   state_id: string | null
   state_name: string | null
   lga_name: string | null
   area: string | null
+  country?: string | null
   is_expert: boolean
   expert_verified_at: string | null
   referral_code: string | null
@@ -26,6 +28,15 @@ export interface Profile {
   celo_wallet_address?: string | null
   average_rating?: number
   rating_count?: number
+  // Verification fields
+  verification_level?: string | null
+  email_verified?: boolean
+  phone_verified?: boolean
+  face_verified?: boolean
+  identity_verified?: boolean
+  verification_country?: string | null
+  risk_score?: number
+  avg_response_time_seconds?: number | null
   // Premium subscription fields
   is_premium?: boolean
   premium_expires_at?: string | null
@@ -34,6 +45,10 @@ export interface Profile {
   facebook_url?: string | null
   google_meet_link?: string | null
   sms_job_alerts?: boolean
+  account_type?: string | null
+  email_2fa_enabled?: boolean
+  transaction_pin?: string | null
+  encrypted_wallet?: string | null
   created_at: string
   updated_at: string
 }
