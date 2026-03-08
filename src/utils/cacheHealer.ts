@@ -84,7 +84,18 @@ export async function checkAndHealCache(): Promise<void> {
     }
     
     recordHealAttempt()
-    await clearAllCaches()
+    
+    // Only clear Cache Storage (stale assets), NOT service workers
+    // Clearing SW breaks push notification subscriptions and causes re-registration delays
+    try {
+      if ('caches' in window) {
+        const cacheNames = await caches.keys()
+        await Promise.all(cacheNames.map(name => caches.delete(name)))
+        console.log('[CacheHealer] Stale caches cleared')
+      }
+    } catch (e) {
+      console.warn('[CacheHealer] Error clearing caches:', e)
+    }
     
     console.log('[CacheHealer] Caches cleared, reloading for fresh assets...')
     window.location.reload()
