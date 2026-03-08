@@ -118,7 +118,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.upload-video]
-verify_jwt = true
+verify_jwt = false
 
 [functions.quidax-on-ramp]
 verify_jwt = true

@@ -23,15 +23,6 @@ export const useVideoUpload = () => {
     progress: 0
   })
 
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.readAsDataURL(file)
-      reader.onload = () => resolve(reader.result as string)
-      reader.onerror = error => reject(error)
-    })
-  }
-
   const uploadVideo = useCallback(async (file: File, folder: string = 'feed'): Promise<VideoUploadResult | null> => {
     if (!user) {
       toast({
@@ -53,7 +44,6 @@ export const useVideoUpload = () => {
       return null
     }
 
-    // Check file type
     if (!file.type.startsWith('video/')) {
       toast({
         title: "Invalid file type",
@@ -70,26 +60,68 @@ export const useVideoUpload = () => {
     })
 
     try {
-      // Convert file to base64
-      setUploadProgress(prev => ({ ...prev, progress: 30 }))
-      const base64 = await fileToBase64(file)
-
-      setUploadProgress(prev => ({ ...prev, progress: 50 }))
-
-      // Upload via edge function
-      const { data, error } = await supabase.functions.invoke('upload-video', {
-        body: {
-          videoBase64: base64,
-          userId: user.id,
-          folder
-        }
+      // Step 1: Get signed upload params from edge function
+      setUploadProgress(prev => ({ ...prev, progress: 20 }))
+      
+      const { data: signData, error: signError } = await supabase.functions.invoke('upload-video', {
+        body: { userId: user.id, folder }
       })
 
-      if (error) throw error
+      if (signError) throw signError
+      if (!signData?.success) throw new Error(signData?.error || 'Failed to get upload signature')
 
-      if (!data.success) {
-        throw new Error(data.error || 'Upload failed')
-      }
+      const { uploadParams } = signData
+
+      // Step 2: Upload directly to Cloudinary from the client (no base64, no body size limit)
+      setUploadProgress(prev => ({ ...prev, progress: 30 }))
+
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('api_key', uploadParams.apiKey)
+      formData.append('timestamp', uploadParams.timestamp.toString())
+      formData.append('signature', uploadParams.signature)
+      formData.append('folder', uploadParams.folder)
+      formData.append('public_id', uploadParams.publicId)
+      formData.append('resource_type', 'video')
+      formData.append('eager', uploadParams.eager)
+
+      const xhr = new XMLHttpRequest()
+      
+      const uploadResult = await new Promise<any>((resolve, reject) => {
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable) {
+            const pct = Math.round(30 + (e.loaded / e.total) * 60)
+            setUploadProgress(prev => ({ ...prev, progress: pct }))
+          }
+        })
+
+        xhr.addEventListener('load', () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve(JSON.parse(xhr.responseText))
+          } else {
+            try {
+              const err = JSON.parse(xhr.responseText)
+              reject(new Error(err.error?.message || 'Upload failed'))
+            } catch {
+              reject(new Error('Upload failed'))
+            }
+          }
+        })
+
+        xhr.addEventListener('error', () => reject(new Error('Network error during upload')))
+        xhr.addEventListener('abort', () => reject(new Error('Upload cancelled')))
+
+        xhr.open('POST', `https://api.cloudinary.com/v1_1/${uploadParams.cloudName}/video/upload`)
+        xhr.send(formData)
+      })
+
+      setUploadProgress(prev => ({ ...prev, progress: 95 }))
+
+      // Generate thumbnail URL from the uploaded video
+      const thumbnailUrl = uploadResult.secure_url.replace(
+        '/video/upload/', 
+        '/video/upload/w_320,h_240,c_limit/'
+      )
 
       setUploadProgress(prev => ({ ...prev, progress: 100 }))
 
@@ -99,9 +131,9 @@ export const useVideoUpload = () => {
       })
 
       return {
-        videoUrl: data.videoUrl,
-        thumbnailUrl: data.thumbnailUrl,
-        duration: data.duration
+        videoUrl: uploadResult.secure_url,
+        thumbnailUrl,
+        duration: uploadResult.duration
       }
 
     } catch (error: any) {
