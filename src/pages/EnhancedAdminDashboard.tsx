@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { ArrowLeft, Users, FileText, TrendingUp, DollarSign, Eye, Settings, AlertCircle, CheckCircle, Clock, Star, MessageCircle, Briefcase, Award, Calendar, BarChart3, PieChart, Activity, Search, Filter, MoreVertical, Trash2, Edit, Ban, Heart, Package, BookOpen, Target, AlertTriangle, Megaphone, Code, Ticket, Gauge } from 'lucide-react'
+import { ArrowLeft, Users, FileText, TrendingUp, DollarSign, Eye, Settings, AlertCircle, CheckCircle, Clock, Star, MessageCircle, Briefcase, Award, Calendar, BarChart3, PieChart, Activity, Search, Filter, MoreVertical, Trash2, Edit, Ban, Heart, Package, BookOpen, Target, AlertTriangle, Megaphone, Code, Ticket, Gauge, Shield } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Logo } from '@/components/ui/logo'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/useAuth'
+import { useAdminRole, ROLE_LABELS, ROLE_COLORS, type AdminRole } from '@/hooks/useAdminRole'
 import { AdminSocialTasksSection } from '@/components/AdminSocialTasksSection'
 import { AdminReferralTasksSection } from '@/components/AdminReferralTasksSection'
 import { AdminArticlesSection } from '@/components/AdminArticlesSection'
@@ -1026,41 +1027,32 @@ const EnhancedAdminDashboard = () => {
   const navigate = useNavigate()
   const { toast } = useToast()
   const { user, loading: authLoading } = useAuth()
+  const { role: adminRole, loading: roleLoading, canAccessTab, canPerformAction, isAnyAdmin } = useAdminRole()
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [showBroadcastDialog, setShowBroadcastDialog] = useState(false)
 
-  // Check if user is admin
+  // Check if user has any admin access
   useEffect(() => {
-    const checkAdminAccess = async () => {
-      // Wait for auth to finish loading
-      if (authLoading) {
-        return
-      }
+    if (authLoading || roleLoading) return
 
-      if (!user) {
-        navigate('/login')
-        return
-      }
-
-      // Check if user has admin access using the is_admin_user function
-      const { data, error } = await supabase.rpc('is_admin_user')
-      
-      if (error || !data) {
-        toast({
-          title: "Access Denied",
-          description: "You don't have permission to access the admin dashboard",
-          variant: "destructive"
-        })
-        navigate('/profile')
-        return
-      }
-      
-      setLoading(false)
+    if (!user) {
+      navigate('/login')
+      return
     }
 
-    checkAdminAccess()
-  }, [user, authLoading, navigate, toast])
+    if (!isAnyAdmin) {
+      toast({
+        title: "Access Denied",
+        description: "You don't have permission to access the admin dashboard",
+        variant: "destructive"
+      })
+      navigate('/profile')
+      return
+    }
+    
+    setLoading(false)
+  }, [user, authLoading, roleLoading, isAnyAdmin, navigate, toast])
   
   // Dashboard Data
   const [dashboardStats, setDashboardStats] = useState({
@@ -1307,9 +1299,15 @@ const EnhancedAdminDashboard = () => {
       </header>
 
       <div className="px-6 py-6 max-w-7xl mx-auto">{/* Dashboard Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-text-primary mb-2">Admin Dashboard</h1>
-          <p className="text-text-secondary">Comprehensive platform management and analytics</p>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-text-primary mb-2">Admin Dashboard</h1>
+            <p className="text-text-secondary">Comprehensive platform management and analytics</p>
+          </div>
+          <Badge className={`${ROLE_COLORS[adminRole]} text-sm px-3 py-1`}>
+            <Shield className="h-3.5 w-3.5 mr-1.5" />
+            {ROLE_LABELS[adminRole]}
+          </Badge>
         </div>
 
         {/* Stats Overview */}
@@ -1406,34 +1404,44 @@ const EnhancedAdminDashboard = () => {
         <Tabs defaultValue="overview" className="w-full">
           <div className="overflow-x-auto mb-6">
             <TabsList className="inline-flex w-full min-w-max">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="users">Users</TabsTrigger>
-              <TabsTrigger value="content">Content</TabsTrigger>
-              <TabsTrigger value="applications">Applications</TabsTrigger>
-              <TabsTrigger value="marketplace">Marketplace</TabsTrigger>
-              <TabsTrigger value="ads">
-                <Megaphone className="h-4 w-4 mr-1" />
-                Ads
-              </TabsTrigger>
-              <TabsTrigger value="wallet">Wallet</TabsTrigger>
-              <TabsTrigger value="api-sales">
-                <Code className="h-4 w-4 mr-1" />
-                API Sales
-              </TabsTrigger>
-              <TabsTrigger value="api-usage">
-                <Gauge className="h-4 w-4 mr-1" />
-                API Usage
-              </TabsTrigger>
-              <TabsTrigger value="support">
-                <Ticket className="h-4 w-4 mr-1" />
-                Support
-              </TabsTrigger>
-              <TabsTrigger value="mini-apps">
-                <Package className="h-4 w-4 mr-1" />
-                Mini Apps
-              </TabsTrigger>
-              <TabsTrigger value="analytics">Analytics</TabsTrigger>
-              <TabsTrigger value="settings">Settings</TabsTrigger>
+              {canAccessTab('overview') && <TabsTrigger value="overview">Overview</TabsTrigger>}
+              {canAccessTab('users') && <TabsTrigger value="users">Users</TabsTrigger>}
+              {canAccessTab('content') && <TabsTrigger value="content">Content</TabsTrigger>}
+              {canAccessTab('applications') && <TabsTrigger value="applications">Applications</TabsTrigger>}
+              {canAccessTab('marketplace') && <TabsTrigger value="marketplace">Marketplace</TabsTrigger>}
+              {canAccessTab('ads') && (
+                <TabsTrigger value="ads">
+                  <Megaphone className="h-4 w-4 mr-1" />
+                  Ads
+                </TabsTrigger>
+              )}
+              {canAccessTab('wallet') && <TabsTrigger value="wallet">Wallet</TabsTrigger>}
+              {canAccessTab('api-sales') && (
+                <TabsTrigger value="api-sales">
+                  <Code className="h-4 w-4 mr-1" />
+                  API Sales
+                </TabsTrigger>
+              )}
+              {canAccessTab('api-usage') && (
+                <TabsTrigger value="api-usage">
+                  <Gauge className="h-4 w-4 mr-1" />
+                  API Usage
+                </TabsTrigger>
+              )}
+              {canAccessTab('support') && (
+                <TabsTrigger value="support">
+                  <Ticket className="h-4 w-4 mr-1" />
+                  Support
+                </TabsTrigger>
+              )}
+              {canAccessTab('mini-apps') && (
+                <TabsTrigger value="mini-apps">
+                  <Package className="h-4 w-4 mr-1" />
+                  Mini Apps
+                </TabsTrigger>
+              )}
+              {canAccessTab('analytics') && <TabsTrigger value="analytics">Analytics</TabsTrigger>}
+              {canAccessTab('settings') && <TabsTrigger value="settings">Settings</TabsTrigger>}
             </TabsList>
           </div>
 

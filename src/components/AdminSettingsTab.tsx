@@ -136,13 +136,21 @@ export function AdminSettingsTab() {
 
   const handleRemoveRole = async (userId: string, role: string) => {
     try {
-      const { error } = await supabase
-        .from('user_roles')
-        .delete()
-        .eq('user_id', userId)
-        .eq('role', role as any)
+      // @ts-ignore - RPC function exists but not in generated types yet
+      const { data, error } = await supabase.rpc('revoke_admin_role', {
+        target_user_id: userId,
+        target_role: role as any
+      })
 
       if (error) throw error
+      if (data && !(data as any).success) {
+        toast({
+          title: "Cannot Remove Role",
+          description: (data as any).error || "Permission denied",
+          variant: "destructive"
+        })
+        return
+      }
 
       toast({
         title: "Role Removed",
@@ -153,7 +161,7 @@ export function AdminSettingsTab() {
     } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to remove role",
+        description: error.message || "Failed to remove role",
         variant: "destructive"
       })
     }
@@ -161,14 +169,23 @@ export function AdminSettingsTab() {
 
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
-      case 'admin':
+      case 'super_admin':
         return 'bg-red-500/10 text-red-500 border-red-500/20'
+      case 'admin':
+        return 'bg-orange-500/10 text-orange-500 border-orange-500/20'
       case 'moderator':
         return 'bg-blue-500/10 text-blue-500 border-blue-500/20'
-      case 'support':
-        return 'bg-green-500/10 text-green-500 border-green-500/20'
       default:
         return 'bg-gray-500/10 text-gray-500 border-gray-500/20'
+    }
+  }
+
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case 'super_admin': return 'Super Admin'
+      case 'admin': return 'Admin'
+      case 'moderator': return 'Moderator'
+      default: return role.charAt(0).toUpperCase() + role.slice(1)
     }
   }
 
@@ -224,7 +241,7 @@ export function AdminSettingsTab() {
                   </div>
                   <div className="flex items-center gap-3">
                     <Badge className={getRoleBadgeColor(member.role)}>
-                      {member.role.charAt(0).toUpperCase() + member.role.slice(1)}
+                      {getRoleLabel(member.role)}
                     </Badge>
                     <Button
                       variant="ghost"
@@ -278,7 +295,7 @@ export function AdminSettingsTab() {
                     </div>
                     <div className="flex items-center gap-3">
                       <Badge className={getRoleBadgeColor(invitation.role)}>
-                        {invitation.role.charAt(0).toUpperCase() + invitation.role.slice(1)}
+                        {getRoleLabel(invitation.role)}
                       </Badge>
                       <Button
                         variant="ghost"

@@ -13,9 +13,8 @@ interface AdminInviteDialogProps {
 }
 
 const COMPANY_ROLES = [
-  { value: 'admin', label: 'Administrator', icon: Shield, description: 'Full system access and control' },
-  { value: 'moderator', label: 'Moderator', icon: UserCog, description: 'Content moderation and user management' },
-  { value: 'support', label: 'Support Staff', icon: Users, description: 'Customer support and basic management' },
+  { value: 'admin', label: 'Administrator', icon: Shield, description: 'Full platform access, can manage moderators' },
+  { value: 'moderator', label: 'Moderator', icon: UserCog, description: 'Review applications, moderate content, handle support' },
 ]
 
 export function AdminInviteDialog({ open, onOpenChange }: AdminInviteDialogProps) {
@@ -141,25 +140,21 @@ export function AdminInviteDialog({ open, onOpenChange }: AdminInviteDialogProps
                 {role === 'admin' && (
                   <>
                     <li>• Full platform access and configuration</li>
-                    <li>• User and content management</li>
-                    <li>• Financial and wallet operations</li>
-                    <li>• Invite and manage team members</li>
+                    <li>• User management (ban/unban)</li>
+                    <li>• Financial operations & wallet management</li>
+                    <li>• Manage ads, API, mini apps</li>
+                    <li>• Invite and manage moderators</li>
+                    <li>• View analytics and reports</li>
                   </>
                 )}
                 {role === 'moderator' && (
                   <>
-                    <li>• Content moderation and approval</li>
-                    <li>• User management (ban/unban)</li>
-                    <li>• Review expert applications</li>
-                    <li>• View analytics and reports</li>
-                  </>
-                )}
-                {role === 'support' && (
-                  <>
-                    <li>• View user information</li>
-                    <li>• Assist with basic inquiries</li>
-                    <li>• Limited wallet operations</li>
-                    <li>• View reports (read-only)</li>
+                    <li>• View dashboard overview</li>
+                    <li>• Review & approve expert applications</li>
+                    <li>• Moderate content (posts, tasks, articles)</li>
+                    <li>• Handle support tickets</li>
+                    <li>• View analytics (read-only)</li>
+                    <li>• Cannot access wallet, settings, or user management</li>
                   </>
                 )}
               </ul>
