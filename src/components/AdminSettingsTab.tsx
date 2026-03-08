@@ -241,14 +241,16 @@ export function AdminSettingsTab() {
                     <Badge className={getRoleBadgeColor(member.role)}>
                       {getRoleLabel(member.role)}
                     </Badge>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleRemoveRole(member.user_id, member.role)}
-                      className="text-red-500 hover:text-red-600 hover:bg-red-50"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    {member.role !== 'super_admin' && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemoveRole(member.user_id, member.role)}
+                        className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))}
