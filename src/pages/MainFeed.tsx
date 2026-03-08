@@ -529,21 +529,23 @@ const MainFeed = () => {
       {/* More Menu Drawer */}
       <MoreMenuDrawer open={moreMenuOpen} onOpenChange={setMoreMenuOpen} />
 
-      {/* Quick Onboarding for new users */}
-      <QuickOnboarding
-        open={showOnboarding}
-        onOpenChange={setShowOnboarding}
-        onComplete={handleOnboardingComplete}
-      />
+      <Suspense fallback={null}>
+        {/* Quick Onboarding for new users */}
+        <QuickOnboarding
+          open={showOnboarding}
+          onOpenChange={setShowOnboarding}
+          onComplete={handleOnboardingComplete}
+        />
 
-      {/* User Mode Prompt for existing users without mode set */}
-      <UserModePrompt />
+        {/* User Mode Prompt for existing users without mode set */}
+        <UserModePrompt />
 
-      {/* Platform Rating Dialog */}
-      <PlatformRatingDialog 
-        open={showRatingDialog} 
-        onOpenChange={setShowRatingDialog} 
-      />
+        {/* Platform Rating Dialog */}
+        <PlatformRatingDialog 
+          open={showRatingDialog} 
+          onOpenChange={setShowRatingDialog} 
+        />
+      </Suspense>
 
     </>
   )
