@@ -236,13 +236,17 @@ const MainFeed = () => {
     toggleLike(postId)
   }
 
-  // ✅ NEW: MiniPay users see content IMMEDIATELY - no blocking at all
-  // Wallet connection happens in background, protected actions trigger auth when needed
-  // This eliminates the "Setting up your account..." infinite loop
+  // Show skeleton briefly while loading, but NEVER forever.
+  // Cap skeleton display at 6 seconds, then show content (even if empty).
+  const [skeletonTimedOut, setSkeletonTimedOut] = useState(false)
+  useEffect(() => {
+    const timer = setTimeout(() => setSkeletonTimedOut(true), 6000)
+    return () => clearTimeout(timer)
+  }, [])
 
-  // Show skeleton only when auth is ready AND feed is actually fetching
-  // Never show skeleton indefinitely when auth hasn't resolved
-  if (authLoading || (loading && user)) {
+  const showSkeleton = !skeletonTimedOut && (authLoading || (loading && user))
+
+  if (showSkeleton) {
     return <FeedSkeleton />
   }
 

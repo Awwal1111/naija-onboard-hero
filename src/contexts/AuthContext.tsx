@@ -32,7 +32,7 @@ export const useAuthContext = () => useContext(AuthContext)
  * - Network is slow/intermittent
  * - Supabase SDK has connectivity issues
  */
-const AUTH_TIMEOUT_MS = 8_000 // 8 seconds max wait
+const AUTH_TIMEOUT_MS = 5_000 // 5 seconds max wait (reduced from 8s)
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null)
