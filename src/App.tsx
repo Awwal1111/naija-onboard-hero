@@ -5,14 +5,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { MiniPayAuthWrapper } from "@/components/MiniPayAuthWrapper";
-import WalletInitializer from "@/components/WalletInitializer";
-import GlobalCallManager from "@/components/GlobalCallManager";
-import GlobalPresenceManager from "@/components/GlobalPresenceManager";
+import { DeferredManagers } from "@/components/DeferredManagers";
 import GlobalErrorHandler from "@/components/GlobalErrorHandler";
-import { QuidaxRampManager } from "@/components/QuidaxRampManager";
-import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
-import { PushNotificationManager } from "@/components/PushNotificationManager";
-import { OnboardingTour } from "@/components/OnboardingTour";
 import { useAppState } from "@/hooks/useAppState";
 import { WebRTCProvider } from "@/contexts/WebRTCContext";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -209,13 +203,7 @@ const App = () => (
               {!isMiniPayEnv && <AuthRedirectHandler />}
               {!isMiniPayEnv && <AppStateManager />}
               {!isMiniPayEnv && <LoginLogger />}
-              {!isMiniPayEnv && <WalletInitializer />}
-              {!isMiniPayEnv && <GlobalCallManager />}
-              {!isMiniPayEnv && <GlobalPresenceManager />}
-              {!isMiniPayEnv && <QuidaxRampManager />}
-              {!isMiniPayEnv && <PWAInstallPrompt />}
-              {!isMiniPayEnv && <PushNotificationManager />}
-              {!isMiniPayEnv && <OnboardingTour />}
+              {!isMiniPayEnv && <DeferredManagers />}
               <Suspense fallback={<PageLoader />}>
                 <Routes>
                 {/* PUBLIC SEO PAGES */}
