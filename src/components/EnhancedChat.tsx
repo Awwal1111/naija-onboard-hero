@@ -18,6 +18,7 @@ import ChatContextBadge from '@/components/ChatContextBadge'
 import { TypingIndicator } from '@/components/TypingIndicator'
 import { ReadReceipt } from '@/components/ReadReceipt'
 import { QuickReplyTemplates } from '@/components/QuickReplyTemplates'
+import { MessageReactions } from '@/components/MessageReactions'
 import { LocationShareButton } from '@/components/chat/LocationShareButton'
 import { LocationMessage, parseLocationMessage, createLocationMessageContent } from '@/components/chat/LocationMessage'
 import { ChatContactBar } from '@/components/chat/ChatContactBar'
@@ -299,7 +300,7 @@ const EnhancedChat = () => {
     return (
       <div
         key={message.id}
-        className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} mb-4`}
+        className={`group flex flex-col ${isOwn ? 'items-end' : 'items-start'} mb-4`}
       >
         {/* Context Badge - Show above message for context messages */}
         {hasContext && (
@@ -373,6 +374,9 @@ const EnhancedChat = () => {
             </div>
           </div>
         )}
+        
+        {/* Message Reactions */}
+        <MessageReactions messageId={message.id} isOwn={isOwn} />
       </div>
     )
   }
