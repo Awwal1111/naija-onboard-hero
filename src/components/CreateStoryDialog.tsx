@@ -308,23 +308,23 @@ const CreateStoryDialog: React.FC<CreateStoryDialogProps> = ({
               Add a photo to your story
             </label>
             <div className="flex justify-center">
-              <label className="cursor-pointer">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleMediaUpload}
-                  className="hidden"
-                />
-                <BrandButton 
-                  type="button" 
-                  variant="outline" 
-                  className="flex items-center gap-2 px-8"
-                  size="lg"
-                >
-                  <Camera className="h-5 w-5" />
-                  Choose Photo
-                </BrandButton>
-              </label>
+              <input
+                id="story-media-input"
+                type="file"
+                accept="image/*"
+                onChange={handleMediaUpload}
+                className="hidden"
+              />
+              <BrandButton 
+                type="button" 
+                variant="outline" 
+                className="flex items-center gap-2 px-8"
+                size="lg"
+                onClick={() => document.getElementById('story-media-input')?.click()}
+              >
+                <Camera className="h-5 w-5" />
+                Choose Photo
+              </BrandButton>
             </div>
             {/* Media Preview */}
             {mediaFile && (
