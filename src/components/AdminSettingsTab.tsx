@@ -295,7 +295,7 @@ export function AdminSettingsTab() {
                     </div>
                     <div className="flex items-center gap-3">
                       <Badge className={getRoleBadgeColor(invitation.role)}>
-                        {invitation.role.charAt(0).toUpperCase() + invitation.role.slice(1)}
+                        {getRoleLabel(invitation.role)}
                       </Badge>
                       <Button
                         variant="ghost"
