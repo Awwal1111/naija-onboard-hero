@@ -241,14 +241,7 @@ const MainFeed = () => {
   // This eliminates the "Setting up your account..." infinite loop
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center pb-20">
-        <div className="text-center">
-          <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-text-secondary">Loading feed...</p>
-        </div>
-      </div>
-    )
+    return <FeedSkeleton />
   }
 
   return (
@@ -320,17 +313,19 @@ const MainFeed = () => {
           </header>
 
           {/* Mini Apps Carousel - Above Stories for visibility */}
-          <MiniAppCarousel onInternalAction={(action) => {
-            if (action === 'bills') navigate('/earn?tab=bills')
-            if (action === 'bank_deposit') {
-              const event = new CustomEvent('open-quidax-widget', { detail: { mode: 'buy' } })
-              window.dispatchEvent(event)
-            }
-            if (action === 'crypto_deposit') setShowDepositDialog(true)
-            if (action === 'deposit_naira') setShowDepositDialog(true)
-            if (action === 'escrow') setShowEscrowSearch(true)
-            if (action === 'nc_converter') setShowNCConverter(true)
-          }} />
+          <Suspense fallback={null}>
+            <MiniAppCarousel onInternalAction={(action) => {
+              if (action === 'bills') navigate('/earn?tab=bills')
+              if (action === 'bank_deposit') {
+                const event = new CustomEvent('open-quidax-widget', { detail: { mode: 'buy' } })
+                window.dispatchEvent(event)
+              }
+              if (action === 'crypto_deposit') setShowDepositDialog(true)
+              if (action === 'deposit_naira') setShowDepositDialog(true)
+              if (action === 'escrow') setShowEscrowSearch(true)
+              if (action === 'nc_converter') setShowNCConverter(true)
+            }} />
+          </Suspense>
 
           {/* Stories Section */}
           <StoriesSection
