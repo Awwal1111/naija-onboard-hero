@@ -1,18 +1,25 @@
 {
-  "name": "NaijaLancers",
+  "name": "NaijaLancers - Connect, Earn & Grow",
   "short_name": "NaijaLancers",
-  "description": "Nigeria's trusted freelance marketplace connecting verified experts with clients",
+  "description": "Nigeria's trusted freelance marketplace connecting verified experts with clients. Hire skilled freelancers or earn online with secure payments.",
   "start_url": "/main-feed",
   "display": "standalone",
-  "background_color": "#0a0a0a",
+  "background_color": "#ffffff",
   "theme_color": "#10b981",
   "orientation": "portrait-primary",
+  "id": "/main-feed",
   "icons": [
     {
       "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "/logo.png",
@@ -20,7 +27,28 @@
       "type": "image/png"
     }
   ],
-  "categories": ["business", "productivity"],
+  "categories": ["social", "business", "productivity"],
   "lang": "en",
-  "scope": "/"
+  "scope": "/",
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "Find Experts",
+      "short_name": "Experts",
+      "url": "/experts",
+      "icons": [{ "src": "/logo.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Post a Job",
+      "short_name": "Post Job",
+      "url": "/post-job",
+      "icons": [{ "src": "/logo.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Messages",
+      "short_name": "Chat",
+      "url": "/messaging",
+      "icons": [{ "src": "/logo.png", "sizes": "192x192" }]
+    }
+  ]
 }
