@@ -23,7 +23,7 @@ self.addEventListener('push', (event) => {
     data = { title: 'NaijaLancers', body: event.data.text() }
   }
 
-  const options: NotificationOptions = {
+  const options: any = {
     body: data.body || '',
     icon: data.icon || '/icon-512.png',
     badge: data.badge || '/icon-512.png',
@@ -31,7 +31,7 @@ self.addEventListener('push', (event) => {
       url: data.url || '/main-feed',
       ...data.data
     },
-    vibrate: [200, 100, 200] as any,
+    vibrate: [200, 100, 200],
     tag: data.tag || 'naijalancers-notification',
     renotify: true,
   }
