@@ -123,17 +123,20 @@ const MessagesTab: React.FC = () => {
     if (!user) return
 
     const channel = supabase
-      .channel('messages-unread-updates')
+      .channel('messages-new-only')
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'INSERT',
           schema: 'public',
           table: 'messages'
         },
-        () => {
-          // Refetch chats when any message changes (new message or read status update)
-          fetchChats()
+        (payload) => {
+          // Only refetch when a new message is inserted (not read receipt updates)
+          const newMsg = payload.new as any
+          if (newMsg) {
+            fetchChats()
+          }
         }
       )
       .subscribe()
