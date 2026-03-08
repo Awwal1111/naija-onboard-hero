@@ -27,20 +27,51 @@ export const AdminArticlesSection = () => {
     reward_amount: 0
   })
 
+  const extractStoragePath = (url: string, bucket: string): string | null => {
+    const publicPattern = `/storage/v1/object/public/${bucket}/`
+    const idx = url.indexOf(publicPattern)
+    if (idx !== -1) {
+      return decodeURIComponent(url.substring(idx + publicPattern.length))
+    }
+    return null
+  }
+
   const getImageUrl = async (mediaUrl: string): Promise<string> => {
     try {
+      if (mediaUrl.startsWith('data:')) return mediaUrl
+
+      let storagePath = mediaUrl
+
+      if (mediaUrl.startsWith('http://') || mediaUrl.startsWith('https://')) {
+        const extracted = extractStoragePath(mediaUrl, 'article-submissions')
+        if (extracted) {
+          storagePath = extracted
+        } else {
+          return mediaUrl // External URL
+        }
+      }
+
       const { data, error } = await supabase.storage
         .from('article-submissions')
-        .createSignedUrl(mediaUrl, 3600) // 1 hour expiry
+        .createSignedUrl(storagePath, 3600)
       
-      if (error) {
-        console.error('Error getting signed URL:', error)
-        toast.error("Could not load image")
-        return ''
+      if (!error && data?.signedUrl) {
+        return data.signedUrl
       }
-      return data.signedUrl
+
+      // Fallback: try public URL
+      const { data: publicData } = supabase.storage
+        .from('article-submissions')
+        .getPublicUrl(storagePath)
+      
+      if (publicData?.publicUrl) {
+        return publicData.publicUrl
+      }
+
+      console.error('Error getting image URL:', error)
+      return ''
     } catch (error) {
-      console.error('Exception getting signed URL:', error)
+      console.error('Exception getting image URL:', error)
       return ''
     }
   }
