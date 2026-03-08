@@ -34,49 +34,16 @@ export const AdminSocialTasksSection = () => {
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({})
   const [loadingImages, setLoadingImages] = useState<Set<string>>(new Set())
 
-  const extractStoragePath = (url: string, bucket: string): string | null => {
-    // Extract file path from Supabase public URL
-    // Format: https://<project>.supabase.co/storage/v1/object/public/<bucket>/<path>
-    const publicPattern = `/storage/v1/object/public/${bucket}/`
-    const idx = url.indexOf(publicPattern)
-    if (idx !== -1) {
-      return decodeURIComponent(url.substring(idx + publicPattern.length))
-    }
-    return null
-  }
-
-  const getImageUrl = async (mediaUrl: string): Promise<string> => {
-    try {
-      // If it's a data URI, return directly
-      if (mediaUrl.startsWith('data:')) return mediaUrl
-
-      let storagePath = mediaUrl
-
-      // If it's a full URL, try to extract the storage path
-      if (mediaUrl.startsWith('http://') || mediaUrl.startsWith('https://')) {
-        const extracted = extractStoragePath(mediaUrl, 'social-media-tasks')
-        if (extracted) {
-          storagePath = extracted
-        } else {
-          // External URL, return directly
-          return mediaUrl
-        }
-      }
-      
-      // Get a signed URL from private storage
-      const { data, error } = await supabase.storage
-        .from('social-media-tasks')
-        .createSignedUrl(storagePath, 3600)
-      
-      if (error) {
-        console.error('Error getting signed URL:', error)
-        return mediaUrl // Fallback to original URL
-      }
-      return data.signedUrl
-    } catch (error) {
-      console.error('Exception getting signed URL:', error)
+  const getImageUrl = (mediaUrl: string): string => {
+    // If it's already a full URL, return directly
+    if (mediaUrl.startsWith('http://') || mediaUrl.startsWith('https://') || mediaUrl.startsWith('data:')) {
       return mediaUrl
     }
+    // Otherwise, get public URL from storage
+    const { data } = supabase.storage
+      .from('social-media-tasks')
+      .getPublicUrl(mediaUrl)
+    return data.publicUrl
   }
 
   useEffect(() => {
