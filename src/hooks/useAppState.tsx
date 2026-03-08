@@ -15,8 +15,9 @@ const isMiniPayEnv = detectMiniPaySync().isMiniPay;
  * Only restores route on TRUE cold start (app killed by OS).
  */
 export const useAppState = () => {
+  const internal = useAppStateInternal();
   if (isMiniPayEnv) return null;
-  return useAppStateInternal();
+  return internal;
 };
 
 const useAppStateInternal = () => {

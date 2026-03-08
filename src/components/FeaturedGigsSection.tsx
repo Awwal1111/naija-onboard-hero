@@ -23,7 +23,20 @@ export const FeaturedGigsSection = () => {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetchFeaturedGigs()
+    let cancelled = false
+    const controller = new AbortController()
+    
+    const load = async () => {
+      try {
+        await fetchFeaturedGigs()
+      } catch {
+        // Already handled in fetchFeaturedGigs
+      }
+    }
+    
+    if (!cancelled) load()
+    
+    return () => { cancelled = true; controller.abort() }
   }, [])
 
   const fetchFeaturedGigs = async () => {
