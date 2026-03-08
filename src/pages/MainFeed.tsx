@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Plus, Home, MessageCircle, Users, DollarSign, User, FileText, Briefcase, Award, Calendar, Vote, Hash, RefreshCw, MoreVertical, Settings, Wallet, Camera } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Logo } from '@/components/ui/logo'
@@ -73,6 +73,32 @@ const MainFeed = () => {
   const [showDepositDialog, setShowDepositDialog] = useState(false)
   const [showEscrowSearch, setShowEscrowSearch] = useState(false)
   const [showNCConverter, setShowNCConverter] = useState(false)
+  const [showRatingDialog, setShowRatingDialog] = useState(false)
+
+  // Check if user should see the platform rating prompt
+  useEffect(() => {
+    if (!user || !profile) return
+    const p = profile as any
+    
+    // Don't show if already rated
+    if (p.has_rated_platform) return
+    
+    // Don't show if skipped within the last 7 days
+    if (p.rating_skipped_at) {
+      const skippedAt = new Date(p.rating_skipped_at).getTime()
+      const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000
+      if (skippedAt > sevenDaysAgo) return
+    }
+    
+    // Show if user has completed at least 1 job or has any earnings
+    const hasActivity = (p.completed_jobs_count > 0) || (p.total_earnings > 0) || (p.wallet_balance > 0)
+    if (hasActivity) {
+      // Delay showing by 3 seconds so the feed loads first
+      const timer = setTimeout(() => setShowRatingDialog(true), 3000)
+      return () => clearTimeout(timer)
+    }
+  }, [user, profile])
+
 
   // Check for onboarding
   useEffect(() => {
@@ -507,6 +533,12 @@ const MainFeed = () => {
 
       {/* User Mode Prompt for existing users without mode set */}
       <UserModePrompt />
+
+      {/* Platform Rating Dialog */}
+      <PlatformRatingDialog 
+        open={showRatingDialog} 
+        onOpenChange={setShowRatingDialog} 
+      />
 
     </>
   )
