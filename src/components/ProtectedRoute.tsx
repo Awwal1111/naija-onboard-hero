@@ -1,7 +1,8 @@
 import { Navigate } from 'react-router-dom'
 import { useAuthContext } from '@/contexts/AuthContext'
 import { detectMiniPaySync } from '@/lib/minipay'
-import { RefreshCw, Wifi, WifiOff } from 'lucide-react'
+import { emergencyHeal } from '@/utils/cacheHealer'
+import { RefreshCw, WifiOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 const isMiniPayEnv = detectMiniPaySync().isMiniPay
@@ -69,20 +70,8 @@ export const ProtectedRoute = ({
             <Button
               variant="ghost"
               className="w-full text-xs text-muted-foreground"
-              onClick={() => {
-                try {
-                  localStorage.clear()
-                  sessionStorage.clear()
-                } catch {}
-                if ('serviceWorker' in navigator) {
-                  navigator.serviceWorker.getRegistrations().then(regs => {
-                    regs.forEach(r => r.unregister())
-                  }).finally(() => {
-                    window.location.href = '/login'
-                  })
-                } else {
-                  window.location.href = '/login'
-                }
+              onClick={async () => {
+                await emergencyHeal()
               }}
             >
               Clear cache & refresh
