@@ -41,7 +41,7 @@ export const AdminSetup = () => {
         .from('user_roles')
         .insert({
           user_id: user.id,
-          role: 'admin'
+          role: 'super_admin' as any
         })
 
       if (error) {
@@ -103,7 +103,7 @@ export const AdminSetup = () => {
         <Shield className="h-4 w-4" />
         <AlertDescription>
           <p className="font-medium mb-2">Admin Setup Required</p>
-          <p className="text-xs">No admin users exist yet. Grant yourself admin access to use admin features like the AI Assistant.</p>
+          <p className="text-xs">No admin users exist yet. Grant yourself <strong>Super Admin</strong> access to manage the platform and assign roles to others.</p>
         </AlertDescription>
       </Alert>
 
@@ -142,9 +142,9 @@ export const AdminSetup = () => {
 
           <div className="space-y-3">
             <div>
-              <p className="text-sm font-medium mb-1">Grant Admin to Yourself</p>
+              <p className="text-sm font-medium mb-1">Grant Super Admin to Yourself</p>
               <p className="text-xs text-muted-foreground mb-3">
-                Click below to grant admin access to your current account
+                Click below to become the platform's Super Admin (highest access level)
               </p>
               <Button 
                 onClick={grantAdminToSelf} 
@@ -152,7 +152,7 @@ export const AdminSetup = () => {
                 className="w-full"
               >
                 <Shield className="h-4 w-4 mr-2" />
-                {loading ? 'Granting...' : adminStatus?.is_admin ? 'Already Admin' : 'Make Me Admin'}
+                {loading ? 'Granting...' : adminStatus?.is_admin ? 'Already Admin' : 'Make Me Super Admin'}
               </Button>
             </div>
           </div>
