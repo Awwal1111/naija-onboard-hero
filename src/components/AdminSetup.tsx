@@ -41,7 +41,7 @@ export const AdminSetup = () => {
         .from('user_roles')
         .insert({
           user_id: user.id,
-          role: 'super_admin' as any
+          role: 'super_admin'
         })
 
       if (error) {
