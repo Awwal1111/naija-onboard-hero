@@ -25,6 +25,7 @@ interface ChatPreview {
 
 const MessagesTab: React.FC = () => {
   const { user } = useAuth()
+  const { isUserOnline } = useUserPresence()
   const navigate = useNavigate()
   const location = useLocation()
   const [chats, setChats] = useState<ChatPreview[]>([])
