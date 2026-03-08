@@ -1027,41 +1027,32 @@ const EnhancedAdminDashboard = () => {
   const navigate = useNavigate()
   const { toast } = useToast()
   const { user, loading: authLoading } = useAuth()
+  const { role: adminRole, loading: roleLoading, canAccessTab, canPerformAction, isAnyAdmin } = useAdminRole()
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [showBroadcastDialog, setShowBroadcastDialog] = useState(false)
 
-  // Check if user is admin
+  // Check if user has any admin access
   useEffect(() => {
-    const checkAdminAccess = async () => {
-      // Wait for auth to finish loading
-      if (authLoading) {
-        return
-      }
+    if (authLoading || roleLoading) return
 
-      if (!user) {
-        navigate('/login')
-        return
-      }
-
-      // Check if user has admin access using the is_admin_user function
-      const { data, error } = await supabase.rpc('is_admin_user')
-      
-      if (error || !data) {
-        toast({
-          title: "Access Denied",
-          description: "You don't have permission to access the admin dashboard",
-          variant: "destructive"
-        })
-        navigate('/profile')
-        return
-      }
-      
-      setLoading(false)
+    if (!user) {
+      navigate('/login')
+      return
     }
 
-    checkAdminAccess()
-  }, [user, authLoading, navigate, toast])
+    if (!isAnyAdmin) {
+      toast({
+        title: "Access Denied",
+        description: "You don't have permission to access the admin dashboard",
+        variant: "destructive"
+      })
+      navigate('/profile')
+      return
+    }
+    
+    setLoading(false)
+  }, [user, authLoading, roleLoading, isAnyAdmin, navigate, toast])
   
   // Dashboard Data
   const [dashboardStats, setDashboardStats] = useState({
