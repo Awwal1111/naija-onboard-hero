@@ -139,7 +139,7 @@ export function AdminSettingsTab() {
       // @ts-ignore - RPC function exists but not in generated types yet
       const { data, error } = await supabase.rpc('revoke_admin_role', {
         target_user_id: userId,
-        target_role: role
+        target_role: role as any
       })
 
       if (error) throw error
