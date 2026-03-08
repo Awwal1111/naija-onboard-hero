@@ -27,100 +27,26 @@ export const AdminArticlesSection = () => {
     reward_amount: 0
   })
 
-  const extractStoragePath = (url: string, bucket: string): string | null => {
-    const publicPattern = `/storage/v1/object/public/${bucket}/`
-    const idx = url.indexOf(publicPattern)
-    if (idx !== -1) {
-      return decodeURIComponent(url.substring(idx + publicPattern.length))
+  const getImageUrl = (mediaUrl: string): string => {
+    if (mediaUrl.startsWith('http://') || mediaUrl.startsWith('https://') || mediaUrl.startsWith('data:')) {
+      return mediaUrl
     }
-    return null
-  }
-
-  const getImageUrl = async (mediaUrl: string): Promise<string> => {
-    try {
-      if (mediaUrl.startsWith('data:')) return mediaUrl
-
-      let storagePath = mediaUrl
-
-      if (mediaUrl.startsWith('http://') || mediaUrl.startsWith('https://')) {
-        const extracted = extractStoragePath(mediaUrl, 'article-submissions')
-        if (extracted) {
-          storagePath = extracted
-        } else {
-          return mediaUrl // External URL
-        }
-      }
-
-      const { data, error } = await supabase.storage
-        .from('article-submissions')
-        .createSignedUrl(storagePath, 3600)
-      
-      if (!error && data?.signedUrl) {
-        return data.signedUrl
-      }
-
-      // Fallback: try public URL
-      const { data: publicData } = supabase.storage
-        .from('article-submissions')
-        .getPublicUrl(storagePath)
-      
-      if (publicData?.publicUrl) {
-        return publicData.publicUrl
-      }
-
-      console.error('Error getting image URL:', error)
-      return ''
-    } catch (error) {
-      console.error('Exception getting image URL:', error)
-      return ''
-    }
+    const { data } = supabase.storage
+      .from('article-submissions')
+      .getPublicUrl(mediaUrl)
+    return data.publicUrl
   }
 
   useEffect(() => {
-    const loadImageUrls = async () => {
-      const urlsToLoad: string[] = []
-      
-      // Find all images that need loading
-      for (const submission of submissions) {
-        if (submission.screenshot_url && 
-            !imageUrls[submission.screenshot_url] && 
-            !loadingImages.has(submission.screenshot_url)) {
-          urlsToLoad.push(submission.screenshot_url)
-        }
+    const urls: Record<string, string> = {}
+    for (const submission of submissions) {
+      if (submission.screenshot_url && !imageUrls[submission.screenshot_url]) {
+        urls[submission.screenshot_url] = getImageUrl(submission.screenshot_url)
       }
-
-      if (urlsToLoad.length === 0) return
-
-      // Mark as loading
-      setLoadingImages(prev => {
-        const newSet = new Set(prev)
-        urlsToLoad.forEach(url => newSet.add(url))
-        return newSet
-      })
-
-      // Load all URLs
-      const urls: Record<string, string> = {}
-      await Promise.all(
-        urlsToLoad.map(async (mediaUrl) => {
-          const url = await getImageUrl(mediaUrl)
-          if (url) urls[mediaUrl] = url
-        })
-      )
-
-      // Update state
-      if (Object.keys(urls).length > 0) {
-        setImageUrls(prev => ({ ...prev, ...urls }))
-      }
-      
-      // Clear loading state
-      setLoadingImages(prev => {
-        const newSet = new Set(prev)
-        urlsToLoad.forEach(url => newSet.delete(url))
-        return newSet
-      })
     }
-
-    loadImageUrls()
+    if (Object.keys(urls).length > 0) {
+      setImageUrls(prev => ({ ...prev, ...urls }))
+    }
   }, [submissions])
 
   const handleCreateArticle = async () => {
