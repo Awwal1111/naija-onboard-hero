@@ -240,10 +240,9 @@ const MainFeed = () => {
   // Wallet connection happens in background, protected actions trigger auth when needed
   // This eliminates the "Setting up your account..." infinite loop
 
-  // Show skeleton only when auth is loading OR feed is actively fetching for a logged-in user
-  // CRITICAL: Never show skeleton if auth timed out or resolved without user
+  // Don't render feed content until auth is resolved
   if (authLoading) {
-    return <FeedSkeleton />
+    return null
   }
 
   return (
