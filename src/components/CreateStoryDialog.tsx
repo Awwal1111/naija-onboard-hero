@@ -2,9 +2,8 @@ import React, { useState } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { BrandButton } from '@/components/ui/brand-button'
 import { BrandInput } from '@/components/ui/brand-input'
-import { Camera, Video, X, FileText, Music } from 'lucide-react'
+import { Camera, Video, X, FileText, Music, Loader2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import { uploadToCatbox, formatFileSize } from '@/lib/catbox'
 import { supabase } from '@/integrations/supabase/client'
 
 interface CreateStoryDialogProps {
@@ -124,9 +123,10 @@ const CreateStoryDialog: React.FC<CreateStoryDialogProps> = ({
         setUploadProgress(20)
         
         try {
-          // Use Supabase Storage (stories bucket) - more reliable than Catbox
           const fileExt = mediaFile.name.split('.').pop() || 'jpg'
           const fileName = `${user.user.id}/${Date.now()}.${fileExt}`
+          
+          setUploadProgress(40)
           
           const { data: uploadData, error: uploadError } = await supabase.storage
             .from('stories')
@@ -138,29 +138,15 @@ const CreateStoryDialog: React.FC<CreateStoryDialogProps> = ({
           setUploadProgress(80)
           
           if (uploadError) {
-            console.error('Supabase storage upload error:', uploadError)
-            // Fallback to Catbox
-            const { url, error } = await uploadToCatbox(mediaFile)
-            if (url && !error) {
-              mediaUrl = url
-            } else if (mediaFile.size <= 2 * 1024 * 1024) {
-              // Final fallback: base64 for small files
-              mediaUrl = await new Promise<string>((resolve, reject) => {
-                const reader = new FileReader()
-                reader.onload = () => resolve(reader.result as string)
-                reader.onerror = reject
-                reader.readAsDataURL(mediaFile)
-              })
-            } else {
-              throw new Error('Upload failed. Please try a smaller image.')
-            }
-          } else {
-            // Get public URL from Supabase
-            const { data: urlData } = supabase.storage
-              .from('stories')
-              .getPublicUrl(uploadData.path)
-            mediaUrl = urlData.publicUrl
+            console.error('Story upload error:', uploadError)
+            throw new Error(uploadError.message || 'Failed to upload image')
           }
+          
+          // Get public URL from Supabase
+          const { data: urlData } = supabase.storage
+            .from('stories')
+            .getPublicUrl(uploadData.path)
+          mediaUrl = urlData.publicUrl
           
           setUploadProgress(100)
           toast({
@@ -169,18 +155,14 @@ const CreateStoryDialog: React.FC<CreateStoryDialogProps> = ({
           })
         } catch (uploadError: any) {
           console.error('Story upload error:', uploadError)
-          // Final fallback for small files
-          if (mediaFile.size <= 2 * 1024 * 1024) {
-            mediaUrl = await new Promise<string>((resolve, reject) => {
-              const reader = new FileReader()
-              reader.onload = () => resolve(reader.result as string)
-              reader.onerror = reject
-              reader.readAsDataURL(mediaFile)
-            })
-            setUploadProgress(100)
-          } else {
-            throw new Error('Upload failed. Please try a smaller image.')
-          }
+          setUploading(false)
+          setUploadProgress(0)
+          toast({
+            title: "Upload failed",
+            description: uploadError.message || "Failed to upload image. Please try again.",
+            variant: "destructive"
+          })
+          return
         }
         
         setUploading(false)
@@ -380,8 +362,11 @@ const CreateStoryDialog: React.FC<CreateStoryDialogProps> = ({
             {/* Upload Progress */}
             {uploading && (
               <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Uploading to Catbox.moe...</span>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Uploading...
+                  </span>
                   <span>{uploadProgress}%</span>
                 </div>
                 <div className="w-full bg-muted rounded-full h-2">
