@@ -128,10 +128,6 @@ export const usePersonalizedFeed = () => {
 
       console.log('[Feed] Fetching personalized feed for user:', userId, 'offset:', offset)
 
-      // Add timeout to prevent infinite loading on slow networks
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 15000) // 15s timeout
-
       try {
         // Use the personalized feed function
         const { data: personalizedPosts, error } = await supabase
@@ -140,9 +136,8 @@ export const usePersonalizedFeed = () => {
             p_limit: POSTS_PER_PAGE,
             p_offset: offset
           })
-          .abortSignal(controller.signal)
         
-        clearTimeout(timeoutId)
+
 
         if (error) {
           console.error('[Feed] Personalized feed RPC error:', error)
