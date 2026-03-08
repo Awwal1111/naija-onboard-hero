@@ -78,6 +78,7 @@ const MainFeed = () => {
   const [showDepositDialog, setShowDepositDialog] = useState(false)
   const [showEscrowSearch, setShowEscrowSearch] = useState(false)
   const [showNCConverter, setShowNCConverter] = useState(false)
+  const [feedTimedOut, setFeedTimedOut] = useState(false)
   const [showRatingDialog, setShowRatingDialog] = useState(false)
 
   // Check if user should see the platform rating prompt
@@ -240,9 +241,29 @@ const MainFeed = () => {
   // Wallet connection happens in background, protected actions trigger auth when needed
   // This eliminates the "Setting up your account..." infinite loop
 
+  // Feed loading safety timeout - never show skeleton for more than 10 seconds
+  useEffect(() => {
+    if (loading && user) {
+      const timer = setTimeout(() => setFeedTimedOut(true), 10_000)
+      return () => clearTimeout(timer)
+    }
+    setFeedTimedOut(false)
+  }, [loading, user])
+
   // Show skeleton only when auth is ready AND feed is actually fetching
-  // Never show skeleton indefinitely when auth hasn't resolved
-  if (authLoading || (loading && user)) {
+  // Never show skeleton indefinitely - feedTimedOut bypasses it
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (loading && user && !feedTimedOut) {
     return <FeedSkeleton />
   }
 

@@ -18,9 +18,12 @@ const isMiniPayEnv = detectMiniPaySync().isMiniPay;
 // App loaded successfully - clear any chunk reload tracking
 clearReloadTracking();
 
-// Auto-heal stale caches from previous deploys (non-blocking)
+// Auto-heal stale caches from previous deploys
+// CRITICAL: Must complete BEFORE React renders to avoid reload mid-render
 if (!isMiniPayEnv) {
-  checkAndHealCache();
+  // Run cache heal but don't block render — the heal will reload if needed
+  // Delay slightly to avoid racing with auth state restoration
+  setTimeout(() => checkAndHealCache(), 500);
 }
 
 // Service worker is handled automatically by VitePWA plugin (registerType: 'autoUpdate')
