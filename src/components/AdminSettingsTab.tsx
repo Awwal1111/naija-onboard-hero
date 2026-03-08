@@ -72,7 +72,7 @@ export function AdminSettingsTab() {
       const { data: rolesData, error: rolesError } = await supabase
         .from('user_roles')
         .select('user_id, role')
-        .in('role', ['admin', 'moderator'])
+        .in('role', ['super_admin', 'admin', 'moderator'])
 
       if (rolesError) throw rolesError
 
@@ -81,17 +81,15 @@ export function AdminSettingsTab() {
         (rolesData || []).map(async (r) => {
           const { data: profile } = await supabase
             .from('profiles')
-            .select('full_name, created_at')
+            .select('full_name, created_at, phone_number')
             .eq('user_id', r.user_id)
             .single()
-
-          const { data: authUser } = await supabase.auth.admin.getUserById(r.user_id)
 
           return {
             user_id: r.user_id,
             role: r.role,
             full_name: profile?.full_name || 'Unknown User',
-            email: authUser?.user?.email || '',
+            email: profile?.phone_number || '', 
             created_at: profile?.created_at || ''
           }
         })
@@ -243,14 +241,16 @@ export function AdminSettingsTab() {
                     <Badge className={getRoleBadgeColor(member.role)}>
                       {getRoleLabel(member.role)}
                     </Badge>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleRemoveRole(member.user_id, member.role)}
-                      className="text-red-500 hover:text-red-600 hover:bg-red-50"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    {member.role !== 'super_admin' && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemoveRole(member.user_id, member.role)}
+                        className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))}
