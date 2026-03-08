@@ -22,7 +22,7 @@ export const MoreMenuDrawer = ({ open, onOpenChange }: MoreMenuDrawerProps) => {
   useEffect(() => {
     const checkAdmin = async () => {
       try {
-        const { data } = await supabase.rpc('is_admin_user');
+        const { data } = await supabase.rpc('has_admin_access');
         setIsAdmin(!!data);
       } catch { setIsAdmin(false); }
     };
