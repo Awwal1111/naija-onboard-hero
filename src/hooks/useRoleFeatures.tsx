@@ -22,6 +22,7 @@ import {
   Target,
   Sparkles,
   Bot,
+  LayoutGrid,
   LucideIcon
 } from 'lucide-react'
 
@@ -82,6 +83,15 @@ export const BOTTOM_NAV_FEATURES: FeatureItem[] = [
     roles: ['client'], // Clients see gigs to hire from
     description: 'Browse services to hire',
     priority: 3
+  },
+  { 
+    id: 'mini-apps', 
+    label: 'Apps', 
+    path: '/mini-apps', 
+    icon: LayoutGrid, 
+    roles: ['freelancer', 'client', 'both'],
+    description: 'Mini apps & tools',
+    priority: 3.5
   },
   { 
     id: 'earn', 
