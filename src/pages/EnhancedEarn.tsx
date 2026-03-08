@@ -51,14 +51,6 @@ const EnhancedEarn = () => {
       category: 'tasks'
     },
     {
-      title: 'Referral Program', 
-      description: 'Invite friends and earn',
-      icon: Trophy,
-      reward: 'NC 100 per referral',
-      path: '/referrals',
-      category: 'referral'
-    },
-    {
       title: 'Surveys',
       description: 'Complete surveys from BitLabs',
       icon: FileText,
@@ -89,38 +81,6 @@ const EnhancedEarn = () => {
       reward: 'Up to NC 200',
       path: '/earn/articles',
       category: 'tasks'
-    },
-    {
-      title: 'Guess Number Game',
-      description: 'Guess the number and win',
-      icon: Trophy,
-      reward: 'Win NC 10',
-      path: '/earn/guess-number',
-      category: 'games'
-    },
-    {
-      title: 'Nigerian Trivia',
-      description: 'Test your Nigerian knowledge',
-      icon: Trophy,
-      reward: 'Win NC 50',
-      path: '/earn/trivia',
-      category: 'games'
-    },
-    {
-      title: 'Spin Wheel',
-      description: 'Spin the wheel for prizes',
-      icon: Trophy,
-      reward: 'Up to NC 100',
-      path: '/earn/spin-wheel',
-      category: 'games'
-    },
-    {
-      title: 'Naija Predictor',
-      description: 'Predict outcomes and win',
-      icon: Trophy,
-      reward: 'Win from pool',
-      path: '/earn/predictor',
-      category: 'games'
     }
   ]
 
