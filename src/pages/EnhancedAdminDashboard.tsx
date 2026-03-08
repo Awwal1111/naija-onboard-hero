@@ -1299,9 +1299,15 @@ const EnhancedAdminDashboard = () => {
       </header>
 
       <div className="px-6 py-6 max-w-7xl mx-auto">{/* Dashboard Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-text-primary mb-2">Admin Dashboard</h1>
-          <p className="text-text-secondary">Comprehensive platform management and analytics</p>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-text-primary mb-2">Admin Dashboard</h1>
+            <p className="text-text-secondary">Comprehensive platform management and analytics</p>
+          </div>
+          <Badge className={`${ROLE_COLORS[adminRole]} text-sm px-3 py-1`}>
+            <Shield className="h-3.5 w-3.5 mr-1.5" />
+            {ROLE_LABELS[adminRole]}
+          </Badge>
         </div>
 
         {/* Stats Overview */}
