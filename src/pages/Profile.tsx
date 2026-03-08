@@ -60,7 +60,7 @@ const Profile = () => {
   const { connectionRequests, respondToConnectionRequest, fetchConnectionRequests, sendConnectionRequest, checkConnection } = useConnections()
   const { isComplete, missingFields } = useProfileCompletion()
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [moreMenuOpen, setMoreMenuOpen] = useState(false)
+  
   const [viewedUserProfile, setViewedUserProfile] = useState<any>(null)
   const [viewedUserLoading, setViewedUserLoading] = useState(false)
   const [isConnected, setIsConnected] = useState(false)

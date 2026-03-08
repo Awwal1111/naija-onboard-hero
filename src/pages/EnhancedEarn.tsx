@@ -23,7 +23,7 @@ const EnhancedEarn = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const [showWithdrawDialog, setShowWithdrawDialog] = useState(false)
-  const [moreMenuOpen, setMoreMenuOpen] = useState(false)
+  
   const [showAirtimeDialog, setShowAirtimeDialog] = useState(false)
   const [showDataDialog, setShowDataDialog] = useState(false)
   const [showBettingDialog, setShowBettingDialog] = useState(false)

@@ -35,7 +35,7 @@ const Jobs = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [stateFilter, setStateFilter] = useState('all')
   const [categoryFilter, setCategoryFilter] = useState('all')
-  const [moreMenuOpen, setMoreMenuOpen] = useState(false)
+  
   const [activeTab, setActiveTab] = useState('gigs')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [myJobs, setMyJobs] = useState<any[]>([])

@@ -64,7 +64,7 @@ const Experts = () => {
   const [skillFilter, setSkillFilter] = useState('all')
   const [sortBy, setSortBy] = useState<SortOption>('relevance')
   const [verifiedOnly, setVerifiedOnly] = useState(false)
-  const [moreMenuOpen, setMoreMenuOpen] = useState(false)
+  
   const [profilePreview, setProfilePreview] = useState<{ isOpen: boolean; userId: string | null }>({ isOpen: false, userId: null })
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [showBoostDialog, setShowBoostDialog] = useState(false)
