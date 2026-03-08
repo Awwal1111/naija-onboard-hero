@@ -141,7 +141,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     )
 
-    // Fallback: If INITIAL_SESSION hasn't fired within 3s, try getSession
+    // Fallback: If INITIAL_SESSION hasn't fired within 1.5s, try getSession
     const fallbackId = setTimeout(() => {
       if (!loadingResolved.current && isMounted.current) {
         console.log('[AuthProvider] INITIAL_SESSION not received, falling back to getSession')
@@ -154,7 +154,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           if (isMounted.current) resolveLoading(null)
         })
       }
-    }, 3000)
+    }, 1500)
 
     return () => {
       isMounted.current = false
