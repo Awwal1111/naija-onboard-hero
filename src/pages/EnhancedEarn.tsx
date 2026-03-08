@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Trophy, Zap, FileText, User, History, Users, ArrowUpRight, Phone, Wifi, TrendingUp, Home, MessageCircle, Briefcase, DollarSign, Menu, Tv, Wallet, Receipt, Coins, PiggyBank } from 'lucide-react'
+import { Trophy, Zap, FileText, User, History, Users, ArrowUpRight, Phone, Wifi, TrendingUp, Tv, Wallet, Receipt, Coins, PiggyBank } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useWallet } from '@/hooks/useWallet'
 import NaijaLanceWalletCard from '@/components/NaijaLanceWalletCard'
@@ -15,7 +15,7 @@ import { VTUDataDialog } from '@/components/VTUDataDialog'
 import { BettingFundDialog } from '@/components/BettingFundDialog'
 import { VTUElectricityDialog } from '@/components/VTUElectricityDialog'
 import { VTUCableTVDialog } from '@/components/VTUCableTVDialog'
-import { MoreMenuDrawer } from '@/components/MoreMenuDrawer'
+import { BottomNavBar } from '@/components/BottomNavBar'
 import { USDTStakingCard } from '@/components/USDTStakingCard'
 
 const EnhancedEarn = () => {
@@ -132,17 +132,6 @@ const EnhancedEarn = () => {
     { title: 'Cable TV', icon: Tv, onClick: () => setShowCableTVDialog(true), color: 'text-purple-500' },
   ]
 
-  const bottomNavItems = [
-    { icon: Home, label: 'Feed', path: '/feed' },
-    { icon: MessageCircle, label: 'Chat', path: '/chat' },
-    { icon: Users, label: 'Expert', path: '/experts' },
-    { icon: Briefcase, label: 'Gig', path: '/jobs' },
-    { icon: DollarSign, label: 'Earn', path: '/earn' }
-  ]
-
-  const handleNavigation = (path: string) => {
-    navigate(path)
-  }
 
   // Group earning methods by category
   const taskMethods = earningMethods.filter(m => m.category === 'tasks')
@@ -397,33 +386,7 @@ const EnhancedEarn = () => {
         onSuccess={() => window.location.reload()}
       />
 
-      {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border z-50">
-        <div className="flex justify-around items-center px-1 sm:px-4 py-1.5 sm:py-2 max-w-md mx-auto">
-          {bottomNavItems.map((item) => (
-            <button
-              key={item.label}
-              onClick={() => handleNavigation(item.path)}
-              className={`flex flex-col items-center gap-0.5 sm:gap-1 py-1.5 sm:py-2 px-2 sm:px-3 rounded-xl transition-colors ${
-                location.pathname === item.path
-                  ? 'text-primary bg-primary/10'
-                  : 'text-muted-foreground hover:text-primary hover:bg-primary/5'
-              }`}
-            >
-              <item.icon className="h-5 w-5 sm:h-6 sm:w-6" />
-              <span className="text-[10px] sm:text-xs font-medium">{item.label}</span>
-            </button>
-          ))}
-          <button
-            onClick={() => setMoreMenuOpen(true)}
-            className="flex flex-col items-center gap-0.5 sm:gap-1 py-1.5 sm:py-2 px-2 sm:px-3 rounded-xl transition-colors text-muted-foreground hover:text-primary hover:bg-primary/5"
-          >
-            <Menu className="h-5 w-5 sm:h-6 sm:w-6" />
-            <span className="text-[10px] sm:text-xs font-medium">More</span>
-          </button>
-        </div>
-      </nav>
-      <MoreMenuDrawer open={moreMenuOpen} onOpenChange={setMoreMenuOpen} />
+      <BottomNavBar />
     </div>
   )
 }

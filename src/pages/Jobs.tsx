@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { ArrowLeft, MapPin, Clock, DollarSign, Users, Briefcase, Home, MessageCircle, Menu, Plus, Search, Eye, TrendingUp, Grid3X3, List, Package, Star, Zap, SlidersHorizontal } from 'lucide-react'
+import { ArrowLeft, MapPin, Clock, DollarSign, Users, Briefcase, Plus, Search, Eye, TrendingUp, Grid3X3, List, Package, Star, Zap, SlidersHorizontal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -14,7 +14,7 @@ import { useProfile } from '@/hooks/useProfile'
 import { usePersonalizedJobPosts, usePersonalizedGigs } from '@/hooks/usePersonalizedDiscovery'
 import { useSearchHistory } from '@/hooks/useSearchHistory'
 import { supabase } from '@/integrations/supabase/client'
-import { MoreMenuDrawer } from '@/components/MoreMenuDrawer'
+import { BottomNavBar } from '@/components/BottomNavBar'
 import { BookmarkButton } from '@/components/BookmarkButton'
 import { MarketplaceExplainer } from '@/components/MarketplaceExplainer'
 import { CreateJobPostDialog } from '@/components/CreateJobPostDialog'
@@ -91,17 +91,6 @@ const Jobs = () => {
     return counts
   }, [gigs])
 
-  const bottomNavItems = [
-    { icon: Home, label: 'Feed', path: '/feed' },
-    { icon: MessageCircle, label: 'Chat', path: '/chat' },
-    { icon: Users, label: 'Expert', path: '/experts' },
-    { icon: Briefcase, label: 'Gig', path: '/jobs' },
-    { icon: DollarSign, label: 'Earn', path: '/earn' }
-  ]
-
-  const handleNavigation = (path: string) => {
-    navigate(path)
-  }
 
   // Enhanced filtering with sorting and price range
   const filteredAndSortedGigs = useMemo(() => {
@@ -580,33 +569,7 @@ const Jobs = () => {
         </Tabs>
       </div>
 
-      {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border z-50">
-        <div className="flex justify-around items-center px-1 sm:px-4 py-1.5 sm:py-2 max-w-md mx-auto">
-          {bottomNavItems.map((item) => (
-            <button
-              key={item.label}
-              onClick={() => handleNavigation(item.path)}
-              className={`flex flex-col items-center gap-0.5 sm:gap-1 py-1.5 sm:py-2 px-2 sm:px-3 rounded-xl transition-colors ${
-                location.pathname === item.path
-                  ? 'text-primary bg-primary/10'
-                  : 'text-muted-foreground hover:text-primary hover:bg-primary/5'
-              }`}
-            >
-              <item.icon className="h-5 w-5 sm:h-6 sm:w-6" />
-              <span className="text-[10px] sm:text-xs font-medium">{item.label}</span>
-            </button>
-          ))}
-          <button
-            onClick={() => setMoreMenuOpen(true)}
-            className="flex flex-col items-center gap-0.5 sm:gap-1 py-1.5 sm:py-2 px-2 sm:px-3 rounded-xl transition-colors text-muted-foreground hover:text-primary hover:bg-primary/5"
-          >
-            <Menu className="h-5 w-5 sm:h-6 sm:w-6" />
-            <span className="text-[10px] sm:text-xs font-medium">More</span>
-          </button>
-        </div>
-      </nav>
-      <MoreMenuDrawer open={moreMenuOpen} onOpenChange={setMoreMenuOpen} />
+      <BottomNavBar />
       <CreateJobPostDialog 
         open={showCreateJobDialog} 
         onOpenChange={setShowCreateJobDialog}
