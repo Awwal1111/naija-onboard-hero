@@ -31,7 +31,7 @@ self.addEventListener('push', (event) => {
       url: data.url || '/main-feed',
       ...data.data
     },
-    vibrate: [200, 100, 200],
+    vibrate: [200, 100, 200] as any,
     tag: data.tag || 'naijalancers-notification',
     renotify: true,
   }
