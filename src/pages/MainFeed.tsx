@@ -20,7 +20,7 @@ import ResponsiveLayout from '@/components/ResponsiveLayout'
 import NotificationBell from '@/components/NotificationBell'
 import ProfileCompletionDialog from '@/components/ProfileCompletionDialog'
 import { useProfileCompletion } from '@/hooks/useProfileCompletion'
-import { MoreMenuDrawer } from '@/components/MoreMenuDrawer'
+
 import { UnifiedSearchBar } from '@/components/UnifiedSearchBar'
 import { NCConverter } from '@/components/NCConverter'
 import { BannerAd } from '@/components/ads/BannerAd'
@@ -63,7 +63,7 @@ const MainFeed = () => {
     refreshFeed
   } = usePersonalizedFeed()
   const [searchQuery, setSearchQuery] = useState('')
-  const [moreMenuOpen, setMoreMenuOpen] = useState(false)
+  
   const [showCreatePost, setShowCreatePost] = useState(false)
   const [showCreateStory, setShowCreateStory] = useState(false)
   const [feedType, setFeedType] = useState<'for-you' | 'following'>('for-you')
@@ -145,12 +145,6 @@ const MainFeed = () => {
     console.log('AI Help requested:', question)
   }
 
-  // Use role-based navigation items from the hook
-  const bottomNavItems = roleBasedNavItems
-
-  const handleNavigation = (path: string) => {
-    navigate(path)
-  }
 
   const postCategories = [
     { id: 'all', label: 'All Posts', icon: FileText },
@@ -487,9 +481,6 @@ const MainFeed = () => {
         missingFields={missingFields}
         onDismiss={() => {}}
       />
-      
-      {/* More Menu Drawer */}
-      <MoreMenuDrawer open={moreMenuOpen} onOpenChange={setMoreMenuOpen} />
 
       <Suspense fallback={null}>
         {/* Quick Onboarding for new users */}
