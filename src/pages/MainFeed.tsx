@@ -314,20 +314,6 @@ const MainFeed = () => {
             </div>
           </header>
 
-          {/* Mini Apps Carousel - Above Stories for visibility */}
-          <Suspense fallback={null}>
-            <MiniAppCarousel onInternalAction={(action) => {
-              if (action === 'bills') navigate('/earn?tab=bills')
-              if (action === 'bank_deposit') {
-                const event = new CustomEvent('open-quidax-widget', { detail: { mode: 'buy' } })
-                window.dispatchEvent(event)
-              }
-              if (action === 'crypto_deposit') setShowDepositDialog(true)
-              if (action === 'deposit_naira') setShowDepositDialog(true)
-              if (action === 'escrow') setShowEscrowSearch(true)
-              if (action === 'nc_converter') setShowNCConverter(true)
-            }} />
-          </Suspense>
 
           {/* Stories Section */}
           <StoriesSection
