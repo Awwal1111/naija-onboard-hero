@@ -81,21 +81,15 @@ export function AdminSettingsTab() {
         (rolesData || []).map(async (r) => {
           const { data: profile } = await supabase
             .from('profiles')
-            .select('full_name, created_at')
+            .select('full_name, created_at, phone_number')
             .eq('user_id', r.user_id)
             .single()
-
-          // Look up email via RPC since auth.admin is not available client-side
-          // @ts-ignore
-          const { data: userInfo } = await supabase.rpc('lookup_user_by_email', {
-            lookup_email: '' // We'll use a different approach
-          })
 
           return {
             user_id: r.user_id,
             role: r.role,
             full_name: profile?.full_name || 'Unknown User',
-            email: '', // Email lookup requires server-side access
+            email: profile?.phone_number || '', 
             created_at: profile?.created_at || ''
           }
         })
