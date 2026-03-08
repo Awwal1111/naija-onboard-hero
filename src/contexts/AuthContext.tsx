@@ -23,37 +23,47 @@ export const useAuthContext = () => useContext(AuthContext)
 /**
  * AuthProvider - SINGLE source of truth for auth state.
  * 
- * CRITICAL FIX: Uses getSession() FIRST to restore session from storage,
- * then subscribes to onAuthStateChange for subsequent updates.
- * This prevents the race condition where INITIAL_SESSION fires before
- * the listener is ready, causing infinite loading on refresh.
+ * CRITICAL FIX: Added a hard timeout so the app NEVER gets stuck on "Loading..."
+ * If getSession() or onAuthStateChange don't resolve within AUTH_TIMEOUT_MS,
+ * loading is set to false and the user is treated as unauthenticated.
+ * 
+ * This prevents the infinite loading loop that occurs on refresh when:
+ * - Service worker serves stale responses
+ * - Network is slow/intermittent
+ * - Supabase SDK has connectivity issues
  */
-const AUTH_TIMEOUT_MS = 8_000
+const AUTH_TIMEOUT_MS = 8_000 // 8 seconds max wait
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
   const [authTimedOut, setAuthTimedOut] = useState(false)
-  const initialized = useRef(false)
+  const loadingResolved = useRef(false)
   const isMounted = useRef(true)
+
+  const resolveLoading = (sess: Session | null) => {
+    if (!isMounted.current || loadingResolved.current) return
+    loadingResolved.current = true
+    setSession(sess)
+    setUser(sess?.user ?? null)
+    setLoading(false)
+    setAuthTimedOut(false)
+  }
 
   const retryAuth = () => {
     console.log('[AuthProvider] Manual retry triggered')
-    initialized.current = false
+    loadingResolved.current = false
     setLoading(true)
     setAuthTimedOut(false)
     
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
+    supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
       if (!isMounted.current) return
-      initialized.current = true
-      setSession(s)
-      setUser(s?.user ?? null)
-      setLoading(false)
+      resolveLoading(existingSession)
     }).catch((err) => {
       console.error('[AuthProvider] Retry getSession failed:', err)
       if (isMounted.current) {
-        initialized.current = true
+        loadingResolved.current = true
         setLoading(false)
         setAuthTimedOut(true)
       }
@@ -85,65 +95,37 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     // CRITICAL: Hard timeout to prevent infinite loading
     const timeoutId = setTimeout(() => {
-      if (!initialized.current && isMounted.current) {
+      if (!loadingResolved.current && isMounted.current) {
         console.warn('[AuthProvider] Auth loading timed out after', AUTH_TIMEOUT_MS, 'ms')
-        initialized.current = true
+        loadingResolved.current = true
         setLoading(false)
         setAuthTimedOut(true)
       }
     }, AUTH_TIMEOUT_MS)
 
-    // STEP 1: Restore session from storage FIRST
-    // This is synchronous from localStorage and resolves immediately
-    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
-      if (!isMounted.current) return
-      
-      console.log('[AuthProvider] getSession resolved:', currentSession ? '(has session)' : '(no session)')
-      
-      if (!initialized.current) {
-        initialized.current = true
-        setSession(currentSession)
-        setUser(currentSession?.user ?? null)
-        setLoading(false)
-        setAuthTimedOut(false)
-        
-        if (currentSession) {
-          scheduleTokenRefresh(currentSession)
-        }
-      }
-    }).catch((err) => {
-      console.error('[AuthProvider] getSession failed:', err)
-      if (isMounted.current && !initialized.current) {
-        initialized.current = true
-        setLoading(false)
-        setAuthTimedOut(true)
-      }
-    })
-
-    // STEP 2: Subscribe to auth changes for sign in/out/token refresh
+    // CRITICAL FIX: Set up onAuthStateChange FIRST, BEFORE getSession()
+    // This ensures the INITIAL_SESSION event is never missed.
+    // Supabase fires INITIAL_SESSION from onAuthStateChange which includes
+    // restoring the session from storage. If we call getSession() first,
+    // we can miss this event and end up with a null session.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, sess) => {
         if (!isMounted.current) return
-        console.log('[AuthProvider] Auth event:', event, sess?.user?.id ? '(has user)' : '(no user)')
-
-        // If getSession hasn't resolved yet, use this event to initialize
-        if (!initialized.current && event === 'INITIAL_SESSION') {
-          initialized.current = true
-          setSession(sess)
-          setUser(sess?.user ?? null)
-          setLoading(false)
-          setAuthTimedOut(false)
+        console.log('Auth state change:', event, sess?.user?.id ? '(has user)' : '(no user)')
+        
+        if (event === 'INITIAL_SESSION') {
+          // This is the definitive session state from storage
+          resolveLoading(sess)
           if (sess) scheduleTokenRefresh(sess)
           return
         }
 
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          setSession(sess)
-          setUser(sess?.user ?? null)
-          if (!initialized.current) {
-            initialized.current = true
-            setLoading(false)
-            setAuthTimedOut(false)
+          if (!loadingResolved.current) {
+            resolveLoading(sess)
+          } else {
+            setSession(sess)
+            setUser(sess?.user ?? null)
           }
           if (sess) scheduleTokenRefresh(sess)
         }
@@ -152,17 +134,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           if (refreshTimer) clearTimeout(refreshTimer)
           setSession(null)
           setUser(null)
-          if (!initialized.current) {
-            initialized.current = true
-            setLoading(false)
+          if (!loadingResolved.current) {
+            resolveLoading(null)
           }
         }
       }
     )
 
+    // Fallback: If INITIAL_SESSION hasn't fired within 3s, try getSession
+    const fallbackId = setTimeout(() => {
+      if (!loadingResolved.current && isMounted.current) {
+        console.log('[AuthProvider] INITIAL_SESSION not received, falling back to getSession')
+        supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
+          if (!isMounted.current) return
+          resolveLoading(existingSession)
+          if (existingSession) scheduleTokenRefresh(existingSession)
+        }).catch((err) => {
+          console.error('[AuthProvider] Fallback getSession failed:', err)
+          if (isMounted.current) resolveLoading(null)
+        })
+      }
+    }, 3000)
+
     return () => {
       isMounted.current = false
       clearTimeout(timeoutId)
+      clearTimeout(fallbackId)
       subscription.unsubscribe()
       if (refreshTimer) clearTimeout(refreshTimer)
     }
