@@ -34,22 +34,14 @@ export default defineConfig(({ mode }) => ({
     react(),
     mode === 'development' && componentTagger(),
     VitePWA({
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
       registerType: 'autoUpdate',
-      workbox: {
-        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10 MB
-        // CRITICAL FIX: Do NOT precache HTML - it causes stale app on refresh
-        // Only cache static assets (JS, CSS, images, fonts)
+      injectRegister: 'auto',
+      injectManifest: {
+        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
         globPatterns: ['**/*.{js,css,ico,png,svg,jpg,jpeg,gif,woff,woff2}'],
-        // No navigateFallback - let the browser fetch index.html from network
-        // This prevents serving stale HTML that references outdated JS bundles
-        navigateFallbackDenylist: [/.*/],
-        // Force immediate activation of new service workers
-        skipWaiting: true,
-        clientsClaim: true,
-        // Clean up old caches from previous SW versions
-        cleanupOutdatedCaches: true,
-        // No runtime caching - all API/auth calls go to network
-        runtimeCaching: []
       },
       manifest: {
         name: 'NaijaLancers - Connect, Earn & Grow',
