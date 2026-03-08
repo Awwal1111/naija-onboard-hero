@@ -61,13 +61,6 @@ const MainFeed = () => {
     savePost,
     refreshFeed
   } = usePersonalizedFeed()
-  // Max skeleton time: never show loading skeleton for more than 8 seconds
-  const [maxLoadingExceeded, setMaxLoadingExceeded] = useState(false)
-  useEffect(() => {
-    const timer = setTimeout(() => setMaxLoadingExceeded(true), 8000)
-    return () => clearTimeout(timer)
-  }, [])
-
   const [searchQuery, setSearchQuery] = useState('')
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
   const [showCreatePost, setShowCreatePost] = useState(false)
@@ -247,9 +240,9 @@ const MainFeed = () => {
   // Wallet connection happens in background, protected actions trigger auth when needed
   // This eliminates the "Setting up your account..." infinite loop
 
-  // Show skeleton only briefly — never forever
-  // maxLoadingExceeded ensures we ALWAYS show content after 8s even if queries hang
-  if (!maxLoadingExceeded && (authLoading || (loading && user))) {
+  // Show skeleton only when auth is ready AND feed is actually fetching
+  // Never show skeleton indefinitely when auth hasn't resolved
+  if (authLoading || (loading && user)) {
     return <FeedSkeleton />
   }
 
