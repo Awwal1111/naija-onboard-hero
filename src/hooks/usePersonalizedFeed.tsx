@@ -212,7 +212,8 @@ export const usePersonalizedFeed = () => {
         console.log('[Feed] Personalized posts received:', personalizedPosts?.length || 0)
 
         if (!personalizedPosts || personalizedPosts.length === 0) {
-          return { posts: [], nextPage: null }
+          console.log('[Feed] RPC returned 0 posts, trying fallback')
+          return await fetchFallbackPosts()
         }
 
         if (personalizedPosts.length > 0) {
