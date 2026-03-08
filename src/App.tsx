@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { MiniPayAuthWrapper } from "@/components/MiniPayAuthWrapper";
 import { DeferredManagers } from "@/components/DeferredManagers";
+import GlobalErrorHandler from "@/components/GlobalErrorHandler";
 import { OnboardingTour } from "@/components/OnboardingTour";
 import { useAppState } from "@/hooks/useAppState";
 import { WebRTCProvider } from "@/contexts/WebRTCContext";
@@ -203,13 +204,7 @@ const App = () => (
               {!isMiniPayEnv && <AuthRedirectHandler />}
               {!isMiniPayEnv && <AppStateManager />}
               {!isMiniPayEnv && <LoginLogger />}
-              {!isMiniPayEnv && <WalletInitializer />}
-              {!isMiniPayEnv && <GlobalCallManager />}
-              {!isMiniPayEnv && <GlobalPresenceManager />}
-              {!isMiniPayEnv && <QuidaxRampManager />}
-              {!isMiniPayEnv && <PWAInstallPrompt />}
-              {!isMiniPayEnv && <PushNotificationManager />}
-              {!isMiniPayEnv && <OnboardingTour />}
+              {!isMiniPayEnv && <DeferredManagers />}
               <Suspense fallback={<PageLoader />}>
                 <Routes>
                 {/* PUBLIC SEO PAGES */}
