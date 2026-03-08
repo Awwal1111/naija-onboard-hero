@@ -20,6 +20,7 @@ import AuthRedirectHandler from "@/components/AuthRedirectHandler";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { detectMiniPaySync } from "@/lib/minipay";
 import { useLoginLogger } from "@/hooks/useLoginLogger";
+import { lazyWithRetry } from "@/utils/chunkErrorHandler";
 import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
