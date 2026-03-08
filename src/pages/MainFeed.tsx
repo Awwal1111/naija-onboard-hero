@@ -242,7 +242,6 @@ const MainFeed = () => {
   // This eliminates the "Setting up your account..." infinite loop
 
   // Feed loading safety timeout - never show skeleton for more than 10 seconds
-  const [feedTimedOut, setFeedTimedOut] = useState(false)
   useEffect(() => {
     if (loading && user) {
       const timer = setTimeout(() => setFeedTimedOut(true), 10_000)
