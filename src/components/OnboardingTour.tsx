@@ -182,15 +182,25 @@ const OnboardingTourInternal = () => {
   }, [mode]);
 
   useEffect(() => {
-    // Check if user has completed onboarding
-    if (user) {
-      const hasCompletedOnboarding = localStorage.getItem(`onboarding_${user.id}`);
-      if (!hasCompletedOnboarding) {
-        // Show onboarding after a short delay
-        const timer = setTimeout(() => setIsOpen(true), 2000);
-        return () => clearTimeout(timer);
-      }
+    if (!user) return;
+
+    // Already dismissed this tour
+    const hasCompletedOnboarding = localStorage.getItem(`onboarding_${user.id}`);
+    if (hasCompletedOnboarding) return;
+
+    // CRITICAL FIX: Only show tour for genuinely new users (account < 10 min old)
+    // This prevents the tour from re-appearing for returning users whose
+    // localStorage was cleared (cache clear, different browser, etc.)
+    const createdAt = new Date(user.created_at || 0).getTime();
+    const tenMinutesAgo = Date.now() - 10 * 60 * 1000;
+    if (createdAt < tenMinutesAgo) {
+      // User account is older than 10 minutes — they're not new, skip tour
+      localStorage.setItem(`onboarding_${user.id}`, 'true');
+      return;
     }
+
+    const timer = setTimeout(() => setIsOpen(true), 2000);
+    return () => clearTimeout(timer);
   }, [user]);
 
   const handleNext = () => {
