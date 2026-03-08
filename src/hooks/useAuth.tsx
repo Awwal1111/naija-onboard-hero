@@ -24,7 +24,6 @@ export const useAuth = () => {
 
   const checkProfileAndRedirect = useCallback(async (authUser: any, isSignup: boolean = false) => {
     try {
-      await new Promise(resolve => setTimeout(resolve, 500))
       
       const { data: profile } = await supabase
         .from('profiles')
