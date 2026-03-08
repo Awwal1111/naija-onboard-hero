@@ -72,7 +72,7 @@ export function AdminSettingsTab() {
       const { data: rolesData, error: rolesError } = await supabase
         .from('user_roles')
         .select('user_id, role')
-        .in('role', ['super_admin' as any, 'admin', 'moderator'])
+        .in('role', ['super_admin', 'admin', 'moderator'])
 
       if (rolesError) throw rolesError
 
