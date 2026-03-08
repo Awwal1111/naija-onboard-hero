@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -21,7 +21,7 @@ export function MessageReactions({ messageId, isOwn }: MessageReactionsProps) {
   const [reactions, setReactions] = useState<Reaction[]>([]);
   const [showPicker, setShowPicker] = useState(false);
 
-  const fetchReactions = async () => {
+  const fetchReactions = useCallback(async () => {
     const { data } = await supabase
       .from('message_reactions' as any)
       .select('emoji, user_id')
@@ -39,25 +39,11 @@ export function MessageReactions({ messageId, isOwn }: MessageReactionsProps) {
     setReactions(
       Object.entries(grouped).map(([emoji, info]) => ({ emoji, ...info }))
     );
-  };
+  }, [messageId, user?.id]);
 
   useEffect(() => {
     fetchReactions();
-
-    const channel = supabase
-      .channel(`reactions-${messageId}`)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'message_reactions',
-        filter: `message_id=eq.${messageId}`
-      }, () => {
-        fetchReactions();
-      })
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, [messageId, user?.id]);
+  }, [fetchReactions]);
 
   const toggleReaction = async (emoji: string) => {
     if (!user) return;
@@ -98,38 +84,54 @@ export function MessageReactions({ messageId, isOwn }: MessageReactionsProps) {
               {r.count > 1 && <span className="text-muted-foreground">{r.count}</span>}
             </button>
           ))}
+          {/* Add more reaction button - always visible next to existing reactions */}
+          <button
+            onClick={() => setShowPicker(!showPicker)}
+            className="px-1.5 py-0.5 rounded-full text-xs border border-border bg-muted/40 hover:bg-muted transition-colors"
+          >
+            +
+          </button>
         </div>
       )}
 
-      {/* Add reaction trigger - small + button */}
-      <button
-        onClick={() => setShowPicker(!showPicker)}
-        className={`opacity-0 group-hover:opacity-100 transition-opacity absolute -bottom-2 ${
-          isOwn ? '-left-6' : '-right-6'
-        } w-5 h-5 rounded-full bg-muted border border-border flex items-center justify-center text-xs hover:bg-accent`}
-      >
-        😊
-      </button>
+      {/* Add reaction trigger - visible on hover (desktop) and long-press area (mobile) */}
+      {reactions.length === 0 && (
+        <button
+          onClick={() => setShowPicker(!showPicker)}
+          className={`opacity-0 group-hover:opacity-100 focus:opacity-100 active:opacity-100 transition-opacity ${
+            isOwn ? '-left-6' : '-right-6'
+          } w-5 h-5 rounded-full bg-muted border border-border flex items-center justify-center text-xs hover:bg-accent`}
+        >
+          😊
+        </button>
+      )}
 
       {/* Emoji picker */}
       <AnimatePresence>
         {showPicker && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            className={`absolute z-50 ${isOwn ? 'right-0' : 'left-0'} -top-10 bg-background border border-border rounded-full shadow-lg px-2 py-1 flex gap-1`}
-          >
-            {EMOJI_OPTIONS.map((emoji) => (
-              <button
-                key={emoji}
-                onClick={() => toggleReaction(emoji)}
-                className="hover:scale-125 transition-transform text-lg p-0.5"
-              >
-                {emoji}
-              </button>
-            ))}
-          </motion.div>
+          <>
+            {/* Backdrop to close picker */}
+            <div 
+              className="fixed inset-0 z-40" 
+              onClick={() => setShowPicker(false)} 
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              className={`absolute z-50 ${isOwn ? 'right-0' : 'left-0'} -top-10 bg-background border border-border rounded-full shadow-lg px-2 py-1 flex gap-1`}
+            >
+              {EMOJI_OPTIONS.map((emoji) => (
+                <button
+                  key={emoji}
+                  onClick={() => toggleReaction(emoji)}
+                  className="hover:scale-125 transition-transform text-lg p-0.5"
+                >
+                  {emoji}
+                </button>
+              ))}
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
     </div>
