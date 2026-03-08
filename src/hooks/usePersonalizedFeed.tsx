@@ -234,8 +234,7 @@ export const usePersonalizedFeed = () => {
           nextPage: enrichedPosts.length === POSTS_PER_PAGE ? pageParam + 1 : null
         }
       } catch (err: any) {
-        clearTimeout(timeoutId)
-        console.error('[Feed] Feed fetch failed or timed out:', err?.message || err)
+        console.error('[Feed] Feed fetch failed:', err?.message || err)
         return { posts: [], nextPage: null }
       }
     },
