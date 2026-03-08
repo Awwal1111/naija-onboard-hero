@@ -96,8 +96,7 @@ const EnhancedEarn = () => {
   // Group earning methods by category
   const taskMethods = earningMethods.filter(m => m.category === 'tasks')
   const surveyMethods = earningMethods.filter(m => m.category === 'surveys')
-  const gameMethods = earningMethods.filter(m => m.category === 'games')
-  const serviceMethods = earningMethods.filter(m => m.category === 'services' || m.category === 'referral')
+  const serviceMethods = earningMethods.filter(m => m.category === 'services')
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -183,25 +182,8 @@ const EnhancedEarn = () => {
               </div>
             </div>
 
-            {/* Games Section */}
-            <div>
-              <h3 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide">Games</h3>
-              <div className="grid grid-cols-2 gap-3">
-                {gameMethods.map((method, index) => (
-                  <Card key={index} className="hover:bg-accent/50 transition-colors cursor-pointer border-border/50" onClick={() => navigate(method.path)}>
-                    <CardContent className="p-4 text-center">
-                      <div className="p-2.5 bg-primary/10 rounded-lg inline-block mb-2">
-                        <method.icon className="h-5 w-5 text-primary" />
-                      </div>
-                      <h3 className="font-medium text-foreground text-sm">{method.title}</h3>
-                      <Badge variant="secondary" className="text-xs mt-1">
-                        {method.reward}
-                      </Badge>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
+
+
 
             {/* Services Section */}
             <div>
