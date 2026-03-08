@@ -397,12 +397,20 @@ const MainFeed = () => {
           {feedType === 'for-you' ? (
             <div className="divide-y divide-border">
               {filteredAndSortedPosts.length === 0 ? (
-                <div className="py-16 text-center">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-                    <FileText className="h-8 w-8 text-muted-foreground" />
+                <div className="py-20 text-center px-6">
+                  <div className="w-20 h-20 mx-auto mb-5 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
+                    <FileText className="h-10 w-10 text-primary/60" />
                   </div>
-                  <h3 className="text-lg font-semibold text-foreground mb-2">No posts yet</h3>
-                  <p className="text-muted-foreground text-sm">Be the first to share something!</p>
+                  <h3 className="text-lg font-bold text-foreground mb-2">No posts to show</h3>
+                  <p className="text-muted-foreground text-sm mb-6 max-w-[240px] mx-auto">
+                    {selectedCategory !== 'all' 
+                      ? `No ${selectedCategory} posts found. Try a different filter.`
+                      : 'Your feed is empty. Start by sharing something or connecting with others!'}
+                  </p>
+                  <BrandButton onClick={() => setShowCreatePost(true)} className="px-6">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create a Post
+                  </BrandButton>
                 </div>
               ) : (
                 <>

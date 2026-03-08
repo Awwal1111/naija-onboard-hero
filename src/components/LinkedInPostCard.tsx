@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { MessageCircle, Share2, Heart, Eye, MoreHorizontal, MapPin, Briefcase, Award, Calendar, Send, Bookmark, BookmarkCheck, Flag, Link2, Copy, Edit, Trash2, Zap } from 'lucide-react'
 import { EnhancedPost } from '@/hooks/useEnhancedFeed'
 import { Button } from '@/components/ui/button'
@@ -63,6 +63,7 @@ const LinkedInPostCard: React.FC<LinkedInPostCardProps> = ({
   const [reportReason, setReportReason] = useState('')
   const [reportDetails, setReportDetails] = useState('')
   const [isReporting, setIsReporting] = useState(false)
+  const [likeAnimation, setLikeAnimation] = useState(false)
   const viewTracked = useRef(false)
   const { trackPostView } = usePostViews()
   const { toast } = useToast()
@@ -78,6 +79,8 @@ const LinkedInPostCard: React.FC<LinkedInPostCardProps> = ({
     } else {
       setIsLiked(true)
       setLikesCount(prev => prev + 1)
+      setLikeAnimation(true)
+      setTimeout(() => setLikeAnimation(false), 600)
       onReact(post.id, 'like')
     }
   }
@@ -480,11 +483,15 @@ const LinkedInPostCard: React.FC<LinkedInPostCardProps> = ({
           <button
             onClick={handleLike}
             className={cn(
-              "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg transition-colors",
+              "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg transition-all duration-200",
               isLiked ? "text-red-500" : "text-muted-foreground hover:bg-muted"
             )}
           >
-            <Heart className={cn("h-5 w-5", isLiked && "fill-current")} />
+            <Heart className={cn(
+              "h-5 w-5 transition-transform duration-300",
+              isLiked && "fill-current",
+              likeAnimation && "animate-[heartBurst_0.6s_ease-out]"
+            )} />
             <span className="text-sm font-medium">Like</span>
           </button>
           
@@ -493,7 +500,7 @@ const LinkedInPostCard: React.FC<LinkedInPostCardProps> = ({
               e.stopPropagation()
               setShowCommentsSection(!showCommentsSection)
             }}
-            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-muted-foreground hover:bg-muted transition-colors"
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-muted-foreground hover:bg-muted transition-colors duration-200"
           >
             <MessageCircle className="h-5 w-5" />
             <span className="text-sm font-medium">Comment</span>
@@ -501,7 +508,7 @@ const LinkedInPostCard: React.FC<LinkedInPostCardProps> = ({
 
           <button
             onClick={handleShare}
-            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-muted-foreground hover:bg-muted transition-colors"
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-muted-foreground hover:bg-muted transition-colors duration-200"
           >
             <Share2 className="h-5 w-5" />
             <span className="text-sm font-medium">Share</span>
