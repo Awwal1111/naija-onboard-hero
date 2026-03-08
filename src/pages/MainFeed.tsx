@@ -45,7 +45,7 @@ const QuickOnboarding = lazy(() => import('@/components/QuickOnboarding').then(m
 const MainFeed = () => {
   const navigate = useNavigate()
   const location = useLocation()
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const { profile } = useProfile()
   const { bottomNavItems: roleBasedNavItems, isFreelancer, isClient } = useRoleFeatures()
   const { isComplete, missingFields, shouldShowDialog } = useProfileCompletion()
@@ -240,7 +240,9 @@ const MainFeed = () => {
   // Wallet connection happens in background, protected actions trigger auth when needed
   // This eliminates the "Setting up your account..." infinite loop
 
-  if (loading) {
+  // Show skeleton only when auth is ready AND feed is actually fetching
+  // Never show skeleton indefinitely when auth hasn't resolved
+  if (authLoading || (loading && user)) {
     return <FeedSkeleton />
   }
 

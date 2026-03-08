@@ -269,7 +269,11 @@ export const usePersonalizedFeed = () => {
     )
   }, [posts, searchQuery])
 
-  const loading = postsLoading || storiesLoading
+  // CRITICAL FIX: Don't report loading if queries are disabled (user not ready yet)
+  // React Query v5: isLoading is true when status='pending' AND fetchStatus='fetching'
+  // But when enabled=false, status='pending' and fetchStatus='idle' → isLoading should be false
+  // However, to be safe, we explicitly check: only "loading" if user is ready AND queries are fetching
+  const loading = isUserReady ? (postsLoading || storiesLoading) : false
 
   // Post creation with cache invalidation
   const createPost = useCallback(async (content: string, contentType: string = 'status', visibility: string = 'public', title?: string, mediaUrls?: string[]) => {
