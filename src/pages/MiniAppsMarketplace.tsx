@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
-import { ArrowLeft, Star, Download, Search, Plus, Sparkles, Receipt, Building2, Wallet, CreditCard, Shield, RefreshCw } from 'lucide-react'
+import { ArrowLeft, Star, Download, Search, Plus, Sparkles, Receipt, Building2, Wallet, CreditCard, Shield, RefreshCw, Trophy, Heart, GraduationCap, Users, Gamepad2, Dices, Target, RotateCw } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { SubmitMiniAppForm } from '@/components/miniapps/SubmitMiniAppForm'
 import { MiniAppViewer } from '@/components/miniapps/MiniAppViewer'
+import { BottomNavBar } from '@/components/BottomNavBar'
 import { motion } from 'framer-motion'
 
 interface MiniApp {
@@ -35,6 +36,28 @@ const INTERNAL_ICONS: Record<string, typeof Receipt> = {
   nc_converter: RefreshCw,
 }
 
+// Platform apps that navigate to internal pages
+interface PlatformApp {
+  id: string
+  name: string
+  description: string
+  icon: typeof Trophy
+  path: string
+  category: string
+  color: string
+}
+
+const PLATFORM_APPS: PlatformApp[] = [
+  { id: 'pa-contests', name: 'Contests', description: 'Compete for prizes or run design contests', icon: Trophy, path: '/contests', category: 'work', color: 'from-amber-500/20 to-yellow-500/20' },
+  { id: 'pa-fundraising', name: 'Fundraising', description: 'Create or support fundraising campaigns', icon: Heart, path: '/fundraising', category: 'finance', color: 'from-rose-500/20 to-pink-500/20' },
+  { id: 'pa-courses', name: 'Courses', description: 'Buy or sell professional courses', icon: GraduationCap, path: '/courses', category: 'learning', color: 'from-blue-500/20 to-cyan-500/20' },
+  { id: 'pa-referrals', name: 'Referrals', description: 'Invite friends and earn NC rewards', icon: Users, path: '/referrals', category: 'earn', color: 'from-purple-500/20 to-violet-500/20' },
+  { id: 'pa-guess', name: 'Guess Number', description: 'Guess the number and win NC', icon: Dices, path: '/earn/guess-number', category: 'games', color: 'from-emerald-500/20 to-green-500/20' },
+  { id: 'pa-trivia', name: 'Nigerian Trivia', description: 'Test your Nigerian knowledge', icon: Gamepad2, path: '/earn/trivia', category: 'games', color: 'from-orange-500/20 to-amber-500/20' },
+  { id: 'pa-spin', name: 'Spin Wheel', description: 'Spin the wheel for prizes', icon: RotateCw, path: '/earn/spin-wheel', category: 'games', color: 'from-indigo-500/20 to-blue-500/20' },
+  { id: 'pa-predictor', name: 'Naija Predictor', description: 'Predict outcomes and win from pool', icon: Target, path: '/earn/predictor', category: 'games', color: 'from-teal-500/20 to-cyan-500/20' },
+]
+
 const MARKETPLACE_INTERNAL_APPS: MiniApp[] = [
   { id: 'int-bills', app_name: 'Bills', app_description: 'Pay bills, airtime & data', app_icon_url: null, app_url: '', category: 'finance', install_count: 0, rating: 5, review_count: 0, sdk_app_id: 'bills', developer_id: 'system', status: 'approved' },
   { id: 'int-bank', app_name: 'Bank Deposit', app_description: 'Deposit via bank transfer', app_icon_url: null, app_url: '', category: 'finance', install_count: 0, rating: 5, review_count: 0, sdk_app_id: 'bank_deposit', developer_id: 'system', status: 'approved' },
@@ -44,6 +67,8 @@ const MARKETPLACE_INTERNAL_APPS: MiniApp[] = [
   { id: 'int-converter', app_name: 'NC Converter', app_description: 'Convert 100 non-withdrawable NC to 5 withdrawable NC', app_icon_url: null, app_url: '', category: 'finance', install_count: 0, rating: 5, review_count: 0, sdk_app_id: 'nc_converter', developer_id: 'system', status: 'approved' },
 ]
 
+const CATEGORY_FILTERS = ['all', 'work', 'finance', 'games', 'learning', 'earn'] as const
+
 const MiniAppsMarketplace = () => {
   const [apps, setApps] = useState<MiniApp[]>([])
   const [myApps, setMyApps] = useState<MiniApp[]>([])
@@ -51,6 +76,7 @@ const MiniAppsMarketplace = () => {
   const [selectedApp, setSelectedApp] = useState<MiniApp | null>(null)
   const [showSubmit, setShowSubmit] = useState(false)
   const [tab, setTab] = useState<'explore' | 'my-apps'>('explore')
+  const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const { user } = useAuth()
   const navigate = useNavigate()
 
@@ -83,11 +109,19 @@ const MiniAppsMarketplace = () => {
     fetchMyApps()
   }, [user])
 
-  const filtered = apps.filter(a =>
-    a.app_name.toLowerCase().includes(search.toLowerCase()) ||
-    a.app_description.toLowerCase().includes(search.toLowerCase()) ||
-    a.category.toLowerCase().includes(search.toLowerCase())
-  )
+  // Filter platform apps
+  const filteredPlatformApps = PLATFORM_APPS.filter(a => {
+    const matchesSearch = !search || a.name.toLowerCase().includes(search.toLowerCase()) || a.description.toLowerCase().includes(search.toLowerCase())
+    const matchesCategory = categoryFilter === 'all' || a.category === categoryFilter
+    return matchesSearch && matchesCategory
+  })
+
+  // Filter mini apps
+  const filteredMiniApps = apps.filter(a => {
+    const matchesSearch = !search || a.app_name.toLowerCase().includes(search.toLowerCase()) || a.app_description.toLowerCase().includes(search.toLowerCase())
+    const matchesCategory = categoryFilter === 'all' || a.category === categoryFilter
+    return matchesSearch && matchesCategory
+  })
 
   const statusColor = (s: string) => {
     if (s === 'approved') return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
@@ -95,6 +129,8 @@ const MiniAppsMarketplace = () => {
     if (s === 'rejected') return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
     return 'bg-muted text-muted-foreground'
   }
+
+  const hasResults = filteredPlatformApps.length > 0 || filteredMiniApps.length > 0
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -107,13 +143,13 @@ const MiniAppsMarketplace = () => {
           <div className="flex-1">
             <h1 className="text-lg font-bold text-foreground flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-primary" />
-              Mini Apps
+              Apps
             </h1>
           </div>
           <Dialog open={showSubmit} onOpenChange={setShowSubmit}>
             <DialogTrigger asChild>
               <Button size="sm" className="gap-1">
-                <Plus className="h-4 w-4" /> Submit App
+                <Plus className="h-4 w-4" /> Submit
               </Button>
             </DialogTrigger>
             <DialogContent>
@@ -148,64 +184,118 @@ const MiniAppsMarketplace = () => {
 
       {tab === 'explore' ? (
         <div className="p-4 space-y-4">
+          {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Search mini apps..."
+              placeholder="Search apps..."
               className="pl-10"
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {filtered.map((app, i) => (
-              <motion.button
-                key={app.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
-                onClick={() => setSelectedApp(app)}
-                className="bg-card border border-border rounded-xl p-4 flex items-start gap-3 text-left hover:border-primary/50 transition-colors"
+          {/* Category Filters */}
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+            {CATEGORY_FILTERS.map(cat => (
+              <button
+                key={cat}
+                onClick={() => setCategoryFilter(cat)}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+                  categoryFilter === cat
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted text-muted-foreground hover:bg-accent'
+                }`}
               >
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                  {(() => {
-                    const InternalIcon = INTERNAL_ICONS[app.sdk_app_id]
-                    if (app.id.startsWith('int-') && InternalIcon) {
-                      return <InternalIcon className="h-6 w-6 text-primary" />
-                    }
-                    if (app.app_icon_url) {
-                      return <img src={app.app_icon_url} alt="" className="w-full h-full object-cover rounded-xl" />
-                    }
-                    return <span className="text-lg font-bold text-primary">{app.app_name.charAt(0)}</span>
-                  })()}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-foreground text-sm truncate">{app.app_name}</h3>
-                  <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{app.app_description}</p>
-                  <div className="flex items-center gap-3 mt-2">
-                    <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
-                      <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
-                      {app.rating.toFixed(1)}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
-                      <Download className="h-3 w-3" />
-                      {app.install_count}
-                    </span>
-                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                      {app.category}
-                    </Badge>
-                  </div>
-                </div>
-              </motion.button>
+                {cat.charAt(0).toUpperCase() + cat.slice(1)}
+              </button>
             ))}
           </div>
 
-          {filtered.length === 0 && (
+          {/* Platform Apps Section */}
+          {filteredPlatformApps.length > 0 && (
+            <div>
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-1">Platform Apps</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {filteredPlatformApps.map((app, i) => (
+                  <motion.button
+                    key={app.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.04 }}
+                    onClick={() => navigate(app.path)}
+                    className="bg-card border border-border rounded-xl p-4 flex flex-col items-center gap-2 text-center hover:border-primary/50 hover:shadow-sm transition-all"
+                  >
+                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${app.color} flex items-center justify-center`}>
+                      <app.icon className="h-6 w-6 text-foreground" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-foreground text-sm">{app.name}</h3>
+                      <p className="text-[10px] text-muted-foreground line-clamp-2 mt-0.5">{app.description}</p>
+                    </div>
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                      {app.category}
+                    </Badge>
+                  </motion.button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Mini Apps Section */}
+          {filteredMiniApps.length > 0 && (
+            <div>
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-1">Mini Apps</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {filteredMiniApps.map((app, i) => (
+                  <motion.button
+                    key={app.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    onClick={() => setSelectedApp(app)}
+                    className="bg-card border border-border rounded-xl p-4 flex items-start gap-3 text-left hover:border-primary/50 transition-colors"
+                  >
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                      {(() => {
+                        const InternalIcon = INTERNAL_ICONS[app.sdk_app_id]
+                        if (app.id.startsWith('int-') && InternalIcon) {
+                          return <InternalIcon className="h-6 w-6 text-primary" />
+                        }
+                        if (app.app_icon_url) {
+                          return <img src={app.app_icon_url} alt="" className="w-full h-full object-cover rounded-xl" />
+                        }
+                        return <span className="text-lg font-bold text-primary">{app.app_name.charAt(0)}</span>
+                      })()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-foreground text-sm truncate">{app.app_name}</h3>
+                      <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{app.app_description}</p>
+                      <div className="flex items-center gap-3 mt-2">
+                        <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                          <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
+                          {app.rating.toFixed(1)}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                          <Download className="h-3 w-3" />
+                          {app.install_count}
+                        </span>
+                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                          {app.category}
+                        </Badge>
+                      </div>
+                    </div>
+                  </motion.button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {!hasResults && (
             <div className="text-center py-12">
               <Sparkles className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-              <p className="text-muted-foreground">No mini apps found</p>
-              <p className="text-sm text-muted-foreground mt-1">Be the first to submit one!</p>
+              <p className="text-muted-foreground">No apps found</p>
+              <p className="text-sm text-muted-foreground mt-1">Try a different search or category</p>
             </div>
           )}
         </div>
@@ -244,6 +334,8 @@ const MiniAppsMarketplace = () => {
       {selectedApp && (
         <MiniAppViewer app={selectedApp} onClose={() => setSelectedApp(null)} />
       )}
+
+      <BottomNavBar />
     </div>
   )
 }
