@@ -59,129 +59,129 @@ const PageLoader = () => {
   );
 };
 
-// ===== LAZY LOADED PAGES =====
+// ===== LAZY LOADED PAGES WITH CHUNK ERROR RECOVERY =====
 // Auth pages (small, load fast)
-const Welcome = lazy(() => import("./pages/Welcome"));
-const Login = lazy(() => import("./pages/Login"));
-const SignUp = lazy(() => import("./pages/SignUp"));
-const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
-const ResetPassword = lazy(() => import("./pages/ResetPassword"));
-const Onboarding = lazy(() => import("./pages/Onboarding"));
+const Welcome = lazy(lazyWithRetry(() => import("./pages/Welcome")));
+const Login = lazy(lazyWithRetry(() => import("./pages/Login")));
+const SignUp = lazy(lazyWithRetry(() => import("./pages/SignUp")));
+const ForgotPassword = lazy(lazyWithRetry(() => import("./pages/ForgotPassword")));
+const ResetPassword = lazy(lazyWithRetry(() => import("./pages/ResetPassword")));
+const Onboarding = lazy(lazyWithRetry(() => import("./pages/Onboarding")));
 
 // Core pages
-const Index = lazy(() => import("./pages/Index"));
-const MainFeed = lazy(() => import("./pages/MainFeed"));
-const Profile = lazy(() => import("./pages/Profile"));
-const Search = lazy(() => import("./pages/Search"));
-const Settings = lazy(() => import("./pages/Settings"));
-const SetupPin = lazy(() => import("./pages/SetupPin"));
-const ActivityLog = lazy(() => import("./pages/ActivityLog"));
-const Dashboard = lazy(() => import("./pages/Dashboard"));
-const ClientDashboard = lazy(() => import("./pages/ClientDashboard"));
-const Analytics = lazy(() => import("./pages/Analytics"));
-const Notifications = lazy(() => import("./pages/Notifications"));
-const Bookmarks = lazy(() => import("./pages/Bookmarks"));
+const Index = lazy(lazyWithRetry(() => import("./pages/Index")));
+const MainFeed = lazy(lazyWithRetry(() => import("./pages/MainFeed")));
+const Profile = lazy(lazyWithRetry(() => import("./pages/Profile")));
+const Search = lazy(lazyWithRetry(() => import("./pages/Search")));
+const Settings = lazy(lazyWithRetry(() => import("./pages/Settings")));
+const SetupPin = lazy(lazyWithRetry(() => import("./pages/SetupPin")));
+const ActivityLog = lazy(lazyWithRetry(() => import("./pages/ActivityLog")));
+const Dashboard = lazy(lazyWithRetry(() => import("./pages/Dashboard")));
+const ClientDashboard = lazy(lazyWithRetry(() => import("./pages/ClientDashboard")));
+const Analytics = lazy(lazyWithRetry(() => import("./pages/Analytics")));
+const Notifications = lazy(lazyWithRetry(() => import("./pages/Notifications")));
+const Bookmarks = lazy(lazyWithRetry(() => import("./pages/Bookmarks")));
 
 // Jobs & Gigs
-const PostJob = lazy(() => import("./pages/PostJob"));
-const Jobs = lazy(() => import("./pages/Jobs"));
-const JobsEnhanced = lazy(() => import("./pages/JobsEnhanced"));
-const JobDetail = lazy(() => import("./pages/JobDetail"));
-const MyGigs = lazy(() => import("./pages/MyGigs"));
-const EditGig = lazy(() => import("./pages/EditGig"));
+const PostJob = lazy(lazyWithRetry(() => import("./pages/PostJob")));
+const Jobs = lazy(lazyWithRetry(() => import("./pages/Jobs")));
+const JobsEnhanced = lazy(lazyWithRetry(() => import("./pages/JobsEnhanced")));
+const JobDetail = lazy(lazyWithRetry(() => import("./pages/JobDetail")));
+const MyGigs = lazy(lazyWithRetry(() => import("./pages/MyGigs")));
+const EditGig = lazy(lazyWithRetry(() => import("./pages/EditGig")));
 
 // Experts
-const Experts = lazy(() => import("./pages/Experts"));
-const ExpertProfile = lazy(() => import("./pages/ExpertProfile"));
-const ExpertApplication = lazy(() => import("./pages/ExpertApplication"));
-const ExpertVerification = lazy(() => import("./pages/ExpertVerification"));
-const ExpertClass = lazy(() => import("./pages/ExpertClass"));
-const ClassRoom = lazy(() => import("./pages/ClassRoom"));
+const Experts = lazy(lazyWithRetry(() => import("./pages/Experts")));
+const ExpertProfile = lazy(lazyWithRetry(() => import("./pages/ExpertProfile")));
+const ExpertApplication = lazy(lazyWithRetry(() => import("./pages/ExpertApplication")));
+const ExpertVerification = lazy(lazyWithRetry(() => import("./pages/ExpertVerification")));
+const ExpertClass = lazy(lazyWithRetry(() => import("./pages/ExpertClass")));
+const ClassRoom = lazy(lazyWithRetry(() => import("./pages/ClassRoom")));
 
 // Chat & Communication
-const Chat = lazy(() => import('./pages/Chat'));
-const ChatPage = lazy(() => import("./pages/ChatPage"));
-const CallHistoryPage = lazy(() => import("./pages/CallHistoryPage"));
-const GroupChat = lazy(() => import("./pages/GroupChat"));
-const Connections = lazy(() => import("./pages/Connections"));
-const AIChat = lazy(() => import("./pages/AIChat"));
-const AIHire = lazy(() => import("./pages/AIHire"));
-const CopilotPage = lazy(() => import("./pages/CopilotPage"));
+const Chat = lazy(lazyWithRetry(() => import('./pages/Chat')));
+const ChatPage = lazy(lazyWithRetry(() => import("./pages/ChatPage")));
+const CallHistoryPage = lazy(lazyWithRetry(() => import("./pages/CallHistoryPage")));
+const GroupChat = lazy(lazyWithRetry(() => import("./pages/GroupChat")));
+const Connections = lazy(lazyWithRetry(() => import("./pages/Connections")));
+const AIChat = lazy(lazyWithRetry(() => import("./pages/AIChat")));
+const AIHire = lazy(lazyWithRetry(() => import("./pages/AIHire")));
+const CopilotPage = lazy(lazyWithRetry(() => import("./pages/CopilotPage")));
 
 // Earn & Games
-const EnhancedEarn = lazy(() => import("./pages/EnhancedEarn"));
-const SocialMediaTasks = lazy(() => import("./pages/SocialMediaTasks").then(m => ({ default: m.SocialMediaTasks })));
-const Surveys = lazy(() => import("./pages/Surveys").then(m => ({ default: m.Surveys })));
-const CpxSurveys = lazy(() => import("./pages/CpxSurveys").then(m => ({ default: m.CpxSurveys })));
-const GuessNumberGame = lazy(() => import("./pages/GuessNumberGame").then(m => ({ default: m.GuessNumberGame })));
-const Referrals = lazy(() => import("./pages/Referrals").then(m => ({ default: m.Referrals })));
-const Tasks = lazy(() => import("./pages/Tasks"));
-const ReferralTasks = lazy(() => import("./pages/ReferralTasks"));
-const Articles = lazy(() => import("./pages/Articles"));
-const NigerianTrivia = lazy(() => import("./components/NigerianTrivia"));
-const SpinWheelGame = lazy(() => import("./components/SpinWheelGame"));
-const NaijaPredictor = lazy(() => import("./components/NaijaPredictor"));
+const EnhancedEarn = lazy(lazyWithRetry(() => import("./pages/EnhancedEarn")));
+const SocialMediaTasks = lazy(lazyWithRetry(() => import("./pages/SocialMediaTasks").then(m => ({ default: m.SocialMediaTasks }))));
+const Surveys = lazy(lazyWithRetry(() => import("./pages/Surveys").then(m => ({ default: m.Surveys }))));
+const CpxSurveys = lazy(lazyWithRetry(() => import("./pages/CpxSurveys").then(m => ({ default: m.CpxSurveys }))));
+const GuessNumberGame = lazy(lazyWithRetry(() => import("./pages/GuessNumberGame").then(m => ({ default: m.GuessNumberGame }))));
+const Referrals = lazy(lazyWithRetry(() => import("./pages/Referrals").then(m => ({ default: m.Referrals }))));
+const Tasks = lazy(lazyWithRetry(() => import("./pages/Tasks")));
+const ReferralTasks = lazy(lazyWithRetry(() => import("./pages/ReferralTasks")));
+const Articles = lazy(lazyWithRetry(() => import("./pages/Articles")));
+const NigerianTrivia = lazy(lazyWithRetry(() => import("./components/NigerianTrivia")));
+const SpinWheelGame = lazy(lazyWithRetry(() => import("./components/SpinWheelGame")));
+const NaijaPredictor = lazy(lazyWithRetry(() => import("./components/NaijaPredictor")));
 
 // Commerce
-const DigitalProducts = lazy(() => import("./pages/DigitalProducts"));
-const ProductDetail = lazy(() => import("./pages/ProductDetail"));
-const Courses = lazy(() => import("./pages/Courses"));
-const CourseDetail = lazy(() => import("./pages/CourseDetail"));
-const Orders = lazy(() => import("./pages/Orders"));
-const OrderDetail = lazy(() => import("./pages/OrderDetail"));
+const DigitalProducts = lazy(lazyWithRetry(() => import("./pages/DigitalProducts")));
+const ProductDetail = lazy(lazyWithRetry(() => import("./pages/ProductDetail")));
+const Courses = lazy(lazyWithRetry(() => import("./pages/Courses")));
+const CourseDetail = lazy(lazyWithRetry(() => import("./pages/CourseDetail")));
+const Orders = lazy(lazyWithRetry(() => import("./pages/Orders")));
+const OrderDetail = lazy(lazyWithRetry(() => import("./pages/OrderDetail")));
 
 // Finance
-const Fundraising = lazy(() => import("./pages/Fundraising"));
-const FundraisingDetail = lazy(() => import("./pages/FundraisingDetail"));
-const Emergency = lazy(() => import("./pages/Emergency"));
-const Loan = lazy(() => import("./pages/Loan"));
-const Donations = lazy(() => import("./pages/Donations"));
-const PaymentSuccess = lazy(() => import("./pages/PaymentSuccess"));
-const PaymentFailed = lazy(() => import("./pages/PaymentFailed"));
+const Fundraising = lazy(lazyWithRetry(() => import("./pages/Fundraising")));
+const FundraisingDetail = lazy(lazyWithRetry(() => import("./pages/FundraisingDetail")));
+const Emergency = lazy(lazyWithRetry(() => import("./pages/Emergency")));
+const Loan = lazy(lazyWithRetry(() => import("./pages/Loan")));
+const Donations = lazy(lazyWithRetry(() => import("./pages/Donations")));
+const PaymentSuccess = lazy(lazyWithRetry(() => import("./pages/PaymentSuccess")));
+const PaymentFailed = lazy(lazyWithRetry(() => import("./pages/PaymentFailed")));
 
 // Learn
-const Learn = lazy(() => import("./pages/Learn"));
-const LearnCourse = lazy(() => import("./pages/LearnCourse"));
-const Leaderboard = lazy(() => import("./pages/Leaderboard"));
-const CertificateView = lazy(() => import("./pages/CertificateView"));
-const VerifyCertificate = lazy(() => import("./pages/VerifyCertificate"));
+const Learn = lazy(lazyWithRetry(() => import("./pages/Learn")));
+const LearnCourse = lazy(lazyWithRetry(() => import("./pages/LearnCourse")));
+const Leaderboard = lazy(lazyWithRetry(() => import("./pages/Leaderboard")));
+const CertificateView = lazy(lazyWithRetry(() => import("./pages/CertificateView")));
+const VerifyCertificate = lazy(lazyWithRetry(() => import("./pages/VerifyCertificate")));
 
 // Contests & Work
-const Contests = lazy(() => import("./pages/Contests"));
-const ContestDetail = lazy(() => import("./pages/ContestDetail"));
-const WorkRooms = lazy(() => import("./pages/WorkRooms"));
-const WorkRoomDetail = lazy(() => import("./pages/WorkRoomDetail"));
-const WorkDiary = lazy(() => import("./pages/WorkDiary"));
+const Contests = lazy(lazyWithRetry(() => import("./pages/Contests")));
+const ContestDetail = lazy(lazyWithRetry(() => import("./pages/ContestDetail")));
+const WorkRooms = lazy(lazyWithRetry(() => import("./pages/WorkRooms")));
+const WorkRoomDetail = lazy(lazyWithRetry(() => import("./pages/WorkRoomDetail")));
+const WorkDiary = lazy(lazyWithRetry(() => import("./pages/WorkDiary")));
 
 // Admin & Developer
-const EnhancedAdminDashboard = lazy(() => import("./pages/EnhancedAdminDashboard"));
-const AdminExpertApplications = lazy(() => import("./pages/AdminExpertApplications"));
-const DeveloperPortal = lazy(() => import("./pages/DeveloperPortal"));
-const DeveloperDocs = lazy(() => import("./pages/DeveloperDocs"));
-const MiniAppsMarketplace = lazy(() => import("./pages/MiniAppsMarketplace"));
+const EnhancedAdminDashboard = lazy(lazyWithRetry(() => import("./pages/EnhancedAdminDashboard")));
+const AdminExpertApplications = lazy(lazyWithRetry(() => import("./pages/AdminExpertApplications")));
+const DeveloperPortal = lazy(lazyWithRetry(() => import("./pages/DeveloperPortal")));
+const DeveloperDocs = lazy(lazyWithRetry(() => import("./pages/DeveloperDocs")));
+const MiniAppsMarketplace = lazy(lazyWithRetry(() => import("./pages/MiniAppsMarketplace")));
 
 // Public SEO pages
-const PublicExpert = lazy(() => import("./pages/PublicExpert"));
-const PublicGig = lazy(() => import("./pages/PublicGig"));
-const PublicJob = lazy(() => import("./pages/PublicJob"));
-const PublicCourse = lazy(() => import("./pages/PublicCourse"));
-const PublicCampaign = lazy(() => import("./pages/PublicCampaign"));
-const PublicGigs = lazy(() => import("./pages/PublicGigs"));
-const PublicExperts = lazy(() => import("./pages/PublicExperts"));
-const PublicJobs = lazy(() => import("./pages/PublicJobs"));
-const Sitemap = lazy(() => import("./pages/Sitemap"));
-const InstallApp = lazy(() => import("./pages/InstallApp"));
+const PublicExpert = lazy(lazyWithRetry(() => import("./pages/PublicExpert")));
+const PublicGig = lazy(lazyWithRetry(() => import("./pages/PublicGig")));
+const PublicJob = lazy(lazyWithRetry(() => import("./pages/PublicJob")));
+const PublicCourse = lazy(lazyWithRetry(() => import("./pages/PublicCourse")));
+const PublicCampaign = lazy(lazyWithRetry(() => import("./pages/PublicCampaign")));
+const PublicGigs = lazy(lazyWithRetry(() => import("./pages/PublicGigs")));
+const PublicExperts = lazy(lazyWithRetry(() => import("./pages/PublicExperts")));
+const PublicJobs = lazy(lazyWithRetry(() => import("./pages/PublicJobs")));
+const Sitemap = lazy(lazyWithRetry(() => import("./pages/Sitemap")));
+const InstallApp = lazy(lazyWithRetry(() => import("./pages/InstallApp")));
 
 // Static pages
-const FAQ = lazy(() => import("./pages/FAQ"));
-const HelpCenter = lazy(() => import("./pages/HelpCenter"));
-const TermsConditions = lazy(() => import("./pages/TermsConditions"));
-const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
-const RefundPolicy = lazy(() => import("./pages/RefundPolicy"));
-const NotFound = lazy(() => import("./pages/NotFound"));
+const FAQ = lazy(lazyWithRetry(() => import("./pages/FAQ")));
+const HelpCenter = lazy(lazyWithRetry(() => import("./pages/HelpCenter")));
+const TermsConditions = lazy(lazyWithRetry(() => import("./pages/TermsConditions")));
+const PrivacyPolicy = lazy(lazyWithRetry(() => import("./pages/PrivacyPolicy")));
+const RefundPolicy = lazy(lazyWithRetry(() => import("./pages/RefundPolicy")));
+const NotFound = lazy(lazyWithRetry(() => import("./pages/NotFound")));
 
 // Lazy load heavy components
-const SmartAIAssistant = lazy(() => import("@/components/SmartAIAssistant"));
+const SmartAIAssistant = lazy(lazyWithRetry(() => import("@/components/SmartAIAssistant")));
 
 // SYNC detection at module load
 const isMiniPayEnv = detectMiniPaySync().isMiniPay;
