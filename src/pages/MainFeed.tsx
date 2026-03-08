@@ -368,10 +368,11 @@ const MainFeed = () => {
             </div>
           </div>
 
-          {/* Smart Job Recommendations */}
-          <div className="px-4 py-3">
-            <SmartJobRecommendations maxItems={5} showGigs={true} />
-          </div>
+          <Suspense fallback={null}>
+            <div className="px-4 py-3">
+              <SmartJobRecommendations maxItems={5} showGigs={true} />
+            </div>
+          </Suspense>
 
           {/* Banner Ad - Top of Feed */}
           <div className="px-4 py-3">
@@ -429,19 +430,23 @@ const MainFeed = () => {
               )}
             </div>
           ) : (
-            <div className="p-4">
-              <SuggestionsTab />
-            </div>
+            <Suspense fallback={<div className="p-8 text-center text-muted-foreground">Loading suggestions...</div>}>
+              <div className="p-4">
+                <SuggestionsTab />
+              </div>
+            </Suspense>
           )}
         </div>
 
         {/* Trending Sidebar - Hidden on smaller screens */}
         <div className="hidden xl:block xl:w-80 xl:ml-6">
           <div className="sticky top-24 px-6">
-            <TrendingSection 
-              onHashtagClick={setSearchQuery}
-              onCategoryFilter={setSelectedCategory}
-            />
+            <Suspense fallback={null}>
+              <TrendingSection 
+                onHashtagClick={setSearchQuery}
+                onCategoryFilter={setSelectedCategory}
+              />
+            </Suspense>
           </div>
         </div>
       </div>
@@ -463,24 +468,26 @@ const MainFeed = () => {
         onStoryCreated={handleStoryCreated}
       />
 
-      {/* Job Application Dialog */}
-      <JobApplicationDialog
-        isOpen={jobApplicationDialog.isOpen}
-        onClose={() => setJobApplicationDialog({ isOpen: false, jobPost: null })}
-        jobPost={jobApplicationDialog.jobPost}
-      />
+      <Suspense fallback={null}>
+        {/* Job Application Dialog */}
+        <JobApplicationDialog
+          isOpen={jobApplicationDialog.isOpen}
+          onClose={() => setJobApplicationDialog({ isOpen: false, jobPost: null })}
+          jobPost={jobApplicationDialog.jobPost}
+        />
 
-      {/* Profile Preview Dialog */}
-      <ProfilePreview
-        isOpen={profilePreview.isOpen}
-        onClose={() => setProfilePreview({ isOpen: false, userId: null })}
-        profileId={profilePreview.userId || ''}
-      />
+        {/* Profile Preview Dialog */}
+        <ProfilePreview
+          isOpen={profilePreview.isOpen}
+          onClose={() => setProfilePreview({ isOpen: false, userId: null })}
+          profileId={profilePreview.userId || ''}
+        />
 
-      {/* Crypto Deposit Dialog */}
-      <DepositDialog open={showDepositDialog} onOpenChange={setShowDepositDialog} />
-      <EscrowSearchDialog open={showEscrowSearch} onOpenChange={setShowEscrowSearch} />
-      <NCConverterDialog open={showNCConverter} onClose={() => setShowNCConverter(false)} />
+        {/* Crypto Deposit Dialog */}
+        <DepositDialog open={showDepositDialog} onOpenChange={setShowDepositDialog} />
+        <EscrowSearchDialog open={showEscrowSearch} onOpenChange={setShowEscrowSearch} />
+        <NCConverterDialog open={showNCConverter} onClose={() => setShowNCConverter(false)} />
+      </Suspense>
 
       {/* Bottom Navigation - Responsive design */}
       <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border px-1 sm:px-4 py-1.5 sm:py-2 safe-area-bottom z-50">
