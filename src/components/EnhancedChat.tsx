@@ -300,7 +300,7 @@ const EnhancedChat = () => {
     return (
       <div
         key={message.id}
-        className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} mb-4`}
+        className={`group flex flex-col ${isOwn ? 'items-end' : 'items-start'} mb-4`}
       >
         {/* Context Badge - Show above message for context messages */}
         {hasContext && (
@@ -374,6 +374,9 @@ const EnhancedChat = () => {
             </div>
           </div>
         )}
+        
+        {/* Message Reactions */}
+        <MessageReactions messageId={message.id} isOwn={isOwn} />
       </div>
     )
   }
