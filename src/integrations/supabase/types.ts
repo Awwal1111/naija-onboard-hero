@@ -7730,8 +7730,18 @@ export type Database = {
         }[]
       }
       get_system_setting: { Args: { setting_key: string }; Returns: string }
+      get_user_admin_role: { Args: never; Returns: string }
       get_verification_level: { Args: { p_user_id: string }; Returns: string }
-      grant_admin_role: { Args: { target_user_id: string }; Returns: boolean }
+      grant_admin_role:
+        | { Args: { target_user_id: string }; Returns: boolean }
+        | {
+            Args: {
+              target_role?: Database["public"]["Enums"]["user_role"]
+              target_user_id: string
+            }
+            Returns: Json
+          }
+      has_admin_access: { Args: never; Returns: boolean }
       has_purchased_product: {
         Args: { p_product_id: string; p_user_id: string }
         Returns: boolean
@@ -7817,6 +7827,13 @@ export type Database = {
       }
       request_fundraising_release: {
         Args: { p_fundraising_id: string; p_user_id: string }
+        Returns: Json
+      }
+      revoke_admin_role: {
+        Args: {
+          target_role: Database["public"]["Enums"]["user_role"]
+          target_user_id: string
+        }
         Returns: Json
       }
       subscribe_premium: {
