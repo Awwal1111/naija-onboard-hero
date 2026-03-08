@@ -35,7 +35,7 @@ const JobApplicationDialog = lazy(() => import('@/components/JobApplicationDialo
 const ProfilePreview = lazy(() => import('@/components/ProfilePreview'))
 const SmartJobRecommendations = lazy(() => import('@/components/SmartJobRecommendations'))
 const UserModePrompt = lazy(() => import('@/components/UserModePrompt'))
-const MiniAppCarousel = lazy(() => import('@/components/miniapps/MiniAppCarousel').then(m => ({ default: m.MiniAppCarousel })))
+
 const DepositDialog = lazy(() => import('@/components/DepositDialog').then(m => ({ default: m.DepositDialog })))
 const EscrowSearchDialog = lazy(() => import('@/components/EscrowSearchDialog').then(m => ({ default: m.EscrowSearchDialog })))
 const NCConverterDialog = lazy(() => import('@/components/miniapps/NCConverterDialog').then(m => ({ default: m.NCConverterDialog })))
