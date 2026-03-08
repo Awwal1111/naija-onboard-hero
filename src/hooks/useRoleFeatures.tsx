@@ -265,27 +265,6 @@ export const MORE_MENU_FEATURES: FeatureItem[] = [
     roles: ['freelancer', 'both'],
     description: 'Become a verified expert'
   },
-  { 
-    id: 'fundraising', 
-    label: 'Fundraising', 
-    path: '/fundraising', 
-    icon: Sparkles, 
-    roles: ['freelancer', 'client', 'both']
-  },
-  { 
-    id: 'leaderboard', 
-    label: 'Leaderboard', 
-    path: '/leaderboard', 
-    icon: Trophy, 
-    roles: ['freelancer', 'both']
-  },
-  { 
-    id: 'referrals', 
-    label: 'Referrals', 
-    path: '/referrals', 
-    icon: Users, 
-    roles: ['freelancer', 'client', 'both']
-  }
 ]
 
 // Onboarding tour steps per role
