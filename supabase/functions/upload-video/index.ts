@@ -1,14 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 }
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
@@ -24,74 +23,45 @@ serve(async (req) => {
       )
     }
 
-    const { videoBase64, userId, folder = 'feed' } = await req.json()
+    const { userId, folder = 'feed' } = await req.json()
 
-    if (!videoBase64) {
+    if (!userId) {
       return new Response(
-        JSON.stringify({ error: 'No video data provided' }),
+        JSON.stringify({ error: 'User ID required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    console.log('[Video Upload] Processing video upload for user:', userId)
+    console.log('[Video Upload] Generating signed upload params for user:', userId)
 
-    // Generate signature for authenticated upload
+    // Generate signature for client-side authenticated upload
     const timestamp = Math.floor(Date.now() / 1000)
     const publicId = `video_${timestamp}_${Math.random().toString(36).substring(7)}`
-    const folderPath = `naijalancers/${folder}/${userId || 'anonymous'}`
+    const folderPath = `naijalancers/${folder}/${userId}`
     
-    // Create signature
-    const paramsToSign = `folder=${folderPath}&public_id=${publicId}&timestamp=${timestamp}`
+    // Create signature string (params must be in alphabetical order)
+    const eagerTransforms = 'c_limit,h_240,w_320'
+    const paramsToSign = `eager=${eagerTransforms}&folder=${folderPath}&public_id=${publicId}&timestamp=${timestamp}`
     const encoder = new TextEncoder()
     const data = encoder.encode(paramsToSign + CLOUDINARY_API_SECRET)
     const hashBuffer = await crypto.subtle.digest('SHA-1', data)
     const hashArray = Array.from(new Uint8Array(hashBuffer))
     const signature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
 
-    // Prepare form data
-    const formData = new FormData()
-    formData.append('file', videoBase64)
-    formData.append('api_key', CLOUDINARY_API_KEY)
-    formData.append('timestamp', timestamp.toString())
-    formData.append('signature', signature)
-    formData.append('folder', folderPath)
-    formData.append('public_id', publicId)
-    formData.append('resource_type', 'video')
-    formData.append('transformation', 'q_auto,f_mp4')
-    
-    // Upload to Cloudinary
-    console.log('[Video Upload] Uploading to Cloudinary...')
-    const uploadResponse = await fetch(
-      `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/video/upload`,
-      {
-        method: 'POST',
-        body: formData
-      }
-    )
-
-    const uploadResult = await uploadResponse.json()
-
-    if (!uploadResponse.ok) {
-      console.error('[Video Upload] Cloudinary error:', uploadResult)
-      return new Response(
-        JSON.stringify({ error: uploadResult.error?.message || 'Upload failed' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    console.log('[Video Upload] Upload successful:', uploadResult.secure_url)
-
-    // Generate thumbnail URL
-    const thumbnailUrl = uploadResult.secure_url.replace('/video/upload/', '/video/upload/w_320,h_240,c_limit/')
+    console.log('[Video Upload] Signed params generated successfully')
 
     return new Response(
       JSON.stringify({
         success: true,
-        videoUrl: uploadResult.secure_url,
-        thumbnailUrl: thumbnailUrl,
-        publicId: uploadResult.public_id,
-        duration: uploadResult.duration,
-        format: uploadResult.format
+        uploadParams: {
+          cloudName: CLOUDINARY_CLOUD_NAME,
+          apiKey: CLOUDINARY_API_KEY,
+          signature,
+          timestamp,
+          publicId,
+          folder: folderPath,
+          eager: eagerTransforms,
+        }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
