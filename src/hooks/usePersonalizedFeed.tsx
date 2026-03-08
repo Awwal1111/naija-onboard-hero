@@ -128,10 +128,6 @@ export const usePersonalizedFeed = () => {
 
       console.log('[Feed] Fetching personalized feed for user:', userId, 'offset:', offset)
 
-      // Add timeout to prevent infinite loading on slow networks
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 15000) // 15s timeout
-
       try {
         // Use the personalized feed function
         const { data: personalizedPosts, error } = await supabase
@@ -140,9 +136,8 @@ export const usePersonalizedFeed = () => {
             p_limit: POSTS_PER_PAGE,
             p_offset: offset
           })
-          .abortSignal(controller.signal)
         
-        clearTimeout(timeoutId)
+
 
         if (error) {
           console.error('[Feed] Personalized feed RPC error:', error)
@@ -239,8 +234,7 @@ export const usePersonalizedFeed = () => {
           nextPage: enrichedPosts.length === POSTS_PER_PAGE ? pageParam + 1 : null
         }
       } catch (err: any) {
-        clearTimeout(timeoutId)
-        console.error('[Feed] Feed fetch failed or timed out:', err?.message || err)
+        console.error('[Feed] Feed fetch failed:', err?.message || err)
         return { posts: [], nextPage: null }
       }
     },
