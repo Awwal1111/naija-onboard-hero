@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Search } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { Search, MessageCircle } from 'lucide-react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/integrations/supabase/client'
 import { BrandInput } from '@/components/ui/brand-input'
