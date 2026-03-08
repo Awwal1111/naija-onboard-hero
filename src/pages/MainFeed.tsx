@@ -243,14 +243,6 @@ const MainFeed = () => {
     toggleLike(postId)
   }
 
-  // Show skeleton briefly while loading, but NEVER forever.
-  // Cap skeleton display at 6 seconds, then show content (even if empty).
-  const [skeletonTimedOut, setSkeletonTimedOut] = useState(false)
-  useEffect(() => {
-    const timer = setTimeout(() => setSkeletonTimedOut(true), 6000)
-    return () => clearTimeout(timer)
-  }, [])
-
   const showSkeleton = !skeletonTimedOut && (authLoading || (loading && user))
 
   if (showSkeleton) {
