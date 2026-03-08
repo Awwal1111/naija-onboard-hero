@@ -296,7 +296,7 @@ const LinkedInPostCard: React.FC<LinkedInPostCardProps> = ({
 
   return (
     <>
-      <article id={`post-${post.id}`} className="bg-card">
+      <article id={`post-${post.id}`} className="bg-card border-b border-border/50 shadow-[0_1px_3px_0_hsl(var(--foreground)/0.04)]">
         {/* Header */}
         <div className="flex items-center justify-between p-4 pb-3">
           <div 

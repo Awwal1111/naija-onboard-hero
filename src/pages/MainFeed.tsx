@@ -433,8 +433,12 @@ const MainFeed = () => {
                       )}
                     </React.Fragment>
                   ))}
-                  <div className="py-8 text-center bg-muted/30">
-                    <span className="text-sm text-muted-foreground">You're all caught up!</span>
+                  <div className="py-10 text-center bg-gradient-to-b from-transparent to-muted/20">
+                    <div className="w-10 h-10 mx-auto mb-3 rounded-full bg-primary/10 flex items-center justify-center">
+                      <RefreshCw className="h-5 w-5 text-primary/50" />
+                    </div>
+                    <span className="text-sm font-medium text-muted-foreground">You're all caught up! ✨</span>
+                    <p className="text-xs text-muted-foreground/60 mt-1">Check back later for new posts</p>
                   </div>
                 </>
               )}
