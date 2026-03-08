@@ -1,7 +1,7 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { User, Briefcase, FileText, GraduationCap, Heart, AlertCircle, Banknote, Gift, BarChart3, Settings, Video, Wallet, Bookmark, Search, Trophy, Bell, Package, Sparkles, Users, FolderKanban, Timer, UserCheck, Award, Bot, PlusCircle, Target, ShoppingBag, Bug, HelpCircle, ShieldAlert } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { User, Briefcase, FileText, Bell, BarChart3, Settings, Video, Wallet, Bookmark, Search, Package, Users, FolderKanban, Timer, Award, Bot, PlusCircle, Target, ShoppingBag, Bug, HelpCircle, ShieldAlert, AlertCircle, Banknote, Gift } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useRoleFeatures } from "@/hooks/useRoleFeatures";
 import { Badge } from "@/components/ui/badge";
@@ -29,7 +29,6 @@ export const MoreMenuDrawer = ({ open, onOpenChange }: MoreMenuDrawerProps) => {
     if (open) checkAdmin();
   }, [open]);
 
-  // Role labels for display
   const modeLabel = mode === 'freelancer' ? 'Freelancer' : mode === 'client' ? 'Client' : 'Freelancer & Client';
   const modeColor = mode === 'freelancer' ? 'bg-emerald-500' : mode === 'client' ? 'bg-blue-500' : 'bg-purple-500';
 
@@ -43,24 +42,21 @@ export const MoreMenuDrawer = ({ open, onOpenChange }: MoreMenuDrawerProps) => {
     { icon: Search, label: "Search", path: "/search", color: "text-cyan-500", description: "Find anything", forRoles: ['freelancer', 'client', 'both'] },
   ];
 
-  // Freelancer-focused items
+  // Freelancer-focused items (removed Contests - now in Apps)
   const freelancerItems = [
     { icon: Briefcase, label: "My Gigs", path: "/my-gigs", color: "text-purple-500", description: "Manage your services" },
     { icon: Search, label: "Find Jobs", path: "/jobs", color: "text-blue-500", description: "Browse job listings" },
     { icon: Video, label: "Expert Classes", path: "/expert-class", color: "text-indigo-500", description: "Teach live classes" },
-    { icon: GraduationCap, label: "Create Courses", path: "/courses", color: "text-orange-500", description: "Sell your knowledge" },
     { icon: ShoppingBag, label: "Sell Products", path: "/digital-products", color: "text-green-500", description: "Digital products" },
-    { icon: Trophy, label: "Contests", path: "/contests", color: "text-yellow-500", description: "Compete for prizes" },
     { icon: Award, label: "Get Verified", path: "/expert-verification", color: "text-primary", description: "Earn badges" },
     { icon: Timer, label: "Work Diary", path: "/work-diary", color: "text-teal-500", description: "Track your time" },
   ];
 
-  // Client-focused items
+  // Client-focused items (removed Run Contest - now in Apps)
   const clientItems = [
     { icon: PlusCircle, label: "Post a Job", path: "/post-job", color: "text-emerald-500", description: "Hire freelancers" },
     { icon: Users, label: "Find Experts", path: "/experts", color: "text-blue-500", description: "Browse talent" },
     { icon: Bot, label: "AI Hire Assistant", path: "/ai-hire", color: "text-primary", description: "AI-powered matching" },
-    { icon: Award, label: "Run Contest", path: "/contests", color: "text-yellow-500", description: "Crowdsource designs" },
   ];
 
   const sharedBusinessItems = [
@@ -69,14 +65,8 @@ export const MoreMenuDrawer = ({ open, onOpenChange }: MoreMenuDrawerProps) => {
     { icon: Users, label: "Connections", path: "/connections", color: "text-indigo-500" },
   ];
 
-  const learningItems = [
-    { icon: GraduationCap, label: "Learn Hub", path: "/learn", color: "text-cyan-500", description: "Courses & paths" },
-  ];
-
+  // Removed: Fundraising, Referrals, Leaderboard (moved to Apps)
   const otherItems = [
-    { icon: Trophy, label: "Leaderboard", path: "/leaderboard", color: "text-yellow-500", forRoles: ['freelancer', 'both'] },
-    { icon: Gift, label: "Referrals", path: "/referrals", color: "text-pink-500", forRoles: ['freelancer', 'client', 'both'] },
-    { icon: Heart, label: "Fundraising", path: "/fundraising", color: "text-red-500", forRoles: ['freelancer', 'client', 'both'] },
     { icon: AlertCircle, label: "Emergency", path: "/emergency", color: "text-amber-500", forRoles: ['freelancer', 'both'] },
     { icon: Banknote, label: "Loan", path: "/loan", color: "text-indigo-500", forRoles: ['freelancer', 'both'] },
     { icon: Gift, label: "Donations", path: "/donations", color: "text-pink-500", forRoles: ['freelancer', 'client', 'both'] },
@@ -89,7 +79,6 @@ export const MoreMenuDrawer = ({ open, onOpenChange }: MoreMenuDrawerProps) => {
     onOpenChange(false);
   };
 
-  // Filter items based on role
   const filterByRole = (items: any[]) => {
     return items.filter(item => {
       if (!item.forRoles) return true;
@@ -97,6 +86,35 @@ export const MoreMenuDrawer = ({ open, onOpenChange }: MoreMenuDrawerProps) => {
       return item.forRoles.includes(mode) || item.forRoles.includes('both');
     });
   };
+
+  const renderItem = (item: any, withDescription = true) => (
+    <button
+      key={item.path + item.label}
+      onClick={() => handleNavigation(item.path)}
+      className="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-accent transition-colors"
+    >
+      <div className={`p-2 rounded-lg bg-primary/10 ${item.color}`}>
+        <item.icon className="h-5 w-5" />
+      </div>
+      <div className="text-left">
+        <span className="text-sm font-medium block">{item.label}</span>
+        {withDescription && item.description && (
+          <span className="text-xs text-muted-foreground">{item.description}</span>
+        )}
+      </div>
+    </button>
+  );
+
+  const renderSimpleItem = (item: any) => (
+    <button
+      key={item.path + item.label}
+      onClick={() => handleNavigation(item.path)}
+      className="w-full flex items-center gap-4 p-3 rounded-lg hover:bg-accent transition-colors"
+    >
+      <item.icon className={`h-5 w-5 ${item.color}`} />
+      <span className="text-sm font-medium">{item.label}</span>
+    </button>
+  );
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -113,28 +131,12 @@ export const MoreMenuDrawer = ({ open, onOpenChange }: MoreMenuDrawerProps) => {
         <div className="mt-6 space-y-6">
           {/* Primary Actions */}
           <div className="space-y-1">
-            {filterByRole(primaryItems).map((item) => (
-              <button
-                key={item.path + item.label}
-                onClick={() => handleNavigation(item.path)}
-                className="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-accent transition-colors"
-              >
-                <div className={`p-2 rounded-lg bg-primary/10 ${item.color}`}>
-                  <item.icon className="h-5 w-5" />
-                </div>
-                <div className="text-left">
-                  <span className="text-sm font-medium block">{item.label}</span>
-                  {item.description && (
-                    <span className="text-xs text-muted-foreground">{item.description}</span>
-                  )}
-                </div>
-              </button>
-            ))}
+            {filterByRole(primaryItems).map(item => renderItem(item))}
           </div>
 
           <Separator />
 
-          {/* Freelancer Section - Only visible to freelancers */}
+          {/* Freelancer Section */}
           {isFreelancer && (
             <>
               <div>
@@ -142,30 +144,14 @@ export const MoreMenuDrawer = ({ open, onOpenChange }: MoreMenuDrawerProps) => {
                   Freelancer Tools
                 </h3>
                 <div className="space-y-1">
-                  {freelancerItems.map((item) => (
-                    <button
-                      key={item.path}
-                      onClick={() => handleNavigation(item.path)}
-                      className="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-accent transition-colors"
-                    >
-                      <div className={`p-2 rounded-lg bg-primary/10 ${item.color}`}>
-                        <item.icon className="h-5 w-5" />
-                      </div>
-                      <div className="text-left">
-                        <span className="text-sm font-medium block">{item.label}</span>
-                        {item.description && (
-                          <span className="text-xs text-muted-foreground">{item.description}</span>
-                        )}
-                      </div>
-                    </button>
-                  ))}
+                  {freelancerItems.map(item => renderItem(item))}
                 </div>
               </div>
               <Separator />
             </>
           )}
 
-          {/* Client Section - Only visible to clients */}
+          {/* Client Section */}
           {isClient && (
             <>
               <div>
@@ -173,23 +159,7 @@ export const MoreMenuDrawer = ({ open, onOpenChange }: MoreMenuDrawerProps) => {
                   Hiring Tools
                 </h3>
                 <div className="space-y-1">
-                  {clientItems.map((item) => (
-                    <button
-                      key={item.path}
-                      onClick={() => handleNavigation(item.path)}
-                      className="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-accent transition-colors"
-                    >
-                      <div className={`p-2 rounded-lg bg-primary/10 ${item.color}`}>
-                        <item.icon className="h-5 w-5" />
-                      </div>
-                      <div className="text-left">
-                        <span className="text-sm font-medium block">{item.label}</span>
-                        {item.description && (
-                          <span className="text-xs text-muted-foreground">{item.description}</span>
-                        )}
-                      </div>
-                    </button>
-                  ))}
+                  {clientItems.map(item => renderItem(item))}
                 </div>
               </div>
               <Separator />
@@ -200,42 +170,7 @@ export const MoreMenuDrawer = ({ open, onOpenChange }: MoreMenuDrawerProps) => {
           <div>
             <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-3">Business</h3>
             <div className="space-y-1">
-              {sharedBusinessItems.map((item) => (
-                <button
-                  key={item.path}
-                  onClick={() => handleNavigation(item.path)}
-                  className="w-full flex items-center gap-4 p-3 rounded-lg hover:bg-accent transition-colors"
-                >
-                  <item.icon className={`h-5 w-5 ${item.color}`} />
-                  <span className="text-sm font-medium">{item.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Learning Section */}
-          <div>
-            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-3">Learn</h3>
-            <div className="space-y-1">
-              {learningItems.map((item) => (
-                <button
-                  key={item.path}
-                  onClick={() => handleNavigation(item.path)}
-                  className="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-accent transition-colors"
-                >
-                  <div className={`p-2 rounded-lg bg-primary/10 ${item.color}`}>
-                    <item.icon className="h-5 w-5" />
-                  </div>
-                  <div className="text-left">
-                    <span className="text-sm font-medium block">{item.label}</span>
-                    {item.description && (
-                      <span className="text-xs text-muted-foreground">{item.description}</span>
-                    )}
-                  </div>
-                </button>
-              ))}
+              {sharedBusinessItems.map(item => renderSimpleItem(item))}
             </div>
           </div>
 
@@ -245,18 +180,9 @@ export const MoreMenuDrawer = ({ open, onOpenChange }: MoreMenuDrawerProps) => {
           <div>
             <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-3">More</h3>
             <div className="space-y-1">
-              {filterByRole(otherItems).map((item) => (
-                <button
-                  key={item.path + item.label}
-                  onClick={() => handleNavigation(item.path)}
-                  className="w-full flex items-center gap-4 p-3 rounded-lg hover:bg-accent transition-colors"
-                >
-                  <item.icon className={`h-5 w-5 ${item.color}`} />
-                  <span className="text-sm font-medium">{item.label}</span>
-                </button>
-              ))}
+              {filterByRole(otherItems).map(item => renderSimpleItem(item))}
               
-              {/* Bug Report Button */}
+              {/* Bug Report */}
               <button
                 onClick={() => {
                   setShowBugReport(true);
@@ -268,7 +194,7 @@ export const MoreMenuDrawer = ({ open, onOpenChange }: MoreMenuDrawerProps) => {
                 <span className="text-sm font-medium">Report a Bug</span>
               </button>
               
-              {/* Admin Panel - only visible to admins */}
+              {/* Admin Panel */}
               {isAdmin && (
                 <button
                   onClick={() => handleNavigation('/admin/dashboard')}
@@ -283,7 +209,6 @@ export const MoreMenuDrawer = ({ open, onOpenChange }: MoreMenuDrawerProps) => {
         </div>
       </SheetContent>
       
-      {/* Bug Report Dialog */}
       <BugReportDialog 
         isOpen={showBugReport} 
         onOpenChange={setShowBugReport} 

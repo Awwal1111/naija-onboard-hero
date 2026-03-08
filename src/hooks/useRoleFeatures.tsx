@@ -156,28 +156,12 @@ export const QUICK_ACTION_FEATURES: FeatureItem[] = [
     description: 'Create live classes'
   },
   { 
-    id: 'courses-create', 
-    label: 'Create Course', 
-    path: '/courses', 
-    icon: GraduationCap, 
-    roles: ['freelancer', 'both'],
-    description: 'Sell your knowledge'
-  },
-  { 
     id: 'products', 
     label: 'Sell Products', 
     path: '/digital-products', 
     icon: ShoppingBag, 
     roles: ['freelancer', 'both'],
     description: 'Sell digital products'
-  },
-  { 
-    id: 'contests', 
-    label: 'Contests', 
-    path: '/contests', 
-    icon: Trophy, 
-    roles: ['freelancer', 'both'],
-    description: 'Compete for prizes'
   },
   
   // Client-focused
@@ -212,14 +196,6 @@ export const QUICK_ACTION_FEATURES: FeatureItem[] = [
     icon: Target, 
     roles: ['client', 'both'],
     description: 'Manage your hires'
-  },
-  { 
-    id: 'create-contest', 
-    label: 'Create Contest', 
-    path: '/contests', 
-    icon: Award, 
-    roles: ['client', 'both'],
-    description: 'Run a design contest'
   },
   
   // Shared
@@ -289,27 +265,6 @@ export const MORE_MENU_FEATURES: FeatureItem[] = [
     roles: ['freelancer', 'both'],
     description: 'Become a verified expert'
   },
-  { 
-    id: 'fundraising', 
-    label: 'Fundraising', 
-    path: '/fundraising', 
-    icon: Sparkles, 
-    roles: ['freelancer', 'client', 'both']
-  },
-  { 
-    id: 'leaderboard', 
-    label: 'Leaderboard', 
-    path: '/leaderboard', 
-    icon: Trophy, 
-    roles: ['freelancer', 'both']
-  },
-  { 
-    id: 'referrals', 
-    label: 'Referrals', 
-    path: '/referrals', 
-    icon: Users, 
-    roles: ['freelancer', 'client', 'both']
-  }
 ]
 
 // Onboarding tour steps per role

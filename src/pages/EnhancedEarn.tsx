@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Trophy, Zap, FileText, User, History, Users, ArrowUpRight, Phone, Wifi, TrendingUp, Tv, Wallet, Receipt, Coins, PiggyBank } from 'lucide-react'
+import { Zap, FileText, User, Users, ArrowUpRight, Phone, Wifi, TrendingUp, Tv, Wallet, Receipt, Coins, PiggyBank, Clock } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useWallet } from '@/hooks/useWallet'
 import NaijaLanceWalletCard from '@/components/NaijaLanceWalletCard'
@@ -51,14 +51,6 @@ const EnhancedEarn = () => {
       category: 'tasks'
     },
     {
-      title: 'Referral Program', 
-      description: 'Invite friends and earn',
-      icon: Trophy,
-      reward: 'NC 100 per referral',
-      path: '/referrals',
-      category: 'referral'
-    },
-    {
       title: 'Surveys',
       description: 'Complete surveys from BitLabs',
       icon: FileText,
@@ -89,38 +81,6 @@ const EnhancedEarn = () => {
       reward: 'Up to NC 200',
       path: '/earn/articles',
       category: 'tasks'
-    },
-    {
-      title: 'Guess Number Game',
-      description: 'Guess the number and win',
-      icon: Trophy,
-      reward: 'Win NC 10',
-      path: '/earn/guess-number',
-      category: 'games'
-    },
-    {
-      title: 'Nigerian Trivia',
-      description: 'Test your Nigerian knowledge',
-      icon: Trophy,
-      reward: 'Win NC 50',
-      path: '/earn/trivia',
-      category: 'games'
-    },
-    {
-      title: 'Spin Wheel',
-      description: 'Spin the wheel for prizes',
-      icon: Trophy,
-      reward: 'Up to NC 100',
-      path: '/earn/spin-wheel',
-      category: 'games'
-    },
-    {
-      title: 'Naija Predictor',
-      description: 'Predict outcomes and win',
-      icon: Trophy,
-      reward: 'Win from pool',
-      path: '/earn/predictor',
-      category: 'games'
     }
   ]
 
@@ -136,8 +96,7 @@ const EnhancedEarn = () => {
   // Group earning methods by category
   const taskMethods = earningMethods.filter(m => m.category === 'tasks')
   const surveyMethods = earningMethods.filter(m => m.category === 'surveys')
-  const gameMethods = earningMethods.filter(m => m.category === 'games')
-  const serviceMethods = earningMethods.filter(m => m.category === 'services' || m.category === 'referral')
+  const serviceMethods = earningMethods.filter(m => m.category === 'services')
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -223,25 +182,8 @@ const EnhancedEarn = () => {
               </div>
             </div>
 
-            {/* Games Section */}
-            <div>
-              <h3 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide">Games</h3>
-              <div className="grid grid-cols-2 gap-3">
-                {gameMethods.map((method, index) => (
-                  <Card key={index} className="hover:bg-accent/50 transition-colors cursor-pointer border-border/50" onClick={() => navigate(method.path)}>
-                    <CardContent className="p-4 text-center">
-                      <div className="p-2.5 bg-primary/10 rounded-lg inline-block mb-2">
-                        <method.icon className="h-5 w-5 text-primary" />
-                      </div>
-                      <h3 className="font-medium text-foreground text-sm">{method.title}</h3>
-                      <Badge variant="secondary" className="text-xs mt-1">
-                        {method.reward}
-                      </Badge>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
+
+
 
             {/* Services Section */}
             <div>
@@ -329,7 +271,7 @@ const EnhancedEarn = () => {
                 className="w-full"
                 onClick={() => navigate('/activity-log')}
               >
-                <History className="h-4 w-4 mr-2" />
+                <Clock className="h-4 w-4 mr-2" />
                 Full History
               </Button>
             </div>
