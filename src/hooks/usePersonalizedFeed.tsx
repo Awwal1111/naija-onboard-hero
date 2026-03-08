@@ -128,49 +128,69 @@ export const usePersonalizedFeed = () => {
 
       console.log('[Feed] Fetching personalized feed for user:', userId, 'offset:', offset)
 
+      // Helper to fetch fallback posts directly from the posts table
+      const fetchFallbackPosts = async () => {
+        console.log('[Feed] Using fallback: fetching posts directly')
+        const { data: fallbackPosts } = await supabase
+          .from('posts')
+          .select('*')
+          .eq('status', 'active')
+          .order('created_at', { ascending: false })
+          .range(offset, offset + POSTS_PER_PAGE - 1)
+
+        console.log('[Feed] Fallback posts:', fallbackPosts?.length || 0)
+
+        if (!fallbackPosts || fallbackPosts.length === 0) {
+          return { posts: [], nextPage: null }
+        }
+
+        const fallbackUserIds = [...new Set(fallbackPosts.map((post: any) => post.user_id))]
+        const { data: fallbackProfiles } = await supabase
+          .from('profiles')
+          .select('user_id, full_name, profession, profile_picture_url, is_expert, average_rating, rating_count, email_verified, phone_verified, face_verified, avg_response_time_seconds')
+          .in('user_id', fallbackUserIds)
+
+        const fallbackProfilesMap = new Map(fallbackProfiles?.map(p => [p.user_id, p]) || [])
+
+        const enrichedFallback = fallbackPosts.map((post: any) => ({
+          ...post,
+          profiles: fallbackProfilesMap.get(post.user_id) || null,
+          user_liked: false,
+          user_saved: false
+        }))
+
+        return { 
+          posts: enrichedFallback, 
+          nextPage: enrichedFallback.length === POSTS_PER_PAGE ? pageParam + 1 : null 
+        }
+      }
+
       try {
-        // Use the personalized feed function
-        const { data: personalizedPosts, error } = await supabase
+        // Race the RPC against a timeout — if RPC hangs, use fallback
+        const rpcPromise = supabase
           .rpc('get_personalized_feed', {
             p_user_id: userId,
             p_limit: POSTS_PER_PAGE,
             p_offset: offset
           })
-        
 
+        const timeoutPromise = new Promise<null>((resolve) => 
+          setTimeout(() => resolve(null), 10000)
+        )
+
+        const rpcResult = await Promise.race([rpcPromise, timeoutPromise])
+
+        // Timeout hit — use fallback
+        if (rpcResult === null) {
+          console.warn('[Feed] RPC timed out after 10s, using fallback')
+          return await fetchFallbackPosts()
+        }
+
+        const { data: personalizedPosts, error } = rpcResult
 
         if (error) {
           console.error('[Feed] Personalized feed RPC error:', error)
-          // Fallback to regular posts if function fails
-          const { data: fallbackPosts } = await supabase
-            .from('posts')
-            .select('*')
-            .eq('status', 'active')
-            .order('created_at', { ascending: false })
-            .range(offset, offset + POSTS_PER_PAGE - 1)
-          
-          console.log('[Feed] Using fallback posts:', fallbackPosts?.length || 0)
-          
-          if (!fallbackPosts || fallbackPosts.length === 0) {
-            return { posts: [], nextPage: null }
-          }
-
-          const fallbackUserIds = [...new Set(fallbackPosts.map((post: any) => post.user_id))]
-          const { data: fallbackProfiles } = await supabase
-            .from('profiles')
-            .select('user_id, full_name, profession, profile_picture_url, is_expert, average_rating, rating_count, email_verified, phone_verified, face_verified, avg_response_time_seconds')
-            .in('user_id', fallbackUserIds)
-
-          const fallbackProfilesMap = new Map(fallbackProfiles?.map(p => [p.user_id, p]) || [])
-
-          const enrichedFallback = fallbackPosts.map((post: any) => ({
-            ...post,
-            profiles: fallbackProfilesMap.get(post.user_id) || null,
-            user_liked: false,
-            user_saved: false
-          }))
-
-          return { posts: enrichedFallback, nextPage: null }
+          return await fetchFallbackPosts()
         }
 
         console.log('[Feed] Personalized posts received:', personalizedPosts?.length || 0)
