@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
-import { ArrowLeft, Plus, Users, UserCheck, Home, MessageCircle, DollarSign, Star, ExternalLink, Briefcase, Menu } from 'lucide-react'
+import { ArrowLeft, Plus, Users, UserCheck, Star, ExternalLink } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { MoreMenuDrawer } from '@/components/MoreMenuDrawer'
+import { BottomNavBar } from '@/components/BottomNavBar'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -41,17 +41,6 @@ export const SocialMediaTasks = () => {
   const [completionDialogOpen, setCompletionDialogOpen] = useState(false)
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null)
 
-  const bottomNavItems = [
-    { icon: Home, label: 'Feed', path: '/feed' },
-    { icon: MessageCircle, label: 'Chat', path: '/chat' },
-    { icon: Users, label: 'Expert', path: '/experts' },
-    { icon: Briefcase, label: 'Gig', path: '/jobs' },
-    { icon: DollarSign, label: 'Earn', path: '/earn' }
-  ]
-
-  const handleNavigation = (path: string) => {
-    navigate(path)
-  }
 
   // Remove manual redirect - ProtectedRoute handles this
   // useEffect(() => {
@@ -286,33 +275,7 @@ export const SocialMediaTasks = () => {
           </div>
         </div>
 
-        {/* Bottom Navigation */}
-        <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border px-1 sm:px-4 py-1.5 sm:py-2 safe-area-bottom z-50">
-          <div className="flex justify-around items-center max-w-md mx-auto">
-            {bottomNavItems.map((item) => (
-              <button
-                key={item.label}
-                onClick={() => handleNavigation(item.path)}
-                className={`flex flex-col items-center gap-0.5 sm:gap-1 py-1.5 sm:py-2 px-2 sm:px-3 rounded-xl transition-colors ${
-                  location.pathname === item.path
-                    ? 'text-primary bg-primary/10'
-                    : 'text-text-secondary hover:text-primary hover:bg-primary/5'
-                }`}
-              >
-                <item.icon className="h-5 w-5 sm:h-6 sm:w-6" />
-                <span className="text-[10px] sm:text-xs font-medium">{item.label}</span>
-              </button>
-            ))}
-            <button
-              onClick={() => setMoreMenuOpen(true)}
-              className="flex flex-col items-center gap-0.5 sm:gap-1 py-1.5 sm:py-2 px-2 sm:px-3 rounded-xl transition-colors text-text-secondary hover:text-primary hover:bg-primary/5"
-            >
-              <Menu className="h-5 w-5 sm:h-6 sm:w-6" />
-              <span className="text-[10px] sm:text-xs font-medium">More</span>
-            </button>
-          </div>
-        </div>
-        <MoreMenuDrawer open={moreMenuOpen} onOpenChange={setMoreMenuOpen} />
+        <BottomNavBar />
 
         {/* Completion Dialog */}
         {selectedTaskId && (
