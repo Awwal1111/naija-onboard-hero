@@ -74,7 +74,6 @@ export const useAdminRole = () => {
     }
 
     try {
-      // @ts-ignore - RPC exists but not in generated types yet
       const { data, error } = await supabase.rpc('get_user_admin_role')
       if (!error && data) {
         setRole(data as AdminRole)
