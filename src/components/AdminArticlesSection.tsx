@@ -27,17 +27,33 @@ export const AdminArticlesSection = () => {
     reward_amount: 0
   })
 
+  const extractStoragePath = (url: string, bucket: string): string | null => {
+    const publicPattern = `/storage/v1/object/public/${bucket}/`
+    const idx = url.indexOf(publicPattern)
+    if (idx !== -1) {
+      return decodeURIComponent(url.substring(idx + publicPattern.length))
+    }
+    return null
+  }
+
   const getImageUrl = async (mediaUrl: string): Promise<string> => {
     try {
-      // If it's already a full URL, return it directly
-      if (mediaUrl.startsWith('http://') || mediaUrl.startsWith('https://') || mediaUrl.startsWith('data:')) {
-        return mediaUrl
+      if (mediaUrl.startsWith('data:')) return mediaUrl
+
+      let storagePath = mediaUrl
+
+      if (mediaUrl.startsWith('http://') || mediaUrl.startsWith('https://')) {
+        const extracted = extractStoragePath(mediaUrl, 'article-submissions')
+        if (extracted) {
+          storagePath = extracted
+        } else {
+          return mediaUrl // External URL
+        }
       }
 
-      // Try signed URL first
       const { data, error } = await supabase.storage
         .from('article-submissions')
-        .createSignedUrl(mediaUrl, 3600)
+        .createSignedUrl(storagePath, 3600)
       
       if (!error && data?.signedUrl) {
         return data.signedUrl
@@ -46,7 +62,7 @@ export const AdminArticlesSection = () => {
       // Fallback: try public URL
       const { data: publicData } = supabase.storage
         .from('article-submissions')
-        .getPublicUrl(mediaUrl)
+        .getPublicUrl(storagePath)
       
       if (publicData?.publicUrl) {
         return publicData.publicUrl
