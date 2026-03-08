@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Zap, FileText, User, Users, Phone, Wifi, TrendingUp, Tv, Wallet, Receipt, Coins, PiggyBank } from 'lucide-react'
+import { Zap, FileText, User, Users, ArrowUpRight, Phone, Wifi, TrendingUp, Tv, Wallet, Receipt, Coins, PiggyBank, Clock } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useWallet } from '@/hooks/useWallet'
 import NaijaLanceWalletCard from '@/components/NaijaLanceWalletCard'
@@ -271,7 +271,7 @@ const EnhancedEarn = () => {
                 className="w-full"
                 onClick={() => navigate('/activity-log')}
               >
-                <History className="h-4 w-4 mr-2" />
+                <Clock className="h-4 w-4 mr-2" />
                 Full History
               </Button>
             </div>
