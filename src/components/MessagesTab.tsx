@@ -84,7 +84,9 @@ const MessagesTab: React.FC = () => {
         })
       )
 
-      setChats(chatsWithProfiles)
+      // Filter out empty chats (opened but no message ever sent)
+      const nonEmptyChats = chatsWithProfiles.filter(chat => chat.last_message)
+      setChats(nonEmptyChats)
     } catch (error) {
       console.error('Error fetching chats:', error)
     } finally {
