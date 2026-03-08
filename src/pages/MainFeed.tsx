@@ -336,25 +336,11 @@ const MainFeed = () => {
           />
 
           {/* Create Post Bar */}
-          <div className="bg-card p-4 border-b border-border">
-            <div 
-              onClick={() => setShowCreatePost(true)}
-              className="flex items-center gap-3 cursor-pointer"
-            >
-              <Avatar className="h-10 w-10 ring-2 ring-primary/20">
-                <AvatarImage src={profile?.profile_picture_url} />
-                <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
-                  {profile?.full_name?.charAt(0) || 'U'}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 py-2.5 px-4 bg-muted/50 hover:bg-muted rounded-full transition-colors">
-                <span className="text-muted-foreground">What's on your mind?</span>
-              </div>
-              <Button size="icon" variant="ghost" className="text-primary">
-                <Camera className="h-5 w-5" />
-              </Button>
-            </div>
-          </div>
+          <CreatePostBar
+            profilePictureUrl={profile?.profile_picture_url}
+            fullName={profile?.full_name}
+            onCreatePost={() => setShowCreatePost(true)}
+          />
 
           {/* Feed Toggle */}
           <div className="bg-card border-b border-border">
