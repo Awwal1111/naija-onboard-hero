@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, Suspense, lazy } from 'react'
 import { Plus, Home, MessageCircle, Users, DollarSign, User, FileText, Briefcase, Award, Calendar, Vote, Hash, RefreshCw, MoreVertical, Settings, Wallet, Camera } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Logo } from '@/components/ui/logo'
@@ -15,28 +15,32 @@ import StoriesSection from '@/components/StoriesSection'
 import { usePersonalizedFeed } from '@/hooks/usePersonalizedFeed'
 import EnhancedCreatePostDialog from '@/components/EnhancedCreatePostDialog'
 import CreateStoryDialog from '@/components/CreateStoryDialog'
-import TrendingSection from '@/components/TrendingSection'
 import ResponsiveLayout from '@/components/ResponsiveLayout'
 import NotificationBell from '@/components/NotificationBell'
-import SuggestionsTab from '@/components/SuggestionsTab'
-import JobApplicationDialog from '@/components/JobApplicationDialog'
-import ProfilePreview from '@/components/ProfilePreview'
 import ProfileCompletionDialog from '@/components/ProfileCompletionDialog'
 import { useProfileCompletion } from '@/hooks/useProfileCompletion'
 import { MoreMenuDrawer } from '@/components/MoreMenuDrawer'
 import { UnifiedSearchBar } from '@/components/UnifiedSearchBar'
 import { NCConverter } from '@/components/NCConverter'
-import { QuickOnboarding } from '@/components/QuickOnboarding'
 import { BannerAd } from '@/components/ads/BannerAd'
 import { FeedAd } from '@/components/ads/FeedAd'
-import SmartJobRecommendations from '@/components/SmartJobRecommendations'
-import UserModePrompt from '@/components/UserModePrompt'
-import { MiniAppCarousel } from '@/components/miniapps/MiniAppCarousel'
-import { DepositDialog } from '@/components/DepositDialog'
-import { EscrowSearchDialog } from '@/components/EscrowSearchDialog'
-import { NCConverterDialog } from '@/components/miniapps/NCConverterDialog'
 import { supabase } from '@/integrations/supabase/client'
-import { PlatformRatingDialog } from '@/components/PlatformRatingDialog'
+import { FeedSkeleton } from '@/components/FeedSkeleton'
+import CreatePostBar from '@/components/CreatePostBar'
+
+// Lazy-load heavy below-fold components
+const TrendingSection = lazy(() => import('@/components/TrendingSection'))
+const SuggestionsTab = lazy(() => import('@/components/SuggestionsTab'))
+const JobApplicationDialog = lazy(() => import('@/components/JobApplicationDialog'))
+const ProfilePreview = lazy(() => import('@/components/ProfilePreview'))
+const SmartJobRecommendations = lazy(() => import('@/components/SmartJobRecommendations'))
+const UserModePrompt = lazy(() => import('@/components/UserModePrompt'))
+const MiniAppCarousel = lazy(() => import('@/components/miniapps/MiniAppCarousel').then(m => ({ default: m.MiniAppCarousel })))
+const DepositDialog = lazy(() => import('@/components/DepositDialog').then(m => ({ default: m.DepositDialog })))
+const EscrowSearchDialog = lazy(() => import('@/components/EscrowSearchDialog').then(m => ({ default: m.EscrowSearchDialog })))
+const NCConverterDialog = lazy(() => import('@/components/miniapps/NCConverterDialog').then(m => ({ default: m.NCConverterDialog })))
+const PlatformRatingDialog = lazy(() => import('@/components/PlatformRatingDialog').then(m => ({ default: m.PlatformRatingDialog })))
+const QuickOnboarding = lazy(() => import('@/components/QuickOnboarding').then(m => ({ default: m.QuickOnboarding })))
 
 const MainFeed = () => {
   const navigate = useNavigate()
@@ -237,14 +241,7 @@ const MainFeed = () => {
   // This eliminates the "Setting up your account..." infinite loop
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center pb-20">
-        <div className="text-center">
-          <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-text-secondary">Loading feed...</p>
-        </div>
-      </div>
-    )
+    return <FeedSkeleton />
   }
 
   return (
@@ -316,17 +313,19 @@ const MainFeed = () => {
           </header>
 
           {/* Mini Apps Carousel - Above Stories for visibility */}
-          <MiniAppCarousel onInternalAction={(action) => {
-            if (action === 'bills') navigate('/earn?tab=bills')
-            if (action === 'bank_deposit') {
-              const event = new CustomEvent('open-quidax-widget', { detail: { mode: 'buy' } })
-              window.dispatchEvent(event)
-            }
-            if (action === 'crypto_deposit') setShowDepositDialog(true)
-            if (action === 'deposit_naira') setShowDepositDialog(true)
-            if (action === 'escrow') setShowEscrowSearch(true)
-            if (action === 'nc_converter') setShowNCConverter(true)
-          }} />
+          <Suspense fallback={null}>
+            <MiniAppCarousel onInternalAction={(action) => {
+              if (action === 'bills') navigate('/earn?tab=bills')
+              if (action === 'bank_deposit') {
+                const event = new CustomEvent('open-quidax-widget', { detail: { mode: 'buy' } })
+                window.dispatchEvent(event)
+              }
+              if (action === 'crypto_deposit') setShowDepositDialog(true)
+              if (action === 'deposit_naira') setShowDepositDialog(true)
+              if (action === 'escrow') setShowEscrowSearch(true)
+              if (action === 'nc_converter') setShowNCConverter(true)
+            }} />
+          </Suspense>
 
           {/* Stories Section */}
           <StoriesSection
@@ -337,25 +336,11 @@ const MainFeed = () => {
           />
 
           {/* Create Post Bar */}
-          <div className="bg-card p-4 border-b border-border">
-            <div 
-              onClick={() => setShowCreatePost(true)}
-              className="flex items-center gap-3 cursor-pointer"
-            >
-              <Avatar className="h-10 w-10 ring-2 ring-primary/20">
-                <AvatarImage src={profile?.profile_picture_url} />
-                <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
-                  {profile?.full_name?.charAt(0) || 'U'}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 py-2.5 px-4 bg-muted/50 hover:bg-muted rounded-full transition-colors">
-                <span className="text-muted-foreground">What's on your mind?</span>
-              </div>
-              <Button size="icon" variant="ghost" className="text-primary">
-                <Camera className="h-5 w-5" />
-              </Button>
-            </div>
-          </div>
+          <CreatePostBar
+            profilePictureUrl={profile?.profile_picture_url}
+            fullName={profile?.full_name}
+            onCreatePost={() => setShowCreatePost(true)}
+          />
 
           {/* Feed Toggle */}
           <div className="bg-card border-b border-border">
@@ -383,10 +368,11 @@ const MainFeed = () => {
             </div>
           </div>
 
-          {/* Smart Job Recommendations */}
-          <div className="px-4 py-3">
-            <SmartJobRecommendations maxItems={5} showGigs={true} />
-          </div>
+          <Suspense fallback={null}>
+            <div className="px-4 py-3">
+              <SmartJobRecommendations maxItems={5} showGigs={true} />
+            </div>
+          </Suspense>
 
           {/* Banner Ad - Top of Feed */}
           <div className="px-4 py-3">
@@ -444,19 +430,23 @@ const MainFeed = () => {
               )}
             </div>
           ) : (
-            <div className="p-4">
-              <SuggestionsTab />
-            </div>
+            <Suspense fallback={<div className="p-8 text-center text-muted-foreground">Loading suggestions...</div>}>
+              <div className="p-4">
+                <SuggestionsTab />
+              </div>
+            </Suspense>
           )}
         </div>
 
         {/* Trending Sidebar - Hidden on smaller screens */}
         <div className="hidden xl:block xl:w-80 xl:ml-6">
           <div className="sticky top-24 px-6">
-            <TrendingSection 
-              onHashtagClick={setSearchQuery}
-              onCategoryFilter={setSelectedCategory}
-            />
+            <Suspense fallback={null}>
+              <TrendingSection 
+                onHashtagClick={setSearchQuery}
+                onCategoryFilter={setSelectedCategory}
+              />
+            </Suspense>
           </div>
         </div>
       </div>
@@ -478,24 +468,26 @@ const MainFeed = () => {
         onStoryCreated={handleStoryCreated}
       />
 
-      {/* Job Application Dialog */}
-      <JobApplicationDialog
-        isOpen={jobApplicationDialog.isOpen}
-        onClose={() => setJobApplicationDialog({ isOpen: false, jobPost: null })}
-        jobPost={jobApplicationDialog.jobPost}
-      />
+      <Suspense fallback={null}>
+        {/* Job Application Dialog */}
+        <JobApplicationDialog
+          isOpen={jobApplicationDialog.isOpen}
+          onClose={() => setJobApplicationDialog({ isOpen: false, jobPost: null })}
+          jobPost={jobApplicationDialog.jobPost}
+        />
 
-      {/* Profile Preview Dialog */}
-      <ProfilePreview
-        isOpen={profilePreview.isOpen}
-        onClose={() => setProfilePreview({ isOpen: false, userId: null })}
-        profileId={profilePreview.userId || ''}
-      />
+        {/* Profile Preview Dialog */}
+        <ProfilePreview
+          isOpen={profilePreview.isOpen}
+          onClose={() => setProfilePreview({ isOpen: false, userId: null })}
+          profileId={profilePreview.userId || ''}
+        />
 
-      {/* Crypto Deposit Dialog */}
-      <DepositDialog open={showDepositDialog} onOpenChange={setShowDepositDialog} />
-      <EscrowSearchDialog open={showEscrowSearch} onOpenChange={setShowEscrowSearch} />
-      <NCConverterDialog open={showNCConverter} onClose={() => setShowNCConverter(false)} />
+        {/* Crypto Deposit Dialog */}
+        <DepositDialog open={showDepositDialog} onOpenChange={setShowDepositDialog} />
+        <EscrowSearchDialog open={showEscrowSearch} onOpenChange={setShowEscrowSearch} />
+        <NCConverterDialog open={showNCConverter} onClose={() => setShowNCConverter(false)} />
+      </Suspense>
 
       {/* Bottom Navigation - Responsive design */}
       <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border px-1 sm:px-4 py-1.5 sm:py-2 safe-area-bottom z-50">
@@ -537,21 +529,23 @@ const MainFeed = () => {
       {/* More Menu Drawer */}
       <MoreMenuDrawer open={moreMenuOpen} onOpenChange={setMoreMenuOpen} />
 
-      {/* Quick Onboarding for new users */}
-      <QuickOnboarding
-        open={showOnboarding}
-        onOpenChange={setShowOnboarding}
-        onComplete={handleOnboardingComplete}
-      />
+      <Suspense fallback={null}>
+        {/* Quick Onboarding for new users */}
+        <QuickOnboarding
+          open={showOnboarding}
+          onOpenChange={setShowOnboarding}
+          onComplete={handleOnboardingComplete}
+        />
 
-      {/* User Mode Prompt for existing users without mode set */}
-      <UserModePrompt />
+        {/* User Mode Prompt for existing users without mode set */}
+        <UserModePrompt />
 
-      {/* Platform Rating Dialog */}
-      <PlatformRatingDialog 
-        open={showRatingDialog} 
-        onOpenChange={setShowRatingDialog} 
-      />
+        {/* Platform Rating Dialog */}
+        <PlatformRatingDialog 
+          open={showRatingDialog} 
+          onOpenChange={setShowRatingDialog} 
+        />
+      </Suspense>
 
     </>
   )
