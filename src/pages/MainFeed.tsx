@@ -78,6 +78,7 @@ const MainFeed = () => {
   const [showDepositDialog, setShowDepositDialog] = useState(false)
   const [showEscrowSearch, setShowEscrowSearch] = useState(false)
   const [showNCConverter, setShowNCConverter] = useState(false)
+  const [feedTimedOut, setFeedTimedOut] = useState(false)
   const [showRatingDialog, setShowRatingDialog] = useState(false)
 
   // Check if user should see the platform rating prompt
