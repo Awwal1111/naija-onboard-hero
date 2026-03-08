@@ -1404,34 +1404,44 @@ const EnhancedAdminDashboard = () => {
         <Tabs defaultValue="overview" className="w-full">
           <div className="overflow-x-auto mb-6">
             <TabsList className="inline-flex w-full min-w-max">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="users">Users</TabsTrigger>
-              <TabsTrigger value="content">Content</TabsTrigger>
-              <TabsTrigger value="applications">Applications</TabsTrigger>
-              <TabsTrigger value="marketplace">Marketplace</TabsTrigger>
-              <TabsTrigger value="ads">
-                <Megaphone className="h-4 w-4 mr-1" />
-                Ads
-              </TabsTrigger>
-              <TabsTrigger value="wallet">Wallet</TabsTrigger>
-              <TabsTrigger value="api-sales">
-                <Code className="h-4 w-4 mr-1" />
-                API Sales
-              </TabsTrigger>
-              <TabsTrigger value="api-usage">
-                <Gauge className="h-4 w-4 mr-1" />
-                API Usage
-              </TabsTrigger>
-              <TabsTrigger value="support">
-                <Ticket className="h-4 w-4 mr-1" />
-                Support
-              </TabsTrigger>
-              <TabsTrigger value="mini-apps">
-                <Package className="h-4 w-4 mr-1" />
-                Mini Apps
-              </TabsTrigger>
-              <TabsTrigger value="analytics">Analytics</TabsTrigger>
-              <TabsTrigger value="settings">Settings</TabsTrigger>
+              {canAccessTab('overview') && <TabsTrigger value="overview">Overview</TabsTrigger>}
+              {canAccessTab('users') && <TabsTrigger value="users">Users</TabsTrigger>}
+              {canAccessTab('content') && <TabsTrigger value="content">Content</TabsTrigger>}
+              {canAccessTab('applications') && <TabsTrigger value="applications">Applications</TabsTrigger>}
+              {canAccessTab('marketplace') && <TabsTrigger value="marketplace">Marketplace</TabsTrigger>}
+              {canAccessTab('ads') && (
+                <TabsTrigger value="ads">
+                  <Megaphone className="h-4 w-4 mr-1" />
+                  Ads
+                </TabsTrigger>
+              )}
+              {canAccessTab('wallet') && <TabsTrigger value="wallet">Wallet</TabsTrigger>}
+              {canAccessTab('api-sales') && (
+                <TabsTrigger value="api-sales">
+                  <Code className="h-4 w-4 mr-1" />
+                  API Sales
+                </TabsTrigger>
+              )}
+              {canAccessTab('api-usage') && (
+                <TabsTrigger value="api-usage">
+                  <Gauge className="h-4 w-4 mr-1" />
+                  API Usage
+                </TabsTrigger>
+              )}
+              {canAccessTab('support') && (
+                <TabsTrigger value="support">
+                  <Ticket className="h-4 w-4 mr-1" />
+                  Support
+                </TabsTrigger>
+              )}
+              {canAccessTab('mini-apps') && (
+                <TabsTrigger value="mini-apps">
+                  <Package className="h-4 w-4 mr-1" />
+                  Mini Apps
+                </TabsTrigger>
+              )}
+              {canAccessTab('analytics') && <TabsTrigger value="analytics">Analytics</TabsTrigger>}
+              {canAccessTab('settings') && <TabsTrigger value="settings">Settings</TabsTrigger>}
             </TabsList>
           </div>
 
