@@ -7366,6 +7366,14 @@ export type Database = {
         }
         Returns: Json
       }
+      convert_nc_balance: {
+        Args: {
+          p_input_amount?: number
+          p_output_amount?: number
+          p_user_id: string
+        }
+        Returns: Json
+      }
       deduct_nc_balance: {
         Args: { p_amount: number; p_user_id: string }
         Returns: boolean
