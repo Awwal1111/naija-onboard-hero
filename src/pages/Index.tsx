@@ -4,14 +4,17 @@ import { Logo } from '@/components/ui/logo'
 import { BrandButton } from '@/components/ui/brand-button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Facebook, Youtube, Linkedin, MessageSquare, Phone, Users, Shield, ArrowRight, Briefcase, DollarSign, Clock, Award, Wallet, CreditCard, UserCheck, CheckCircle2, Building2, Network, Download, Play, Code2 } from 'lucide-react'
+import { Facebook, Youtube, Linkedin, MessageSquare, Phone, Users, Shield, ArrowRight, Briefcase, DollarSign, Clock, Award, Wallet, UserCheck, CheckCircle2, Building2, Download, Play, Code2 } from 'lucide-react'
 import heroImage from '@/assets/hero-image.jpg'
 import explainerVideo from '@/assets/naijalancers-explainer.mp4'
 
 import { LeaderboardSection } from '@/components/LeaderboardSection'
 import { SuccessStoriesSection } from '@/components/SuccessStoriesSection'
+import { SocialProofSection } from '@/components/SocialProofSection'
 import { FeaturedContestsSection } from '@/components/FeaturedContestsSection'
 import { FeaturedGigsSection } from '@/components/FeaturedGigsSection'
+import { WhatsAppShareCTA } from '@/components/WhatsAppShareCTA'
+import { StickyMobileCTA } from '@/components/StickyMobileCTA'
 import { detectMiniPaySync } from '@/lib/minipay'
 
 // SYNC detection at module load - NO context hooks
@@ -19,7 +22,6 @@ const isMiniPayEnv = detectMiniPaySync().isMiniPay
 
 const Index = () => {
   // MiniPay users go directly to feed - NO login screens
-  // This redirect happens ONCE on initial render using SYNC detection
   if (isMiniPayEnv) {
     return <Navigate to="/feed" replace />
   }
@@ -35,7 +37,7 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-16 md:pb-0">
       {/* Sticky Navigation + Search Bar */}
       <nav className="sticky top-0 bg-background/95 backdrop-blur-md border-b border-border z-50 shadow-sm">
         <div className="flex items-center justify-between px-3 py-3 sm:px-6 sm:py-4">
@@ -61,7 +63,6 @@ const Index = () => {
           <div className="max-w-4xl mx-auto">
             <EnhancedSearchBar />
           </div>
-          {/* Quick browse chips */}
           <div className="flex flex-wrap gap-2 justify-center mt-3">
             <Link to="/p/gigs" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium bg-muted hover:bg-accent transition-colors">
               <Briefcase className="w-3.5 h-3.5" />
@@ -83,7 +84,7 @@ const Index = () => {
         </div>
       </nav>
 
-      {/* Hero Section - Premium Professional Design */}
+      {/* Hero Section */}
       <section className="relative overflow-hidden py-12 sm:py-20 lg:py-28 bg-gradient-to-br from-primary/5 via-background to-background">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent opacity-60" />
         
@@ -97,14 +98,14 @@ const Index = () => {
                 </Badge>
                 
                 <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.1] tracking-tight">
-                  <span className="text-foreground">Your Trusted</span>
+                  <span className="text-foreground">Hire or Get Hired</span>
                   <span className="block bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent mt-2">
-                    Global Freelance Marketplace
+                    With Confidence
                   </span>
                 </h1>
                 
                 <p className="text-lg sm:text-xl lg:text-2xl text-muted-foreground leading-relaxed max-w-xl">
-                  Connect with vetted professionals worldwide. Secure escrow payments. Trusted by thousands.
+                  Post a job in 2 minutes. Get matched with verified experts. Pay only when satisfied.
                 </p>
 
                 <div className="flex flex-wrap gap-4 sm:gap-8 pt-2">
@@ -122,13 +123,13 @@ const Index = () => {
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Users className="w-4 h-4 text-primary" />
+                      <Clock className="w-4 h-4 text-primary" />
                     </div>
-                    <span className="text-sm sm:text-base font-medium">10,000+ Users</span>
+                    <span className="text-sm sm:text-base font-medium">Fast Payouts</span>
                   </div>
                 </div>
 
-                {/* Dual CTA for Clients and Freelancers */}
+                {/* Dual CTA */}
                 <div className="flex flex-col gap-3 sm:flex-row sm:gap-4 pt-4">
                   <BrandButton asChild size="lg" className="text-base sm:text-lg px-6 sm:px-10 py-5 sm:py-7 w-full sm:w-auto shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all">
                     <Link to="/signup?intent=hire">
@@ -147,22 +148,20 @@ const Index = () => {
 
               <div className="relative hidden lg:block">
                 <div className="relative">
-                  {/* Decorative elements */}
                   <div className="absolute -top-8 -left-8 w-72 h-72 bg-primary/10 rounded-full blur-3xl" />
                   <div className="absolute -bottom-8 -right-8 w-72 h-72 bg-accent/10 rounded-full blur-3xl" />
                   
                   <div className="relative aspect-square rounded-3xl overflow-hidden shadow-2xl border border-border/50">
-                    <img src={heroImage} alt="NaijaLancers Platform" className="w-full h-full object-cover" />
+                    <img src={heroImage} alt="NaijaLancers - Trusted Freelance Marketplace" className="w-full h-full object-cover" loading="eager" />
                     <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
                   </div>
                   
                   {/* Floating stats card */}
                   <div className="absolute -bottom-6 -right-6 bg-card/95 backdrop-blur-sm p-6 rounded-2xl shadow-2xl border border-border">
-                    <div className="text-3xl sm:text-4xl font-bold text-primary">10K+</div>
-                    <div className="text-sm text-muted-foreground">Active Users</div>
+                    <div className="text-3xl sm:text-4xl font-bold text-primary">SafePay</div>
+                    <div className="text-sm text-muted-foreground">Escrow Protection</div>
                   </div>
                   
-                  {/* Floating badge */}
                   <div className="absolute -top-4 -right-4 bg-primary text-primary-foreground px-4 py-2 rounded-full shadow-lg flex items-center gap-2">
                     <Shield className="w-4 h-4" />
                     <span className="text-sm font-medium">Verified</span>
@@ -173,6 +172,9 @@ const Index = () => {
           </div>
         </div>
       </section>
+
+      {/* Social Proof Testimonials - right after hero for trust */}
+      <SocialProofSection />
 
       {/* Video Explainer Section */}
       <section className="py-16 sm:py-24 bg-muted/30 relative overflow-hidden">
@@ -205,10 +207,10 @@ const Index = () => {
             {/* How it works steps */}
             <div className="grid sm:grid-cols-4 gap-6 mt-12">
               {[
-                { step: "1", title: "Sign Up", desc: "Create your free account in minutes" },
-                { step: "2", title: "Find Work", desc: "Browse jobs or offer your services" },
-                { step: "3", title: "Get Paid", desc: "Secure payments via SafePay escrow" },
-                { step: "4", title: "Grow", desc: "Build your reputation and earn more" },
+                { step: "1", title: "Sign Up Free", desc: "Create your account in under 2 minutes" },
+                { step: "2", title: "Post or Apply", desc: "Post a job or browse available gigs" },
+                { step: "3", title: "Work Securely", desc: "SafePay escrow protects every payment" },
+                { step: "4", title: "Get Paid", desc: "Withdraw earnings to your bank instantly" },
               ].map((item) => (
                 <div key={item.step} className="text-center">
                   <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground font-bold text-lg flex items-center justify-center mx-auto mb-3">
@@ -226,70 +228,105 @@ const Index = () => {
       {/* Featured Gigs Section */}
       <FeaturedGigsSection />
 
-      {/* Featured Contests Section - Keep for marketing appeal */}
+      {/* Featured Contests Section */}
       <FeaturedContestsSection />
 
-      {/* For Clients Section - Hiring Focus */}
+      {/* Combined Value Props - For Both Clients and Freelancers */}
       <section className="py-16 bg-muted/30">
         <div className="container mx-auto px-6">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12">
-              <Badge variant="secondary" className="mb-4">
-                <Briefcase className="w-3 h-3 mr-1" />
-                For Clients
-              </Badge>
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">Find the Perfect Talent</h2>
-              <p className="text-lg text-muted-foreground">Access verified professionals ready to deliver quality work</p>
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">Everything You Need to Succeed</h2>
+              <p className="text-lg text-muted-foreground">Whether you're hiring or freelancing</p>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-8">
-              <Card className="text-center">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <Card className="hover:shadow-lg transition-shadow border-primary/10">
                 <CardHeader>
-                  <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-                    <Users className="w-8 h-8 text-primary" />
+                  <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-3">
+                    <Users className="w-6 h-6 text-primary" />
                   </div>
-                  <CardTitle>AI-Powered Matching</CardTitle>
-                  <CardDescription>Smart recommendations</CardDescription>
+                  <CardTitle className="text-lg">AI-Powered Matching</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground">
-                    Our AI matches you with the best talent based on your project requirements
+                    Our AI matches you with the perfect talent or job based on skills, budget, and past performance.
                   </p>
                 </CardContent>
               </Card>
 
-              <Card className="text-center">
+              <Card className="hover:shadow-lg transition-shadow border-primary/10">
                 <CardHeader>
-                  <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-                    <Shield className="w-8 h-8 text-primary" />
+                  <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-3">
+                    <Shield className="w-6 h-6 text-primary" />
                   </div>
-                  <CardTitle>SafePay Escrow</CardTitle>
-                  <CardDescription>Risk-free payments</CardDescription>
+                  <CardTitle className="text-lg">SafePay Escrow</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground">
-                    Funds are released only when you approve the completed work
+                    Funds are held securely and released only when you approve. Zero risk for both sides.
                   </p>
                 </CardContent>
               </Card>
 
-              <Card className="text-center">
+              <Card className="hover:shadow-lg transition-shadow border-primary/10">
                 <CardHeader>
-                  <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-                    <UserCheck className="w-8 h-8 text-primary" />
+                  <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-3">
+                    <UserCheck className="w-6 h-6 text-primary" />
                   </div>
-                  <CardTitle>Verified Professionals</CardTitle>
-                  <CardDescription>Quality assured</CardDescription>
+                  <CardTitle className="text-lg">Verified Professionals</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground">
-                    Every expert is vetted with verified skills and portfolio reviews
+                    Every expert is vetted with verified skills, portfolio reviews, and real client ratings.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="hover:shadow-lg transition-shadow border-primary/10">
+                <CardHeader>
+                  <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-3">
+                    <Wallet className="w-6 h-6 text-primary" />
+                  </div>
+                  <CardTitle className="text-lg">Multiple Payment Options</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    Bank transfers, crypto via Celo/MiniPay, and in-platform wallet. Get paid your way.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="hover:shadow-lg transition-shadow border-primary/10">
+                <CardHeader>
+                  <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-3">
+                    <Award className="w-6 h-6 text-primary" />
+                  </div>
+                  <CardTitle className="text-lg">Free Courses & Certifications</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    Level up with free courses, earn certificates, and unlock higher-paying opportunities.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="hover:shadow-lg transition-shadow border-primary/10">
+                <CardHeader>
+                  <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-3">
+                    <Clock className="w-6 h-6 text-primary" />
+                  </div>
+                  <CardTitle className="text-lg">Daily Earning Tasks</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    Earn rewards through daily sign-ins, surveys, referrals, and social media tasks.
                   </p>
                 </CardContent>
               </Card>
             </div>
             
-            <div className="text-center mt-8">
+            <div className="text-center mt-10 flex flex-col sm:flex-row gap-4 justify-center">
               <BrandButton asChild size="lg">
                 <Link to="/ai-hire">
                   <Users className="mr-2 w-5 h-5" />
@@ -297,165 +334,23 @@ const Index = () => {
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Link>
               </BrandButton>
+              <BrandButton asChild size="lg" variant="outline">
+                <Link to="/p/gigs">
+                  <Briefcase className="mr-2 w-5 h-5" />
+                  Browse Services
+                </Link>
+              </BrandButton>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Global Trust Section */}
-      <section className="py-16">
-        <div className="container mx-auto px-6">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-12">
-              <Badge variant="secondary" className="mb-4">
-                <DollarSign className="w-3 h-3 mr-1" />
-                For Freelancers
-              </Badge>
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">Grow Your Freelance Career</h2>
-              <p className="text-lg text-muted-foreground">Everything you need to succeed globally</p>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-8">
-              <Card className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-                    <Wallet className="w-8 h-8 text-primary" />
-                  </div>
-                  <CardTitle className="text-center">Global Payments</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-center text-muted-foreground">
-                    Get paid in multiple currencies with instant deposits and fast withdrawals
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-                    <Network className="w-8 h-8 text-primary" />
-                  </div>
-                  <CardTitle className="text-center">Blockchain Powered</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-center text-muted-foreground">
-                    Secure crypto payments via Celo network with MiniPay integration
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-                    <Award className="w-8 h-8 text-primary" />
-                  </div>
-                  <CardTitle className="text-center">Build Reputation</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-center text-muted-foreground">
-                    Earn badges, collect reviews, and become a verified expert
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section className="py-20 bg-muted/30">
-        <div className="container mx-auto px-6">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">Why Choose NaijaLancers?</h2>
-              <p className="text-lg text-muted-foreground">Everything you need to succeed</p>
-            </div>
-
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              <Card>
-                <CardHeader>
-                  <Wallet className="w-12 h-12 text-primary mb-4" />
-                  <CardTitle>Instant Deposits</CardTitle>
-                  <CardDescription>Min: 3,000 NC (₦3,000)</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">
-                    Fund your account instantly through our secure banking partner
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <DollarSign className="w-12 h-12 text-primary mb-4" />
-                  <CardTitle>Fast Withdrawals</CardTitle>
-                  <CardDescription>Min: $2 USD (3,000 NC)</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">
-                    Withdraw your earnings quickly to your bank account
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <Shield className="w-12 h-12 text-primary mb-4" />
-                  <CardTitle>SafePay Protection</CardTitle>
-                  <CardDescription>Secure Escrow System</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">
-                    Your payments are protected until work is completed
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <Briefcase className="w-12 h-12 text-primary mb-4" />
-                  <CardTitle>Find Jobs</CardTitle>
-                  <CardDescription>Thousands of Opportunities</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">
-                    Connect with clients looking for your skills
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <Clock className="w-12 h-12 text-primary mb-4" />
-                  <CardTitle>Earn Daily</CardTitle>
-                  <CardDescription>Multiple Income Streams</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">
-                    Complete tasks, surveys, and games for rewards
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <Users className="w-12 h-12 text-primary mb-4" />
-                  <CardTitle>Verified Experts</CardTitle>
-                  <CardDescription>Quality Professionals</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">
-                    Work with pre-screened verified experts
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Success Stories Section */}
+      {/* Success Stories with Real Data */}
       <SuccessStoriesSection />
+
+      {/* WhatsApp Share CTA */}
+      <WhatsAppShareCTA />
+
       {/* Leaderboard Section */}
       <section className="py-16">
         <div className="container mx-auto px-6">
@@ -468,15 +363,20 @@ const Index = () => {
       {/* CTA Section */}
       <section className="py-20 bg-primary text-primary-foreground">
         <div className="container mx-auto px-6 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to Get Started?</h2>
-          <p className="text-xl mb-8 opacity-90">
-            Join thousands of professionals earning globally on NaijaLancers
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">Stop Waiting. Start Earning Today.</h2>
+          <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
+            Join thousands of professionals already growing their careers on NaijaLancers. It's free to sign up.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <BrandButton asChild size="lg" variant="secondary" className="text-lg px-8 py-6">
               <Link to="/signup">
                 Create Free Account
                 <ArrowRight className="ml-2 w-5 h-5" />
+              </Link>
+            </BrandButton>
+            <BrandButton asChild size="lg" variant="ghost" className="text-lg px-8 py-6 text-primary-foreground border border-primary-foreground/30 hover:bg-primary-foreground/10">
+              <Link to="/p/gigs">
+                Browse First
               </Link>
             </BrandButton>
           </div>
@@ -575,6 +475,9 @@ const Index = () => {
           </div>
         </div>
       </footer>
+
+      {/* Sticky Mobile CTA */}
+      <StickyMobileCTA />
     </div>
   )
 }
