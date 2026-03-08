@@ -35,7 +35,7 @@ const JobApplicationDialog = lazy(() => import('@/components/JobApplicationDialo
 const ProfilePreview = lazy(() => import('@/components/ProfilePreview'))
 const SmartJobRecommendations = lazy(() => import('@/components/SmartJobRecommendations'))
 const UserModePrompt = lazy(() => import('@/components/UserModePrompt'))
-const MiniAppCarousel = lazy(() => import('@/components/miniapps/MiniAppCarousel').then(m => ({ default: m.MiniAppCarousel })))
+
 const DepositDialog = lazy(() => import('@/components/DepositDialog').then(m => ({ default: m.DepositDialog })))
 const EscrowSearchDialog = lazy(() => import('@/components/EscrowSearchDialog').then(m => ({ default: m.EscrowSearchDialog })))
 const NCConverterDialog = lazy(() => import('@/components/miniapps/NCConverterDialog').then(m => ({ default: m.NCConverterDialog })))
@@ -314,20 +314,6 @@ const MainFeed = () => {
             </div>
           </header>
 
-          {/* Mini Apps Carousel - Above Stories for visibility */}
-          <Suspense fallback={null}>
-            <MiniAppCarousel onInternalAction={(action) => {
-              if (action === 'bills') navigate('/earn?tab=bills')
-              if (action === 'bank_deposit') {
-                const event = new CustomEvent('open-quidax-widget', { detail: { mode: 'buy' } })
-                window.dispatchEvent(event)
-              }
-              if (action === 'crypto_deposit') setShowDepositDialog(true)
-              if (action === 'deposit_naira') setShowDepositDialog(true)
-              if (action === 'escrow') setShowEscrowSearch(true)
-              if (action === 'nc_converter') setShowNCConverter(true)
-            }} />
-          </Suspense>
 
           {/* Stories Section */}
           <StoriesSection
