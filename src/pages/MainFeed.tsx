@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, Suspense, lazy } from 'react'
 import { Plus, Home, MessageCircle, Users, DollarSign, User, FileText, Briefcase, Award, Calendar, Vote, Hash, RefreshCw, MoreVertical, Settings, Wallet, Camera } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Logo } from '@/components/ui/logo'
@@ -15,28 +15,32 @@ import StoriesSection from '@/components/StoriesSection'
 import { usePersonalizedFeed } from '@/hooks/usePersonalizedFeed'
 import EnhancedCreatePostDialog from '@/components/EnhancedCreatePostDialog'
 import CreateStoryDialog from '@/components/CreateStoryDialog'
-import TrendingSection from '@/components/TrendingSection'
 import ResponsiveLayout from '@/components/ResponsiveLayout'
 import NotificationBell from '@/components/NotificationBell'
-import SuggestionsTab from '@/components/SuggestionsTab'
-import JobApplicationDialog from '@/components/JobApplicationDialog'
-import ProfilePreview from '@/components/ProfilePreview'
 import ProfileCompletionDialog from '@/components/ProfileCompletionDialog'
 import { useProfileCompletion } from '@/hooks/useProfileCompletion'
 import { MoreMenuDrawer } from '@/components/MoreMenuDrawer'
 import { UnifiedSearchBar } from '@/components/UnifiedSearchBar'
 import { NCConverter } from '@/components/NCConverter'
-import { QuickOnboarding } from '@/components/QuickOnboarding'
 import { BannerAd } from '@/components/ads/BannerAd'
 import { FeedAd } from '@/components/ads/FeedAd'
-import SmartJobRecommendations from '@/components/SmartJobRecommendations'
-import UserModePrompt from '@/components/UserModePrompt'
-import { MiniAppCarousel } from '@/components/miniapps/MiniAppCarousel'
-import { DepositDialog } from '@/components/DepositDialog'
-import { EscrowSearchDialog } from '@/components/EscrowSearchDialog'
-import { NCConverterDialog } from '@/components/miniapps/NCConverterDialog'
 import { supabase } from '@/integrations/supabase/client'
-import { PlatformRatingDialog } from '@/components/PlatformRatingDialog'
+import { FeedSkeleton } from '@/components/FeedSkeleton'
+import CreatePostBar from '@/components/CreatePostBar'
+
+// Lazy-load heavy below-fold components
+const TrendingSection = lazy(() => import('@/components/TrendingSection'))
+const SuggestionsTab = lazy(() => import('@/components/SuggestionsTab'))
+const JobApplicationDialog = lazy(() => import('@/components/JobApplicationDialog'))
+const ProfilePreview = lazy(() => import('@/components/ProfilePreview'))
+const SmartJobRecommendations = lazy(() => import('@/components/SmartJobRecommendations'))
+const UserModePrompt = lazy(() => import('@/components/UserModePrompt'))
+const MiniAppCarousel = lazy(() => import('@/components/miniapps/MiniAppCarousel').then(m => ({ default: m.MiniAppCarousel })))
+const DepositDialog = lazy(() => import('@/components/DepositDialog').then(m => ({ default: m.DepositDialog })))
+const EscrowSearchDialog = lazy(() => import('@/components/EscrowSearchDialog').then(m => ({ default: m.EscrowSearchDialog })))
+const NCConverterDialog = lazy(() => import('@/components/miniapps/NCConverterDialog').then(m => ({ default: m.NCConverterDialog })))
+const PlatformRatingDialog = lazy(() => import('@/components/PlatformRatingDialog').then(m => ({ default: m.PlatformRatingDialog })))
+const QuickOnboarding = lazy(() => import('@/components/QuickOnboarding').then(m => ({ default: m.QuickOnboarding })))
 
 const MainFeed = () => {
   const navigate = useNavigate()
