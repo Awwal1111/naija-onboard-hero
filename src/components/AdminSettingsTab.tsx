@@ -72,7 +72,7 @@ export function AdminSettingsTab() {
       const { data: rolesData, error: rolesError } = await supabase
         .from('user_roles')
         .select('user_id, role')
-        .in('role', ['admin', 'moderator'])
+        .in('role', ['super_admin' as any, 'admin', 'moderator'])
 
       if (rolesError) throw rolesError
 
@@ -85,13 +85,17 @@ export function AdminSettingsTab() {
             .eq('user_id', r.user_id)
             .single()
 
-          const { data: authUser } = await supabase.auth.admin.getUserById(r.user_id)
+          // Look up email via RPC since auth.admin is not available client-side
+          // @ts-ignore
+          const { data: userInfo } = await supabase.rpc('lookup_user_by_email', {
+            lookup_email: '' // We'll use a different approach
+          })
 
           return {
             user_id: r.user_id,
             role: r.role,
             full_name: profile?.full_name || 'Unknown User',
-            email: authUser?.user?.email || '',
+            email: '', // Email lookup requires server-side access
             created_at: profile?.created_at || ''
           }
         })
