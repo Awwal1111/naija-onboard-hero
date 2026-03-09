@@ -10,12 +10,14 @@ import { useAuth } from '@/hooks/useAuth'
 import { useNavigate } from 'react-router-dom'
 import { toast } from '@/hooks/use-toast'
 import { usePersonalizedConnections, PersonalizedConnection } from '@/hooks/usePersonalizedDiscovery'
+import ProfilePreview from '@/components/ProfilePreview'
 
 const SuggestionsTab: React.FC = () => {
   const { user } = useAuth()
   const navigate = useNavigate()
   const { sendConnectionRequest } = useConnections()
   const [pendingRequests, setPendingRequests] = useState<Set<string>>(new Set())
+  const [previewProfileId, setPreviewProfileId] = useState<string | null>(null)
 
   // Use personalized connection algorithm
   const { connections: allSuggestions, loading } = usePersonalizedConnections(50)
@@ -48,7 +50,10 @@ const SuggestionsTab: React.FC = () => {
         <CardContent className="p-0">
           <div className="p-4">
             <div className="flex items-start gap-4 mb-4">
-              <Avatar className="h-16 w-16 border-2 border-background shadow-md ring-2 ring-primary/10 group-hover:ring-primary/30 transition-all">
+              <Avatar 
+                className="h-16 w-16 border-2 border-background shadow-md ring-2 ring-primary/10 group-hover:ring-primary/30 transition-all cursor-pointer"
+                onClick={() => setPreviewProfileId(user.user_id)}
+              >
                 <AvatarImage src={user.profile_picture_url || undefined} />
                 <AvatarFallback className="text-lg font-semibold">
                   {user.full_name?.[0]?.toUpperCase() || 'U'}
@@ -57,7 +62,10 @@ const SuggestionsTab: React.FC = () => {
               
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-2 mb-1">
-                  <h4 className="font-semibold text-base truncate">
+                  <h4 
+                    className="font-semibold text-base truncate cursor-pointer hover:text-primary transition-colors"
+                    onClick={() => setPreviewProfileId(user.user_id)}
+                  >
                     {user.full_name}
                   </h4>
                   {user.is_expert && (
@@ -244,6 +252,13 @@ const SuggestionsTab: React.FC = () => {
           )}
         </div>
       )}
+
+      {/* Profile Preview Dialog */}
+      <ProfilePreview
+        isOpen={!!previewProfileId}
+        onClose={() => setPreviewProfileId(null)}
+        profileId={previewProfileId || ''}
+      />
     </div>
   )
 }

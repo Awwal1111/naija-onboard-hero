@@ -12,6 +12,7 @@ import { useUserPresence } from '@/hooks/useUserPresence'
 import ResponsiveLayout from '@/components/ResponsiveLayout'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '@/integrations/supabase/client'
+import ProfilePreview from '@/components/ProfilePreview'
 
 export const Connected = () => {
   const { connections, loading, refetch } = useConnections()
@@ -19,6 +20,7 @@ export const Connected = () => {
   const navigate = useNavigate()
   const [searchQuery, setSearchQuery] = useState('')
   const [filterBy, setFilterBy] = useState('all')
+  const [previewProfileId, setPreviewProfileId] = useState<string | null>(null)
   
   useEffect(() => {
     refetch()
@@ -131,7 +133,10 @@ export const Connected = () => {
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center space-x-2.5 md:space-x-3 min-w-0 flex-1">
                         <div className="relative flex-shrink-0">
-                          <Avatar className="h-10 w-10 md:h-12 md:w-12">
+                          <Avatar 
+                            className="h-10 w-10 md:h-12 md:w-12 cursor-pointer"
+                            onClick={() => setPreviewProfileId(connection.other_user?.id || '')}
+                          >
                             <AvatarImage 
                               src={connection.other_user?.profile_picture_url} 
                               alt={connection.other_user?.full_name}
@@ -150,7 +155,10 @@ export const Connected = () => {
                           />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-sm md:text-base truncate">
+                          <h4 
+                            className="font-medium text-sm md:text-base truncate cursor-pointer hover:text-primary transition-colors"
+                            onClick={() => setPreviewProfileId(connection.other_user?.id || '')}
+                          >
                             {connection.other_user?.full_name || 'Unknown User'}
                           </h4>
                           <p className="text-xs md:text-sm text-muted-foreground truncate">
@@ -189,6 +197,13 @@ export const Connected = () => {
           )}
         </div>
       </CardContent>
+
+      {/* Profile Preview Dialog */}
+      <ProfilePreview
+        isOpen={!!previewProfileId}
+        onClose={() => setPreviewProfileId(null)}
+        profileId={previewProfileId || ''}
+      />
     </Card>
   )
 }

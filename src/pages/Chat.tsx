@@ -15,6 +15,7 @@ import SafePayDialog from '@/components/SafePayDialog'
 import ActiveCallInterface from '@/components/ActiveCallInterface'
 import CallHistory from '@/components/CallHistory'
 import VoiceRecorder from '@/components/VoiceRecorder'
+import ProfilePreview from '@/components/ProfilePreview'
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/integrations/supabase/client'
 
@@ -49,6 +50,7 @@ const Chat = () => {
   const [showVoiceRecorder, setShowVoiceRecorder] = useState(false)
   const [replyTo, setReplyTo] = useState<Message | null>(null)
   const [showBlockDialog, setShowBlockDialog] = useState(false)
+  const [showProfilePreview, setShowProfilePreview] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -411,7 +413,10 @@ const Chat = () => {
         </button>
         
         {/* User Avatar & Info */}
-        <div className="flex items-center gap-3 flex-1 min-w-0">
+        <div 
+          className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
+          onClick={() => setShowProfilePreview(true)}
+        >
           {otherUser?.profile_picture_url ? (
             <img 
               src={otherUser.profile_picture_url} 
@@ -425,7 +430,7 @@ const Chat = () => {
           )}
           
           <div className="flex-1 min-w-0">
-            <h1 className="font-medium text-foreground truncate">
+            <h1 className="font-medium text-foreground truncate hover:text-primary transition-colors">
               {otherUser?.full_name || 'Loading...'}
             </h1>
             {userId && (
