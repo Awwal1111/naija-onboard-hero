@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
-import { ArrowLeft, Star, Download, Search, Plus, Sparkles, Receipt, Building2, Wallet, CreditCard, Shield, RefreshCw, Trophy, Heart, GraduationCap, Users, Gamepad2, Dices, Target, RotateCw, Gift, Banknote, AlertCircle, ShoppingBag } from 'lucide-react'
+import { ArrowLeft, Search, Plus, Sparkles, Receipt, Building2, Wallet, CreditCard, Shield, RefreshCw, Trophy, Heart, GraduationCap, Users, Gamepad2, Dices, Target, RotateCw, Gift, Banknote, AlertCircle, ShoppingBag } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -27,54 +27,46 @@ interface MiniApp {
   status: string
 }
 
-const INTERNAL_ICONS: Record<string, typeof Receipt> = {
-  bills: Receipt,
-  bank_deposit: Building2,
-  crypto_deposit: Wallet,
-  deposit_naira: CreditCard,
-  escrow: Shield,
-  nc_converter: RefreshCw,
-}
-
-// Platform apps that navigate to internal pages
-interface PlatformApp {
+interface UnifiedApp {
   id: string
   name: string
   description: string
-  icon: typeof Trophy
-  path: string
+  icon?: typeof Trophy
+  iconUrl?: string | null
+  path?: string
   category: string
-  color: string
+  color?: string
+  isInternal?: boolean
+  miniApp?: MiniApp
 }
 
-const PLATFORM_APPS: PlatformApp[] = [
-  { id: 'pa-contests', name: 'Contests', description: 'Compete for prizes or run design contests', icon: Trophy, path: '/contests', category: 'work', color: 'from-amber-500/20 to-yellow-500/20' },
-  { id: 'pa-fundraising', name: 'Fundraising', description: 'Create or support fundraising campaigns', icon: Heart, path: '/fundraising', category: 'finance', color: 'from-rose-500/20 to-pink-500/20' },
-  { id: 'pa-courses', name: 'Courses', description: 'Buy or sell professional courses', icon: GraduationCap, path: '/courses', category: 'learning', color: 'from-blue-500/20 to-cyan-500/20' },
-  { id: 'pa-referrals', name: 'Referrals', description: 'Invite friends and earn NC rewards', icon: Users, path: '/referrals', category: 'earn', color: 'from-purple-500/20 to-violet-500/20' },
-  { id: 'pa-donations', name: 'Donations', description: 'Support the platform with donations', icon: Gift, path: '/donations', category: 'finance', color: 'from-pink-500/20 to-rose-500/20' },
-  { id: 'pa-loan', name: 'Loan Services', description: 'Access quick loans via partners', icon: Banknote, path: '/loan', category: 'finance', color: 'from-indigo-500/20 to-purple-500/20' },
-  { id: 'pa-emergency', name: 'Emergency Fund', description: 'Request emergency financial assistance', icon: AlertCircle, path: '/emergency', category: 'finance', color: 'from-amber-500/20 to-orange-500/20' },
-  { id: 'pa-products', name: 'Sell Products', description: 'Sell digital products and templates', icon: ShoppingBag, path: '/digital-products', category: 'work', color: 'from-green-500/20 to-emerald-500/20' },
-  { id: 'pa-guess', name: 'Guess Number', description: 'Guess the number and win NC', icon: Dices, path: '/earn/guess-number', category: 'games', color: 'from-emerald-500/20 to-green-500/20' },
-  { id: 'pa-trivia', name: 'Nigerian Trivia', description: 'Test your Nigerian knowledge', icon: Gamepad2, path: '/earn/trivia', category: 'games', color: 'from-orange-500/20 to-amber-500/20' },
-  { id: 'pa-spin', name: 'Spin Wheel', description: 'Spin the wheel for prizes', icon: RotateCw, path: '/earn/spin-wheel', category: 'games', color: 'from-indigo-500/20 to-blue-500/20' },
-  { id: 'pa-predictor', name: 'Naija Predictor', description: 'Predict outcomes and win from pool', icon: Target, path: '/earn/predictor', category: 'games', color: 'from-teal-500/20 to-cyan-500/20' },
-]
-
-const MARKETPLACE_INTERNAL_APPS: MiniApp[] = [
-  { id: 'int-bills', app_name: 'Bills', app_description: 'Pay bills, airtime & data', app_icon_url: null, app_url: '', category: 'finance', install_count: 0, rating: 5, review_count: 0, sdk_app_id: 'bills', developer_id: 'system', status: 'approved' },
-  { id: 'int-bank', app_name: 'Bank Deposit', app_description: 'Deposit via bank transfer', app_icon_url: null, app_url: '', category: 'finance', install_count: 0, rating: 5, review_count: 0, sdk_app_id: 'bank_deposit', developer_id: 'system', status: 'approved' },
-  { id: 'int-naira', app_name: 'Deposit Naira', app_description: 'Deposit with Naira', app_icon_url: null, app_url: '', category: 'finance', install_count: 0, rating: 5, review_count: 0, sdk_app_id: 'deposit_naira', developer_id: 'system', status: 'approved' },
-  { id: 'int-crypto', app_name: 'Crypto Deposit', app_description: 'Deposit via crypto', app_icon_url: null, app_url: '', category: 'finance', install_count: 0, rating: 5, review_count: 0, sdk_app_id: 'crypto_deposit', developer_id: 'system', status: 'approved' },
-  { id: 'int-escrow', app_name: 'Escrow', app_description: 'Secure escrow payments', app_icon_url: null, app_url: '', category: 'finance', install_count: 0, rating: 5, review_count: 0, sdk_app_id: 'escrow', developer_id: 'system', status: 'approved' },
-  { id: 'int-converter', app_name: 'NC Converter', app_description: 'Convert 100 non-withdrawable NC to 5 withdrawable NC', app_icon_url: null, app_url: '', category: 'finance', install_count: 0, rating: 5, review_count: 0, sdk_app_id: 'nc_converter', developer_id: 'system', status: 'approved' },
+// All built-in apps (platform features + internal mini apps)
+const BUILT_IN_APPS: UnifiedApp[] = [
+  { id: 'pa-contests', name: 'Contests', description: 'Compete for prizes or run design contests', icon: Trophy, path: '/contests', category: 'work', color: 'from-amber-500/20 to-yellow-500/20', isInternal: true },
+  { id: 'pa-fundraising', name: 'Fundraising', description: 'Create or support fundraising campaigns', icon: Heart, path: '/fundraising', category: 'finance', color: 'from-rose-500/20 to-pink-500/20', isInternal: true },
+  { id: 'pa-courses', name: 'Courses', description: 'Buy or sell professional courses', icon: GraduationCap, path: '/courses', category: 'learning', color: 'from-blue-500/20 to-cyan-500/20', isInternal: true },
+  { id: 'pa-referrals', name: 'Referrals', description: 'Invite friends and earn NC rewards', icon: Users, path: '/referrals', category: 'earn', color: 'from-purple-500/20 to-violet-500/20', isInternal: true },
+  { id: 'pa-donations', name: 'Donations', description: 'Support the platform with donations', icon: Gift, path: '/donations', category: 'finance', color: 'from-pink-500/20 to-rose-500/20', isInternal: true },
+  { id: 'pa-loan', name: 'Loan Services', description: 'Access quick loans via partners', icon: Banknote, path: '/loan', category: 'finance', color: 'from-indigo-500/20 to-purple-500/20', isInternal: true },
+  { id: 'pa-emergency', name: 'Emergency Fund', description: 'Request emergency financial assistance', icon: AlertCircle, path: '/emergency', category: 'finance', color: 'from-amber-500/20 to-orange-500/20', isInternal: true },
+  { id: 'pa-products', name: 'Sell Products', description: 'Sell digital products and templates', icon: ShoppingBag, path: '/digital-products', category: 'work', color: 'from-green-500/20 to-emerald-500/20', isInternal: true },
+  { id: 'pa-guess', name: 'Guess Number', description: 'Guess the number and win NC', icon: Dices, path: '/earn/guess-number', category: 'games', color: 'from-emerald-500/20 to-green-500/20', isInternal: true },
+  { id: 'pa-trivia', name: 'Nigerian Trivia', description: 'Test your Nigerian knowledge', icon: Gamepad2, path: '/earn/trivia', category: 'games', color: 'from-orange-500/20 to-amber-500/20', isInternal: true },
+  { id: 'pa-spin', name: 'Spin Wheel', description: 'Spin the wheel for prizes', icon: RotateCw, path: '/earn/spin-wheel', category: 'games', color: 'from-indigo-500/20 to-blue-500/20', isInternal: true },
+  { id: 'pa-predictor', name: 'Naija Predictor', description: 'Predict outcomes and win from pool', icon: Target, path: '/earn/predictor', category: 'games', color: 'from-teal-500/20 to-cyan-500/20', isInternal: true },
+  // Internal mini apps
+  { id: 'int-bills', name: 'Bills', description: 'Pay bills, airtime & data', icon: Receipt, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, miniApp: { id: 'int-bills', app_name: 'Bills', app_description: 'Pay bills, airtime & data', app_icon_url: null, app_url: '', category: 'finance', install_count: 0, rating: 5, review_count: 0, sdk_app_id: 'bills', developer_id: 'system', status: 'approved' } },
+  { id: 'int-bank', name: 'Bank Deposit', description: 'Deposit via bank transfer', icon: Building2, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, miniApp: { id: 'int-bank', app_name: 'Bank Deposit', app_description: 'Deposit via bank transfer', app_icon_url: null, app_url: '', category: 'finance', install_count: 0, rating: 5, review_count: 0, sdk_app_id: 'bank_deposit', developer_id: 'system', status: 'approved' } },
+  { id: 'int-naira', name: 'Deposit Naira', description: 'Deposit with Naira', icon: CreditCard, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, miniApp: { id: 'int-naira', app_name: 'Deposit Naira', app_description: 'Deposit with Naira', app_icon_url: null, app_url: '', category: 'finance', install_count: 0, rating: 5, review_count: 0, sdk_app_id: 'deposit_naira', developer_id: 'system', status: 'approved' } },
+  { id: 'int-crypto', name: 'Crypto Deposit', description: 'Deposit via crypto', icon: Wallet, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, miniApp: { id: 'int-crypto', app_name: 'Crypto Deposit', app_description: 'Deposit via crypto', app_icon_url: null, app_url: '', category: 'finance', install_count: 0, rating: 5, review_count: 0, sdk_app_id: 'crypto_deposit', developer_id: 'system', status: 'approved' } },
+  { id: 'int-escrow', name: 'Escrow', description: 'Secure escrow payments', icon: Shield, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, miniApp: { id: 'int-escrow', app_name: 'Escrow', app_description: 'Secure escrow payments', app_icon_url: null, app_url: '', category: 'finance', install_count: 0, rating: 5, review_count: 0, sdk_app_id: 'escrow', developer_id: 'system', status: 'approved' } },
+  { id: 'int-converter', name: 'NC Converter', description: 'Convert 100 non-withdrawable NC to 5 withdrawable NC', icon: RefreshCw, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, miniApp: { id: 'int-converter', app_name: 'NC Converter', app_description: 'Convert 100 non-withdrawable NC to 5 withdrawable NC', app_icon_url: null, app_url: '', category: 'finance', install_count: 0, rating: 5, review_count: 0, sdk_app_id: 'nc_converter', developer_id: 'system', status: 'approved' } },
 ]
 
 const CATEGORY_FILTERS = ['all', 'work', 'finance', 'games', 'learning', 'earn'] as const
 
 const MiniAppsMarketplace = () => {
-  const [apps, setApps] = useState<MiniApp[]>([])
+  const [externalApps, setExternalApps] = useState<MiniApp[]>([])
   const [myApps, setMyApps] = useState<MiniApp[]>([])
   const [search, setSearch] = useState('')
   const [selectedApp, setSelectedApp] = useState<MiniApp | null>(null)
@@ -92,9 +84,9 @@ const MiniAppsMarketplace = () => {
       .order('is_featured', { ascending: false })
       .order('install_count', { ascending: false })
 
-    const internalIds = new Set(MARKETPLACE_INTERNAL_APPS.map(a => a.sdk_app_id))
+    const internalIds = new Set(['bills', 'bank_deposit', 'deposit_naira', 'crypto_deposit', 'escrow', 'nc_converter'])
     const dbApps = (data || []).filter((a: any) => !internalIds.has(a.sdk_app_id)) as MiniApp[]
-    setApps([...MARKETPLACE_INTERNAL_APPS, ...dbApps])
+    setExternalApps(dbApps)
   }
 
   const fetchMyApps = async () => {
@@ -113,16 +105,26 @@ const MiniAppsMarketplace = () => {
     fetchMyApps()
   }, [user])
 
-  // Filter platform apps
-  const filteredPlatformApps = PLATFORM_APPS.filter(a => {
+  // Convert external apps to unified format
+  const externalUnified: UnifiedApp[] = externalApps.map(app => ({
+    id: app.id,
+    name: app.app_name,
+    description: app.app_description,
+    iconUrl: app.app_icon_url,
+    category: app.category,
+    color: 'from-primary/20 to-accent/20',
+    isInternal: false,
+    miniApp: app,
+  }))
+
+  // Combine all apps
+  const allApps: UnifiedApp[] = [...BUILT_IN_APPS, ...externalUnified]
+
+  // Filter apps
+  const filteredApps = allApps.filter(a => {
     const matchesSearch = !search || a.name.toLowerCase().includes(search.toLowerCase()) || a.description.toLowerCase().includes(search.toLowerCase())
     const matchesCategory = categoryFilter === 'all' || a.category === categoryFilter
     return matchesSearch && matchesCategory
-  })
-
-  // Filter mini apps - only by search, not by category
-  const filteredMiniApps = apps.filter(a => {
-    return !search || a.app_name.toLowerCase().includes(search.toLowerCase()) || a.app_description.toLowerCase().includes(search.toLowerCase())
   })
 
   const statusColor = (s: string) => {
@@ -132,7 +134,13 @@ const MiniAppsMarketplace = () => {
     return 'bg-muted text-muted-foreground'
   }
 
-  const hasResults = filteredPlatformApps.length > 0 || filteredMiniApps.length > 0
+  const handleAppClick = (app: UnifiedApp) => {
+    if (app.path) {
+      navigate(app.path)
+    } else if (app.miniApp) {
+      setSelectedApp(app.miniApp)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -214,86 +222,38 @@ const MiniAppsMarketplace = () => {
             ))}
           </div>
 
-          {/* Platform Apps Section */}
-          {filteredPlatformApps.length > 0 && (
-            <div>
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-1">Platform Apps</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {filteredPlatformApps.map((app, i) => (
-                  <motion.button
-                    key={app.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.04 }}
-                    onClick={() => navigate(app.path)}
-                    className="bg-card border border-border rounded-xl p-4 flex flex-col items-center gap-2 text-center hover:border-primary/50 hover:shadow-sm transition-all"
-                  >
-                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${app.color} flex items-center justify-center`}>
+          {/* Unified Apps Grid */}
+          {filteredApps.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {filteredApps.map((app, i) => (
+                <motion.button
+                  key={app.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.03 }}
+                  onClick={() => handleAppClick(app)}
+                  className="bg-card border border-border rounded-xl p-4 flex flex-col items-center gap-2 text-center hover:border-primary/50 hover:shadow-sm transition-all"
+                >
+                  <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${app.color || 'from-primary/20 to-accent/20'} flex items-center justify-center overflow-hidden`}>
+                    {app.icon ? (
                       <app.icon className="h-6 w-6 text-foreground" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-foreground text-sm">{app.name}</h3>
-                      <p className="text-[10px] text-muted-foreground line-clamp-2 mt-0.5">{app.description}</p>
-                    </div>
-                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                      {app.category}
-                    </Badge>
-                  </motion.button>
-                ))}
-              </div>
+                    ) : app.iconUrl ? (
+                      <img src={app.iconUrl} alt="" className="w-full h-full object-cover rounded-xl" />
+                    ) : (
+                      <span className="text-lg font-bold text-primary">{app.name.charAt(0)}</span>
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-foreground text-sm">{app.name}</h3>
+                    <p className="text-[10px] text-muted-foreground line-clamp-2 mt-0.5">{app.description}</p>
+                  </div>
+                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                    {app.category}
+                  </Badge>
+                </motion.button>
+              ))}
             </div>
-          )}
-
-          {/* Mini Apps Section */}
-          {filteredMiniApps.length > 0 && (
-            <div>
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-1">Mini Apps</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {filteredMiniApps.map((app, i) => (
-                  <motion.button
-                    key={app.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.05 }}
-                    onClick={() => setSelectedApp(app)}
-                    className="bg-card border border-border rounded-xl p-4 flex items-start gap-3 text-left hover:border-primary/50 transition-colors"
-                  >
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                      {(() => {
-                        const InternalIcon = INTERNAL_ICONS[app.sdk_app_id]
-                        if (app.id.startsWith('int-') && InternalIcon) {
-                          return <InternalIcon className="h-6 w-6 text-primary" />
-                        }
-                        if (app.app_icon_url) {
-                          return <img src={app.app_icon_url} alt="" className="w-full h-full object-cover rounded-xl" />
-                        }
-                        return <span className="text-lg font-bold text-primary">{app.app_name.charAt(0)}</span>
-                      })()}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-foreground text-sm truncate">{app.app_name}</h3>
-                      <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{app.app_description}</p>
-                      <div className="flex items-center gap-3 mt-2">
-                        <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
-                          <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
-                          {app.rating.toFixed(1)}
-                        </span>
-                        <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
-                          <Download className="h-3 w-3" />
-                          {app.install_count}
-                        </span>
-                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                          {app.category}
-                        </Badge>
-                      </div>
-                    </div>
-                  </motion.button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {!hasResults && (
+          ) : (
             <div className="text-center py-12">
               <Sparkles className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
               <p className="text-muted-foreground">No apps found</p>
