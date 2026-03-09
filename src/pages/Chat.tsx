@@ -920,6 +920,15 @@ const Chat = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Profile Preview Dialog */}
+      {userId && (
+        <ProfilePreview
+          isOpen={showProfilePreview}
+          onClose={() => setShowProfilePreview(false)}
+          profileId={userId}
+        />
+      )}
     </div>
   )
 }
