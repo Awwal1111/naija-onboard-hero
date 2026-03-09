@@ -69,20 +69,28 @@ const SuggestionsTab: React.FC = () => {
                 </div>
                 
                 {user.profession && (
-                  <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-2">
+                  <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-1">
                     <Briefcase className="h-3.5 w-3.5 flex-shrink-0" />
                     <span className="truncate">{user.profession}</span>
                   </div>
                 )}
                 
-                {(user.state_name || user.lga_name) && (
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
-                    <span className="truncate">
-                      {[user.lga_name, user.state_name].filter(Boolean).join(', ')}
-                    </span>
-                  </div>
-                )}
+                <div className="flex items-center gap-3 text-xs text-muted-foreground mb-1">
+                  {user.average_rating && user.average_rating > 0 && (
+                    <div className="flex items-center gap-1">
+                      <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
+                      <span className="font-medium">{user.average_rating.toFixed(1)}</span>
+                    </div>
+                  )}
+                  {(user.state_name || user.lga_name) && (
+                    <div className="flex items-center gap-1">
+                      <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
+                      <span className="truncate">
+                        {[user.lga_name, user.state_name].filter(Boolean).join(', ')}
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
             
