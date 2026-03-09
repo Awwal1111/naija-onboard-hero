@@ -1,7 +1,7 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Briefcase, FileText, Bell, BarChart3, Settings, Video, Wallet, Bookmark, Search, Package, Users, FolderKanban, Timer, Award, Bot, PlusCircle, Target, ShoppingBag, Bug, HelpCircle, ShieldAlert, AlertCircle, Banknote, Gift } from "lucide-react";
+import { User, Briefcase, FileText, Bell, BarChart3, Settings, Video, Wallet, Bookmark, Search, Package, Users, FolderKanban, Timer, Award, Bot, PlusCircle, Target, Bug, HelpCircle, ShieldAlert } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useRoleFeatures } from "@/hooks/useRoleFeatures";
 import { Badge } from "@/components/ui/badge";
