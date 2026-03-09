@@ -120,11 +120,9 @@ const MiniAppsMarketplace = () => {
     return matchesSearch && matchesCategory
   })
 
-  // Filter mini apps
+  // Filter mini apps - only by search, not by category
   const filteredMiniApps = apps.filter(a => {
-    const matchesSearch = !search || a.app_name.toLowerCase().includes(search.toLowerCase()) || a.app_description.toLowerCase().includes(search.toLowerCase())
-    const matchesCategory = categoryFilter === 'all' || a.category === categoryFilter
-    return matchesSearch && matchesCategory
+    return !search || a.app_name.toLowerCase().includes(search.toLowerCase()) || a.app_description.toLowerCase().includes(search.toLowerCase())
   })
 
   const statusColor = (s: string) => {
