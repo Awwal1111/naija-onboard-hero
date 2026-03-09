@@ -42,12 +42,11 @@ export const MoreMenuDrawer = ({ open, onOpenChange }: MoreMenuDrawerProps) => {
     { icon: Search, label: "Search", path: "/search", color: "text-cyan-500", description: "Find anything", forRoles: ['freelancer', 'client', 'both'] },
   ];
 
-  // Freelancer-focused items (removed Contests - now in Apps)
+  // Freelancer-focused items (removed Contests, Sell Products - now in Apps)
   const freelancerItems = [
     { icon: Briefcase, label: "My Gigs", path: "/my-gigs", color: "text-purple-500", description: "Manage your services" },
     { icon: Search, label: "Find Jobs", path: "/jobs", color: "text-blue-500", description: "Browse job listings" },
     { icon: Video, label: "Expert Classes", path: "/expert-class", color: "text-indigo-500", description: "Teach live classes" },
-    { icon: ShoppingBag, label: "Sell Products", path: "/digital-products", color: "text-green-500", description: "Digital products" },
     { icon: Award, label: "Get Verified", path: "/expert-verification", color: "text-primary", description: "Earn badges" },
     { icon: Timer, label: "Work Diary", path: "/work-diary", color: "text-teal-500", description: "Track your time" },
   ];
@@ -65,11 +64,8 @@ export const MoreMenuDrawer = ({ open, onOpenChange }: MoreMenuDrawerProps) => {
     { icon: Users, label: "Connections", path: "/connections", color: "text-indigo-500" },
   ];
 
-  // Removed: Fundraising, Referrals, Leaderboard (moved to Apps)
+  // Removed: Fundraising, Referrals, Leaderboard, Donations, Loan, Emergency, Sell Products (moved to Apps)
   const otherItems = [
-    { icon: AlertCircle, label: "Emergency", path: "/emergency", color: "text-amber-500", forRoles: ['freelancer', 'both'] },
-    { icon: Banknote, label: "Loan", path: "/loan", color: "text-indigo-500", forRoles: ['freelancer', 'both'] },
-    { icon: Gift, label: "Donations", path: "/donations", color: "text-pink-500", forRoles: ['freelancer', 'client', 'both'] },
     { icon: HelpCircle, label: "Help Center", path: "/help", color: "text-blue-500", forRoles: ['freelancer', 'client', 'both'] },
     { icon: Settings, label: "Settings", path: "/settings", color: "text-muted-foreground", forRoles: ['freelancer', 'client', 'both'] },
   ];
