@@ -31,6 +31,8 @@ export interface Connection {
     full_name: string
     profile_picture_url?: string
     profession?: string
+    average_rating?: number
+    rating_count?: number
   }
 }
 
@@ -115,7 +117,7 @@ export const useConnections = () => {
           const otherUserId = conn.user1_id === user.id ? conn.user2_id : conn.user1_id
           const { data: otherUserProfile } = await supabase
             .from('profiles')
-            .select('user_id, full_name, profile_picture_url, profession')
+            .select('user_id, full_name, profile_picture_url, profession, average_rating, rating_count')
             .eq('user_id', otherUserId)
             .single()
 
@@ -125,7 +127,9 @@ export const useConnections = () => {
               id: otherUserProfile.user_id,
               full_name: otherUserProfile.full_name,
               profile_picture_url: otherUserProfile.profile_picture_url,
-              profession: otherUserProfile.profession
+              profession: otherUserProfile.profession,
+              average_rating: otherUserProfile.average_rating,
+              rating_count: otherUserProfile.rating_count
             } : undefined
           }
         })
