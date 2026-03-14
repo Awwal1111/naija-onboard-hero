@@ -42,6 +42,7 @@ interface UnifiedApp {
   color?: string
   isInternal?: boolean
   miniApp?: MiniApp
+  internalAction?: string
 }
 
 // All built-in apps (platform features + internal mini apps)
