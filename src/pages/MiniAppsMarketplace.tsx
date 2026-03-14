@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import { ArrowLeft, Search, Plus, Sparkles, Receipt, Building2, Wallet, CreditCard, Shield, RefreshCw, Trophy, Heart, GraduationCap, Users, Gamepad2, Dices, Target, RotateCw, Gift, Banknote, AlertCircle, ShoppingBag } from 'lucide-react'
@@ -11,6 +11,10 @@ import { SubmitMiniAppForm } from '@/components/miniapps/SubmitMiniAppForm'
 import { MiniAppViewer } from '@/components/miniapps/MiniAppViewer'
 import { BottomNavBar } from '@/components/BottomNavBar'
 import { motion } from 'framer-motion'
+
+const DepositDialog = lazy(() => import('@/components/DepositDialog').then(m => ({ default: m.DepositDialog })))
+const EscrowSearchDialog = lazy(() => import('@/components/EscrowSearchDialog').then(m => ({ default: m.EscrowSearchDialog })))
+const NCConverterDialog = lazy(() => import('@/components/miniapps/NCConverterDialog').then(m => ({ default: m.NCConverterDialog })))
 
 interface MiniApp {
   id: string
