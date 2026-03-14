@@ -142,8 +142,31 @@ const MiniAppsMarketplace = () => {
     return 'bg-muted text-muted-foreground'
   }
 
+  const handleInternalAction = (action: string) => {
+    switch (action) {
+      case 'bills':
+        navigate('/earn?tab=bills')
+        break
+      case 'bank_deposit':
+      case 'deposit_naira':
+        window.dispatchEvent(new CustomEvent('open-quidax-widget', { detail: { mode: 'buy' } }))
+        break
+      case 'crypto_deposit':
+        setShowDepositDialog(true)
+        break
+      case 'escrow':
+        setShowEscrowSearch(true)
+        break
+      case 'nc_converter':
+        setShowNCConverter(true)
+        break
+    }
+  }
+
   const handleAppClick = (app: UnifiedApp) => {
-    if (app.path) {
+    if (app.internalAction) {
+      handleInternalAction(app.internalAction)
+    } else if (app.path) {
       navigate(app.path)
     } else if (app.miniApp) {
       setSelectedApp(app.miniApp)
