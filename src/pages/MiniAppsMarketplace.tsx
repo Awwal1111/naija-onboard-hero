@@ -78,6 +78,9 @@ const MiniAppsMarketplace = () => {
   const [showSubmit, setShowSubmit] = useState(false)
   const [tab, setTab] = useState<'explore' | 'my-apps'>('explore')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
+  const [showDepositDialog, setShowDepositDialog] = useState(false)
+  const [showEscrowSearch, setShowEscrowSearch] = useState(false)
+  const [showNCConverter, setShowNCConverter] = useState(false)
   const { user } = useAuth()
   const navigate = useNavigate()
 
