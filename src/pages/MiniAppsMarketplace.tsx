@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import { ArrowLeft, Search, Plus, Sparkles, Receipt, Building2, Wallet, CreditCard, Shield, RefreshCw, Trophy, Heart, GraduationCap, Users, Gamepad2, Dices, Target, RotateCw, Gift, Banknote, AlertCircle, ShoppingBag } from 'lucide-react'
@@ -11,6 +11,10 @@ import { SubmitMiniAppForm } from '@/components/miniapps/SubmitMiniAppForm'
 import { MiniAppViewer } from '@/components/miniapps/MiniAppViewer'
 import { BottomNavBar } from '@/components/BottomNavBar'
 import { motion } from 'framer-motion'
+
+const DepositDialog = lazy(() => import('@/components/DepositDialog').then(m => ({ default: m.DepositDialog })))
+const EscrowSearchDialog = lazy(() => import('@/components/EscrowSearchDialog').then(m => ({ default: m.EscrowSearchDialog })))
+const NCConverterDialog = lazy(() => import('@/components/miniapps/NCConverterDialog').then(m => ({ default: m.NCConverterDialog })))
 
 interface MiniApp {
   id: string
@@ -38,6 +42,7 @@ interface UnifiedApp {
   color?: string
   isInternal?: boolean
   miniApp?: MiniApp
+  internalAction?: string
 }
 
 // All built-in apps (platform features + internal mini apps)
@@ -54,13 +59,13 @@ const BUILT_IN_APPS: UnifiedApp[] = [
   { id: 'pa-trivia', name: 'Nigerian Trivia', description: 'Test your Nigerian knowledge', icon: Gamepad2, path: '/earn/trivia', category: 'games', color: 'from-orange-500/20 to-amber-500/20', isInternal: true },
   { id: 'pa-spin', name: 'Spin Wheel', description: 'Spin the wheel for prizes', icon: RotateCw, path: '/earn/spin-wheel', category: 'games', color: 'from-indigo-500/20 to-blue-500/20', isInternal: true },
   { id: 'pa-predictor', name: 'Naija Predictor', description: 'Predict outcomes and win from pool', icon: Target, path: '/earn/predictor', category: 'games', color: 'from-teal-500/20 to-cyan-500/20', isInternal: true },
-  // Internal mini apps
-  { id: 'int-bills', name: 'Bills', description: 'Pay bills, airtime & data', icon: Receipt, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, miniApp: { id: 'int-bills', app_name: 'Bills', app_description: 'Pay bills, airtime & data', app_icon_url: null, app_url: '', category: 'finance', install_count: 0, rating: 5, review_count: 0, sdk_app_id: 'bills', developer_id: 'system', status: 'approved' } },
-  { id: 'int-bank', name: 'Bank Deposit', description: 'Deposit via bank transfer', icon: Building2, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, miniApp: { id: 'int-bank', app_name: 'Bank Deposit', app_description: 'Deposit via bank transfer', app_icon_url: null, app_url: '', category: 'finance', install_count: 0, rating: 5, review_count: 0, sdk_app_id: 'bank_deposit', developer_id: 'system', status: 'approved' } },
-  { id: 'int-naira', name: 'Deposit Naira', description: 'Deposit with Naira', icon: CreditCard, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, miniApp: { id: 'int-naira', app_name: 'Deposit Naira', app_description: 'Deposit with Naira', app_icon_url: null, app_url: '', category: 'finance', install_count: 0, rating: 5, review_count: 0, sdk_app_id: 'deposit_naira', developer_id: 'system', status: 'approved' } },
-  { id: 'int-crypto', name: 'Crypto Deposit', description: 'Deposit via crypto', icon: Wallet, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, miniApp: { id: 'int-crypto', app_name: 'Crypto Deposit', app_description: 'Deposit via crypto', app_icon_url: null, app_url: '', category: 'finance', install_count: 0, rating: 5, review_count: 0, sdk_app_id: 'crypto_deposit', developer_id: 'system', status: 'approved' } },
-  { id: 'int-escrow', name: 'Escrow', description: 'Secure escrow payments', icon: Shield, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, miniApp: { id: 'int-escrow', app_name: 'Escrow', app_description: 'Secure escrow payments', app_icon_url: null, app_url: '', category: 'finance', install_count: 0, rating: 5, review_count: 0, sdk_app_id: 'escrow', developer_id: 'system', status: 'approved' } },
-  { id: 'int-converter', name: 'NC Converter', description: 'Convert 100 non-withdrawable NC to 5 withdrawable NC', icon: RefreshCw, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, miniApp: { id: 'int-converter', app_name: 'NC Converter', app_description: 'Convert 100 non-withdrawable NC to 5 withdrawable NC', app_icon_url: null, app_url: '', category: 'finance', install_count: 0, rating: 5, review_count: 0, sdk_app_id: 'nc_converter', developer_id: 'system', status: 'approved' } },
+  // Internal mini apps with actions
+  { id: 'int-bills', name: 'Bills', description: 'Pay bills, airtime & data', icon: Receipt, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, internalAction: 'bills' },
+  { id: 'int-bank', name: 'Bank Deposit', description: 'Deposit via bank transfer', icon: Building2, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, internalAction: 'bank_deposit' },
+  { id: 'int-naira', name: 'Deposit Naira', description: 'Deposit with Naira', icon: CreditCard, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, internalAction: 'deposit_naira' },
+  { id: 'int-crypto', name: 'Crypto Deposit', description: 'Deposit via crypto', icon: Wallet, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, internalAction: 'crypto_deposit' },
+  { id: 'int-escrow', name: 'Escrow', description: 'Secure escrow payments', icon: Shield, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, internalAction: 'escrow' },
+  { id: 'int-converter', name: 'NC Converter', description: 'Convert 100 non-withdrawable NC to 5 withdrawable NC', icon: RefreshCw, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, internalAction: 'nc_converter' },
 ]
 
 const CATEGORY_FILTERS = ['all', 'work', 'finance', 'games', 'learning', 'earn'] as const
@@ -73,6 +78,9 @@ const MiniAppsMarketplace = () => {
   const [showSubmit, setShowSubmit] = useState(false)
   const [tab, setTab] = useState<'explore' | 'my-apps'>('explore')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
+  const [showDepositDialog, setShowDepositDialog] = useState(false)
+  const [showEscrowSearch, setShowEscrowSearch] = useState(false)
+  const [showNCConverter, setShowNCConverter] = useState(false)
   const { user } = useAuth()
   const navigate = useNavigate()
 
@@ -134,8 +142,31 @@ const MiniAppsMarketplace = () => {
     return 'bg-muted text-muted-foreground'
   }
 
+  const handleInternalAction = (action: string) => {
+    switch (action) {
+      case 'bills':
+        navigate('/earn?tab=bills')
+        break
+      case 'bank_deposit':
+      case 'deposit_naira':
+        window.dispatchEvent(new CustomEvent('open-quidax-widget', { detail: { mode: 'buy' } }))
+        break
+      case 'crypto_deposit':
+        setShowDepositDialog(true)
+        break
+      case 'escrow':
+        setShowEscrowSearch(true)
+        break
+      case 'nc_converter':
+        setShowNCConverter(true)
+        break
+    }
+  }
+
   const handleAppClick = (app: UnifiedApp) => {
-    if (app.path) {
+    if (app.internalAction) {
+      handleInternalAction(app.internalAction)
+    } else if (app.path) {
       navigate(app.path)
     } else if (app.miniApp) {
       setSelectedApp(app.miniApp)
@@ -296,6 +327,12 @@ const MiniAppsMarketplace = () => {
       {selectedApp && (
         <MiniAppViewer app={selectedApp} onClose={() => setSelectedApp(null)} />
       )}
+
+      <Suspense fallback={null}>
+        <DepositDialog open={showDepositDialog} onOpenChange={setShowDepositDialog} />
+        <EscrowSearchDialog open={showEscrowSearch} onOpenChange={setShowEscrowSearch} />
+        <NCConverterDialog open={showNCConverter} onClose={() => setShowNCConverter(false)} />
+      </Suspense>
 
       <BottomNavBar />
     </div>
