@@ -146,12 +146,9 @@ export const useAuth = () => {
       supabase.auth.getUser().then(({ data }) => {
         if (data.user) logIPActivity(data.user.id, 'login')
       })
-      // Small delay to ensure session token is fully propagated before calling edge function
-      setTimeout(() => {
-        supabase.functions.invoke('send-welcome-notification').catch(err => {
-          console.error('Failed to send welcome notification:', err)
-        })
-      }, 1500)
+      supabase.functions.invoke('send-welcome-notification').catch(err => {
+        console.error('Failed to send welcome notification:', err)
+      })
     }
     return { error }
   }, [logIPActivity, toast])
