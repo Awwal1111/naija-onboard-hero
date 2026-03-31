@@ -344,17 +344,17 @@ export const useNotifications = () => {
           })
         }
         
-        // Also send push notification
-        await supabase.functions.invoke('send-push-notification', {
+        // Also send push notification for important types only
+        supabase.functions.invoke('send-push-notification', {
           body: {
             userId,
             title,
             body: message,
             data: { type, ...metadata }
           }
-        })
+        }).catch(e => console.warn('Push notification failed:', e))
       } else {
-        // Regular notification without email but with push
+        // Regular notification — just insert to DB, no edge function call
         const { error } = await supabase
           .from('notifications')
           .insert({
@@ -366,16 +366,7 @@ export const useNotifications = () => {
           })
 
         if (error) throw error
-        
-        // Send push notification for all notifications
-        await supabase.functions.invoke('send-push-notification', {
-          body: {
-            userId,
-            title,
-            body: message,
-            data: { type, ...metadata }
-          }
-        })
+        // Skip push for regular notifications to reduce edge function load
       }
     } catch (error) {
       console.error('Error creating notification:', error)

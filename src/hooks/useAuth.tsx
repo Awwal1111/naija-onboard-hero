@@ -146,12 +146,8 @@ export const useAuth = () => {
       supabase.auth.getUser().then(({ data }) => {
         if (data.user) logIPActivity(data.user.id, 'login')
       })
-      // Small delay to ensure session token is fully propagated before calling edge function
-      setTimeout(() => {
-        supabase.functions.invoke('send-welcome-notification').catch(err => {
-          console.error('Failed to send welcome notification:', err)
-        })
-      }, 1500)
+      // NOTE: send-welcome-notification is handled by the DB trigger on profile creation.
+      // Do NOT call it here — it causes duplicate edge function invocations on every login.
     }
     return { error }
   }, [logIPActivity, toast])
