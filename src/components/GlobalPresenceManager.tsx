@@ -35,7 +35,6 @@ export const GlobalPresenceManager = () => {
       .on('presence', { event: 'sync' }, () => {
         // Silent sync - no logging to reduce noise
       })
-      })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
           console.log('[Presence] Channel subscribed, tracking user')
