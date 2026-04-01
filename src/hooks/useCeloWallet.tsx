@@ -16,8 +16,8 @@ const cUSD_ADDRESS = USE_TESTNET
 
 const USDT_ADDRESS = '0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e'; // Tether USD on Celo Mainnet
 
-// Polling interval for deposit detection (30 seconds)
-const DEPOSIT_CHECK_INTERVAL = 30000;
+// Polling interval for deposit detection (5 minutes - reduced from 30s to save resources)
+const DEPOSIT_CHECK_INTERVAL = 300000;
 
 export const useCeloWallet = () => {
   const [wallet, setWallet] = useState<ethers.HDNodeWallet | ethers.Wallet | null>(null);

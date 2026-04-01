@@ -108,9 +108,7 @@ const TrendingSection: React.FC<TrendingSectionProps> = ({
 
     fetchTrendingData()
 
-    // Refresh every 5 minutes
-    const interval = setInterval(fetchTrendingData, 5 * 60 * 1000)
-    return () => clearInterval(interval)
+    // No auto-refresh - data fetched once on mount to reduce API calls
   }, [])
 
   const trendingTopics = [

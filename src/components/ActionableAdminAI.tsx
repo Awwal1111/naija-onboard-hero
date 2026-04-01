@@ -50,10 +50,15 @@ export const ActionableAdminAI = () => {
 
   useEffect(() => {
     checkAdminStatus();
-    fetchAlerts();
-    const interval = setInterval(fetchAlerts, 60000); // Check every minute
-    return () => clearInterval(interval);
   }, []);
+
+  // Only poll alerts if user is confirmed admin
+  useEffect(() => {
+    if (!isAdmin) return;
+    fetchAlerts();
+    const interval = setInterval(fetchAlerts, 300000); // Check every 5 minutes (was 1 min)
+    return () => clearInterval(interval);
+  }, [isAdmin]);
 
   const checkAdminStatus = async () => {
     try {

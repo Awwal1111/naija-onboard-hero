@@ -33,14 +33,7 @@ export const GlobalPresenceManager = () => {
     const channel = supabase
       .channel('global-user-presence')
       .on('presence', { event: 'sync' }, () => {
-        const state = channel.presenceState()
-        console.log('[Presence] Sync - online users:', Object.keys(state).length)
-      })
-      .on('presence', { event: 'join' }, ({ key, newPresences }) => {
-        console.log('[Presence] User joined:', newPresences)
-      })
-      .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
-        console.log('[Presence] User left:', leftPresences)
+        // Silent sync - no logging to reduce noise
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
