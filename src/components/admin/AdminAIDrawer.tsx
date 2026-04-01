@@ -58,10 +58,15 @@ export const AdminAIDrawer = () => {
 
   useEffect(() => {
     checkAdminStatus();
-    fetchAlerts();
-    const interval = setInterval(fetchAlerts, 60000);
-    return () => clearInterval(interval);
   }, []);
+
+  // Only poll alerts if confirmed admin
+  useEffect(() => {
+    if (!isAdmin) return;
+    fetchAlerts();
+    const interval = setInterval(fetchAlerts, 300000); // 5 min (was 1 min)
+    return () => clearInterval(interval);
+  }, [isAdmin]);
 
   const checkAdminStatus = async () => {
     try {
