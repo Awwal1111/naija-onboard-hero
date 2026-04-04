@@ -20,6 +20,7 @@ export const useAuth = () => {
   const navigate = useNavigate()
   const { toast } = useToast()
   const { checkSignupAllowed, logIPActivity } = useIPProtection()
+  const { logLogin, resetLogger } = useLoginLogger()
 
   const authPaths = ['/login', '/signup', '/forgot-password', '/reset-password']
 
