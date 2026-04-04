@@ -145,14 +145,18 @@ export const useAuth = () => {
       toast({ title: "Login failed", description: errorMessage, variant: "destructive" })
     } else {
       toast({ title: "Welcome back!", description: "You've been signed in successfully." })
+      // Fire and forget - non-blocking
+      logLogin('email')
       supabase.auth.getUser().then(({ data }) => {
-        if (data.user) logIPActivity(data.user.id, 'login')
+        if (data.user) {
+          logIPActivity(data.user.id, 'login')
+          // Explicit navigation after login (don't rely solely on React re-render)
+          setTimeout(() => checkProfileAndRedirect(data.user), 100)
+        }
       })
-      // NOTE: send-welcome-notification is handled by the DB trigger on profile creation.
-      // Do NOT call it here — it causes duplicate edge function invocations on every login.
     }
     return { error }
-  }, [logIPActivity, toast])
+  }, [logIPActivity, logLogin, toast, checkProfileAndRedirect])
 
   const signInWithGoogle = useCallback(async () => {
     const redirectUrl = window.location.hostname === 'localhost'
