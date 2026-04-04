@@ -198,7 +198,7 @@ const App = () => (
             <MiniPayAuthWrapper>
               {!isMiniPayEnv && <AuthRedirectHandler />}
               {!isMiniPayEnv && <AppStateManager />}
-              {!isMiniPayEnv && <LoginLogger />}
+              
               {!isMiniPayEnv && <DeferredManagers />}
               <Suspense fallback={<PageLoader />}>
                 <Routes>
