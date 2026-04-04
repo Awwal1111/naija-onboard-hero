@@ -180,10 +180,6 @@ const SmartAIAssistant = lazy(lazyWithRetry(() => import("@/components/SmartAIAs
 // SYNC detection at module load
 const isMiniPayEnv = detectMiniPaySync().isMiniPay;
 
-const LoginLogger = () => {
-  useLoginLogger();
-  return null;
-};
 
 const AppStateManager = () => {
   useAppState();
