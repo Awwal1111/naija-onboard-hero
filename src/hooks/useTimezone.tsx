@@ -44,12 +44,8 @@ export const TimezoneProvider = ({ children }: { children: ReactNode }) => {
   })
   const [userId, setUserId] = useState<string | null>(null)
 
-  // Get user ID directly from Supabase auth (no Router dependency)
+  // Get user ID from auth state changes only (no getSession call to avoid race conditions)
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUserId(session?.user?.id || null)
-    })
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
       setUserId(session?.user?.id || null)
     })
