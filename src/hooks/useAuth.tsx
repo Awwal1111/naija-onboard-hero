@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useToast } from '@/hooks/use-toast'
 import { useIPProtection } from '@/hooks/useIPProtection'
 import { useAuthContext } from '@/contexts/AuthContext'
+import { useLoginLogger } from '@/hooks/useLoginLogger'
 
 /**
  * useAuth - provides auth state from the centralized AuthProvider
