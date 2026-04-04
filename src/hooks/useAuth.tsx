@@ -199,8 +199,8 @@ export const useAuth = () => {
   }, [toast, navigate])
 
   const signOut = useCallback(async () => {
-    // Clear auth redirect flag so next login gets redirected properly
     sessionStorage.removeItem('hasAuthRedirect')
+    resetLogger()
     const { error } = await supabase.auth.signOut()
     if (error) {
       toast({ title: "Sign out failed", description: error.message, variant: "destructive" })
