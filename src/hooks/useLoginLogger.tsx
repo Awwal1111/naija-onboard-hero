@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 const detectDeviceInfo = () => {
@@ -36,42 +36,43 @@ const getClientIP = async (): Promise<string | null> => {
   return null;
 };
 
+/**
+ * useLoginLogger - provides a logLogin function to be called explicitly after sign-in.
+ * 
+ * FIXED: No longer creates its own onAuthStateChange subscription.
+ * Previously this was one of 5+ competing auth listeners causing race conditions.
+ * Now it's a simple callable function triggered from the signIn flow.
+ */
 export const useLoginLogger = () => {
   const loggedRef = useRef(false);
 
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user && !loggedRef.current) {
-        loggedRef.current = true;
-        
-        // Only log on actual sign in, not token refresh
-        if (event !== 'SIGNED_IN') return;
+  const logLogin = useCallback(async (loginMethod: string = 'email') => {
+    if (loggedRef.current) return;
+    loggedRef.current = true;
 
-        try {
-          const device = detectDeviceInfo();
-          const ip = await getClientIP();
-          
-          await supabase.functions.invoke('log-login', {
-            body: {
-              ip_address: ip,
-              user_agent: device.userAgent,
-              device_type: device.deviceType,
-              browser: device.browser,
-              os: device.os,
-              login_method: session.user.app_metadata?.provider || 'email',
-            },
-          });
-        } catch (e) {
-          // Non-critical - don't block the user
-          console.warn('Login logging failed:', e);
-        }
-      }
+    try {
+      const device = detectDeviceInfo();
+      const ip = await getClientIP();
       
-      if (event === 'SIGNED_OUT') {
-        loggedRef.current = false;
-      }
-    });
-
-    return () => subscription.unsubscribe();
+      // Fire and forget - don't await
+      supabase.functions.invoke('log-login', {
+        body: {
+          ip_address: ip,
+          user_agent: device.userAgent,
+          device_type: device.deviceType,
+          browser: device.browser,
+          os: device.os,
+          login_method: loginMethod,
+        },
+      }).catch(e => console.warn('Login logging failed:', e));
+    } catch (e) {
+      console.warn('Login logging failed:', e);
+    }
   }, []);
+
+  const resetLogger = useCallback(() => {
+    loggedRef.current = false;
+  }, []);
+
+  return { logLogin, resetLogger };
 };
