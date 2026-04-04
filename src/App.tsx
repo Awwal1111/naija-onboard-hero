@@ -13,7 +13,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import AuthRedirectHandler from "@/components/AuthRedirectHandler";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { detectMiniPaySync } from "@/lib/minipay";
-import { useLoginLogger } from "@/hooks/useLoginLogger";
+
 import { lazyWithRetry } from "@/utils/chunkErrorHandler";
 import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -180,10 +180,6 @@ const SmartAIAssistant = lazy(lazyWithRetry(() => import("@/components/SmartAIAs
 // SYNC detection at module load
 const isMiniPayEnv = detectMiniPaySync().isMiniPay;
 
-const LoginLogger = () => {
-  useLoginLogger();
-  return null;
-};
 
 const AppStateManager = () => {
   useAppState();
@@ -202,7 +198,7 @@ const App = () => (
             <MiniPayAuthWrapper>
               {!isMiniPayEnv && <AuthRedirectHandler />}
               {!isMiniPayEnv && <AppStateManager />}
-              {!isMiniPayEnv && <LoginLogger />}
+              
               {!isMiniPayEnv && <DeferredManagers />}
               <Suspense fallback={<PageLoader />}>
                 <Routes>

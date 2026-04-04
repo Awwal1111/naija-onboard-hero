@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useToast } from '@/hooks/use-toast'
 import { useIPProtection } from '@/hooks/useIPProtection'
 import { useAuthContext } from '@/contexts/AuthContext'
+import { useLoginLogger } from '@/hooks/useLoginLogger'
 
 /**
  * useAuth - provides auth state from the centralized AuthProvider
@@ -19,6 +20,7 @@ export const useAuth = () => {
   const navigate = useNavigate()
   const { toast } = useToast()
   const { checkSignupAllowed, logIPActivity } = useIPProtection()
+  const { logLogin, resetLogger } = useLoginLogger()
 
   const authPaths = ['/login', '/signup', '/forgot-password', '/reset-password']
 
@@ -143,14 +145,18 @@ export const useAuth = () => {
       toast({ title: "Login failed", description: errorMessage, variant: "destructive" })
     } else {
       toast({ title: "Welcome back!", description: "You've been signed in successfully." })
+      // Fire and forget - non-blocking
+      logLogin('email')
       supabase.auth.getUser().then(({ data }) => {
-        if (data.user) logIPActivity(data.user.id, 'login')
+        if (data.user) {
+          logIPActivity(data.user.id, 'login')
+          // Explicit navigation after login (don't rely solely on React re-render)
+          setTimeout(() => checkProfileAndRedirect(data.user), 100)
+        }
       })
-      // NOTE: send-welcome-notification is handled by the DB trigger on profile creation.
-      // Do NOT call it here — it causes duplicate edge function invocations on every login.
     }
     return { error }
-  }, [logIPActivity, toast])
+  }, [logIPActivity, logLogin, toast, checkProfileAndRedirect])
 
   const signInWithGoogle = useCallback(async () => {
     const redirectUrl = window.location.hostname === 'localhost'
@@ -193,8 +199,8 @@ export const useAuth = () => {
   }, [toast, navigate])
 
   const signOut = useCallback(async () => {
-    // Clear auth redirect flag so next login gets redirected properly
     sessionStorage.removeItem('hasAuthRedirect')
+    resetLogger()
     const { error } = await supabase.auth.signOut()
     if (error) {
       toast({ title: "Sign out failed", description: error.message, variant: "destructive" })

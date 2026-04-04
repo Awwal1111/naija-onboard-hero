@@ -21,12 +21,8 @@ export const UserModeProvider = ({ children }: { children: ReactNode }) => {
   const [userId, setUserId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  // Get user ID from Supabase auth
+  // Get user ID from auth state changes only (no getSession call to avoid race conditions)
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUserId(session?.user?.id || null)
-    })
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
       setUserId(session?.user?.id || null)
     })
