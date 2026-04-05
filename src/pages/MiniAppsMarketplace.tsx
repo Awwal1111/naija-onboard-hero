@@ -116,6 +116,25 @@ const MiniAppsMarketplace = () => {
     fetchMyApps()
   }, [user])
 
+  // Determine "App of the Week" - most installed external app, fallback to featured built-in
+  const topApp: UnifiedApp | null = (() => {
+    if (externalApps.length > 0) {
+      const top = externalApps.reduce((a, b) => (a.install_count > b.install_count ? a : b))
+      return {
+        id: top.id,
+        name: top.app_name,
+        description: top.app_description,
+        iconUrl: top.app_icon_url,
+        category: top.category,
+        color: 'from-primary/20 to-accent/20',
+        isInternal: false,
+        miniApp: top,
+      }
+    }
+    // Fallback to a popular built-in app
+    return BUILT_IN_APPS.find(a => a.id === 'pa-contests') || null
+  })()
+
   // Convert external apps to unified format
   const externalUnified: UnifiedApp[] = externalApps.map(app => ({
     id: app.id,
