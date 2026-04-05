@@ -112,7 +112,7 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
 
   // Handle messages from mini app iframe
   useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
+    const handleMessage = async (event: MessageEvent) => {
       const data = event.data
       if (!data?.type?.startsWith('njl_')) return
 
