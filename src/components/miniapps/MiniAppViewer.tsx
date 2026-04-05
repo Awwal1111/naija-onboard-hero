@@ -157,6 +157,31 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
         setShowPayoutDialog(true)
       }
 
+      // Push notification from mini app
+      if (data.type === 'njl_push') {
+        const { title, body, url, requestId } = data
+        if (!title || !body) {
+          postToIframe({ type: 'njl_push_result', success: false, error: 'Title and body required', requestId })
+          return
+        }
+        try {
+          await supabase.functions.invoke('send-push-notification', {
+            body: {
+              userId: user?.id,
+              title,
+              body: body.substring(0, 200),
+              icon: app.app_icon_url || '/icon-512.png',
+              badge: '/icon-512.png',
+              url: url || '/apps',
+              data: { type: 'mini_app', appId: app.id }
+            }
+          })
+          postToIframe({ type: 'njl_push_result', success: true, requestId })
+        } catch {
+          postToIframe({ type: 'njl_push_result', success: false, error: 'Failed to send', requestId })
+        }
+      }
+
       if (data.type === 'njl_verify_pin') {
         const { reason, requestId } = data
         if (!hasPin) {
