@@ -129,17 +129,18 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
     }
     
     try {
+      // Don't filter by user_id - RLS handles authorization
+      // This allows both post owners AND admins to delete
       const { error } = await supabase
         .from('posts')
         .delete()
         .eq('id', post.id)
-        .eq('user_id', currentUserId)
       
       if (error) throw error
       
       toast({
         title: "Post Deleted",
-        description: "Your post has been deleted successfully",
+        description: "The post has been deleted successfully",
       })
       
       // Reload the page to reflect changes
