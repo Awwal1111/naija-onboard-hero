@@ -92,8 +92,11 @@ const MiniAppsMarketplace = () => {
       .order('is_featured', { ascending: false })
       .order('install_count', { ascending: false })
 
+    // Filter out internal:// apps (handled as built-in) and known internal sdk_app_ids
     const internalIds = new Set(['bills', 'bank_deposit', 'deposit_naira', 'crypto_deposit', 'escrow', 'nc_converter'])
-    const dbApps = (data || []).filter((a: any) => !internalIds.has(a.sdk_app_id)) as MiniApp[]
+    const dbApps = (data || []).filter((a: any) => 
+      !internalIds.has(a.sdk_app_id) && !a.app_url?.startsWith('internal://')
+    ) as MiniApp[]
     setExternalApps(dbApps)
   }
 
@@ -112,6 +115,25 @@ const MiniAppsMarketplace = () => {
     fetchApps()
     fetchMyApps()
   }, [user])
+
+  // Determine "App of the Week" - most installed external app, fallback to featured built-in
+  const topApp: UnifiedApp | null = (() => {
+    if (externalApps.length > 0) {
+      const top = externalApps.reduce((a, b) => (a.install_count > b.install_count ? a : b))
+      return {
+        id: top.id,
+        name: top.app_name,
+        description: top.app_description,
+        iconUrl: top.app_icon_url,
+        category: top.category,
+        color: 'from-primary/20 to-accent/20',
+        isInternal: false,
+        miniApp: top,
+      }
+    }
+    // Fallback to a popular built-in app
+    return BUILT_IN_APPS.find(a => a.id === 'pa-contests') || null
+  })()
 
   // Convert external apps to unified format
   const externalUnified: UnifiedApp[] = externalApps.map(app => ({
@@ -225,6 +247,39 @@ const MiniAppsMarketplace = () => {
 
       {tab === 'explore' ? (
         <div className="p-4 space-y-4">
+          {/* App of the Week */}
+          {topApp && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="relative overflow-hidden rounded-xl bg-gradient-to-br from-primary/20 via-accent/10 to-primary/5 border border-primary/30 p-4"
+            >
+              <div className="flex items-center gap-1 mb-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <span className="text-xs font-bold text-primary uppercase tracking-wider">App of the Week</span>
+              </div>
+              <button
+                onClick={() => handleAppClick(topApp)}
+                className="flex items-center gap-3 w-full text-left"
+              >
+                <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${topApp.color || 'from-primary/20 to-accent/20'} flex items-center justify-center shrink-0 overflow-hidden`}>
+                  {topApp.icon ? (
+                    <topApp.icon className="h-7 w-7 text-foreground" />
+                  ) : topApp.iconUrl ? (
+                    <img src={topApp.iconUrl} alt="" className="w-full h-full object-cover rounded-xl" />
+                  ) : (
+                    <span className="text-xl font-bold text-primary">{topApp.name.charAt(0)}</span>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-foreground text-sm">{topApp.name}</h3>
+                  <p className="text-xs text-muted-foreground line-clamp-2">{topApp.description}</p>
+                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 mt-1">{topApp.category}</Badge>
+                </div>
+              </button>
+            </motion.div>
+          )}
+
           {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
