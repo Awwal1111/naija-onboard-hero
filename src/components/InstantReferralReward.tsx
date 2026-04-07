@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BrandButton } from '@/components/ui/brand-button';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Gift, Copy, Share2, Sparkles, Users, CheckCircle, Loader2 } from 'lucide-react';
+import { Gift, Copy, Sparkles, Users, CheckCircle, Loader2, Shield } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { supabase } from '@/integrations/supabase/client';
@@ -32,99 +32,23 @@ export const InstantReferralReward = ({ onFirstReferralClaimed }: InstantReferra
 
   const submitReferralCode = async () => {
     if (!user || !referralCode.trim()) return;
-
     setIsSubmitting(true);
     try {
-      // Find the referrer
-      const { data: referrerData, error: referrerError } = await supabase
-        .from('profiles')
-        .select('user_id, full_name')
-        .eq('referral_code', referralCode.trim().toUpperCase())
-        .single();
+      const { data, error } = await supabase.functions.invoke('validate-referral', {
+        body: { referral_code: referralCode.trim() }
+      });
 
-      if (referrerError || !referrerData) {
-        toast.error('Invalid referral code');
-        setIsSubmitting(false);
+      if (error) {
+        toast.error('Failed to process referral');
         return;
       }
 
-      if (referrerData.user_id === user.id) {
-        toast.error('You cannot refer yourself');
-        setIsSubmitting(false);
+      if (data?.error) {
+        toast.error(data.error);
         return;
       }
 
-      // Check if already referred
-      const { data: existingRef } = await supabase
-        .from('referrals')
-        .select('id')
-        .eq('referee_id', user.id)
-        .maybeSingle();
-
-      if (existingRef) {
-        toast.error('You have already been referred');
-        setIsSubmitting(false);
-        return;
-      }
-
-      // Create referral with instant reward for BOTH parties
-      const { error: referralError } = await supabase
-        .from('referrals')
-        .insert([{
-          referrer_id: referrerData.user_id,
-          referee_id: user.id,
-          status: 'pending',
-          points_earned: 0 // Main reward comes after ₦1000 NC
-        }]);
-
-      if (referralError) {
-        throw referralError;
-      }
-
-      // Give instant small reward (₦25 to both)
-      const instantReward = 25;
-      
-      // Credit referee (current user)
-      await supabase.rpc('increment_wallet_balance', { 
-        target_user_id: user.id, 
-        amount_to_add: instantReward 
-      });
-
-      // Credit referrer
-      await supabase.rpc('increment_wallet_balance', { 
-        target_user_id: referrerData.user_id, 
-        amount_to_add: instantReward 
-      });
-
-      // Create transaction records
-      await supabase.from('transactions').insert([
-        {
-          user_id: user.id,
-          type: 'referral_bonus',
-          amount: instantReward,
-          balance_type: 'non_withdrawable',
-          description: `Welcome bonus - referred by ${referrerData.full_name || 'a friend'}`,
-          status: 'completed'
-        },
-        {
-          user_id: referrerData.user_id,
-          type: 'referral_bonus',
-          amount: instantReward,
-          balance_type: 'non_withdrawable',
-          description: `Instant referral bonus - new user joined`,
-          status: 'completed'
-        }
-      ]);
-
-      // Notify referrer
-      await supabase.from('notifications').insert({
-        user_id: referrerData.user_id,
-        title: '🎉 New Referral!',
-        message: `Someone joined using your code! You earned NC ${instantReward}. Help them earn ₦1,000 to unlock ₦100 bonus!`,
-        type: 'referral'
-      });
-
-      toast.success(`Welcome bonus: NC ${instantReward} credited! Earn ₦1,000 to unlock full rewards.`);
+      toast.success(data?.message || 'Referral applied!');
       setReferralCode('');
       setHasClaimedInstant(true);
       onFirstReferralClaimed?.();
@@ -140,41 +64,31 @@ export const InstantReferralReward = ({ onFirstReferralClaimed }: InstantReferra
 
   return (
     <div className="space-y-4">
-      {/* Instant Reward Banner */}
-      <Card className="border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-orange-500/5">
+      {/* Reward Banner */}
+      <Card className="border-primary/30 bg-gradient-to-br from-primary/10 to-accent/5">
         <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Sparkles className="h-5 w-5 text-amber-500" />
-              Earn Instantly!
-            </CardTitle>
-            <Badge className="bg-amber-500">NEW</Badge>
-          </div>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Gift className="h-5 w-5 text-primary" />
+            Earn ₦50 Per Referral
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="grid grid-cols-2 gap-3 text-center">
-            <div className="p-3 bg-background/50 rounded-lg">
-              <p className="text-2xl font-bold text-amber-600">NC 25</p>
-              <p className="text-xs text-muted-foreground">Instant when you join</p>
-            </div>
-            <div className="p-3 bg-background/50 rounded-lg">
-              <p className="text-2xl font-bold text-green-600">NC 100</p>
-              <p className="text-xs text-muted-foreground">After earning ₦1,000</p>
-            </div>
-          </div>
-          
-          <div className="text-xs text-muted-foreground text-center">
-            Both you AND your referrer earn NC 25 instantly! Full NC 100 bonus unlocks when you reach ₦1,000 earnings.
+          <p className="text-sm text-muted-foreground">
+            Both you and your friend earn ₦50 NC when they complete their profile.
+          </p>
+          <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/50 rounded-lg p-2">
+            <Shield className="h-3.5 w-3.5 shrink-0 mt-0.5 text-primary" />
+            <span>IP-verified to prevent abuse. Same-network referrals are blocked.</span>
           </div>
         </CardContent>
       </Card>
 
       {/* Apply Referral Code */}
       {!hasClaimedInstant && (
-        <Card className="border-primary/20">
+        <Card className="border-accent/20">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-base">
-              <Gift className="h-5 w-5 text-primary" />
+              <Sparkles className="h-5 w-5 text-primary" />
               Have a Referral Code?
             </CardTitle>
           </CardHeader>
@@ -187,23 +101,19 @@ export const InstantReferralReward = ({ onFirstReferralClaimed }: InstantReferra
                 className="flex-1"
                 maxLength={10}
               />
-              <BrandButton 
+              <Button
                 onClick={submitReferralCode}
                 disabled={!referralCode.trim() || isSubmitting}
               >
-                {isSubmitting ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  'Apply'
-                )}
-              </BrandButton>
+                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Apply'}
+              </Button>
             </div>
           </CardContent>
         </Card>
       )}
 
       {/* Share Your Code */}
-      <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+      <Card className="border-accent/20">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-base">
             <Users className="h-5 w-5 text-primary" />
@@ -211,29 +121,24 @@ export const InstantReferralReward = ({ onFirstReferralClaimed }: InstantReferra
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+          <div className="flex items-center gap-2 p-2.5 bg-muted rounded-lg">
             <code className="flex-1 text-sm font-mono text-primary truncate">
               {profile.referral_code}
             </code>
-            <button 
-              onClick={copyLink}
-              className="p-2 hover:bg-background rounded-lg transition-colors"
-            >
+            <button onClick={copyLink} className="p-2 hover:bg-background rounded-lg transition-colors">
               <Copy className="h-4 w-4" />
             </button>
           </div>
-
           <ShareButtons
             title="Join NaijaLancers"
-            text={`🚀 Join me on NaijaLancers! Get NC 25 instantly when you sign up with my code: ${profile.referral_code}`}
+            text={`🚀 Join NaijaLancers & earn ₦50! Use my code: ${profile.referral_code}`}
             url={`/signup?ref=${profile.referral_code}`}
             className="justify-center"
             showLabels
           />
-
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <CheckCircle className="h-3 w-3 text-green-500" />
-            <span>Both you and your friend earn NC 25 instantly!</span>
+            <span>Both earn ₦50 when your friend completes their profile</span>
           </div>
         </CardContent>
       </Card>
