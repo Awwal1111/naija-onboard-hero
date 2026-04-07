@@ -47,28 +47,25 @@ interface UnifiedApp {
 
 // All built-in apps (platform features + internal mini apps)
 const BUILT_IN_APPS: UnifiedApp[] = [
-  // Work
   { id: 'pa-contests', name: 'Contests', description: 'Compete for prizes or run design contests', icon: Trophy, path: '/contests', category: 'work', color: 'from-amber-500/20 to-yellow-500/20', isInternal: true },
-  { id: 'pa-products', name: 'Sell Products', description: 'Sell digital products and templates', icon: ShoppingBag, path: '/digital-products', category: 'work', color: 'from-green-500/20 to-emerald-500/20', isInternal: true },
-  // Finance
   { id: 'pa-fundraising', name: 'Fundraising', description: 'Create or support fundraising campaigns', icon: Heart, path: '/fundraising', category: 'finance', color: 'from-rose-500/20 to-pink-500/20', isInternal: true },
+  { id: 'pa-courses', name: 'Courses', description: 'Buy or sell professional courses', icon: GraduationCap, path: '/courses', category: 'learning', color: 'from-blue-500/20 to-cyan-500/20', isInternal: true },
+  { id: 'pa-referrals', name: 'Referrals', description: 'Invite friends and earn NC rewards', icon: Users, path: '/referrals', category: 'earn', color: 'from-purple-500/20 to-violet-500/20', isInternal: true },
   { id: 'pa-donations', name: 'Donations', description: 'Support the platform with donations', icon: Gift, path: '/donations', category: 'finance', color: 'from-pink-500/20 to-rose-500/20', isInternal: true },
   { id: 'pa-loan', name: 'Loan Services', description: 'Access quick loans via partners', icon: Banknote, path: '/loan', category: 'finance', color: 'from-indigo-500/20 to-purple-500/20', isInternal: true },
   { id: 'pa-emergency', name: 'Emergency Fund', description: 'Request emergency financial assistance', icon: AlertCircle, path: '/emergency', category: 'finance', color: 'from-amber-500/20 to-orange-500/20', isInternal: true },
-  { id: 'int-bills', name: 'Bills & Airtime', description: 'Pay bills, buy airtime & data', icon: Receipt, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, internalAction: 'bills' },
-  { id: 'int-bank', name: 'Deposit', description: 'Deposit via bank or Naira', icon: Building2, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, internalAction: 'bank_deposit' },
-  { id: 'int-crypto', name: 'Crypto Deposit', description: 'Deposit via crypto wallet', icon: Wallet, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, internalAction: 'crypto_deposit' },
-  { id: 'int-escrow', name: 'Escrow', description: 'Secure escrow payments', icon: Shield, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, internalAction: 'escrow' },
-  { id: 'int-converter', name: 'NC Converter', description: 'Convert non-withdrawable to withdrawable NC', icon: RefreshCw, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, internalAction: 'nc_converter' },
-  // Learning
-  { id: 'pa-courses', name: 'Courses', description: 'Buy or sell professional courses', icon: GraduationCap, path: '/courses', category: 'learning', color: 'from-blue-500/20 to-cyan-500/20', isInternal: true },
-  // Earn
-  { id: 'pa-referrals', name: 'Referrals', description: 'Invite friends & earn ₦50 each', icon: Users, path: '/referrals', category: 'earn', color: 'from-purple-500/20 to-violet-500/20', isInternal: true },
-  // Games
+  { id: 'pa-products', name: 'Sell Products', description: 'Sell digital products and templates', icon: ShoppingBag, path: '/digital-products', category: 'work', color: 'from-green-500/20 to-emerald-500/20', isInternal: true },
   { id: 'pa-guess', name: 'Guess Number', description: 'Guess the number and win NC', icon: Dices, path: '/earn/guess-number', category: 'games', color: 'from-emerald-500/20 to-green-500/20', isInternal: true },
   { id: 'pa-trivia', name: 'Nigerian Trivia', description: 'Test your Nigerian knowledge', icon: Gamepad2, path: '/earn/trivia', category: 'games', color: 'from-orange-500/20 to-amber-500/20', isInternal: true },
   { id: 'pa-spin', name: 'Spin Wheel', description: 'Spin the wheel for prizes', icon: RotateCw, path: '/earn/spin-wheel', category: 'games', color: 'from-indigo-500/20 to-blue-500/20', isInternal: true },
   { id: 'pa-predictor', name: 'Naija Predictor', description: 'Predict outcomes and win from pool', icon: Target, path: '/earn/predictor', category: 'games', color: 'from-teal-500/20 to-cyan-500/20', isInternal: true },
+  // Internal mini apps with actions
+  { id: 'int-bills', name: 'Bills', description: 'Pay bills, airtime & data', icon: Receipt, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, internalAction: 'bills' },
+  { id: 'int-bank', name: 'Bank Deposit', description: 'Deposit via bank transfer', icon: Building2, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, internalAction: 'bank_deposit' },
+  { id: 'int-naira', name: 'Deposit Naira', description: 'Deposit with Naira', icon: CreditCard, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, internalAction: 'deposit_naira' },
+  { id: 'int-crypto', name: 'Crypto Deposit', description: 'Deposit via crypto', icon: Wallet, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, internalAction: 'crypto_deposit' },
+  { id: 'int-escrow', name: 'Escrow', description: 'Secure escrow payments', icon: Shield, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, internalAction: 'escrow' },
+  { id: 'int-converter', name: 'NC Converter', description: 'Convert 100 non-withdrawable NC to 5 withdrawable NC', icon: RefreshCw, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, internalAction: 'nc_converter' },
 ]
 
 const CATEGORY_FILTERS = ['all', 'work', 'finance', 'games', 'learning', 'earn'] as const

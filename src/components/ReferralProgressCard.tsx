@@ -1,9 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Gift, Users, Copy } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Gift, Users, Trophy, Target, Crown, Sparkles } from "lucide-react";
 import { ShareButtons } from "./ShareButtons";
-import { toast } from "sonner";
 
 interface ReferralProgressCardProps {
   referralCode: string;
@@ -13,6 +13,13 @@ interface ReferralProgressCardProps {
   totalEarnings: number;
 }
 
+const milestones = [
+  { count: 5, reward: "₦500 Bonus", icon: Gift, description: "5 quality referrals" },
+  { count: 10, reward: "Premium Badge", icon: Crown, description: "10 quality referrals" },
+  { count: 25, reward: "₦2,500 Bonus", icon: Trophy, description: "25 quality referrals" },
+  { count: 50, reward: "VIP Status", icon: Sparkles, description: "50 quality referrals" },
+];
+
 export const ReferralProgressCard = ({
   referralCode,
   totalReferrals,
@@ -20,23 +27,28 @@ export const ReferralProgressCard = ({
   completedReferrals,
   totalEarnings,
 }: ReferralProgressCardProps) => {
-  const referralLink = `${window.location.origin}/signup?ref=${referralCode}`;
+  const nextMilestone = milestones.find((m) => m.count > completedReferrals) || milestones[milestones.length - 1];
+  const previousMilestone = milestones.filter((m) => m.count <= completedReferrals).pop();
   
-  const copyLink = () => {
-    navigator.clipboard.writeText(referralLink);
-    toast.success('Referral link copied!');
-  };
+  const progressStart = previousMilestone?.count || 0;
+  const progressEnd = nextMilestone.count;
+  const progressPercent = Math.min(
+    ((completedReferrals - progressStart) / (progressEnd - progressStart)) * 100,
+    100
+  );
+
+  const referralLink = `${window.location.origin}/signup?ref=${referralCode}`;
 
   return (
     <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-accent/5">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-lg">
           <Users className="h-5 w-5 text-primary" />
-          Invite Friends & Earn ₦50 Each
+          Invite Friends & Earn
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Stats */}
+      <CardContent className="space-y-5">
+        {/* Stats Row */}
         <div className="grid grid-cols-3 gap-3">
           <div className="text-center p-3 bg-background/50 rounded-lg">
             <p className="text-2xl font-bold text-primary">{completedReferrals}</p>
@@ -52,25 +64,69 @@ export const ReferralProgressCard = ({
           </div>
         </div>
 
-        {/* Info */}
-        <div className="bg-amber-50 dark:bg-amber-950/30 rounded-lg p-3 text-sm">
-          <p className="font-medium text-amber-800 dark:text-amber-200 mb-1">How rewards work</p>
-          <p className="text-amber-700 dark:text-amber-300 text-xs">
-            You and your friend each earn ₦50 NC when they complete their profile (name, location, phone). Referrals from the same IP are blocked.
+        {/* Progress to Next Milestone */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">Next milestone</span>
+            <div className="flex items-center gap-1">
+              <nextMilestone.icon className="h-4 w-4 text-primary" />
+              <span className="font-medium">{nextMilestone.reward}</span>
+            </div>
+          </div>
+          <Progress value={progressPercent} className="h-3" />
+          <p className="text-xs text-muted-foreground text-center">
+            {completedReferrals}/{nextMilestone.count} referrals to unlock
           </p>
         </div>
 
-        {/* Share */}
-        <div className="pt-2 border-t border-border space-y-3">
-          <div className="flex items-center gap-2 bg-muted/50 rounded-lg p-2">
-            <code className="flex-1 text-sm text-primary font-mono truncate">{referralCode}</code>
-            <button onClick={copyLink} className="p-1.5 hover:bg-background rounded transition-colors">
-              <Copy className="h-4 w-4" />
-            </button>
+        {/* Milestones */}
+        <div className="flex justify-between items-center pt-2">
+          {milestones.map((milestone, index) => {
+            const isCompleted = completedReferrals >= milestone.count;
+            const Icon = milestone.icon;
+            return (
+              <div
+                key={index}
+                className={`flex flex-col items-center gap-1 ${
+                  isCompleted ? "text-primary" : "text-muted-foreground/50"
+                }`}
+              >
+                <div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                    isCompleted
+                      ? "bg-primary/20 text-primary"
+                      : "bg-muted"
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                </div>
+                <span className="text-xs font-medium">{milestone.count}</span>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Quality Referral Info */}
+        <div className="bg-amber-50 dark:bg-amber-950/30 rounded-lg p-3 text-sm">
+          <p className="font-medium text-amber-800 dark:text-amber-200 mb-1">What counts as a quality referral?</p>
+          <p className="text-amber-700 dark:text-amber-300 text-xs">
+            Your referred user must earn at least ₦1,000 NC on the platform. This ensures genuine, active users.
+          </p>
+        </div>
+
+        {/* Share Section */}
+        <div className="pt-3 border-t border-border space-y-3">
+          <p className="text-sm font-medium text-center">
+            Share your link & earn ₦100 per quality referral!
+          </p>
+          
+          <div className="bg-muted/50 rounded-lg p-2 text-center">
+            <code className="text-sm text-primary font-mono">{referralCode}</code>
           </div>
+          
           <ShareButtons
             title="Join NaijaLancers"
-            text={`🚀 Join NaijaLancers & earn ₦50! Use my code: ${referralCode}`}
+            text={`🚀 Join me on NaijaLancers - Nigeria's trusted freelance marketplace! Use my code: ${referralCode} and start earning today.`}
             url={`/signup?ref=${referralCode}`}
             className="justify-center"
             showLabels

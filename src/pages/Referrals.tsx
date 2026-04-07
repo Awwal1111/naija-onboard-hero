@@ -3,17 +3,30 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
 import { supabase } from '@/integrations/supabase/client'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { 
-  ArrowLeft, Users, Copy, Gift, UserPlus, CheckCircle, Clock, Sparkles, Trophy, Share2, Shield, Loader2
+  ArrowLeft,
+  Share,
+  Users,
+  Copy,
+  Gift,
+  UserPlus,
+  Coins,
+  CheckCircle,
+  Clock,
+  Sparkles,
+  Trophy
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { ReferralProgressCard } from '@/components/ReferralProgressCard'
+import { InstantReferralReward } from '@/components/InstantReferralReward'
+import { ReferralTierCard } from '@/components/ReferralTierCard'
 import { ReferralLeaderboard } from '@/components/ReferralLeaderboard'
-import { ShareButtons } from '@/components/ShareButtons'
 
 interface Referral {
   id: string
@@ -35,20 +48,29 @@ export const Referrals = () => {
   const [referrals, setReferrals] = useState<Referral[]>([])
   const [loading, setLoading] = useState(true)
   const [referralCode, setReferralCode] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
-    if (user) fetchReferrals()
+    if (user) {
+      fetchReferrals()
+    }
   }, [user])
 
   const fetchReferrals = async () => {
     if (!user) return
+
     try {
       const { data, error } = await supabase
         .from('referrals')
-        .select(`*, referee:profiles!referrals_referee_id_fkey (full_name, profile_picture_url)`)
+        .select(`
+          *,
+          referee:profiles!referrals_referee_id_fkey (
+            full_name,
+            profile_picture_url
+          )
+        `)
         .eq('referrer_id', user.id)
         .order('created_at', { ascending: false })
+
       if (error) throw error
       setReferrals(data || [])
     } catch (error) {
@@ -61,35 +83,65 @@ export const Referrals = () => {
   const copyReferralLink = () => {
     const referralLink = `${window.location.origin}/signup?ref=${profile?.referral_code}`
     navigator.clipboard.writeText(referralLink)
-    toast.success('Referral link copied!')
+    toast.success('Referral link copied to clipboard!')
+  }
+
+  const shareReferralCode = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: 'Join NaijaLancers',
+        text: `Join me on NaijaLancers! Use my referral code: ${profile?.referral_code}`,
+        url: `${window.location.origin}/signup?ref=${profile?.referral_code}`
+      })
+    } else {
+      copyReferralLink()
+    }
   }
 
   const submitReferralCode = async () => {
     if (!user || !referralCode.trim()) return
-    setIsSubmitting(true)
+
     try {
-      const { data, error } = await supabase.functions.invoke('validate-referral', {
-        body: { referral_code: referralCode.trim() }
-      })
+      // Find the referrer by referral code
+      const { data: referrerData, error: referrerError } = await supabase
+        .from('profiles')
+        .select('user_id')
+        .eq('referral_code', referralCode.trim().toUpperCase())
+        .single()
 
-      if (error) {
-        toast.error('Failed to process referral')
+      if (referrerError || !referrerData) {
+        toast.error('Invalid referral code')
         return
       }
 
-      if (data?.error) {
-        toast.error(data.error)
+      if (referrerData.user_id === user.id) {
+        toast.error('You cannot refer yourself')
         return
       }
 
-      toast.success(data?.message || 'Referral applied!')
+      // Create referral record
+      const { error: referralError } = await supabase
+        .from('referrals')
+        .insert([{
+          referrer_id: referrerData.user_id,
+          referee_id: user.id,
+          status: 'pending'
+        }])
+
+      if (referralError) {
+        if (referralError.code === '23505') {
+          toast.error('Referral code already used')
+        } else {
+          throw referralError
+        }
+        return
+      }
+
+      toast.success('Referral code applied! You and your referrer will earn rewards when you reach 1000 NC.')
       setReferralCode('')
-      fetchReferrals()
     } catch (error) {
-      console.error('Referral error:', error)
+      console.error('Error applying referral code:', error)
       toast.error('Failed to apply referral code')
-    } finally {
-      setIsSubmitting(false)
     }
   }
 
@@ -101,143 +153,99 @@ export const Referrals = () => {
 
   const pendingReferrals = referrals.filter(r => r.status === 'pending').length
   const completedReferrals = referrals.filter(r => r.status === 'completed').length
-  const totalEarned = referrals.filter(r => r.status === 'completed').length * 50
+  const totalEarned = referrals.reduce((sum, r) => sum + r.points_earned, 0)
 
   return (
     <div className="min-h-screen bg-gradient-subtle p-4 pb-24">
-      <div className="max-w-md mx-auto space-y-4">
+      <div className="max-w-md mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between pt-8">
-          <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="p-2">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => navigate(-1)}
+            className="p-2"
+          >
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <h1 className="text-xl font-bold text-foreground">Referrals</h1>
           <div className="w-10" />
         </div>
 
-        {/* Hero Card */}
-        <Card className="border-primary/30 bg-gradient-to-br from-primary/10 via-accent/5 to-primary/5 overflow-hidden">
-          <CardContent className="pt-6 space-y-4">
-            <div className="text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/20 mb-3">
-                <Gift className="h-8 w-8 text-primary" />
-              </div>
-              <h2 className="text-2xl font-bold text-foreground">Earn ₦50 Per Referral</h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                Both you and your friend get ₦50 when they complete their profile
-              </p>
-            </div>
+        {/* Enhanced Referral Progress Card */}
+        <ReferralProgressCard
+          referralCode={profile.referral_code || ''}
+          totalReferrals={referrals.length}
+          pendingReferrals={pendingReferrals}
+          completedReferrals={completedReferrals}
+          totalEarnings={totalEarned}
+        />
 
-            {/* Stats */}
-            <div className="grid grid-cols-3 gap-2">
-              <div className="text-center p-3 bg-background/60 rounded-xl">
-                <p className="text-xl font-bold text-primary">{completedReferrals}</p>
-                <p className="text-[10px] text-muted-foreground">Completed</p>
-              </div>
-              <div className="text-center p-3 bg-background/60 rounded-xl">
-                <p className="text-xl font-bold text-amber-600">{pendingReferrals}</p>
-                <p className="text-[10px] text-muted-foreground">Pending</p>
-              </div>
-              <div className="text-center p-3 bg-background/60 rounded-xl">
-                <p className="text-xl font-bold text-green-600">₦{totalEarned}</p>
-                <p className="text-[10px] text-muted-foreground">Earned</p>
-              </div>
-            </div>
-
-            {/* Share */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 p-2.5 bg-background/60 rounded-lg">
-                <code className="flex-1 text-sm font-mono text-primary truncate">{profile.referral_code}</code>
-                <Button variant="ghost" size="sm" onClick={copyReferralLink} className="p-1.5 h-auto">
-                  <Copy className="h-4 w-4" />
-                </Button>
-              </div>
-              <ShareButtons
-                title="Join NaijaLancers"
-                text={`🚀 Join NaijaLancers & get ₦50 instantly! Use my code: ${profile.referral_code}`}
-                url={`/signup?ref=${profile.referral_code}`}
-                className="justify-center"
-                showLabels
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Apply Code */}
-        <Card className="border-accent/20">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <UserPlus className="h-5 w-5 text-primary" />
-              Have a Referral Code?
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-2">
-              <Input
-                placeholder="Enter code"
-                value={referralCode}
-                onChange={e => setReferralCode(e.target.value.toUpperCase())}
-                className="flex-1"
-                maxLength={10}
-              />
-              <Button onClick={submitReferralCode} disabled={!referralCode.trim() || isSubmitting}>
-                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Apply'}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Anti-cheat info */}
-        <div className="flex items-start gap-2 p-3 bg-muted/50 rounded-lg text-xs text-muted-foreground">
-          <Shield className="h-4 w-4 shrink-0 mt-0.5 text-primary" />
-          <p>Referrals are verified for authenticity. Accounts sharing the same IP or device will not receive rewards.</p>
-        </div>
+        {/* Tier System */}
+        <ReferralTierCard completedReferrals={completedReferrals} />
 
         {/* Leaderboard */}
         <ReferralLeaderboard />
 
+        {/* Instant Referral Reward Section */}
+        <InstantReferralReward />
+
         {/* Referral List */}
         <Card className="border-accent/20">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-base">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
               <Users className="h-5 w-5 text-primary" />
-              Your Referrals
+              <span>Your Referrals</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
             {loading ? (
               <div className="text-center py-4">
-                <Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" />
+                <p className="text-muted-foreground">Loading...</p>
               </div>
             ) : referrals.length === 0 ? (
               <div className="text-center py-6">
-                <UserPlus className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">No referrals yet. Share your code!</p>
+                <UserPlus className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                <p className="text-muted-foreground">No referrals yet</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Share your code to start earning!
+                </p>
               </div>
             ) : (
-              <div className="space-y-2">
-                {referrals.map((referral) => (
-                  <div key={referral.id} className="flex items-center justify-between p-2.5 bg-muted/30 rounded-lg">
-                    <div className="flex items-center gap-2.5">
-                      <div className="h-8 w-8 bg-primary/10 rounded-full flex items-center justify-center">
-                        <Users className="h-4 w-4 text-primary" />
+              <div className="space-y-3">
+                {referrals.map((referral, index) => (
+                  <div key={referral.id}>
+                    <div className="flex items-center justify-between py-2">
+                      <div className="flex items-center space-x-3">
+                        <div className="h-8 w-8 bg-primary/10 rounded-full flex items-center justify-center">
+                          <Users className="h-4 w-4 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm">
+                            {referral.referee?.full_name || 'Anonymous User'}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(referral.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium text-sm">{referral.referee?.full_name || 'Anonymous'}</p>
-                        <p className="text-[10px] text-muted-foreground">
-                          {new Date(referral.created_at).toLocaleDateString()}
-                        </p>
+                      <div className="flex items-center space-x-2">
+                        {referral.status === 'completed' ? (
+                          <>
+                            <Badge variant="secondary" className="bg-green-100 text-green-800">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              {referral.points_earned} NC
+                            </Badge>
+                          </>
+                        ) : (
+                          <Badge variant="secondary" className="bg-orange-100 text-orange-800">
+                            <Clock className="h-3 w-3 mr-1" />
+                            Pending
+                          </Badge>
+                        )}
                       </div>
                     </div>
-                    {referral.status === 'completed' ? (
-                      <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 text-xs">
-                        <CheckCircle className="h-3 w-3 mr-1" /> ₦50
-                      </Badge>
-                    ) : (
-                      <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 text-xs">
-                        <Clock className="h-3 w-3 mr-1" /> Pending
-                      </Badge>
-                    )}
+                    {index < referrals.length - 1 && <Separator />}
                   </div>
                 ))}
               </div>
@@ -247,27 +255,39 @@ export const Referrals = () => {
 
         {/* How it Works */}
         <Card className="border-accent/20">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">How It Works</CardTitle>
+          <CardHeader>
+            <CardTitle className="text-lg">How Referrals Work</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2.5 text-sm text-muted-foreground">
-            <div className="flex items-start gap-3">
-              <div className="bg-primary/10 rounded-full w-6 h-6 flex items-center justify-center shrink-0">
+          <CardContent className="space-y-3 text-sm text-muted-foreground">
+            <div className="flex items-start space-x-3">
+              <div className="bg-primary/10 rounded-full p-1 mt-0.5">
                 <span className="text-xs text-primary font-bold">1</span>
               </div>
               <p>Share your referral code with friends</p>
             </div>
-            <div className="flex items-start gap-3">
-              <div className="bg-primary/10 rounded-full w-6 h-6 flex items-center justify-center shrink-0">
+            <div className="flex items-start space-x-3">
+              <div className="bg-primary/10 rounded-full p-1 mt-0.5">
                 <span className="text-xs text-primary font-bold">2</span>
               </div>
-              <p>They sign up and enter your code</p>
+              <p>They sign up using your code</p>
             </div>
-            <div className="flex items-start gap-3">
-              <div className="bg-primary/10 rounded-full w-6 h-6 flex items-center justify-center shrink-0">
+            <div className="flex items-start space-x-3">
+              <div className="bg-primary/10 rounded-full p-1 mt-0.5">
                 <span className="text-xs text-primary font-bold">3</span>
               </div>
-              <p>Once they complete their profile, <strong>both of you get ₦50 NC</strong></p>
+              <p>When they earn ₦1,000 NC, you get ₦100 NC reward!</p>
+            </div>
+            <div className="flex items-start space-x-3">
+              <div className="bg-primary/10 rounded-full p-1 mt-0.5">
+                <span className="text-xs text-primary font-bold">4</span>
+              </div>
+              <p><strong>Bonus:</strong> Get 5 quality referrals and unlock ₦500 bonus!</p>
+            </div>
+            
+            <div className="mt-4 p-3 bg-muted/50 rounded-lg">
+              <p className="text-xs">
+                <strong>Quality referral:</strong> A user who earns at least ₦1,000 NC on the platform through deposits, jobs, or other activities.
+              </p>
             </div>
           </CardContent>
         </Card>
