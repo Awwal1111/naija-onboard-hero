@@ -70,6 +70,12 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
     iframeRef.current?.contentWindow?.postMessage(data, '*')
   }, [])
 
+  const withRequestIds = useCallback((requestId: string, payload: Record<string, unknown>) => ({
+    ...payload,
+    requestId,
+    request_id: requestId,
+  }), [])
+
   const generateIdentityPayload = useCallback(() => {
     if (!user || !profile) return null
     return {
@@ -96,19 +102,21 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
         .single()
 
       postToIframe({
-        type: 'njl_balance_result',
-        balance: (data as any)?.wallet_balance || 0,
-        requestId
+        ...withRequestIds(requestId, {
+          type: 'njl_balance_result',
+          balance: (data as any)?.wallet_balance || 0,
+        })
       })
     } catch {
       postToIframe({
-        type: 'njl_balance_result',
-        balance: 0,
-        error: 'Failed to fetch balance',
-        requestId
+        ...withRequestIds(requestId, {
+          type: 'njl_balance_result',
+          balance: 0,
+          error: 'Failed to fetch balance',
+        })
       })
     }
-  }, [user, postToIframe])
+  }, [user, postToIframe, withRequestIds])
 
   // Normalize requestId: developers may send requestId or request_id
   const getRequestId = (data: any): string => data.requestId || data.request_id || ''
@@ -135,11 +143,11 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
         const { amount, description, charge_type } = data
         if (!amount || amount <= 0) {
           postToIframe({
-            type: 'njl_charge_result',
-            success: false,
-            error: 'Invalid amount',
-            requestId,
-            request_id: requestId
+            ...withRequestIds(requestId, {
+              type: 'njl_charge_result',
+              success: false,
+              error: 'Invalid amount',
+            })
           })
           return
         }
@@ -151,11 +159,11 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
         const { amount, description } = data
         if (!amount || amount <= 0) {
           postToIframe({
-            type: 'njl_payout_result',
-            success: false,
-            error: 'Invalid amount',
-            requestId,
-            request_id: requestId
+            ...withRequestIds(requestId, {
+              type: 'njl_payout_result',
+              success: false,
+              error: 'Invalid amount',
+            })
           })
           return
         }
@@ -167,7 +175,7 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
       if (data.type === 'njl_push') {
         const { title, body, url } = data
         if (!title || !body) {
-          postToIframe({ type: 'njl_push_result', success: false, error: 'Title and body required', requestId, request_id: requestId })
+          postToIframe(withRequestIds(requestId, { type: 'njl_push_result', success: false, error: 'Title and body required' }))
           return
         }
         try {
@@ -182,9 +190,9 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
               data: { type: 'mini_app', appId: app.id }
             }
           })
-          postToIframe({ type: 'njl_push_result', success: true, requestId, request_id: requestId })
+          postToIframe(withRequestIds(requestId, { type: 'njl_push_result', success: true }))
         } catch {
-          postToIframe({ type: 'njl_push_result', success: false, error: 'Failed to send', requestId, request_id: requestId })
+          postToIframe(withRequestIds(requestId, { type: 'njl_push_result', success: false, error: 'Failed to send' }))
         }
       }
 
@@ -192,11 +200,11 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
         const { reason } = data
         if (!hasPin) {
           postToIframe({
-            type: 'njl_verify_pin_result',
-            success: false,
-            error: 'No PIN set. Please set up in Settings.',
-            requestId,
-            request_id: requestId
+            ...withRequestIds(requestId, {
+              type: 'njl_verify_pin_result',
+              success: false,
+              error: 'No PIN set. Please set up in Settings.',
+            })
           })
           toast.error('Set up your transaction PIN in Settings first')
           return
@@ -209,7 +217,7 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
 
     window.addEventListener('message', handleMessage)
     return () => window.removeEventListener('message', handleMessage)
-  }, [generateIdentityPayload, handleBalanceQuery, postToIframe, hasPin])
+  }, [generateIdentityPayload, handleBalanceQuery, postToIframe, hasPin, withRequestIds, user?.id, app.app_icon_url, app.id])
 
   const handleConfirmCharge = async () => {
     if (!pendingCharge || !user) return
@@ -231,14 +239,14 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
       if (error || !result?.success) {
         const errMsg = result?.error || error?.message || 'Payment failed'
         toast.error(errMsg)
-        postToIframe({ type: 'njl_charge_result', success: false, error: errMsg, requestId: rid, request_id: rid })
+        postToIframe(withRequestIds(rid, { type: 'njl_charge_result', success: false, error: errMsg }))
       } else {
-        postToIframe({ type: 'njl_charge_result', success: true, txRef: result.tx_ref, requestId: rid, request_id: rid })
+        postToIframe(withRequestIds(rid, { type: 'njl_charge_result', success: true, txRef: result.tx_ref }))
         toast.success(`₦${pendingCharge.amount}NC paid to ${app.app_name}`)
       }
     } catch (err) {
       console.error('[MiniApp] Charge failed:', err)
-      postToIframe({ type: 'njl_charge_result', success: false, error: 'Payment failed', requestId: rid, request_id: rid })
+      postToIframe(withRequestIds(rid, { type: 'njl_charge_result', success: false, error: 'Payment failed' }))
       toast.error('Payment failed')
     }
 
@@ -266,14 +274,14 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
       if (error || !result?.success) {
         const errMsg = result?.error || error?.message || 'Payout failed'
         toast.error(errMsg)
-        postToIframe({ type: 'njl_payout_result', success: false, error: errMsg, requestId: rid, request_id: rid })
+        postToIframe(withRequestIds(rid, { type: 'njl_payout_result', success: false, error: errMsg }))
       } else {
-        postToIframe({ type: 'njl_payout_result', success: true, txRef: result.tx_ref, requestId: rid, request_id: rid })
+        postToIframe(withRequestIds(rid, { type: 'njl_payout_result', success: true, txRef: result.tx_ref }))
         toast.success(`₦${pendingPayout.amount}NC received from ${app.app_name}`)
       }
     } catch (err) {
       console.error('[MiniApp] Payout failed:', err)
-      postToIframe({ type: 'njl_payout_result', success: false, error: 'Payout failed', requestId: rid, request_id: rid })
+      postToIframe(withRequestIds(rid, { type: 'njl_payout_result', success: false, error: 'Payout failed' }))
       toast.error('Payout failed')
     }
 
@@ -375,10 +383,11 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
                 <Button variant="outline" className="flex-1" onClick={() => {
                   setShowChargeDialog(false)
                   postToIframe({
-                    type: 'njl_charge_result',
-                    success: false,
-                    error: 'User cancelled',
-                    requestId: pendingCharge?.requestId
+                    ...withRequestIds(pendingCharge?.requestId || '', {
+                      type: 'njl_charge_result',
+                      success: false,
+                      error: 'User cancelled',
+                    })
                   })
                   setPendingCharge(null)
                 }}>
@@ -415,10 +424,11 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
                 <Button variant="outline" className="flex-1" onClick={() => {
                   setShowPayoutDialog(false)
                   postToIframe({
-                    type: 'njl_payout_result',
-                    success: false,
-                    error: 'User declined',
-                    requestId: pendingPayout?.requestId
+                    ...withRequestIds(pendingPayout?.requestId || '', {
+                      type: 'njl_payout_result',
+                      success: false,
+                      error: 'User declined',
+                    })
                   })
                   setPendingPayout(null)
                 }}>
@@ -459,11 +469,11 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
                   setShowPinDialog(false)
                   const rid = pendingPinRequest?.requestId
                   postToIframe({
-                    type: 'njl_verify_pin_result',
-                    success: false,
-                    error: 'User cancelled',
-                    requestId: rid,
-                    request_id: rid
+                    ...withRequestIds(rid || '', {
+                      type: 'njl_verify_pin_result',
+                      success: false,
+                      error: 'User cancelled',
+                    })
                   })
                   setPendingPinRequest(null)
                 }}>
@@ -473,19 +483,19 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
                   const rid = pendingPinRequest?.requestId
                   if (pinInput === transactionPin) {
                     postToIframe({
-                      type: 'njl_verify_pin_result',
-                      success: true,
-                      requestId: rid,
-                      request_id: rid
+                      ...withRequestIds(rid || '', {
+                        type: 'njl_verify_pin_result',
+                        success: true,
+                      })
                     })
                     toast.success('Identity verified')
                   } else {
                     postToIframe({
-                      type: 'njl_verify_pin_result',
-                      success: false,
-                      error: 'Incorrect PIN',
-                      requestId: rid,
-                      request_id: rid
+                      ...withRequestIds(rid || '', {
+                        type: 'njl_verify_pin_result',
+                        success: false,
+                        error: 'Incorrect PIN',
+                      })
                     })
                     toast.error('Incorrect PIN')
                   }
