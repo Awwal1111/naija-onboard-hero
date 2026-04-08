@@ -61,13 +61,8 @@ serve(async (req) => {
 
     if (!appToken || !secretKey) {
       console.error('BitLabs credentials not configured')
-      const mockOffers: BitLabsOffer[] = [
-        { id: 'mock-1', name: 'Consumer Habits Survey', description: 'Tell us about your shopping and lifestyle preferences', reward: 50, duration: 5, category: 'Consumer', url: '#' },
-        { id: 'mock-2', name: 'Technology Survey', description: 'Share your thoughts on the latest tech trends', reward: 75, duration: 8, category: 'Technology', url: '#' },
-        { id: 'mock-3', name: 'Travel & Lifestyle Survey', description: 'Help us understand travel and lifestyle patterns', reward: 100, duration: 12, category: 'Lifestyle', url: '#' },
-      ]
       return new Response(
-        JSON.stringify({ offers: mockOffers }),
+        JSON.stringify({ offers: [], message: 'Survey provider not configured. No surveys available.' }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -119,11 +114,8 @@ serve(async (req) => {
 
     } catch (error) {
       console.error('BitLabs API error:', error)
-      const mockOffers: BitLabsOffer[] = [
-        { id: 'fallback-1', name: 'Quick Survey', description: 'A short survey about your preferences', reward: 30, duration: 3, category: 'Quick', url: '#' }
-      ]
       return new Response(
-        JSON.stringify({ offers: mockOffers }),
+        JSON.stringify({ offers: [], error: 'Survey provider temporarily unavailable' }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
