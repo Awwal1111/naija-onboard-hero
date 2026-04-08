@@ -110,13 +110,17 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
     }
   }, [user, postToIframe])
 
+  // Normalize requestId: developers may send requestId or request_id
+  const getRequestId = (data: any): string => data.requestId || data.request_id || ''
+
   // Handle messages from mini app iframe
   useEffect(() => {
     const handleMessage = async (event: MessageEvent) => {
       const data = event.data
       if (!data?.type?.startsWith('njl_')) return
 
-      console.log('[MiniApp SDK] Received:', data.type)
+      const requestId = getRequestId(data)
+      console.log('[MiniApp SDK] Received:', data.type, 'requestId:', requestId)
 
       if (data.type === 'njl_ready') {
         const identity = generateIdentityPayload()
@@ -124,17 +128,18 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
       }
 
       if (data.type === 'njl_balance') {
-        handleBalanceQuery(data.requestId)
+        handleBalanceQuery(requestId)
       }
 
       if (data.type === 'njl_charge') {
-        const { amount, description, requestId, charge_type } = data
+        const { amount, description, charge_type } = data
         if (!amount || amount <= 0) {
           postToIframe({
             type: 'njl_charge_result',
             success: false,
             error: 'Invalid amount',
-            requestId
+            requestId,
+            request_id: requestId
           })
           return
         }
@@ -143,13 +148,14 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
       }
 
       if (data.type === 'njl_payout') {
-        const { amount, description, requestId } = data
+        const { amount, description } = data
         if (!amount || amount <= 0) {
           postToIframe({
             type: 'njl_payout_result',
             success: false,
             error: 'Invalid amount',
-            requestId
+            requestId,
+            request_id: requestId
           })
           return
         }
@@ -159,9 +165,9 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
 
       // Push notification from mini app
       if (data.type === 'njl_push') {
-        const { title, body, url, requestId } = data
+        const { title, body, url } = data
         if (!title || !body) {
-          postToIframe({ type: 'njl_push_result', success: false, error: 'Title and body required', requestId })
+          postToIframe({ type: 'njl_push_result', success: false, error: 'Title and body required', requestId, request_id: requestId })
           return
         }
         try {
@@ -176,20 +182,21 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
               data: { type: 'mini_app', appId: app.id }
             }
           })
-          postToIframe({ type: 'njl_push_result', success: true, requestId })
+          postToIframe({ type: 'njl_push_result', success: true, requestId, request_id: requestId })
         } catch {
-          postToIframe({ type: 'njl_push_result', success: false, error: 'Failed to send', requestId })
+          postToIframe({ type: 'njl_push_result', success: false, error: 'Failed to send', requestId, request_id: requestId })
         }
       }
 
       if (data.type === 'njl_verify_pin') {
-        const { reason, requestId } = data
+        const { reason } = data
         if (!hasPin) {
           postToIframe({
             type: 'njl_verify_pin_result',
             success: false,
             error: 'No PIN set. Please set up in Settings.',
-            requestId
+            requestId,
+            request_id: requestId
           })
           toast.error('Set up your transaction PIN in Settings first')
           return
