@@ -113,10 +113,14 @@ export const Surveys = () => {
         .eq('offer_id', offer.id)
         .maybeSingle()
 
-      console.log('Existing completion check:', existingCompletion)
-
       if (existingCompletion && existingCompletion.status === 'completed') {
         toast.error('You have already completed this survey')
+        return
+      }
+
+      // Only open real surveys with valid URLs
+      if (!offer.url || offer.url === '#' || offer.url === '') {
+        toast.info('This survey is not available right now. Please try another one.')
         return
       }
 
@@ -134,78 +138,18 @@ export const Surveys = () => {
         console.error('Error creating survey record:', insertError)
       }
 
-      // Check if this is a real BitLabs survey with click_url
-      if (offer.url && offer.url !== '#' && offer.url !== '') {
-        console.log('Opening BitLabs survey URL:', offer.url)
-        
-        // Open BitLabs survey in new tab
-        const surveyWindow = window.open(offer.url, '_blank', 'noopener,noreferrer')
-        
-        if (surveyWindow) {
-          toast.success('Survey opened in new tab! Complete it to earn ₦' + offer.reward)
-          console.log('Survey window opened successfully')
-        } else {
-          toast.error('Please allow popups to open surveys')
-          console.error('Failed to open survey window - popup may be blocked')
-        }
-        
-        // Note: Actual completion will be handled by BitLabs callback
+      console.log('Opening BitLabs survey URL:', offer.url)
+      
+      // Open BitLabs survey in new tab
+      const surveyWindow = window.open(offer.url, '_blank', 'noopener,noreferrer')
+      
+      if (surveyWindow) {
+        toast.success('Survey opened in new tab! Complete it to earn ₦' + offer.reward)
       } else {
-        console.warn('Mock survey detected (no valid URL):', offer)
-
-        // For demo surveys, simulate completion
-        toast.loading('Starting survey...')
-        
-        setTimeout(async () => {
-          try {
-            // Update survey completion status
-            const { error: updateError } = await supabase
-              .from('survey_completions')
-              .update({
-                status: 'completed',
-                points_earned: offer.reward,
-                completed_at: new Date().toISOString()
-              })
-              .eq('user_id', user.id)
-              .eq('offer_id', offer.id)
-
-            if (updateError) {
-              throw updateError
-            }
-
-            // Update wallet balance
-            const { error: walletError } = await supabase
-              .from('profiles')
-              .update({ 
-                wallet_balance: (profile?.wallet_balance || 0) + offer.reward 
-              })
-              .eq('user_id', user.id)
-
-            if (walletError) {
-              throw walletError
-            }
-
-            // Success messages
-            toast.dismiss()
-            toast.success(`Survey "${offer.name}" completed successfully!`)
-            
-            setTimeout(() => {
-              toast.success(`₦${offer.reward} has been added to your wallet!`)
-            }, 1000)
-
-            // Refresh offers
-            setTimeout(() => {
-              fetchOffers()
-            }, 2000)
-
-          } catch (error) {
-            console.error('Error completing survey:', error)
-            toast.dismiss()
-            toast.error('Survey completed but there was an error processing rewards')
-          }
-        }, 2000)
+        toast.error('Please allow popups to open surveys')
       }
       
+      // Actual completion & payment is handled ONLY by BitLabs server-side callback
     } catch (error) {
       console.error('Error starting survey:', error)
       toast.error('Failed to start survey')
