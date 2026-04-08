@@ -16,6 +16,37 @@ interface BitLabsOffer {
   url: string
 }
 
+const getBitLabsErrorMessage = (status: number, errorText: string) => {
+  let providerMessage = ''
+
+  try {
+    const parsed = JSON.parse(errorText)
+    providerMessage = parsed?.error?.details?.msg || parsed?.error?.message || parsed?.message || ''
+  } catch {
+    providerMessage = errorText
+  }
+
+  const normalized = providerMessage.toLowerCase()
+
+  if (status === 403 && normalized.includes('publisher not verified')) {
+    return 'BitLabs publisher account is not verified yet.'
+  }
+
+  if (normalized.includes('using_vpn') || normalized.includes('vpn')) {
+    return 'VPN detected - surveys are unavailable.'
+  }
+
+  if (normalized.includes('unsupported_country')) {
+    return 'Surveys are not available in your country.'
+  }
+
+  if (normalized.includes('banned')) {
+    return 'This account is banned from BitLabs surveys.'
+  }
+
+  return providerMessage || 'Survey provider temporarily unavailable'
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -83,7 +114,7 @@ serve(async (req) => {
       if (!bitLabsResponse.ok) {
         const errorText = await bitLabsResponse.text()
         console.error(`BitLabs API error: ${bitLabsResponse.status} - ${errorText}`)
-        throw new Error(`BitLabs API error: ${bitLabsResponse.status}`)
+        throw new Error(getBitLabsErrorMessage(bitLabsResponse.status, errorText))
       }
 
       const bitLabsData = await bitLabsResponse.json()
@@ -115,7 +146,7 @@ serve(async (req) => {
     } catch (error) {
       console.error('BitLabs API error:', error)
       return new Response(
-        JSON.stringify({ offers: [], error: 'Survey provider temporarily unavailable' }),
+        JSON.stringify({ offers: [], error: error instanceof Error ? error.message : 'Survey provider temporarily unavailable' }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }

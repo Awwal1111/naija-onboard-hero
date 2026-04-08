@@ -48,6 +48,9 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
   const { profile } = useProfile()
   const { hasPin, transactionPin } = useUserSecrets()
   const iframeRef = useRef<HTMLIFrameElement>(null)
+  const chargeResultSentRef = useRef(false)
+  const payoutResultSentRef = useRef(false)
+  const pinResultSentRef = useRef(false)
   const [isLoading, setIsLoading] = useState(true)
   const [showChargeDialog, setShowChargeDialog] = useState(false)
   const [showPayoutDialog, setShowPayoutDialog] = useState(false)
@@ -222,6 +225,7 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
   const handleConfirmCharge = async () => {
     if (!pendingCharge || !user) return
     const rid = pendingCharge.requestId
+    chargeResultSentRef.current = true
 
     try {
       const txRef = 'njl_tx_' + crypto.randomUUID().replace(/-/g, '').slice(0, 16)
@@ -250,13 +254,14 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
       toast.error('Payment failed')
     }
 
-    setShowChargeDialog(false)
     setPendingCharge(null)
+    setShowChargeDialog(false)
   }
 
   const handleConfirmPayout = async () => {
     if (!pendingPayout || !user) return
     const rid = pendingPayout.requestId
+    payoutResultSentRef.current = true
 
     try {
       const txRef = 'njl_po_' + crypto.randomUUID().replace(/-/g, '').slice(0, 16)
@@ -285,8 +290,8 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
       toast.error('Payout failed')
     }
 
-    setShowPayoutDialog(false)
     setPendingPayout(null)
+    setShowPayoutDialog(false)
   }
 
   // Track install/open
@@ -359,7 +364,25 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
         />
 
         {/* Charge Confirmation Dialog */}
-        <Dialog open={showChargeDialog} onOpenChange={setShowChargeDialog}>
+        <Dialog open={showChargeDialog} onOpenChange={(open) => {
+          setShowChargeDialog(open)
+
+          if (!open && pendingCharge && !chargeResultSentRef.current) {
+            chargeResultSentRef.current = true
+            postToIframe({
+              ...withRequestIds(pendingCharge.requestId || '', {
+                type: 'njl_charge_result',
+                success: false,
+                error: 'User cancelled',
+              })
+            })
+            setPendingCharge(null)
+          }
+
+          if (open && pendingCharge) {
+            chargeResultSentRef.current = false
+          }
+        }}>
           <DialogContent className="max-w-sm">
             <div className="text-center space-y-4">
               <div className="w-14 h-14 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center">
@@ -381,6 +404,7 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
               </div>
               <div className="flex gap-3">
                 <Button variant="outline" className="flex-1" onClick={() => {
+                   chargeResultSentRef.current = true
                   setShowChargeDialog(false)
                   postToIframe({
                     ...withRequestIds(pendingCharge?.requestId || '', {
@@ -402,7 +426,25 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
         </Dialog>
 
         {/* Payout Confirmation Dialog */}
-        <Dialog open={showPayoutDialog} onOpenChange={setShowPayoutDialog}>
+        <Dialog open={showPayoutDialog} onOpenChange={(open) => {
+          setShowPayoutDialog(open)
+
+          if (!open && pendingPayout && !payoutResultSentRef.current) {
+            payoutResultSentRef.current = true
+            postToIframe({
+              ...withRequestIds(pendingPayout.requestId || '', {
+                type: 'njl_payout_result',
+                success: false,
+                error: 'User declined',
+              })
+            })
+            setPendingPayout(null)
+          }
+
+          if (open && pendingPayout) {
+            payoutResultSentRef.current = false
+          }
+        }}>
           <DialogContent className="max-w-sm">
             <div className="text-center space-y-4">
               <div className="w-14 h-14 mx-auto rounded-2xl bg-emerald-500/10 flex items-center justify-center">
@@ -422,6 +464,7 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
               </div>
               <div className="flex gap-3">
                 <Button variant="outline" className="flex-1" onClick={() => {
+                   payoutResultSentRef.current = true
                   setShowPayoutDialog(false)
                   postToIframe({
                     ...withRequestIds(pendingPayout?.requestId || '', {
@@ -442,7 +485,26 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
           </DialogContent>
         </Dialog>
         {/* PIN Verification Dialog */}
-        <Dialog open={showPinDialog} onOpenChange={setShowPinDialog}>
+        <Dialog open={showPinDialog} onOpenChange={(open) => {
+          setShowPinDialog(open)
+
+          if (!open && pendingPinRequest && !pinResultSentRef.current) {
+            pinResultSentRef.current = true
+            postToIframe({
+              ...withRequestIds(pendingPinRequest.requestId || '', {
+                type: 'njl_verify_pin_result',
+                success: false,
+                error: 'User cancelled',
+              })
+            })
+            setPendingPinRequest(null)
+            setPinInput('')
+          }
+
+          if (open && pendingPinRequest) {
+            pinResultSentRef.current = false
+          }
+        }}>
           <DialogContent className="max-w-sm">
             <div className="text-center space-y-4">
               <div className="w-14 h-14 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center">
@@ -466,6 +528,7 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
               />
               <div className="flex gap-3">
                 <Button variant="outline" className="flex-1" onClick={() => {
+                   pinResultSentRef.current = true
                   setShowPinDialog(false)
                   const rid = pendingPinRequest?.requestId
                   postToIframe({
@@ -481,6 +544,7 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
                 </Button>
                 <Button className="flex-1" onClick={() => {
                   const rid = pendingPinRequest?.requestId
+                   pinResultSentRef.current = true
                   if (pinInput === transactionPin) {
                     postToIframe({
                       ...withRequestIds(rid || '', {
