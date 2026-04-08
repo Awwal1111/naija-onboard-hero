@@ -35,6 +35,7 @@ export const Surveys = () => {
   const [offers, setOffers] = useState<BitLabsOffer[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [providerMessage, setProviderMessage] = useState<string>('')
 
   useEffect(() => {
     fetchOffers()
@@ -66,18 +67,20 @@ export const Surveys = () => {
       if (data?.offers) {
         console.log(`Received ${data.offers.length} surveys:`, data.offers)
         setOffers(data.offers)
+        setProviderMessage(data.error || data.message || '')
         toast.dismiss()
         
         if (data.offers.length === 0) {
-          toast.info('No surveys available at the moment. Check back later!')
+          toast.info(data.error || data.message || 'No surveys available at the moment. Check back later!')
         } else {
           toast.success(`Found ${data.offers.length} available surveys`)
         }
       } else {
         console.warn('No offers in response data:', data)
         setOffers([])
+        setProviderMessage(data?.error || data?.message || '')
         toast.dismiss()
-        toast.info('No surveys available at the moment')
+        toast.info(data?.error || data?.message || 'No surveys available at the moment')
       }
       
     } catch (error: any) {
@@ -85,6 +88,7 @@ export const Surveys = () => {
       toast.dismiss()
       toast.error(error.message || 'Failed to load surveys. Please try again.')
       setOffers([])
+      setProviderMessage(error.message || 'Failed to load surveys. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -262,8 +266,10 @@ export const Surveys = () => {
             <Card className="border-accent/20">
               <CardContent className="p-8 text-center">
                 <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">No surveys available right now</p>
-                <p className="text-sm text-muted-foreground mt-1">Check back later for new opportunities</p>
+                <p className="text-muted-foreground">{providerMessage || 'No surveys available right now'}</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {providerMessage ? 'This is coming directly from the survey provider configuration.' : 'Check back later for new opportunities'}
+                </p>
               </CardContent>
             </Card>
           ) : (
