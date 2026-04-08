@@ -457,22 +457,26 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
               <div className="flex gap-3">
                 <Button variant="outline" className="flex-1" onClick={() => {
                   setShowPinDialog(false)
+                  const rid = pendingPinRequest?.requestId
                   postToIframe({
                     type: 'njl_verify_pin_result',
                     success: false,
                     error: 'User cancelled',
-                    requestId: pendingPinRequest?.requestId
+                    requestId: rid,
+                    request_id: rid
                   })
                   setPendingPinRequest(null)
                 }}>
                   Cancel
                 </Button>
                 <Button className="flex-1" onClick={() => {
+                  const rid = pendingPinRequest?.requestId
                   if (pinInput === transactionPin) {
                     postToIframe({
                       type: 'njl_verify_pin_result',
                       success: true,
-                      requestId: pendingPinRequest?.requestId
+                      requestId: rid,
+                      request_id: rid
                     })
                     toast.success('Identity verified')
                   } else {
@@ -480,7 +484,8 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
                       type: 'njl_verify_pin_result',
                       success: false,
                       error: 'Incorrect PIN',
-                      requestId: pendingPinRequest?.requestId
+                      requestId: rid,
+                      request_id: rid
                     })
                     toast.error('Incorrect PIN')
                   }
