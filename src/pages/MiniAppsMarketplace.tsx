@@ -1,12 +1,12 @@
 import { useState, useEffect, lazy, Suspense } from 'react'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
-import { ArrowLeft, Search, Plus, Sparkles, Receipt, Building2, Wallet, CreditCard, Shield, RefreshCw, Trophy, Heart, GraduationCap, Users, Gamepad2, Dices, Target, RotateCw, Gift, Banknote, AlertCircle, ShoppingBag } from 'lucide-react'
+import { ArrowLeft, Search, Plus, Sparkles, Receipt, Building2, Wallet, Shield, RefreshCw, Trophy, Heart, GraduationCap, Users, Gamepad2, Dices, Target, RotateCw, Gift, Banknote, AlertCircle, ShoppingBag, PiggyBank, Flame, FileText, Zap, BookOpen } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { SubmitMiniAppForm } from '@/components/miniapps/SubmitMiniAppForm'
 import { MiniAppViewer } from '@/components/miniapps/MiniAppViewer'
 import { BottomNavBar } from '@/components/BottomNavBar'
@@ -63,7 +63,14 @@ const BUILT_IN_APPS: UnifiedApp[] = [
   // Learning
   { id: 'pa-courses', name: 'Courses', description: 'Buy or sell professional courses', icon: GraduationCap, path: '/courses', category: 'learning', color: 'from-blue-500/20 to-cyan-500/20', isInternal: true },
   // Earn
-  { id: 'pa-referrals', name: 'Referrals', description: 'Invite friends & earn ₦50 each', icon: Users, path: '/referrals', category: 'earn', color: 'from-purple-500/20 to-violet-500/20', isInternal: true },
+  { id: 'pa-savings', name: 'NC Savings', description: 'Grow NC with 5% yearly interest', icon: PiggyBank, path: '/earn', category: 'earn', color: 'from-emerald-500/20 to-teal-500/20', isInternal: true },
+  { id: 'pa-streak', name: 'Daily Streak', description: 'Claim your streak bonus every day', icon: Flame, path: '/earn', category: 'earn', color: 'from-orange-500/20 to-amber-500/20', isInternal: true },
+  { id: 'pa-bitlabs', name: 'BitLabs Surveys', description: 'Complete surveys and earn NC rewards', icon: FileText, path: '/surveys', category: 'earn', color: 'from-primary/20 to-accent/20', isInternal: true },
+  { id: 'pa-cpx', name: 'CPX Surveys', description: 'Open CPX Research surveys for extra rewards', icon: FileText, path: '/cpx-surveys', category: 'earn', color: 'from-blue-500/20 to-cyan-500/20', isInternal: true },
+  { id: 'pa-social-tasks', name: 'Social Tasks', description: 'Do social media tasks for cash rewards', icon: Zap, path: '/earn/social-tasks', category: 'earn', color: 'from-primary/20 to-accent/20', isInternal: true },
+  { id: 'pa-tasks', name: 'Tasks', description: 'Complete community reward tasks', icon: Users, path: '/tasks', category: 'earn', color: 'from-violet-500/20 to-purple-500/20', isInternal: true },
+  { id: 'pa-media', name: 'Local Media Tasks', description: 'Read articles and submit short notes', icon: BookOpen, path: '/earn/articles', category: 'earn', color: 'from-sky-500/20 to-cyan-500/20', isInternal: true },
+  { id: 'pa-referrals', name: 'Referrals', description: 'Invite friends and earn ₦50 each', icon: Users, path: '/referrals', category: 'earn', color: 'from-purple-500/20 to-violet-500/20', isInternal: true },
   // Games
   { id: 'pa-guess', name: 'Guess Number', description: 'Guess the number and win NC', icon: Dices, path: '/earn/guess-number', category: 'games', color: 'from-emerald-500/20 to-green-500/20', isInternal: true },
   { id: 'pa-trivia', name: 'Nigerian Trivia', description: 'Test your Nigerian knowledge', icon: Gamepad2, path: '/earn/trivia', category: 'games', color: 'from-orange-500/20 to-amber-500/20', isInternal: true },
@@ -221,6 +228,9 @@ const MiniAppsMarketplace = () => {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Submit Your Mini App</DialogTitle>
+                <DialogDescription>
+                  Share your app details for review and publication in the marketplace.
+                </DialogDescription>
               </DialogHeader>
               <SubmitMiniAppForm onSuccess={() => { setShowSubmit(false); fetchMyApps() }} />
             </DialogContent>

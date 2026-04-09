@@ -66,14 +66,14 @@ export const USDTStakingCard = () => {
           {/* APY Display */}
           <div className="flex items-center justify-between p-3 bg-background/50 rounded-lg border border-border/50">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Current APY</span>
+              <span className="text-sm text-muted-foreground">Yearly Interest</span>
               <Info className="h-3.5 w-3.5 text-muted-foreground" />
             </div>
             {apyLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <Badge variant="secondary" className="bg-emerald-500/20 text-emerald-600 font-bold">
-                {apy}%
+                {apy}% APY
               </Badge>
             )}
           </div>
@@ -82,7 +82,7 @@ export const USDTStakingCard = () => {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Your Savings Balance</span>
-              <span className="text-xs text-emerald-600">Earning interest</span>
+              <span className="text-xs text-emerald-600">Up to 5% yearly</span>
             </div>
             <div className="flex items-baseline gap-2">
               <span className="text-2xl font-bold text-foreground">
@@ -144,7 +144,7 @@ export const USDTStakingCard = () => {
 
           {/* Info */}
           <p className="text-xs text-center text-muted-foreground pt-2">
-            Earn daily interest on your savings. Withdraw anytime.
+            Earn up to 5% yearly interest, calculated daily. Withdraw anytime.
           </p>
         </CardContent>
       </Card>
@@ -158,7 +158,7 @@ export const USDTStakingCard = () => {
               Save NC
             </DialogTitle>
             <DialogDescription>
-              Deposit NC to earn {apy}% APY. Interest is calculated daily and added automatically.
+              Deposit NC to earn {apy}% yearly interest. Interest is calculated daily and added automatically.
             </DialogDescription>
           </DialogHeader>
           
@@ -197,7 +197,7 @@ export const USDTStakingCard = () => {
             <div className="p-3 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
               <div className="flex items-center gap-2 text-sm">
                 <TrendingUp className="h-4 w-4 text-emerald-500" />
-                <span className="text-emerald-600 font-medium">Earn {apy}% APY</span>
+                <span className="text-emerald-600 font-medium">Earn {apy}% yearly interest</span>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 Interest is calculated daily and compounded automatically
