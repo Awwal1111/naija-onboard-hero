@@ -6,7 +6,7 @@ import { useProfile } from '@/hooks/useProfile'
 import { useUserSecrets } from '@/hooks/useUserSecrets'
 import { supabase } from '@/integrations/supabase/client'
 import { toast } from 'sonner'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
@@ -48,6 +48,7 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
   const { profile } = useProfile()
   const { hasPin, transactionPin } = useUserSecrets()
   const iframeRef = useRef<HTMLIFrameElement>(null)
+  const iframeLoadedRef = useRef(false)
   const chargeResultSentRef = useRef(false)
   const payoutResultSentRef = useRef(false)
   const pinResultSentRef = useRef(false)
@@ -80,23 +81,43 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
   }), [])
 
   const generateIdentityPayload = useCallback(() => {
-    if (!user || !profile) return null
+    if (!user) return null
+
     return {
       type: 'njl_identify',
       user: {
         user_id: user.id,
-        full_name: profile.full_name || '',
+        full_name: profile?.full_name || '',
         email: user.email || '',
-        profile_picture_url: profile.profile_picture_url || '',
+        profile_picture_url: profile?.profile_picture_url || '',
       },
       app_id: app.sdk_app_id,
       timestamp: Date.now()
     }
-  }, [user, profile, app.sdk_app_id])
+  }, [user, profile?.full_name, profile?.profile_picture_url, app.sdk_app_id])
+
+  const sendIdentify = useCallback(() => {
+    if (!iframeLoadedRef.current) return
+
+    const identity = generateIdentityPayload()
+    if (identity) {
+      postToIframe(identity)
+    }
+  }, [generateIdentityPayload, postToIframe])
 
   // Handle balance query from mini app
   const handleBalanceQuery = useCallback(async (requestId: string) => {
-    if (!user) return
+    if (!user) {
+      postToIframe({
+        ...withRequestIds(requestId, {
+          type: 'njl_balance_result',
+          balance: 0,
+          error: 'Authentication required',
+        })
+      })
+      return
+    }
+
     try {
       const { data } = await supabase
         .from('profiles')
@@ -127,6 +148,8 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
   // Handle messages from mini app iframe
   useEffect(() => {
     const handleMessage = async (event: MessageEvent) => {
+      if (event.source !== iframeRef.current?.contentWindow) return
+
       const data = event.data
       if (!data?.type?.startsWith('njl_')) return
 
@@ -134,16 +157,23 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
       console.log('[MiniApp SDK] Received:', data.type, 'requestId:', requestId)
 
       if (data.type === 'njl_ready') {
-        const identity = generateIdentityPayload()
-        if (identity) postToIframe(identity)
+        sendIdentify()
+        return
       }
 
       if (data.type === 'njl_balance') {
         handleBalanceQuery(requestId)
+        return
       }
 
       if (data.type === 'njl_charge') {
         const { amount, description, charge_type } = data
+
+        if (!user) {
+          postToIframe(withRequestIds(requestId, { type: 'njl_charge_result', success: false, error: 'Authentication required' }))
+          return
+        }
+
         if (!amount || amount <= 0) {
           postToIframe({
             ...withRequestIds(requestId, {
@@ -154,12 +184,20 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
           })
           return
         }
+
         setPendingCharge({ amount, description: description || 'Mini App Purchase', requestId, chargeType: charge_type || 'one_time' })
         setShowChargeDialog(true)
+        return
       }
 
       if (data.type === 'njl_payout') {
         const { amount, description } = data
+
+        if (!user) {
+          postToIframe(withRequestIds(requestId, { type: 'njl_payout_result', success: false, error: 'Authentication required' }))
+          return
+        }
+
         if (!amount || amount <= 0) {
           postToIframe({
             ...withRequestIds(requestId, {
@@ -170,21 +208,29 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
           })
           return
         }
+
         setPendingPayout({ amount, description: description || 'Payout', requestId })
         setShowPayoutDialog(true)
+        return
       }
 
-      // Push notification from mini app
       if (data.type === 'njl_push') {
         const { title, body, url } = data
+
+        if (!user) {
+          postToIframe(withRequestIds(requestId, { type: 'njl_push_result', success: false, error: 'Authentication required' }))
+          return
+        }
+
         if (!title || !body) {
           postToIframe(withRequestIds(requestId, { type: 'njl_push_result', success: false, error: 'Title and body required' }))
           return
         }
+
         try {
           await supabase.functions.invoke('send-push-notification', {
             body: {
-              userId: user?.id,
+              userId: user.id,
               title,
               body: body.substring(0, 200),
               icon: app.app_icon_url || '/icon-512.png',
@@ -197,10 +243,18 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
         } catch {
           postToIframe(withRequestIds(requestId, { type: 'njl_push_result', success: false, error: 'Failed to send' }))
         }
+
+        return
       }
 
       if (data.type === 'njl_verify_pin') {
         const { reason } = data
+
+        if (!user) {
+          postToIframe(withRequestIds(requestId, { type: 'njl_verify_pin_result', success: false, error: 'Authentication required' }))
+          return
+        }
+
         if (!hasPin) {
           postToIframe({
             ...withRequestIds(requestId, {
@@ -212,6 +266,7 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
           toast.error('Set up your transaction PIN in Settings first')
           return
         }
+
         setPendingPinRequest({ reason: reason || 'verify your identity', requestId })
         setPinInput('')
         setShowPinDialog(true)
@@ -220,7 +275,11 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
 
     window.addEventListener('message', handleMessage)
     return () => window.removeEventListener('message', handleMessage)
-  }, [generateIdentityPayload, handleBalanceQuery, postToIframe, hasPin, withRequestIds, user?.id, app.app_icon_url, app.id])
+  }, [handleBalanceQuery, postToIframe, hasPin, withRequestIds, user, app.app_icon_url, app.id, sendIdentify])
+
+  useEffect(() => {
+    sendIdentify()
+  }, [sendIdentify])
 
   const handleConfirmCharge = async () => {
     if (!pendingCharge || !user) return
@@ -245,7 +304,7 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
         toast.error(errMsg)
         postToIframe(withRequestIds(rid, { type: 'njl_charge_result', success: false, error: errMsg }))
       } else {
-        postToIframe(withRequestIds(rid, { type: 'njl_charge_result', success: true, txRef: result.tx_ref }))
+        postToIframe(withRequestIds(rid, { type: 'njl_charge_result', success: true, txRef: result.tx_ref, tx_ref: result.tx_ref }))
         toast.success(`₦${pendingCharge.amount}NC paid to ${app.app_name}`)
       }
     } catch (err) {
@@ -281,7 +340,7 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
         toast.error(errMsg)
         postToIframe(withRequestIds(rid, { type: 'njl_payout_result', success: false, error: errMsg }))
       } else {
-        postToIframe(withRequestIds(rid, { type: 'njl_payout_result', success: true, txRef: result.tx_ref }))
+        postToIframe(withRequestIds(rid, { type: 'njl_payout_result', success: true, txRef: result.tx_ref, tx_ref: result.tx_ref }))
         toast.success(`₦${pendingPayout.amount}NC received from ${app.app_name}`)
       }
     } catch (err) {
@@ -355,11 +414,9 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
           className="flex-1 w-full border-0"
           sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
           onLoad={() => {
+            iframeLoadedRef.current = true
             setIsLoading(false)
-            const identity = generateIdentityPayload()
-            if (identity) {
-              setTimeout(() => postToIframe(identity), 500)
-            }
+            setTimeout(() => sendIdentify(), 250)
           }}
         />
 
@@ -384,6 +441,7 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
           }
         }}>
           <DialogContent className="max-w-sm">
+            <DialogDescription className="sr-only">Approve or cancel this mini app wallet charge request.</DialogDescription>
             <div className="text-center space-y-4">
               <div className="w-14 h-14 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center">
                 {app.app_icon_url ? (
@@ -446,6 +504,7 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
           }
         }}>
           <DialogContent className="max-w-sm">
+            <DialogDescription className="sr-only">Approve or decline this mini app payout request.</DialogDescription>
             <div className="text-center space-y-4">
               <div className="w-14 h-14 mx-auto rounded-2xl bg-emerald-500/10 flex items-center justify-center">
                 {app.app_icon_url ? (
@@ -506,6 +565,7 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
           }
         }}>
           <DialogContent className="max-w-sm">
+            <DialogDescription className="sr-only">Enter your transaction PIN to confirm this mini app request.</DialogDescription>
             <div className="text-center space-y-4">
               <div className="w-14 h-14 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center">
                 <Fingerprint className="h-7 w-7 text-primary" />
