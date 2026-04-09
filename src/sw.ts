@@ -16,26 +16,41 @@ precacheAndRoute(self.__WB_MANIFEST)
 self.skipWaiting()
 clientsClaim()
 
-// Cache Supabase storage images (profile pictures, post media, etc.)
+// Cache Supabase storage images with CacheFirst — avoids CDN hits entirely after first load
 registerRoute(
   ({ url }) => url.hostname.includes('supabase.co') && url.pathname.includes('/storage/'),
   new CacheFirst({
     cacheName: 'supabase-images',
     plugins: [
-      new CacheableResponsePlugin({ statuses: [0, 200] }),
-      new ExpirationPlugin({ maxEntries: 200, maxAgeSeconds: 7 * 24 * 60 * 60 }), // 7 days
+      new CacheableResponsePlugin({ statuses: [200] }),
+      new ExpirationPlugin({ maxEntries: 500, maxAgeSeconds: 30 * 24 * 60 * 60 }), // 30 days
     ],
   })
 )
 
-// Cache other image requests (avatars, icons)
+// Cache ALL other images with CacheFirst too — no revalidation = no egress
 registerRoute(
   ({ request }) => request.destination === 'image',
-  new StaleWhileRevalidate({
+  new CacheFirst({
     cacheName: 'images',
     plugins: [
-      new CacheableResponsePlugin({ statuses: [0, 200] }),
-      new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 30 * 24 * 60 * 60 }), // 30 days
+      new CacheableResponsePlugin({ statuses: [200] }),
+      new ExpirationPlugin({ maxEntries: 300, maxAgeSeconds: 30 * 24 * 60 * 60 }),
+    ],
+  })
+)
+
+// Cache Supabase REST API GET requests (profiles, posts, etc.) — reduces repeated DB egress
+registerRoute(
+  ({ url, request }) =>
+    url.hostname.includes('supabase.co') &&
+    url.pathname.includes('/rest/') &&
+    request.method === 'GET',
+  new StaleWhileRevalidate({
+    cacheName: 'supabase-api',
+    plugins: [
+      new CacheableResponsePlugin({ statuses: [200] }),
+      new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 5 * 60 }), // 5 min
     ],
   })
 )
