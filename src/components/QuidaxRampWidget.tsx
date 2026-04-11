@@ -13,6 +13,13 @@ import { SecurePinInput } from './SecurePinInput'
 import { supabase } from '@/integrations/supabase/client'
 import { toast } from 'sonner'
 
+const QUIDAX_RAMP_SCRIPT_URL = 'https://d309lcjd52k0i0.cloudfront.net/ramp.js'
+const NAIRA_PER_USDT_FALLBACK = 1600
+const MIN_BUY_AMOUNT_NGN = 3000
+const MIN_SELL_AMOUNT_NGN = 3200
+
+let rampScriptPromise: Promise<void> | null = null
+
 interface QuidaxRampWidgetProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -37,6 +44,43 @@ export const QuidaxRampWidget = ({ open, onOpenChange, mode }: QuidaxRampWidgetP
   const [showPinInput, setShowPinInput] = useState(false)
   const [pendingAmount, setPendingAmount] = useState('')
 
+  const ensureRampLoaded = async () => {
+    if (window.ramp) return
+
+    if (!rampScriptPromise) {
+      rampScriptPromise = new Promise((resolve, reject) => {
+        const existingScript = document.querySelector<HTMLScriptElement>(`script[src="${QUIDAX_RAMP_SCRIPT_URL}"]`)
+
+        const handleLoad = () => resolve()
+        const handleError = () => {
+          rampScriptPromise = null
+          reject(new Error('Failed to load Quidax widget'))
+        }
+
+        if (existingScript) {
+          existingScript.addEventListener('load', handleLoad, { once: true })
+          existingScript.addEventListener('error', handleError, { once: true })
+          return
+        }
+
+        const script = document.createElement('script')
+        script.src = QUIDAX_RAMP_SCRIPT_URL
+        script.async = true
+        script.dataset.quidaxRamp = 'true'
+        script.addEventListener('load', handleLoad, { once: true })
+        script.addEventListener('error', handleError, { once: true })
+        document.body.appendChild(script)
+      })
+    }
+
+    await rampScriptPromise
+
+    if (!window.ramp) {
+      rampScriptPromise = null
+      throw new Error('Quidax widget is unavailable right now')
+    }
+  }
+
   const handleContinue = () => {
     if (!user || !profile) {
       toast.error('Please log in first')
@@ -48,9 +92,9 @@ export const QuidaxRampWidget = ({ open, onOpenChange, mode }: QuidaxRampWidgetP
       return
     }
 
-    const minAmount = mode === 'buy' ? 3000 : 2
+    const minAmount = mode === 'buy' ? MIN_BUY_AMOUNT_NGN : MIN_SELL_AMOUNT_NGN
     if (parseFloat(amount) < minAmount) {
-      toast.error(`Minimum ${mode === 'buy' ? 'deposit' : 'withdrawal'} is ${mode === 'buy' ? '3,000 NC (₦3,000)' : '$2 USD (3,000 NC)'}`)
+      toast.error(`Minimum ${mode === 'buy' ? 'deposit' : 'withdrawal'} is ${mode === 'buy' ? '₦3,000 NC' : '₦3,200 NC (~$2)'}`)
       return
     }
 
@@ -80,6 +124,12 @@ export const QuidaxRampWidget = ({ open, onOpenChange, mode }: QuidaxRampWidgetP
     setLoading(true)
 
     try {
+      if (!user) {
+        throw new Error('Please log in first')
+      }
+
+      await ensureRampLoaded()
+
       // Get wallet address from profile
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
@@ -89,15 +139,17 @@ export const QuidaxRampWidget = ({ open, onOpenChange, mode }: QuidaxRampWidgetP
 
       if (profileError) throw profileError
 
-      if (!profileData?.celo_wallet_address) {
+      let resolvedWalletAddress = profileData?.celo_wallet_address || ''
+
+      if (!resolvedWalletAddress) {
         // Create wallet if not exists
         const { data: walletData, error: walletError } = await supabase.functions.invoke('create-user-wallet')
         if (walletError) throw walletError
         if (!walletData?.address) throw new Error('Failed to create wallet')
-        setWalletAddress(walletData.address)
-      } else {
-        setWalletAddress(profileData.celo_wallet_address)
+        resolvedWalletAddress = walletData.address
       }
+
+      setWalletAddress(resolvedWalletAddress)
 
       // Get public key from edge function
       const { data: keysData, error: keysError } = await supabase.functions.invoke('get-quidax-public-key')
@@ -106,6 +158,8 @@ export const QuidaxRampWidget = ({ open, onOpenChange, mode }: QuidaxRampWidgetP
       if (!keysData?.publicKey) throw new Error('Failed to get public key')
 
       const reference = `ref_${Date.now()}_${user.id}`
+      const fiatAmount = parseFloat(amountToProcess)
+      const sellTokenAmount = Number((fiatAmount / NAIRA_PER_USDT_FALLBACK).toFixed(6))
 
       // Pre-create transaction record for tracking
       console.log(`[QUIDAX] Creating pending transaction: ${reference}`)
@@ -114,16 +168,17 @@ export const QuidaxRampWidget = ({ open, onOpenChange, mode }: QuidaxRampWidgetP
         reference: reference,
         transaction_type: mode === 'buy' ? 'on_ramp' : 'off_ramp',
         status: 'pending',
-        fiat_amount: mode === 'buy' ? parseFloat(amount) : 0,
-        token_amount: mode === 'sell' ? parseFloat(amount) / 1600 : null,
+        fiat_amount: fiatAmount,
+        token_amount: mode === 'sell' ? sellTokenAmount : null,
         token: 'USDT',
         fiat_currency: 'NGN',
-        wallet_address: profileData?.celo_wallet_address || walletAddress,
+        wallet_address: resolvedWalletAddress,
         quidax_data: { initiated_at: new Date().toISOString() }
       })
 
       // Initialize Quidax Ramp Widget
-      if (window.ramp) {
+      onOpenChange(false)
+
       const config: any = {
         public_key: keysData.publicKey,
         reference: reference, // CRITICAL: Pass reference to Quidax
@@ -131,9 +186,7 @@ export const QuidaxRampWidget = ({ open, onOpenChange, mode }: QuidaxRampWidgetP
         network: 'CELO',
         onClose: function(ref: string) {
           console.log('Quidax modal closed:', ref)
-          // Prevent closing by reopening the widget
-          toast.info('Please complete the transaction')
-          return false
+          setLoading(false)
         },
           onSuccess: async function(transaction: any) {
             console.log('[QUIDAX] Transaction successful:', transaction)
@@ -178,14 +231,14 @@ export const QuidaxRampWidget = ({ open, onOpenChange, mode }: QuidaxRampWidgetP
           config.from_currency = 'ngn'
           config.to_currency = 'usdt'
           config.from_amount = amountToProcess
-          config.address = profileData?.celo_wallet_address || walletAddress
+          config.address = resolvedWalletAddress
           config.onReceiveWalletDetails = function(details: any) {
             console.log('Wallet details:', details)
           }
         } else {
           config.from_currency = 'usdt'
           config.to_currency = 'ngn'
-          config.from_amount = amountToProcess
+          config.from_amount = sellTokenAmount.toFixed(6)
           config.onReceiveWalletDetails = async function(details: any) {
             console.log('[QUIDAX SELL] onReceiveWalletDetails called')
             console.log('[QUIDAX SELL] Received details:', JSON.stringify(details))
@@ -219,7 +272,8 @@ export const QuidaxRampWidget = ({ open, onOpenChange, mode }: QuidaxRampWidgetP
               const { data, error } = await supabase.functions.invoke('process-quidax-sell', {
                 body: {
                   reference: reference,
-                  amount: amount,
+                  amount: sellTokenAmount.toFixed(6),
+                  ncAmount: fiatAmount,
                   details: {
                     deposit_address: depositAddress,
                     ...details
@@ -251,10 +305,6 @@ export const QuidaxRampWidget = ({ open, onOpenChange, mode }: QuidaxRampWidgetP
         }
 
         window.ramp.initialize(config)
-      } else {
-        toast.error('Quidax Ramp widget not loaded. Please refresh the page.')
-        setLoading(false)
-      }
     } catch (error: any) {
       console.error('Error initializing widget:', error)
       toast.error(error.message || 'Failed to initialize widget')
@@ -287,20 +337,20 @@ export const QuidaxRampWidget = ({ open, onOpenChange, mode }: QuidaxRampWidgetP
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="amount">
-                Amount in {mode === 'buy' ? 'NGN' : 'USDT'}
+                Amount in NGN
               </Label>
               <Input
                 id="amount"
                 type="number"
-                placeholder={mode === 'buy' ? 'Enter amount (min 3,000 NC / ₦3,000)' : 'Enter amount (min $2 / 3,000 NC)'}
+                placeholder={mode === 'buy' ? 'Enter amount (min ₦3,000 NC)' : 'Enter amount (min ₦3,200 NC)'}
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                min={mode === 'buy' ? '3000' : '2'}
+                min={mode === 'buy' ? '3000' : '3200'}
               />
               <p className="text-xs text-muted-foreground">
                 {mode === 'buy' 
-                  ? 'Minimum deposit: 3,000 NC (₦3,000)' 
-                  : 'Minimum withdrawal: $2 USD (3,000 NC)'}
+                  ? 'Minimum deposit: ₦3,000 NC' 
+                  : 'Enter your amount in Naira and we will convert it to the required USDT automatically.'}
               </p>
             </div>
 
@@ -314,7 +364,7 @@ export const QuidaxRampWidget = ({ open, onOpenChange, mode }: QuidaxRampWidgetP
                   </>
                 ) : (
                   <>
-                    Your withdrawal will be processed securely through our banking partner.
+                    Your withdrawal amount stays in Naira while the app handles the USDT conversion for Quidax.
                     Funds will arrive in your bank account within minutes.
                   </>
                 )}
@@ -326,7 +376,7 @@ export const QuidaxRampWidget = ({ open, onOpenChange, mode }: QuidaxRampWidgetP
                 onVerified={handlePinVerified}
                 onCancel={() => setShowPinInput(false)}
                 title="Confirm Withdrawal"
-                description={`Enter PIN to withdraw ${mode === 'sell' ? `$${amount}` : amount}`}
+                description={`Enter PIN to withdraw ${mode === 'sell' ? `₦${Number(amount || 0).toLocaleString()}` : `₦${Number(amount || 0).toLocaleString()}`}`}
               />
             ) : (
               <BrandButton
