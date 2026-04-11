@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { X, ArrowLeft, Shield, Fingerprint } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/hooks/useAuth'
@@ -70,9 +70,17 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
     requestId: string
   } | null>(null)
 
+  const allowedOrigin = useMemo(() => {
+    try {
+      return new URL(app.app_url).origin
+    } catch {
+      return '*'
+    }
+  }, [app.app_url])
+
   const postToIframe = useCallback((data: Record<string, unknown>) => {
-    iframeRef.current?.contentWindow?.postMessage(data, '*')
-  }, [])
+    iframeRef.current?.contentWindow?.postMessage(data, allowedOrigin)
+  }, [allowedOrigin])
 
   const withRequestIds = useCallback((requestId: string, payload: Record<string, unknown>) => ({
     ...payload,
@@ -92,6 +100,10 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
         profile_picture_url: profile?.profile_picture_url || '',
       },
       app_id: app.sdk_app_id,
+      host_origin: window.location.origin,
+      host_domain: 'naijalancers.name.ng',
+      allowed_parent_origins: Array.from(new Set([window.location.origin, 'https://naijalancers.name.ng'])),
+      sdk_version: '2.0',
       timestamp: Date.now()
     }
   }, [user, profile?.full_name, profile?.profile_picture_url, app.sdk_app_id])
@@ -149,6 +161,7 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
   useEffect(() => {
     const handleMessage = async (event: MessageEvent) => {
       if (event.source !== iframeRef.current?.contentWindow) return
+      if (allowedOrigin !== '*' && event.origin !== allowedOrigin) return
 
       const data = event.data
       if (!data?.type?.startsWith('njl_')) return
@@ -156,7 +169,7 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
       const requestId = getRequestId(data)
       console.log('[MiniApp SDK] Received:', data.type, 'requestId:', requestId)
 
-      if (data.type === 'njl_ready') {
+      if (data.type === 'njl_ready' || data.type === 'njl_handshake') {
         sendIdentify()
         return
       }
@@ -185,6 +198,7 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
           return
         }
 
+        chargeResultSentRef.current = false
         setPendingCharge({ amount, description: description || 'Mini App Purchase', requestId, chargeType: charge_type || 'one_time' })
         setShowChargeDialog(true)
         return
@@ -209,6 +223,7 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
           return
         }
 
+        payoutResultSentRef.current = false
         setPendingPayout({ amount, description: description || 'Payout', requestId })
         setShowPayoutDialog(true)
         return
@@ -267,6 +282,7 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
           return
         }
 
+        pinResultSentRef.current = false
         setPendingPinRequest({ reason: reason || 'verify your identity', requestId })
         setPinInput('')
         setShowPinDialog(true)
@@ -275,7 +291,7 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
 
     window.addEventListener('message', handleMessage)
     return () => window.removeEventListener('message', handleMessage)
-  }, [handleBalanceQuery, postToIframe, hasPin, withRequestIds, user, app.app_icon_url, app.id, sendIdentify])
+  }, [allowedOrigin, handleBalanceQuery, postToIframe, hasPin, withRequestIds, user, app.app_icon_url, app.id, sendIdentify])
 
   useEffect(() => {
     sendIdentify()
@@ -417,6 +433,7 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
             iframeLoadedRef.current = true
             setIsLoading(false)
             setTimeout(() => sendIdentify(), 250)
+            setTimeout(() => sendIdentify(), 1000)
           }}
         />
 

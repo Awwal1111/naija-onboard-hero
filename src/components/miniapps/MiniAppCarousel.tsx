@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/integrations/supabase/client'
-import { ChevronRight, Star, Sparkles, Receipt, Building2, Wallet, CreditCard, Shield, RefreshCw } from 'lucide-react'
+import { ChevronRight, Star, Sparkles, Receipt, Building2, Wallet, CreditCard, Shield, RefreshCw, Banknote } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { MiniAppViewer } from './MiniAppViewer'
 
@@ -48,6 +48,20 @@ const INTERNAL_MINI_APPS: MiniApp[] = [
     developer_id: 'system',
     is_internal: true,
     internal_action: 'bank_deposit',
+  },
+  {
+    id: 'internal-bank-withdrawal',
+    app_name: 'Bank Withdrawal',
+    app_description: 'Withdraw to your bank with Quidax',
+    app_icon_url: null,
+    app_url: '',
+    category: 'finance',
+    install_count: 0,
+    rating: 5,
+    sdk_app_id: 'bank_withdrawal',
+    developer_id: 'system',
+    is_internal: true,
+    internal_action: 'bank_withdrawal',
   },
   {
     id: 'internal-deposit-naira',
@@ -110,6 +124,7 @@ const INTERNAL_MINI_APPS: MiniApp[] = [
 const INTERNAL_ICONS: Record<string, typeof Receipt> = {
   bills: Receipt,
   bank_deposit: Building2,
+  bank_withdrawal: Banknote,
   crypto_deposit: Wallet,
   deposit_naira: CreditCard,
   escrow: Shield,

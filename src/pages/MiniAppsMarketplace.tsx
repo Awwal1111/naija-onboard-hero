@@ -57,6 +57,7 @@ const BUILT_IN_APPS: UnifiedApp[] = [
   { id: 'pa-emergency', name: 'Emergency Fund', description: 'Request emergency financial assistance', icon: AlertCircle, path: '/emergency', category: 'finance', color: 'from-amber-500/20 to-orange-500/20', isInternal: true },
   { id: 'int-bills', name: 'Bills & Airtime', description: 'Pay bills, buy airtime & data', icon: Receipt, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, internalAction: 'bills' },
   { id: 'int-bank', name: 'Deposit', description: 'Deposit via bank or Naira', icon: Building2, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, internalAction: 'bank_deposit' },
+  { id: 'int-bank-withdraw', name: 'Withdraw', description: 'Withdraw to your bank with Quidax', icon: Banknote, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, internalAction: 'bank_withdrawal' },
   { id: 'int-crypto', name: 'Crypto Deposit', description: 'Deposit via crypto wallet', icon: Wallet, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, internalAction: 'crypto_deposit' },
   { id: 'int-escrow', name: 'Escrow', description: 'Secure escrow payments', icon: Shield, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, internalAction: 'escrow' },
   { id: 'int-converter', name: 'NC Converter', description: 'Convert non-withdrawable to withdrawable NC', icon: RefreshCw, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, internalAction: 'nc_converter' },
@@ -103,7 +104,7 @@ const MiniAppsMarketplace = () => {
       .order('install_count', { ascending: false })
 
     // Filter out internal:// apps (handled as built-in) and known internal sdk_app_ids
-    const internalIds = new Set(['bills', 'bank_deposit', 'deposit_naira', 'crypto_deposit', 'escrow', 'nc_converter'])
+    const internalIds = new Set(['bills', 'bank_deposit', 'bank_withdrawal', 'deposit_naira', 'crypto_deposit', 'escrow', 'nc_converter'])
     const dbApps = (data || []).filter((a: any) => 
       !internalIds.has(a.sdk_app_id) && !a.app_url?.startsWith('internal://')
     ) as MiniApp[]
@@ -182,6 +183,9 @@ const MiniAppsMarketplace = () => {
       case 'bank_deposit':
       case 'deposit_naira':
         window.dispatchEvent(new CustomEvent('open-quidax-widget', { detail: { mode: 'buy' } }))
+        break
+      case 'bank_withdrawal':
+        window.dispatchEvent(new CustomEvent('open-quidax-widget', { detail: { mode: 'sell' } }))
         break
       case 'crypto_deposit':
         setShowDepositDialog(true)
