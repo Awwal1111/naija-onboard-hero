@@ -24,34 +24,11 @@ interface MiniAppViewerProps {
   onClose: () => void
 }
 
-/**
- * MiniAppViewer - Opens mini apps in a full-screen iframe with SDK communication
- * 
- * SDK Protocol (postMessage):
- * Parent → Child: { type: "njl_identify", user }
- * Child → Parent: { type: "njl_ready" } → triggers njl_identify
- * Child → Parent: { type: "njl_charge", amount, description, charge_type, requestId }
- * Parent → Child: { type: "njl_charge_result", success, txRef, requestId }
- * Child → Parent: { type: "njl_balance", requestId }
- * Parent → Child: { type: "njl_balance_result", balance, requestId }
- * Child → Parent: { type: "njl_payout", amount, description, requestId }
- * Parent → Child: { type: "njl_payout_result", success, txRef, requestId }
- * Child → Parent: { type: "njl_verify_pin", reason, requestId }
- * Parent → Child: { type: "njl_verify_pin_result", success, requestId }
- *
- * charge_type: 'one_time' | 'subscription' | 'tip' | 'purchase'
- * Payment split: 90% developer, 10% platform commission
- * Payout: developer sends money back to user (refunds, rewards, savings returns)
- */
 export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
   const { user } = useAuth()
   const { profile } = useProfile()
   const { hasPin, transactionPin } = useUserSecrets()
   const iframeRef = useRef<HTMLIFrameElement>(null)
-  const iframeLoadedRef = useRef(false)
-  const chargeResultSentRef = useRef(false)
-  const payoutResultSentRef = useRef(false)
-  const pinResultSentRef = useRef(false)
   const [isLoading, setIsLoading] = useState(true)
   const [showChargeDialog, setShowChargeDialog] = useState(false)
   const [showPayoutDialog, setShowPayoutDialog] = useState(false)
@@ -59,38 +36,38 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
   const [pinInput, setPinInput] = useState('')
   const [pendingPinRequest, setPendingPinRequest] = useState<{ reason: string; requestId: string } | null>(null)
   const [pendingCharge, setPendingCharge] = useState<{
-    amount: number
-    description: string
-    requestId: string
-    chargeType: string
+    amount: number; description: string; requestId: string; chargeType: string
   } | null>(null)
   const [pendingPayout, setPendingPayout] = useState<{
-    amount: number
-    description: string
-    requestId: string
+    amount: number; description: string; requestId: string
   } | null>(null)
 
+  // Track whether we already sent a result for the current pending request
+  const resultSentRef = useRef<Record<string, boolean>>({})
+
   const allowedOrigin = useMemo(() => {
-    try {
-      return new URL(app.app_url).origin
-    } catch {
-      return '*'
-    }
+    try { return new URL(app.app_url).origin } catch { return '*' }
   }, [app.app_url])
 
+  // Post message to iframe with origin restriction
   const postToIframe = useCallback((data: Record<string, unknown>) => {
-    iframeRef.current?.contentWindow?.postMessage(data, allowedOrigin)
+    const win = iframeRef.current?.contentWindow
+    if (!win) {
+      console.warn('[SDK] No iframe contentWindow available')
+      return
+    }
+    console.log('[SDK] Sending:', data.type, data)
+    win.postMessage(data, allowedOrigin)
   }, [allowedOrigin])
 
-  const withRequestIds = useCallback((requestId: string, payload: Record<string, unknown>) => ({
-    ...payload,
-    requestId,
-    request_id: requestId,
+  // Always include both requestId and request_id
+  const withIds = useCallback((rid: string, payload: Record<string, unknown>) => ({
+    ...payload, requestId: rid, request_id: rid,
   }), [])
 
-  const generateIdentityPayload = useCallback(() => {
+  // Build identify payload - works even with partial profile
+  const buildIdentify = useCallback(() => {
     if (!user) return null
-
     return {
       type: 'njl_identify',
       user: {
@@ -102,233 +79,184 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
       app_id: app.sdk_app_id,
       host_origin: window.location.origin,
       host_domain: 'naijalancers.name.ng',
-      allowed_parent_origins: Array.from(new Set([window.location.origin, 'https://naijalancers.name.ng'])),
+      allowed_parent_origins: [window.location.origin, 'https://naijalancers.name.ng'],
       sdk_version: '2.0',
-      timestamp: Date.now()
+      timestamp: Date.now(),
     }
   }, [user, profile?.full_name, profile?.profile_picture_url, app.sdk_app_id])
 
   const sendIdentify = useCallback(() => {
-    if (!iframeLoadedRef.current) return
+    const payload = buildIdentify()
+    if (payload) postToIframe(payload)
+  }, [buildIdentify, postToIframe])
 
-    const identity = generateIdentityPayload()
-    if (identity) {
-      postToIframe(identity)
+  // Extract requestId from either format
+  const getRid = (d: any): string => d?.requestId || d?.request_id || `auto_${Date.now()}`
+
+  // Parse incoming message data - handles both object and stringified JSON
+  const parseMessageData = (raw: any): any => {
+    if (!raw) return null
+    if (typeof raw === 'string') {
+      try { return JSON.parse(raw) } catch { return null }
     }
-  }, [generateIdentityPayload, postToIframe])
+    return raw
+  }
 
-  // Handle balance query from mini app
-  const handleBalanceQuery = useCallback(async (requestId: string) => {
+  // Handle balance query
+  const handleBalance = useCallback(async (rid: string) => {
     if (!user) {
-      postToIframe({
-        ...withRequestIds(requestId, {
-          type: 'njl_balance_result',
-          balance: 0,
-          error: 'Authentication required',
-        })
-      })
+      postToIframe(withIds(rid, { type: 'njl_balance_result', balance: 0, error: 'Auth required' }))
       return
     }
-
     try {
-      const { data } = await supabase
-        .from('profiles')
-        .select('wallet_balance')
-        .eq('user_id', user.id)
-        .single()
-
-      postToIframe({
-        ...withRequestIds(requestId, {
-          type: 'njl_balance_result',
-          balance: (data as any)?.wallet_balance || 0,
-        })
-      })
+      const { data } = await supabase.from('profiles').select('wallet_balance').eq('user_id', user.id).single()
+      postToIframe(withIds(rid, { type: 'njl_balance_result', balance: (data as any)?.wallet_balance || 0 }))
     } catch {
-      postToIframe({
-        ...withRequestIds(requestId, {
-          type: 'njl_balance_result',
-          balance: 0,
-          error: 'Failed to fetch balance',
-        })
-      })
+      postToIframe(withIds(rid, { type: 'njl_balance_result', balance: 0, error: 'Fetch failed' }))
     }
-  }, [user, postToIframe, withRequestIds])
+  }, [user, postToIframe, withIds])
 
-  // Normalize requestId: developers may send requestId or request_id
-  const getRequestId = (data: any): string => data.requestId || data.request_id || ''
-
-  // Handle messages from mini app iframe
+  // Main message handler
   useEffect(() => {
-    const handleMessage = async (event: MessageEvent) => {
+    const handler = (event: MessageEvent) => {
+      // Validate source is our iframe
       if (event.source !== iframeRef.current?.contentWindow) return
       if (allowedOrigin !== '*' && event.origin !== allowedOrigin) return
 
-      const data = event.data
-      if (!data?.type?.startsWith('njl_')) return
+      const data = parseMessageData(event.data)
+      if (!data || typeof data.type !== 'string') return
+      if (!data.type.startsWith('njl_')) return
 
-      const requestId = getRequestId(data)
-      console.log('[MiniApp SDK] Received:', data.type, 'requestId:', requestId)
+      const rid = getRid(data)
+      console.log('[SDK] ← Received:', data.type, 'rid:', rid)
 
-      if (data.type === 'njl_ready' || data.type === 'njl_handshake') {
-        sendIdentify()
-        return
-      }
+      switch (data.type) {
+        case 'njl_ready':
+        case 'njl_handshake':
+          sendIdentify()
+          break
 
-      if (data.type === 'njl_balance') {
-        handleBalanceQuery(requestId)
-        return
-      }
+        case 'njl_balance':
+          handleBalance(rid)
+          break
 
-      if (data.type === 'njl_charge') {
-        const { amount, description, charge_type } = data
-
-        if (!user) {
-          postToIframe(withRequestIds(requestId, { type: 'njl_charge_result', success: false, error: 'Authentication required' }))
-          return
-        }
-
-        if (!amount || amount <= 0) {
-          postToIframe({
-            ...withRequestIds(requestId, {
-              type: 'njl_charge_result',
-              success: false,
-              error: 'Invalid amount',
-            })
+        case 'njl_charge': {
+          if (!user) {
+            postToIframe(withIds(rid, { type: 'njl_charge_result', success: false, error: 'Auth required' }))
+            return
+          }
+          if (!data.amount || data.amount <= 0) {
+            postToIframe(withIds(rid, { type: 'njl_charge_result', success: false, error: 'Invalid amount' }))
+            return
+          }
+          resultSentRef.current[rid] = false
+          setPendingCharge({
+            amount: data.amount,
+            description: data.description || 'Mini App Purchase',
+            requestId: rid,
+            chargeType: data.charge_type || 'one_time',
           })
-          return
+          setShowChargeDialog(true)
+          break
         }
 
-        chargeResultSentRef.current = false
-        setPendingCharge({ amount, description: description || 'Mini App Purchase', requestId, chargeType: charge_type || 'one_time' })
-        setShowChargeDialog(true)
-        return
-      }
-
-      if (data.type === 'njl_payout') {
-        const { amount, description } = data
-
-        if (!user) {
-          postToIframe(withRequestIds(requestId, { type: 'njl_payout_result', success: false, error: 'Authentication required' }))
-          return
-        }
-
-        if (!amount || amount <= 0) {
-          postToIframe({
-            ...withRequestIds(requestId, {
-              type: 'njl_payout_result',
-              success: false,
-              error: 'Invalid amount',
-            })
+        case 'njl_payout': {
+          if (!user) {
+            postToIframe(withIds(rid, { type: 'njl_payout_result', success: false, error: 'Auth required' }))
+            return
+          }
+          if (!data.amount || data.amount <= 0) {
+            postToIframe(withIds(rid, { type: 'njl_payout_result', success: false, error: 'Invalid amount' }))
+            return
+          }
+          resultSentRef.current[rid] = false
+          setPendingPayout({
+            amount: data.amount,
+            description: data.description || 'Payout',
+            requestId: rid,
           })
-          return
+          setShowPayoutDialog(true)
+          break
         }
 
-        payoutResultSentRef.current = false
-        setPendingPayout({ amount, description: description || 'Payout', requestId })
-        setShowPayoutDialog(true)
-        return
-      }
-
-      if (data.type === 'njl_push') {
-        const { title, body, url } = data
-
-        if (!user) {
-          postToIframe(withRequestIds(requestId, { type: 'njl_push_result', success: false, error: 'Authentication required' }))
-          return
-        }
-
-        if (!title || !body) {
-          postToIframe(withRequestIds(requestId, { type: 'njl_push_result', success: false, error: 'Title and body required' }))
-          return
-        }
-
-        try {
-          await supabase.functions.invoke('send-push-notification', {
+        case 'njl_push': {
+          if (!user || !data.title || !data.body) {
+            postToIframe(withIds(rid, { type: 'njl_push_result', success: false, error: 'Missing fields' }))
+            return
+          }
+          supabase.functions.invoke('send-push-notification', {
             body: {
-              userId: user.id,
-              title,
-              body: body.substring(0, 200),
-              icon: app.app_icon_url || '/icon-512.png',
-              badge: '/icon-512.png',
-              url: url || '/apps',
-              data: { type: 'mini_app', appId: app.id }
+              userId: user.id, title: data.title, body: data.body.substring(0, 200),
+              icon: app.app_icon_url || '/icon-512.png', badge: '/icon-512.png',
+              url: data.url || '/apps', data: { type: 'mini_app', appId: app.id },
             }
+          }).then(() => {
+            postToIframe(withIds(rid, { type: 'njl_push_result', success: true }))
+          }).catch(() => {
+            postToIframe(withIds(rid, { type: 'njl_push_result', success: false, error: 'Failed' }))
           })
-          postToIframe(withRequestIds(requestId, { type: 'njl_push_result', success: true }))
-        } catch {
-          postToIframe(withRequestIds(requestId, { type: 'njl_push_result', success: false, error: 'Failed to send' }))
+          break
         }
 
-        return
-      }
-
-      if (data.type === 'njl_verify_pin') {
-        const { reason } = data
-
-        if (!user) {
-          postToIframe(withRequestIds(requestId, { type: 'njl_verify_pin_result', success: false, error: 'Authentication required' }))
-          return
+        case 'njl_verify_pin': {
+          if (!user) {
+            postToIframe(withIds(rid, { type: 'njl_verify_pin_result', success: false, error: 'Auth required' }))
+            return
+          }
+          if (!hasPin) {
+            postToIframe(withIds(rid, { type: 'njl_verify_pin_result', success: false, error: 'No PIN set' }))
+            toast.error('Set up your transaction PIN in Settings first')
+            return
+          }
+          resultSentRef.current[rid] = false
+          setPendingPinRequest({ reason: data.reason || 'verify your identity', requestId: rid })
+          setPinInput('')
+          setShowPinDialog(true)
+          break
         }
-
-        if (!hasPin) {
-          postToIframe({
-            ...withRequestIds(requestId, {
-              type: 'njl_verify_pin_result',
-              success: false,
-              error: 'No PIN set. Please set up in Settings.',
-            })
-          })
-          toast.error('Set up your transaction PIN in Settings first')
-          return
-        }
-
-        pinResultSentRef.current = false
-        setPendingPinRequest({ reason: reason || 'verify your identity', requestId })
-        setPinInput('')
-        setShowPinDialog(true)
       }
     }
 
-    window.addEventListener('message', handleMessage)
-    return () => window.removeEventListener('message', handleMessage)
-  }, [allowedOrigin, handleBalanceQuery, postToIframe, hasPin, withRequestIds, user, app.app_icon_url, app.id, sendIdentify])
+    window.addEventListener('message', handler)
+    return () => window.removeEventListener('message', handler)
+  }, [allowedOrigin, handleBalance, postToIframe, hasPin, withIds, user, app.app_icon_url, app.id, sendIdentify])
 
+  // Re-send identify when profile loads (covers late-loading profile)
   useEffect(() => {
-    sendIdentify()
-  }, [sendIdentify])
+    if (profile && user) sendIdentify()
+  }, [profile, user, sendIdentify])
+
+  // --- Action handlers ---
+
+  const sendResult = (rid: string, payload: Record<string, unknown>) => {
+    if (resultSentRef.current[rid]) return
+    resultSentRef.current[rid] = true
+    postToIframe(withIds(rid, payload))
+  }
 
   const handleConfirmCharge = async () => {
     if (!pendingCharge || !user) return
     const rid = pendingCharge.requestId
-    chargeResultSentRef.current = true
 
     try {
       const txRef = 'njl_tx_' + crypto.randomUUID().replace(/-/g, '').slice(0, 16)
-
       const { data, error } = await supabase.rpc('process_mini_app_payment', {
-        p_user_id: user.id,
-        p_mini_app_id: app.id,
-        p_amount: pendingCharge.amount,
-        p_description: pendingCharge.description,
-        p_tx_ref: txRef
+        p_user_id: user.id, p_mini_app_id: app.id,
+        p_amount: pendingCharge.amount, p_description: pendingCharge.description, p_tx_ref: txRef,
       })
-
       const result = data as any
-
       if (error || !result?.success) {
         const errMsg = result?.error || error?.message || 'Payment failed'
         toast.error(errMsg)
-        postToIframe(withRequestIds(rid, { type: 'njl_charge_result', success: false, error: errMsg }))
+        sendResult(rid, { type: 'njl_charge_result', success: false, error: errMsg })
       } else {
-        postToIframe(withRequestIds(rid, { type: 'njl_charge_result', success: true, txRef: result.tx_ref, tx_ref: result.tx_ref }))
+        sendResult(rid, { type: 'njl_charge_result', success: true, txRef: result.tx_ref, tx_ref: result.tx_ref })
         toast.success(`₦${pendingCharge.amount}NC paid to ${app.app_name}`)
       }
-    } catch (err) {
-      console.error('[MiniApp] Charge failed:', err)
-      postToIframe(withRequestIds(rid, { type: 'njl_charge_result', success: false, error: 'Payment failed' }))
+    } catch {
+      sendResult(rid, { type: 'njl_charge_result', success: false, error: 'Payment failed' })
       toast.error('Payment failed')
     }
-
     setPendingCharge(null)
     setShowChargeDialog(false)
   }
@@ -336,46 +264,35 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
   const handleConfirmPayout = async () => {
     if (!pendingPayout || !user) return
     const rid = pendingPayout.requestId
-    payoutResultSentRef.current = true
 
     try {
       const txRef = 'njl_po_' + crypto.randomUUID().replace(/-/g, '').slice(0, 16)
-
       const { data, error } = await supabase.rpc('process_mini_app_payout', {
-        p_mini_app_id: app.id,
-        p_user_id: user.id,
-        p_amount: pendingPayout.amount,
-        p_description: pendingPayout.description,
-        p_tx_ref: txRef
+        p_mini_app_id: app.id, p_user_id: user.id,
+        p_amount: pendingPayout.amount, p_description: pendingPayout.description, p_tx_ref: txRef,
       })
-
       const result = data as any
-
       if (error || !result?.success) {
         const errMsg = result?.error || error?.message || 'Payout failed'
         toast.error(errMsg)
-        postToIframe(withRequestIds(rid, { type: 'njl_payout_result', success: false, error: errMsg }))
+        sendResult(rid, { type: 'njl_payout_result', success: false, error: errMsg })
       } else {
-        postToIframe(withRequestIds(rid, { type: 'njl_payout_result', success: true, txRef: result.tx_ref, tx_ref: result.tx_ref }))
+        sendResult(rid, { type: 'njl_payout_result', success: true, txRef: result.tx_ref, tx_ref: result.tx_ref })
         toast.success(`₦${pendingPayout.amount}NC received from ${app.app_name}`)
       }
-    } catch (err) {
-      console.error('[MiniApp] Payout failed:', err)
-      postToIframe(withRequestIds(rid, { type: 'njl_payout_result', success: false, error: 'Payout failed' }))
+    } catch {
+      sendResult(rid, { type: 'njl_payout_result', success: false, error: 'Payout failed' })
       toast.error('Payout failed')
     }
-
     setPendingPayout(null)
     setShowPayoutDialog(false)
   }
 
-  // Track install/open
+  // Track install
   useEffect(() => {
-    supabase
-      .from('mini_apps')
+    supabase.from('mini_apps')
       .update({ install_count: (app as any).install_count + 1 })
-      .eq('id', app.id)
-      .then(() => {})
+      .eq('id', app.id).then(() => {})
   }, [app.id])
 
   return (
@@ -430,35 +347,25 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
           className="flex-1 w-full border-0"
           sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
           onLoad={() => {
-            iframeLoadedRef.current = true
             setIsLoading(false)
-            setTimeout(() => sendIdentify(), 250)
-            setTimeout(() => sendIdentify(), 1000)
+            // Staggered identify sends to handle different app loading speeds
+            sendIdentify()
+            setTimeout(sendIdentify, 300)
+            setTimeout(sendIdentify, 1000)
+            setTimeout(sendIdentify, 3000)
           }}
         />
 
-        {/* Charge Confirmation Dialog */}
+        {/* Charge Dialog */}
         <Dialog open={showChargeDialog} onOpenChange={(open) => {
-          setShowChargeDialog(open)
-
-          if (!open && pendingCharge && !chargeResultSentRef.current) {
-            chargeResultSentRef.current = true
-            postToIframe({
-              ...withRequestIds(pendingCharge.requestId || '', {
-                type: 'njl_charge_result',
-                success: false,
-                error: 'User cancelled',
-              })
-            })
+          if (!open && pendingCharge) {
+            sendResult(pendingCharge.requestId, { type: 'njl_charge_result', success: false, error: 'User cancelled' })
             setPendingCharge(null)
           }
-
-          if (open && pendingCharge) {
-            chargeResultSentRef.current = false
-          }
+          setShowChargeDialog(open)
         }}>
           <DialogContent className="max-w-sm">
-            <DialogDescription className="sr-only">Approve or cancel this mini app wallet charge request.</DialogDescription>
+            <DialogDescription className="sr-only">Approve or cancel this charge.</DialogDescription>
             <div className="text-center space-y-4">
               <div className="w-14 h-14 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center">
                 {app.app_icon_url ? (
@@ -470,28 +377,17 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
               <div>
                 <h3 className="font-semibold text-foreground">{app.app_name}</h3>
                 <p className="text-sm text-muted-foreground mt-1">wants to charge your wallet</p>
-                {pendingCharge?.chargeType && pendingCharge.chargeType !== 'one_time' && (
-                  <span className="inline-block mt-1 text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full capitalize">
-                    {pendingCharge.chargeType.replace('_', ' ')}
-                  </span>
-                )}
                 <p className="text-sm text-muted-foreground mt-1">{pendingCharge?.description}</p>
+              </div>
+              <div className="bg-muted rounded-xl p-4">
+                <p className="text-2xl font-bold text-primary">₦{pendingCharge?.amount}NC</p>
               </div>
               <div className="flex gap-3">
                 <Button variant="outline" className="flex-1" onClick={() => {
-                   chargeResultSentRef.current = true
-                  setShowChargeDialog(false)
-                  postToIframe({
-                    ...withRequestIds(pendingCharge?.requestId || '', {
-                      type: 'njl_charge_result',
-                      success: false,
-                      error: 'User cancelled',
-                    })
-                  })
+                  if (pendingCharge) sendResult(pendingCharge.requestId, { type: 'njl_charge_result', success: false, error: 'User cancelled' })
                   setPendingCharge(null)
-                }}>
-                  Cancel
-                </Button>
+                  setShowChargeDialog(false)
+                }}>Cancel</Button>
                 <Button className="flex-1" onClick={handleConfirmCharge}>
                   Pay ₦{pendingCharge?.amount}NC
                 </Button>
@@ -500,28 +396,16 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
           </DialogContent>
         </Dialog>
 
-        {/* Payout Confirmation Dialog */}
+        {/* Payout Dialog */}
         <Dialog open={showPayoutDialog} onOpenChange={(open) => {
-          setShowPayoutDialog(open)
-
-          if (!open && pendingPayout && !payoutResultSentRef.current) {
-            payoutResultSentRef.current = true
-            postToIframe({
-              ...withRequestIds(pendingPayout.requestId || '', {
-                type: 'njl_payout_result',
-                success: false,
-                error: 'User declined',
-              })
-            })
+          if (!open && pendingPayout) {
+            sendResult(pendingPayout.requestId, { type: 'njl_payout_result', success: false, error: 'User declined' })
             setPendingPayout(null)
           }
-
-          if (open && pendingPayout) {
-            payoutResultSentRef.current = false
-          }
+          setShowPayoutDialog(open)
         }}>
           <DialogContent className="max-w-sm">
-            <DialogDescription className="sr-only">Approve or decline this mini app payout request.</DialogDescription>
+            <DialogDescription className="sr-only">Approve or decline this payout.</DialogDescription>
             <div className="text-center space-y-4">
               <div className="w-14 h-14 mx-auto rounded-2xl bg-emerald-500/10 flex items-center justify-center">
                 {app.app_icon_url ? (
@@ -540,19 +424,10 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
               </div>
               <div className="flex gap-3">
                 <Button variant="outline" className="flex-1" onClick={() => {
-                   payoutResultSentRef.current = true
-                  setShowPayoutDialog(false)
-                  postToIframe({
-                    ...withRequestIds(pendingPayout?.requestId || '', {
-                      type: 'njl_payout_result',
-                      success: false,
-                      error: 'User declined',
-                    })
-                  })
+                  if (pendingPayout) sendResult(pendingPayout.requestId, { type: 'njl_payout_result', success: false, error: 'User declined' })
                   setPendingPayout(null)
-                }}>
-                  Decline
-                </Button>
+                  setShowPayoutDialog(false)
+                }}>Decline</Button>
                 <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700" onClick={handleConfirmPayout}>
                   Accept ₦{pendingPayout?.amount}NC
                 </Button>
@@ -560,92 +435,52 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
             </div>
           </DialogContent>
         </Dialog>
-        {/* PIN Verification Dialog */}
-        <Dialog open={showPinDialog} onOpenChange={(open) => {
-          setShowPinDialog(open)
 
-          if (!open && pendingPinRequest && !pinResultSentRef.current) {
-            pinResultSentRef.current = true
-            postToIframe({
-              ...withRequestIds(pendingPinRequest.requestId || '', {
-                type: 'njl_verify_pin_result',
-                success: false,
-                error: 'User cancelled',
-              })
-            })
+        {/* PIN Dialog */}
+        <Dialog open={showPinDialog} onOpenChange={(open) => {
+          if (!open && pendingPinRequest) {
+            sendResult(pendingPinRequest.requestId, { type: 'njl_verify_pin_result', success: false, error: 'User cancelled' })
             setPendingPinRequest(null)
             setPinInput('')
           }
-
-          if (open && pendingPinRequest) {
-            pinResultSentRef.current = false
-          }
+          setShowPinDialog(open)
         }}>
           <DialogContent className="max-w-sm">
-            <DialogDescription className="sr-only">Enter your transaction PIN to confirm this mini app request.</DialogDescription>
+            <DialogDescription className="sr-only">Enter your PIN to verify.</DialogDescription>
             <div className="text-center space-y-4">
               <div className="w-14 h-14 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center">
                 <Fingerprint className="h-7 w-7 text-primary" />
               </div>
               <div>
                 <h3 className="font-semibold text-foreground">{app.app_name}</h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  wants to {pendingPinRequest?.reason}
-                </p>
+                <p className="text-sm text-muted-foreground mt-1">wants to {pendingPinRequest?.reason}</p>
                 <p className="text-xs text-muted-foreground mt-2">Enter your transaction PIN</p>
               </div>
               <Input
-                type="password"
-                inputMode="numeric"
-                maxLength={6}
-                placeholder="••••••"
-                className="text-center text-2xl tracking-[0.5em]"
-                value={pinInput}
-                onChange={e => setPinInput(e.target.value.replace(/\D/g, ''))}
+                type="password" inputMode="numeric" maxLength={6}
+                placeholder="••••••" className="text-center text-2xl tracking-[0.5em]"
+                value={pinInput} onChange={e => setPinInput(e.target.value.replace(/\D/g, ''))}
               />
               <div className="flex gap-3">
                 <Button variant="outline" className="flex-1" onClick={() => {
-                   pinResultSentRef.current = true
+                  if (pendingPinRequest) sendResult(pendingPinRequest.requestId, { type: 'njl_verify_pin_result', success: false, error: 'User cancelled' })
                   setShowPinDialog(false)
-                  const rid = pendingPinRequest?.requestId
-                  postToIframe({
-                    ...withRequestIds(rid || '', {
-                      type: 'njl_verify_pin_result',
-                      success: false,
-                      error: 'User cancelled',
-                    })
-                  })
                   setPendingPinRequest(null)
-                }}>
-                  Cancel
-                </Button>
+                }}>Cancel</Button>
                 <Button className="flex-1" onClick={() => {
-                  const rid = pendingPinRequest?.requestId
-                   pinResultSentRef.current = true
+                  if (!pendingPinRequest) return
+                  const rid = pendingPinRequest.requestId
                   if (pinInput === transactionPin) {
-                    postToIframe({
-                      ...withRequestIds(rid || '', {
-                        type: 'njl_verify_pin_result',
-                        success: true,
-                      })
-                    })
+                    sendResult(rid, { type: 'njl_verify_pin_result', success: true })
                     toast.success('Identity verified')
                   } else {
-                    postToIframe({
-                      ...withRequestIds(rid || '', {
-                        type: 'njl_verify_pin_result',
-                        success: false,
-                        error: 'Incorrect PIN',
-                      })
-                    })
+                    sendResult(rid, { type: 'njl_verify_pin_result', success: false, error: 'Incorrect PIN' })
                     toast.error('Incorrect PIN')
                   }
                   setShowPinDialog(false)
                   setPendingPinRequest(null)
                   setPinInput('')
-                }}>
-                  Verify
-                </Button>
+                }}>Verify</Button>
               </div>
             </div>
           </DialogContent>
