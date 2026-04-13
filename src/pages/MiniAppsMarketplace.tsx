@@ -15,6 +15,7 @@ import { motion } from 'framer-motion'
 const DepositDialog = lazy(() => import('@/components/DepositDialog').then(m => ({ default: m.DepositDialog })))
 const EscrowSearchDialog = lazy(() => import('@/components/EscrowSearchDialog').then(m => ({ default: m.EscrowSearchDialog })))
 const NCConverterDialog = lazy(() => import('@/components/miniapps/NCConverterDialog').then(m => ({ default: m.NCConverterDialog })))
+const TransferDialog = lazy(() => import('@/components/TransferDialog').then(m => ({ default: m.TransferDialog })))
 
 interface MiniApp {
   id: string
