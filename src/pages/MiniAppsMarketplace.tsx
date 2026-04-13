@@ -1,7 +1,7 @@
 import { useState, useEffect, lazy, Suspense } from 'react'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
-import { ArrowLeft, Search, Plus, Sparkles, Receipt, Building2, Wallet, Shield, RefreshCw, Trophy, Heart, GraduationCap, Users, Gamepad2, Dices, Target, RotateCw, Gift, Banknote, AlertCircle, ShoppingBag, PiggyBank, Flame, FileText, Zap, BookOpen } from 'lucide-react'
+import { ArrowLeft, Search, Plus, Sparkles, Receipt, Building2, Wallet, Shield, RefreshCw, Trophy, Heart, GraduationCap, Users, Gamepad2, Dices, Target, RotateCw, Gift, Banknote, AlertCircle, ShoppingBag, PiggyBank, Flame, FileText, Zap, BookOpen, Send } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,6 +15,7 @@ import { motion } from 'framer-motion'
 const DepositDialog = lazy(() => import('@/components/DepositDialog').then(m => ({ default: m.DepositDialog })))
 const EscrowSearchDialog = lazy(() => import('@/components/EscrowSearchDialog').then(m => ({ default: m.EscrowSearchDialog })))
 const NCConverterDialog = lazy(() => import('@/components/miniapps/NCConverterDialog').then(m => ({ default: m.NCConverterDialog })))
+const TransferDialog = lazy(() => import('@/components/TransferDialog').then(m => ({ default: m.TransferDialog })))
 
 interface MiniApp {
   id: string
@@ -61,6 +62,7 @@ const BUILT_IN_APPS: UnifiedApp[] = [
   { id: 'int-crypto', name: 'Crypto Deposit', description: 'Deposit via crypto wallet', icon: Wallet, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, internalAction: 'crypto_deposit' },
   { id: 'int-escrow', name: 'Escrow', description: 'Secure escrow payments', icon: Shield, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, internalAction: 'escrow' },
   { id: 'int-converter', name: 'NC Converter', description: 'Convert non-withdrawable to withdrawable NC', icon: RefreshCw, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, internalAction: 'nc_converter' },
+  { id: 'int-send-money', name: 'Send Money', description: 'Send NC to any NaijaLancers user instantly', icon: Send, category: 'finance', color: 'from-emerald-500/20 to-green-500/20', isInternal: true, internalAction: 'send_money' },
   // Learning
   { id: 'pa-courses', name: 'Courses', description: 'Buy or sell professional courses', icon: GraduationCap, path: '/courses', category: 'learning', color: 'from-blue-500/20 to-cyan-500/20', isInternal: true },
   // Earn
@@ -92,6 +94,7 @@ const MiniAppsMarketplace = () => {
   const [showDepositDialog, setShowDepositDialog] = useState(false)
   const [showEscrowSearch, setShowEscrowSearch] = useState(false)
   const [showNCConverter, setShowNCConverter] = useState(false)
+  const [showTransferDialog, setShowTransferDialog] = useState(false)
   const { user } = useAuth()
   const navigate = useNavigate()
 
@@ -195,6 +198,9 @@ const MiniAppsMarketplace = () => {
         break
       case 'nc_converter':
         setShowNCConverter(true)
+        break
+      case 'send_money':
+        setShowTransferDialog(true)
         break
     }
   }
@@ -404,6 +410,7 @@ const MiniAppsMarketplace = () => {
         <DepositDialog open={showDepositDialog} onOpenChange={setShowDepositDialog} />
         <EscrowSearchDialog open={showEscrowSearch} onOpenChange={setShowEscrowSearch} />
         <NCConverterDialog open={showNCConverter} onClose={() => setShowNCConverter(false)} />
+        <TransferDialog open={showTransferDialog} onOpenChange={setShowTransferDialog} />
       </Suspense>
 
       <BottomNavBar />

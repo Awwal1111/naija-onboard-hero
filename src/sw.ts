@@ -2,7 +2,7 @@
 import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching'
 import { clientsClaim } from 'workbox-core'
 import { registerRoute } from 'workbox-routing'
-import { CacheFirst, StaleWhileRevalidate } from 'workbox-strategies'
+import { CacheFirst, StaleWhileRevalidate, NetworkFirst } from 'workbox-strategies'
 import { ExpirationPlugin } from 'workbox-expiration'
 import { CacheableResponsePlugin } from 'workbox-cacheable-response'
 
@@ -23,12 +23,12 @@ registerRoute(
     cacheName: 'supabase-images',
     plugins: [
       new CacheableResponsePlugin({ statuses: [200] }),
-      new ExpirationPlugin({ maxEntries: 500, maxAgeSeconds: 30 * 24 * 60 * 60 }), // 30 days
+      new ExpirationPlugin({ maxEntries: 500, maxAgeSeconds: 30 * 24 * 60 * 60 }),
     ],
   })
 )
 
-// Cache ALL other images with CacheFirst too — no revalidation = no egress
+// Cache ALL other images with CacheFirst — no revalidation = no egress
 registerRoute(
   ({ request }) => request.destination === 'image',
   new CacheFirst({
@@ -40,22 +40,63 @@ registerRoute(
   })
 )
 
-// Cache Supabase REST API GET requests (profiles, posts, etc.) — reduces repeated DB egress
+// Cache fonts with CacheFirst — fonts never change
+registerRoute(
+  ({ request }) => request.destination === 'font',
+  new CacheFirst({
+    cacheName: 'fonts',
+    plugins: [
+      new CacheableResponsePlugin({ statuses: [200] }),
+      new ExpirationPlugin({ maxEntries: 30, maxAgeSeconds: 365 * 24 * 60 * 60 }),
+    ],
+  })
+)
+
+// Cache CSS and JS with CacheFirst — hashed filenames mean they're immutable
+registerRoute(
+  ({ request, url }) =>
+    (request.destination === 'style' || request.destination === 'script') &&
+    !url.hostname.includes('supabase.co'),
+  new CacheFirst({
+    cacheName: 'static-assets',
+    plugins: [
+      new CacheableResponsePlugin({ statuses: [200] }),
+      new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 30 * 24 * 60 * 60 }),
+    ],
+  })
+)
+
+// Cache Supabase REST API GET requests with CacheFirst + short TTL
+// This prevents repeated identical queries from hitting the network
 registerRoute(
   ({ url, request }) =>
     url.hostname.includes('supabase.co') &&
     url.pathname.includes('/rest/') &&
     request.method === 'GET',
-  new StaleWhileRevalidate({
+  new CacheFirst({
     cacheName: 'supabase-api',
     plugins: [
       new CacheableResponsePlugin({ statuses: [200] }),
-      new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 5 * 60 }), // 5 min
+      new ExpirationPlugin({ maxEntries: 200, maxAgeSeconds: 2 * 60 }), // 2 min TTL
     ],
   })
 )
 
-// Push notification handler - shows notification with app logo
+// Cache Supabase auth token endpoint with NetworkFirst (needs freshness)
+registerRoute(
+  ({ url }) =>
+    url.hostname.includes('supabase.co') &&
+    url.pathname.includes('/auth/'),
+  new NetworkFirst({
+    cacheName: 'supabase-auth',
+    plugins: [
+      new CacheableResponsePlugin({ statuses: [200] }),
+      new ExpirationPlugin({ maxEntries: 10, maxAgeSeconds: 60 }),
+    ],
+  })
+)
+
+// Push notification handler
 self.addEventListener('push', (event) => {
   if (!event.data) return
 
@@ -84,7 +125,7 @@ self.addEventListener('push', (event) => {
   )
 })
 
-// Notification click handler - opens the app
+// Notification click handler
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
 
@@ -92,7 +133,6 @@ self.addEventListener('notificationclick', (event) => {
 
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      // Focus existing window if found
       for (const client of clientList) {
         if ('focus' in client) {
           client.focus()
@@ -100,7 +140,6 @@ self.addEventListener('notificationclick', (event) => {
           return
         }
       }
-      // Open new window
       return self.clients.openWindow(url)
     })
   )
