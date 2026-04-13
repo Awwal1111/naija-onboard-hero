@@ -94,6 +94,7 @@ const MiniAppsMarketplace = () => {
   const [showDepositDialog, setShowDepositDialog] = useState(false)
   const [showEscrowSearch, setShowEscrowSearch] = useState(false)
   const [showNCConverter, setShowNCConverter] = useState(false)
+  const [showTransferDialog, setShowTransferDialog] = useState(false)
   const { user } = useAuth()
   const navigate = useNavigate()
 
