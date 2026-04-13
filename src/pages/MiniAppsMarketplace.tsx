@@ -199,6 +199,9 @@ const MiniAppsMarketplace = () => {
       case 'nc_converter':
         setShowNCConverter(true)
         break
+      case 'send_money':
+        setShowTransferDialog(true)
+        break
     }
   }
 
