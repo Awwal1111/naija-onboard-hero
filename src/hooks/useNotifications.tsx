@@ -32,8 +32,17 @@ export const useNotifications = () => {
   }, [user])
 
   const checkPushPermission = async () => {
-    if (!('Notification' in window) || !('serviceWorker' in navigator)) {
-      console.log('Push notifications not supported')
+    if (!('Notification' in window)) {
+      console.log('Push notifications not supported - no Notification API')
+      return
+    }
+    if (!('serviceWorker' in navigator)) {
+      console.log('Push notifications not supported - no Service Worker API')
+      return
+    }
+    // iOS Safari < 16.4 doesn't support push
+    if (!('PushManager' in window)) {
+      console.log('Push notifications not supported - no PushManager API')
       return
     }
 
@@ -42,7 +51,8 @@ export const useNotifications = () => {
 
     if (permission === 'granted') {
       try {
-        const registration = await navigator.serviceWorker.ready
+        const registration = await getServiceWorkerRegistration()
+        if (!registration) return
         const subscription = await registration.pushManager.getSubscription()
         setPushSubscription(subscription)
       } catch (error) {
@@ -51,77 +61,133 @@ export const useNotifications = () => {
     }
   }
 
+  // Helper: get SW registration with timeout (don't hang forever)
+  const getServiceWorkerRegistration = async (): Promise<ServiceWorkerRegistration | null> => {
+    if (!('serviceWorker' in navigator)) return null
+    
+    try {
+      // Race between SW ready and a 5-second timeout
+      const registration = await Promise.race([
+        navigator.serviceWorker.ready,
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000))
+      ])
+      
+      if (!registration) {
+        console.warn('[Push] Service worker not ready after 5s - trying getRegistrations fallback')
+        const registrations = await navigator.serviceWorker.getRegistrations()
+        return registrations[0] || null
+      }
+      
+      return registration
+    } catch (err) {
+      console.error('[Push] Error getting SW registration:', err)
+      return null
+    }
+  }
+
   const requestPushPermission = async () => {
-    if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+    if (!('Notification' in window)) {
       toast({
         title: 'Not Supported',
-        description: 'Push notifications are not supported on this device',
+        description: 'Push notifications are not supported on this device/browser',
+        variant: 'destructive',
+      })
+      return false
+    }
+    if (!('PushManager' in window)) {
+      toast({
+        title: 'Not Supported',
+        description: 'Push notifications require a modern browser. Please update your browser or use Chrome/Edge.',
         variant: 'destructive',
       })
       return false
     }
 
     try {
-      console.log('Starting push notification setup...')
+      console.log('[Push] Starting push notification setup...')
       
-      // Use the existing VitePWA service worker instead of registering a separate one
-      // Registering '/service-worker.js' conflicts with VitePWA's 'sw.js'
-      const registration = await navigator.serviceWorker.ready
-      console.log('Service Worker ready:', registration)
-
-      // Request notification permission
-      const permission = await Notification.requestPermission()
-      console.log('Notification permission result:', permission)
-      
-      if (permission === 'granted') {
-        // Check if already subscribed
-        let subscription = await registration.pushManager.getSubscription()
-        
-        if (subscription) {
-          console.log('Existing subscription found, unsubscribing first...')
-          await subscription.unsubscribe()
+      // Get SW registration with timeout
+      const registration = await getServiceWorkerRegistration()
+      if (!registration) {
+        // Try to register SW on the fly
+        console.log('[Push] No SW found, attempting registration...')
+        try {
+          const freshReg = await navigator.serviceWorker.register('/sw.js', { scope: '/' })
+          await freshReg.update()
+          // Wait briefly for activation
+          await new Promise(resolve => setTimeout(resolve, 1000))
+          return await setupPushSubscription(freshReg)
+        } catch (regErr) {
+          console.error('[Push] SW registration failed:', regErr)
+          toast({
+            title: 'Setup Failed',
+            description: 'Could not initialize push notifications. Please try installing the app first.',
+            variant: 'destructive',
+          })
+          return false
         }
-        
-        // Subscribe to push notifications
-        console.log('Creating new push subscription...')
-        subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(
-            'BLpOlYmZrInf0zI1oSxqhGvAhSm3HEqVALjIvZtgoCXU-N59AX0SbjhLL3RF5aX-eG4A31uBFM2gkGYpVEtQdbw'
-          ),
-        })
-        
-        console.log('Push subscription created:', subscription)
-        setPushSubscription(subscription)
-        
-        // Save subscription to backend
-        console.log('Saving subscription to backend...')
-        await savePushSubscription(subscription)
-        
-        setPushEnabled(true)
-        
-        toast({
-          title: 'Success',
-          description: 'Push notifications enabled successfully! You can now test them.',
-        })
-        
-        return true
-      } else {
-        console.log('Permission denied by user')
+      }
+      
+      console.log('[Push] Service Worker ready:', registration.scope)
+      return await setupPushSubscription(registration)
+    } catch (error: any) {
+      console.error('[Push] Error requesting push permission:', error)
+      toast({
+        title: 'Error',
+        description: `Failed to enable push notifications: ${error.message}`,
+        variant: 'destructive',
+      })
+      return false
+    }
+  }
+
+  const setupPushSubscription = async (registration: ServiceWorkerRegistration): Promise<boolean> => {
+    try {
+      const permission = await Notification.requestPermission()
+      console.log('[Push] Permission result:', permission)
+      
+      if (permission !== 'granted') {
         toast({
           title: 'Permission Denied',
-          description: 'Please enable notifications in your browser settings',
+          description: 'Please enable notifications in your browser/phone settings',
           variant: 'destructive',
         })
         return false
       }
-    } catch (error: any) {
-      console.error('Error requesting push permission:', error)
-      console.error('Error details:', {
-        name: error.name,
-        message: error.message
+
+      // Unsubscribe existing
+      let subscription = await registration.pushManager.getSubscription()
+      if (subscription) {
+        console.log('[Push] Unsubscribing existing subscription...')
+        await subscription.unsubscribe()
+      }
+      
+      // Subscribe with VAPID key
+      console.log('[Push] Creating new subscription...')
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(
+          'BLpOlYmZrInf0zI1oSxqhGvAhSm3HEqVALjIvZtgoCXU-N59AX0SbjhLL3RF5aX-eG4A31uBFM2gkGYpVEtQdbw'
+        ),
       })
       
+      console.log('[Push] Subscription created:', subscription.endpoint)
+      setPushSubscription(subscription)
+      
+      // Save subscription to backend
+      console.log('[Push] Saving subscription to backend...')
+      await savePushSubscription(subscription)
+      
+      setPushEnabled(true)
+      
+      toast({
+        title: 'Success',
+        description: 'Push notifications enabled successfully!',
+      })
+      
+      return true
+    } catch (error: any) {
+      console.error('[Push] Error in setupPushSubscription:', error)
       toast({
         title: 'Error',
         description: `Failed to enable push notifications: ${error.message}`,
