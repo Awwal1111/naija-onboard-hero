@@ -145,20 +145,35 @@ const Index = () => {
                   </BrandButton>
                 </div>
 
-                {/* Google Play Badge */}
-                <a
-                  href="https://play.google.com/store/apps/details?id=co.median.android.mbbeeqr"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-block pt-2"
-                >
-                  <img
-                    src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png"
-                    alt="Get it on Google Play"
-                    className="h-16 sm:h-20"
-                    loading="lazy"
-                  />
-                </a>
+                {/* App Store Badges */}
+                <div className="flex items-center gap-2 pt-2 flex-wrap">
+                  <a
+                    href="https://play.google.com/store/apps/details?id=co.median.android.mbbeeqr"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <img
+                      src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png"
+                      alt="Get it on Google Play"
+                      className="h-14 sm:h-16"
+                      loading="lazy"
+                    />
+                  </a>
+                  <a
+                    href="https://m.apkpure.com/naijalancers-freelance-app/co.median.android.mbbeeqr"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-foreground text-background rounded-lg px-4 py-2.5 flex items-center gap-2 hover:opacity-90 transition-opacity"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="2" fill="none" />
+                    </svg>
+                    <div className="text-left leading-tight">
+                      <div className="text-[10px] opacity-80">Download on</div>
+                      <div className="text-sm font-semibold">APKPure</div>
+                    </div>
+                  </a>
+                </div>
               </div>
 
               <div className="relative hidden lg:block">
