@@ -455,8 +455,8 @@ const StoriesSection: React.FC<StoriesSectionProps> = ({
       </div>
 
       {/* Story Viewer Dialog */}
-      <Dialog open={!!viewingStory} onOpenChange={() => setViewingStory(null)}>
-        <DialogContent className="max-w-md w-full h-[90vh] max-h-[600px] p-0 overflow-hidden">
+      <Dialog open={!!viewingStory} onOpenChange={() => closeStoryViewer()}>
+        <DialogContent className="max-w-md w-full h-[100dvh] sm:h-[90vh] sm:max-h-[600px] p-0 overflow-hidden border-0 sm:border rounded-none sm:rounded-lg">
           {viewingStory && (
             <div className="relative w-full h-full bg-black flex flex-col">
               {/* Story Progress Bars */}
@@ -539,7 +539,7 @@ const StoriesSection: React.FC<StoriesSectionProps> = ({
               </div>
 
               {/* Navigation Areas */}
-              <div className="absolute inset-0 flex z-5" style={{ pointerEvents: showViewers ? 'none' : 'auto' }}>
+              <div className="absolute inset-0 flex z-[5]" style={{ pointerEvents: showViewers ? 'none' : 'auto' }}>
                 <button
                   onClick={previousStory}
                   className="flex-1 h-full bg-transparent"
