@@ -204,6 +204,7 @@ const App = () => (
             <MiniPayAuthWrapper>
               {!isMiniPayEnv && <AuthRedirectHandler />}
               {!isMiniPayEnv && <AppStateManager />}
+              {!isMiniPayEnv && <OneSignalInitializer />}
               
               {!isMiniPayEnv && <DeferredManagers />}
               <Suspense fallback={<PageLoader />}>
