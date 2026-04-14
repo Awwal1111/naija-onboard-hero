@@ -79,6 +79,31 @@
   "edge_side_panel": {
     "preferred_width": 400
   },
+  "file_handlers": [
+    {
+      "action": "/main-feed",
+      "accept": {
+        "application/pdf": [".pdf"],
+        "image/*": [".png", ".jpg", ".jpeg", ".gif", ".webp"],
+        "text/plain": [".txt"]
+      }
+    }
+  ],
+  "handle_links": "preferred",
+  "note_taking": {
+    "new_note_url": "/main-feed"
+  },
+  "widgets": [
+    {
+      "name": "NaijaLancers Feed",
+      "description": "Quick access to your feed",
+      "tag": "naijalancers-widget",
+      "ms_ac_template": "feed",
+      "screenshots": [
+        { "src": "/screenshot-narrow.jpg", "sizes": "540x720", "type": "image/jpeg" }
+      ]
+    }
+  ],
   "shortcuts": [
     {
       "name": "Find Experts",
