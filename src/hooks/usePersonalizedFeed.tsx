@@ -75,7 +75,7 @@ export const usePersonalizedFeed = () => {
 
       const { data: storiesData, error } = await supabase
         .from('stories')
-        .select('id, user_id, media_url, media_type, caption, created_at, expires_at, views_count')
+        .select('id, user_id, media_url, media_type, content, created_at, expires_at, views_count, background_color, privacy_setting')
         .gt('expires_at', new Date().toISOString())
         .order('created_at', { ascending: false })
         .limit(20)
