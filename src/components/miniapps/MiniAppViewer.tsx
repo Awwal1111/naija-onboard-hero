@@ -116,11 +116,12 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
     }
   }, [user, postToIframe, withIds])
 
-  // Main message handler
+  // Main message handler - attached BEFORE iframe loads to catch early njl_ready
   useEffect(() => {
     const handler = (event: MessageEvent) => {
-      // Validate source is our iframe
-      if (event.source !== iframeRef.current?.contentWindow) return
+      // Accept messages from any source initially (iframe ref may not be set yet)
+      const isFromIframe = event.source === iframeRef.current?.contentWindow
+      if (!isFromIframe) return
       if (allowedOrigin !== '*' && event.origin !== allowedOrigin) return
 
       const data = parseMessageData(event.data)
@@ -128,11 +129,13 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
       if (!data.type.startsWith('njl_')) return
 
       const rid = getRid(data)
-      console.log('[SDK] ← Received:', data.type, 'rid:', rid)
+      console.log('[SDK] ← Received:', data.type, 'rid:', rid, data)
 
       switch (data.type) {
         case 'njl_ready':
         case 'njl_handshake':
+        case 'njl_ping':
+          console.log('[SDK] Handshake received, sending identify')
           sendIdentify()
           break
 
