@@ -1,11 +1,25 @@
 [
   {
-    "relation": ["delegate_permission/common.handle_all_urls"],
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
     "target": {
       "namespace": "android_app",
       "package_name": "com.naijalancers.app",
       "sha256_cert_fingerprints": [
         "REPLACE_WITH_YOUR_SHA256_FINGERPRINT"
+      ]
+    }
+  },
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "co.median.android.mbbeeqr",
+      "sha256_cert_fingerprints": [
+        "C2:D6:26:4B:4C:BE:C6:D5:D4:6E:AA:1B:25:4C:54:EC:87:46:67:82:C3:CB:ED:AA:F0:B7:F4:40:08:D9:17:9E"
       ]
     }
   }
