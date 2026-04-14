@@ -16,7 +16,7 @@ precacheAndRoute(self.__WB_MANIFEST)
 self.skipWaiting()
 clientsClaim()
 
-// Cache Supabase storage images with CacheFirst — avoids CDN hits entirely after first load
+// Cache Supabase storage images with CacheFirst
 registerRoute(
   ({ url }) => url.hostname.includes('supabase.co') && url.pathname.includes('/storage/'),
   new CacheFirst({
@@ -28,7 +28,7 @@ registerRoute(
   })
 )
 
-// Cache ALL other images with CacheFirst — no revalidation = no egress
+// Cache ALL other images with CacheFirst
 registerRoute(
   ({ request }) => request.destination === 'image',
   new CacheFirst({
@@ -66,23 +66,23 @@ registerRoute(
   })
 )
 
-// Cache Supabase REST API GET requests with CacheFirst + short TTL
-// This prevents repeated identical queries from hitting the network
+// Cache Supabase REST API with StaleWhileRevalidate (not CacheFirst!)
+// This serves cached data instantly but revalidates in background for freshness
 registerRoute(
   ({ url, request }) =>
     url.hostname.includes('supabase.co') &&
     url.pathname.includes('/rest/') &&
     request.method === 'GET',
-  new CacheFirst({
+  new StaleWhileRevalidate({
     cacheName: 'supabase-api',
     plugins: [
       new CacheableResponsePlugin({ statuses: [200] }),
-      new ExpirationPlugin({ maxEntries: 200, maxAgeSeconds: 2 * 60 }), // 2 min TTL
+      new ExpirationPlugin({ maxEntries: 200, maxAgeSeconds: 5 * 60 }), // 5 min TTL
     ],
   })
 )
 
-// Cache Supabase auth token endpoint with NetworkFirst (needs freshness)
+// Supabase auth — always network first (needs freshness)
 registerRoute(
   ({ url }) =>
     url.hostname.includes('supabase.co') &&
