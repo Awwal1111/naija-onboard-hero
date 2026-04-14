@@ -11,6 +11,7 @@ import { UserModeProvider } from "./hooks/useUserMode"
 import { detectMiniPaySync } from './lib/minipay'
 import { clearReloadTracking } from './utils/chunkErrorHandler'
 import { checkAndHealCache } from './utils/cacheHealer'
+import { startScrollLockGuard } from './utils/scrollLockGuard'
 
 // SYNC detection at module load
 const isMiniPayEnv = detectMiniPaySync().isMiniPay;
@@ -22,6 +23,9 @@ clearReloadTracking();
 if (!isMiniPayEnv) {
   checkAndHealCache();
 }
+
+// Guard against stale Radix Dialog scroll locks freezing the page
+startScrollLockGuard();
 
 // Service worker is handled automatically by VitePWA plugin (registerType: 'autoUpdate')
 // Do NOT manually register a service worker here - it conflicts with VitePWA's sw.js
