@@ -4,7 +4,8 @@
   "description": "Nigeria's trusted freelance marketplace connecting verified experts with clients. Hire skilled freelancers or earn online with secure payments.",
   "start_url": "/main-feed",
   "display": "standalone",
-  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "display_override": ["window-controls-overlay", "tabbed", "standalone", "minimal-ui"],
+  "iarc_rating_id": "e84b072d-71b3-4d3e-86ae-31a8ce4e53b7",
   "background_color": "#ffffff",
   "theme_color": "#10b981",
   "orientation": "any",
@@ -78,6 +79,31 @@
   "edge_side_panel": {
     "preferred_width": 400
   },
+  "file_handlers": [
+    {
+      "action": "/main-feed",
+      "accept": {
+        "application/pdf": [".pdf"],
+        "image/*": [".png", ".jpg", ".jpeg", ".gif", ".webp"],
+        "text/plain": [".txt"]
+      }
+    }
+  ],
+  "handle_links": "preferred",
+  "note_taking": {
+    "new_note_url": "/main-feed"
+  },
+  "widgets": [
+    {
+      "name": "NaijaLancers Feed",
+      "description": "Quick access to your feed",
+      "tag": "naijalancers-widget",
+      "ms_ac_template": "feed",
+      "screenshots": [
+        { "src": "/screenshot-narrow.jpg", "sizes": "540x720", "type": "image/jpeg" }
+      ]
+    }
+  ],
   "shortcuts": [
     {
       "name": "Find Experts",
