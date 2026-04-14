@@ -463,14 +463,16 @@ const StoriesCarousel: React.FC<StoriesCarouselProps> = ({ onCreateStory }) => {
               </div>
 
               {/* Navigation Areas */}
-              <div className="absolute inset-0 flex pointer-events-none">
+              <div className="absolute inset-0 flex pointer-events-none" style={{ zIndex: 1 }}>
                 <button
                   onClick={previousStory}
-                  className="flex-1 h-full bg-transparent pointer-events-auto"
+                  className="flex-1 bg-transparent pointer-events-auto"
+                  style={{ touchAction: 'manipulation' }}
                 />
                 <button
                   onClick={nextStory}
-                  className="flex-1 h-full bg-transparent pointer-events-auto"
+                  className="flex-1 bg-transparent pointer-events-auto"
+                  style={{ touchAction: 'manipulation' }}
                 />
               </div>
 
