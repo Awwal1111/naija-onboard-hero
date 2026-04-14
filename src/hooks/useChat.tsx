@@ -153,7 +153,7 @@ export const useChat = (otherUserId: string) => {
     try {
       const { data, error } = await supabase
         .from('messages')
-        .select('id, chat_id, sender_id, content, media_url, media_type, created_at, read')
+        .select('id, chat_id, sender_id, content, media_url, media_type, created_at, read_at, reply_to_id, reply_to_content, reply_to_sender')
         .eq('chat_id', chatId)
         .order('created_at', { ascending: true })
 
