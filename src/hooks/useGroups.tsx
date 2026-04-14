@@ -37,7 +37,7 @@ export const useGroups = () => {
     try {
       const { data, error } = await supabase
         .from('groups')
-        .select('id, name, description, category, group_lead_id, is_active, member_count, state_name, lga_name, area, created_at')
+        .select('id, name, description, category, group_lead_id, is_active, member_count, state_name, lga_name, area, created_at, updated_at')
         .eq('is_active', true)
         .order('created_at', { ascending: false })
 

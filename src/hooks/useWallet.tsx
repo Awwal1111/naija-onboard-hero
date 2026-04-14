@@ -112,7 +112,7 @@ export const useWallet = () => {
       // Fetch from wallet transactions table
       const { data: walletData, error: walletError } = await supabase
         .from('wallet_transactions')
-        .select('id, user_id, amount, kind, description, reference, status, created_at')
+        .select('id, user_id, amount, kind, reference, status, created_at')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(50)

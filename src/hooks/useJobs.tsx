@@ -48,7 +48,7 @@ export const useJobs = () => {
     try {
       const { data, error } = await supabase
         .from('jobs')
-        .select('id, title, description, budget_min, budget_max, location, job_type, required_skills, status, user_id, created_at')
+        .select('id, title, description, budget_min, budget_max, location, job_type, required_skills, status, user_id, created_at, updated_at')
         .eq('status', 'open')
         .order('created_at', { ascending: false })
         .limit(50)
@@ -88,7 +88,7 @@ export const useJobs = () => {
     try {
       const { data, error } = await supabase
         .from('jobs')
-        .select('id, title, description, budget_min, budget_max, location, job_type, required_skills, status, user_id, created_at')
+        .select('id, title, description, budget_min, budget_max, location, job_type, required_skills, status, user_id, created_at, updated_at')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
 
