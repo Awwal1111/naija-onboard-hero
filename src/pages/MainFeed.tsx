@@ -85,25 +85,40 @@ const MainFeed = () => {
   useEffect(() => {
     if (!user || !profile) return
     const p = profile as any
-    
-    // Don't show if already rated (DB or localStorage backup)
-    if (p.has_rated_platform || localStorage.getItem('platform_rated') === 'true') return
-    
-    // Don't show if skipped within the last 30 days
+
+    // Quick localStorage gate — avoids any async work if already rated/skipped
+    if (localStorage.getItem('platform_rated') === 'true') return
+
     const localSkip = localStorage.getItem('rating_skipped_at')
-    const skipTime = p.rating_skipped_at || localSkip
-    if (skipTime) {
-      const skippedAt = new Date(skipTime).getTime()
-      const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000
-      if (skippedAt > thirtyDaysAgo) return
+    if (localSkip) {
+      const skippedAt = new Date(localSkip).getTime()
+      if (Date.now() - skippedAt < 30 * 24 * 60 * 60 * 1000) return
     }
-    
-    // Show if user has completed at least 1 job or has any earnings
-    const hasActivity = (p.completed_jobs_count > 0) || (p.total_earnings > 0) || (p.wallet_balance > 0)
-    if (hasActivity) {
-      const timer = setTimeout(() => setShowRatingDialog(true), 3000)
-      return () => clearTimeout(timer)
+
+    // Check DB to see if user already submitted a rating
+    const checkRating = async () => {
+      try {
+        const { data } = await supabase
+          .from('platform_ratings' as any)
+          .select('id')
+          .eq('user_id', user.id)
+          .limit(1) as any
+        if (data && data.length > 0) {
+          localStorage.setItem('platform_rated', 'true')
+          return
+        }
+      } catch {
+        // If table doesn't exist or query fails, skip silently
+      }
+
+      // Show if user has some activity
+      const hasActivity = (p.completed_jobs_count > 0) || (p.total_earnings > 0) || (p.wallet_balance > 0)
+      if (hasActivity) {
+        const timer = setTimeout(() => setShowRatingDialog(true), 3000)
+        return () => clearTimeout(timer)
+      }
     }
+    checkRating()
   }, [user, profile])
 
 
