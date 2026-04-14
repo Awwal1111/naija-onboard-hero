@@ -16,7 +16,7 @@ export const BottomNavBar = () => {
   return (
     <>
       <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border px-1 sm:px-4 py-1.5 sm:py-2 safe-area-bottom safe-area-x z-50">
-        <div className="flex justify-around items-center max-w-md mx-auto">
+        <div className="flex justify-around items-center max-w-lg mx-auto">
           {bottomNavItems.map((item) => (
             <button
               key={item.id}
