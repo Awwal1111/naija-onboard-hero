@@ -149,20 +149,20 @@ const Dashboard = () => {
         totalViews: postStats.views,
         totalLikes: postStats.likes,
         totalComments: postStats.comments,
-        storiesCount: (storiesRes.data || []).length,
-        storyViews: (storyViewsRes.data || []).length,
-        jobsPosted: (jobsRes.data || []).length,
-        jobApplications: (jobAppsRes.data || []).length,
-        coursesCreated: (coursesRes.data || []).length,
+        storiesCount: storiesCountRes.count || 0,
+        storyViews: storyViewsCountRes.count || 0,
+        jobsPosted: jobsCountRes.count || 0,
+        jobApplications: jobAppsCountRes.count || 0,
+        coursesCreated: coursesCountRes.count || 0,
         courseEnrollments: (courseEnrollmentsRes.data || []).length,
         courseRevenue,
-        productsCreated: (productsRes.data || []).length,
+        productsCreated: productsCountRes.count || 0,
         productSales: (productPurchasesRes.data || []).length,
         productRevenue,
-        fundraisingsCreated: (fundraisingsRes.data || []).length,
+        fundraisingsCreated: fundraisingsCountRes.count || 0,
         fundraisingRaised,
-        classesCreated: (classesRes.data || []).length,
-        classParticipants: (classParticipantsRes.data || []).length,
+        classesCreated: classesCountRes.count || 0,
+        classParticipants: classParticipantsCountRes.count || 0,
         connectionsCount: profileData?.connections_count || 0,
         avgRating,
         ratingCount: ratings.length
@@ -198,10 +198,10 @@ const Dashboard = () => {
 
       const contentBreakdown = [
         { name: 'Posts', value: posts.length },
-        { name: 'Stories', value: (storiesRes.data || []).length },
-        { name: 'Jobs', value: (jobsRes.data || []).length },
-        { name: 'Courses', value: (coursesRes.data || []).length },
-        { name: 'Products', value: (productsRes.data || []).length }
+        { name: 'Stories', value: storiesCountRes.count || 0 },
+        { name: 'Jobs', value: jobsCountRes.count || 0 },
+        { name: 'Courses', value: coursesCountRes.count || 0 },
+        { name: 'Products', value: productsCountRes.count || 0 }
       ].filter(item => item.value > 0);
 
       const revenueBreakdown = [
