@@ -1,6 +1,6 @@
 import OneSignal from 'react-onesignal'
 
-const ONESIGNAL_APP_ID = 'cjra6uzcgncrdkgbjck47m426m3ttugw6nqex554l3jouk5ipk2ujx4au7a55x2sg2wxa75nvlmchokkujqpm5qgd7c6gwbt5vzehma'
+const ONESIGNAL_APP_ID = 'bdedddd2-3acd-4822-ad6a-88fd37ade488'
 
 let initialized = false
 
