@@ -78,16 +78,16 @@ const Dashboard = () => {
 
   const fetchAllStats = async () => {
     try {
-      // Fetch profile with only needed fields
+      // Fetch profile first
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('user_id, full_name, profile_picture_url, email_verified, phone_verified, face_verified, average_rating, rating_count, created_at, avg_response_time_seconds, connections_count, is_expert, wallet_balance, profession')
+        .select('*')
         .eq('user_id', user?.id)
         .single();
       
       setProfile(profileData);
 
-      // Use lightweight COUNT queries + only needed columns to reduce egress
+      // Fetch all other data in parallel
       const [
         postsRes,
         storiesRes,
@@ -105,19 +105,19 @@ const Dashboard = () => {
         classParticipantsRes,
         ratingsRes
       ] = await Promise.all([
-        supabase.from('posts').select('id, views_count, likes_count, comments_count, created_at').eq('user_id', user?.id),
-        supabase.from('stories').select('id', { count: 'exact', head: true }).eq('user_id', user?.id),
-        supabase.from('story_views').select('id', { count: 'exact', head: true }).eq('user_id', user?.id),
-        supabase.from('wallet_transactions').select('amount, kind, created_at').eq('user_id', user?.id).order('created_at', { ascending: false }).limit(200),
-        supabase.from('job_posts').select('id', { count: 'exact', head: true }).eq('user_id', user?.id),
-        supabase.from('job_post_applications').select('id', { count: 'exact', head: true }).eq('applicant_id', user?.id),
-        supabase.from('courses').select('id', { count: 'exact', head: true }).eq('user_id', user?.id),
+        supabase.from('posts').select('*').eq('user_id', user?.id),
+        supabase.from('stories').select('*').eq('user_id', user?.id),
+        supabase.from('story_views').select('story_id').eq('user_id', user?.id),
+        supabase.from('wallet_transactions').select('*').eq('user_id', user?.id).order('created_at', { ascending: false }),
+        supabase.from('job_posts').select('*').eq('user_id', user?.id),
+        supabase.from('job_post_applications').select('*').eq('applicant_id', user?.id),
+        supabase.from('courses').select('*').eq('user_id', user?.id),
         supabase.from('course_enrollments').select('amount, courses!inner(user_id)').eq('courses.user_id', user?.id),
-        supabase.from('digital_products').select('id', { count: 'exact', head: true }).eq('user_id', user?.id),
+        supabase.from('digital_products').select('*').eq('user_id', user?.id),
         supabase.from('digital_product_purchases').select('amount, digital_products!inner(user_id)').eq('digital_products.user_id', user?.id),
-        supabase.from('fundraisings').select('id', { count: 'exact', head: true }).eq('user_id', user?.id),
+        supabase.from('fundraisings').select('*').eq('user_id', user?.id),
         supabase.from('fundraising_contributions').select('amount, fundraisings!inner(user_id)').eq('fundraisings.user_id', user?.id),
-        supabase.from('expert_classes').select('id', { count: 'exact', head: true }).eq('expert_id', user?.id),
+        supabase.from('expert_classes').select('*').eq('expert_id', user?.id),
         supabase.from('class_participants').select('id, expert_classes!inner(expert_id)').eq('expert_classes.expert_id', user?.id),
         supabase.from('expert_ratings').select('rating').eq('expert_id', user?.id)
       ]);
@@ -125,21 +125,21 @@ const Dashboard = () => {
       const posts = postsRes.data || [];
       const transactions = transactionsRes.data || [];
       
-      // Calculate stats from lightweight data
-      const totalEarnings = transactions.filter((t: any) => t.amount > 0).reduce((sum: number, t: any) => sum + t.amount, 0);
-      const totalSpent = Math.abs(transactions.filter((t: any) => t.amount < 0).reduce((sum: number, t: any) => sum + t.amount, 0));
+      // Calculate stats
+      const totalEarnings = transactions.filter(t => t.amount > 0).reduce((sum, t) => sum + t.amount, 0);
+      const totalSpent = Math.abs(transactions.filter(t => t.amount < 0).reduce((sum, t) => sum + t.amount, 0));
       
-      const postStats = posts.reduce((acc: any, p: any) => ({
+      const postStats = posts.reduce((acc, p) => ({
         views: acc.views + (p.views_count || 0),
         likes: acc.likes + (p.likes_count || 0),
         comments: acc.comments + (p.comments_count || 0)
       }), { views: 0, likes: 0, comments: 0 });
       
-      const courseRevenue = (courseEnrollmentsRes.data || []).reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
-      const productRevenue = (productPurchasesRes.data || []).reduce((sum: number, p: any) => sum + (p.amount || 0), 0);
-      const fundraisingRaised = (contributionsRes.data || []).reduce((sum: number, c: any) => sum + (c.amount || 0), 0);
+      const courseRevenue = (courseEnrollmentsRes.data || []).reduce((sum, e) => sum + (e.amount || 0), 0);
+      const productRevenue = (productPurchasesRes.data || []).reduce((sum, p) => sum + (p.amount || 0), 0);
+      const fundraisingRaised = (contributionsRes.data || []).reduce((sum, c) => sum + (c.amount || 0), 0);
       const ratings = ratingsRes.data || [];
-      const avgRating = ratings.length ? ratings.reduce((sum: number, r: any) => sum + r.rating, 0) / ratings.length : 0;
+      const avgRating = ratings.length ? ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length : 0;
 
       setStats({
         totalEarnings,
