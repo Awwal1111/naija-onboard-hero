@@ -14,7 +14,7 @@ import { SocialProofSection } from '@/components/SocialProofSection'
 import { FeaturedContestsSection } from '@/components/FeaturedContestsSection'
 import { FeaturedGigsSection } from '@/components/FeaturedGigsSection'
 import { WhatsAppShareCTA } from '@/components/WhatsAppShareCTA'
-import { StickyMobileCTA } from '@/components/StickyMobileCTA'
+
 import { detectMiniPaySync } from '@/lib/minipay'
 
 // SYNC detection at module load - NO context hooks
