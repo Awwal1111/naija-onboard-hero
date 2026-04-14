@@ -62,8 +62,8 @@ const Jobs = () => {
 
   const fetchMyData = async () => {
     const [jobsRes, appsRes] = await Promise.all([
-      supabase.from('job_posts').select('*').eq('user_id', user?.id).order('created_at', { ascending: false }),
-      supabase.from('job_post_applications').select('*, job_posts(*)').eq('applicant_id', user?.id).order('created_at', { ascending: false })
+      supabase.from('job_posts').select('id, user_id, title, description, budget_min, budget_max, required_skills, status, created_at, application_deadline, is_remote, location, job_type, views_count, applications_count, company_name').eq('user_id', user?.id).order('created_at', { ascending: false }),
+      supabase.from('job_post_applications').select('id, job_id, applicant_id, cover_letter, status, created_at, job_posts(id, title, budget_min, budget_max, status)').eq('applicant_id', user?.id).order('created_at', { ascending: false })
     ])
     setMyJobs(jobsRes.data || [])
     setMyApplications(appsRes.data || [])

@@ -99,7 +99,7 @@ export const useChat = (otherUserId: string) => {
         // Find or create chat
         const { data: existingChat, error: chatError } = await supabase
           .from('chats')
-          .select('*')
+          .select('id, user1_id, user2_id, created_at, updated_at')
           .or(`and(user1_id.eq.${user.id},user2_id.eq.${otherUserId}),and(user1_id.eq.${otherUserId},user2_id.eq.${user.id})`)
           .maybeSingle()
 
@@ -153,7 +153,7 @@ export const useChat = (otherUserId: string) => {
     try {
       const { data, error } = await supabase
         .from('messages')
-        .select('*')
+        .select('id, chat_id, sender_id, content, media_url, media_type, created_at, read_at, reply_to_id, reply_to_content, reply_to_sender')
         .eq('chat_id', chatId)
         .order('created_at', { ascending: true })
 

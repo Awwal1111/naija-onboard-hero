@@ -45,7 +45,7 @@ export const useExpertClasses = () => {
       
       const { data: classes, error } = await supabase
         .from('expert_classes')
-        .select('*')
+        .select('id, expert_id, title, description, class_type, status, room_code, expert_pass, scheduled_start, scheduled_end, actual_start, actual_end, duration_minutes, max_participants, current_participants, price, is_free, category, thumbnail_url, created_at')
         .eq('expert_id', user.id)
         .order('created_at', { ascending: false })
 
@@ -79,7 +79,7 @@ export const useExpertClasses = () => {
     queryFn: async () => {
       const { data: classes, error } = await supabase
         .from('expert_classes')
-        .select('*')
+        .select('id, expert_id, title, description, class_type, status, room_code, scheduled_start, actual_start, duration_minutes, max_participants, current_participants, price, is_free, category, thumbnail_url')
         .eq('status', 'live')
         .order('actual_start', { ascending: false })
 
@@ -113,7 +113,7 @@ export const useExpertClasses = () => {
       const now = new Date().toISOString()
       const { data: classes, error } = await supabase
         .from('expert_classes')
-        .select('*')
+        .select('id, expert_id, title, description, class_type, status, room_code, scheduled_start, scheduled_end, duration_minutes, max_participants, current_participants, price, is_free, category, thumbnail_url')
         .eq('status', 'scheduled')
         .gt('scheduled_start', now) // Only future classes
         .order('scheduled_start', { ascending: true })
@@ -148,7 +148,7 @@ export const useExpertClasses = () => {
       const now = new Date().toISOString()
       const { data: classes, error } = await supabase
         .from('expert_classes')
-        .select('*')
+        .select('id, expert_id, title, description, class_type, status, room_code, scheduled_start, actual_start, duration_minutes, max_participants, current_participants, price, is_free, category, thumbnail_url')
         .or(`status.eq.live,and(status.eq.scheduled,scheduled_start.gt.${now})`)
         .order('current_participants', { ascending: false })
         .limit(6)
@@ -182,7 +182,7 @@ export const useExpertClasses = () => {
     queryFn: async () => {
       const { data: classes, error } = await supabase
         .from('expert_classes')
-        .select('*')
+        .select('id, expert_id, title, description, class_type, status, room_code, actual_start, actual_end, duration_minutes, max_participants, current_participants, price, is_free, category, thumbnail_url, recording_url')
         .eq('status', 'ended')
         .order('actual_end', { ascending: false })
         .limit(20)
