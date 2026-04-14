@@ -53,7 +53,7 @@ export const useSafePay = (otherUserId: string) => {
     try {
       const { data, error } = await supabase
         .from('safepay_transactions')
-        .select('id, buyer_id, seller_id, amount, status, escrow_deadline, created_at, updated_at')
+        .select('id, buyer_id, seller_id, amount, status, created_at, updated_at')
         .or(`and(buyer_id.eq.${user.id},seller_id.eq.${otherUserId}),and(buyer_id.eq.${otherUserId},seller_id.eq.${user.id})`)
         .in('status', ['proposed', 'active', 'complete'])
         .order('created_at', { ascending: false })
