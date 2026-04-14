@@ -259,9 +259,7 @@ const MainFeed = () => {
       )}
       
       <div 
-        className="flex min-h-0"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
+        className="flex flex-col md:flex-row"
       >
       {/* Main Content */}
         <div className="flex-1 max-w-4xl mx-auto w-full">
