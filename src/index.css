@@ -16,11 +16,15 @@ html, body {
   overscroll-behavior-y: contain;
   overflow-x: hidden;
   max-width: 100vw;
+  /* CRITICAL: Explicitly allow vertical touch scrolling on Android WebView/TWA */
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Ensure root container respects viewport */
 #root {
   overflow-x: hidden;
+  touch-action: pan-y;
 }
 
 @layer base {
