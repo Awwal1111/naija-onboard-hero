@@ -26,9 +26,6 @@ export const initOneSignal = async () => {
       appId: ONESIGNAL_APP_ID,
       allowLocalhostAsSecureOrigin: false,
       serviceWorkerParam: { scope: '/' },
-      notifyButton: {
-        enable: false, // We use our own UI
-      },
     })
     initialized = true
     console.log('[OneSignal] Initialized successfully')
