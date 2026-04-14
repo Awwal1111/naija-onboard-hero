@@ -1,9 +1,10 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/integrations/supabase/client'
 import { ChevronRight, Star, Sparkles, Receipt, Building2, Wallet, CreditCard, Shield, RefreshCw, Banknote } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { MiniAppViewer } from './MiniAppViewer'
+import { useUserCountry } from '@/hooks/useUserCountry'
 
 interface MiniApp {
   id: string
@@ -141,6 +142,14 @@ export const MiniAppCarousel = ({ onInternalAction }: MiniAppCarouselProps) => {
   const [selectedApp, setSelectedApp] = useState<MiniApp | null>(null)
   const navigate = useNavigate()
   const intervalRef = useRef<NodeJS.Timeout>()
+  const { isNigerian } = useUserCountry()
+
+  // Filter out Nigeria-only apps for international users
+  const NIGERIA_ONLY_ACTIONS = new Set(['bank_deposit', 'bank_withdrawal', 'deposit_naira'])
+  const filteredInternalApps = useMemo(() => 
+    INTERNAL_MINI_APPS.filter(a => isNigerian || !NIGERIA_ONLY_ACTIONS.has(a.internal_action || '')),
+    [isNigerian]
+  )
 
   useEffect(() => {
     const fetchApps = async () => {
@@ -152,13 +161,12 @@ export const MiniAppCarousel = ({ onInternalAction }: MiniAppCarouselProps) => {
         .order('install_count', { ascending: false })
         .limit(10)
 
-      // Combine internal apps first, then DB apps (excluding duplicates by sdk_app_id)
-      const internalIds = new Set(INTERNAL_MINI_APPS.map(a => a.sdk_app_id))
+      const internalIds = new Set(filteredInternalApps.map(a => a.sdk_app_id))
       const dbApps = (data || []).filter((a: any) => !a.is_internal && !internalIds.has(a.sdk_app_id)) as MiniApp[]
-      setApps([...INTERNAL_MINI_APPS, ...dbApps])
+      setApps([...filteredInternalApps, ...dbApps])
     }
     fetchApps()
-  }, [])
+  }, [filteredInternalApps])
 
   useEffect(() => {
     if (apps.length <= 4) return

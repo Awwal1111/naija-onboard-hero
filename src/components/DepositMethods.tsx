@@ -3,6 +3,7 @@ import { BrandButton } from '@/components/ui/brand-button'
 import { Badge } from '@/components/ui/badge'
 import { ArrowDownUp, Send, Wallet, Sparkles, Zap } from 'lucide-react'
 import { useMiniPay } from '@/hooks/useMiniPay'
+import { useUserCountry } from '@/hooks/useUserCountry'
 
 interface DepositMethodsProps {
   onSelectMethod: (method: 'ramp' | 'crypto' | 'telegram' | 'minipay') => void
@@ -10,6 +11,7 @@ interface DepositMethodsProps {
 
 export const DepositMethods = ({ onSelectMethod }: DepositMethodsProps) => {
   const { isMiniPay } = useMiniPay();
+  const { isNigerian } = useUserCountry();
 
   return (
     <div className="grid gap-4">
@@ -37,43 +39,51 @@ export const DepositMethods = ({ onSelectMethod }: DepositMethodsProps) => {
         </Card>
       )}
 
-      {/* Recommended: Bank Deposit */}
-      <Card className={`${!isMiniPay ? 'border-primary/20 bg-gradient-to-br from-primary/5 to-transparent' : ''} relative overflow-hidden`}>
-        {!isMiniPay && (
+      {/* Bank Deposit - Nigerian users only */}
+      {isNigerian && (
+        <Card className={`${!isMiniPay ? 'border-primary/20 bg-gradient-to-br from-primary/5 to-transparent' : ''} relative overflow-hidden`}>
+          {!isMiniPay && (
+            <Badge className="absolute top-4 right-4 bg-primary">
+              <Sparkles className="h-3 w-3 mr-1" />
+              Recommended
+            </Badge>
+          )}
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <ArrowDownUp className="h-5 w-5 text-primary" />
+              Bank Deposit (₦ Naira)
+            </CardTitle>
+            <CardDescription>
+              Instant funding via secure banking • Nigerian banks only
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <BrandButton onClick={() => onSelectMethod('ramp')} className="w-full" variant={isMiniPay ? 'outline' : 'primary'}>
+              Deposit Now
+            </BrandButton>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Crypto Deposit - Recommended for international users */}
+      <Card className={`${!isNigerian && !isMiniPay ? 'border-primary/20 bg-gradient-to-br from-primary/5 to-transparent' : 'hover:border-primary/40'} transition-colors relative overflow-hidden`}>
+        {!isNigerian && !isMiniPay && (
           <Badge className="absolute top-4 right-4 bg-primary">
             <Sparkles className="h-3 w-3 mr-1" />
             Recommended
           </Badge>
         )}
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <ArrowDownUp className="h-5 w-5 text-primary" />
-            Bank Deposit
-          </CardTitle>
-          <CardDescription>
-            Instant funding via secure banking • Amount in NC
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <BrandButton onClick={() => onSelectMethod('ramp')} className="w-full" variant={isMiniPay ? 'outline' : 'primary'}>
-            Deposit Now
-          </BrandButton>
-        </CardContent>
-      </Card>
-
-      {/* Crypto Deposit */}
-      <Card className="hover:border-primary/40 transition-colors">
-        <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <Wallet className="h-5 w-5" />
             Crypto Deposit
           </CardTitle>
           <CardDescription>
-            Send USDT, cUSD, or CELO to your wallet
+            Send USDT, cUSD, or CELO to your wallet • Works globally
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <BrandButton onClick={() => onSelectMethod('crypto')} variant="outline" className="w-full">
+          <BrandButton onClick={() => onSelectMethod('crypto')} variant={!isNigerian && !isMiniPay ? 'primary' : 'outline'} className="w-full">
             View Wallet Address
           </BrandButton>
         </CardContent>
