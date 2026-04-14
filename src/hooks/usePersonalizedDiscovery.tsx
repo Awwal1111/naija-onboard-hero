@@ -218,7 +218,7 @@ export const usePersonalizedCourses = (limit = 20, offset = 0) => {
         // Non-authenticated users get basic ordering
         const { data: basic } = await supabase
           .from('courses')
-          .select('*')
+          .select('id, title, description, price, course_category, thumbnail_url, average_rating, review_count, enrollment_count, duration_hours, level, is_demo, created_at')
           .eq('status', 'active')
           .order('average_rating', { ascending: false })
           .limit(limit)
@@ -236,7 +236,7 @@ export const usePersonalizedCourses = (limit = 20, offset = 0) => {
         console.error('[Courses] Personalized fetch error:', error)
         const { data: fallback } = await supabase
           .from('courses')
-          .select('*')
+          .select('id, title, description, price, course_category, thumbnail_url, average_rating, review_count, enrollment_count, duration_hours, level, is_demo, created_at')
           .eq('status', 'active')
           .order('created_at', { ascending: false })
           .limit(limit)
@@ -283,7 +283,7 @@ export const usePersonalizedProducts = (limit = 20, offset = 0) => {
       if (!user) {
         const { data: basic } = await supabase
           .from('digital_products')
-          .select('*')
+          .select('id, title, description, price, category, preview_url, average_rating, review_count, download_count, is_verified, is_demo, created_at')
           .eq('status', 'active')
           .order('average_rating', { ascending: false })
           .limit(limit)
@@ -301,7 +301,7 @@ export const usePersonalizedProducts = (limit = 20, offset = 0) => {
         console.error('[Products] Personalized fetch error:', error)
         const { data: fallback } = await supabase
           .from('digital_products')
-          .select('*')
+          .select('id, title, description, price, category, preview_url, average_rating, review_count, download_count, is_verified, is_demo, created_at')
           .eq('status', 'active')
           .order('average_rating', { ascending: false })
           .limit(limit)
@@ -350,7 +350,7 @@ export const usePersonalizedJobs = (limit = 20, offset = 0) => {
       if (!user) {
         const { data: basic } = await supabase
           .from('jobs')
-          .select('*')
+          .select('id, title, description, budget_min, budget_max, location, job_type, required_skills, status, created_at, user_id')
           .eq('status', 'open')
           .order('created_at', { ascending: false })
           .limit(limit)
@@ -424,7 +424,7 @@ export const usePersonalizedFundraisings = (limit = 20, offset = 0) => {
       if (!user) {
         const { data: basic } = await supabase
           .from('fundraisings')
-          .select('*')
+          .select('id, title, description, goal_amount, raised_amount, category, location, featured_image_url, deadline, backer_count, is_verified, user_id, created_at')
           .eq('status', 'approved')
           .order('created_at', { ascending: false })
           .limit(limit)
@@ -445,7 +445,7 @@ export const usePersonalizedFundraisings = (limit = 20, offset = 0) => {
         console.error('[Fundraising] Personalized fetch error:', error)
         const { data: fallback } = await supabase
           .from('fundraisings')
-          .select('*')
+          .select('id, title, description, goal_amount, raised_amount, category, location, featured_image_url, deadline, backer_count, is_verified, user_id, created_at')
           .eq('status', 'approved')
           .order('created_at', { ascending: false })
           .limit(limit)
