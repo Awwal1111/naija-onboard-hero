@@ -143,12 +143,30 @@ const Onboarding = () => {
     setFormData(prev => ({ ...prev, goal }))
     
     if (goal === 'exploring') {
-      // Just exploring - mark as completed, let them browse
+      // Just exploring - still save their basic info
+      setLoading(true)
+      try {
+        await updateProfile({
+          full_name: formData.full_name.trim(),
+          profession: formData.profession.trim() || null,
+          country_code: formData.country,
+          state_name: isNigeria ? formData.state : null,
+          lga_name: isNigeria ? formData.lga : null,
+          area: !isNigeria ? formData.city : null,
+          account_type: formData.account_type,
+          onboarding_completed: true,
+          user_mode: 'both'
+        } as any)
+      } catch (error) {
+        // Non-blocking - still navigate
+      } finally {
+        setLoading(false)
+      }
       toast({
         title: 'Welcome! 👋',
         description: 'Feel free to explore. You can update your profile anytime.'
       })
-      navigate('/feed')
+      navigate('/main-feed')
       return
     }
 
@@ -164,7 +182,8 @@ const Onboarding = () => {
           lga_name: isNigeria ? formData.lga : null,
           area: !isNigeria ? formData.city : null,
           account_type: 'client',
-          onboarding_completed: true
+          onboarding_completed: true,
+          user_mode: 'client'
         } as any)
 
         toast({
@@ -192,7 +211,8 @@ const Onboarding = () => {
         lga_name: isNigeria ? formData.lga : null,
         area: !isNigeria ? formData.city : null,
         account_type: 'freelancer',
-        onboarding_completed: true
+        onboarding_completed: true,
+        user_mode: 'freelancer'
       } as any)
 
       toast({
@@ -200,7 +220,7 @@ const Onboarding = () => {
         description: "You're all set. Start finding opportunities!"
       })
 
-      navigate('/feed')
+      navigate('/main-feed')
     } catch (error) {
       toast({ title: 'Error saving profile', variant: 'destructive' })
     } finally {
@@ -215,7 +235,7 @@ const Onboarding = () => {
   }
 
   const handleSkip = () => {
-    navigate('/feed')
+    navigate('/main-feed')
   }
 
   const steps = [
@@ -488,10 +508,10 @@ const Onboarding = () => {
                     <Target className="h-8 w-8 text-primary" />
                   </div>
                   <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
-                    What brings you here?
+                    What's your main goal?
                   </h1>
                   <p className="text-muted-foreground max-w-md mx-auto">
-                    Select your primary goal
+                    This helps us personalize your dashboard
                   </p>
                 </div>
 
@@ -500,7 +520,11 @@ const Onboarding = () => {
                   <button
                     onClick={() => handleGoalSelect('freelancer')}
                     disabled={loading}
-                    className="w-full p-4 rounded-xl border-2 border-primary bg-primary/5 hover:bg-primary/10 transition-all text-left group"
+                    className={`w-full p-4 rounded-xl border-2 transition-all text-left group ${
+                      formData.account_type === 'freelancer' 
+                        ? 'border-primary bg-primary/5 hover:bg-primary/10' 
+                        : 'border-border hover:border-primary/50'
+                    }`}
                   >
                     <div className="flex items-start gap-3">
                       <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center shrink-0">
@@ -509,7 +533,7 @@ const Onboarding = () => {
                       <div className="flex-1">
                         <p className="font-semibold text-foreground flex items-center gap-2">
                           I'm a Freelancer
-                          <Badge variant="secondary" className="text-xs">Recommended</Badge>
+                          {formData.account_type === 'freelancer' && <Badge variant="secondary" className="text-xs">Recommended</Badge>}
                         </p>
                         <p className="text-sm text-muted-foreground mt-1">
                           Find clients, showcase skills, and earn money
@@ -523,7 +547,11 @@ const Onboarding = () => {
                   <button
                     onClick={() => handleGoalSelect('hire')}
                     disabled={loading}
-                    className="w-full p-4 rounded-xl border-2 border-border hover:border-primary/50 transition-all text-left group"
+                    className={`w-full p-4 rounded-xl border-2 transition-all text-left group ${
+                      formData.account_type === 'client' 
+                        ? 'border-primary bg-primary/5 hover:bg-primary/10' 
+                        : 'border-border hover:border-primary/50'
+                    }`}
                   >
                     <div className="flex items-start gap-3">
                       <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center shrink-0">
