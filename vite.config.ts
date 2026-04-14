@@ -7,13 +7,11 @@ import { VitePWA } from 'vite-plugin-pwa';
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   define: {
-    // Unique build ID per deploy — used by cacheHealer to detect stale caches
     'import.meta.env.VITE_BUILD_ID': JSON.stringify(Date.now().toString(36)),
   },
   server: {
     host: "::",
     port: 8080,
-    // Allow ngrok hosts for MiniPay testing (per docs)
     allowedHosts: [".ngrok.app", ".ngrok-free.dev", ".ngrok-free.app"],
   },
   build: {
@@ -38,9 +36,9 @@ export default defineConfig(({ mode }) => ({
       srcDir: 'src',
       filename: 'sw.ts',
       registerType: 'autoUpdate',
-      injectRegister: false, // We guard registration manually in main.tsx
+      injectRegister: false,
       devOptions: {
-        enabled: false, // Never register SW in dev/preview
+        enabled: false,
       },
       injectManifest: {
         maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
@@ -56,15 +54,33 @@ export default defineConfig(({ mode }) => ({
         theme_color: '#10b981',
         background_color: '#ffffff',
         display: 'standalone',
-        orientation: 'any', // Support all orientations for large screens / foldables
+        display_override: ['standalone', 'minimal-ui'],
+        orientation: 'any',
+        dir: 'ltr',
+        lang: 'en',
         scope: '/',
         start_url: '/main-feed',
         id: '/main-feed',
+        launch_handler: {
+          client_mode: 'focus-existing'
+        } as any,
+        share_target: {
+          action: '/main-feed',
+          method: 'GET',
+          params: { title: 'title', text: 'text', url: 'url' }
+        } as any,
         icons: [
           {
-            src: '/logo.png',
+            src: '/icon-192.png',
             sizes: '192x192',
-            type: 'image/png'
+            type: 'image/png',
+            purpose: 'any'
+          },
+          {
+            src: '/icon-384.png',
+            sizes: '384x384',
+            type: 'image/png',
+            purpose: 'any'
           },
           {
             src: '/icon-512.png',
@@ -82,11 +98,13 @@ export default defineConfig(({ mode }) => ({
         categories: ['social', 'business', 'productivity'],
         screenshots: [
           {
-            src: '/logo.png',
-            sizes: '540x720',
-            type: 'image/png'
+            src: '/icon-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            form_factor: 'narrow',
+            label: 'NaijaLancers - Nigeria\'s Freelance Platform'
           }
-        ]
+        ] as any
       }
     })
   ].filter(Boolean),
