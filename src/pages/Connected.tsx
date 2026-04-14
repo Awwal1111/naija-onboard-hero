@@ -23,19 +23,8 @@ export const Connected = () => {
   const [previewProfileId, setPreviewProfileId] = useState<string | null>(null)
   
   useEffect(() => {
+    // No global realtime — rely on manual refetch to save egress
     refetch()
-    
-    // Set up real-time subscription for connections
-    const channel = supabase
-      .channel('connections_realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'connections' }, () => {
-        refetch()
-      })
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
   }, [])
 
   const filteredConnections = connections.filter(connection => {

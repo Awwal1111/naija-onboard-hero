@@ -218,7 +218,7 @@ export const usePersonalizedCourses = (limit = 20, offset = 0) => {
         // Non-authenticated users get basic ordering
         const { data: basic } = await supabase
           .from('courses')
-          .select('*')
+          .select('id, title, description, price, course_category, thumbnail_url, average_rating, review_count, enrollment_count, duration_hours, level, is_demo, created_at')
           .eq('status', 'active')
           .order('average_rating', { ascending: false })
           .limit(limit)
@@ -236,7 +236,7 @@ export const usePersonalizedCourses = (limit = 20, offset = 0) => {
         console.error('[Courses] Personalized fetch error:', error)
         const { data: fallback } = await supabase
           .from('courses')
-          .select('*')
+          .select('id, title, description, price, course_category, thumbnail_url, average_rating, review_count, enrollment_count, duration_hours, level, is_demo, created_at')
           .eq('status', 'active')
           .order('created_at', { ascending: false })
           .limit(limit)
