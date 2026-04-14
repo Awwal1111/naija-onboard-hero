@@ -235,7 +235,7 @@ const Onboarding = () => {
   }
 
   const handleSkip = () => {
-    navigate('/feed')
+    navigate('/main-feed')
   }
 
   const steps = [
