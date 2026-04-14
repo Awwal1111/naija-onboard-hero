@@ -301,7 +301,7 @@ export const AdminAIDrawer = () => {
             message: `📋 *New Tasks Available!*\n\nHey ${expert.full_name}! There are new tasks waiting for completion. Open the app to start earning! 💰`,
             reply_markup: JSON.stringify({
               inline_keyboard: [[
-                { text: "🚀 View Tasks", url: "https://naija-onboard-hero.lovable.app/tasks" }
+                { text: "🚀 View Tasks", url: "https://naijalancers.name.ng/tasks" }
               ]]
             })
           }

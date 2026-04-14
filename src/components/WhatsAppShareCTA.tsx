@@ -7,7 +7,7 @@ export const WhatsAppShareCTA = () => {
     `✅ Find jobs & earn money\n` +
     `✅ Hire verified experts\n` +
     `✅ SafePay escrow protection\n\n` +
-    `Join free 👉 https://naija-onboard-hero.lovable.app/signup`
+    `Join free 👉 https://naijalancers.name.ng/signup`
   )
 
   const handleWhatsAppShare = () => {
@@ -16,9 +16,9 @@ export const WhatsAppShareCTA = () => {
 
   const handleTelegramShare = () => {
     const telegramMessage = encodeURIComponent(
-      `🚀 Join NaijaLancers - trusted freelance marketplace with secure payments!\n\nJoin free 👉 https://naija-onboard-hero.lovable.app/signup`
+      `🚀 Join NaijaLancers - trusted freelance marketplace with secure payments!\n\nJoin free 👉 https://naijalancers.name.ng/signup`
     )
-    window.open(`https://t.me/share/url?url=https://naija-onboard-hero.lovable.app/signup&text=${telegramMessage}`, '_blank')
+    window.open(`https://t.me/share/url?url=https://naijalancers.name.ng/signup&text=${telegramMessage}`, '_blank')
   }
 
   return (
