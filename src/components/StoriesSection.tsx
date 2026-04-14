@@ -539,15 +539,17 @@ const StoriesSection: React.FC<StoriesSectionProps> = ({
               </div>
 
               {/* Navigation Areas */}
-              <div className="absolute inset-0 flex z-[5]" style={{ pointerEvents: showViewers ? 'none' : 'auto' }}>
+              <div className="absolute inset-0 flex" style={{ pointerEvents: showViewers ? 'none' : 'auto', zIndex: 1 }}>
                 <button
                   onClick={previousStory}
-                  className="flex-1 h-full bg-transparent"
+                  className="flex-1 bg-transparent"
+                  style={{ touchAction: 'manipulation' }}
                   disabled={currentStoryIndex === 0}
                 />
                 <button
                   onClick={nextStory}
-                  className="flex-1 h-full bg-transparent"
+                  className="flex-1 bg-transparent"
+                  style={{ touchAction: 'manipulation' }}
                 />
               </div>
 
