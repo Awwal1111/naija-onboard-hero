@@ -143,12 +143,30 @@ const Onboarding = () => {
     setFormData(prev => ({ ...prev, goal }))
     
     if (goal === 'exploring') {
-      // Just exploring - mark as completed, let them browse
+      // Just exploring - still save their basic info
+      setLoading(true)
+      try {
+        await updateProfile({
+          full_name: formData.full_name.trim(),
+          profession: formData.profession.trim() || null,
+          country_code: formData.country,
+          state_name: isNigeria ? formData.state : null,
+          lga_name: isNigeria ? formData.lga : null,
+          area: !isNigeria ? formData.city : null,
+          account_type: formData.account_type,
+          onboarding_completed: true,
+          user_mode: 'both'
+        } as any)
+      } catch (error) {
+        // Non-blocking - still navigate
+      } finally {
+        setLoading(false)
+      }
       toast({
         title: 'Welcome! 👋',
         description: 'Feel free to explore. You can update your profile anytime.'
       })
-      navigate('/feed')
+      navigate('/main-feed')
       return
     }
 
