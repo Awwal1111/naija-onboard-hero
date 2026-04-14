@@ -431,6 +431,15 @@ const Index = () => {
                 <p className="text-sm text-muted-foreground mt-4">
                   Global freelance marketplace trusted by thousands worldwide.
                 </p>
+                <div className="flex items-center gap-2 mt-4">
+                  <a href="https://play.google.com/store/apps/details?id=co.median.android.mbbeeqr" target="_blank" rel="noopener noreferrer">
+                    <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" className="h-10" loading="lazy" />
+                  </a>
+                  <a href="https://m.apkpure.com/naijalancers-freelance-app/co.median.android.mbbeeqr" target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground hover:text-primary transition-colors flex items-center gap-1">
+                    <Download className="w-3 h-3" />
+                    APKPure
+                  </a>
+                </div>
               </div>
 
               <div>
