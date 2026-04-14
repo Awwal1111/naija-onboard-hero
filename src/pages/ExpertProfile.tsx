@@ -48,7 +48,7 @@ const ExpertProfile = () => {
 
   const fetchExpertData = async () => {
     try {
-      console.log('Fetching expert data for user ID:', userId)
+      
       
       // Fetch expert application data
       const { data: expertApp, error: appError } = await supabase
@@ -79,7 +79,7 @@ const ExpertProfile = () => {
         profiles: profile
       }
 
-      console.log('Expert data:', expertData)
+      
       setExpert(expertData)
     } catch (error) {
       console.error('Error fetching expert:', error)

@@ -249,7 +249,7 @@ const Profile = () => {
           url: profileUrl
         })
       } catch (error) {
-        console.log('Share cancelled')
+        // Share cancelled by user
       }
     } else {
       // Fallback - copy to clipboard
