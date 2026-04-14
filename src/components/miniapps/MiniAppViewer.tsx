@@ -351,11 +351,14 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
           sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
           onLoad={() => {
             setIsLoading(false)
+            console.log('[SDK] iframe loaded, sending staggered identify')
             // Staggered identify sends to handle different app loading speeds
             sendIdentify()
-            setTimeout(sendIdentify, 300)
-            setTimeout(sendIdentify, 1000)
-            setTimeout(sendIdentify, 3000)
+            setTimeout(sendIdentify, 200)
+            setTimeout(sendIdentify, 500)
+            setTimeout(sendIdentify, 1500)
+            setTimeout(sendIdentify, 4000)
+            setTimeout(sendIdentify, 8000) // Late-loading apps
           }}
         />
 
