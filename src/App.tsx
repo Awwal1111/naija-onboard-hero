@@ -181,6 +181,12 @@ const SmartAIAssistant = lazy(lazyWithRetry(() => import("@/components/SmartAIAs
 const isMiniPayEnv = detectMiniPaySync().isMiniPay;
 
 
+const OneSignalInitializer = () => {
+  const { useOneSignalPush } = require('@/hooks/useOneSignalPush');
+  useOneSignalPush();
+  return null;
+};
+
 const AppStateManager = () => {
   useAppState();
   return null;
