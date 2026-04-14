@@ -120,7 +120,7 @@ const Profile = () => {
         try {
           const { data, error } = await supabase
             .from('profiles')
-            .select('*')
+            .select('user_id, full_name, username, email, bio, profile_picture_url, cover_image_url, state, area, country_code, phone, skills_tags, experience_level, account_type, verification_level, is_expert, is_verified, balance, balance_non_withdrawable, connections_count, user_mode, created_at')
             .eq('user_id', userId)
             .single()
           
@@ -180,7 +180,7 @@ const Profile = () => {
             if (isOwnProfile) {
               const { data } = await supabase
                 .from('profiles')
-                .select('*')
+                .select('user_id, full_name, username, profile_picture_url, connections_count')
                 .eq('user_id', user.id)
                 .single()
               
@@ -207,7 +207,7 @@ const Profile = () => {
       // Refetch the viewed user's profile to update connection count
       const { data } = await supabase
         .from('profiles')
-        .select('*')
+        .select('user_id, full_name, username, email, bio, profile_picture_url, cover_image_url, state, area, country_code, phone, skills_tags, experience_level, account_type, verification_level, is_expert, is_verified, balance, balance_non_withdrawable, connections_count, user_mode, created_at')
         .eq('user_id', userId)
         .single()
       if (data) {
