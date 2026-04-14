@@ -44,10 +44,11 @@ export const PlatformRatingDialog: React.FC<PlatformRatingDialogProps> = ({
 
       if (ratingError) throw ratingError
 
-      // Update profile to mark as rated
+      // Update profile to mark as rated + localStorage backup
+      localStorage.setItem('platform_rated', 'true')
       await supabase
         .from('profiles')
-        .update({ has_rated_platform: true })
+        .update({ has_rated_platform: true } as any)
         .eq('user_id', user.id)
 
       toast({
@@ -78,11 +79,13 @@ export const PlatformRatingDialog: React.FC<PlatformRatingDialogProps> = ({
   }
 
   const handleSkip = async () => {
-    // Don't mark as rated - just store skip timestamp so we can show again on next sign-in
+    // Store skip timestamp in both DB and localStorage
+    const now = new Date().toISOString()
+    localStorage.setItem('rating_skipped_at', now)
     if (user) {
       await supabase
         .from('profiles')
-        .update({ rating_skipped_at: new Date().toISOString() } as any)
+        .update({ rating_skipped_at: now } as any)
         .eq('user_id', user.id)
     }
     onOpenChange(false)
