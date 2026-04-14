@@ -36,11 +36,13 @@ export const UserModePrompt: React.FC<UserModePromptProps> = ({
       // Show prompt if:
       // 1. User exists and has completed basic profile
       // 2. But hasn't set user_mode in database (it's null or defaulted)
-      const hasNoUserMode = !p.user_mode || p.user_mode === 'both'
+      const hasNoUserMode = !p.user_mode
+      const isRecentOnboarding = p.onboarding_completed && p.updated_at && 
+        (Date.now() - new Date(p.updated_at).getTime()) < 60000 // Skip if onboarded < 1 min ago
       const hasCompletedBasicProfile = p.full_name && p.onboarding_completed !== false
       const hasNotDismissed = !localStorage.getItem('user_mode_prompt_dismissed')
       
-      if (hasNoUserMode && hasCompletedBasicProfile && hasNotDismissed) {
+      if (hasNoUserMode && hasCompletedBasicProfile && hasNotDismissed && !isRecentOnboarding) {
         // Small delay to not interrupt initial load
         const timer = setTimeout(() => setInternalOpen(true), 1500)
         return () => clearTimeout(timer)
