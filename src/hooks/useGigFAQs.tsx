@@ -27,7 +27,7 @@ export const useGigFAQs = (gigId?: string) => {
     try {
       const { data, error } = await supabase
         .from('gig_faqs')
-        .select('*')
+        .select('id, gig_id, question, answer, display_order, created_at')
         .eq('gig_id', gigId)
         .order('display_order', { ascending: true });
 
