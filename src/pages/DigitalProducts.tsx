@@ -40,8 +40,8 @@ export default function DigitalProducts() {
 
   const fetchMyData = async () => {
     const [createdRes, purchasedRes, salesRes] = await Promise.all([
-      supabase.from('digital_products').select('id, title, description, price, category, preview_url, average_rating, download_count, status, created_at').eq('user_id', user?.id).order('created_at', { ascending: false }),
-      supabase.from('digital_product_purchases').select('id, amount, created_at, digital_products(id, title, preview_url, price)').eq('buyer_id', user?.id),
+      supabase.from('digital_products').select('*').eq('user_id', user?.id).order('created_at', { ascending: false }),
+      supabase.from('digital_product_purchases').select('*, digital_products(*)').eq('buyer_id', user?.id),
       supabase.from('digital_product_purchases').select('amount, digital_products!inner(user_id)').eq('digital_products.user_id', user?.id)
     ]);
     setMyProducts(createdRes.data || []);

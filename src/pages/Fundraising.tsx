@@ -55,7 +55,7 @@ export default function Fundraising() {
       if (!user) return [];
       const { data } = await supabase
         .from('fundraisings')
-        .select('id, title, description, goal_amount, raised_amount, category, featured_image_url, deadline, backer_count, status, created_at')
+        .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
       return data || [];

@@ -56,10 +56,10 @@ const Notifications = () => {
     setLoading(true)
     const { data, error } = await supabase
       .from('notifications')
-      .select('id, user_id, type, title, message, read_at, created_at')
+      .select('*')
       .eq('user_id', user?.id)
       .order('created_at', { ascending: false })
-      .limit(50)
+      .limit(100)
 
     if (!error && data) {
       setNotifications(data)

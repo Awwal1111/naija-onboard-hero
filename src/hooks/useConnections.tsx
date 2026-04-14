@@ -50,7 +50,7 @@ export const useConnections = () => {
       setLoading(true)
       const { data, error } = await supabase
         .from('connection_requests')
-        .select('id, requester_id, requested_id, status, created_at')
+        .select('*')
         .or(`requester_id.eq.${user.id},requested_id.eq.${user.id}`)
         .eq('status', 'pending')
         .order('created_at', { ascending: false })
@@ -100,7 +100,7 @@ export const useConnections = () => {
     try {
       const { data, error } = await supabase
         .from('connections')
-        .select('id, user1_id, user2_id, status, created_at')
+        .select('*')
         .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
         .order('created_at', { ascending: false })
 
