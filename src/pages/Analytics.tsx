@@ -48,13 +48,13 @@ const Analytics = () => {
   const fetchAnalytics = async () => {
     try {
       const [profile, posts, transactions, stories, storyViews, jobs, jobApplications] = await Promise.all([
-        supabase.from('profiles').select('*').eq('user_id', user?.id).single(),
-        supabase.from('posts').select('*').eq('user_id', user?.id),
-        supabase.from('wallet_transactions').select('*').eq('user_id', user?.id).order('created_at', { ascending: false }),
-        supabase.from('stories').select('*').eq('user_id', user?.id),
-        supabase.from('story_views').select('*, stories!inner(user_id)').eq('stories.user_id', user?.id),
-        supabase.from('job_posts').select('*').eq('user_id', user?.id),
-        supabase.from('job_applications').select('*').eq('applicant_id', user?.id)
+        supabase.from('profiles').select('full_name, profile_picture_url, wallet_balance, created_at').eq('user_id', user?.id).single(),
+        supabase.from('posts').select('id, views_count, likes_count, comments_count, created_at').eq('user_id', user?.id),
+        supabase.from('wallet_transactions').select('amount, kind, created_at').eq('user_id', user?.id).order('created_at', { ascending: false }).limit(200),
+        supabase.from('stories').select('id', { count: 'exact', head: true }).eq('user_id', user?.id),
+        supabase.from('story_views').select('id', { count: 'exact', head: true }),
+        supabase.from('job_posts').select('id', { count: 'exact', head: true }).eq('user_id', user?.id),
+        supabase.from('job_applications').select('id', { count: 'exact', head: true }).eq('applicant_id', user?.id)
       ])
       
       const postStats = posts.data?.reduce((acc, p) => ({
