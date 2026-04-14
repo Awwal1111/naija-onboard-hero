@@ -1,6 +1,6 @@
-import { Bell, BellOff } from "lucide-react"
+import { Bell, BellOff, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { useNotifications } from "@/hooks/useNotifications"
+import { useOneSignalPush } from "@/hooks/useOneSignalPush"
 import {
   Card,
   CardContent,
@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/card"
 
 export const PushNotificationToggle = () => {
-  const { pushEnabled, requestPushPermission, disablePushNotifications } = useNotifications()
+  const { pushEnabled, loading, requestPushPermission, disablePushNotifications } = useOneSignalPush()
 
   const handleToggle = async () => {
     if (pushEnabled) {
@@ -29,8 +29,8 @@ export const PushNotificationToggle = () => {
         </CardTitle>
         <CardDescription>
           {pushEnabled
-            ? "You're receiving push notifications"
-            : "Enable push notifications to stay updated"}
+            ? "You're receiving push notifications on this device"
+            : "Enable push notifications to stay updated even when the app is closed"}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -38,8 +38,14 @@ export const PushNotificationToggle = () => {
           onClick={handleToggle}
           variant={pushEnabled ? "outline" : "default"}
           className="w-full"
+          disabled={loading}
         >
-          {pushEnabled ? (
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Setting up...
+            </>
+          ) : pushEnabled ? (
             <>
               <BellOff className="mr-2 h-4 w-4" />
               Disable Push Notifications
