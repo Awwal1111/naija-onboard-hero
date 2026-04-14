@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Camera, Wallet, MoreVertical, Edit, Share, Settings, LogOut, Plus, ArrowLeft, Users, Phone, Mail, Award, Star, MapPin, Briefcase, UserPlus, Crown, Sparkles, MessageCircle } from 'lucide-react'
 import { useNavigate, useParams, useSearchParams, useLocation } from 'react-router-dom'
 import { BottomNavBar } from '@/components/BottomNavBar'
@@ -175,7 +175,6 @@ const Profile = () => {
             table: 'connections'
           },
           async (payload) => {
-            console.log('Connection change detected:', payload)
             // Refetch the current profile to get updated count
             if (isOwnProfile) {
               const { data } = await supabase
@@ -185,8 +184,7 @@ const Profile = () => {
                 .single()
               
               if (data) {
-                // Update the profile via the updateProfile method
-                window.location.reload()
+                setViewedUserProfile(prev => prev ? { ...prev, ...data } : data)
               }
             }
           }
