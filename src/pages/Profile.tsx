@@ -184,7 +184,7 @@ const Profile = () => {
                 .single()
               
               if (data) {
-                setViewedUserProfile(prev => prev ? { ...prev, ...data } : data)
+                setViewedUserProfile(prev => prev ? Object.assign({}, prev, data) : data as any)
               }
             }
           }
