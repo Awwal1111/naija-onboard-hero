@@ -4,11 +4,28 @@
   "description": "Nigeria's trusted freelance marketplace connecting verified experts with clients. Hire skilled freelancers or earn online with secure payments.",
   "start_url": "/main-feed",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "background_color": "#ffffff",
   "theme_color": "#10b981",
   "orientation": "any",
+  "dir": "ltr",
+  "lang": "en",
   "id": "/main-feed",
+  "scope": "/",
+  "prefer_related_applications": false,
   "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any"
+    },
     {
       "src": "/icon-512.png",
       "sizes": "512x512",
@@ -23,32 +40,52 @@
     },
     {
       "src": "/logo.png",
-      "sizes": "192x192",
-      "type": "image/png"
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
     }
   ],
   "categories": ["social", "business", "productivity"],
-  "lang": "en",
-  "scope": "/",
-  "prefer_related_applications": false,
+  "iarc_rating_id": "",
+  "launch_handler": {
+    "client_mode": "focus-existing"
+  },
+  "share_target": {
+    "action": "/main-feed",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
   "shortcuts": [
     {
       "name": "Find Experts",
       "short_name": "Experts",
       "url": "/experts",
-      "icons": [{ "src": "/logo.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
     },
     {
       "name": "Post a Job",
       "short_name": "Post Job",
       "url": "/post-job",
-      "icons": [{ "src": "/logo.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
     },
     {
       "name": "Messages",
       "short_name": "Chat",
       "url": "/messaging",
-      "icons": [{ "src": "/logo.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "NaijaLancers - Nigeria's Freelance Platform"
     }
   ]
 }
