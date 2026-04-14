@@ -182,7 +182,8 @@ const Onboarding = () => {
           lga_name: isNigeria ? formData.lga : null,
           area: !isNigeria ? formData.city : null,
           account_type: 'client',
-          onboarding_completed: true
+          onboarding_completed: true,
+          user_mode: 'client'
         } as any)
 
         toast({
@@ -210,7 +211,8 @@ const Onboarding = () => {
         lga_name: isNigeria ? formData.lga : null,
         area: !isNigeria ? formData.city : null,
         account_type: 'freelancer',
-        onboarding_completed: true
+        onboarding_completed: true,
+        user_mode: 'freelancer'
       } as any)
 
       toast({
@@ -218,7 +220,7 @@ const Onboarding = () => {
         description: "You're all set. Start finding opportunities!"
       })
 
-      navigate('/feed')
+      navigate('/main-feed')
     } catch (error) {
       toast({ title: 'Error saving profile', variant: 'destructive' })
     } finally {
