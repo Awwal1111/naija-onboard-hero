@@ -13,6 +13,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import AuthRedirectHandler from "@/components/AuthRedirectHandler";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { detectMiniPaySync } from "@/lib/minipay";
+import { useOneSignalPush } from "@/hooks/useOneSignalPush";
 
 import { lazyWithRetry } from "@/utils/chunkErrorHandler";
 import { RefreshCw } from "lucide-react";
@@ -182,7 +183,6 @@ const isMiniPayEnv = detectMiniPaySync().isMiniPay;
 
 
 const OneSignalInitializer = () => {
-  const { useOneSignalPush } = require('@/hooks/useOneSignalPush');
   useOneSignalPush();
   return null;
 };
