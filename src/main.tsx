@@ -18,16 +18,27 @@ const isMiniPayEnv = detectMiniPaySync().isMiniPay;
 // App loaded successfully - clear any chunk reload tracking
 clearReloadTracking();
 
-// Auto-heal stale caches from previous deploys (non-blocking)
-if (!isMiniPayEnv) {
+// --- PWA Service Worker Guard ---
+// Only register SW in production on the real domain, never in iframes or preview hosts
+const isInIframe = (() => {
+  try { return window.self !== window.top; } catch { return true; }
+})();
+const isPreviewHost =
+  window.location.hostname.includes('id-preview--') ||
+  window.location.hostname.includes('lovableproject.com') ||
+  window.location.hostname.includes('localhost');
+
+if (isPreviewHost || isInIframe) {
+  // Unregister any existing service workers in preview/iframe contexts
+  navigator.serviceWorker?.getRegistrations().then((registrations) => {
+    registrations.forEach((r) => r.unregister());
+  });
+} else if (!isMiniPayEnv) {
+  // Only heal cache in production (not preview/iframe)
   checkAndHealCache();
 }
 
-// Service worker is handled automatically by VitePWA plugin (registerType: 'autoUpdate')
-// Do NOT manually register a service worker here - it conflicts with VitePWA's sw.js
-
 // Prevent mobile browser from refreshing on orientation change
-// DISABLED in MiniPay - can cause flickering
 if (!isMiniPayEnv) {
   window.addEventListener('orientationchange', (e) => {
     e.preventDefault();
@@ -35,16 +46,13 @@ if (!isMiniPayEnv) {
 }
 
 // Handle page lifecycle to prevent unnecessary reloads
-// DISABLED in MiniPay - visibility changes can cause re-renders
 if (!isMiniPayEnv) {
   let isPageHidden = false;
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
       isPageHidden = true;
-      console.log('[Lifecycle] Page hidden - state preserved');
     } else if (isPageHidden) {
       isPageHidden = false;
-      console.log('[Lifecycle] Page visible - state restored');
     }
   });
 }

@@ -38,10 +38,16 @@ export default defineConfig(({ mode }) => ({
       srcDir: 'src',
       filename: 'sw.ts',
       registerType: 'autoUpdate',
-      injectRegister: 'auto',
+      injectRegister: false, // We guard registration manually in main.tsx
+      devOptions: {
+        enabled: false, // Never register SW in dev/preview
+      },
       injectManifest: {
         maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
         globPatterns: ['**/*.{js,css,ico,png,svg,jpg,jpeg,gif,woff,woff2}'],
+      },
+      workbox: {
+        navigateFallbackDenylist: [/^\/~oauth/],
       },
       manifest: {
         name: 'NaijaLancers - Connect, Earn & Grow',
@@ -50,9 +56,10 @@ export default defineConfig(({ mode }) => ({
         theme_color: '#10b981',
         background_color: '#ffffff',
         display: 'standalone',
-        orientation: 'portrait',
+        orientation: 'any', // Support all orientations for large screens / foldables
         scope: '/',
         start_url: '/main-feed',
+        id: '/main-feed',
         icons: [
           {
             src: '/logo.png',
