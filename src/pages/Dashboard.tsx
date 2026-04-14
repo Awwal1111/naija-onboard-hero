@@ -105,7 +105,7 @@ const Dashboard = () => {
         classParticipantsRes,
         ratingsRes
       ] = await Promise.all([
-        supabase.from('posts').select('id, views_count, likes_count, comments_count').eq('user_id', user?.id),
+        supabase.from('posts').select('id, views_count, likes_count, comments_count, created_at').eq('user_id', user?.id),
         supabase.from('stories').select('id', { count: 'exact', head: true }).eq('user_id', user?.id),
         supabase.from('story_views').select('id', { count: 'exact', head: true }).eq('user_id', user?.id),
         supabase.from('wallet_transactions').select('amount, kind, created_at').eq('user_id', user?.id).order('created_at', { ascending: false }).limit(200),
