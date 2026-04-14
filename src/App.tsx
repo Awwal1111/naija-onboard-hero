@@ -193,6 +193,7 @@ const App = () => (
       <Sonner />
       <GlobalErrorHandler />
       <BrowserRouter>
+        <ScrollToTop />
         <AuthProvider>
           <WebRTCProvider>
             <MiniPayAuthWrapper>
