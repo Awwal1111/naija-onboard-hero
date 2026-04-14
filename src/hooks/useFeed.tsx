@@ -126,7 +126,7 @@ export const useFeed = () => {
       const now = new Date().toISOString()
       const { data: storiesData, error } = await supabase
         .from('stories')
-        .select('id, user_id, media_url, media_type, caption, expires_at, views_count, created_at')
+        .select('id, user_id, media_url, media_type, expires_at, views_count, created_at')
         .gt('expires_at', now)
         .order('created_at', { ascending: false })
         .limit(30)
