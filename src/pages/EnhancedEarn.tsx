@@ -23,6 +23,12 @@ const EnhancedEarn = () => {
   const { balance } = useWallet()
   const navigate = useNavigate()
   const location = useLocation()
+  const queryClient = useQueryClient()
+  
+  const refreshWallet = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['wallet'] })
+    queryClient.invalidateQueries({ queryKey: ['transactions'] })
+  }, [queryClient])
   const [showWithdrawDialog, setShowWithdrawDialog] = useState(false)
   const [showAirtimeDialog, setShowAirtimeDialog] = useState(false)
   const [showDataDialog, setShowDataDialog] = useState(false)
