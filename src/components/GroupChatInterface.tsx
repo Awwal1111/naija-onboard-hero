@@ -99,7 +99,7 @@ const GroupChatInterface: React.FC = () => {
     try {
       const { data, error } = await supabase
         .from('groups')
-        .select('*')
+        .select('id, name, description, category, group_lead_id, is_active, member_count, avatar_url, created_at')
         .eq('id', groupId)
         .single()
 
