@@ -106,7 +106,7 @@ export const Surveys = () => {
       return
     }
 
-    console.log('Opening survey:', offer)
+    
 
     try {
       // Check if user already completed this survey
@@ -142,7 +142,7 @@ export const Surveys = () => {
         console.error('Error creating survey record:', insertError)
       }
 
-      console.log('Opening BitLabs survey URL:', offer.url)
+      
       
       // Open BitLabs survey in new tab
       const surveyWindow = window.open(offer.url, '_blank', 'noopener,noreferrer')
