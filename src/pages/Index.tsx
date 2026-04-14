@@ -144,6 +144,21 @@ const Index = () => {
                     </Link>
                   </BrandButton>
                 </div>
+
+                {/* Google Play Badge */}
+                <a
+                  href="https://play.google.com/store/apps/details?id=co.median.android.mbbeeqr"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block pt-2"
+                >
+                  <img
+                    src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png"
+                    alt="Get it on Google Play"
+                    className="h-12 sm:h-14"
+                    loading="lazy"
+                  />
+                </a>
               </div>
 
               <div className="relative hidden lg:block">
