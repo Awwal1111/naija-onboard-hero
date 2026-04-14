@@ -95,7 +95,7 @@ export const useProfile = () => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, user_id, full_name, profession, bio, profile_picture_url, phone_number, state_name, lga_name, area, is_expert, expert_verified_at, wallet_balance, balance_withdrawable, balance_non_withdrawable, connections_count, average_rating, rating_count, referral_code, email_confirmed, email_verified, phone_verified, face_verified, created_at, updated_at, is_boosted, boost_expires_at, premium_expires_at, transaction_pin, avg_response_time_seconds, account_type, onboarding_completed, user_mode, open_to_work, is_premium, verification_level')
+        .select('id, user_id, full_name, profession, bio, profile_picture_url, phone_number, state_name, lga_name, area, is_expert, expert_verified_at, wallet_balance, balance_withdrawable, balance_non_withdrawable, connections_count, average_rating, rating_count, referral_code, email_confirmed, email_verified, phone_verified, face_verified, created_at, updated_at, is_boosted, boost_expires_at, premium_expires_at, avg_response_time_seconds, account_type, onboarding_completed, user_mode, open_to_work, is_premium, verification_level')
         .eq('user_id', user.id)
         .single()
 
