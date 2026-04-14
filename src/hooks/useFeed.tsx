@@ -126,10 +126,10 @@ export const useFeed = () => {
       const now = new Date().toISOString()
       const { data: storiesData, error } = await supabase
         .from('stories')
-        .select('*')
+        .select('id, user_id, media_url, media_type, content, created_at, expires_at, views_count, background_color, privacy_setting')
         .gt('expires_at', now)
         .order('created_at', { ascending: false })
-        .limit(50)
+        .limit(30)
 
       if (error) {
         console.error('Error fetching stories:', error)
