@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Zap, FileText, User, Users, ArrowUpRight, Phone, Wifi, TrendingUp, Tv, Wallet, Coins, Clock } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useWallet } from '@/hooks/useWallet'
+import { useQueryClient } from '@tanstack/react-query'
 import NaijaLanceWalletCard from '@/components/NaijaLanceWalletCard'
 import { DailySigninCard } from '@/components/DailySigninCard'
 import { TransactionHistory } from '@/components/TransactionHistory'
@@ -22,6 +23,12 @@ const EnhancedEarn = () => {
   const { balance } = useWallet()
   const navigate = useNavigate()
   const location = useLocation()
+  const queryClient = useQueryClient()
+  
+  const refreshWallet = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['wallet'] })
+    queryClient.invalidateQueries({ queryKey: ['transactions'] })
+  }, [queryClient])
   const [showWithdrawDialog, setShowWithdrawDialog] = useState(false)
   const [showAirtimeDialog, setShowAirtimeDialog] = useState(false)
   const [showDataDialog, setShowDataDialog] = useState(false)
@@ -254,35 +261,35 @@ const EnhancedEarn = () => {
         open={showAirtimeDialog}
         onOpenChange={setShowAirtimeDialog}
         currentBalance={balance.withdrawable}
-        onSuccess={() => window.location.reload()}
+        onSuccess={refreshWallet}
       />
 
       <VTUDataDialog
         open={showDataDialog}
         onOpenChange={setShowDataDialog}
         currentBalance={balance.withdrawable}
-        onSuccess={() => window.location.reload()}
+        onSuccess={refreshWallet}
       />
 
       <BettingFundDialog
         open={showBettingDialog}
         onOpenChange={setShowBettingDialog}
         currentBalance={balance.withdrawable}
-        onSuccess={() => window.location.reload()}
+        onSuccess={refreshWallet}
       />
 
       <VTUElectricityDialog
         open={showElectricityDialog}
         onOpenChange={setShowElectricityDialog}
         currentBalance={balance.withdrawable}
-        onSuccess={() => window.location.reload()}
+        onSuccess={refreshWallet}
       />
 
       <VTUCableTVDialog
         open={showCableTVDialog}
         onOpenChange={setShowCableTVDialog}
         currentBalance={balance.withdrawable}
-        onSuccess={() => window.location.reload()}
+        onSuccess={refreshWallet}
       />
 
       <BottomNavBar />

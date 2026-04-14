@@ -24,7 +24,7 @@ const PageLoader = () => {
   const [timedOut, setTimedOut] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => setTimedOut(true), 12_000);
+    const timer = setTimeout(() => setTimedOut(true), 6_000);
     return () => clearTimeout(timer);
   }, []);
 

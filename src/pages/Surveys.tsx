@@ -49,7 +49,7 @@ export const Surveys = () => {
     
     try {
       setLoading(true)
-      console.log('Fetching BitLabs surveys for user:', user.id)
+      
       toast.loading('Loading available surveys...')
       
       // Call BitLabs offers API through our edge function
@@ -57,7 +57,7 @@ export const Surveys = () => {
         body: { user_id: user.id }
       })
 
-      console.log('BitLabs edge function response:', { data, error })
+      
 
       if (error) {
         console.error('Edge function error:', error)
@@ -65,7 +65,7 @@ export const Surveys = () => {
       }
 
       if (data?.offers) {
-        console.log(`Received ${data.offers.length} surveys:`, data.offers)
+        
         setOffers(data.offers)
         setProviderMessage(data.error || data.message || '')
         toast.dismiss()
@@ -106,7 +106,7 @@ export const Surveys = () => {
       return
     }
 
-    console.log('Opening survey:', offer)
+    
 
     try {
       // Check if user already completed this survey
@@ -142,7 +142,7 @@ export const Surveys = () => {
         console.error('Error creating survey record:', insertError)
       }
 
-      console.log('Opening BitLabs survey URL:', offer.url)
+      
       
       // Open BitLabs survey in new tab
       const surveyWindow = window.open(offer.url, '_blank', 'noopener,noreferrer')

@@ -273,7 +273,7 @@ export default function DeveloperPortal() {
     try {
       setLoading(true);
       
-      console.log('Upgrading to developer account...');
+      
       const { data: keyData, error: keyError } = await supabase.rpc('generate_api_key');
       
       if (keyError) {
@@ -285,7 +285,7 @@ export default function DeveloperPortal() {
         throw new Error('API key generation returned empty result');
       }
       
-      console.log('API key generated:', keyData.substring(0, 10) + '...');
+      
       
       const [{ error: updateError }, { error: secretError }] = await Promise.all([
         supabase.from('profiles').update({ account_type: 'developer' } as any).eq('user_id', user?.id),
@@ -318,7 +318,7 @@ export default function DeveloperPortal() {
     try {
       setRegenerating(true);
       
-      console.log('Regenerating API key...');
+      
       const { data: keyData, error: keyError } = await supabase.rpc('generate_api_key');
       
       if (keyError) {
@@ -330,7 +330,7 @@ export default function DeveloperPortal() {
         throw new Error('API key generation returned empty result');
       }
       
-      console.log('New API key generated:', keyData.substring(0, 10) + '...');
+      
       
       const { error: updateError } = await supabase
         .from('user_secrets')
@@ -372,8 +372,7 @@ export default function DeveloperPortal() {
       // Use the correct Supabase URL
       const url = `https://jxybqmquymxkvxxpiuhv.supabase.co/functions/v1/developer-api${selectedEndpoint.path}`;
       
-      console.log('Testing endpoint:', url);
-      console.log('Using API key:', apiKey.substring(0, 10) + '...');
+      
       
       const response = await fetch(url, {
         method: selectedEndpoint.method,
@@ -385,7 +384,7 @@ export default function DeveloperPortal() {
       });
       
       const data = await response.json();
-      console.log('Test result:', data);
+      
       setTestResult(JSON.stringify(data, null, 2));
       
       if (response.ok) {

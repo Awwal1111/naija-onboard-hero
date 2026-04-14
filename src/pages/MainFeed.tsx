@@ -142,7 +142,6 @@ const MainFeed = () => {
   const handleAskAI = (question: string) => {
     // This would trigger the main AI assistant with the specific question
     setAiAssistantOpen(true)
-    console.log('AI Help requested:', question)
   }
 
 

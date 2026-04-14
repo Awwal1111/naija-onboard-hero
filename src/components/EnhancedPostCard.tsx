@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { MessageCircle, Share, Eye, MoreVertical, Briefcase, Clock, DollarSign, Users, Award, Calendar, Vote, Hash, MapPin, ExternalLink, ChevronDown, ChevronUp, Bookmark, Flag, Link, Edit, Trash2 } from 'lucide-react'
 import { EnhancedPost } from '@/hooks/useEnhancedFeed'
 import { Button } from '@/components/ui/button'
@@ -23,6 +23,7 @@ interface EnhancedPostCardProps {
   onComment: (postId: string, content: string) => Promise<{ success?: boolean; error?: string }>
   onJobApply?: (jobPost: EnhancedPost) => void
   onProfileClick?: (userId: string) => void
+  onDelete?: (postId: string) => void
   currentUserId?: string
 }
 
@@ -33,6 +34,7 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
   onComment, 
   onJobApply,
   onProfileClick,
+  onDelete,
   currentUserId
 }) => {
   const [showComments, setShowComments] = useState(false)
@@ -143,8 +145,8 @@ const EnhancedPostCard: React.FC<EnhancedPostCardProps> = ({
         description: "The post has been deleted successfully",
       })
       
-      // Reload the page to reflect changes
-      window.location.reload()
+      // Remove the post from the feed without full page reload
+      onDelete?.(post.id)
     } catch (error) {
       toast({
         title: "Error",

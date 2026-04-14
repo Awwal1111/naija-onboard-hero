@@ -134,7 +134,6 @@ const SignUp = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
-    console.log('Input changed:', { name, value, currentFormData: formData })
     setFormData(prev => ({
       ...prev,
       [name]: value
