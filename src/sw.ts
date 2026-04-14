@@ -12,22 +12,9 @@ declare const self: ServiceWorkerGlobalScope
 cleanupOutdatedCaches()
 precacheAndRoute(self.__WB_MANIFEST)
 
-// Activate immediately and claim all clients
+// Activate immediately
 self.skipWaiting()
 clientsClaim()
-
-// Force clear all runtime caches on activation to prevent stale content
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames
-          .filter((name) => name !== 'workbox-precache-v2' && !name.startsWith('workbox-precache'))
-          .map((name) => caches.delete(name))
-      )
-    })
-  )
-})
 
 // Cache Supabase storage images with CacheFirst — avoids CDN hits entirely after first load
 registerRoute(

@@ -60,7 +60,7 @@ export const useOptimizedFeed = () => {
       // First get stories
       const { data: storiesData, error } = await supabase
         .from('stories')
-        .select('id, user_id, media_url, media_type, expires_at, views_count, created_at')
+        .select('*')
         .gt('expires_at', new Date().toISOString())
         .order('created_at', { ascending: false })
         .limit(20)
@@ -118,7 +118,7 @@ export const useOptimizedFeed = () => {
       // First get posts
       const { data: postsData, error } = await supabase
         .from('posts')
-        .select('id, user_id, content, title, content_type, media_urls, likes_count, comments_count, shares_count, views_count, status, metadata, created_at, updated_at')
+        .select('*')
         .eq('status', 'active')
         .order('created_at', { ascending: false })
         .range(from, to)

@@ -48,10 +48,9 @@ export const useJobs = () => {
     try {
       const { data, error } = await supabase
         .from('jobs')
-        .select('id, title, description, budget_min, budget_max, location, job_type, required_skills, status, user_id, created_at, updated_at')
+        .select('*')
         .eq('status', 'open')
         .order('created_at', { ascending: false })
-        .limit(50)
 
       if (error) {
         console.error('Error fetching jobs:', error)
@@ -88,7 +87,7 @@ export const useJobs = () => {
     try {
       const { data, error } = await supabase
         .from('jobs')
-        .select('id, title, description, budget_min, budget_max, location, job_type, required_skills, status, user_id, created_at, updated_at')
+        .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
 
@@ -185,7 +184,7 @@ export const useJobs = () => {
     try {
       const { data, error } = await supabase
         .from('job_applications')
-        .select('id, job_id, applicant_id, cover_letter, status, created_at')
+        .select('*')
         .eq('job_id', jobId)
         .order('created_at', { ascending: false })
 

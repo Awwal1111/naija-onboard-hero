@@ -74,7 +74,7 @@ const MainFeed = () => {
   const [jobApplicationDialog, setJobApplicationDialog] = useState<{ isOpen: boolean; jobPost: any | null }>({ isOpen: false, jobPost: null })
   const [profilePreview, setProfilePreview] = useState<{ isOpen: boolean; userId: string | null }>({ isOpen: false, userId: null })
   const [isRefreshing, setIsRefreshing] = useState(false)
-  
+  const [pullStartY, setPullStartY] = useState(0)
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [showDepositDialog, setShowDepositDialog] = useState(false)
   const [showEscrowSearch, setShowEscrowSearch] = useState(false)
@@ -203,6 +203,19 @@ const MainFeed = () => {
     setProfilePreview({ isOpen: true, userId })
   }
 
+  // Pull to refresh handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setPullStartY(e.touches[0].clientY)
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    const currentY = e.touches[0].clientY
+    const pullDistance = currentY - pullStartY
+    
+    if (pullDistance > 100 && window.scrollY === 0 && !isRefreshing) {
+      handleRefresh()
+    }
+  }
 
   const handleRefresh = async () => {
     setIsRefreshing(true)
@@ -240,7 +253,9 @@ const MainFeed = () => {
       )}
       
       <div 
-        className="flex flex-col md:flex-row"
+        className="flex"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
       >
       {/* Main Content */}
         <div className="flex-1 max-w-4xl mx-auto w-full">
