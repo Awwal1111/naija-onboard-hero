@@ -74,7 +74,7 @@ const MainFeed = () => {
   const [jobApplicationDialog, setJobApplicationDialog] = useState<{ isOpen: boolean; jobPost: any | null }>({ isOpen: false, jobPost: null })
   const [profilePreview, setProfilePreview] = useState<{ isOpen: boolean; userId: string | null }>({ isOpen: false, userId: null })
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const [pullStartY, setPullStartY] = useState(0)
+  
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [showDepositDialog, setShowDepositDialog] = useState(false)
   const [showEscrowSearch, setShowEscrowSearch] = useState(false)
@@ -203,25 +203,6 @@ const MainFeed = () => {
     setProfilePreview({ isOpen: true, userId })
   }
 
-  // Pull to refresh handlers
-  const handleTouchStart = (e: React.TouchEvent) => {
-    // Only track pull-to-refresh when at the top of the page
-    if (window.scrollY <= 0) {
-      setPullStartY(e.touches[0].clientY)
-    } else {
-      setPullStartY(0)
-    }
-  }
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (pullStartY === 0 || isRefreshing) return
-    const currentY = e.touches[0].clientY
-    const pullDistance = currentY - pullStartY
-    
-    if (pullDistance > 100 && window.scrollY <= 0) {
-      handleRefresh()
-    }
-  }
 
   const handleRefresh = async () => {
     setIsRefreshing(true)
@@ -259,9 +240,7 @@ const MainFeed = () => {
       )}
       
       <div 
-        className="flex min-h-0"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
+        className="flex flex-col md:flex-row"
       >
       {/* Main Content */}
         <div className="flex-1 max-w-4xl mx-auto w-full">
