@@ -155,7 +155,7 @@ const Index = () => {
                   <img
                     src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png"
                     alt="Get it on Google Play"
-                    className="h-12 sm:h-14"
+                    className="h-16 sm:h-20"
                     loading="lazy"
                   />
                 </a>
