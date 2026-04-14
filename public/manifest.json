@@ -4,7 +4,7 @@
   "description": "Nigeria's trusted freelance marketplace connecting verified experts with clients. Hire skilled freelancers or earn online with secure payments.",
   "start_url": "/main-feed",
   "display": "standalone",
-  "display_override": ["standalone", "minimal-ui"],
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "background_color": "#ffffff",
   "theme_color": "#10b981",
   "orientation": "any",
@@ -64,6 +64,19 @@
       "text": "text",
       "url": "url"
     }
+  },
+  "protocol_handlers": [
+    {
+      "protocol": "web+naijalancers",
+      "url": "/main-feed?ref=%s"
+    }
+  ],
+  "scope_extensions": [
+    { "origin": "https://naijalancers.name.ng" },
+    { "origin": "https://naijalancers.lovable.app" }
+  ],
+  "edge_side_panel": {
+    "preferred_width": 400
   },
   "shortcuts": [
     {
