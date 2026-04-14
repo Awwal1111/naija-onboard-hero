@@ -261,35 +261,35 @@ const EnhancedEarn = () => {
         open={showAirtimeDialog}
         onOpenChange={setShowAirtimeDialog}
         currentBalance={balance.withdrawable}
-        onSuccess={() => window.location.reload()}
+        onSuccess={refreshWallet}
       />
 
       <VTUDataDialog
         open={showDataDialog}
         onOpenChange={setShowDataDialog}
         currentBalance={balance.withdrawable}
-        onSuccess={() => window.location.reload()}
+        onSuccess={refreshWallet}
       />
 
       <BettingFundDialog
         open={showBettingDialog}
         onOpenChange={setShowBettingDialog}
         currentBalance={balance.withdrawable}
-        onSuccess={() => window.location.reload()}
+        onSuccess={refreshWallet}
       />
 
       <VTUElectricityDialog
         open={showElectricityDialog}
         onOpenChange={setShowElectricityDialog}
         currentBalance={balance.withdrawable}
-        onSuccess={() => window.location.reload()}
+        onSuccess={refreshWallet}
       />
 
       <VTUCableTVDialog
         open={showCableTVDialog}
         onOpenChange={setShowCableTVDialog}
         currentBalance={balance.withdrawable}
-        onSuccess={() => window.location.reload()}
+        onSuccess={refreshWallet}
       />
 
       <BottomNavBar />
