@@ -203,6 +203,33 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Featured In / Press Section */}
+      <section className="py-8 sm:py-12 border-b border-border/50">
+        <div className="container mx-auto px-4 sm:px-6">
+          <p className="text-center text-xs sm:text-sm text-muted-foreground font-medium uppercase tracking-widest mb-6">
+            As Featured In
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-10 opacity-70 hover:opacity-100 transition-opacity">
+            <a href="https://messari.io" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-foreground/70 hover:text-foreground transition-colors">
+              <svg viewBox="0 0 24 24" className="w-6 h-6" fill="currentColor"><path d="M3 3h4v18H3V3zm7 0h4v18h-4V3zm7 0h4v18h-4V3z"/></svg>
+              <span className="text-lg sm:text-xl font-bold tracking-tight">Messari</span>
+            </a>
+            <a href="https://forum.celo.org" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-foreground/70 hover:text-foreground transition-colors">
+              <svg viewBox="0 0 24 24" className="w-6 h-6" fill="currentColor"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2"/><circle cx="12" cy="12" r="4" /></svg>
+              <span className="text-lg sm:text-xl font-bold tracking-tight">Celo Forum</span>
+            </a>
+            <a href="https://www.instagram.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-foreground/70 hover:text-foreground transition-colors">
+              <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none"/></svg>
+              <span className="text-lg sm:text-xl font-bold tracking-tight">Instagram</span>
+            </a>
+            <a href="https://m.apkpure.com/naijalancers-freelance-app/co.median.android.mbbeeqr" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-foreground/70 hover:text-foreground transition-colors">
+              <Download className="w-5 h-5" />
+              <span className="text-lg sm:text-xl font-bold tracking-tight">APKPure</span>
+            </a>
+          </div>
+        </div>
+      </section>
+
       {/* Social Proof Testimonials - right after hero for trust */}
       <SocialProofSection />
 
