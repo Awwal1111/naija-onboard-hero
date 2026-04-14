@@ -205,14 +205,20 @@ const MainFeed = () => {
 
   // Pull to refresh handlers
   const handleTouchStart = (e: React.TouchEvent) => {
-    setPullStartY(e.touches[0].clientY)
+    // Only track pull-to-refresh when at the top of the page
+    if (window.scrollY <= 0) {
+      setPullStartY(e.touches[0].clientY)
+    } else {
+      setPullStartY(0)
+    }
   }
 
   const handleTouchMove = (e: React.TouchEvent) => {
+    if (pullStartY === 0 || isRefreshing) return
     const currentY = e.touches[0].clientY
     const pullDistance = currentY - pullStartY
     
-    if (pullDistance > 100 && window.scrollY === 0 && !isRefreshing) {
+    if (pullDistance > 100 && window.scrollY <= 0) {
       handleRefresh()
     }
   }
@@ -253,7 +259,7 @@ const MainFeed = () => {
       )}
       
       <div 
-        className="flex"
+        className="flex min-h-0"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
       >
