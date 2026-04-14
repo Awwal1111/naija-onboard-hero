@@ -12,7 +12,14 @@
   "lang": "en",
   "id": "/main-feed",
   "scope": "/",
-  "prefer_related_applications": false,
+  "prefer_related_applications": true,
+  "related_applications": [
+    {
+      "platform": "play",
+      "url": "https://play.google.com/store/apps/details?id=ng.name.naijalancers.twa",
+      "id": "ng.name.naijalancers.twa"
+    }
+  ],
   "icons": [
     {
       "src": "/icon-192.png",
@@ -46,7 +53,6 @@
     }
   ],
   "categories": ["social", "business", "productivity"],
-  "iarc_rating_id": "",
   "launch_handler": {
     "client_mode": "focus-existing"
   },
@@ -81,11 +87,18 @@
   ],
   "screenshots": [
     {
-      "src": "/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
+      "src": "/screenshot-narrow.jpg",
+      "sizes": "540x720",
+      "type": "image/jpeg",
       "form_factor": "narrow",
       "label": "NaijaLancers - Nigeria's Freelance Platform"
+    },
+    {
+      "src": "/screenshot-wide.jpg",
+      "sizes": "1280x720",
+      "type": "image/jpeg",
+      "form_factor": "wide",
+      "label": "NaijaLancers - Desktop View"
     }
   ]
 }
