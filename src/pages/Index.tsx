@@ -404,11 +404,19 @@ const Index = () => {
                 <ArrowRight className="ml-2 w-5 h-5" />
               </Link>
             </BrandButton>
-            <BrandButton asChild size="lg" variant="ghost" className="text-lg px-8 py-6 text-primary-foreground border border-primary-foreground/30 hover:bg-primary-foreground/10">
-              <Link to="/p/gigs">
-                Browse First
-              </Link>
-            </BrandButton>
+          </div>
+          {/* Download badges in CTA */}
+          <div className="flex items-center gap-3 justify-center mt-8 flex-wrap">
+            <a href="https://play.google.com/store/apps/details?id=co.median.android.mbbeeqr" target="_blank" rel="noopener noreferrer">
+              <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" className="h-12" loading="lazy" />
+            </a>
+            <a href="https://m.apkpure.com/naijalancers-freelance-app/co.median.android.mbbeeqr" target="_blank" rel="noopener noreferrer" className="bg-primary-foreground/20 text-primary-foreground rounded-lg px-3 py-1.5 flex items-center gap-2 hover:bg-primary-foreground/30 transition-colors border border-primary-foreground/30">
+              <Download className="w-4 h-4" />
+              <div className="text-left leading-tight">
+                <div className="text-[9px] opacity-80">Download on</div>
+                <div className="text-xs font-semibold">APKPure</div>
+              </div>
+            </a>
           </div>
         </div>
       </section>
@@ -506,8 +514,7 @@ const Index = () => {
         </div>
       </footer>
 
-      {/* Sticky Mobile CTA */}
-      <StickyMobileCTA />
+      {/* Removed StickyMobileCTA - duplicated hero CTAs */}
     </div>
   )
 }
