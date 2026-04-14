@@ -30,7 +30,7 @@ export const useBlockUser = (otherUserId: string) => {
       // Check if current user blocked other user
       const { data: userBlocked, error: error1 } = await supabase
         .from('blocked_users')
-        .select('*')
+        .select('id')
         .eq('blocker_id', user.id)
         .eq('blocked_id', otherUserId)
         .maybeSingle()
@@ -40,7 +40,7 @@ export const useBlockUser = (otherUserId: string) => {
       // Check if other user blocked current user
       const { data: blockedByOther, error: error2 } = await supabase
         .from('blocked_users')
-        .select('*')
+        .select('id')
         .eq('blocker_id', otherUserId)  
         .eq('blocked_id', user.id)
         .maybeSingle()

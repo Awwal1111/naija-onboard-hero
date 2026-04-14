@@ -45,7 +45,7 @@ const ChatList = () => {
       // Fetch all chats for the current user
       const { data: chatsData, error: chatsError } = await supabase
         .from('chats')
-        .select('*')
+        .select('id, user1_id, user2_id, created_at, updated_at')
         .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
         .order('updated_at', { ascending: false })
 
