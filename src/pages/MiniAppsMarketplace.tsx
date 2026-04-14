@@ -2,6 +2,7 @@ import { useState, useEffect, lazy, Suspense, useMemo } from 'react'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import { ArrowLeft, Search, Plus, Sparkles, Receipt, Building2, Wallet, Shield, RefreshCw, Trophy, Heart, GraduationCap, Users, Gamepad2, Dices, Target, RotateCw, Gift, Banknote, AlertCircle, ShoppingBag, PiggyBank, Flame, FileText, Zap, BookOpen, Send } from 'lucide-react'
+import { useUserCountry } from '@/hooks/useUserCountry'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -96,6 +97,7 @@ const MiniAppsMarketplace = () => {
   const [showNCConverter, setShowNCConverter] = useState(false)
   const [showTransferDialog, setShowTransferDialog] = useState(false)
   const { user } = useAuth()
+  const { isNigerian } = useUserCountry()
   const navigate = useNavigate()
 
   const fetchApps = async () => {
@@ -161,8 +163,10 @@ const MiniAppsMarketplace = () => {
     miniApp: app,
   }))
 
-  // Combine all apps
-  const allApps: UnifiedApp[] = [...BUILT_IN_APPS, ...externalUnified]
+  // Combine all apps, filtering out Quidax-dependent apps for non-Nigerian users
+  const NIGERIA_ONLY_IDS = new Set(['int-bank', 'int-bank-withdraw'])
+  const filteredBuiltIn = BUILT_IN_APPS.filter(a => isNigerian || !NIGERIA_ONLY_IDS.has(a.id))
+  const allApps: UnifiedApp[] = [...filteredBuiltIn, ...externalUnified]
 
   // Filter apps
   const filteredApps = allApps.filter(a => {
