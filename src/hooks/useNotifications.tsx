@@ -170,38 +170,24 @@ export const useNotifications = () => {
           'BLpOlYmZrInf0zI1oSxqhGvAhSm3HEqVALjIvZtgoCXU-N59AX0SbjhLL3RF5aX-eG4A31uBFM2gkGYpVEtQdbw'
         ),
       })
-        
-        console.log('Push subscription created:', subscription)
-        setPushSubscription(subscription)
-        
-        // Save subscription to backend
-        console.log('Saving subscription to backend...')
-        await savePushSubscription(subscription)
-        
-        setPushEnabled(true)
-        
-        toast({
-          title: 'Success',
-          description: 'Push notifications enabled successfully! You can now test them.',
-        })
-        
-        return true
-      } else {
-        console.log('Permission denied by user')
-        toast({
-          title: 'Permission Denied',
-          description: 'Please enable notifications in your browser settings',
-          variant: 'destructive',
-        })
-        return false
-      }
-    } catch (error: any) {
-      console.error('Error requesting push permission:', error)
-      console.error('Error details:', {
-        name: error.name,
-        message: error.message
+      
+      console.log('[Push] Subscription created:', subscription.endpoint)
+      setPushSubscription(subscription)
+      
+      // Save subscription to backend
+      console.log('[Push] Saving subscription to backend...')
+      await savePushSubscription(subscription)
+      
+      setPushEnabled(true)
+      
+      toast({
+        title: 'Success',
+        description: 'Push notifications enabled successfully!',
       })
       
+      return true
+    } catch (error: any) {
+      console.error('[Push] Error in setupPushSubscription:', error)
       toast({
         title: 'Error',
         description: `Failed to enable push notifications: ${error.message}`,
