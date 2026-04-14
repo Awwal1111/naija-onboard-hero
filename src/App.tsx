@@ -1,4 +1,5 @@
 import { lazy, Suspense, useState, useEffect } from "react";
+import ScrollToTop from "@/components/ScrollToTop";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
