@@ -77,7 +77,7 @@ registerRoute(
     cacheName: 'supabase-api',
     plugins: [
       new CacheableResponsePlugin({ statuses: [200] }),
-      new ExpirationPlugin({ maxEntries: 200, maxAgeSeconds: 5 * 60 }), // 5 min TTL
+      new ExpirationPlugin({ maxEntries: 200, maxAgeSeconds: 10 * 60 }), // 10 min TTL — matches QueryClient staleTime
     ],
   })
 )

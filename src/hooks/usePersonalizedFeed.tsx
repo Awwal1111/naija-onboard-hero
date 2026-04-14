@@ -75,7 +75,7 @@ export const usePersonalizedFeed = () => {
 
       const { data: storiesData, error } = await supabase
         .from('stories')
-        .select('*')
+        .select('id, user_id, media_url, media_type, content, created_at, expires_at, views_count, background_color, privacy_setting')
         .gt('expires_at', new Date().toISOString())
         .order('created_at', { ascending: false })
         .limit(20)
@@ -141,7 +141,7 @@ export const usePersonalizedFeed = () => {
         // Fallback to regular posts if function fails
         const { data: fallbackPosts } = await supabase
           .from('posts')
-          .select('*')
+          .select('id, user_id, content, media_url, media_type, likes_count, comments_count, views_count, status, created_at, boost_amount, is_pinned, post_type, shared_post_id')
           .eq('status', 'active')
           .order('created_at', { ascending: false })
           .range(offset, offset + POSTS_PER_PAGE - 1)

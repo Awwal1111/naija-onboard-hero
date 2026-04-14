@@ -112,7 +112,7 @@ export const useWallet = () => {
       // Fetch from wallet transactions table
       const { data: walletData, error: walletError } = await supabase
         .from('wallet_transactions')
-        .select('*')
+        .select('id, user_id, amount, kind, reference, status, created_at, currency, metadata')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(50)
@@ -122,7 +122,7 @@ export const useWallet = () => {
       // Also fetch crypto transactions (deposits/withdrawals)
       const { data: cryptoData, error: cryptoError } = await supabase
         .from('crypto_transactions')
-        .select('*')
+        .select('id, user_id, nc_amount, crypto_amount, crypto_currency, transaction_type, status, created_at, tx_hash, wallet_address, exchange_rate')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(50)

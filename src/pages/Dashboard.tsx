@@ -81,44 +81,44 @@ const Dashboard = () => {
       // Fetch profile first
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('*')
+        .select('wallet_balance, connections_count, full_name, profile_picture_url, profession, is_expert')
         .eq('user_id', user?.id)
         .single();
       
       setProfile(profileData);
 
-      // Fetch all other data in parallel
+      // Fetch only needed columns; use head counts where possible to reduce egress
       const [
         postsRes,
-        storiesRes,
-        storyViewsRes,
+        storiesCountRes,
+        storyViewsCountRes,
         transactionsRes,
-        jobsRes,
-        jobAppsRes,
-        coursesRes,
+        jobsCountRes,
+        jobAppsCountRes,
+        coursesCountRes,
         courseEnrollmentsRes,
-        productsRes,
+        productsCountRes,
         productPurchasesRes,
-        fundraisingsRes,
+        fundraisingsCountRes,
         contributionsRes,
-        classesRes,
-        classParticipantsRes,
+        classesCountRes,
+        classParticipantsCountRes,
         ratingsRes
       ] = await Promise.all([
-        supabase.from('posts').select('*').eq('user_id', user?.id),
-        supabase.from('stories').select('*').eq('user_id', user?.id),
-        supabase.from('story_views').select('story_id').eq('user_id', user?.id),
-        supabase.from('wallet_transactions').select('*').eq('user_id', user?.id).order('created_at', { ascending: false }),
-        supabase.from('job_posts').select('*').eq('user_id', user?.id),
-        supabase.from('job_post_applications').select('*').eq('applicant_id', user?.id),
-        supabase.from('courses').select('*').eq('user_id', user?.id),
+        supabase.from('posts').select('id, created_at, views_count, likes_count, comments_count').eq('user_id', user?.id),
+        supabase.from('stories').select('*', { count: 'exact', head: true }).eq('user_id', user?.id),
+        supabase.from('story_views').select('*', { count: 'exact', head: true }).eq('user_id', user?.id),
+        supabase.from('wallet_transactions').select('id, amount, kind, reference, status, created_at').eq('user_id', user?.id).order('created_at', { ascending: false }).limit(50),
+        supabase.from('job_posts').select('*', { count: 'exact', head: true }).eq('user_id', user?.id),
+        supabase.from('job_post_applications').select('*', { count: 'exact', head: true }).eq('applicant_id', user?.id),
+        supabase.from('courses').select('*', { count: 'exact', head: true }).eq('user_id', user?.id),
         supabase.from('course_enrollments').select('amount, courses!inner(user_id)').eq('courses.user_id', user?.id),
-        supabase.from('digital_products').select('*').eq('user_id', user?.id),
+        supabase.from('digital_products').select('*', { count: 'exact', head: true }).eq('user_id', user?.id),
         supabase.from('digital_product_purchases').select('amount, digital_products!inner(user_id)').eq('digital_products.user_id', user?.id),
-        supabase.from('fundraisings').select('*').eq('user_id', user?.id),
+        supabase.from('fundraisings').select('*', { count: 'exact', head: true }).eq('user_id', user?.id),
         supabase.from('fundraising_contributions').select('amount, fundraisings!inner(user_id)').eq('fundraisings.user_id', user?.id),
-        supabase.from('expert_classes').select('*').eq('expert_id', user?.id),
-        supabase.from('class_participants').select('id, expert_classes!inner(expert_id)').eq('expert_classes.expert_id', user?.id),
+        supabase.from('expert_classes').select('*', { count: 'exact', head: true }).eq('expert_id', user?.id),
+        supabase.from('class_participants').select('*', { count: 'exact', head: true }).eq('expert_classes.expert_id', user?.id),
         supabase.from('expert_ratings').select('rating').eq('expert_id', user?.id)
       ]);
 
@@ -149,20 +149,20 @@ const Dashboard = () => {
         totalViews: postStats.views,
         totalLikes: postStats.likes,
         totalComments: postStats.comments,
-        storiesCount: (storiesRes.data || []).length,
-        storyViews: (storyViewsRes.data || []).length,
-        jobsPosted: (jobsRes.data || []).length,
-        jobApplications: (jobAppsRes.data || []).length,
-        coursesCreated: (coursesRes.data || []).length,
+        storiesCount: storiesCountRes.count || 0,
+        storyViews: storyViewsCountRes.count || 0,
+        jobsPosted: jobsCountRes.count || 0,
+        jobApplications: jobAppsCountRes.count || 0,
+        coursesCreated: coursesCountRes.count || 0,
         courseEnrollments: (courseEnrollmentsRes.data || []).length,
         courseRevenue,
-        productsCreated: (productsRes.data || []).length,
+        productsCreated: productsCountRes.count || 0,
         productSales: (productPurchasesRes.data || []).length,
         productRevenue,
-        fundraisingsCreated: (fundraisingsRes.data || []).length,
+        fundraisingsCreated: fundraisingsCountRes.count || 0,
         fundraisingRaised,
-        classesCreated: (classesRes.data || []).length,
-        classParticipants: (classParticipantsRes.data || []).length,
+        classesCreated: classesCountRes.count || 0,
+        classParticipants: classParticipantsCountRes.count || 0,
         connectionsCount: profileData?.connections_count || 0,
         avgRating,
         ratingCount: ratings.length
@@ -198,10 +198,10 @@ const Dashboard = () => {
 
       const contentBreakdown = [
         { name: 'Posts', value: posts.length },
-        { name: 'Stories', value: (storiesRes.data || []).length },
-        { name: 'Jobs', value: (jobsRes.data || []).length },
-        { name: 'Courses', value: (coursesRes.data || []).length },
-        { name: 'Products', value: (productsRes.data || []).length }
+        { name: 'Stories', value: storiesCountRes.count || 0 },
+        { name: 'Jobs', value: jobsCountRes.count || 0 },
+        { name: 'Courses', value: coursesCountRes.count || 0 },
+        { name: 'Products', value: productsCountRes.count || 0 }
       ].filter(item => item.value > 0);
 
       const revenueBreakdown = [
