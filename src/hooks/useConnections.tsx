@@ -50,10 +50,11 @@ export const useConnections = () => {
       setLoading(true)
       const { data, error } = await supabase
         .from('connection_requests')
-        .select('*')
+        .select('id, requester_id, requested_id, status, created_at, updated_at')
         .or(`requester_id.eq.${user.id},requested_id.eq.${user.id}`)
         .eq('status', 'pending')
         .order('created_at', { ascending: false })
+        .limit(50)
 
       if (error) throw error
       

@@ -116,11 +116,12 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
     }
   }, [user, postToIframe, withIds])
 
-  // Main message handler
+  // Main message handler - attached BEFORE iframe loads to catch early njl_ready
   useEffect(() => {
     const handler = (event: MessageEvent) => {
-      // Validate source is our iframe
-      if (event.source !== iframeRef.current?.contentWindow) return
+      // Accept messages from any source initially (iframe ref may not be set yet)
+      const isFromIframe = event.source === iframeRef.current?.contentWindow
+      if (!isFromIframe) return
       if (allowedOrigin !== '*' && event.origin !== allowedOrigin) return
 
       const data = parseMessageData(event.data)
@@ -128,11 +129,13 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
       if (!data.type.startsWith('njl_')) return
 
       const rid = getRid(data)
-      console.log('[SDK] ← Received:', data.type, 'rid:', rid)
+      console.log('[SDK] ← Received:', data.type, 'rid:', rid, data)
 
       switch (data.type) {
         case 'njl_ready':
         case 'njl_handshake':
+        case 'njl_ping':
+          console.log('[SDK] Handshake received, sending identify')
           sendIdentify()
           break
 
@@ -348,11 +351,14 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
           sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
           onLoad={() => {
             setIsLoading(false)
+            console.log('[SDK] iframe loaded, sending staggered identify')
             // Staggered identify sends to handle different app loading speeds
             sendIdentify()
-            setTimeout(sendIdentify, 300)
-            setTimeout(sendIdentify, 1000)
-            setTimeout(sendIdentify, 3000)
+            setTimeout(sendIdentify, 200)
+            setTimeout(sendIdentify, 500)
+            setTimeout(sendIdentify, 1500)
+            setTimeout(sendIdentify, 4000)
+            setTimeout(sendIdentify, 8000) // Late-loading apps
           }}
         />
 
