@@ -36,8 +36,8 @@ export default function Courses() {
 
   const fetchMyData = async () => {
     const [createdRes, enrolledRes, enrollmentsRes] = await Promise.all([
-      supabase.from('courses').select('*').eq('user_id', user?.id).order('created_at', { ascending: false }),
-      supabase.from('course_enrollments').select('*, courses(*)').eq('student_id', user?.id),
+      supabase.from('courses').select('id, title, description, price, thumbnail_url, average_rating, enrollment_count, status, created_at').eq('user_id', user?.id).order('created_at', { ascending: false }),
+      supabase.from('course_enrollments').select('id, course_id, amount, created_at, courses(id, title, thumbnail_url, price, average_rating)').eq('student_id', user?.id),
       supabase.from('course_enrollments').select('amount, courses!inner(user_id)').eq('courses.user_id', user?.id)
     ]);
     setMyCourses(createdRes.data || []);
