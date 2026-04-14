@@ -93,7 +93,7 @@ const GroupMessagesTab: React.FC = () => {
       // Fetch all available groups
       const { data: allGroups, error: allGroupsError } = await supabase
         .from('groups')
-        .select('id, name, description, category, group_lead_id, is_active, member_count, avatar_url, created_at')
+        .select('id, name, description, category, group_lead_id, is_active, member_count, created_at')
         .eq('is_active', true)
         .order('created_at', { ascending: false })
 
