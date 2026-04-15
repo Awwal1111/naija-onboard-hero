@@ -13,6 +13,7 @@ import { toast } from 'sonner'
 import { DepositMethods } from './DepositMethods'
 import { MiniPayDepositCard } from './MiniPayDepositCard'
 import { IvoryPayDepositCard } from './IvoryPayDepositCard'
+import { useMiniPay } from '@/hooks/useMiniPay'
 
 interface DepositDialogProps {
   open: boolean
@@ -26,7 +27,7 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
   const [walletAddress, setWalletAddress] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [creatingWallet, setCreatingWallet] = useState(false)
-  const [selectedMethod, setSelectedMethod] = useState<'main' | 'ramp' | 'crypto' | 'telegram' | 'minipay'>('main')
+  const [selectedMethod, setSelectedMethod] = useState<'main' | 'ramp' | 'crypto' | 'telegram' | 'minipay' | 'ivorypay'>('main')
 
   useEffect(() => {
     console.log('[DEPOSIT] 🎯 Effect triggered. User:', !!user, 'Profile:', !!profile)
