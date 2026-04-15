@@ -118,7 +118,7 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
     window.dispatchEvent(event)
   }
 
-  const handleMethodSelect = (method: 'ramp' | 'crypto' | 'telegram' | 'minipay') => {
+  const handleMethodSelect = (method: 'ramp' | 'crypto' | 'telegram' | 'minipay' | 'ivorypay') => {
     if (method === 'ramp') {
       handleOpenQuidaxWidget()
     } else {
@@ -154,12 +154,14 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
                 {selectedMethod === 'main' ? 'Add Funds' : 
                  selectedMethod === 'crypto' ? 'Crypto Deposit' : 
                  selectedMethod === 'minipay' ? 'MiniPay Deposit' :
+                 selectedMethod === 'ivorypay' ? 'IvoryPay Deposit' :
                  'Telegram Bot'}
               </DialogTitle>
               <DialogDescription>
                 {selectedMethod === 'main' ? 'Choose your preferred deposit method' :
                  selectedMethod === 'crypto' ? 'Send crypto to your wallet address' :
                  selectedMethod === 'minipay' ? 'Deposit directly from MiniPay' :
+                 selectedMethod === 'ivorypay' ? 'Pay via bank or crypto through IvoryPay' :
                  'Deposit via Telegram bot'}
               </DialogDescription>
             </div>
