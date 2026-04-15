@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client'
 import { toast } from 'sonner'
 import { DepositMethods } from './DepositMethods'
 import { MiniPayDepositCard } from './MiniPayDepositCard'
+import { IvoryPayDepositCard } from './IvoryPayDepositCard'
 import { useMiniPay } from '@/hooks/useMiniPay'
 
 interface DepositDialogProps {
@@ -26,7 +27,7 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
   const [walletAddress, setWalletAddress] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [creatingWallet, setCreatingWallet] = useState(false)
-  const [selectedMethod, setSelectedMethod] = useState<'main' | 'ramp' | 'crypto' | 'telegram' | 'minipay'>('main')
+  const [selectedMethod, setSelectedMethod] = useState<'main' | 'ramp' | 'crypto' | 'telegram' | 'minipay' | 'ivorypay'>('main')
 
   useEffect(() => {
     console.log('[DEPOSIT] 🎯 Effect triggered. User:', !!user, 'Profile:', !!profile)
@@ -117,7 +118,7 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
     window.dispatchEvent(event)
   }
 
-  const handleMethodSelect = (method: 'ramp' | 'crypto' | 'telegram' | 'minipay') => {
+  const handleMethodSelect = (method: 'ramp' | 'crypto' | 'telegram' | 'minipay' | 'ivorypay') => {
     if (method === 'ramp') {
       handleOpenQuidaxWidget()
     } else {
@@ -153,12 +154,14 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
                 {selectedMethod === 'main' ? 'Add Funds' : 
                  selectedMethod === 'crypto' ? 'Crypto Deposit' : 
                  selectedMethod === 'minipay' ? 'MiniPay Deposit' :
+                 selectedMethod === 'ivorypay' ? 'IvoryPay Deposit' :
                  'Telegram Bot'}
               </DialogTitle>
               <DialogDescription>
                 {selectedMethod === 'main' ? 'Choose your preferred deposit method' :
                  selectedMethod === 'crypto' ? 'Send crypto to your wallet address' :
                  selectedMethod === 'minipay' ? 'Deposit directly from MiniPay' :
+                 selectedMethod === 'ivorypay' ? 'Pay via bank or crypto through IvoryPay' :
                  'Deposit via Telegram bot'}
               </DialogDescription>
             </div>
@@ -285,6 +288,13 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
 
         {selectedMethod === 'minipay' && (
           <MiniPayDepositCard onSuccess={handleMiniPaySuccess} />
+        )}
+
+        {selectedMethod === 'ivorypay' && (
+          <IvoryPayDepositCard onSuccess={() => {
+            onOpenChange(false)
+            setSelectedMethod('main')
+          }} />
         )}
       </DialogContent>
     </Dialog>

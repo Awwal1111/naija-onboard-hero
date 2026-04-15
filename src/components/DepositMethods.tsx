@@ -1,12 +1,12 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { BrandButton } from '@/components/ui/brand-button'
 import { Badge } from '@/components/ui/badge'
-import { ArrowDownUp, Send, Wallet, Sparkles, Zap } from 'lucide-react'
+import { ArrowDownUp, Send, Wallet, Sparkles, Zap, Globe } from 'lucide-react'
 import { useMiniPay } from '@/hooks/useMiniPay'
 import { useUserCountry } from '@/hooks/useUserCountry'
 
 interface DepositMethodsProps {
-  onSelectMethod: (method: 'ramp' | 'crypto' | 'telegram' | 'minipay') => void
+  onSelectMethod: (method: 'ramp' | 'crypto' | 'telegram' | 'minipay' | 'ivorypay') => void
 }
 
 export const DepositMethods = ({ onSelectMethod }: DepositMethodsProps) => {
@@ -65,14 +65,32 @@ export const DepositMethods = ({ onSelectMethod }: DepositMethodsProps) => {
         </Card>
       )}
 
-      {/* Crypto Deposit - Recommended for international users */}
-      <Card className={`${!isNigerian && !isMiniPay ? 'border-primary/20 bg-gradient-to-br from-primary/5 to-transparent' : 'hover:border-primary/40'} transition-colors relative overflow-hidden`}>
+      {/* IvoryPay - International Fiat/Crypto Ramp */}
+      <Card className={`${!isNigerian && !isMiniPay ? 'border-primary/20 bg-gradient-to-br from-primary/5 to-transparent' : 'hover:border-amber-500/40'} transition-colors relative overflow-hidden`}>
         {!isNigerian && !isMiniPay && (
           <Badge className="absolute top-4 right-4 bg-primary">
             <Sparkles className="h-3 w-3 mr-1" />
             Recommended
           </Badge>
         )}
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Globe className="h-5 w-5 text-amber-600" />
+            IvoryPay Deposit
+          </CardTitle>
+          <CardDescription>
+            Pay with bank transfer or crypto • Nigeria, Ghana, Kenya, South Africa
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <BrandButton onClick={() => onSelectMethod('ivorypay')} variant={!isNigerian && !isMiniPay ? 'primary' : 'outline'} className="w-full">
+            Deposit via IvoryPay
+          </BrandButton>
+        </CardContent>
+      </Card>
+
+      {/* Crypto Deposit */}
+      <Card className="hover:border-primary/40 transition-colors relative overflow-hidden">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <Wallet className="h-5 w-5" />
@@ -83,7 +101,7 @@ export const DepositMethods = ({ onSelectMethod }: DepositMethodsProps) => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <BrandButton onClick={() => onSelectMethod('crypto')} variant={!isNigerian && !isMiniPay ? 'primary' : 'outline'} className="w-full">
+          <BrandButton onClick={() => onSelectMethod('crypto')} variant="outline" className="w-full">
             View Wallet Address
           </BrandButton>
         </CardContent>
