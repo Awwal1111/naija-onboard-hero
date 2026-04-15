@@ -12,7 +12,7 @@ import { supabase } from '@/integrations/supabase/client'
 import { toast } from 'sonner'
 import { DepositMethods } from './DepositMethods'
 import { MiniPayDepositCard } from './MiniPayDepositCard'
-import { useMiniPay } from '@/hooks/useMiniPay'
+import { IvoryPayDepositCard } from './IvoryPayDepositCard'
 
 interface DepositDialogProps {
   open: boolean
