@@ -289,6 +289,13 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
         {selectedMethod === 'minipay' && (
           <MiniPayDepositCard onSuccess={handleMiniPaySuccess} />
         )}
+
+        {selectedMethod === 'ivorypay' && (
+          <IvoryPayDepositCard onSuccess={() => {
+            onOpenChange(false)
+            setSelectedMethod('main')
+          }} />
+        )}
       </DialogContent>
     </Dialog>
   )
