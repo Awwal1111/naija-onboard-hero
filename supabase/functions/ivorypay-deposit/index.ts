@@ -25,12 +25,21 @@ serve(async (req) => {
     );
 
     // Authenticate user
-    const authHeader = req.headers.get("Authorization")!;
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: "Missing authorization header" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
     const token = authHeader.replace("Bearer ", "");
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
 
     if (authError || !user) {
-      throw new Error("Unauthorized");
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
     }
 
     const { action, amount, currency, reference } = await req.json();
@@ -59,7 +68,7 @@ serve(async (req) => {
       const nameParts = (profile?.full_name || profile?.username || "User").split(" ");
 
       // Create IvoryPay transaction using CHECKOUT mode
-      const ivoryResponse = await fetch(`${IVORYPAY_API_URL}/v1/transactions`, {
+      const ivoryResponse = await fetch(`${IVORYPAY_API_URL}/transactions`, {
         method: "POST",
         headers: {
           Authorization: IVORYPAY_SECRET_KEY,
@@ -119,7 +128,7 @@ serve(async (req) => {
 
       // Verify transaction status with IvoryPay (public endpoint, no auth needed)
       const verifyResponse = await fetch(
-        `${IVORYPAY_API_URL}/v1/transactions/${reference}/verify`
+        `${IVORYPAY_API_URL}/transactions/${reference}/verify`
       );
 
       const verifyData = await verifyResponse.json();
