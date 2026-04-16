@@ -239,3 +239,6 @@ verify_jwt = true
 
 [functions.send-daily-email-digest]
 verify_jwt = false
+
+[functions.ivorypay-deposit]
+verify_jwt = false
