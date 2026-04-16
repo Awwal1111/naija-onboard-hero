@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
-import { Coins, Send, AlertCircle, Wallet, Info, ArrowDownUp, Smartphone, ExternalLink, Copy, Check, ShieldAlert } from 'lucide-react'
+import { Coins, Send, AlertCircle, Wallet, Info, ArrowDownUp, Smartphone, ExternalLink, Copy, Check, ShieldAlert, Globe } from 'lucide-react'
 import { SecurePinInput } from './SecurePinInput'
 import { useWallet } from '@/hooks/useWallet'
 import { useProfile } from '@/hooks/useProfile'
@@ -20,6 +20,7 @@ import { useUserCountry } from '@/hooks/useUserCountry'
 import { useVerification } from '@/hooks/useVerification'
 import { supabase } from '@/integrations/supabase/client'
 import { toast } from 'sonner'
+import { IvoryPayWithdrawalCard } from './IvoryPayWithdrawalCard'
 
 interface WithdrawalDialogProps {
   open: boolean
@@ -156,15 +157,19 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
         </DialogHeader>
         
         <Tabs defaultValue="crypto" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 h-auto">
+          <TabsList className="grid w-full grid-cols-3 h-auto">
             <TabsTrigger value="crypto" className="gap-1 sm:gap-2 text-xs sm:text-sm py-2">
               <Coins className="h-3 w-3 sm:h-4 sm:w-4" />
               <span>Crypto</span>
             </TabsTrigger>
+            <TabsTrigger value="ivorypay" className="gap-1 sm:gap-2 text-xs sm:text-sm py-2">
+              <Globe className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span>Bank</span>
+            </TabsTrigger>
             {isNigerian && (
               <TabsTrigger value="ramp" className="gap-1 sm:gap-2 text-xs sm:text-sm py-2">
                 <ArrowDownUp className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span>Bank Transfer</span>
+                <span>Quidax</span>
               </TabsTrigger>
             )}
             {!isNigerian && (
@@ -270,6 +275,13 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="ivorypay" className="space-y-4">
+            <IvoryPayWithdrawalCard
+              currentBalance={currentBalance}
+              onSuccess={() => onOpenChange(false)}
+            />
           </TabsContent>
 
           {/* Bank Transfer Tab - Nigerian users only */}
