@@ -6,7 +6,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const IVORYPAY_API_URL = "https://api.ivorypay.io/api/v1";
+// Per IvoryPay docs: base URL is https://api.ivorypay.io/api, paths start with /v1/...
+const IVORYPAY_BASE_URL = "https://api.ivorypay.io/api";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -78,8 +79,16 @@ serve(async (req) => {
       );
     }
 
-    // Convert NC to fiat: 1 USDT ≈ 1600 NC, then convert USDT to local fiat
+    // Convert NC → USDT (1 USDT ≈ 1600 NC), then USDT → local fiat (approximate rates)
     const usdtAmount = ncAmount / 1600;
+    const usdtToFiat: Record<string, number> = {
+      NGN: 1600,
+      GHS: 12,
+      KES: 130,
+      ZAR: 18,
+      USD: 1,
+    };
+    const fiatAmount = Math.round(usdtAmount * (usdtToFiat[currency] || 1) * 100) / 100;
     const reference = crypto.randomUUID();
 
     // Debit user balance first
@@ -97,27 +106,27 @@ serve(async (req) => {
       user_id: user.id,
       amount: -ncAmount,
       transaction_type: "withdrawal_pending",
-      description: `IvoryPay withdrawal: NC ${ncAmount.toLocaleString()} → ${currency} (pending)`,
+      description: `IvoryPay withdrawal: NC ${ncAmount.toLocaleString()} → ${fiatAmount} ${currency} (pending)`,
       reference,
       status: "pending",
     });
 
-    // Call IvoryPay payout/transfer API
-    const ivoryResponse = await fetch(`${IVORYPAY_API_URL}/transfers`, {
+    // POST /v1/fiat-transfer — fiat payout (amount is in fiatCurrency)
+    const ivoryResponse = await fetch(`${IVORYPAY_BASE_URL}/v1/fiat-transfer`, {
       method: "POST",
       headers: {
         Authorization: IVORYPAY_SECRET_KEY,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        amount: usdtAmount,
-        crypto: "USDT",
-        baseFiat: currency,
-        bankCode,
+        amount: fiatAmount,
+        token: "USDT",
+        fiatCurrency: currency,
+        payoutMethod: "BANK_TRANSFER",
         accountNumber,
+        bankCode,
         accountName,
         reference,
-        email: user.email,
         narration: `NaijaLancers withdrawal - ${reference.slice(0, 8)}`,
       }),
     });
@@ -125,7 +134,7 @@ serve(async (req) => {
     const ivoryData = await ivoryResponse.json();
     console.log("[IVORYPAY-WITHDRAWAL] Response:", JSON.stringify(ivoryData));
 
-    if (!ivoryResponse.ok || (!ivoryData.success && !ivoryData.data)) {
+    if (!ivoryResponse.ok || (!ivoryData.success && !ivoryData.status && !ivoryData.data)) {
       // Refund user on failure
       await supabaseService
         .from("profiles")

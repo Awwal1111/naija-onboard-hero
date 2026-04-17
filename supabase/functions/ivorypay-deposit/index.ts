@@ -6,7 +6,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const IVORYPAY_API_URL = "https://api.ivorypay.io/api/v1";
+// Per IvoryPay docs: base URL is https://api.ivorypay.io/api, paths start with /v1/...
+const IVORYPAY_BASE_URL = "https://api.ivorypay.io/api";
+const APP_URL = "https://naijalancers.name.ng";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -24,7 +26,6 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_ANON_KEY") ?? ""
     );
 
-    // Authenticate user
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(
@@ -45,7 +46,6 @@ serve(async (req) => {
     const { action, amount, currency, reference } = await req.json();
 
     if (action === "initiate") {
-      // Validate inputs
       if (!amount || amount <= 0) {
         throw new Error("Invalid amount");
       }
@@ -53,7 +53,6 @@ serve(async (req) => {
       const baseFiat = currency || "NGN";
       const paymentReference = reference || crypto.randomUUID();
 
-      // Get user profile for email
       const supabaseService = createClient(
         Deno.env.get("SUPABASE_URL") ?? "",
         Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
@@ -67,8 +66,8 @@ serve(async (req) => {
 
       const nameParts = (profile?.full_name || profile?.username || "User").split(" ");
 
-      // Create IvoryPay transaction using CHECKOUT mode
-      const ivoryResponse = await fetch(`${IVORYPAY_API_URL}/transactions`, {
+      // POST /v1/transactions  (CHECKOUT mode → hosted page)
+      const ivoryResponse = await fetch(`${IVORYPAY_BASE_URL}/v1/transactions`, {
         method: "POST",
         headers: {
           Authorization: IVORYPAY_SECRET_KEY,
@@ -79,12 +78,12 @@ serve(async (req) => {
           email: user.email,
           firstName: nameParts[0] || "User",
           lastName: nameParts.slice(1).join(" ") || "NaijaLancers",
-          type: "CRYPTO",
+          type: "FIAT",
           mode: "CHECKOUT",
           baseFiat: baseFiat,
           crypto: "USDT",
           reference: paymentReference,
-          redirect_url: `https://naijalancers.lovable.app/wallet?ivorypay_ref=${paymentReference}`,
+          redirect_url: `${APP_URL}/wallet?ivorypay_ref=${paymentReference}`,
           metadata: JSON.stringify({
             user_id: user.id,
             nc_deposit: true,
@@ -97,24 +96,29 @@ serve(async (req) => {
       const ivoryData = await ivoryResponse.json();
       console.log("[IVORYPAY] Transaction response:", JSON.stringify(ivoryData));
 
-      if (!ivoryData.success && !ivoryData.data) {
+      if (!ivoryResponse.ok || (!ivoryData.success && !ivoryData.status && !ivoryData.data)) {
         throw new Error(ivoryData.message || "Failed to create IvoryPay transaction");
       }
 
-      // Record the pending transaction
       await supabaseService.from("wallet_transactions").insert({
         user_id: user.id,
-        amount: 0, // Will be updated on confirmation
+        amount: 0,
         transaction_type: "deposit_pending",
         description: `IvoryPay deposit: ${amount} ${baseFiat} (pending)`,
         reference: paymentReference,
         status: "pending",
       });
 
+      const checkoutUrl =
+        ivoryData.data?.checkoutUrl ||
+        ivoryData.data?.checkout_url ||
+        ivoryData.data?.paymentUrl ||
+        ivoryData.data?.url;
+
       return new Response(
         JSON.stringify({
           success: true,
-          checkoutUrl: ivoryData.data?.checkoutUrl,
+          checkoutUrl,
           reference: paymentReference,
         }),
         { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
@@ -126,21 +130,26 @@ serve(async (req) => {
         throw new Error("Reference is required");
       }
 
-      // Verify transaction status with IvoryPay (public endpoint, no auth needed)
+      // GET /v1/business/transactions/:reference/verify
       const verifyResponse = await fetch(
-        `${IVORYPAY_API_URL}/transactions/${reference}/verify`
+        `${IVORYPAY_BASE_URL}/v1/business/transactions/${reference}/verify`,
+        {
+          headers: { Authorization: IVORYPAY_SECRET_KEY },
+        }
       );
 
       const verifyData = await verifyResponse.json();
       console.log("[IVORYPAY] Verify response:", JSON.stringify(verifyData));
 
-      if (verifyData.success && verifyData.data?.status === "SUCCESS") {
+      const txStatus = verifyData.data?.status;
+      const isSuccess = (verifyData.success || verifyData.status) && txStatus === "SUCCESS";
+
+      if (isSuccess) {
         const supabaseService = createClient(
           Deno.env.get("SUPABASE_URL") ?? "",
           Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
         );
 
-        // Check if already credited
         const { data: existing } = await supabaseService
           .from("wallet_transactions")
           .select("id, status")
@@ -155,13 +164,13 @@ serve(async (req) => {
           );
         }
 
-        // Calculate NC amount from settled crypto
-        const settledCrypto = verifyData.data.settledAmountInCrypto || 0;
-        // 1 USDT ≈ 1 USD ≈ 1600 NC
+        const settledCrypto =
+          verifyData.data.settledAmountInCrypto ||
+          verifyData.data.amountInCrypto ||
+          0;
         const ncAmount = Math.floor(settledCrypto * 1600);
 
         if (ncAmount > 0) {
-          // Credit user balance
           const { data: profile } = await supabaseService
             .from("profiles")
             .select("wallet_balance, balance_withdrawable")
@@ -179,7 +188,6 @@ serve(async (req) => {
               .eq("user_id", user.id);
           }
 
-          // Update transaction record
           await supabaseService
             .from("wallet_transactions")
             .update({
@@ -191,7 +199,6 @@ serve(async (req) => {
             .eq("reference", reference)
             .eq("user_id", user.id);
 
-          // Also record in crypto_transactions
           await supabaseService.from("crypto_transactions").insert({
             user_id: user.id,
             crypto_amount: settledCrypto,
@@ -221,7 +228,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({
           success: true,
-          status: verifyData.data?.status || "PENDING",
+          status: txStatus || "PENDING",
           message: "Transaction not yet confirmed",
         }),
         { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
