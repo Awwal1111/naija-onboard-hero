@@ -3159,6 +3159,33 @@ export type Database = {
         }
         Relationships: []
       }
+      ivorypay_webhook_events: {
+        Row: {
+          event: string
+          id: string
+          payload: Json
+          processed_at: string
+          reference: string
+          status: string
+        }
+        Insert: {
+          event: string
+          id?: string
+          payload: Json
+          processed_at?: string
+          reference: string
+          status: string
+        }
+        Update: {
+          event?: string
+          id?: string
+          payload?: Json
+          processed_at?: string
+          reference?: string
+          status?: string
+        }
+        Relationships: []
+      }
       job_applications: {
         Row: {
           applicant_id: string
