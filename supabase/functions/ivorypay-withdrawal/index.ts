@@ -125,9 +125,7 @@ serve(async (req) => {
         payoutMethod: "BANK_TRANSFER",
         accountNumber,
         bankCode,
-        accountName,
         reference,
-        narration: `NaijaLancers withdrawal - ${reference.slice(0, 8)}`,
       }),
     });
 
