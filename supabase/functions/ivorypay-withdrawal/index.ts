@@ -6,7 +6,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const IVORYPAY_API_URL = "https://api.ivorypay.io/api/v1";
+// Per IvoryPay docs: base URL is https://api.ivorypay.io/api, paths start with /v1/...
+const IVORYPAY_BASE_URL = "https://api.ivorypay.io/api";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -102,22 +103,23 @@ serve(async (req) => {
       status: "pending",
     });
 
-    // Call IvoryPay payout/transfer API
-    const ivoryResponse = await fetch(`${IVORYPAY_API_URL}/transfers`, {
+    // POST /v1/fiat-transfer — fiat payout (NGN, GHS, KES, ZAR)
+    // amount is in fiatCurrency, IvoryPay handles crypto→fiat conversion
+    const ivoryResponse = await fetch(`${IVORYPAY_BASE_URL}/v1/fiat-transfer`, {
       method: "POST",
       headers: {
         Authorization: IVORYPAY_SECRET_KEY,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        amount: usdtAmount,
-        crypto: "USDT",
-        baseFiat: currency,
-        bankCode,
+        amount: Math.round(usdtAmount * 100) / 100, // not used directly; we send fiat amount below
+        token: "USDT",
+        fiatCurrency: currency,
+        payoutMethod: "BANK_TRANSFER",
         accountNumber,
+        bankCode,
         accountName,
         reference,
-        email: user.email,
         narration: `NaijaLancers withdrawal - ${reference.slice(0, 8)}`,
       }),
     });
@@ -125,7 +127,7 @@ serve(async (req) => {
     const ivoryData = await ivoryResponse.json();
     console.log("[IVORYPAY-WITHDRAWAL] Response:", JSON.stringify(ivoryData));
 
-    if (!ivoryResponse.ok || (!ivoryData.success && !ivoryData.data)) {
+    if (!ivoryResponse.ok || (!ivoryData.success && !ivoryData.status && !ivoryData.data)) {
       // Refund user on failure
       await supabaseService
         .from("profiles")
