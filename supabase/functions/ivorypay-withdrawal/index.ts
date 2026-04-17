@@ -79,8 +79,16 @@ serve(async (req) => {
       );
     }
 
-    // Convert NC to fiat: 1 USDT ≈ 1600 NC, then convert USDT to local fiat
+    // Convert NC → USDT (1 USDT ≈ 1600 NC), then USDT → local fiat (approximate rates)
     const usdtAmount = ncAmount / 1600;
+    const usdtToFiat: Record<string, number> = {
+      NGN: 1600,
+      GHS: 12,
+      KES: 130,
+      ZAR: 18,
+      USD: 1,
+    };
+    const fiatAmount = Math.round(usdtAmount * (usdtToFiat[currency] || 1) * 100) / 100;
     const reference = crypto.randomUUID();
 
     // Debit user balance first
@@ -98,13 +106,12 @@ serve(async (req) => {
       user_id: user.id,
       amount: -ncAmount,
       transaction_type: "withdrawal_pending",
-      description: `IvoryPay withdrawal: NC ${ncAmount.toLocaleString()} → ${currency} (pending)`,
+      description: `IvoryPay withdrawal: NC ${ncAmount.toLocaleString()} → ${fiatAmount} ${currency} (pending)`,
       reference,
       status: "pending",
     });
 
-    // POST /v1/fiat-transfer — fiat payout (NGN, GHS, KES, ZAR)
-    // amount is in fiatCurrency, IvoryPay handles crypto→fiat conversion
+    // POST /v1/fiat-transfer — fiat payout (amount is in fiatCurrency)
     const ivoryResponse = await fetch(`${IVORYPAY_BASE_URL}/v1/fiat-transfer`, {
       method: "POST",
       headers: {
@@ -112,7 +119,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        amount: Math.round(usdtAmount * 100) / 100, // not used directly; we send fiat amount below
+        amount: fiatAmount,
         token: "USDT",
         fiatCurrency: currency,
         payoutMethod: "BANK_TRANSFER",
