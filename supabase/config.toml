@@ -245,3 +245,6 @@ verify_jwt = false
 
 [functions.ivorypay-withdrawal]
 verify_jwt = false
+
+[functions.ivorypay-webhook]
+verify_jwt = false
