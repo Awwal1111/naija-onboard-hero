@@ -101,14 +101,21 @@ serve(async (req) => {
       })
       .eq("user_id", user.id);
 
-    // Record pending transaction
+    // Record pending transaction (correct schema: kind, currency, metadata)
     await supabaseService.from("wallet_transactions").insert({
       user_id: user.id,
       amount: -ncAmount,
-      transaction_type: "withdrawal_pending",
-      description: `IvoryPay withdrawal: NC ${ncAmount.toLocaleString()} → ${fiatAmount} ${currency} (pending)`,
-      reference,
+      currency: "NC",
+      kind: "withdrawal_pending",
       status: "pending",
+      reference,
+      metadata: {
+        provider: "ivorypay",
+        fiat_currency: currency,
+        fiat_amount: fiatAmount,
+        bank_code: bankCode,
+        account_number: accountNumber,
+      },
     });
 
     // POST /v1/fiat-transfer — fiat payout (amount is in fiatCurrency)
@@ -147,8 +154,8 @@ serve(async (req) => {
         .from("wallet_transactions")
         .update({
           status: "failed",
-          transaction_type: "withdrawal_failed",
-          description: `IvoryPay withdrawal failed: ${ivoryData.message || "Unknown error"}`,
+          kind: "withdrawal_failed",
+          metadata: { provider: "ivorypay", error: ivoryData.message || "Unknown error" },
         })
         .eq("reference", reference)
         .eq("user_id", user.id);
@@ -161,8 +168,7 @@ serve(async (req) => {
       .from("wallet_transactions")
       .update({
         status: "completed",
-        transaction_type: "withdrawal",
-        description: `IvoryPay withdrawal: NC ${ncAmount.toLocaleString()} → ${accountNumber} (${currency})`,
+        kind: "withdrawal",
       })
       .eq("reference", reference)
       .eq("user_id", user.id);
