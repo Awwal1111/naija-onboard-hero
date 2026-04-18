@@ -135,8 +135,13 @@ serve(async (req) => {
             .update({
               amount: ncAmount,
               status: "completed",
-              transaction_type: "deposit",
-              description: `IvoryPay deposit (webhook): ${settledCrypto} ${data.token || "USDT"} → NC ${ncAmount.toLocaleString()}`,
+              kind: "deposit",
+              metadata: {
+                provider: "ivorypay",
+                settled_crypto: settledCrypto,
+                crypto_currency: data.token || "USDT",
+                via: "webhook",
+              },
             })
             .eq("id", pending.id);
 
@@ -160,7 +165,7 @@ serve(async (req) => {
     if (event === "fiatPayout.success" || event === "cryptoPayout.success") {
       await supabase
         .from("wallet_transactions")
-        .update({ status: "completed", transaction_type: "withdrawal" })
+        .update({ status: "completed", kind: "withdrawal" })
         .eq("reference", reference);
     }
 
@@ -195,8 +200,8 @@ serve(async (req) => {
           .from("wallet_transactions")
           .update({
             status: "failed",
-            transaction_type: "withdrawal_failed",
-            description: `IvoryPay payout failed: ${data.failureReason || "unknown"} (refunded)`,
+            kind: "withdrawal_failed",
+            metadata: { provider: "ivorypay", error: data.failureReason || "unknown", refunded: true },
           })
           .eq("id", tx.id);
       }

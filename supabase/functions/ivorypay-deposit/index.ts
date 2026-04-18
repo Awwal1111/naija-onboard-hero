@@ -6,7 +6,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Per IvoryPay docs: base URL is https://api.ivorypay.io/api, paths start with /v1/...
 const IVORYPAY_BASE_URL = "https://api.ivorypay.io/api";
 const APP_URL = "https://naijalancers.name.ng";
 
@@ -17,9 +16,7 @@ serve(async (req) => {
 
   try {
     const IVORYPAY_SECRET_KEY = Deno.env.get("IVORYPAY_SECRET_KEY");
-    if (!IVORYPAY_SECRET_KEY) {
-      throw new Error("IVORYPAY_SECRET_KEY is not configured");
-    }
+    if (!IVORYPAY_SECRET_KEY) throw new Error("IVORYPAY_SECRET_KEY is not configured");
 
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -28,35 +25,30 @@ serve(async (req) => {
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: "Missing authorization header" }),
-        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
+      return new Response(JSON.stringify({ error: "Missing authorization header" }), {
+        status: 401, headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
     const token = authHeader.replace("Bearer ", "");
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
-
     if (authError || !user) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
     const { action, amount, currency, reference } = await req.json();
 
+    const supabaseService = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
+
     if (action === "initiate") {
-      if (!amount || amount <= 0) {
-        throw new Error("Invalid amount");
-      }
+      if (!amount || amount <= 0) throw new Error("Invalid amount");
 
       const baseFiat = currency || "NGN";
       const paymentReference = reference || crypto.randomUUID();
-
-      const supabaseService = createClient(
-        Deno.env.get("SUPABASE_URL") ?? "",
-        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-      );
 
       const { data: profile } = await supabaseService
         .from("profiles")
@@ -66,21 +58,17 @@ serve(async (req) => {
 
       const nameParts = (profile?.full_name || profile?.username || "User").split(" ");
 
-      // POST /v1/transactions  (CHECKOUT mode → hosted page)
       const ivoryResponse = await fetch(`${IVORYPAY_BASE_URL}/v1/transactions`, {
         method: "POST",
-        headers: {
-          Authorization: IVORYPAY_SECRET_KEY,
-          "Content-Type": "application/json",
-        },
+        headers: { Authorization: IVORYPAY_SECRET_KEY, "Content-Type": "application/json" },
         body: JSON.stringify({
-          amount: amount,
+          amount,
           email: user.email,
           firstName: nameParts[0] || "User",
           lastName: nameParts.slice(1).join(" ") || "NaijaLancers",
           type: "FIAT",
           mode: "CHECKOUT",
-          baseFiat: baseFiat,
+          baseFiat,
           crypto: "USDT",
           reference: paymentReference,
           redirect_url: `${APP_URL}/wallet?ivorypay_ref=${paymentReference}`,
@@ -96,18 +84,9 @@ serve(async (req) => {
       const ivoryData = await ivoryResponse.json();
       console.log("[IVORYPAY] Transaction response:", JSON.stringify(ivoryData));
 
-      if (!ivoryResponse.ok || (!ivoryData.success && !ivoryData.status && !ivoryData.data)) {
-        throw new Error(ivoryData.message || "Failed to create IvoryPay transaction");
+      if (!ivoryResponse.ok) {
+        throw new Error(ivoryData.message || ivoryData.error || "Failed to create IvoryPay transaction");
       }
-
-      await supabaseService.from("wallet_transactions").insert({
-        user_id: user.id,
-        amount: 0,
-        transaction_type: "deposit_pending",
-        description: `IvoryPay deposit: ${amount} ${baseFiat} (pending)`,
-        reference: paymentReference,
-        status: "pending",
-      });
 
       const checkoutUrl =
         ivoryData.data?.checkoutUrl ||
@@ -115,47 +94,54 @@ serve(async (req) => {
         ivoryData.data?.paymentUrl ||
         ivoryData.data?.url;
 
+      if (!checkoutUrl) {
+        console.error("[IVORYPAY] No checkout URL in response:", JSON.stringify(ivoryData));
+        throw new Error("IvoryPay did not return a checkout URL");
+      }
+
+      // Insert pending transaction with CORRECT schema (kind, currency, metadata)
+      const { error: txErr } = await supabaseService.from("wallet_transactions").insert({
+        user_id: user.id,
+        amount: 0,
+        currency: "NC",
+        kind: "deposit_pending",
+        status: "pending",
+        reference: paymentReference,
+        metadata: {
+          provider: "ivorypay",
+          fiat_currency: baseFiat,
+          fiat_amount: amount,
+        },
+      });
+      if (txErr) console.error("[IVORYPAY] insert pending tx error:", txErr);
+
       return new Response(
-        JSON.stringify({
-          success: true,
-          checkoutUrl,
-          reference: paymentReference,
-        }),
+        JSON.stringify({ success: true, checkoutUrl, reference: paymentReference }),
         { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
     if (action === "verify") {
-      if (!reference) {
-        throw new Error("Reference is required");
-      }
+      if (!reference) throw new Error("Reference is required");
 
-      // GET /v1/business/transactions/:reference/verify
       const verifyResponse = await fetch(
         `${IVORYPAY_BASE_URL}/v1/business/transactions/${reference}/verify`,
-        {
-          headers: { Authorization: IVORYPAY_SECRET_KEY },
-        }
+        { headers: { Authorization: IVORYPAY_SECRET_KEY } }
       );
 
       const verifyData = await verifyResponse.json();
       console.log("[IVORYPAY] Verify response:", JSON.stringify(verifyData));
 
       const txStatus = verifyData.data?.status;
-      const isSuccess = (verifyData.success || verifyData.status) && txStatus === "SUCCESS";
+      const isSuccess = txStatus === "SUCCESS";
 
       if (isSuccess) {
-        const supabaseService = createClient(
-          Deno.env.get("SUPABASE_URL") ?? "",
-          Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-        );
-
         const { data: existing } = await supabaseService
           .from("wallet_transactions")
           .select("id, status")
           .eq("reference", reference)
           .eq("user_id", user.id)
-          .single();
+          .maybeSingle();
 
         if (existing && existing.status === "completed") {
           return new Response(
@@ -165,9 +151,7 @@ serve(async (req) => {
         }
 
         const settledCrypto =
-          verifyData.data.settledAmountInCrypto ||
-          verifyData.data.amountInCrypto ||
-          0;
+          parseFloat(verifyData.data.settledAmountInCrypto || verifyData.data.amountInCrypto || "0");
         const ncAmount = Math.floor(settledCrypto * 1600);
 
         if (ncAmount > 0) {
@@ -188,16 +172,31 @@ serve(async (req) => {
               .eq("user_id", user.id);
           }
 
-          await supabaseService
-            .from("wallet_transactions")
-            .update({
+          if (existing) {
+            await supabaseService
+              .from("wallet_transactions")
+              .update({
+                amount: ncAmount,
+                status: "completed",
+                kind: "deposit",
+                metadata: {
+                  provider: "ivorypay",
+                  settled_crypto: settledCrypto,
+                  crypto_currency: verifyData.data.currency || "USDT",
+                },
+              })
+              .eq("id", existing.id);
+          } else {
+            await supabaseService.from("wallet_transactions").insert({
+              user_id: user.id,
               amount: ncAmount,
+              currency: "NC",
+              kind: "deposit",
               status: "completed",
-              transaction_type: "deposit",
-              description: `IvoryPay deposit: ${settledCrypto} USDT → NC ${ncAmount.toLocaleString()}`,
-            })
-            .eq("reference", reference)
-            .eq("user_id", user.id);
+              reference,
+              metadata: { provider: "ivorypay", settled_crypto: settledCrypto },
+            });
+          }
 
           await supabaseService.from("crypto_transactions").insert({
             user_id: user.id,
@@ -215,10 +214,7 @@ serve(async (req) => {
 
         return new Response(
           JSON.stringify({
-            success: true,
-            status: "SUCCESS",
-            ncAmount,
-            settledCrypto,
+            success: true, status: "SUCCESS", ncAmount, settledCrypto,
             message: `NC ${ncAmount.toLocaleString()} credited to your wallet`,
           }),
           { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
@@ -226,11 +222,7 @@ serve(async (req) => {
       }
 
       return new Response(
-        JSON.stringify({
-          success: true,
-          status: txStatus || "PENDING",
-          message: "Transaction not yet confirmed",
-        }),
+        JSON.stringify({ success: true, status: txStatus || "PENDING", message: "Transaction not yet confirmed" }),
         { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
