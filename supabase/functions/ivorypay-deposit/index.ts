@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 const IVORYPAY_BASE_URL = "https://api.ivorypay.io/api";
-const APP_URL = "https://naijalancers.name.ng";
+const APP_URL = "https://naijalancers.name.ng/payment-success";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -71,7 +71,7 @@ serve(async (req) => {
           baseFiat,
           crypto: "USDT",
           reference: paymentReference,
-          redirect_url: `${APP_URL}/wallet?ivorypay_ref=${paymentReference}`,
+          redirect_url: `${APP_URL}`,
           metadata: JSON.stringify({
             user_id: user.id,
             nc_deposit: true,
@@ -124,15 +124,15 @@ serve(async (req) => {
     if (action === "verify") {
       if (!reference) throw new Error("Reference is required");
 
-      const verifyResponse = await fetch(
-        `${IVORYPAY_BASE_URL}/v1/business/transactions/${reference}/verify`,
-        { headers: { Authorization: IVORYPAY_SECRET_KEY } }
-      );
+        const verifyResponse = await fetch(
+          `${IVORYPAY_BASE_URL}/v1/transactions/${reference}/verify`,
+          { headers: { Authorization: IVORYPAY_SECRET_KEY } }
+        );
 
       const verifyData = await verifyResponse.json();
       console.log("[IVORYPAY] Verify response:", JSON.stringify(verifyData));
 
-      const txStatus = verifyData.data?.status;
+        const txStatus = verifyData.data?.status;
       const isSuccess = txStatus === "SUCCESS";
 
       if (isSuccess) {
@@ -151,7 +151,7 @@ serve(async (req) => {
         }
 
         const settledCrypto =
-          parseFloat(verifyData.data.settledAmountInCrypto || verifyData.data.amountInCrypto || "0");
+          parseFloat(verifyData.data?.settledAmountInCrypto || verifyData.data?.receivedAmountInCrypto || verifyData.data?.amountInCrypto || "0");
         const ncAmount = Math.floor(settledCrypto * 1600);
 
         if (ncAmount > 0) {

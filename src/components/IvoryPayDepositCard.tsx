@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { BrandButton } from '@/components/ui/brand-button'
 import { BrandInput } from '@/components/ui/brand-input'
@@ -10,55 +10,13 @@ import { supabase } from '@/integrations/supabase/client'
 import { toast } from 'sonner'
 
 interface IvoryPayDepositCardProps {
-  onSuccess?: () => void
+  onPending?: () => void
 }
 
-export const IvoryPayDepositCard = ({ onSuccess }: IvoryPayDepositCardProps) => {
+export const IvoryPayDepositCard = ({ onPending }: IvoryPayDepositCardProps) => {
   const [amount, setAmount] = useState('')
   const [currency, setCurrency] = useState('NGN')
   const [isLoading, setIsLoading] = useState(false)
-  const verifiedRef = useRef<Set<string>>(new Set())
-
-  // Auto-verify when user returns from IvoryPay checkout
-  useEffect(() => {
-    const verifyPending = async () => {
-      const url = new URL(window.location.href)
-      const refFromUrl = url.searchParams.get('ivorypay_ref')
-      const refFromStorage = localStorage.getItem('ivorypay_pending_ref')
-      const reference = refFromUrl || refFromStorage
-      if (!reference || verifiedRef.current.has(reference)) return
-      verifiedRef.current.add(reference)
-
-      try {
-        const { data: { session } } = await supabase.auth.getSession()
-        if (!session) return
-        const res = await supabase.functions.invoke('ivorypay-deposit', {
-          body: { action: 'verify', reference },
-          headers: { Authorization: `Bearer ${session.access_token}` },
-        })
-        const data = res.data
-        if (data?.status === 'SUCCESS' && data?.ncAmount > 0) {
-          toast.success(`Deposit confirmed! NC ${data.ncAmount.toLocaleString()} added to your wallet.`)
-          localStorage.removeItem('ivorypay_pending_ref')
-          if (refFromUrl) {
-            url.searchParams.delete('ivorypay_ref')
-            window.history.replaceState({}, '', url.toString())
-          }
-          onSuccess?.()
-        } else if (data?.status === 'PENDING') {
-          // allow retrying later
-          verifiedRef.current.delete(reference)
-        }
-      } catch (e) {
-        console.error('IvoryPay verify error:', e)
-        verifiedRef.current.delete(reference)
-      }
-    }
-    verifyPending()
-    const onFocus = () => verifyPending()
-    window.addEventListener('focus', onFocus)
-    return () => window.removeEventListener('focus', onFocus)
-  }, [onSuccess])
 
   const currencySymbols: Record<string, string> = {
     NGN: '₦',
@@ -103,8 +61,8 @@ export const IvoryPayDepositCard = ({ onSuccess }: IvoryPayDepositCardProps) => 
       // Open IvoryPay checkout in new tab
       window.open(data.checkoutUrl, '_blank')
       toast.success('IvoryPay checkout opened! Complete payment in the new tab.')
-      
-      onSuccess?.()
+
+      onPending?.()
     } catch (error: any) {
       console.error('IvoryPay deposit error:', error)
       toast.error(error.message || 'Failed to initiate deposit')
