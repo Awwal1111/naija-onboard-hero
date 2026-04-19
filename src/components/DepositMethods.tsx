@@ -6,7 +6,7 @@ import { useMiniPay } from '@/hooks/useMiniPay'
 import { useUserCountry } from '@/hooks/useUserCountry'
 
 interface DepositMethodsProps {
-  onSelectMethod: (method: 'ramp' | 'crypto' | 'telegram' | 'minipay' | 'ivorypay') => void
+  onSelectMethod: (method: 'ramp' | 'crypto' | 'telegram' | 'minipay' | 'ivorypay' | 'metamask' | 'valora') => void
 }
 
 export const DepositMethods = ({ onSelectMethod }: DepositMethodsProps) => {
@@ -103,6 +103,40 @@ export const DepositMethods = ({ onSelectMethod }: DepositMethodsProps) => {
         <CardContent>
           <BrandButton onClick={() => onSelectMethod('crypto')} variant="outline" className="w-full">
             View Wallet Address
+          </BrandButton>
+        </CardContent>
+      </Card>
+
+      <Card className="hover:border-primary/40 transition-colors relative overflow-hidden">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Wallet className="h-5 w-5" />
+            MetaMask Deposit
+          </CardTitle>
+          <CardDescription>
+            Connect MetaMask and send cUSD or USDT on Celo to your NaijaLancers wallet
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <BrandButton onClick={() => onSelectMethod('metamask')} variant="outline" className="w-full">
+            Connect MetaMask
+          </BrandButton>
+        </CardContent>
+      </Card>
+
+      <Card className="hover:border-primary/40 transition-colors relative overflow-hidden">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Wallet className="h-5 w-5" />
+            Valora Deposit
+          </CardTitle>
+          <CardDescription>
+            Open Valora-compatible transfer details and send cUSD or USDT to your wallet
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <BrandButton onClick={() => onSelectMethod('valora')} variant="outline" className="w-full">
+            Deposit with Valora
           </BrandButton>
         </CardContent>
       </Card>
