@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Send, Wallet, Copy, Info, AlertCircle, ArrowLeft } from 'lucide-react'
+import { Send, Wallet, Copy, Info, AlertCircle, ArrowLeft, ExternalLink } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
 import { supabase } from '@/integrations/supabase/client'
@@ -14,6 +14,7 @@ import { DepositMethods } from './DepositMethods'
 import { MiniPayDepositCard } from './MiniPayDepositCard'
 import { IvoryPayDepositCard } from './IvoryPayDepositCard'
 import { useMiniPay } from '@/hooks/useMiniPay'
+import { CUSD_ADDRESS, USDT_ADDRESS } from '@/lib/minipay'
 
 interface DepositDialogProps {
   open: boolean
@@ -27,7 +28,7 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
   const [walletAddress, setWalletAddress] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [creatingWallet, setCreatingWallet] = useState(false)
-  const [selectedMethod, setSelectedMethod] = useState<'main' | 'ramp' | 'crypto' | 'telegram' | 'minipay' | 'ivorypay'>('main')
+  const [selectedMethod, setSelectedMethod] = useState<'main' | 'ramp' | 'crypto' | 'telegram' | 'minipay' | 'ivorypay' | 'metamask' | 'valora'>('main')
 
   useEffect(() => {
     console.log('[DEPOSIT] 🎯 Effect triggered. User:', !!user, 'Profile:', !!profile)
@@ -118,12 +119,26 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
     window.dispatchEvent(event)
   }
 
-  const handleMethodSelect = (method: 'ramp' | 'crypto' | 'telegram' | 'minipay' | 'ivorypay') => {
+  const handleMethodSelect = (method: 'ramp' | 'crypto' | 'telegram' | 'minipay' | 'ivorypay' | 'metamask' | 'valora') => {
     if (method === 'ramp') {
       handleOpenQuidaxWidget()
     } else {
       setSelectedMethod(method)
     }
+  }
+
+  const openWalletTransfer = (wallet: 'metamask' | 'valora', tokenAddress: string) => {
+    if (!walletAddress) {
+      toast.error('Your NaijaLancers wallet is not ready yet')
+      return
+    }
+
+    const baseUrl = wallet === 'metamask'
+      ? `https://metamask.app.link/send/${tokenAddress}@42220/transfer?address=${walletAddress}`
+      : `https://app.valora.xyz/transfer?address=${walletAddress}`
+
+    window.open(baseUrl, '_blank', 'noopener,noreferrer')
+    toast.success(`${wallet === 'metamask' ? 'MetaMask' : 'Valora'} opened for wallet deposit`)
   }
 
   const handleMiniPaySuccess = () => {
@@ -155,6 +170,8 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
                  selectedMethod === 'crypto' ? 'Crypto Deposit' : 
                  selectedMethod === 'minipay' ? 'MiniPay Deposit' :
                  selectedMethod === 'ivorypay' ? 'IvoryPay Deposit' :
+                 selectedMethod === 'metamask' ? 'MetaMask Deposit' :
+                 selectedMethod === 'valora' ? 'Valora Deposit' :
                  'Telegram Bot'}
               </DialogTitle>
               <DialogDescription>
@@ -162,6 +179,8 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
                  selectedMethod === 'crypto' ? 'Send crypto to your wallet address' :
                  selectedMethod === 'minipay' ? 'Deposit directly from MiniPay' :
                  selectedMethod === 'ivorypay' ? 'Pay via bank or crypto through IvoryPay' :
+                 selectedMethod === 'metamask' ? 'Open MetaMask and transfer to your NaijaLancers wallet' :
+                 selectedMethod === 'valora' ? 'Open Valora and transfer to your NaijaLancers wallet' :
                  'Deposit via Telegram bot'}
               </DialogDescription>
             </div>
@@ -291,10 +310,64 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
         )}
 
         {selectedMethod === 'ivorypay' && (
-          <IvoryPayDepositCard onSuccess={() => {
+          <IvoryPayDepositCard onPending={() => {
             onOpenChange(false)
             setSelectedMethod('main')
           }} />
+        )}
+
+        {(selectedMethod === 'metamask' || selectedMethod === 'valora') && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Wallet className="h-5 w-5 text-primary" />
+                {selectedMethod === 'metamask' ? 'MetaMask Wallet Deposit' : 'Valora Wallet Deposit'}
+              </CardTitle>
+              <CardDescription>
+                Send cUSD or USDT on Celo to your permanent NaijaLancers wallet address.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Your NaijaLancers Wallet Address</Label>
+                <div className="flex gap-2">
+                  <Input value={walletAddress} readOnly className="font-mono text-sm" />
+                  <BrandButton onClick={copyWalletAddress} variant="outline" size="icon">
+                    <Copy className="h-4 w-4" />
+                  </BrandButton>
+                </div>
+              </div>
+
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertDescription className="text-sm">
+                  Open your wallet app, confirm the recipient address, then send cUSD or USDT on the Celo network.
+                </AlertDescription>
+              </Alert>
+
+              <div className="grid gap-3">
+                <div className="rounded-lg border border-border bg-card p-3">
+                  <p className="text-sm font-medium">cUSD token</p>
+                  <p className="mt-1 break-all font-mono text-xs text-muted-foreground">{CUSD_ADDRESS}</p>
+                </div>
+                <div className="rounded-lg border border-border bg-card p-3">
+                  <p className="text-sm font-medium">USDT token</p>
+                  <p className="mt-1 break-all font-mono text-xs text-muted-foreground">{USDT_ADDRESS}</p>
+                </div>
+              </div>
+
+              <div className="grid gap-2 sm:grid-cols-2">
+                <BrandButton onClick={() => openWalletTransfer(selectedMethod, CUSD_ADDRESS)} className="w-full">
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  Open for cUSD
+                </BrandButton>
+                <BrandButton onClick={() => openWalletTransfer(selectedMethod, USDT_ADDRESS)} variant="outline" className="w-full">
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  Open for USDT
+                </BrandButton>
+              </div>
+            </CardContent>
+          </Card>
         )}
       </DialogContent>
     </Dialog>
