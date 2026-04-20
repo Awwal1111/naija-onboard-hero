@@ -27,11 +27,7 @@ const erc20TransferAbi = [
 
 export type WalletKind = 'metamask' | 'valora' | 'injected'
 
-declare global {
-  interface Window {
-    ethereum?: any
-  }
-}
+// window.ethereum is declared globally in src/lib/minipay.ts
 
 const isMobile = () =>
   typeof navigator !== 'undefined' && /android|iphone|ipad|ipod/i.test(navigator.userAgent)
