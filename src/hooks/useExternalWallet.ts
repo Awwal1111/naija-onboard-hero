@@ -37,17 +37,17 @@ const isMobile = () =>
  */
 function getProvider(kind: WalletKind): any | null {
   if (typeof window === 'undefined') return null
-  const eth = window.ethereum
+  const eth: any = (window as any).ethereum
   if (!eth) return null
 
   // EIP-5749 / multi-provider
-  const providers: any[] = (eth.providers as any[]) || [eth]
+  const providers: any[] = Array.isArray(eth.providers) ? eth.providers : [eth]
 
   if (kind === 'metamask') {
-    return providers.find((p) => p?.isMetaMask && !p?.isBraveWallet) || (eth.isMetaMask ? eth : null)
+    return providers.find((p: any) => p?.isMetaMask && !p?.isBraveWallet) || (eth.isMetaMask ? eth : null)
   }
   if (kind === 'valora') {
-    return providers.find((p) => p?.isValora) || (eth.isValora ? eth : null) || eth
+    return providers.find((p: any) => p?.isValora) || (eth.isValora ? eth : null) || eth
   }
   return eth
 }
