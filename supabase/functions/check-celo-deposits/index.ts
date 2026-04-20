@@ -264,11 +264,14 @@ serve(async (req) => {
     console.log(`[CHECK-DEPOSIT] 💵 NC to credit: ${ncAmount} (from ${nairaAmount.toFixed(2)} NGN)`);
 
     // Check if there's a "detected" transaction from webhook to update
+    // Match same asset + recent (last 30 min) to avoid hijacking unrelated stale records
     const { data: existingDetected } = await supabase
       .from("crypto_transactions")
       .select("id, tx_hash")
       .eq("user_id", user_id)
       .eq("status", "detected")
+      .eq("crypto_currency", asset)
+      .gte("created_at", new Date(Date.now() - 30 * 60 * 1000).toISOString())
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
