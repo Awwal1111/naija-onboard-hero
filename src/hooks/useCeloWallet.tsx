@@ -26,7 +26,7 @@ export const useCeloWallet = () => {
   const [cUsdBalance, setCUsdBalance] = useState<string>('0');
   const [usdtBalance, setUsdtBalance] = useState<string>('0');
   const [loading, setLoading] = useState(true);
-  const [isCheckingDeposits, setIsCheckingDeposits] = useState(false);
+  const isCheckingDepositsRef = useRef(false);
 
   // Update balances from blockchain - defined early for use in deposit check
   const updateBalancesForWallet = async (walletInstance: ethers.HDNodeWallet | ethers.Wallet) => {
@@ -57,20 +57,17 @@ export const useCeloWallet = () => {
 
   // Check for deposits by calling the edge function
   const checkForDeposits = useCallback(async (walletAddress: string, walletInstance?: ethers.HDNodeWallet | ethers.Wallet) => {
-    if (isCheckingDeposits) return;
-    
+    if (isCheckingDepositsRef.current) return;
+
     try {
-      setIsCheckingDeposits(true);
+      isCheckingDepositsRef.current = true;
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
       console.log('[DEPOSIT-CHECK] Checking for deposits...');
-      
+
       const { data, error } = await supabase.functions.invoke('check-celo-deposits', {
         body: { user_id: user.id, wallet_address: walletAddress },
-        headers: {
-          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
-        }
       });
 
       if (error) {
@@ -81,7 +78,6 @@ export const useCeloWallet = () => {
       if (data?.deposit_detected) {
         console.log(`[DEPOSIT-CHECK] ✅ Deposit detected! Credited: ${data.credited} NC`);
         toast.success(`Deposit received! ${data.credited} NC credited to your wallet`);
-        // Refresh balances after deposit
         if (walletInstance) {
           await updateBalancesForWallet(walletInstance);
         }
@@ -89,9 +85,9 @@ export const useCeloWallet = () => {
     } catch (error) {
       console.error('[DEPOSIT-CHECK] Error:', error);
     } finally {
-      setIsCheckingDeposits(false);
+      isCheckingDepositsRef.current = false;
     }
-  }, [isCheckingDeposits]);
+  }, []);
 
   useEffect(() => {
     initializeWallet();
@@ -101,15 +97,20 @@ export const useCeloWallet = () => {
   useEffect(() => {
     if (!address || !wallet) return;
 
-    // Initial check
-    checkForDeposits(address, wallet);
+    // Initial check (delayed 10s to avoid burst on mount)
+    const initialTimer = setTimeout(() => {
+      checkForDeposits(address, wallet);
+    }, 10000);
 
     // Set up polling interval
     const intervalId = setInterval(() => {
       checkForDeposits(address, wallet);
     }, DEPOSIT_CHECK_INTERVAL);
 
-    return () => clearInterval(intervalId);
+    return () => {
+      clearTimeout(initialTimer);
+      clearInterval(intervalId);
+    };
   }, [address, wallet, checkForDeposits]);
 
   const initializeWallet = async () => {
