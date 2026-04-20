@@ -13,6 +13,7 @@ import { toast } from 'sonner'
 import { DepositMethods } from './DepositMethods'
 import { MiniPayDepositCard } from './MiniPayDepositCard'
 import { IvoryPayDepositCard } from './IvoryPayDepositCard'
+import { WalletDepositCard } from './WalletDepositCard'
 import { useMiniPay } from '@/hooks/useMiniPay'
 import { CUSD_ADDRESS, USDT_ADDRESS } from '@/lib/minipay'
 
@@ -317,57 +318,14 @@ export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
         )}
 
         {(selectedMethod === 'metamask' || selectedMethod === 'valora') && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Wallet className="h-5 w-5 text-primary" />
-                {selectedMethod === 'metamask' ? 'MetaMask Wallet Deposit' : 'Valora Wallet Deposit'}
-              </CardTitle>
-              <CardDescription>
-                Send cUSD or USDT on Celo to your permanent NaijaLancers wallet address.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Your NaijaLancers Wallet Address</Label>
-                <div className="flex gap-2">
-                  <Input value={walletAddress} readOnly className="font-mono text-sm" />
-                  <BrandButton onClick={copyWalletAddress} variant="outline" size="icon">
-                    <Copy className="h-4 w-4" />
-                  </BrandButton>
-                </div>
-              </div>
-
-              <Alert>
-                <Info className="h-4 w-4" />
-                <AlertDescription className="text-sm">
-                  Open your wallet app, confirm the recipient address, then send cUSD or USDT on the Celo network.
-                </AlertDescription>
-              </Alert>
-
-              <div className="grid gap-3">
-                <div className="rounded-lg border border-border bg-card p-3">
-                  <p className="text-sm font-medium">cUSD token</p>
-                  <p className="mt-1 break-all font-mono text-xs text-muted-foreground">{CUSD_ADDRESS}</p>
-                </div>
-                <div className="rounded-lg border border-border bg-card p-3">
-                  <p className="text-sm font-medium">USDT token</p>
-                  <p className="mt-1 break-all font-mono text-xs text-muted-foreground">{USDT_ADDRESS}</p>
-                </div>
-              </div>
-
-              <div className="grid gap-2 sm:grid-cols-2">
-                <BrandButton onClick={() => openWalletTransfer(selectedMethod, CUSD_ADDRESS)} className="w-full">
-                  <ExternalLink className="mr-2 h-4 w-4" />
-                  Open for cUSD
-                </BrandButton>
-                <BrandButton onClick={() => openWalletTransfer(selectedMethod, USDT_ADDRESS)} variant="outline" className="w-full">
-                  <ExternalLink className="mr-2 h-4 w-4" />
-                  Open for USDT
-                </BrandButton>
-              </div>
-            </CardContent>
-          </Card>
+          <WalletDepositCard
+            walletKind={selectedMethod}
+            recipientAddress={walletAddress}
+            onSuccess={() => {
+              onOpenChange(false)
+              setSelectedMethod('main')
+            }}
+          />
         )}
       </DialogContent>
     </Dialog>
