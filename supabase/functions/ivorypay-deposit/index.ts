@@ -88,7 +88,9 @@ serve(async (req) => {
         throw new Error(ivoryData.message || ivoryData.error || "Failed to create IvoryPay transaction");
       }
 
+      // IvoryPay returns checkoutUrl nested inside collectionDetails
       const checkoutUrl =
+        ivoryData.data?.collectionDetails?.checkoutUrl ||
         ivoryData.data?.checkoutUrl ||
         ivoryData.data?.checkout_url ||
         ivoryData.data?.paymentUrl ||
