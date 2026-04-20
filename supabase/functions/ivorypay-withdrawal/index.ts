@@ -118,13 +118,43 @@ serve(async (req) => {
       },
     });
 
-    // POST /v1/fiat-transfer — fiat payout (amount is in fiatCurrency)
+    // Step 1: Resolve account name to validate before sending money
+    const resolveResp = await fetch(`${IVORYPAY_BASE_URL}/v1/fiat-transfer/account-resolution`, {
+      method: "POST",
+      headers: { Authorization: IVORYPAY_SECRET_KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({ accountNumber, bankCode, currency }),
+    });
+    const resolveData = await resolveResp.json();
+    console.log("[IVORYPAY-WITHDRAWAL] Account resolution:", JSON.stringify(resolveData));
+
+    if (!resolveResp.ok || resolveData.status === false || resolveData.success === false) {
+      // Refund balance immediately
+      await supabaseService
+        .from("profiles")
+        .update({
+          wallet_balance: profile.wallet_balance || 0,
+          balance_withdrawable: profile.balance_withdrawable || 0,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", user.id);
+
+      await supabaseService
+        .from("wallet_transactions")
+        .update({
+          status: "failed",
+          kind: "withdrawal_failed",
+          metadata: { provider: "ivorypay", error: resolveData.message || "Account resolution failed" },
+        })
+        .eq("reference", reference)
+        .eq("user_id", user.id);
+
+      throw new Error(resolveData.message || "Could not verify bank account");
+    }
+
+    // Step 2: Initiate the fiat payout
     const ivoryResponse = await fetch(`${IVORYPAY_BASE_URL}/v1/fiat-transfer`, {
       method: "POST",
-      headers: {
-        Authorization: IVORYPAY_SECRET_KEY,
-        "Content-Type": "application/json",
-      },
+      headers: { Authorization: IVORYPAY_SECRET_KEY, "Content-Type": "application/json" },
       body: JSON.stringify({
         amount: fiatAmount,
         token: "USDT",
@@ -137,15 +167,18 @@ serve(async (req) => {
     });
 
     const ivoryData = await ivoryResponse.json();
-    console.log("[IVORYPAY-WITHDRAWAL] Response:", JSON.stringify(ivoryData));
+    console.log("[IVORYPAY-WITHDRAWAL] Payout response:", JSON.stringify(ivoryData));
 
-    if (!ivoryResponse.ok || (!ivoryData.success && !ivoryData.status && !ivoryData.data)) {
+    // IvoryPay returns { status: true, data: {...} } on success
+    const payoutOk = ivoryResponse.ok && (ivoryData.status === true || ivoryData.success === true);
+
+    if (!payoutOk) {
       // Refund user on failure
       await supabaseService
         .from("profiles")
         .update({
-          wallet_balance: (profile.wallet_balance || 0),
-          balance_withdrawable: (profile.balance_withdrawable || 0),
+          wallet_balance: profile.wallet_balance || 0,
+          balance_withdrawable: profile.balance_withdrawable || 0,
           updated_at: new Date().toISOString(),
         })
         .eq("user_id", user.id);
@@ -163,29 +196,25 @@ serve(async (req) => {
       throw new Error(ivoryData.message || "Withdrawal failed");
     }
 
-    // Update transaction to completed
+    // Payout accepted — keep status pending until webhook confirms SUCCESS/FAILED
+    // (do NOT mark completed here, do NOT insert crypto_transactions yet)
     await supabaseService
       .from("wallet_transactions")
       .update({
-        status: "completed",
         kind: "withdrawal",
+        metadata: {
+          provider: "ivorypay",
+          fiat_currency: currency,
+          fiat_amount: fiatAmount,
+          bank_code: bankCode,
+          account_number: accountNumber,
+          account_name: resolveData.data?.accountName || accountName,
+          payout_id: ivoryData.data?.id,
+          submitted_at: new Date().toISOString(),
+        },
       })
       .eq("reference", reference)
       .eq("user_id", user.id);
-
-    // Record in crypto_transactions
-    await supabaseService.from("crypto_transactions").insert({
-      user_id: user.id,
-      crypto_amount: usdtAmount,
-      crypto_currency: "USDT",
-      nc_amount: ncAmount,
-      naira_amount: ncAmount,
-      exchange_rate: 1600,
-      transaction_type: "withdrawal",
-      status: "completed",
-      tx_hash: reference,
-      wallet_address: `${bankCode}:${accountNumber}`,
-    });
 
     return new Response(
       JSON.stringify({
