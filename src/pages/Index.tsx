@@ -105,7 +105,7 @@ const Index = () => {
                 </h1>
                 
                 <p className="text-lg sm:text-xl lg:text-2xl text-muted-foreground leading-relaxed max-w-xl">
-                  Post a job in 2 minutes. Get matched with verified experts. Pay only when satisfied.
+                  Join a global community of freelancers and clients. Post a job in 2 minutes, get matched with verified talent, and pay only when you're satisfied.
                 </p>
 
                 <div className="flex flex-wrap gap-4 sm:gap-8 pt-2">
