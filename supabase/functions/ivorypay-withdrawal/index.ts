@@ -118,6 +118,34 @@ serve(async (req) => {
       },
     });
 
+    // Helper to safely refund the user (re-reads current balances to avoid races)
+    const refundUser = async (errorMsg: string) => {
+      const { data: current } = await supabaseService
+        .from("profiles")
+        .select("wallet_balance, balance_withdrawable")
+        .eq("user_id", user.id)
+        .single();
+      if (current) {
+        await supabaseService
+          .from("profiles")
+          .update({
+            wallet_balance: (current.wallet_balance || 0) + ncAmount,
+            balance_withdrawable: (current.balance_withdrawable || 0) + ncAmount,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("user_id", user.id);
+      }
+      await supabaseService
+        .from("wallet_transactions")
+        .update({
+          status: "failed",
+          kind: "withdrawal_failed",
+          metadata: { provider: "ivorypay", error: errorMsg, refunded: true },
+        })
+        .eq("reference", reference)
+        .eq("user_id", user.id);
+    };
+
     // Step 1: Resolve account name to validate before sending money
     const resolveResp = await fetch(`${IVORYPAY_BASE_URL}/v1/fiat-transfer/account-resolution`, {
       method: "POST",
@@ -125,30 +153,12 @@ serve(async (req) => {
       body: JSON.stringify({ accountNumber, bankCode, currency }),
     });
     const resolveData = await resolveResp.json();
-    console.log("[IVORYPAY-WITHDRAWAL] Account resolution:", JSON.stringify(resolveData));
+    console.log("[IVORYPAY-WITHDRAWAL] Account resolution status:", resolveResp.status, "body:", JSON.stringify(resolveData));
 
     if (!resolveResp.ok || resolveData.status === false || resolveData.success === false) {
-      // Refund balance immediately
-      await supabaseService
-        .from("profiles")
-        .update({
-          wallet_balance: profile.wallet_balance || 0,
-          balance_withdrawable: profile.balance_withdrawable || 0,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("user_id", user.id);
-
-      await supabaseService
-        .from("wallet_transactions")
-        .update({
-          status: "failed",
-          kind: "withdrawal_failed",
-          metadata: { provider: "ivorypay", error: resolveData.message || "Account resolution failed" },
-        })
-        .eq("reference", reference)
-        .eq("user_id", user.id);
-
-      throw new Error(resolveData.message || "Could not verify bank account");
+      const msg = resolveData.message || resolveData.error || `Account resolution failed (HTTP ${resolveResp.status})`;
+      await refundUser(msg);
+      throw new Error(msg);
     }
 
     // Step 2: Initiate the fiat payout
@@ -167,33 +177,15 @@ serve(async (req) => {
     });
 
     const ivoryData = await ivoryResponse.json();
-    console.log("[IVORYPAY-WITHDRAWAL] Payout response:", JSON.stringify(ivoryData));
+    console.log("[IVORYPAY-WITHDRAWAL] Payout response status:", ivoryResponse.status, "body:", JSON.stringify(ivoryData));
 
     // IvoryPay returns { status: true, data: {...} } on success
     const payoutOk = ivoryResponse.ok && (ivoryData.status === true || ivoryData.success === true);
 
     if (!payoutOk) {
-      // Refund user on failure
-      await supabaseService
-        .from("profiles")
-        .update({
-          wallet_balance: profile.wallet_balance || 0,
-          balance_withdrawable: profile.balance_withdrawable || 0,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("user_id", user.id);
-
-      await supabaseService
-        .from("wallet_transactions")
-        .update({
-          status: "failed",
-          kind: "withdrawal_failed",
-          metadata: { provider: "ivorypay", error: ivoryData.message || "Unknown error" },
-        })
-        .eq("reference", reference)
-        .eq("user_id", user.id);
-
-      throw new Error(ivoryData.message || "Withdrawal failed");
+      const msg = ivoryData.message || ivoryData.error || `Payout failed (HTTP ${ivoryResponse.status})`;
+      await refundUser(msg);
+      throw new Error(msg);
     }
 
     // Payout accepted — keep status pending until webhook confirms SUCCESS/FAILED
