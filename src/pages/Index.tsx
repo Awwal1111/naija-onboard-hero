@@ -11,6 +11,7 @@ import explainerVideo from '@/assets/naijalancers-explainer.mp4'
 import { LeaderboardSection } from '@/components/LeaderboardSection'
 import { SuccessStoriesSection } from '@/components/SuccessStoriesSection'
 import { SocialProofSection } from '@/components/SocialProofSection'
+import { TrustStatsStrip } from '@/components/TrustStatsStrip'
 import { FeaturedContestsSection } from '@/components/FeaturedContestsSection'
 import { FeaturedGigsSection } from '@/components/FeaturedGigsSection'
 import { WhatsAppShareCTA } from '@/components/WhatsAppShareCTA'
@@ -105,7 +106,7 @@ const Index = () => {
                 </h1>
                 
                 <p className="text-lg sm:text-xl lg:text-2xl text-muted-foreground leading-relaxed max-w-xl">
-                  Post a job in 2 minutes. Get matched with verified experts. Pay only when satisfied.
+                  Join a global community of freelancers and clients. Post a job in 2 minutes, get matched with verified talent, and pay only when you're satisfied.
                 </p>
 
                 <div className="flex flex-wrap gap-4 sm:gap-8 pt-2">
@@ -202,6 +203,9 @@ const Index = () => {
           </div>
         </div>
       </section>
+
+      {/* Static trust stats — no DB calls, egress-safe */}
+      <TrustStatsStrip />
 
       {/* Featured In / Press Section */}
       <section className="py-8 sm:py-12 border-b border-border/50">
