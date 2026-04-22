@@ -48,6 +48,42 @@ serve(async (req) => {
       if (!amount || amount <= 0) throw new Error("Invalid amount");
 
       const baseFiat = currency || "NGN";
+
+      // ===== Dedupe: reuse a recent open pending deposit instead of creating duplicates =====
+      // If the user has a pending deposit < 25 minutes old for the SAME amount+currency,
+      // and that pending row already has a checkout URL, return it instead of creating a new one.
+      const { data: recentPending } = await supabaseService
+        .from("wallet_transactions")
+        .select("id, reference, metadata, created_at")
+        .eq("user_id", user.id)
+        .eq("kind", "deposit_pending")
+        .eq("status", "pending")
+        .gt("created_at", new Date(Date.now() - 25 * 60 * 1000).toISOString())
+        .order("created_at", { ascending: false })
+        .limit(5);
+
+      const reusable = (recentPending || []).find((row: any) => {
+        const m = row.metadata || {};
+        return (
+          m.fiat_currency === baseFiat &&
+          Number(m.fiat_amount) === Number(amount) &&
+          typeof m.checkout_url === "string"
+        );
+      });
+
+      if (reusable) {
+        console.log("[IVORYPAY] Reusing existing pending deposit", reusable.reference);
+        return new Response(
+          JSON.stringify({
+            success: true,
+            checkoutUrl: (reusable.metadata as any).checkout_url,
+            reference: reusable.reference,
+            reused: true,
+          }),
+          { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+
       const paymentReference = reference || crypto.randomUUID();
 
       const { data: profile } = await supabaseService
@@ -101,7 +137,7 @@ serve(async (req) => {
         throw new Error("IvoryPay did not return a checkout URL");
       }
 
-      // Insert pending transaction with CORRECT schema (kind, currency, metadata)
+      // Insert pending transaction with the checkout url stored so we can reuse it
       const { error: txErr } = await supabaseService.from("wallet_transactions").insert({
         user_id: user.id,
         amount: 0,
@@ -113,6 +149,7 @@ serve(async (req) => {
           provider: "ivorypay",
           fiat_currency: baseFiat,
           fiat_amount: amount,
+          checkout_url: checkoutUrl,
         },
       });
       if (txErr) console.error("[IVORYPAY] insert pending tx error:", txErr);
