@@ -872,14 +872,14 @@ serve(async (req) => {
     );
   }
   
-  // Check balance for paid endpoints
+  // Check balance for paid endpoints (uses developer's NC wallet_balance)
   const cost = API_PRICING[endpoint] || API_PRICING['default'];
-  if (cost > 0 && developer.nc_balance < cost) {
+  if (cost > 0 && (developer.wallet_balance || 0) < cost) {
     return new Response(
       JSON.stringify({ 
         error: 'Insufficient NC balance',
         required: cost,
-        current_balance: developer.nc_balance,
+        current_balance: developer.wallet_balance || 0,
         topup_url: 'https://naijalancers.name.ng/settings/wallet'
       }),
       { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
