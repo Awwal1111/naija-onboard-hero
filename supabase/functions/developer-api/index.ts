@@ -33,6 +33,8 @@ const RATE_LIMITS: Record<string, number> = {
   'vtu/cable': 50,
   'payments/escrow/create': 50,
   'payments/escrow/release': 50,
+  'payments/payout': 50,
+  'payments/credit': 50,
   'notifications/send': 200,
   'notifications/push': 500,
   'notifications/sms': 100,
@@ -53,6 +55,8 @@ const API_PRICING: Record<string, number> = {
   'vtu/cable': 3,
   'payments/escrow/create': 10,
   'payments/escrow/release': 0,
+  'payments/payout': 5,
+  'payments/credit': 5,
   'notifications/send': 5, // Email
   'notifications/push': 0.5,
   'notifications/sms': 4,
