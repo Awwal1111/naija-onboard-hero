@@ -111,7 +111,7 @@ const Experts = () => {
     if (user) {
       supabase
         .from('profiles')
-        .select('user_id, full_name, username, profile_picture_url, state, area, skills_tags, experience_level, verification_level, is_expert')
+        .select('user_id, full_name, profile_picture_url, state_name, area, verification_level, is_expert')
         .eq('user_id', user.id)
         .single()
         .then(({ data }) => setUserProfile(data))

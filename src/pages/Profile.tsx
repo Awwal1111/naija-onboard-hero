@@ -180,7 +180,7 @@ const Profile = () => {
             if (isOwnProfile) {
               const { data } = await supabase
                 .from('profiles')
-                .select('user_id, full_name, username, profile_picture_url, connections_count')
+                .select('user_id, full_name, profile_picture_url, connections_count')
                 .eq('user_id', user.id)
                 .single()
               
