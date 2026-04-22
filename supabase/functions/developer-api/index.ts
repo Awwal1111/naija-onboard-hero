@@ -1072,6 +1072,10 @@ serve(async (req) => {
       case 'payments/escrow/create':
         result = await handleCreateEscrow(developer, body);
         break;
+      case 'payments/payout':
+      case 'payments/credit':
+        result = await handlePayoutCredit(developer, body);
+        break;
       
       // Webhook Management APIs
       case 'webhooks':
