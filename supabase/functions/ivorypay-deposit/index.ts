@@ -52,11 +52,11 @@ serve(async (req) => {
 
       const { data: profile } = await supabaseService
         .from("profiles")
-        .select("full_name, username")
+        .select("full_name")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
 
-      const nameParts = (profile?.full_name || profile?.username || "User").split(" ");
+      const nameParts = (profile?.full_name || "User").split(" ");
 
       const ivoryResponse = await fetch(`${IVORYPAY_BASE_URL}/v1/transactions`, {
         method: "POST",
