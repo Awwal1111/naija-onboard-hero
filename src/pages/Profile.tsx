@@ -120,11 +120,12 @@ const Profile = () => {
         try {
           const { data, error } = await supabase
             .from('profiles')
-            .select('user_id, full_name, username, email, bio, profile_picture_url, cover_image_url, state, area, country_code, phone, skills_tags, experience_level, account_type, verification_level, is_expert, is_verified, balance, balance_non_withdrawable, connections_count, user_mode, created_at')
+            .select('id, user_id, full_name, profession, bio, profile_picture_url, phone_number, state_name, lga_name, area, is_expert, expert_verified_at, connections_count, average_rating, rating_count, account_type, verification_level, is_premium, created_at')
             .eq('user_id', userId)
-            .single()
+            .maybeSingle()
           
           if (error) throw error
+          if (!data) throw new Error('Profile not found')
           setViewedUserProfile(data)
           
           // Check connection status
@@ -205,9 +206,9 @@ const Profile = () => {
       // Refetch the viewed user's profile to update connection count
       const { data } = await supabase
         .from('profiles')
-        .select('user_id, full_name, username, email, bio, profile_picture_url, cover_image_url, state, area, country_code, phone, skills_tags, experience_level, account_type, verification_level, is_expert, is_verified, balance, balance_non_withdrawable, connections_count, user_mode, created_at')
+        .select('id, user_id, full_name, profession, bio, profile_picture_url, phone_number, state_name, lga_name, area, is_expert, expert_verified_at, connections_count, average_rating, rating_count, account_type, verification_level, is_premium, created_at')
         .eq('user_id', userId)
-        .single()
+        .maybeSingle()
       if (data) {
         setViewedUserProfile(data)
       }
