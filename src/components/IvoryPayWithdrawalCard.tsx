@@ -164,8 +164,12 @@ export const IvoryPayWithdrawalCard = ({ currentBalance, onSuccess }: IvoryPayWi
       <CardContent className="space-y-4">
         <Alert className="bg-amber-500/10 border-amber-500/30">
           <Info className="h-4 w-4 text-amber-600" />
-          <AlertDescription className="text-xs">
-            Withdraw to bank accounts in Nigeria, Ghana, Kenya, and South Africa
+          <AlertDescription className="text-xs space-y-1">
+            <p>Withdraw to bank accounts in Nigeria, Ghana, Kenya, and South Africa.</p>
+            <p className="text-muted-foreground">
+              No external page opens — IvoryPay sends the money straight to the bank account
+              you enter. You'll see the result here.
+            </p>
           </AlertDescription>
         </Alert>
 
