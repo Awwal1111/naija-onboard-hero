@@ -817,9 +817,10 @@ serve(async (req) => {
   const url = new URL(req.url);
   const pathParts = url.pathname.split('/').filter(Boolean);
   
-  // Remove 'developer-api' from path if present
-  if (pathParts[0] === 'developer-api') {
-    pathParts.shift();
+  // Strip any prefix segments before 'developer-api' (e.g. /functions/v1/developer-api/...)
+  const apiIdx = pathParts.indexOf('developer-api');
+  if (apiIdx >= 0) {
+    pathParts.splice(0, apiIdx + 1);
   }
   
   const endpoint = pathParts.join('/');
