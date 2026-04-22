@@ -808,6 +808,124 @@ async function handleReleaseEscrow(developer: DeveloperProfile, escrowId: string
   };
 }
 
+// PAYOUT/CREDIT API — credit a NaijaLancers user's NC wallet from developer's NC balance
+async function handlePayoutCredit(developer: DeveloperProfile, body: any) {
+  const { user_id, email, amount, reference, description } = body || {};
+
+  const amt = Number(amount);
+  if (!amt || amt <= 0) {
+    return { error: 'amount (positive number) required', status: 400 };
+  }
+  if (!user_id && !email) {
+    return { error: 'user_id or email required', status: 400 };
+  }
+
+  // Re-fetch developer balance (avoid stale)
+  const { data: devProfile, error: devErr } = await supabase
+    .from('profiles')
+    .select('user_id, wallet_balance')
+    .eq('user_id', developer.user_id)
+    .maybeSingle();
+
+  if (devErr || !devProfile) {
+    return { error: 'Developer profile not found', status: 500 };
+  }
+  const devBalance = Number(devProfile.wallet_balance || 0);
+  if (devBalance < amt) {
+    return { error: 'Insufficient developer NC balance', status: 402 };
+  }
+
+  // Resolve recipient
+  let target: { user_id: string; wallet_balance: number } | null = null;
+  if (user_id) {
+    const { data } = await supabase
+      .from('profiles')
+      .select('user_id, wallet_balance')
+      .eq('user_id', user_id)
+      .maybeSingle();
+    target = data as any;
+  } else if (email) {
+    const { data } = await supabase
+      .from('profiles')
+      .select('user_id, wallet_balance')
+      .eq('email', email)
+      .maybeSingle();
+    target = data as any;
+  }
+
+  if (!target) return { error: 'Recipient user not found', status: 404 };
+  if (target.user_id === developer.user_id) {
+    return { error: 'Cannot payout to yourself', status: 400 };
+  }
+
+  // Debit developer
+  const { error: debitErr } = await supabase
+    .from('profiles')
+    .update({ wallet_balance: devBalance - amt })
+    .eq('user_id', developer.user_id);
+  if (debitErr) return { error: 'Failed to debit developer wallet', status: 500 };
+
+  // Re-fetch recipient balance & credit
+  const { data: freshTarget } = await supabase
+    .from('profiles')
+    .select('wallet_balance')
+    .eq('user_id', target.user_id)
+    .maybeSingle();
+  const targetBalance = Number(freshTarget?.wallet_balance || 0);
+
+  const { error: creditErr } = await supabase
+    .from('profiles')
+    .update({ wallet_balance: targetBalance + amt })
+    .eq('user_id', target.user_id);
+
+  if (creditErr) {
+    // Refund developer on failure
+    await supabase
+      .from('profiles')
+      .update({ wallet_balance: devBalance })
+      .eq('user_id', developer.user_id);
+    return { error: 'Failed to credit recipient', status: 500 };
+  }
+
+  const txRef = reference || `dev_payout_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
+  await supabase.from('wallet_transactions').insert([
+    {
+      user_id: developer.user_id,
+      amount: -amt,
+      type: 'developer_payout',
+      status: 'completed',
+      description: description || `API payout to ${target.user_id}`,
+      reference: txRef,
+    },
+    {
+      user_id: target.user_id,
+      amount: amt,
+      type: 'developer_credit',
+      status: 'completed',
+      description: description || `API credit from developer ${developer.user_id}`,
+      reference: txRef,
+    },
+  ]).then(() => {}, () => {});
+
+  triggerWebhook(developer.user_id, 'wallet.payout', {
+    reference: txRef,
+    recipient_user_id: target.user_id,
+    amount: amt,
+    currency: 'NC',
+  });
+
+  return {
+    data: {
+      reference: txRef,
+      recipient_user_id: target.user_id,
+      amount: amt,
+      currency: 'NC',
+      status: 'completed',
+      developer_balance_after: devBalance - amt,
+    },
+  };
+}
+
 // ============= MAIN ROUTER =============
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
