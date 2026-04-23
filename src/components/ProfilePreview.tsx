@@ -69,40 +69,22 @@ const ProfilePreview: React.FC<ProfilePreviewProps> = ({
       // Fetch basic profile info (available to all authenticated users)
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select(`
-          id,
-          user_id,
-          full_name,
-          profession,
-          bio,
-          profile_picture_url,
-          connections_count,
-          is_expert,
-          expert_verified_at,
-          state_name,
-          lga_name,
-          email_confirmed,
-          phone_verified,
-          face_verified,
-          average_rating,
-          rating_count,
-          created_at,
-          avg_response_time_seconds
-        `)
+        .select('id, user_id, full_name, profession, bio, profile_picture_url, connections_count, is_expert, expert_verified_at, state_name, lga_name, phone_verified, face_verified, average_rating, rating_count, created_at, avg_response_time_seconds')
         .eq('user_id', profileId)
-        .single()
+        .maybeSingle()
 
       if (profileError) throw profileError
+      if (!profileData) throw new Error('Profile not found')
 
       setProfile(profileData)
 
       // Check connection status if not own profile
-      if (user?.id !== profileId) {
+      if (user?.id !== profileId && user?.id) {
         const { data: connectionData } = await supabase
           .from('connections')
           .select('id')
-          .or(`and(user1_id.eq.${user?.id},user2_id.eq.${profileId}),and(user1_id.eq.${profileId},user2_id.eq.${user?.id})`)
-          .single()
+          .or(`and(user1_id.eq.${user.id},user2_id.eq.${profileId}),and(user1_id.eq.${profileId},user2_id.eq.${user.id})`)
+          .maybeSingle()
 
         setIsConnected(!!connectionData)
       }

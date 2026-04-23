@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS profiles_user_id_idx ON public.profiles (user_id);
