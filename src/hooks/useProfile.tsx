@@ -208,7 +208,8 @@ export const useProfile = () => {
       const { data, error } = result
       if (error) throw error
 
-      setProfile(data)
+      profileCache.set(user.id, { data: data as Profile, ts: Date.now() })
+      setProfile(data as Profile)
       
       toast({
         title: "Success",
