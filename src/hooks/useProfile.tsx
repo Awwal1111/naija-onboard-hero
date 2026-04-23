@@ -75,39 +75,64 @@ export interface SocialTask {
   created_at: string
 }
 
+// In-memory session cache to avoid repeated /profiles fetches across components/pages
+const profileCache = new Map<string, { data: Profile; ts: number }>()
+const PROFILE_CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
+
+const PROFILE_SELECT = 'id, user_id, full_name, profession, bio, profile_picture_url, phone_number, state_name, state_id, lga_name, area, is_expert, expert_verified_at, wallet_balance, balance_withdrawable, balance_non_withdrawable, connections_count, average_rating, rating_count, referral_code, email_verified, phone_verified, face_verified, created_at, updated_at, premium_expires_at, avg_response_time_seconds, account_type, is_premium, verification_level, telegram_user_id, telegram_username'
+
 export const useProfile = () => {
   const { user } = useAuth()
   const { toast } = useToast()
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [profile, setProfile] = useState<Profile | null>(() => {
+    return user ? (profileCache.get(user.id)?.data ?? null) : null
+  })
+  const [loading, setLoading] = useState(!profile)
 
   useEffect(() => {
-    if (user) {
-      fetchProfile()
-    } else {
+    if (!user) {
       setLoading(false)
+      return
     }
-  }, [user])
+    const cached = profileCache.get(user.id)
+    if (cached && Date.now() - cached.ts < PROFILE_CACHE_TTL_MS) {
+      setProfile(cached.data)
+      setLoading(false)
+      return
+    }
+    fetchProfile()
+  }, [user?.id])
 
-  const fetchProfile = async () => {
+  const fetchProfile = async (force = false) => {
     if (!user) return
+
+    if (!force) {
+      const cached = profileCache.get(user.id)
+      if (cached && Date.now() - cached.ts < PROFILE_CACHE_TTL_MS) {
+        setProfile(cached.data)
+        setLoading(false)
+        return
+      }
+    }
 
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, user_id, full_name, profession, bio, profile_picture_url, phone_number, state_name, state_id, lga_name, area, is_expert, expert_verified_at, wallet_balance, balance_withdrawable, balance_non_withdrawable, connections_count, average_rating, rating_count, referral_code, email_confirmed, email_verified, phone_verified, face_verified, created_at, updated_at, is_boosted, boost_expires_at, premium_expires_at, avg_response_time_seconds, account_type, onboarding_completed, user_mode, open_to_work, is_premium, verification_level, telegram_user_id, telegram_username')
+        .select(PROFILE_SELECT)
         .eq('user_id', user.id)
-        .single()
+        .maybeSingle()
 
       if (error) {
         if (error.code === 'PGRST116') {
-          // No profile found, create one
           await createProfile()
         } else {
           throw error
         }
+      } else if (!data) {
+        await createProfile()
       } else {
-        setProfile(data)
+        profileCache.set(user.id, { data: data as Profile, ts: Date.now() })
+        setProfile(data as Profile)
       }
     } catch (error) {
       console.error('Error fetching profile:', error)
