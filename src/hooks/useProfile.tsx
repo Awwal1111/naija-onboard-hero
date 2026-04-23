@@ -163,7 +163,8 @@ export const useProfile = () => {
         .single()
 
       if (error) throw error
-      setProfile(data)
+      profileCache.set(user.id, { data: data as Profile, ts: Date.now() })
+      setProfile(data as Profile)
     } catch (error) {
       console.error('Error creating profile:', error)
       toast({
