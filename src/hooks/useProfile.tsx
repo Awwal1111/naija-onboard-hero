@@ -235,6 +235,6 @@ export const useProfile = () => {
     profile,
     loading,
     updateProfile,
-    refetch: fetchProfile
+    refetch: () => fetchProfile(true)
   }
 }
