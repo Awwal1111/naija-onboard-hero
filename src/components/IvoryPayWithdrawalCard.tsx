@@ -1,11 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { BrandButton } from '@/components/ui/brand-button'
 import { BrandInput } from '@/components/ui/brand-input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Globe, Info, Loader2, Send } from 'lucide-react'
+import { Globe, Info, Loader2, Send, CheckCircle2 } from 'lucide-react'
 import { supabase } from '@/integrations/supabase/client'
 import { toast } from 'sonner'
 import { SecurePinInput } from './SecurePinInput'
@@ -16,62 +16,8 @@ interface IvoryPayWithdrawalCardProps {
   onSuccess?: () => void
 }
 
-const BANK_OPTIONS: Record<string, { name: string; banks: { code: string; name: string }[] }> = {
-  NGN: {
-    name: 'Nigeria',
-    banks: [
-      { code: '044', name: 'Access Bank' },
-      { code: '023', name: 'Citibank' },
-      { code: '050', name: 'Ecobank' },
-      { code: '070', name: 'Fidelity Bank' },
-      { code: '011', name: 'First Bank' },
-      { code: '214', name: 'FCMB' },
-      { code: '058', name: 'GTBank' },
-      { code: '030', name: 'Heritage Bank' },
-      { code: '301', name: 'Jaiz Bank' },
-      { code: '082', name: 'Keystone Bank' },
-      { code: '526', name: 'Kuda Bank' },
-      { code: '076', name: 'Polaris Bank' },
-      { code: '101', name: 'Providus Bank' },
-      { code: '221', name: 'Stanbic IBTC' },
-      { code: '068', name: 'Standard Chartered' },
-      { code: '232', name: 'Sterling Bank' },
-      { code: '032', name: 'Union Bank' },
-      { code: '033', name: 'UBA' },
-      { code: '215', name: 'Unity Bank' },
-      { code: '035', name: 'Wema Bank' },
-      { code: '057', name: 'Zenith Bank' },
-      { code: '999', name: 'OPay' },
-      { code: '305', name: 'PalmPay' },
-      { code: '100', name: 'Moniepoint' },
-    ],
-  },
-  GHS: {
-    name: 'Ghana',
-    banks: [
-      { code: 'MTN_GH', name: 'MTN Mobile Money' },
-      { code: 'VODAFONE_GH', name: 'Vodafone Cash' },
-      { code: 'AIRTELTIGO_GH', name: 'AirtelTigo Money' },
-    ],
-  },
-  KES: {
-    name: 'Kenya',
-    banks: [
-      { code: 'MPESA', name: 'M-Pesa' },
-      { code: 'AIRTEL_KE', name: 'Airtel Money' },
-    ],
-  },
-  ZAR: {
-    name: 'South Africa',
-    banks: [
-      { code: 'FNB_ZA', name: 'FNB' },
-      { code: 'ABSA_ZA', name: 'ABSA' },
-      { code: 'STD_ZA', name: 'Standard Bank' },
-      { code: 'NED_ZA', name: 'Nedbank' },
-      { code: 'CAP_ZA', name: 'Capitec Bank' },
-    ],
-  },
-}
+interface IvoryBank { code: string; name: string }
+
 
 export const IvoryPayWithdrawalCard = ({ currentBalance, onSuccess }: IvoryPayWithdrawalCardProps) => {
   const { transactionPin } = useUserSecrets()
