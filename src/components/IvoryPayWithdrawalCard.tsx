@@ -31,6 +31,7 @@ export const IvoryPayWithdrawalCard = ({ currentBalance, onSuccess }: IvoryPayWi
   const [showPin, setShowPin] = useState(false)
   const [banks, setBanks] = useState<IvoryBank[]>([])
   const [banksLoading, setBanksLoading] = useState(false)
+  const [accountResolutionError, setAccountResolutionError] = useState<string | null>(null)
 
   const usdEquivalent = (parseFloat(amount) || 0) / 1600
 
@@ -42,6 +43,7 @@ export const IvoryPayWithdrawalCard = ({ currentBalance, onSuccess }: IvoryPayWi
       setBanksLoading(true)
       setBankCode('')
       setVerifiedName(null)
+      setAccountResolutionError(null)
       try {
         const { data: { session } } = await supabase.auth.getSession()
         const response = await supabase.functions.invoke('ivorypay-withdrawal', {
@@ -50,6 +52,9 @@ export const IvoryPayWithdrawalCard = ({ currentBalance, onSuccess }: IvoryPayWi
         })
         if (cancelled) return
         if (response.error) throw new Error(response.error.message)
+        if (response.data?.success === false) {
+          throw new Error(response.data?.error || 'Could not load bank list')
+        }
         const list = (response.data?.banks || []) as any[]
         const normalized: IvoryBank[] = list
           .map((b) => ({
@@ -75,6 +80,7 @@ export const IvoryPayWithdrawalCard = ({ currentBalance, onSuccess }: IvoryPayWi
   // Auto-verify the account name once we have a bank + ≥8-digit account number.
   useEffect(() => {
     setVerifiedName(null)
+    setAccountResolutionError(null)
     if (!bankCode || accountNumber.trim().length < 8) return
     let cancelled = false
     const t = setTimeout(async () => {
@@ -86,17 +92,24 @@ export const IvoryPayWithdrawalCard = ({ currentBalance, onSuccess }: IvoryPayWi
           headers: { Authorization: `Bearer ${session?.access_token}` },
         })
         if (cancelled) return
+        if (response.error) throw new Error(response.error.message)
         const data = response.data
         if (data?.success && data?.accountName) {
           setVerifiedName(data.accountName)
           setAccountName(data.accountName)
+          setAccountResolutionError(null)
         } else {
           setVerifiedName(null)
           setAccountName('')
+          setAccountResolutionError(data?.error || 'Could not verify account details')
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Account resolution error:', err)
-        if (!cancelled) setVerifiedName(null)
+        if (!cancelled) {
+          setVerifiedName(null)
+          setAccountName('')
+          setAccountResolutionError(err.message || 'Could not verify account details')
+        }
       } finally {
         if (!cancelled) setIsVerifying(false)
       }
@@ -240,6 +253,9 @@ export const IvoryPayWithdrawalCard = ({ currentBalance, onSuccess }: IvoryPayWi
             <p className="text-xs text-green-600 flex items-center gap-1">
               <CheckCircle2 className="h-3 w-3" /> {verifiedName}
             </p>
+          )}
+          {accountResolutionError && !isVerifying && !verifiedName && (
+            <p className="text-xs text-destructive">{accountResolutionError}</p>
           )}
         </div>
 
