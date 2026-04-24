@@ -175,85 +175,42 @@ serve(async (req) => {
       const isSuccess = txStatus === "SUCCESS";
 
       if (isSuccess) {
-        const { data: existing } = await supabaseService
-          .from("wallet_transactions")
-          .select("id, status")
-          .eq("reference", reference)
-          .eq("user_id", user.id)
-          .maybeSingle();
-
-        if (existing && existing.status === "completed") {
-          return new Response(
-            JSON.stringify({ success: true, message: "Already credited", status: "SUCCESS" }),
-            { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
-          );
-        }
-
-        const settledCrypto =
-          parseFloat(verifyData.data?.settledAmountInCrypto || verifyData.data?.receivedAmountInCrypto || verifyData.data?.amountInCrypto || "0");
+        const settledCrypto = parseFloat(
+          verifyData.data?.settledAmountInCrypto ||
+            verifyData.data?.receivedAmountInCrypto ||
+            verifyData.data?.amountInCrypto ||
+            "0"
+        );
         const ncAmount = Math.floor(settledCrypto * 1600);
+        const cryptoCurrency = verifyData.data?.currency || verifyData.data?.token || "USDT";
 
         if (ncAmount > 0) {
-          const { data: profile } = await supabaseService
-            .from("profiles")
-            .select("wallet_balance, balance_withdrawable")
-            .eq("user_id", user.id)
-            .single();
-
-          if (profile) {
-            await supabaseService
-              .from("profiles")
-              .update({
-                wallet_balance: (profile.wallet_balance || 0) + ncAmount,
-                balance_withdrawable: (profile.balance_withdrawable || 0) + ncAmount,
-                updated_at: new Date().toISOString(),
-              })
-              .eq("user_id", user.id);
+          // Atomic, idempotent credit. If the webhook already credited this reference,
+          // the function returns { credited: false, reason: 'already_completed' } and we do nothing.
+          const { data: rpcResult, error: rpcErr } = await supabaseService.rpc(
+            "process_ivorypay_deposit",
+            {
+              p_user_id: user.id,
+              p_reference: reference,
+              p_nc_amount: ncAmount,
+              p_settled_crypto: settledCrypto,
+              p_crypto_currency: cryptoCurrency,
+              p_via: "verify",
+            }
+          );
+          if (rpcErr) {
+            console.error("[IVORYPAY] process_ivorypay_deposit error:", rpcErr);
+            throw rpcErr;
           }
-
-          if (existing) {
-            await supabaseService
-              .from("wallet_transactions")
-              .update({
-                amount: ncAmount,
-                status: "completed",
-                kind: "deposit",
-                metadata: {
-                  provider: "ivorypay",
-                  settled_crypto: settledCrypto,
-                  crypto_currency: verifyData.data.currency || "USDT",
-                },
-              })
-              .eq("id", existing.id);
-          } else {
-            await supabaseService.from("wallet_transactions").insert({
-              user_id: user.id,
-              amount: ncAmount,
-              currency: "NC",
-              kind: "deposit",
-              status: "completed",
-              reference,
-              metadata: { provider: "ivorypay", settled_crypto: settledCrypto },
-            });
-          }
-
-          await supabaseService.from("crypto_transactions").insert({
-            user_id: user.id,
-            crypto_amount: settledCrypto,
-            crypto_currency: verifyData.data.currency || "USDT",
-            nc_amount: ncAmount,
-            naira_amount: ncAmount,
-            exchange_rate: 1600,
-            transaction_type: "deposit",
-            status: "completed",
-            tx_hash: reference,
-            wallet_address: "ivorypay_checkout",
-          });
+          console.log("[IVORYPAY] verify credit result:", JSON.stringify(rpcResult));
         }
 
         return new Response(
           JSON.stringify({
-            success: true, status: "SUCCESS", ncAmount, settledCrypto,
+            success: true,
+            status: "SUCCESS",
+            ncAmount,
+            settledCrypto,
             message: `NC ${ncAmount.toLocaleString()} credited to your wallet`,
           }),
           { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
