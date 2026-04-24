@@ -15,10 +15,42 @@ serve(async (req) => {
   }
 
   try {
-    const IVORYPAY_SECRET_KEY = Deno.env.get("IVORYPAY_SECRET_KEY");
+    const IVORYPAY_SECRET_KEY = Deno.env.get("IVORYPAY_SECRET_KEY")?.trim();
     if (!IVORYPAY_SECRET_KEY) {
       throw new Error("IVORYPAY_SECRET_KEY is not configured");
     }
+    if (!IVORYPAY_SECRET_KEY.startsWith("sk_")) {
+      throw new Error("IVORYPAY_SECRET_KEY appears invalid");
+    }
+
+    const parseIvoryPayResponse = async (response: Response) => {
+      const rawText = await response.text();
+      if (!rawText) {
+        return { data: null, rawText };
+      }
+
+      try {
+        return { data: JSON.parse(rawText), rawText };
+      } catch {
+        return { data: null, rawText };
+      }
+    };
+
+    const callIvoryPay = async (path: string, init: RequestInit = {}) => {
+      const headers = new Headers(init.headers);
+      headers.set("Authorization", IVORYPAY_SECRET_KEY);
+      if (init.body && !headers.has("Content-Type")) {
+        headers.set("Content-Type", "application/json");
+      }
+
+      const response = await fetch(`${IVORYPAY_BASE_URL}${path}`, {
+        ...init,
+        headers,
+      });
+
+      const { data, rawText } = await parseIvoryPayResponse(response);
+      return { response, data, rawText };
+    };
 
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -48,22 +80,26 @@ serve(async (req) => {
 
     // ============= listBanks: proxy IvoryPay's banks list so the user picks valid codes =============
     if (action === "listBanks") {
-      const cur = currency || "NGN";
-      const banksResp = await fetch(
-        `${IVORYPAY_BASE_URL}/v1/fiat-transfer/banks?currency=${encodeURIComponent(cur)}`,
-        { headers: { Authorization: IVORYPAY_SECRET_KEY } }
-      );
-      const banksData = await banksResp.json();
-      console.log("[IVORYPAY-WITHDRAWAL] listBanks", cur, "status:", banksResp.status);
+      const cur = String(currency || "NGN").toUpperCase();
+      const { response: banksResp, data: banksData, rawText } = await callIvoryPay("/v1/fiat-transfer/banks");
+      console.log("[IVORYPAY-WITHDRAWAL] listBanks status:", banksResp.status, "currency:", cur);
       if (!banksResp.ok) {
         return new Response(
-          JSON.stringify({ error: banksData.message || "Failed to fetch banks" }),
-          { status: banksResp.status, headers: { "Content-Type": "application/json", ...corsHeaders } }
+          JSON.stringify({ success: false, error: banksData?.message || rawText || "Failed to fetch banks" }),
+          { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
-      const list = Array.isArray(banksData.data) ? banksData.data : (banksData.data?.banks || []);
+
+      const list = Array.isArray(banksData?.data)
+        ? banksData.data
+        : (Array.isArray(banksData?.data?.banks) ? banksData.data.banks : []);
+      const filtered = list.filter((bank: any) => {
+        const bankCurrency = typeof bank?.currency === "string" ? bank.currency.toUpperCase() : null;
+        return !bankCurrency || bankCurrency === cur;
+      });
+
       return new Response(
-        JSON.stringify({ success: true, banks: list }),
+        JSON.stringify({ success: true, banks: filtered.length > 0 ? filtered : list }),
         { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
@@ -76,18 +112,20 @@ serve(async (req) => {
           { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
       }
-      const resp = await fetch(`${IVORYPAY_BASE_URL}/v1/fiat-transfer/account-resolution`, {
+      const { response: resp, data: respData, rawText } = await callIvoryPay("/v1/fiat-transfer/account-resolution", {
         method: "POST",
-        headers: { Authorization: IVORYPAY_SECRET_KEY, "Content-Type": "application/json" },
-        body: JSON.stringify({ accountNumber, bankCode, currency }),
+        body: JSON.stringify({
+          accountNumber: String(accountNumber).trim(),
+          bankCode: String(bankCode).trim(),
+          currency: String(currency).toUpperCase(),
+        }),
       });
-      const respData = await resp.json();
-      console.log("[IVORYPAY-WITHDRAWAL] resolveAccount status:", resp.status, JSON.stringify(respData));
-      if (!resp.ok || respData.status === false || respData.success === false) {
+      console.log("[IVORYPAY-WITHDRAWAL] resolveAccount status:", resp.status, "success:", respData?.status ?? respData?.success ?? null);
+      if (!resp.ok || respData?.status === false || respData?.success === false) {
         return new Response(
           JSON.stringify({
             success: false,
-            error: respData.message || respData.error || "Could not verify account",
+            error: respData?.message || respData?.error || rawText || "Could not verify account",
           }),
           { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
         );
@@ -204,43 +242,42 @@ serve(async (req) => {
     };
 
     // Step 1: Resolve account name to validate before sending money
-    const resolveResp = await fetch(`${IVORYPAY_BASE_URL}/v1/fiat-transfer/account-resolution`, {
+    const { response: resolveResp, data: resolveData, rawText: resolveRawText } = await callIvoryPay("/v1/fiat-transfer/account-resolution", {
       method: "POST",
-      headers: { Authorization: IVORYPAY_SECRET_KEY, "Content-Type": "application/json" },
-      body: JSON.stringify({ accountNumber, bankCode, currency }),
+      body: JSON.stringify({
+        accountNumber: String(accountNumber).trim(),
+        bankCode: String(bankCode).trim(),
+        currency: String(currency).toUpperCase(),
+      }),
     });
-    const resolveData = await resolveResp.json();
-    console.log("[IVORYPAY-WITHDRAWAL] Account resolution status:", resolveResp.status, "body:", JSON.stringify(resolveData));
+    console.log("[IVORYPAY-WITHDRAWAL] Account resolution status:", resolveResp.status, "success:", resolveData?.status ?? resolveData?.success ?? null);
 
-    if (!resolveResp.ok || resolveData.status === false || resolveData.success === false) {
-      const msg = resolveData.message || resolveData.error || `Account resolution failed (HTTP ${resolveResp.status})`;
+    if (!resolveResp.ok || resolveData?.status === false || resolveData?.success === false) {
+      const msg = resolveData?.message || resolveData?.error || resolveRawText || `Account resolution failed (HTTP ${resolveResp.status})`;
       await refundUser(msg);
       throw new Error(msg);
     }
 
     // Step 2: Initiate the fiat payout
-    const ivoryResponse = await fetch(`${IVORYPAY_BASE_URL}/v1/fiat-transfer`, {
+    const { response: ivoryResponse, data: ivoryData, rawText: ivoryRawText } = await callIvoryPay("/v1/fiat-transfer", {
       method: "POST",
-      headers: { Authorization: IVORYPAY_SECRET_KEY, "Content-Type": "application/json" },
       body: JSON.stringify({
         amount: fiatAmount,
         token: "USDT",
-        fiatCurrency: currency,
+        fiatCurrency: String(currency).toUpperCase(),
         payoutMethod: "BANK_TRANSFER",
-        accountNumber,
-        bankCode,
+        accountNumber: String(accountNumber).trim(),
+        bankCode: String(bankCode).trim(),
         reference,
       }),
     });
-
-    const ivoryData = await ivoryResponse.json();
-    console.log("[IVORYPAY-WITHDRAWAL] Payout response status:", ivoryResponse.status, "body:", JSON.stringify(ivoryData));
+    console.log("[IVORYPAY-WITHDRAWAL] Payout response status:", ivoryResponse.status, "success:", ivoryData?.status ?? ivoryData?.success ?? null);
 
     // IvoryPay returns { status: true, data: {...} } on success
-    const payoutOk = ivoryResponse.ok && (ivoryData.status === true || ivoryData.success === true);
+    const payoutOk = ivoryResponse.ok && (ivoryData?.status === true || ivoryData?.success === true);
 
     if (!payoutOk) {
-      const msg = ivoryData.message || ivoryData.error || `Payout failed (HTTP ${ivoryResponse.status})`;
+      const msg = ivoryData?.message || ivoryData?.error || ivoryRawText || `Payout failed (HTTP ${ivoryResponse.status})`;
       await refundUser(msg);
       throw new Error(msg);
     }
