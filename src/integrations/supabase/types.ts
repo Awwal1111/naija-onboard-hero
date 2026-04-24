@@ -7815,6 +7815,17 @@ export type Database = {
         Args: { p_safepay_id: string }
         Returns: undefined
       }
+      process_ivorypay_deposit: {
+        Args: {
+          p_crypto_currency: string
+          p_nc_amount: number
+          p_reference: string
+          p_settled_crypto: number
+          p_user_id: string
+          p_via: string
+        }
+        Returns: Json
+      }
       process_mini_app_payment: {
         Args: {
           p_amount: number

@@ -99,64 +99,37 @@ serve(async (req) => {
       status === "SUCCESS";
 
     if (isCollectionSuccess) {
-      // Find pending wallet_transaction with this reference
+      // Find the pending wallet_transaction so we can attach the user_id.
       const { data: pending } = await supabase
         .from("wallet_transactions")
         .select("id, user_id, status")
         .eq("reference", reference)
         .maybeSingle();
 
-      if (pending && pending.status !== "completed") {
+      if (pending) {
         const settledCrypto = parseFloat(
           data.settledAmountInCrypto || data.receivedAmountInCrypto || "0"
         );
         const ncAmount = Math.floor(settledCrypto * 1600);
 
         if (ncAmount > 0) {
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("wallet_balance, balance_withdrawable")
-            .eq("user_id", pending.user_id)
-            .single();
-
-          if (profile) {
-            await supabase
-              .from("profiles")
-              .update({
-                wallet_balance: (profile.wallet_balance || 0) + ncAmount,
-                balance_withdrawable: (profile.balance_withdrawable || 0) + ncAmount,
-                updated_at: new Date().toISOString(),
-              })
-              .eq("user_id", pending.user_id);
+          // Atomic, idempotent credit — safe even if verify already credited.
+          const { data: rpcResult, error: rpcErr } = await supabase.rpc(
+            "process_ivorypay_deposit",
+            {
+              p_user_id: pending.user_id,
+              p_reference: reference,
+              p_nc_amount: ncAmount,
+              p_settled_crypto: settledCrypto,
+              p_crypto_currency: data.token || "USDT",
+              p_via: "webhook",
+            }
+          );
+          if (rpcErr) {
+            console.error("[IVORYPAY-WEBHOOK] process_ivorypay_deposit error:", rpcErr);
+          } else {
+            console.log("[IVORYPAY-WEBHOOK] credit result:", JSON.stringify(rpcResult));
           }
-
-          await supabase
-            .from("wallet_transactions")
-            .update({
-              amount: ncAmount,
-              status: "completed",
-              kind: "deposit",
-              metadata: {
-                provider: "ivorypay",
-                settled_crypto: settledCrypto,
-                crypto_currency: data.token || "USDT",
-                via: "webhook",
-              },
-            })
-            .eq("id", pending.id);
-
-          await supabase.from("crypto_transactions").insert({
-            user_id: pending.user_id,
-            crypto_amount: settledCrypto,
-            crypto_currency: data.token || "USDT",
-            nc_amount: ncAmount,
-            naira_amount: ncAmount,
-            exchange_rate: 1600,
-            transaction_type: "deposit",
-            status: "completed",
-            tx_hash: data.cryptoTransactionHash || reference,
-            wallet_address: data.address || "ivorypay_checkout",
-          });
         }
       }
     }

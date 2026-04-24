@@ -43,9 +43,66 @@ serve(async (req) => {
       );
     }
 
-    const { ncAmount, currency, bankCode, accountNumber, accountName } = await req.json();
+    const body = await req.json();
+    const { action, ncAmount, currency, bankCode, accountNumber, accountName } = body;
 
-    // Validate inputs
+    // ============= listBanks: proxy IvoryPay's banks list so the user picks valid codes =============
+    if (action === "listBanks") {
+      const cur = currency || "NGN";
+      const banksResp = await fetch(
+        `${IVORYPAY_BASE_URL}/v1/fiat-transfer/banks?currency=${encodeURIComponent(cur)}`,
+        { headers: { Authorization: IVORYPAY_SECRET_KEY } }
+      );
+      const banksData = await banksResp.json();
+      console.log("[IVORYPAY-WITHDRAWAL] listBanks", cur, "status:", banksResp.status);
+      if (!banksResp.ok) {
+        return new Response(
+          JSON.stringify({ error: banksData.message || "Failed to fetch banks" }),
+          { status: banksResp.status, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+      const list = Array.isArray(banksData.data) ? banksData.data : (banksData.data?.banks || []);
+      return new Response(
+        JSON.stringify({ success: true, banks: list }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // ============= resolveAccount: validate the account name BEFORE the user submits =============
+    if (action === "resolveAccount") {
+      if (!bankCode || !accountNumber || !currency) {
+        return new Response(
+          JSON.stringify({ error: "currency, bankCode and accountNumber are required" }),
+          { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+      const resp = await fetch(`${IVORYPAY_BASE_URL}/v1/fiat-transfer/account-resolution`, {
+        method: "POST",
+        headers: { Authorization: IVORYPAY_SECRET_KEY, "Content-Type": "application/json" },
+        body: JSON.stringify({ accountNumber, bankCode, currency }),
+      });
+      const respData = await resp.json();
+      console.log("[IVORYPAY-WITHDRAWAL] resolveAccount status:", resp.status, JSON.stringify(respData));
+      if (!resp.ok || respData.status === false || respData.success === false) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: respData.message || respData.error || "Could not verify account",
+          }),
+          { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+      return new Response(
+        JSON.stringify({
+          success: true,
+          accountName: respData.data?.accountName || respData.data?.account_name || null,
+          bankName: respData.data?.bankName || respData.data?.bank_name || null,
+        }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // ============= Default action: process the actual withdrawal =============
     if (!ncAmount || ncAmount < 100) {
       return new Response(
         JSON.stringify({ error: "Minimum withdrawal is NC 100" }),

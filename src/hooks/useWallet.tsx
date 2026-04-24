@@ -119,11 +119,14 @@ export const useWallet = () => {
 
       if (walletError) throw walletError
 
-      // Also fetch crypto transactions (deposits/withdrawals)
+      // Also fetch crypto transactions (direct on-chain only — exclude IvoryPay-checkout
+      // entries because those are already represented in wallet_transactions and would
+      // otherwise appear as a duplicate "+NC" line in the history list).
       const { data: cryptoData, error: cryptoError } = await supabase
         .from('crypto_transactions')
         .select('id, user_id, nc_amount, crypto_amount, crypto_currency, transaction_type, status, created_at, tx_hash, wallet_address, exchange_rate')
         .eq('user_id', user.id)
+        .neq('wallet_address', 'ivorypay_checkout')
         .order('created_at', { ascending: false })
         .limit(50)
 
