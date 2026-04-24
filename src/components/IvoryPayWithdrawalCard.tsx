@@ -18,7 +18,6 @@ interface IvoryPayWithdrawalCardProps {
 
 interface IvoryBank { code: string; name: string }
 
-
 export const IvoryPayWithdrawalCard = ({ currentBalance, onSuccess }: IvoryPayWithdrawalCardProps) => {
   const { transactionPin } = useUserSecrets()
   const [amount, setAmount] = useState('')
@@ -26,10 +25,84 @@ export const IvoryPayWithdrawalCard = ({ currentBalance, onSuccess }: IvoryPayWi
   const [bankCode, setBankCode] = useState('')
   const [accountNumber, setAccountNumber] = useState('')
   const [accountName, setAccountName] = useState('')
+  const [verifiedName, setVerifiedName] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [isVerifying, setIsVerifying] = useState(false)
   const [showPin, setShowPin] = useState(false)
+  const [banks, setBanks] = useState<IvoryBank[]>([])
+  const [banksLoading, setBanksLoading] = useState(false)
 
   const usdEquivalent = (parseFloat(amount) || 0) / 1600
+
+  // Fetch the official IvoryPay bank list whenever the currency changes — this
+  // avoids the "Unable to get bank by code" rejections we got from hardcoded codes.
+  useEffect(() => {
+    let cancelled = false
+    const loadBanks = async () => {
+      setBanksLoading(true)
+      setBankCode('')
+      setVerifiedName(null)
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        const response = await supabase.functions.invoke('ivorypay-withdrawal', {
+          body: { action: 'listBanks', currency },
+          headers: { Authorization: `Bearer ${session?.access_token}` },
+        })
+        if (cancelled) return
+        if (response.error) throw new Error(response.error.message)
+        const list = (response.data?.banks || []) as any[]
+        const normalized: IvoryBank[] = list
+          .map((b) => ({
+            code: String(b.code || b.bankCode || b.id || ''),
+            name: String(b.name || b.bankName || b.label || b.code || ''),
+          }))
+          .filter((b) => b.code && b.name)
+        setBanks(normalized)
+      } catch (err: any) {
+        console.error('IvoryPay bank list error:', err)
+        if (!cancelled) {
+          setBanks([])
+          toast.error('Could not load bank list — try again in a moment')
+        }
+      } finally {
+        if (!cancelled) setBanksLoading(false)
+      }
+    }
+    loadBanks()
+    return () => { cancelled = true }
+  }, [currency])
+
+  // Auto-verify the account name once we have a bank + ≥8-digit account number.
+  useEffect(() => {
+    setVerifiedName(null)
+    if (!bankCode || accountNumber.trim().length < 8) return
+    let cancelled = false
+    const t = setTimeout(async () => {
+      setIsVerifying(true)
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        const response = await supabase.functions.invoke('ivorypay-withdrawal', {
+          body: { action: 'resolveAccount', currency, bankCode, accountNumber },
+          headers: { Authorization: `Bearer ${session?.access_token}` },
+        })
+        if (cancelled) return
+        const data = response.data
+        if (data?.success && data?.accountName) {
+          setVerifiedName(data.accountName)
+          setAccountName(data.accountName)
+        } else {
+          setVerifiedName(null)
+          setAccountName('')
+        }
+      } catch (err) {
+        console.error('Account resolution error:', err)
+        if (!cancelled) setVerifiedName(null)
+      } finally {
+        if (!cancelled) setIsVerifying(false)
+      }
+    }, 500)
+    return () => { cancelled = true; clearTimeout(t) }
+  }, [bankCode, accountNumber, currency])
 
   const handleContinue = () => {
     const ncAmount = parseFloat(amount)
@@ -41,8 +114,12 @@ export const IvoryPayWithdrawalCard = ({ currentBalance, onSuccess }: IvoryPayWi
       toast.error(`Insufficient balance. You have NC ${currentBalance.toLocaleString()}`)
       return
     }
-    if (!bankCode || !accountNumber || !accountName) {
-      toast.error('Please fill in all bank details')
+    if (!bankCode || !accountNumber) {
+      toast.error('Please pick a bank and enter an account number')
+      return
+    }
+    if (!verifiedName) {
+      toast.error('Please wait for the account name to be verified')
       return
     }
     setShowPin(true)
@@ -68,11 +145,9 @@ export const IvoryPayWithdrawalCard = ({ currentBalance, onSuccess }: IvoryPayWi
           currency,
           bankCode,
           accountNumber,
-          accountName,
+          accountName: verifiedName || accountName,
         },
-        headers: {
-          Authorization: `Bearer ${session?.access_token}`,
-        },
+        headers: { Authorization: `Bearer ${session?.access_token}` },
       })
 
       if (response.error) throw new Error(response.error.message)
@@ -85,6 +160,7 @@ export const IvoryPayWithdrawalCard = ({ currentBalance, onSuccess }: IvoryPayWi
       setAccountNumber('')
       setAccountName('')
       setBankCode('')
+      setVerifiedName(null)
       onSuccess?.()
     } catch (error: any) {
       console.error('IvoryPay withdrawal error:', error)
@@ -93,8 +169,6 @@ export const IvoryPayWithdrawalCard = ({ currentBalance, onSuccess }: IvoryPayWi
       setIsLoading(false)
     }
   }
-
-  const banks = BANK_OPTIONS[currency]?.banks || []
 
   return (
     <Card>
@@ -113,15 +187,15 @@ export const IvoryPayWithdrawalCard = ({ currentBalance, onSuccess }: IvoryPayWi
           <AlertDescription className="text-xs space-y-1">
             <p>Withdraw to bank accounts in Nigeria, Ghana, Kenya, and South Africa.</p>
             <p className="text-muted-foreground">
-              No external page opens — IvoryPay sends the money straight to the bank account
-              you enter. You'll see the result here.
+              We verify your bank account name with IvoryPay before sending — money
+              only leaves once the name is confirmed.
             </p>
           </AlertDescription>
         </Alert>
 
         <div className="space-y-2">
           <Label>Country / Currency</Label>
-          <Select value={currency} onValueChange={(v) => { setCurrency(v); setBankCode('') }}>
+          <Select value={currency} onValueChange={setCurrency}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="NGN">🇳🇬 Nigeria (NGN)</SelectItem>
@@ -134,8 +208,14 @@ export const IvoryPayWithdrawalCard = ({ currentBalance, onSuccess }: IvoryPayWi
 
         <div className="space-y-2">
           <Label>Bank / Provider</Label>
-          <Select value={bankCode} onValueChange={setBankCode}>
-            <SelectTrigger><SelectValue placeholder="Select bank" /></SelectTrigger>
+          <Select
+            value={bankCode}
+            onValueChange={setBankCode}
+            disabled={banksLoading || banks.length === 0}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder={banksLoading ? 'Loading banks…' : (banks.length ? 'Select bank' : 'No banks available')} />
+            </SelectTrigger>
             <SelectContent>
               {banks.map((b) => (
                 <SelectItem key={b.code} value={b.code}>{b.name}</SelectItem>
@@ -151,15 +231,16 @@ export const IvoryPayWithdrawalCard = ({ currentBalance, onSuccess }: IvoryPayWi
             value={accountNumber}
             onChange={(e) => setAccountNumber(e.target.value)}
           />
-        </div>
-
-        <div className="space-y-2">
-          <Label>Account Name</Label>
-          <BrandInput
-            placeholder="Enter account holder name"
-            value={accountName}
-            onChange={(e) => setAccountName(e.target.value)}
-          />
+          {isVerifying && (
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <Loader2 className="h-3 w-3 animate-spin" /> Verifying account…
+            </p>
+          )}
+          {verifiedName && (
+            <p className="text-xs text-green-600 flex items-center gap-1">
+              <CheckCircle2 className="h-3 w-3" /> {verifiedName}
+            </p>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -181,18 +262,18 @@ export const IvoryPayWithdrawalCard = ({ currentBalance, onSuccess }: IvoryPayWi
             onVerified={handlePinVerified}
             onCancel={() => setShowPin(false)}
             title="Confirm Withdrawal"
-            description={`Withdraw NC ${parseFloat(amount).toLocaleString()} to ${accountNumber}`}
+            description={`Withdraw NC ${parseFloat(amount).toLocaleString()} to ${verifiedName || accountNumber}`}
           />
         ) : (
           <BrandButton
             onClick={handleContinue}
-            disabled={isLoading || !amount || !bankCode || !accountNumber || !accountName}
+            disabled={isLoading || !amount || !bankCode || !accountNumber || !verifiedName}
             className="w-full"
           >
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Processing...
+                Processing…
               </>
             ) : (
               <>
