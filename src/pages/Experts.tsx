@@ -133,7 +133,7 @@ const Experts = () => {
     is_premium: expert.is_premium,
     is_boosted: expert.is_boosted,
     // Derive verification_status from expert_verified_at so the badge reflects reality
-    verification_status: expert.expert_verified_at ? 'verified' : 'unverified',
+    verification_status: (expert.expert_verified_at ? 'verified' : 'unverified') as 'verified' | 'unverified',
     profiles: {
       full_name: expert.full_name,
       bio: expert.bio || '',
