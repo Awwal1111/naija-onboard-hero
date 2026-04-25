@@ -132,13 +132,16 @@ const Experts = () => {
     relevance_score: expert.relevance_score,
     is_premium: expert.is_premium,
     is_boosted: expert.is_boosted,
+    // Derive verification_status from expert_verified_at so the badge reflects reality
+    verification_status: expert.expert_verified_at ? 'verified' : 'unverified',
     profiles: {
       full_name: expert.full_name,
       bio: expert.bio || '',
       profession: expert.profession || expert.skill_category || 'Expert',
       profile_picture_url: expert.profile_picture_url || '',
       average_rating: expert.average_rating,
-      rating_count: expert.rating_count
+      rating_count: expert.rating_count,
+      verification_status: expert.expert_verified_at ? 'verified' : 'unverified'
     }
   }))
 
