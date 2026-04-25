@@ -279,6 +279,12 @@ const PostJob = () => {
           description: error?.hint || "Your listing looks like a job posting or promotional content. Use the Jobs section for hiring, and write a real service description for gigs.",
           variant: "destructive"
         })
+      } else if (msg.includes('idx_jobs_services_unique_active_title') || error?.code === '23505') {
+        toast({
+          title: "Duplicate gig",
+          description: "You already have an active gig with this title. Edit the existing one instead of posting it again.",
+          variant: "destructive"
+        })
       } else {
         toast({
           title: "Posting Failed",

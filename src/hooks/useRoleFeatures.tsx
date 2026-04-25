@@ -68,11 +68,11 @@ export const BOTTOM_NAV_FEATURES: FeatureItem[] = [
   },
   { 
     id: 'jobs', 
-    label: 'Jobs', 
+    label: 'Gigs', 
     path: '/jobs', 
     icon: Briefcase, 
-    roles: ['freelancer', 'both'], // Freelancers browse jobs
-    description: 'Find work opportunities',
+    roles: ['freelancer', 'both'], // Freelancers see the gigs marketplace (gigs tab is default)
+    description: 'Browse gigs and jobs',
     priority: 3
   },
   { 
