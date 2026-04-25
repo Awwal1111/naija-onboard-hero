@@ -2679,6 +2679,53 @@ export type Database = {
           },
         ]
       }
+      gig_spam_flags: {
+        Row: {
+          action: string | null
+          created_at: string
+          gig_id: string
+          id: string
+          reasons: string[]
+          reviewed: boolean
+          reviewed_at: string | null
+          reviewed_by: string | null
+          severity: string
+          user_id: string
+        }
+        Insert: {
+          action?: string | null
+          created_at?: string
+          gig_id: string
+          id?: string
+          reasons?: string[]
+          reviewed?: boolean
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          severity?: string
+          user_id: string
+        }
+        Update: {
+          action?: string | null
+          created_at?: string
+          gig_id?: string
+          id?: string
+          reasons?: string[]
+          reviewed?: boolean
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          severity?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gig_spam_flags_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "jobs_services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gig_testimonials: {
         Row: {
           created_at: string
