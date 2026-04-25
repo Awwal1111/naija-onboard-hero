@@ -14,6 +14,21 @@ export type Database = {
   }
   public: {
     Tables: {
+      _gig_spam_test_results: {
+        Row: {
+          result: string | null
+          test: string | null
+        }
+        Insert: {
+          result?: string | null
+          test?: string | null
+        }
+        Update: {
+          result?: string | null
+          test?: string | null
+        }
+        Relationships: []
+      }
       action_restrictions: {
         Row: {
           action_name: string
