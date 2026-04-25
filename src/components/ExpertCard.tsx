@@ -237,7 +237,11 @@ export const ExpertCard: React.FC<ExpertCardProps> = ({ expert, viewMode, onProf
                     <Clock className="h-3 w-3 mr-1" />
                     Pending
                   </Badge>
-                ) : null}
+                ) : (
+                  <Badge variant="outline" className="bg-muted text-muted-foreground border-muted-foreground/30 text-xs shrink-0">
+                    Not Verified
+                  </Badge>
+                )}
                 {isBoosted && (
                   <Badge className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-700 dark:text-amber-400 border-amber-500/30 text-xs shrink-0">
                     <TrendingUp className="h-3 w-3 mr-1" />
