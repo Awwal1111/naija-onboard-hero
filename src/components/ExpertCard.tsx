@@ -57,7 +57,7 @@ export const ExpertCard: React.FC<ExpertCardProps> = ({ expert, viewMode, onProf
     return null;
   };
 
-  // Get verification badge
+  // Get verification badge — always render so users can clearly see status
   const getVerificationBadge = () => {
     if (isVerified) {
       return (
@@ -75,7 +75,11 @@ export const ExpertCard: React.FC<ExpertCardProps> = ({ expert, viewMode, onProf
         </Badge>
       );
     }
-    return null;
+    return (
+      <Badge variant="outline" className="bg-muted text-muted-foreground border-muted-foreground/30 text-[10px] px-1.5 py-0">
+        Not Verified
+      </Badge>
+    );
   };
 
   if (viewMode === 'grid') {
