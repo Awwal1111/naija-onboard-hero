@@ -203,6 +203,45 @@ const PostJob = () => {
       return
     }
 
+    // Client-side spam pre-check (mirrors server-side trigger for instant feedback)
+    const combined = `${formData.title}\n${formData.description}`.toLowerCase()
+    const jobListingPattern = /\b(hiring|we are hiring|now hiring|looking for a (personal assistant|freelancer|remote|virtual)|remote jobs?|work[ -]from[ -]home|jobseekers?|apply now|send (your )?(cv|resume))\b/i
+    const promoPattern = /\b(download (this |the |our )?(app|game)|sign ?up (and|to)|earn \$?\d+|play to earn|refer(ral)? code|use my (code|link)|join my team|click (the )?link|register (now|here|today))\b/i
+    const externalContactPattern = /\b(whatsapp|telegram|wa\.me|t\.me|chat me on|dm me on|message me on)\b/i
+
+    if (jobListingPattern.test(combined)) {
+      toast({
+        title: "This looks like a job posting",
+        description: "Gigs are services you offer. To hire someone, please use the Jobs section instead.",
+        variant: "destructive"
+      })
+      return
+    }
+    if (promoPattern.test(combined)) {
+      toast({
+        title: "Promotional content not allowed",
+        description: "Gigs must describe a real service you provide. Please remove referral, sign-up or 'download app' content.",
+        variant: "destructive"
+      })
+      return
+    }
+    if (externalContactPattern.test(combined) && /\d{7,}/.test(combined)) {
+      toast({
+        title: "External contact not allowed",
+        description: "Don't include WhatsApp/Telegram numbers in gigs. Buyers will message you through the in-app chat.",
+        variant: "destructive"
+      })
+      return
+    }
+    if (formData.title.trim().length < 8) {
+      toast({ title: "Title too short", description: "Please write a clear, descriptive gig title (at least 8 characters).", variant: "destructive" })
+      return
+    }
+    if (formData.description.trim().length < 40) {
+      toast({ title: "Description too short", description: "Please describe your service in at least 40 characters so buyers know what they're getting.", variant: "destructive" })
+      return
+    }
+
     setLoading(true)
 
     try {
@@ -231,13 +270,22 @@ const PostJob = () => {
       })
 
       navigate('/jobs')
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error posting service:', error)
-      toast({
-        title: "Posting Failed",
-        description: "Failed to post your service. Please try again.",
-        variant: "destructive"
-      })
+      const msg = String(error?.message || '')
+      if (msg.includes('GIG_SPAM_BLOCKED')) {
+        toast({
+          title: "Posting blocked: spam detected",
+          description: error?.hint || "Your listing looks like a job posting or promotional content. Use the Jobs section for hiring, and write a real service description for gigs.",
+          variant: "destructive"
+        })
+      } else {
+        toast({
+          title: "Posting Failed",
+          description: "Failed to post your service. Please try again.",
+          variant: "destructive"
+        })
+      }
     } finally {
       setLoading(false)
     }
