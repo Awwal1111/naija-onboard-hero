@@ -7,6 +7,8 @@ import { Star, MapPin, MessageCircle, Shield, CheckCircle, TrendingUp, Clock, Br
 import { useNavigate } from 'react-router-dom';
 import { BookmarkButton } from '@/components/BookmarkButton';
 import { HireExpertDialog } from '@/components/HireExpertDialog';
+import { TrustScoreBadge } from '@/components/TrustScoreDisplay';
+import { calculateTrustScore } from '@/hooks/useTrustScore';
 interface ExpertCardProps {
   expert: {
     id: string;
