@@ -280,6 +280,7 @@ export const ExpertCard: React.FC<ExpertCardProps> = ({ expert, viewMode, onProf
                   <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
                   <span>{rating.toFixed(1)} ({reviewCount})</span>
                 </div>
+                <TrustScoreBadge score={trustScore.score} level={trustScore.level} size="sm" />
                 <div className="flex items-center gap-1">
                   <MapPin className="h-3.5 w-3.5" />
                   <span>{expert.location_area ? `${expert.location_area}, ` : ''}{expert.location_state}</span>
