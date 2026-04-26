@@ -4,46 +4,84 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { BrandButton } from '@/components/ui/brand-button'
 import { useWallet, WalletBalance } from '@/hooks/useWallet'
 import { useUserCountry } from '@/hooks/useUserCountry'
+import { useCurrency, CURRENCIES, CurrencyCode } from '@/hooks/useCurrency'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { DepositDialog } from './DepositDialog'
 import { WithdrawalDialog } from './WithdrawalDialog'
 import { TransferDialog } from './TransferDialog'
 
-// NC is pegged 1:1 to NGN
-const NGN_TO_USD_RATE = 1600
-
 export const WalletCard = () => {
   const { balance, loading } = useWallet()
   const { isNigerian } = useUserCountry()
+  const { currency, setCurrency, formatPreferred, convertFromNC } = useCurrency()
   const [showBalance, setShowBalance] = useState(true)
   const [showDeposit, setShowDeposit] = useState(false)
   const [showWithdrawal, setShowWithdrawal] = useState(false)
   const [showTransfer, setShowTransfer] = useState(false)
 
+  const curr = CURRENCIES[currency]
+
   const formatBalance = (amount: number) => {
-    return `NC ${amount.toLocaleString()}`
+    if (currency === 'NC') return `NC ${amount.toLocaleString()}`
+    const converted = convertFromNC(amount, currency)
+    return `${curr.symbol}${converted.toLocaleString(undefined, {
+      minimumFractionDigits: currency === 'NGN' ? 0 : 2,
+      maximumFractionDigits: 2,
+    })}`
   }
 
-  const formatUsd = (amount: number) => {
-    const usdAmount = amount / NGN_TO_USD_RATE
-    return `~$${usdAmount.toFixed(2)}`
+  const formatSecondary = (amount: number) => {
+    if (currency === 'NC') {
+      const usd = convertFromNC(amount, 'USD')
+      return `~$${usd.toFixed(2)} USD`
+    }
+    return `NC ${amount.toLocaleString()}`
   }
 
   return (
     <>
       <Card className="bg-gradient-to-br from-primary to-primary-glow border-none text-white">
         <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <CardTitle className="text-lg font-medium text-white/90">Wallet</CardTitle>
-            <button
-              onClick={() => setShowBalance(!showBalance)}
-              className="p-1 hover:bg-white/10 rounded"
-            >
-              {showBalance ? (
-                <EyeOff className="h-4 w-4 text-white/70" />
-              ) : (
-                <Eye className="h-4 w-4 text-white/70" />
-              )}
-            </button>
+            <div className="flex items-center gap-1">
+              <Select
+                value={currency}
+                onValueChange={(v) => setCurrency(v as CurrencyCode)}
+              >
+                <SelectTrigger
+                  className="h-7 px-2 w-auto gap-1 bg-white/10 border-white/20 text-white text-xs hover:bg-white/20 focus:ring-0"
+                  aria-label="Display currency"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent align="end">
+                  {Object.values(CURRENCIES).map((c) => (
+                    <SelectItem key={c.code} value={c.code}>
+                      <span className="mr-1">{c.flag}</span>
+                      {c.code}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <button
+                onClick={() => setShowBalance(!showBalance)}
+                className="p-1 hover:bg-white/10 rounded"
+                aria-label="Toggle balance visibility"
+              >
+                {showBalance ? (
+                  <EyeOff className="h-4 w-4 text-white/70" />
+                ) : (
+                  <Eye className="h-4 w-4 text-white/70" />
+                )}
+              </button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="pt-0">
@@ -60,7 +98,7 @@ export const WalletCard = () => {
               </div>
               {showBalance && !loading && (
                 <div className="text-sm text-white/70">
-                  {formatUsd(balance.total)} USD
+                  {formatSecondary(balance.total)}
                 </div>
               )}
             </div>

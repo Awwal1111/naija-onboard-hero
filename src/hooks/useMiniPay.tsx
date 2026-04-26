@@ -256,12 +256,21 @@ export const useMiniPay = (): UseMiniPayReturn => {
     setState(prev => ({ ...prev, isLoading: true }));
 
     try {
-      // Get live exchange rate
-      const { data: rateData } = await supabase.functions.invoke('quidax-on-ramp', {
-        body: { action: 'get_rate' }
-      });
-      
-      const exchangeRate = rateData?.rate || 1600;
+      // Get live exchange rate (with 5s timeout so we never hang)
+      let exchangeRate = 1600;
+      try {
+        const ratePromise = supabase.functions.invoke('quidax-on-ramp', {
+          body: { action: 'get_rate' }
+        });
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('rate timeout')), 5000)
+        );
+        const { data: rateData } = await Promise.race([ratePromise, timeoutPromise]) as any;
+        if (rateData?.rate) exchangeRate = rateData.rate;
+      } catch (rateErr) {
+        console.warn('[MiniPay] Rate fetch failed, using fallback 1600:', rateErr);
+      }
+
       const amountInStable = amountNGN / exchangeRate;
       
       console.log('[MiniPay] Depositing:', {
@@ -272,7 +281,7 @@ export const useMiniPay = (): UseMiniPayReturn => {
         exchangeRate
       });
 
-      // Send to USER's assigned wallet
+      // Send to USER's assigned wallet — this awaits MiniPay tx confirmation
       let result;
       if (token === 'usdt') {
         result = await sendUSDTViaMiniPay(state.userWalletAddress, amountInStable);
@@ -281,12 +290,31 @@ export const useMiniPay = (): UseMiniPayReturn => {
       }
       
       if (result.success && result.txHash) {
-        toast.success(`Deposit initiated! TX: ${result.txHash.slice(0, 10)}...`);
-        
-        // Notify backend about the deposit
-        await supabase.functions.invoke('check-celo-deposits');
-        
-        await refreshBalance();
+        toast.success(`Deposit sent! TX: ${result.txHash.slice(0, 10)}... NC will be credited shortly.`);
+
+        // Fire-and-forget: trigger deposit detection. Do NOT block the UI.
+        // The function REQUIRES user_id + wallet_address in the body.
+        const userId = user?.id;
+        const walletAddress = state.userWalletAddress;
+        if (userId && walletAddress) {
+          // Poll up to 4 times over ~60s, but don't await — UI is already done.
+          (async () => {
+            for (let i = 0; i < 4; i++) {
+              await new Promise(r => setTimeout(r, 15000));
+              try {
+                await supabase.functions.invoke('check-celo-deposits', {
+                  body: { user_id: userId, wallet_address: walletAddress }
+                });
+              } catch (e) {
+                console.warn('[MiniPay] check-celo-deposits attempt failed:', e);
+              }
+            }
+            await refreshBalance();
+          })();
+        }
+
+        // Refresh local wallet balance immediately too
+        refreshBalance().catch(() => {});
       } else {
         toast.error(result.error || 'Deposit failed');
       }
@@ -296,11 +324,13 @@ export const useMiniPay = (): UseMiniPayReturn => {
       return result;
     } catch (err) {
       console.error('[MiniPay] Deposit failed:', err);
-      toast.error('Deposit failed');
+      const msg = err instanceof Error ? err.message : 'Deposit failed';
+      // Surface useful error instead of generic "payment timeout"
+      toast.error(msg.toLowerCase().includes('user reject') ? 'Transaction cancelled' : `Deposit error: ${msg}`);
       setState(prev => ({ ...prev, isLoading: false }));
       return { success: false };
     }
-  }, [state.isConnected, state.account, state.userWalletAddress, connect, refreshBalance]);
+  }, [state.isConnected, state.account, state.userWalletAddress, connect, refreshBalance, user?.id]);
 
   return {
     isMiniPay: state.isMiniPay,
