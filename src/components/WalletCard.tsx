@@ -4,28 +4,44 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { BrandButton } from '@/components/ui/brand-button'
 import { useWallet, WalletBalance } from '@/hooks/useWallet'
 import { useUserCountry } from '@/hooks/useUserCountry'
+import { useCurrency, CURRENCIES, CurrencyCode } from '@/hooks/useCurrency'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { DepositDialog } from './DepositDialog'
 import { WithdrawalDialog } from './WithdrawalDialog'
 import { TransferDialog } from './TransferDialog'
 
-// NC is pegged 1:1 to NGN
-const NGN_TO_USD_RATE = 1600
-
 export const WalletCard = () => {
   const { balance, loading } = useWallet()
   const { isNigerian } = useUserCountry()
+  const { currency, setCurrency, formatPreferred, convertFromNC } = useCurrency()
   const [showBalance, setShowBalance] = useState(true)
   const [showDeposit, setShowDeposit] = useState(false)
   const [showWithdrawal, setShowWithdrawal] = useState(false)
   const [showTransfer, setShowTransfer] = useState(false)
 
+  const curr = CURRENCIES[currency]
+
   const formatBalance = (amount: number) => {
-    return `NC ${amount.toLocaleString()}`
+    if (currency === 'NC') return `NC ${amount.toLocaleString()}`
+    const converted = convertFromNC(amount, currency)
+    return `${curr.symbol}${converted.toLocaleString(undefined, {
+      minimumFractionDigits: currency === 'NGN' ? 0 : 2,
+      maximumFractionDigits: 2,
+    })}`
   }
 
-  const formatUsd = (amount: number) => {
-    const usdAmount = amount / NGN_TO_USD_RATE
-    return `~$${usdAmount.toFixed(2)}`
+  const formatSecondary = (amount: number) => {
+    if (currency === 'NC') {
+      const usd = convertFromNC(amount, 'USD')
+      return `~$${usd.toFixed(2)} USD`
+    }
+    return `NC ${amount.toLocaleString()}`
   }
 
   return (
