@@ -29,6 +29,13 @@ interface ExpertCardProps {
       rating_count: number;
       verification_status?: 'unverified' | 'submitted' | 'verified';
       avg_response_time_seconds?: number;
+      email_verified?: boolean;
+      phone_verified?: boolean;
+      face_verified?: boolean;
+      identity_verified?: boolean;
+      connections_count?: number;
+      is_expert?: boolean;
+      created_at?: string;
     } | null;
     verification_status?: 'unverified' | 'submitted' | 'verified';
     relevance_score?: number;
@@ -49,7 +56,20 @@ export const ExpertCard: React.FC<ExpertCardProps> = ({ expert, viewMode, onProf
   const isVerified = verificationStatus === 'verified';
   const isSubmitted = verificationStatus === 'submitted';
   const isBoosted = expert.is_boosted;
-  
+
+  // Compute trust score for visibility on listing card
+  const trustScore = calculateTrustScore({
+    emailVerified: !!expert.profiles?.email_verified,
+    phoneVerified: !!expert.profiles?.phone_verified,
+    faceVerified: !!expert.profiles?.face_verified,
+    averageRating: rating,
+    ratingCount: reviewCount,
+    createdAt: expert.profiles?.created_at,
+    avgResponseTimeSeconds: expert.profiles?.avg_response_time_seconds,
+    connectionsCount: expert.profiles?.connections_count,
+    isExpert: !!expert.profiles?.is_expert,
+  });
+
   // Format response time
   const responseTime = expert.profiles?.avg_response_time_seconds;
   const getResponseLabel = () => {
