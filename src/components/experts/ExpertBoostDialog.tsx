@@ -83,59 +83,28 @@ export const ExpertBoostDialog: React.FC<ExpertBoostDialogProps> = ({
     const pkg = BOOST_PACKAGES.find(p => p.id === selectedPackage);
     if (!pkg) return;
 
+    const durationDays = pkg.id === '1-day' ? 1 : pkg.id === '7-day' ? 7 : 30;
+
     setLoading(true);
 
     try {
-      // Check wallet balance from profiles table
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('wallet_balance, balance_withdrawable')
-        .eq('user_id', user.id)
-        .single();
-
-      const balance = profileData?.balance_withdrawable || profileData?.wallet_balance || 0;
-
-      if (balance < pkg.price) {
-        toast({
-          title: 'Insufficient Balance',
-          description: `You need ₦${pkg.price.toLocaleString()} NC to boost. Please top up your wallet.`,
-          variant: 'destructive',
-        });
-        setLoading(false);
-        return;
-      }
-
-      // Deduct from wallet
-      const { error: deductError } = await supabase
-        .from('profiles')
-        .update({ 
-          wallet_balance: (profileData?.wallet_balance || 0) - pkg.price,
-          balance_withdrawable: (profileData?.balance_withdrawable || 0) - pkg.price,
-        })
-        .eq('user_id', user.id);
-
-      if (deductError) throw deductError;
-
-      // Record transaction
-      await supabase.from('wallet_transactions').insert({
-        user_id: user.id,
-        kind: 'expert_boost',
-        amount: -pkg.price,
-        status: 'completed',
-        reference: `Expert Boost - ${pkg.name}`,
+      const { data, error } = await supabase.rpc('boost_expert_profile' as any, {
+        p_amount: pkg.price,
+        p_duration_days: durationDays,
+        p_package_name: pkg.name,
       });
 
-      // Calculate boost end date
-      const boostEnd = new Date();
-      if (pkg.id === '1-day') boostEnd.setDate(boostEnd.getDate() + 1);
-      else if (pkg.id === '7-day') boostEnd.setDate(boostEnd.getDate() + 7);
-      else boostEnd.setDate(boostEnd.getDate() + 30);
+      if (error) throw error;
 
-      // Update profile with boost
-      await supabase.from('profiles').update({
-        is_boosted: true,
-        boost_expires_at: boostEnd.toISOString(),
-      } as any).eq('user_id', user.id);
+      const result = data as { success: boolean; error?: string; expires_at?: string };
+      if (!result?.success) {
+        toast({
+          title: 'Boost Failed',
+          description: result?.error || 'Failed to activate boost',
+          variant: 'destructive',
+        });
+        return;
+      }
 
       toast({
         title: 'Boost Activated! 🚀',
@@ -144,11 +113,11 @@ export const ExpertBoostDialog: React.FC<ExpertBoostDialogProps> = ({
 
       onSuccess?.();
       onOpenChange(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Boost error:', error);
       toast({
         title: 'Error',
-        description: 'Failed to activate boost. Please try again.',
+        description: error?.message || 'Failed to activate boost. Please try again.',
         variant: 'destructive',
       });
     } finally {
