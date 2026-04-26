@@ -141,7 +141,9 @@ const Experts = () => {
       profile_picture_url: expert.profile_picture_url || '',
       average_rating: expert.average_rating,
       rating_count: expert.rating_count,
-      verification_status: (expert.expert_verified_at ? 'verified' : 'unverified') as 'verified' | 'unverified'
+      verification_status: (expert.expert_verified_at ? 'verified' : 'unverified') as 'verified' | 'unverified',
+      connections_count: expert.connections_count,
+      is_expert: expert.is_expert,
     }
   }))
 
