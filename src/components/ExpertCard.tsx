@@ -154,20 +154,21 @@ export const ExpertCard: React.FC<ExpertCardProps> = ({ expert, viewMode, onProf
                 <p className="text-sm text-primary font-medium truncate">{expert.skill_category}</p>
               </div>
 
-              {/* Rating & Response Time */}
+              {/* Rating & Trust Score */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
                   <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                   <span className="font-medium text-sm">{rating.toFixed(1)}</span>
                   <span className="text-muted-foreground text-xs">({reviewCount})</span>
                 </div>
-                {getResponseLabel() && (
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <Clock className="h-3 w-3" />
-                    <span className="truncate">{getResponseLabel()}</span>
-                  </div>
-                )}
+                <TrustScoreBadge score={trustScore.score} level={trustScore.level} size="sm" />
               </div>
+              {getResponseLabel() && (
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Clock className="h-3 w-3" />
+                  <span className="truncate">{getResponseLabel()}</span>
+                </div>
+              )}
 
               {/* Location & Experience */}
               <div className="flex items-center gap-2 text-muted-foreground text-xs">
