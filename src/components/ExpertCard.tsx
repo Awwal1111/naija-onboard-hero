@@ -7,6 +7,8 @@ import { Star, MapPin, MessageCircle, Shield, CheckCircle, TrendingUp, Clock, Br
 import { useNavigate } from 'react-router-dom';
 import { BookmarkButton } from '@/components/BookmarkButton';
 import { HireExpertDialog } from '@/components/HireExpertDialog';
+import { TrustScoreBadge } from '@/components/TrustScoreDisplay';
+import { calculateTrustScore } from '@/hooks/useTrustScore';
 interface ExpertCardProps {
   expert: {
     id: string;
@@ -27,6 +29,13 @@ interface ExpertCardProps {
       rating_count: number;
       verification_status?: 'unverified' | 'submitted' | 'verified';
       avg_response_time_seconds?: number;
+      email_verified?: boolean;
+      phone_verified?: boolean;
+      face_verified?: boolean;
+      identity_verified?: boolean;
+      connections_count?: number;
+      is_expert?: boolean;
+      created_at?: string;
     } | null;
     verification_status?: 'unverified' | 'submitted' | 'verified';
     relevance_score?: number;
@@ -47,7 +56,20 @@ export const ExpertCard: React.FC<ExpertCardProps> = ({ expert, viewMode, onProf
   const isVerified = verificationStatus === 'verified';
   const isSubmitted = verificationStatus === 'submitted';
   const isBoosted = expert.is_boosted;
-  
+
+  // Compute trust score for visibility on listing card
+  const trustScore = calculateTrustScore({
+    emailVerified: !!expert.profiles?.email_verified,
+    phoneVerified: !!expert.profiles?.phone_verified,
+    faceVerified: !!expert.profiles?.face_verified,
+    averageRating: rating,
+    ratingCount: reviewCount,
+    createdAt: expert.profiles?.created_at,
+    avgResponseTimeSeconds: expert.profiles?.avg_response_time_seconds,
+    connectionsCount: expert.profiles?.connections_count,
+    isExpert: !!expert.profiles?.is_expert,
+  });
+
   // Format response time
   const responseTime = expert.profiles?.avg_response_time_seconds;
   const getResponseLabel = () => {
@@ -132,20 +154,21 @@ export const ExpertCard: React.FC<ExpertCardProps> = ({ expert, viewMode, onProf
                 <p className="text-sm text-primary font-medium truncate">{expert.skill_category}</p>
               </div>
 
-              {/* Rating & Response Time */}
+              {/* Rating & Trust Score */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
                   <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                   <span className="font-medium text-sm">{rating.toFixed(1)}</span>
                   <span className="text-muted-foreground text-xs">({reviewCount})</span>
                 </div>
-                {getResponseLabel() && (
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <Clock className="h-3 w-3" />
-                    <span className="truncate">{getResponseLabel()}</span>
-                  </div>
-                )}
+                <TrustScoreBadge score={trustScore.score} level={trustScore.level} size="sm" />
               </div>
+              {getResponseLabel() && (
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Clock className="h-3 w-3" />
+                  <span className="truncate">{getResponseLabel()}</span>
+                </div>
+              )}
 
               {/* Location & Experience */}
               <div className="flex items-center gap-2 text-muted-foreground text-xs">
@@ -257,6 +280,7 @@ export const ExpertCard: React.FC<ExpertCardProps> = ({ expert, viewMode, onProf
                   <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
                   <span>{rating.toFixed(1)} ({reviewCount})</span>
                 </div>
+                <TrustScoreBadge score={trustScore.score} level={trustScore.level} size="sm" />
                 <div className="flex items-center gap-1">
                   <MapPin className="h-3.5 w-3.5" />
                   <span>{expert.location_area ? `${expert.location_area}, ` : ''}{expert.location_state}</span>

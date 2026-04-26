@@ -7426,6 +7426,19 @@ export type Database = {
       }
       auto_approve_user_task_submissions: { Args: never; Returns: undefined }
       auto_release_safepay: { Args: never; Returns: undefined }
+      boost_expert_profile: {
+        Args: {
+          p_amount: number
+          p_duration_days: number
+          p_package_name: string
+        }
+        Returns: Json
+      }
+      boost_gig: { Args: { p_amount: number; p_gig_id: string }; Returns: Json }
+      boost_post: {
+        Args: { p_amount: number; p_post_id: string }
+        Returns: Json
+      }
       calculate_comment_engagement: {
         Args: { p_comment_id: string }
         Returns: number

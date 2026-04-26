@@ -36,7 +36,7 @@ import TelegramConnectCard from '@/components/TelegramConnectCard'
 import { UserBadges } from '@/components/UserBadges'
 import { EmailVerificationBanner } from '@/components/EmailVerificationBanner'
 import { TrustScoreCard } from '@/components/TrustScoreDisplay'
-import { calculateTrustScore } from '@/hooks/useTrustScore'
+import { useDynamicTrustScore } from '@/hooks/useDynamicTrustScore'
 import { PremiumSubscriptionDialog } from '@/components/PremiumSubscriptionDialog'
 import { ContactButtons } from '@/components/ContactButtons'
 import { ProfileVideoIntro } from '@/components/premium/ProfileVideoIntro'
@@ -83,6 +83,7 @@ const Profile = () => {
   const isOwnProfile = !userId || userId === user?.id
   const profile = isOwnProfile ? currentUserProfile : viewedUserProfile
   const loading = isOwnProfile ? currentUserLoading : viewedUserLoading
+  const dynamicTrustScore = useDynamicTrustScore(profile as any)
 
   // Expert ratings hook
   const { ratings, loading: ratingsLoading, hasRated, submitRating, updateRating, deleteRating, refetch: refetchRatings } = useExpertRatings(userId || user?.id)
@@ -541,20 +542,10 @@ const Profile = () => {
           </TabsContent>
           
           <TabsContent value="overview" className="space-y-6">
-            {/* Trust Score Card */}
+            {/* Trust Score Card - dynamic score includes identity verification + risk */}
             {profile && (
               <TrustScoreCard
-                trustScore={calculateTrustScore({
-                  emailVerified: !!(profile as any)?.email_verified,
-                  phoneVerified: !!(profile as any)?.phone_verified,
-                  faceVerified: !!(profile as any)?.face_verified,
-                  averageRating: profile?.average_rating,
-                  ratingCount: profile?.rating_count,
-                  createdAt: profile?.created_at,
-                  avgResponseTimeSeconds: (profile as any)?.avg_response_time_seconds,
-                  connectionsCount: profile?.connections_count,
-                  isExpert: profile?.is_expert,
-                })}
+                trustScore={dynamicTrustScore}
                 showBreakdown={isOwnProfile}
               />
             )}

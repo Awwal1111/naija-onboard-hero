@@ -58,63 +58,26 @@ const PostBoostDialog: React.FC<PostBoostDialogProps> = ({
     setLoading(true)
 
     try {
-      // Get user's wallet balance
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('wallet_balance')
-        .eq('user_id', user.id)
-        .single()
+      const { data, error } = await supabase.rpc('boost_post' as any, {
+        p_post_id: postId,
+        p_amount: boostAmount,
+      })
 
-      if (profileError) throw profileError
+      if (error) throw error
 
-      if ((profile?.wallet_balance || 0) < boostAmount) {
+      const result = data as { success: boolean; error?: string; new_total_boost?: number }
+      if (!result?.success) {
         toast({
-          title: "Insufficient balance",
-          description: `You need ₦${boostAmount.toLocaleString()} but have ₦${(profile?.wallet_balance || 0).toLocaleString()}`,
-          variant: "destructive"
+          title: 'Boost failed',
+          description: result?.error || 'Something went wrong',
+          variant: 'destructive',
         })
-        setLoading(false)
         return
       }
 
-      // Deduct from wallet
-      const { error: walletError } = await supabase
-        .from('profiles')
-        .update({ 
-          wallet_balance: (profile?.wallet_balance || 0) - boostAmount 
-        })
-        .eq('user_id', user.id)
-
-      if (walletError) throw walletError
-
-      // Update post boost
-      const newBoostAmount = currentBoost + boostAmount
-      const { error: postError } = await supabase
-        .from('posts')
-        .update({
-          boost_amount: newBoostAmount,
-          boosted_at: new Date().toISOString()
-        })
-        .eq('id', postId)
-
-      if (postError) throw postError
-
-      // Record transaction
-      await supabase
-        .from('transactions')
-        .insert({
-          user_id: user.id,
-          amount: boostAmount,
-          type: 'debit',
-          balance_type: 'main',
-          description: `Post boost - ${postTitle?.slice(0, 30) || 'Post'}`,
-          status: 'completed',
-          metadata: { post_id: postId }
-        })
-
       toast({
-        title: "Post boosted!",
-        description: `Your post now has a total boost of ₦${newBoostAmount.toLocaleString()}`
+        title: 'Post boosted!',
+        description: `Your post now has a total boost of ₦${(result.new_total_boost ?? currentBoost + boostAmount).toLocaleString()}`,
       })
 
       queryClient.invalidateQueries({ queryKey: ['personalized-posts-v2'] })
@@ -123,9 +86,9 @@ const PostBoostDialog: React.FC<PostBoostDialogProps> = ({
       setAmount('')
     } catch (error: any) {
       toast({
-        title: "Boost failed",
-        description: error.message || "Something went wrong",
-        variant: "destructive"
+        title: 'Boost failed',
+        description: error.message || 'Something went wrong',
+        variant: 'destructive',
       })
     } finally {
       setLoading(false)
