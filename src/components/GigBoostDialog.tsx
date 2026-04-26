@@ -45,57 +45,26 @@ export const GigBoostDialog: React.FC<GigBoostDialogProps> = ({
 
     setLoading(true);
     try {
-      // Get user's wallet balance
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('wallet_balance')
-        .eq('user_id', user.id)
-        .single();
+      const { data, error } = await supabase.rpc('boost_gig' as any, {
+        p_gig_id: gigId,
+        p_amount: parsedAmount,
+      });
 
-      if (profileError) throw profileError;
+      if (error) throw error;
 
-      const walletBalance = profile?.wallet_balance || 0;
-      if (walletBalance < parsedAmount) {
+      const result = data as { success: boolean; error?: string; new_total_boost?: number };
+      if (!result?.success) {
         toast({
-          title: "Insufficient Balance",
-          description: `You need ₦${parsedAmount.toLocaleString()} but only have ₦${walletBalance.toLocaleString()}`,
-          variant: "destructive"
+          title: 'Boost Failed',
+          description: result?.error || 'Failed to boost your gig',
+          variant: 'destructive',
         });
         return;
       }
 
-      // Deduct from wallet
-      const { error: walletError } = await supabase
-        .from('profiles')
-        .update({ wallet_balance: walletBalance - parsedAmount })
-        .eq('user_id', user.id);
-
-      if (walletError) throw walletError;
-
-      // Update gig boost amount
-      const { error: boostError } = await supabase
-        .from('jobs_services')
-        .update({ 
-          boost_amount: newTotalBoost,
-          boosted_at: new Date().toISOString()
-        })
-        .eq('id', gigId)
-        .eq('user_id', user.id);
-
-      if (boostError) throw boostError;
-
-      // Record transaction in wallet_transactions
-      await supabase.from('wallet_transactions').insert({
-        user_id: user.id,
-        amount: -parsedAmount,
-        kind: 'gig_boost',
-        status: 'completed',
-        reference: `Boost for gig: ${gigTitle.substring(0, 50)}`
-      });
-
       toast({
-        title: "Gig Boosted! 🚀",
-        description: `Your gig is now boosted with ₦${newTotalBoost.toLocaleString()} total`,
+        title: 'Gig Boosted! 🚀',
+        description: `Your gig is now boosted with ₦${(result.new_total_boost ?? newTotalBoost).toLocaleString()} total`,
       });
 
       onOpenChange(false);
@@ -103,9 +72,9 @@ export const GigBoostDialog: React.FC<GigBoostDialogProps> = ({
     } catch (error: any) {
       console.error('Boost error:', error);
       toast({
-        title: "Boost Failed",
-        description: error.message || "Failed to boost your gig",
-        variant: "destructive"
+        title: 'Boost Failed',
+        description: error.message || 'Failed to boost your gig',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
