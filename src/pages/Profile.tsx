@@ -83,6 +83,7 @@ const Profile = () => {
   const isOwnProfile = !userId || userId === user?.id
   const profile = isOwnProfile ? currentUserProfile : viewedUserProfile
   const loading = isOwnProfile ? currentUserLoading : viewedUserLoading
+  const dynamicTrustScore = useDynamicTrustScore(profile as any)
 
   // Expert ratings hook
   const { ratings, loading: ratingsLoading, hasRated, submitRating, updateRating, deleteRating, refetch: refetchRatings } = useExpertRatings(userId || user?.id)
@@ -541,10 +542,10 @@ const Profile = () => {
           </TabsContent>
           
           <TabsContent value="overview" className="space-y-6">
-            {/* Trust Score Card - now uses dynamic score that includes identity verification + risk */}
+            {/* Trust Score Card - dynamic score includes identity verification + risk */}
             {profile && (
               <TrustScoreCard
-                trustScore={useDynamicTrustScore(profile as any)}
+                trustScore={dynamicTrustScore}
                 showBreakdown={isOwnProfile}
               />
             )}
