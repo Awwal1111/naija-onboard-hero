@@ -541,20 +541,10 @@ const Profile = () => {
           </TabsContent>
           
           <TabsContent value="overview" className="space-y-6">
-            {/* Trust Score Card */}
+            {/* Trust Score Card - now uses dynamic score that includes identity verification + risk */}
             {profile && (
               <TrustScoreCard
-                trustScore={calculateTrustScore({
-                  emailVerified: !!(profile as any)?.email_verified,
-                  phoneVerified: !!(profile as any)?.phone_verified,
-                  faceVerified: !!(profile as any)?.face_verified,
-                  averageRating: profile?.average_rating,
-                  ratingCount: profile?.rating_count,
-                  createdAt: profile?.created_at,
-                  avgResponseTimeSeconds: (profile as any)?.avg_response_time_seconds,
-                  connectionsCount: profile?.connections_count,
-                  isExpert: profile?.is_expert,
-                })}
+                trustScore={useDynamicTrustScore(profile as any)}
                 showBreakdown={isOwnProfile}
               />
             )}
