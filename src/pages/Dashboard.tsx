@@ -12,7 +12,7 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { useTrustScore } from '@/hooks/useTrustScore';
+import { useDynamicTrustScore } from '@/hooks/useDynamicTrustScore';
 import { ProfileVisitorsCard } from '@/components/dashboard/ProfileVisitorsCard';
 import { 
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
@@ -60,17 +60,7 @@ const Dashboard = () => {
     revenueBreakdown: [] as any[]
   });
 
-  const trustScore = useTrustScore({
-    emailVerified: profile?.email_verified,
-    phoneVerified: profile?.phone_verified,
-    faceVerified: profile?.face_verified,
-    averageRating: profile?.average_rating,
-    ratingCount: profile?.rating_count,
-    createdAt: profile?.created_at,
-    avgResponseTimeSeconds: profile?.avg_response_time_seconds,
-    connectionsCount: profile?.connections_count,
-    isExpert: profile?.is_expert
-  });
+  const trustScore = useDynamicTrustScore(profile as any);
 
   useEffect(() => {
     if (user) fetchAllStats();
@@ -81,7 +71,7 @@ const Dashboard = () => {
       // Fetch profile first
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('wallet_balance, connections_count, full_name, profile_picture_url, profession, is_expert')
+        .select('wallet_balance, connections_count, full_name, profile_picture_url, profession, is_expert, email_verified, phone_verified, face_verified, identity_verified, average_rating, rating_count, created_at, avg_response_time_seconds, risk_score')
         .eq('user_id', user?.id)
         .single();
       
