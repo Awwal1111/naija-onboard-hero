@@ -481,8 +481,12 @@ const Chat = () => {
 
       {/* SafePay and Block/Unblock Bar (Below Header) */}
       {userId && otherUser && !isBlockedBy && (
-        <div className="bg-background border-b border-border px-4 py-2 flex items-center justify-between shadow-sm">
+        <div className="bg-background border-b border-border px-4 py-2 flex items-center gap-2 flex-wrap shadow-sm">
           <SafePayDialog 
+            otherUserId={userId}
+            otherUserName={otherUser.full_name || 'User'}
+          />
+          <MarkProjectCompleteDialog
             otherUserId={userId}
             otherUserName={otherUser.full_name || 'User'}
           />
