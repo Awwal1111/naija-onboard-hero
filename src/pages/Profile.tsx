@@ -46,6 +46,7 @@ import { ProfileVisitorsCard } from '@/components/dashboard/ProfileVisitorsCard'
 import { trackProfileView } from '@/lib/profileViewTracker'
 import { AIWritingAssistant } from '@/components/AIWritingAssistant'
 import { ProfileActivityFeed } from '@/components/ProfileActivityFeed'
+import { WorkedWithSection } from '@/components/WorkedWithSection'
 
 const Profile = () => {
   const navigate = useNavigate()
@@ -548,6 +549,11 @@ const Profile = () => {
                 trustScore={dynamicTrustScore}
                 showBreakdown={isOwnProfile}
               />
+            )}
+
+            {/* Worked With - completed collaborations */}
+            {profile?.user_id && (
+              <WorkedWithSection userId={profile.user_id} isOwnProfile={isOwnProfile} />
             )}
             
             {/* Connection Requests Section - Only show on own profile */}

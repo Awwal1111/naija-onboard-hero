@@ -12,6 +12,7 @@ import { BrandInput } from '@/components/ui/brand-input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import SafePayDialog from '@/components/SafePayDialog'
+import { MarkProjectCompleteDialog } from '@/components/MarkProjectCompleteDialog'
 import ActiveCallInterface from '@/components/ActiveCallInterface'
 import CallHistory from '@/components/CallHistory'
 import VoiceRecorder from '@/components/VoiceRecorder'
@@ -480,8 +481,12 @@ const Chat = () => {
 
       {/* SafePay and Block/Unblock Bar (Below Header) */}
       {userId && otherUser && !isBlockedBy && (
-        <div className="bg-background border-b border-border px-4 py-2 flex items-center justify-between shadow-sm">
+        <div className="bg-background border-b border-border px-4 py-2 flex items-center gap-2 flex-wrap shadow-sm">
           <SafePayDialog 
+            otherUserId={userId}
+            otherUserName={otherUser.full_name || 'User'}
+          />
+          <MarkProjectCompleteDialog
             otherUserId={userId}
             otherUserName={otherUser.full_name || 'User'}
           />
