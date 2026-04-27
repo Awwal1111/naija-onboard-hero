@@ -61,13 +61,31 @@ export const GlobalErrorHandler = () => {
       console.error('[GlobalErrorHandler] Global error:', event.error)
     }
 
-    // Handle network offline/online events
+    // Debounce offline notifications — mobile networks blip frequently,
+    // and showing a "network error" toast on first launch makes the app
+    // look broken. Only warn if user has been offline for >4 seconds.
+    let offlineTimer: ReturnType<typeof setTimeout> | null = null
+    let wasReallyOffline = false
+
     const handleOffline = () => {
-      toast.warning('You are offline. Some features may not work.')
+      if (offlineTimer) clearTimeout(offlineTimer)
+      offlineTimer = setTimeout(() => {
+        if (!navigator.onLine) {
+          wasReallyOffline = true
+          toast.warning('You are offline. Some features may not work.')
+        }
+      }, 4000)
     }
 
     const handleOnline = () => {
-      toast.success('You are back online!')
+      if (offlineTimer) {
+        clearTimeout(offlineTimer)
+        offlineTimer = null
+      }
+      if (wasReallyOffline) {
+        wasReallyOffline = false
+        toast.success('You are back online!')
+      }
     }
 
     window.addEventListener('unhandledrejection', handleUnhandledRejection)
@@ -76,6 +94,7 @@ export const GlobalErrorHandler = () => {
     window.addEventListener('online', handleOnline)
 
     return () => {
+      if (offlineTimer) clearTimeout(offlineTimer)
       window.removeEventListener('unhandledrejection', handleUnhandledRejection)
       window.removeEventListener('error', handleGlobalError)
       window.removeEventListener('offline', handleOffline)
