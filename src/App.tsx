@@ -19,21 +19,27 @@ import { lazyWithRetry } from "@/utils/chunkErrorHandler";
 import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-// Loading fallback with timeout recovery
+// Loading fallback with progressive messaging - tolerant of slow mobile networks
 const PageLoader = () => {
-  const [timedOut, setTimedOut] = useState(false);
+  const [stage, setStage] = useState<'loading' | 'slow' | 'timedOut'>('loading');
 
   useEffect(() => {
-    const timer = setTimeout(() => setTimedOut(true), 6_000);
-    return () => clearTimeout(timer);
+    // After 8s, show a friendlier "still loading" hint (no reload button yet)
+    const slowTimer = setTimeout(() => setStage('slow'), 8_000);
+    // Only show reload option after 20s — slow 3G mobile users need more patience
+    const timeoutTimer = setTimeout(() => setStage('timedOut'), 20_000);
+    return () => {
+      clearTimeout(slowTimer);
+      clearTimeout(timeoutTimer);
+    };
   }, []);
 
-  if (timedOut) {
+  if (stage === 'timedOut') {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="text-center max-w-xs space-y-4 p-4">
           <p className="text-sm text-muted-foreground">
-            Page is taking too long to load.
+            Slow connection detected. You can keep waiting or try reloading.
           </p>
           <Button onClick={() => window.location.reload()} size="sm" variant="outline">
             <RefreshCw className="h-4 w-4 mr-2" />
@@ -48,7 +54,9 @@ const PageLoader = () => {
     <div className="flex items-center justify-center min-h-screen bg-background">
       <div className="flex flex-col items-center gap-3">
         <div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin" />
-        <p className="text-sm text-muted-foreground">Loading...</p>
+        <p className="text-sm text-muted-foreground">
+          {stage === 'slow' ? 'Still loading, please wait…' : 'Loading...'}
+        </p>
       </div>
     </div>
   );
