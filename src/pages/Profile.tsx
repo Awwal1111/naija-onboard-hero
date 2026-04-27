@@ -550,6 +550,11 @@ const Profile = () => {
                 showBreakdown={isOwnProfile}
               />
             )}
+
+            {/* Worked With - completed collaborations */}
+            {profile?.user_id && (
+              <WorkedWithSection userId={profile.user_id} isOwnProfile={isOwnProfile} />
+            )}
             
             {/* Connection Requests Section - Only show on own profile */}
             {isOwnProfile && connectionRequests.filter(req => req.requested_id === profile?.user_id && req.status === 'pending').length > 0 && (
