@@ -4904,6 +4904,68 @@ export type Database = {
         }
         Relationships: []
       }
+      project_completions: {
+        Row: {
+          amount: number | null
+          chat_id: string | null
+          client_confirmed: boolean
+          client_confirmed_at: string | null
+          client_id: string
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          freelancer_confirmed: boolean
+          freelancer_confirmed_at: string | null
+          freelancer_id: string
+          id: string
+          initiated_by: string
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount?: number | null
+          chat_id?: string | null
+          client_confirmed?: boolean
+          client_confirmed_at?: string | null
+          client_id: string
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          freelancer_confirmed?: boolean
+          freelancer_confirmed_at?: string | null
+          freelancer_id: string
+          id?: string
+          initiated_by: string
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number | null
+          chat_id?: string | null
+          client_confirmed?: boolean
+          client_confirmed_at?: string | null
+          client_id?: string
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          freelancer_confirmed?: boolean
+          freelancer_confirmed_at?: string | null
+          freelancer_id?: string
+          id?: string
+          initiated_by?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_completions_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "chats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_milestones: {
         Row: {
           amount: number
@@ -7477,6 +7539,32 @@ export type Database = {
       cleanup_expired_2fa_codes: { Args: never; Returns: undefined }
       cleanup_expired_telegram_codes: { Args: never; Returns: undefined }
       cleanup_old_telegram_conversations: { Args: never; Returns: undefined }
+      confirm_project_completion: {
+        Args: { p_completion_id: string }
+        Returns: {
+          amount: number | null
+          chat_id: string | null
+          client_confirmed: boolean
+          client_confirmed_at: string | null
+          client_id: string
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          freelancer_confirmed: boolean
+          freelancer_confirmed_at: string | null
+          freelancer_id: string
+          id: string
+          initiated_by: string
+          title: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "project_completions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       contribute_to_fundraising: {
         Args: {
           p_amount: number
@@ -7818,6 +7906,16 @@ export type Database = {
       }
       get_system_setting: { Args: { setting_key: string }; Returns: string }
       get_user_admin_role: { Args: never; Returns: string }
+      get_user_collaborations: {
+        Args: { p_user_id: string }
+        Returns: {
+          last_completed_at: string
+          partner_id: string
+          project_count: number
+          source: string
+          total_amount: number
+        }[]
+      }
       get_verification_level: { Args: { p_user_id: string }; Returns: string }
       grant_admin_role:
         | { Args: { target_user_id: string }; Returns: boolean }
