@@ -534,6 +534,10 @@ const Profile = () => {
           </TabsList>
           
           <TabsContent value="activity" className="space-y-4">
+            {/* Worked With shown on default tab so reputation is visible without tab switching */}
+            {profile?.user_id && (
+              <WorkedWithSection userId={profile.user_id} isOwnProfile={isOwnProfile} />
+            )}
             <ProfileActivityFeed 
               userId={profile?.user_id || ''}
               fullName={profile?.full_name || 'User'}
