@@ -14,6 +14,8 @@ interface WorkedWithSectionProps {
 const sourceLabel = (source: string): string => {
   const parts = source.split(',')
   if (parts.includes('escrow')) return 'Paid project'
+  if (parts.includes('workroom')) return 'WorkRoom'
+  if (parts.includes('hourly')) return 'Hourly work'
   if (parts.includes('gig_order')) return 'Gig'
   return 'Chat project'
 }
