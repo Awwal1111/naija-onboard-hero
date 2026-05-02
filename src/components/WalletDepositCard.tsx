@@ -33,6 +33,36 @@ export const WalletDepositCard = ({ walletKind, recipientAddress, onSuccess }: W
 
   const walletName = walletKind === 'metamask' ? 'MetaMask' : walletKind === 'valora' ? 'Valora' : 'Wallet'
 
+  // Build a "prefilled send" deep link as fallback when in-page connection isn't available.
+  // MetaMask supports https://metamask.app.link/send/<token>@42220/transfer?address=<to>&uint256=<value>
+  // Valora supports its universal link to its in-app browser. Users without the app see install prompt.
+  const buildManualSendLink = (): string => {
+    if (!recipientAddress) return ''
+    const t = TOKENS[token]
+    const amt = parseFloat(amount)
+    if (walletKind === 'metamask') {
+      const base = `https://metamask.app.link/send/${t.address}@42220/transfer?address=${recipientAddress}`
+      if (amt > 0) {
+        // uint256 must be the on-chain integer amount (amount * 10^decimals)
+        const value = BigInt(Math.floor(amt * 10 ** t.decimals)).toString()
+        return `${base}&uint256=${value}`
+      }
+      return base
+    }
+    // Valora: open its app browser to this page so user can complete the in-app flow
+    return `https://valoraapp.com/wallet?dappUrl=${encodeURIComponent(window.location.href)}`
+  }
+
+  const handleManualSend = () => {
+    const url = buildManualSendLink()
+    if (!url) {
+      toast.error('Your NaijaLancers wallet is not ready yet')
+      return
+    }
+    window.open(url, '_blank', 'noopener,noreferrer')
+    toast.info(`Opening ${walletName}… complete the transfer there. NC will credit automatically once confirmed on-chain.`)
+  }
+
   const handleConnect = async () => {
     try {
       await connect(walletKind)
