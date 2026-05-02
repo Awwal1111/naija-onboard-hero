@@ -17,19 +17,27 @@ import { WalletDepositCard } from './WalletDepositCard'
 import { useMiniPay } from '@/hooks/useMiniPay'
 import { CUSD_ADDRESS, USDT_ADDRESS } from '@/lib/minipay'
 
+type DepositMethod = 'main' | 'ramp' | 'crypto' | 'telegram' | 'minipay' | 'ivorypay' | 'metamask' | 'valora'
+
 interface DepositDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  defaultMethod?: Exclude<DepositMethod, 'main'>
 }
 
-export const DepositDialog = ({ open, onOpenChange }: DepositDialogProps) => {
+export const DepositDialog = ({ open, onOpenChange, defaultMethod }: DepositDialogProps) => {
   const { user } = useAuth()
   const { profile } = useProfile()
   const { isMiniPay } = useMiniPay()
   const [walletAddress, setWalletAddress] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [creatingWallet, setCreatingWallet] = useState(false)
-  const [selectedMethod, setSelectedMethod] = useState<'main' | 'ramp' | 'crypto' | 'telegram' | 'minipay' | 'ivorypay' | 'metamask' | 'valora'>('main')
+  const [selectedMethod, setSelectedMethod] = useState<DepositMethod>(defaultMethod ?? 'main')
+
+  // Reset to the requested method whenever the dialog re-opens
+  useEffect(() => {
+    if (open) setSelectedMethod(defaultMethod ?? 'main')
+  }, [open, defaultMethod])
 
   useEffect(() => {
     console.log('[DEPOSIT] 🎯 Effect triggered. User:', !!user, 'Profile:', !!profile)

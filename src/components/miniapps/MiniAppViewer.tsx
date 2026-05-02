@@ -49,7 +49,13 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
     try { return new URL(app.app_url).origin } catch { return '*' }
   }, [app.app_url])
 
-  // Post message to iframe with origin restriction
+  // Post message to iframe.
+  // We use '*' as targetOrigin because:
+  //  - Mini apps may redirect to a sub-origin (auth flow, CDN, etc.) so the
+  //    iframe's actual origin can differ from app.app_url.origin, which would
+  //    cause postMessage to silently drop and produce the "payment timeout".
+  //  - The outgoing payload only carries success flag + opaque tx_ref + amount,
+  //    no secrets. Inbound messages are still validated by sender below.
   const postToIframe = useCallback((data: Record<string, unknown>) => {
     const win = iframeRef.current?.contentWindow
     if (!win) {
@@ -57,8 +63,8 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
       return
     }
     console.log('[SDK] Sending:', data.type, data)
-    win.postMessage(data, allowedOrigin)
-  }, [allowedOrigin])
+    try { win.postMessage(data, '*') } catch (e) { console.warn('[SDK] postMessage failed', e) }
+  }, [])
 
   // Always include both requestId and request_id
   const withIds = useCallback((rid: string, payload: Record<string, unknown>) => ({
@@ -119,10 +125,13 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
   // Main message handler - attached BEFORE iframe loads to catch early njl_ready
   useEffect(() => {
     const handler = (event: MessageEvent) => {
-      // Accept messages from any source initially (iframe ref may not be set yet)
+      // Validate sender is THIS iframe (window reference equality).
+      // We intentionally do NOT enforce event.origin === allowedOrigin
+      // because mini apps may redirect to sub-origins; trusting the
+      // window reference is sufficient since only this iframe can post
+      // as its own contentWindow.
       const isFromIframe = event.source === iframeRef.current?.contentWindow
       if (!isFromIframe) return
-      if (allowedOrigin !== '*' && event.origin !== allowedOrigin) return
 
       const data = parseMessageData(event.data)
       if (!data || typeof data.type !== 'string') return

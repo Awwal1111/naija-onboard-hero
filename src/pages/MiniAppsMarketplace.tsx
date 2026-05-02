@@ -61,6 +61,8 @@ const BUILT_IN_APPS: UnifiedApp[] = [
   { id: 'int-bank', name: 'Deposit', description: 'Deposit via bank or Naira', icon: Building2, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, internalAction: 'bank_deposit' },
   { id: 'int-bank-withdraw', name: 'Withdraw', description: 'Withdraw to your bank with Quidax', icon: Banknote, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, internalAction: 'bank_withdrawal' },
   { id: 'int-crypto', name: 'Crypto Deposit', description: 'Deposit via crypto wallet', icon: Wallet, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, internalAction: 'crypto_deposit' },
+  { id: 'int-metamask', name: 'MetaMask Deposit', description: 'Deposit cUSD or USDT from MetaMask', icon: Wallet, category: 'finance', color: 'from-orange-500/20 to-amber-500/20', isInternal: true, internalAction: 'metamask_deposit' },
+  { id: 'int-ivorypay', name: 'IvoryPay Deposit', description: 'Pay via bank or crypto across Africa', icon: Wallet, category: 'finance', color: 'from-amber-500/20 to-yellow-500/20', isInternal: true, internalAction: 'ivorypay_deposit' },
   { id: 'int-escrow', name: 'Escrow', description: 'Secure escrow payments', icon: Shield, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, internalAction: 'escrow' },
   { id: 'int-converter', name: 'NC Converter', description: 'Convert non-withdrawable to withdrawable NC', icon: RefreshCw, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, internalAction: 'nc_converter' },
   { id: 'int-send-money', name: 'Send Money', description: 'Send NC to any NaijaLancers user instantly', icon: Send, category: 'finance', color: 'from-emerald-500/20 to-green-500/20', isInternal: true, internalAction: 'send_money' },
@@ -93,6 +95,7 @@ const MiniAppsMarketplace = () => {
   const [tab, setTab] = useState<'explore' | 'my-apps'>('explore')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [showDepositDialog, setShowDepositDialog] = useState(false)
+  const [depositMethod, setDepositMethod] = useState<'metamask' | 'ivorypay' | undefined>(undefined)
   const [showEscrowSearch, setShowEscrowSearch] = useState(false)
   const [showNCConverter, setShowNCConverter] = useState(false)
   const [showTransferDialog, setShowTransferDialog] = useState(false)
@@ -109,7 +112,7 @@ const MiniAppsMarketplace = () => {
       .order('install_count', { ascending: false })
 
     // Filter out internal:// apps (handled as built-in) and known internal sdk_app_ids
-    const internalIds = new Set(['bills', 'bank_deposit', 'bank_withdrawal', 'deposit_naira', 'crypto_deposit', 'escrow', 'nc_converter'])
+    const internalIds = new Set(['bills', 'bank_deposit', 'bank_withdrawal', 'deposit_naira', 'crypto_deposit', 'metamask_deposit', 'ivorypay_deposit', 'escrow', 'nc_converter'])
     const dbApps = (data || []).filter((a: any) => 
       !internalIds.has(a.sdk_app_id) && !a.app_url?.startsWith('internal://')
     ) as MiniApp[]
@@ -195,6 +198,15 @@ const MiniAppsMarketplace = () => {
         window.dispatchEvent(new CustomEvent('open-quidax-widget', { detail: { mode: 'sell' } }))
         break
       case 'crypto_deposit':
+        setDepositMethod(undefined)
+        setShowDepositDialog(true)
+        break
+      case 'metamask_deposit':
+        setDepositMethod('metamask')
+        setShowDepositDialog(true)
+        break
+      case 'ivorypay_deposit':
+        setDepositMethod('ivorypay')
         setShowDepositDialog(true)
         break
       case 'escrow':
@@ -411,7 +423,7 @@ const MiniAppsMarketplace = () => {
       )}
 
       <Suspense fallback={null}>
-        <DepositDialog open={showDepositDialog} onOpenChange={setShowDepositDialog} />
+        <DepositDialog open={showDepositDialog} onOpenChange={setShowDepositDialog} defaultMethod={depositMethod} />
         <EscrowSearchDialog open={showEscrowSearch} onOpenChange={setShowEscrowSearch} />
         <NCConverterDialog open={showNCConverter} onClose={() => setShowNCConverter(false)} />
         <TransferDialog open={showTransferDialog} onOpenChange={setShowTransferDialog} />
