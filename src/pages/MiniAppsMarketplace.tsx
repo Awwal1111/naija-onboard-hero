@@ -198,6 +198,15 @@ const MiniAppsMarketplace = () => {
         window.dispatchEvent(new CustomEvent('open-quidax-widget', { detail: { mode: 'sell' } }))
         break
       case 'crypto_deposit':
+        setDepositMethod(undefined)
+        setShowDepositDialog(true)
+        break
+      case 'metamask_deposit':
+        setDepositMethod('metamask')
+        setShowDepositDialog(true)
+        break
+      case 'ivorypay_deposit':
+        setDepositMethod('ivorypay')
         setShowDepositDialog(true)
         break
       case 'escrow':
