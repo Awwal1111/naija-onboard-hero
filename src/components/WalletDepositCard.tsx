@@ -155,10 +155,19 @@ export const WalletDepositCard = ({ walletKind, recipientAddress, onSuccess }: W
         </div>
 
         {!account ? (
-          <BrandButton onClick={handleConnect} disabled={busy} className="w-full">
-            {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wallet className="mr-2 h-4 w-4" />}
-            Connect {walletName}
-          </BrandButton>
+          <div className="space-y-2">
+            <BrandButton onClick={handleConnect} disabled={busy} className="w-full">
+              {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wallet className="mr-2 h-4 w-4" />}
+              Connect {walletName}
+            </BrandButton>
+            <BrandButton onClick={handleManualSend} variant="outline" className="w-full" disabled={!recipientAddress}>
+              <ExternalLink className="mr-2 h-4 w-4" />
+              Open {walletName} app to send
+            </BrandButton>
+            <p className="text-xs text-muted-foreground text-center">
+              On mobile? Use "Open {walletName} app" — it pre-fills the transfer.
+            </p>
+          </div>
         ) : (
           <Alert>
             <CheckCircle2 className="h-4 w-4 text-green-600" />
