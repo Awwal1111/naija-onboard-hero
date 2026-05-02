@@ -86,21 +86,27 @@ export function useExternalWallet() {
       try {
         const provider = getProvider(kind)
         if (!provider) {
-          // Deep-link to mobile app and stop
+          // No injected provider. On mobile, deep-link into the wallet's in-app browser
+          // so the user lands back on this page WITH the provider injected.
           if (isMobile()) {
-            const here = window.location.host + window.location.pathname
+            const here = window.location.host + window.location.pathname + window.location.search
             if (kind === 'metamask') {
+              // MetaMask universal link — opens MM app's in-app browser at this URL
               window.location.href = `https://metamask.app.link/dapp/${here}`
             } else if (kind === 'valora') {
-              window.location.href = `celo://wallet/dappkit?url=${encodeURIComponent(window.location.href)}`
+              // Valora's modern universal link (DappKit / celo://dappkit was deprecated 2024)
+              // wallet.valora.xyz opens the Valora app browser to the given URL
+              window.location.href = `https://valoraapp.com/wallet?dappUrl=${encodeURIComponent(window.location.href)}`
             }
+            // Give the OS ~1.5s to switch apps; if it doesn't, the throw below shows guidance.
+            await new Promise((r) => setTimeout(r, 1500))
           }
           throw new Error(
             kind === 'metamask'
-              ? 'MetaMask not detected. Open this page inside the MetaMask browser.'
+              ? 'MetaMask not detected. If the MetaMask app didn\'t open, install it and reopen this page from inside its browser — or use the Crypto Deposit option to send manually.'
               : kind === 'valora'
-                ? 'Valora not detected. Open this page inside the Valora browser.'
-                : 'No wallet detected.'
+                ? 'Valora not detected. If the Valora app didn\'t open, install it and reopen this page from its in-app browser — or use the Crypto Deposit option to send manually.'
+                : 'No wallet detected. Use the Crypto Deposit option to send to your address manually.'
           )
         }
 
