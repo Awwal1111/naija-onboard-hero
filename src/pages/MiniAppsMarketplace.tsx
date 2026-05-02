@@ -112,7 +112,7 @@ const MiniAppsMarketplace = () => {
       .order('install_count', { ascending: false })
 
     // Filter out internal:// apps (handled as built-in) and known internal sdk_app_ids
-    const internalIds = new Set(['bills', 'bank_deposit', 'bank_withdrawal', 'deposit_naira', 'crypto_deposit', 'escrow', 'nc_converter'])
+    const internalIds = new Set(['bills', 'bank_deposit', 'bank_withdrawal', 'deposit_naira', 'crypto_deposit', 'metamask_deposit', 'ivorypay_deposit', 'escrow', 'nc_converter'])
     const dbApps = (data || []).filter((a: any) => 
       !internalIds.has(a.sdk_app_id) && !a.app_url?.startsWith('internal://')
     ) as MiniApp[]
