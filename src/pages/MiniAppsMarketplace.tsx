@@ -423,7 +423,7 @@ const MiniAppsMarketplace = () => {
       )}
 
       <Suspense fallback={null}>
-        <DepositDialog open={showDepositDialog} onOpenChange={setShowDepositDialog} />
+        <DepositDialog open={showDepositDialog} onOpenChange={setShowDepositDialog} defaultMethod={depositMethod} />
         <EscrowSearchDialog open={showEscrowSearch} onOpenChange={setShowEscrowSearch} />
         <NCConverterDialog open={showNCConverter} onClose={() => setShowNCConverter(false)} />
         <TransferDialog open={showTransferDialog} onOpenChange={setShowTransferDialog} />
