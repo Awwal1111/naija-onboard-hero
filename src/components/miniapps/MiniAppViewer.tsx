@@ -125,10 +125,13 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
   // Main message handler - attached BEFORE iframe loads to catch early njl_ready
   useEffect(() => {
     const handler = (event: MessageEvent) => {
-      // Accept messages from any source initially (iframe ref may not be set yet)
+      // Validate sender is THIS iframe (window reference equality).
+      // We intentionally do NOT enforce event.origin === allowedOrigin
+      // because mini apps may redirect to sub-origins; trusting the
+      // window reference is sufficient since only this iframe can post
+      // as its own contentWindow.
       const isFromIframe = event.source === iframeRef.current?.contentWindow
       if (!isFromIframe) return
-      if (allowedOrigin !== '*' && event.origin !== allowedOrigin) return
 
       const data = parseMessageData(event.data)
       if (!data || typeof data.type !== 'string') return
