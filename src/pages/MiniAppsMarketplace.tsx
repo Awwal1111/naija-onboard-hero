@@ -95,6 +95,7 @@ const MiniAppsMarketplace = () => {
   const [tab, setTab] = useState<'explore' | 'my-apps'>('explore')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [showDepositDialog, setShowDepositDialog] = useState(false)
+  const [depositMethod, setDepositMethod] = useState<'metamask' | 'ivorypay' | undefined>(undefined)
   const [showEscrowSearch, setShowEscrowSearch] = useState(false)
   const [showNCConverter, setShowNCConverter] = useState(false)
   const [showTransferDialog, setShowTransferDialog] = useState(false)
