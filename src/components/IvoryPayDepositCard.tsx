@@ -116,6 +116,21 @@ export const IvoryPayDepositCard = ({ onPending }: IvoryPayDepositCardProps) => 
             onChange={(e) => setAmount(e.target.value)}
             min="1"
           />
+          {parseFloat(amount) > 0 && (
+            <div className="rounded-md bg-muted/50 p-2 text-xs space-y-0.5">
+              <p className="text-muted-foreground">
+                IvoryPay converts your {currency} via live FX:
+              </p>
+              <p>
+                {currencySymbols[currency] || currency}{parseFloat(amount).toLocaleString()} → USDT (live rate) → NC
+              </p>
+              <p className="text-muted-foreground">
+                The exact NC credited depends on the USDT rate at settlement
+                (1 USDT ≈ 1,600 NC). Small differences vs. the amount you typed
+                are normal.
+              </p>
+            </div>
+          )}
         </div>
 
         <BrandButton
