@@ -31,6 +31,7 @@ export const IvoryPayWithdrawalCard = ({ currentBalance, onSuccess }: IvoryPayWi
   const [showPin, setShowPin] = useState(false)
   const [banks, setBanks] = useState<IvoryBank[]>([])
   const [banksLoading, setBanksLoading] = useState(false)
+  const [banksError, setBanksError] = useState<string | null>(null)
   const [accountResolutionError, setAccountResolutionError] = useState<string | null>(null)
 
   const usdEquivalent = (parseFloat(amount) || 0) / 1600
