@@ -277,9 +277,16 @@ serve(async (req) => {
     const payoutOk = ivoryResponse.ok && (ivoryData?.status === true || ivoryData?.success === true);
 
     if (!payoutOk) {
-      const msg = ivoryData?.message || ivoryData?.error || ivoryRawText || `Payout failed (HTTP ${ivoryResponse.status})`;
-      await refundUser(msg);
-      throw new Error(msg);
+      const rawMsg = ivoryData?.message || ivoryData?.error || ivoryRawText || `Payout failed (HTTP ${ivoryResponse.status})`;
+      // Translate the most common provider-side errors into clear user messages
+      let userMsg = rawMsg;
+      if (/require additional .* USDT/i.test(rawMsg) || /insufficient.*(balance|liquidity|funds)/i.test(rawMsg)) {
+        userMsg = "IvoryPay can't process payouts right now (provider liquidity is low). Your NC has been refunded — please try again later or use Celo / Quidax withdrawal.";
+      } else if (/bank|account/i.test(rawMsg) && /invalid|not found/i.test(rawMsg)) {
+        userMsg = "Bank or account details rejected by the provider. Please double-check and try again. Your NC has been refunded.";
+      }
+      await refundUser(rawMsg);
+      throw new Error(userMsg);
     }
 
     // Payout accepted — keep status pending until webhook confirms SUCCESS/FAILED
