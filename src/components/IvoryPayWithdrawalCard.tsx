@@ -242,6 +242,9 @@ export const IvoryPayWithdrawalCard = ({ currentBalance, onSuccess }: IvoryPayWi
               ))}
             </SelectContent>
           </Select>
+          {banksError && !banksLoading && (
+            <p className="text-xs text-destructive">{banksError}</p>
+          )}
         </div>
 
         <div className="space-y-2">
