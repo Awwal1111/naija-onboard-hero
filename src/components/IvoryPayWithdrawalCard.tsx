@@ -31,6 +31,7 @@ export const IvoryPayWithdrawalCard = ({ currentBalance, onSuccess }: IvoryPayWi
   const [showPin, setShowPin] = useState(false)
   const [banks, setBanks] = useState<IvoryBank[]>([])
   const [banksLoading, setBanksLoading] = useState(false)
+  const [banksError, setBanksError] = useState<string | null>(null)
   const [accountResolutionError, setAccountResolutionError] = useState<string | null>(null)
 
   const usdEquivalent = (parseFloat(amount) || 0) / 1600
@@ -44,6 +45,7 @@ export const IvoryPayWithdrawalCard = ({ currentBalance, onSuccess }: IvoryPayWi
       setBankCode('')
       setVerifiedName(null)
       setAccountResolutionError(null)
+      setBanksError(null)
       try {
         const { data: { session } } = await supabase.auth.getSession()
         const response = await supabase.functions.invoke('ivorypay-withdrawal', {
@@ -63,11 +65,16 @@ export const IvoryPayWithdrawalCard = ({ currentBalance, onSuccess }: IvoryPayWi
           }))
           .filter((b) => b.code && b.name)
         setBanks(normalized)
+        if (normalized.length === 0) {
+          setBanksError(`No banks returned for ${currency}. IvoryPay may not support this currency right now.`)
+        }
       } catch (err: any) {
         console.error('IvoryPay bank list error:', err)
         if (!cancelled) {
           setBanks([])
-          toast.error('Could not load bank list — try again in a moment')
+          const msg = err?.message || 'Could not load bank list — try again in a moment'
+          setBanksError(msg)
+          toast.error(msg)
         }
       } finally {
         if (!cancelled) setBanksLoading(false)
@@ -235,6 +242,9 @@ export const IvoryPayWithdrawalCard = ({ currentBalance, onSuccess }: IvoryPayWi
               ))}
             </SelectContent>
           </Select>
+          {banksError && !banksLoading && (
+            <p className="text-xs text-destructive">{banksError}</p>
+          )}
         </div>
 
         <div className="space-y-2">
