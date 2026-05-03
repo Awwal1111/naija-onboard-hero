@@ -64,6 +64,7 @@ const BUILT_IN_APPS: UnifiedApp[] = [
   { id: 'int-metamask', name: 'MetaMask Deposit', description: 'Deposit cUSD or USDT from MetaMask', icon: Wallet, category: 'finance', color: 'from-orange-500/20 to-amber-500/20', isInternal: true, internalAction: 'metamask_deposit' },
   { id: 'int-ivorypay', name: 'IvoryPay Deposit', description: 'Pay via bank or crypto across Africa', icon: Wallet, category: 'finance', color: 'from-amber-500/20 to-yellow-500/20', isInternal: true, internalAction: 'ivorypay_deposit' },
   { id: 'int-escrow', name: 'Escrow', description: 'Secure escrow payments', icon: Shield, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, internalAction: 'escrow' },
+  { id: 'int-escrowhubs', name: 'EscrowHubs (On-chain)', description: 'Non-custodial cUSD escrow on Celo with AI arbitration', icon: Shield, category: 'finance', color: 'from-emerald-500/20 to-teal-500/20', isInternal: true, internalAction: 'escrowhubs' },
   { id: 'int-converter', name: 'NC Converter', description: 'Convert non-withdrawable to withdrawable NC', icon: RefreshCw, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, internalAction: 'nc_converter' },
   { id: 'int-send-money', name: 'Send Money', description: 'Send NC to any NaijaLancers user instantly', icon: Send, category: 'finance', color: 'from-emerald-500/20 to-green-500/20', isInternal: true, internalAction: 'send_money' },
   // Learning
