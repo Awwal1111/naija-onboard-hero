@@ -7509,6 +7509,10 @@ export type Database = {
         Args: { amount_ngn: number; payment_method?: string }
         Returns: number
       }
+      cancel_gig_order: {
+        Args: { p_order_id: string; p_reason: string }
+        Returns: Json
+      }
       cancel_safepay_proposal: {
         Args: { p_safepay_id: string }
         Returns: undefined
@@ -7539,6 +7543,7 @@ export type Database = {
       cleanup_expired_2fa_codes: { Args: never; Returns: undefined }
       cleanup_expired_telegram_codes: { Args: never; Returns: undefined }
       cleanup_old_telegram_conversations: { Args: never; Returns: undefined }
+      complete_gig_order: { Args: { p_order_id: string }; Returns: Json }
       confirm_project_completion: {
         Args: { p_completion_id: string }
         Returns: {
@@ -7972,6 +7977,17 @@ export type Database = {
       mark_safepay_complete: {
         Args: { p_safepay_id: string }
         Returns: undefined
+      }
+      place_gig_order: {
+        Args: {
+          p_amount: number
+          p_delivery_days: number
+          p_description: string
+          p_gig_id: string
+          p_seller_id: string
+          p_title: string
+        }
+        Returns: Json
       }
       process_ivorypay_deposit: {
         Args: {
