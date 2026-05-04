@@ -151,6 +151,38 @@ export const useGigOrders = () => {
         description: `NC ${amount.toLocaleString()} held in escrow until delivery is accepted`
       });
 
+      // Auto-provision a WorkRoom so both parties can collaborate, track time & manage tasks
+      try {
+        const { data: room } = await supabase
+          .from('workrooms')
+          .insert([{
+            name: title,
+            description: description || `Gig order: ${title}`,
+            owner_id: user.id,
+            project_type: 'Gig Order',
+            total_budget: amount,
+            payment_type: 'fixed',
+            hourly_rate: 0,
+          }])
+          .select()
+          .single();
+        if (room?.id) {
+          await supabase.from('workroom_members').insert([
+            { workroom_id: room.id, user_id: user.id, role: 'owner', permissions: ['read','write','comment','upload','manage'] },
+            { workroom_id: room.id, user_id: sellerId, role: 'freelancer', permissions: ['read','write','comment','upload'] },
+          ]);
+          await supabase.from('notifications').insert([{
+            user_id: sellerId,
+            title: '🎉 New WorkRoom Created',
+            message: `A WorkRoom was opened for "${title}". Track your time and deliverables there.`,
+            type: 'workroom',
+            data: { workroom_id: room.id, order_id: result.order_id }
+          }]);
+        }
+      } catch (e) {
+        console.warn('[gig-order] workroom auto-create failed', e);
+      }
+
       await notifyOrderEvent(result.order_id, 'placed');
       fetchOrders();
       return { success: true, order: { id: result.order_id } as any };
