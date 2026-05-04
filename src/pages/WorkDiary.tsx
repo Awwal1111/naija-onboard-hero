@@ -222,12 +222,17 @@ const WorkDiary = () => {
                 <div className="max-w-sm mx-auto space-y-2">
                   <Select value={selectedWorkroom} onValueChange={setSelectedWorkroom} disabled={!!activeEntry}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select project" />
+                      <SelectValue placeholder={workrooms.length ? 'Select project' : 'No projects yet — place a gig order or create a WorkRoom'} />
                     </SelectTrigger>
                     <SelectContent>
                       {workrooms.map(w => (
                         <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
                       ))}
+                      {workrooms.length === 0 && (
+                        <div className="p-2 text-xs text-muted-foreground">
+                          Tip: A WorkRoom is auto-created when a buyer places a gig order. You can also create one manually from the WorkRooms page.
+                        </div>
+                      )}
                     </SelectContent>
                   </Select>
                   
