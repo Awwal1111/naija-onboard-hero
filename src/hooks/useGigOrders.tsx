@@ -116,44 +116,49 @@ export const useGigOrders = () => {
     }
   };
 
+  const notifyOrderEvent = async (orderId: string, event: string) => {
+    try {
+      await supabase.functions.invoke('notify-gig-order', {
+        body: { order_id: orderId, event }
+      });
+    } catch (e) {
+      console.warn('[gig-order] notify failed', e);
+    }
+  };
+
   const createOrder = async (gigId: string, sellerId: string, title: string, description: string, amount: number, deliveryDays: number) => {
     if (!user) return { error: 'Not authenticated' };
 
     try {
-      const platformFee = amount * 0.1; // 10% platform fee
-      const deliveryDeadline = new Date();
-      deliveryDeadline.setDate(deliveryDeadline.getDate() + deliveryDays);
-
-      const { data, error } = await supabase
-        .from('gig_orders')
-        .insert({
-          gig_id: gigId,
-          buyer_id: user.id,
-          seller_id: sellerId,
-          title,
-          description,
-          amount,
-          platform_fee: platformFee,
-          delivery_deadline: deliveryDeadline.toISOString(),
-          buyer_notes: description
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      toast({
-        title: 'Order Created',
-        description: 'Your order has been sent to the seller'
+      const { data, error } = await supabase.rpc('place_gig_order', {
+        p_gig_id: gigId,
+        p_seller_id: sellerId,
+        p_title: title,
+        p_description: description,
+        p_amount: amount,
+        p_delivery_days: deliveryDays
       });
 
+      if (error) throw error;
+      const result: any = data;
+      if (!result?.success) {
+        toast({ title: 'Order failed', description: result?.error || 'Could not place order', variant: 'destructive' });
+        return { error: result?.error || 'Failed' };
+      }
+
+      toast({
+        title: 'Order Placed',
+        description: `NC ${amount.toLocaleString()} held in escrow until delivery is accepted`
+      });
+
+      await notifyOrderEvent(result.order_id, 'placed');
       fetchOrders();
-      return { success: true, order: data };
+      return { success: true, order: { id: result.order_id } as any };
     } catch (error: any) {
       console.error('Error creating order:', error);
       toast({
         title: 'Error',
-        description: 'Failed to create order',
+        description: error.message || 'Failed to create order',
         variant: 'destructive'
       });
       return { error: error.message };
@@ -164,15 +169,31 @@ export const useGigOrders = () => {
     if (!user) return { error: 'Not authenticated' };
 
     try {
-      const updateData: any = { status, ...additionalData };
-
-      if (status === 'delivered') {
-        updateData.delivered_at = new Date().toISOString();
-      } else if (status === 'completed') {
-        updateData.completed_at = new Date().toISOString();
-      } else if (status === 'cancelled') {
-        updateData.cancelled_at = new Date().toISOString();
+      // Money-moving transitions go through atomic RPCs
+      if (status === 'completed') {
+        const { data, error } = await supabase.rpc('complete_gig_order', { p_order_id: orderId });
+        if (error) throw error;
+        if (!(data as any)?.success) throw new Error((data as any)?.error || 'Could not complete');
+        toast({ title: 'Order Completed', description: 'Funds released to seller' });
+        await notifyOrderEvent(orderId, 'completed');
+        fetchOrders();
+        return { success: true };
       }
+      if (status === 'cancelled') {
+        const { data, error } = await supabase.rpc('cancel_gig_order', {
+          p_order_id: orderId,
+          p_reason: additionalData?.cancellation_reason || ''
+        });
+        if (error) throw error;
+        if (!(data as any)?.success) throw new Error((data as any)?.error || 'Could not cancel');
+        toast({ title: 'Order Cancelled', description: 'Buyer has been refunded' });
+        await notifyOrderEvent(orderId, 'cancelled');
+        fetchOrders();
+        return { success: true };
+      }
+
+      const updateData: any = { status, ...additionalData };
+      if (status === 'delivered') updateData.delivered_at = new Date().toISOString();
 
       const { error } = await supabase
         .from('gig_orders')
@@ -186,13 +207,14 @@ export const useGigOrders = () => {
         description: `Order status changed to ${status.replace('_', ' ')}`
       });
 
+      await notifyOrderEvent(orderId, status);
       fetchOrders();
       return { success: true };
     } catch (error: any) {
       console.error('Error updating order:', error);
       toast({
         title: 'Error',
-        description: 'Failed to update order',
+        description: error.message || 'Failed to update order',
         variant: 'destructive'
       });
       return { error: error.message };
