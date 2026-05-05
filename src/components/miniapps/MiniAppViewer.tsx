@@ -96,14 +96,36 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
     if (payload) postToIframe(payload)
   }, [buildIdentify, postToIframe])
 
-  // Extract requestId from either format
-  const getRid = (d: any): string => d?.requestId || d?.request_id || `auto_${Date.now()}`
+  // Extract requestId from many possible formats
+  const getRid = (d: any): string =>
+    d?.requestId || d?.request_id || d?.id || d?.tx_ref || d?.txRef || d?.nonce || `auto_${Date.now()}_${Math.random().toString(36).slice(2,8)}`
 
-  // Parse incoming message data - handles both object and stringified JSON
+  // Extract amount from many possible formats and coerce to number
+  const getAmount = (d: any): number => {
+    const raw = d?.amount ?? d?.value ?? d?.price ?? d?.cost ?? d?.nc ?? d?.naira ?? d?.payload?.amount
+    const n = typeof raw === 'string' ? parseFloat(raw) : Number(raw)
+    return isFinite(n) && n > 0 ? n : 0
+  }
+
+  // Normalize a wide variety of message types coming from third-party SDKs
+  const normalizeType = (t: string): string => {
+    const s = String(t || '').toLowerCase().replace(/[-:]/g, '_')
+    if (s === 'njl_ready' || s === 'ready' || s === 'init' || s === 'sdk_ready' || s === 'app_ready') return 'njl_ready'
+    if (s === 'njl_handshake' || s === 'handshake' || s === 'hello') return 'njl_ready'
+    if (s === 'njl_ping' || s === 'ping') return 'njl_ready'
+    if (s === 'njl_balance' || s === 'balance' || s === 'get_balance' || s === 'wallet_balance' || s === 'request_balance') return 'njl_balance'
+    if (s === 'njl_charge' || s === 'charge' || s === 'pay' || s === 'payment' || s === 'request_payment' || s === 'request_charge' || s === 'debit' || s === 'purchase' || s === 'checkout') return 'njl_charge'
+    if (s === 'njl_payout' || s === 'payout' || s === 'credit' || s === 'reward' || s === 'send_payment' || s === 'transfer_to_user') return 'njl_payout'
+    if (s === 'njl_push' || s === 'push' || s === 'notify' || s === 'send_push' || s === 'notification') return 'njl_push'
+    if (s === 'njl_verify_pin' || s === 'verify_pin' || s === 'request_pin' || s === 'pin') return 'njl_verify_pin'
+    return s.startsWith('njl_') ? s : ''
+  }
+
+  // Parse incoming message data - handles object, stringified JSON, or simple string
   const parseMessageData = (raw: any): any => {
     if (!raw) return null
     if (typeof raw === 'string') {
-      try { return JSON.parse(raw) } catch { return null }
+      try { return JSON.parse(raw) } catch { return { type: raw } }
     }
     return raw
   }
