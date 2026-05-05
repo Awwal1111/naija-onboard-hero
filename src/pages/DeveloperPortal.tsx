@@ -590,6 +590,18 @@ export default function DeveloperPortal() {
             <p className="text-xs text-muted-foreground mt-2">
               Include in requests: <code className="bg-muted px-1 rounded">x-api-key: YOUR_API_KEY</code>
             </p>
+            <div className="mt-4 flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+              <div className="flex items-center gap-2">
+                <Power className={`h-4 w-4 ${apiKeyEnabled ? 'text-emerald-500' : 'text-destructive'}`} />
+                <div>
+                  <p className="text-sm font-medium">{apiKeyEnabled ? 'Key is active' : 'Key is disabled'}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {apiKeyEnabled ? 'Accepting API requests' : 'All requests will return 403'}
+                  </p>
+                </div>
+              </div>
+              <Switch checked={apiKeyEnabled} onCheckedChange={toggleApiKey} disabled={togglingKey} />
+            </div>
           </CardContent>
         </Card>
 
