@@ -451,7 +451,9 @@ export type Database = {
           cost_nc: number | null
           created_at: string
           endpoint: string
+          external_service: string | null
           id: string
+          markup_nc: number | null
           method: string
           response_time_ms: number | null
           status_code: number | null
@@ -462,7 +464,9 @@ export type Database = {
           cost_nc?: number | null
           created_at?: string
           endpoint: string
+          external_service?: string | null
           id?: string
+          markup_nc?: number | null
           method: string
           response_time_ms?: number | null
           status_code?: number | null
@@ -473,7 +477,9 @@ export type Database = {
           cost_nc?: number | null
           created_at?: string
           endpoint?: string
+          external_service?: string | null
           id?: string
+          markup_nc?: number | null
           method?: string
           response_time_ms?: number | null
           status_code?: number | null
@@ -6619,6 +6625,7 @@ export type Database = {
       user_secrets: {
         Row: {
           api_key: string | null
+          api_key_enabled: boolean
           backup_codes: string[] | null
           created_at: string
           encrypted_wallet: string | null
@@ -6630,6 +6637,7 @@ export type Database = {
         }
         Insert: {
           api_key?: string | null
+          api_key_enabled?: boolean
           backup_codes?: string[] | null
           created_at?: string
           encrypted_wallet?: string | null
@@ -6641,6 +6649,7 @@ export type Database = {
         }
         Update: {
           api_key?: string | null
+          api_key_enabled?: boolean
           backup_codes?: string[] | null
           created_at?: string
           encrypted_wallet?: string | null
