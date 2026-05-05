@@ -228,6 +228,11 @@ export default function DeveloperPortal() {
   const [usage, setUsage] = useState<{ total_calls: number; total_cost: number; this_month: number } | null>(null);
   const [accountType, setAccountType] = useState<string>('personal');
   const [ncBalance, setNcBalance] = useState(0);
+  const [apiKeyEnabled, setApiKeyEnabled] = useState(true);
+  const [togglingKey, setTogglingKey] = useState(false);
+  const [recentCalls, setRecentCalls] = useState<Array<{ endpoint: string; status_code: number; cost_nc: number; created_at: string; external_service: string | null }>>([]);
+  const [endpointBreakdown, setEndpointBreakdown] = useState<Array<{ endpoint: string; count: number; cost: number }>>([]);
+  const [quidaxStats, setQuidaxStats] = useState({ calls: 0, earned: 0 });
 
   useEffect(() => {
     if (user) {
