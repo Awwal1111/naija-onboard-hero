@@ -11,8 +11,10 @@ import { toast } from 'sonner';
 import { 
   Code, Copy, Eye, EyeOff, RefreshCw, Loader2, ArrowLeft,
   Wallet, Video, Bell, MessageSquare, Zap, Shield, BookOpen,
-  Terminal, Play, ChevronRight, ExternalLink, TrendingUp, DollarSign
+  Terminal, Play, ChevronRight, ExternalLink, TrendingUp, DollarSign,
+  Power, BarChart3, Activity
 } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { useNavigate } from 'react-router-dom';
 
 interface ApiEndpoint {
