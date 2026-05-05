@@ -244,11 +244,12 @@ export default function DeveloperPortal() {
     try {
       const [{ data: profile }, { data: secrets }] = await Promise.all([
         supabase.from('profiles').select('account_type, wallet_balance').eq('user_id', user?.id).single(),
-        supabase.from('user_secrets').select('api_key').eq('user_id', user?.id).single()
+        supabase.from('user_secrets').select('api_key, api_key_enabled').eq('user_id', user?.id).single()
       ]);
       
       if (profile) {
         setApiKey(secrets?.api_key || null);
+        setApiKeyEnabled((secrets as any)?.api_key_enabled !== false);
         setAccountType((profile as any).account_type || 'personal');
         setNcBalance((profile as any).wallet_balance || 0);
       }
@@ -260,19 +261,64 @@ export default function DeveloperPortal() {
 
       const { data: usageData } = await supabase
         .from('api_usage')
-        .select('cost_nc, created_at')
-        .eq('user_id', user?.id);
+        .select('endpoint, status_code, cost_nc, created_at, external_service')
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false })
+        .limit(500);
 
       if (usageData) {
         const total_calls = usageData.length;
-        const total_cost = usageData.reduce((sum, u) => sum + (u.cost_nc || 0), 0);
+        const total_cost = usageData.reduce((sum, u: any) => sum + (Number(u.cost_nc) || 0), 0);
         const this_month = usageData.filter(u => new Date(u.created_at) >= startOfMonth).length;
         setUsage({ total_calls, total_cost, this_month });
+
+        // Recent 20 calls for the activity feed
+        setRecentCalls(usageData.slice(0, 20) as any);
+
+        // Endpoint breakdown
+        const groups = new Map<string, { count: number; cost: number }>();
+        usageData.forEach((u: any) => {
+          const k = u.endpoint || 'unknown';
+          const cur = groups.get(k) || { count: 0, cost: 0 };
+          cur.count++;
+          cur.cost += Number(u.cost_nc) || 0;
+          groups.set(k, cur);
+        });
+        const breakdown = Array.from(groups.entries())
+          .map(([endpoint, v]) => ({ endpoint, count: v.count, cost: v.cost }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 10);
+        setEndpointBreakdown(breakdown);
+
+        // Quidax-specific stats
+        const quidaxRows = usageData.filter((u: any) => u.external_service === 'quidax');
+        setQuidaxStats({
+          calls: quidaxRows.length,
+          earned: quidaxRows.reduce((s: number, r: any) => s + (Number(r.cost_nc) || 0), 0),
+        });
       }
     } catch (error) {
       console.error('Error fetching developer data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const toggleApiKey = async (enabled: boolean) => {
+    if (!user) return;
+    setTogglingKey(true);
+    try {
+      const { error } = await supabase
+        .from('user_secrets')
+        .update({ api_key_enabled: enabled } as any)
+        .eq('user_id', user.id);
+      if (error) throw error;
+      setApiKeyEnabled(enabled);
+      toast.success(enabled ? 'API key enabled — accepting requests' : 'API key disabled — all requests blocked');
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to update key status');
+    } finally {
+      setTogglingKey(false);
     }
   };
 
