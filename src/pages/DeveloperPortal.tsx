@@ -11,8 +11,10 @@ import { toast } from 'sonner';
 import { 
   Code, Copy, Eye, EyeOff, RefreshCw, Loader2, ArrowLeft,
   Wallet, Video, Bell, MessageSquare, Zap, Shield, BookOpen,
-  Terminal, Play, ChevronRight, ExternalLink, TrendingUp, DollarSign
+  Terminal, Play, ChevronRight, ExternalLink, TrendingUp, DollarSign,
+  Power, BarChart3, Activity
 } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { useNavigate } from 'react-router-dom';
 
 interface ApiEndpoint {
@@ -198,6 +200,36 @@ const API_ENDPOINTS: ApiEndpoint[] = [
       { name: 'description', type: 'string', required: false, description: 'Payment description' }
     ],
     response: '{ "escrow_id": "...", "status": "pending", "actions": { "fund": "...", "release": "..." } }'
+  },
+  // Quidax Ramp Proxy (NGN ↔ USDT)
+  {
+    method: 'POST',
+    path: '/quidax-proxy/quotes',
+    description: 'Get a price quote (NGN ↔ USDT) via our Quidax proxy. No Quidax account needed.',
+    category: 'Payments',
+    cost: 5,
+    rateLimit: 100,
+    params: [
+      { name: 'from_currency', type: 'string', required: true, description: 'e.g. ngn' },
+      { name: 'to_currency', type: 'string', required: true, description: 'e.g. usdt' },
+      { name: 'from_amount', type: 'number', required: true, description: 'Amount to convert' }
+    ],
+    response: '{ "data": { "quoted_price": "...", "rate": "..." } }'
+  },
+  {
+    method: 'POST',
+    path: '/quidax-proxy/instant_orders',
+    description: 'Create an on/off-ramp order using OUR Quidax merchant. We handle KYC, you keep the user.',
+    category: 'Payments',
+    cost: 50,
+    rateLimit: 30,
+    params: [
+      { name: 'bid_currency', type: 'string', required: true, description: 'Currency to spend' },
+      { name: 'ask_currency', type: 'string', required: true, description: 'Currency to receive' },
+      { name: 'type', type: 'string', required: true, description: 'buy or sell' },
+      { name: 'volume', type: 'number', required: true, description: 'Amount' }
+    ],
+    response: '{ "data": { "id": "...", "status": "pending", "payment_url": "..." } }'
   }
 ];
 
@@ -226,6 +258,11 @@ export default function DeveloperPortal() {
   const [usage, setUsage] = useState<{ total_calls: number; total_cost: number; this_month: number } | null>(null);
   const [accountType, setAccountType] = useState<string>('personal');
   const [ncBalance, setNcBalance] = useState(0);
+  const [apiKeyEnabled, setApiKeyEnabled] = useState(true);
+  const [togglingKey, setTogglingKey] = useState(false);
+  const [recentCalls, setRecentCalls] = useState<Array<{ endpoint: string; status_code: number; cost_nc: number; created_at: string; external_service: string | null }>>([]);
+  const [endpointBreakdown, setEndpointBreakdown] = useState<Array<{ endpoint: string; count: number; cost: number }>>([]);
+  const [quidaxStats, setQuidaxStats] = useState({ calls: 0, earned: 0 });
 
   useEffect(() => {
     if (user) {
@@ -237,11 +274,12 @@ export default function DeveloperPortal() {
     try {
       const [{ data: profile }, { data: secrets }] = await Promise.all([
         supabase.from('profiles').select('account_type, wallet_balance').eq('user_id', user?.id).single(),
-        supabase.from('user_secrets').select('api_key').eq('user_id', user?.id).single()
+        supabase.from('user_secrets').select('api_key, api_key_enabled').eq('user_id', user?.id).single()
       ]);
       
       if (profile) {
         setApiKey(secrets?.api_key || null);
+        setApiKeyEnabled((secrets as any)?.api_key_enabled !== false);
         setAccountType((profile as any).account_type || 'personal');
         setNcBalance((profile as any).wallet_balance || 0);
       }
@@ -253,19 +291,64 @@ export default function DeveloperPortal() {
 
       const { data: usageData } = await supabase
         .from('api_usage')
-        .select('cost_nc, created_at')
-        .eq('user_id', user?.id);
+        .select('endpoint, status_code, cost_nc, created_at, external_service')
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false })
+        .limit(500);
 
       if (usageData) {
         const total_calls = usageData.length;
-        const total_cost = usageData.reduce((sum, u) => sum + (u.cost_nc || 0), 0);
+        const total_cost = usageData.reduce((sum, u: any) => sum + (Number(u.cost_nc) || 0), 0);
         const this_month = usageData.filter(u => new Date(u.created_at) >= startOfMonth).length;
         setUsage({ total_calls, total_cost, this_month });
+
+        // Recent 20 calls for the activity feed
+        setRecentCalls(usageData.slice(0, 20) as any);
+
+        // Endpoint breakdown
+        const groups = new Map<string, { count: number; cost: number }>();
+        usageData.forEach((u: any) => {
+          const k = u.endpoint || 'unknown';
+          const cur = groups.get(k) || { count: 0, cost: 0 };
+          cur.count++;
+          cur.cost += Number(u.cost_nc) || 0;
+          groups.set(k, cur);
+        });
+        const breakdown = Array.from(groups.entries())
+          .map(([endpoint, v]) => ({ endpoint, count: v.count, cost: v.cost }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 10);
+        setEndpointBreakdown(breakdown);
+
+        // Quidax-specific stats
+        const quidaxRows = usageData.filter((u: any) => u.external_service === 'quidax');
+        setQuidaxStats({
+          calls: quidaxRows.length,
+          earned: quidaxRows.reduce((s: number, r: any) => s + (Number(r.cost_nc) || 0), 0),
+        });
       }
     } catch (error) {
       console.error('Error fetching developer data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const toggleApiKey = async (enabled: boolean) => {
+    if (!user) return;
+    setTogglingKey(true);
+    try {
+      const { error } = await supabase
+        .from('user_secrets')
+        .update({ api_key_enabled: enabled } as any)
+        .eq('user_id', user.id);
+      if (error) throw error;
+      setApiKeyEnabled(enabled);
+      toast.success(enabled ? 'API key enabled — accepting requests' : 'API key disabled — all requests blocked');
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to update key status');
+    } finally {
+      setTogglingKey(false);
     }
   };
 
@@ -537,6 +620,18 @@ export default function DeveloperPortal() {
             <p className="text-xs text-muted-foreground mt-2">
               Include in requests: <code className="bg-muted px-1 rounded">x-api-key: YOUR_API_KEY</code>
             </p>
+            <div className="mt-4 flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+              <div className="flex items-center gap-2">
+                <Power className={`h-4 w-4 ${apiKeyEnabled ? 'text-emerald-500' : 'text-destructive'}`} />
+                <div>
+                  <p className="text-sm font-medium">{apiKeyEnabled ? 'Key is active' : 'Key is disabled'}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {apiKeyEnabled ? 'Accepting API requests' : 'All requests will return 403'}
+                  </p>
+                </div>
+              </div>
+              <Switch checked={apiKeyEnabled} onCheckedChange={toggleApiKey} disabled={togglingKey} />
+            </div>
           </CardContent>
         </Card>
 
@@ -572,10 +667,96 @@ export default function DeveloperPortal() {
             <TabsTrigger value="endpoints" className="gap-2">
               <BookOpen className="h-4 w-4" /> API Reference
             </TabsTrigger>
+            <TabsTrigger value="stats" className="gap-2">
+              <BarChart3 className="h-4 w-4" /> Stats
+            </TabsTrigger>
             <TabsTrigger value="playground" className="gap-2">
               <Terminal className="h-4 w-4" /> Playground
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="stats" className="space-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <Card className="p-4">
+                <p className="text-xs text-muted-foreground">Total Calls</p>
+                <p className="text-2xl font-bold">{usage?.total_calls.toLocaleString() || 0}</p>
+              </Card>
+              <Card className="p-4">
+                <p className="text-xs text-muted-foreground">This Month</p>
+                <p className="text-2xl font-bold">{usage?.this_month.toLocaleString() || 0}</p>
+              </Card>
+              <Card className="p-4">
+                <p className="text-xs text-muted-foreground">NC Spent</p>
+                <p className="text-2xl font-bold">₦{usage?.total_cost.toLocaleString() || 0}</p>
+              </Card>
+              <Card className="p-4">
+                <p className="text-xs text-muted-foreground">Quidax Calls</p>
+                <p className="text-2xl font-bold">{quidaxStats.calls.toLocaleString()}</p>
+                <p className="text-[10px] text-muted-foreground">₦{quidaxStats.earned} fees</p>
+              </Card>
+            </div>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4" /> Top Endpoints
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {endpointBreakdown.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">No API calls yet</p>
+                ) : (
+                  <div className="space-y-2">
+                    {endpointBreakdown.map(b => (
+                      <div key={b.endpoint} className="flex items-center justify-between text-sm py-2 border-b last:border-0">
+                        <code className="text-xs bg-muted px-2 py-1 rounded">{b.endpoint}</code>
+                        <div className="flex items-center gap-3">
+                          <span className="text-muted-foreground">{b.count} calls</span>
+                          <span className="font-medium">₦{b.cost.toLocaleString()}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Activity className="h-4 w-4" /> Recent Activity
+                </CardTitle>
+                <CardDescription>Last 20 API calls</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {recentCalls.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">No recent calls</p>
+                ) : (
+                  <ScrollArea className="h-[320px]">
+                    <div className="space-y-1">
+                      {recentCalls.map((c, i) => (
+                        <div key={i} className="flex items-center justify-between gap-2 text-xs py-2 border-b last:border-0">
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <Badge variant={c.status_code < 400 ? 'default' : 'destructive'} className="shrink-0 text-[10px]">
+                              {c.status_code}
+                            </Badge>
+                            <code className="truncate">{c.endpoint}</code>
+                            {c.external_service && (
+                              <Badge variant="outline" className="text-[10px] shrink-0">{c.external_service}</Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0 text-muted-foreground">
+                            <span>₦{c.cost_nc || 0}</span>
+                            <span>{new Date(c.created_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           <TabsContent value="endpoints" className="space-y-4">
             {/* Category Filter */}
