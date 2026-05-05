@@ -200,6 +200,36 @@ const API_ENDPOINTS: ApiEndpoint[] = [
       { name: 'description', type: 'string', required: false, description: 'Payment description' }
     ],
     response: '{ "escrow_id": "...", "status": "pending", "actions": { "fund": "...", "release": "..." } }'
+  },
+  // Quidax Ramp Proxy (NGN ↔ USDT)
+  {
+    method: 'POST',
+    path: '/quidax-proxy/quotes',
+    description: 'Get a price quote (NGN ↔ USDT) via our Quidax proxy. No Quidax account needed.',
+    category: 'Payments',
+    cost: 5,
+    rateLimit: 100,
+    params: [
+      { name: 'from_currency', type: 'string', required: true, description: 'e.g. ngn' },
+      { name: 'to_currency', type: 'string', required: true, description: 'e.g. usdt' },
+      { name: 'from_amount', type: 'number', required: true, description: 'Amount to convert' }
+    ],
+    response: '{ "data": { "quoted_price": "...", "rate": "..." } }'
+  },
+  {
+    method: 'POST',
+    path: '/quidax-proxy/instant_orders',
+    description: 'Create an on/off-ramp order using OUR Quidax merchant. We handle KYC, you keep the user.',
+    category: 'Payments',
+    cost: 50,
+    rateLimit: 30,
+    params: [
+      { name: 'bid_currency', type: 'string', required: true, description: 'Currency to spend' },
+      { name: 'ask_currency', type: 'string', required: true, description: 'Currency to receive' },
+      { name: 'type', type: 'string', required: true, description: 'buy or sell' },
+      { name: 'volume', type: 'number', required: true, description: 'Amount' }
+    ],
+    response: '{ "data": { "id": "...", "status": "pending", "payment_url": "..." } }'
   }
 ];
 
