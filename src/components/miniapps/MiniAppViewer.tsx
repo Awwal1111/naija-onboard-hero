@@ -156,16 +156,16 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
       if (!isFromIframe) return
 
       const data = parseMessageData(event.data)
-      if (!data || typeof data.type !== 'string') return
-      if (!data.type.startsWith('njl_')) return
+      if (!data) return
+      const rawType = data.type || data.action || data.method || data.event
+      const normType = normalizeType(rawType)
+      if (!normType) return
 
       const rid = getRid(data)
-      console.log('[SDK] ← Received:', data.type, 'rid:', rid, data)
+      console.log('[SDK] ← Received:', rawType, '→', normType, 'rid:', rid, data)
 
-      switch (data.type) {
+      switch (normType) {
         case 'njl_ready':
-        case 'njl_handshake':
-        case 'njl_ping':
           console.log('[SDK] Handshake received, sending identify')
           sendIdentify()
           break
@@ -179,16 +179,17 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
             postToIframe(withIds(rid, { type: 'njl_charge_result', success: false, error: 'Auth required' }))
             return
           }
-          if (!data.amount || data.amount <= 0) {
+          const amt = getAmount(data)
+          if (amt <= 0) {
             postToIframe(withIds(rid, { type: 'njl_charge_result', success: false, error: 'Invalid amount' }))
             return
           }
           resultSentRef.current[rid] = false
           setPendingCharge({
-            amount: data.amount,
-            description: data.description || 'Mini App Purchase',
+            amount: amt,
+            description: data.description || data.reason || data.memo || data.label || 'Mini App Purchase',
             requestId: rid,
-            chargeType: data.charge_type || 'one_time',
+            chargeType: data.charge_type || data.chargeType || 'one_time',
           })
           setShowChargeDialog(true)
           break
@@ -199,14 +200,15 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
             postToIframe(withIds(rid, { type: 'njl_payout_result', success: false, error: 'Auth required' }))
             return
           }
-          if (!data.amount || data.amount <= 0) {
+          const amt = getAmount(data)
+          if (amt <= 0) {
             postToIframe(withIds(rid, { type: 'njl_payout_result', success: false, error: 'Invalid amount' }))
             return
           }
           resultSentRef.current[rid] = false
           setPendingPayout({
-            amount: data.amount,
-            description: data.description || 'Payout',
+            amount: amt,
+            description: data.description || data.reason || data.memo || data.label || 'Payout',
             requestId: rid,
           })
           setShowPayoutDialog(true)
@@ -214,13 +216,15 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
         }
 
         case 'njl_push': {
-          if (!user || !data.title || !data.body) {
+          const title = data.title || data.heading
+          const body = data.body || data.message || data.text
+          if (!user || !title || !body) {
             postToIframe(withIds(rid, { type: 'njl_push_result', success: false, error: 'Missing fields' }))
             return
           }
           supabase.functions.invoke('send-push-notification', {
             body: {
-              userId: user.id, title: data.title, body: data.body.substring(0, 200),
+              userId: user.id, title, body: String(body).substring(0, 200),
               icon: app.app_icon_url || '/icon-512.png', badge: '/icon-512.png',
               url: data.url || '/apps', data: { type: 'mini_app', appId: app.id },
             }
