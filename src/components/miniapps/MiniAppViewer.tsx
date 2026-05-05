@@ -269,7 +269,18 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
   const sendResult = (rid: string, payload: Record<string, unknown>) => {
     if (resultSentRef.current[rid]) return
     resultSentRef.current[rid] = true
+    // Send canonical event
     postToIframe(withIds(rid, payload))
+    // Also send common alias type so SDKs using shorter names still receive it
+    const t = String(payload.type || '')
+    const aliasMap: Record<string, string> = {
+      njl_charge_result: 'charge_result',
+      njl_payout_result: 'payout_result',
+      njl_verify_pin_result: 'verify_pin_result',
+    }
+    if (aliasMap[t]) {
+      postToIframe(withIds(rid, { ...payload, type: aliasMap[t] }))
+    }
   }
 
   const handleConfirmCharge = async () => {
