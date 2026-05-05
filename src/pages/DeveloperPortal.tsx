@@ -637,10 +637,96 @@ export default function DeveloperPortal() {
             <TabsTrigger value="endpoints" className="gap-2">
               <BookOpen className="h-4 w-4" /> API Reference
             </TabsTrigger>
+            <TabsTrigger value="stats" className="gap-2">
+              <BarChart3 className="h-4 w-4" /> Stats
+            </TabsTrigger>
             <TabsTrigger value="playground" className="gap-2">
               <Terminal className="h-4 w-4" /> Playground
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="stats" className="space-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <Card className="p-4">
+                <p className="text-xs text-muted-foreground">Total Calls</p>
+                <p className="text-2xl font-bold">{usage?.total_calls.toLocaleString() || 0}</p>
+              </Card>
+              <Card className="p-4">
+                <p className="text-xs text-muted-foreground">This Month</p>
+                <p className="text-2xl font-bold">{usage?.this_month.toLocaleString() || 0}</p>
+              </Card>
+              <Card className="p-4">
+                <p className="text-xs text-muted-foreground">NC Spent</p>
+                <p className="text-2xl font-bold">₦{usage?.total_cost.toLocaleString() || 0}</p>
+              </Card>
+              <Card className="p-4">
+                <p className="text-xs text-muted-foreground">Quidax Calls</p>
+                <p className="text-2xl font-bold">{quidaxStats.calls.toLocaleString()}</p>
+                <p className="text-[10px] text-muted-foreground">₦{quidaxStats.earned} fees</p>
+              </Card>
+            </div>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4" /> Top Endpoints
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {endpointBreakdown.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">No API calls yet</p>
+                ) : (
+                  <div className="space-y-2">
+                    {endpointBreakdown.map(b => (
+                      <div key={b.endpoint} className="flex items-center justify-between text-sm py-2 border-b last:border-0">
+                        <code className="text-xs bg-muted px-2 py-1 rounded">{b.endpoint}</code>
+                        <div className="flex items-center gap-3">
+                          <span className="text-muted-foreground">{b.count} calls</span>
+                          <span className="font-medium">₦{b.cost.toLocaleString()}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Activity className="h-4 w-4" /> Recent Activity
+                </CardTitle>
+                <CardDescription>Last 20 API calls</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {recentCalls.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">No recent calls</p>
+                ) : (
+                  <ScrollArea className="h-[320px]">
+                    <div className="space-y-1">
+                      {recentCalls.map((c, i) => (
+                        <div key={i} className="flex items-center justify-between gap-2 text-xs py-2 border-b last:border-0">
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <Badge variant={c.status_code < 400 ? 'default' : 'destructive'} className="shrink-0 text-[10px]">
+                              {c.status_code}
+                            </Badge>
+                            <code className="truncate">{c.endpoint}</code>
+                            {c.external_service && (
+                              <Badge variant="outline" className="text-[10px] shrink-0">{c.external_service}</Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0 text-muted-foreground">
+                            <span>₦{c.cost_nc || 0}</span>
+                            <span>{new Date(c.created_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           <TabsContent value="endpoints" className="space-y-4">
             {/* Category Filter */}
