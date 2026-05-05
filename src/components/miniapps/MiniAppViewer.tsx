@@ -96,14 +96,36 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
     if (payload) postToIframe(payload)
   }, [buildIdentify, postToIframe])
 
-  // Extract requestId from either format
-  const getRid = (d: any): string => d?.requestId || d?.request_id || `auto_${Date.now()}`
+  // Extract requestId from many possible formats
+  const getRid = (d: any): string =>
+    d?.requestId || d?.request_id || d?.id || d?.tx_ref || d?.txRef || d?.nonce || `auto_${Date.now()}_${Math.random().toString(36).slice(2,8)}`
 
-  // Parse incoming message data - handles both object and stringified JSON
+  // Extract amount from many possible formats and coerce to number
+  const getAmount = (d: any): number => {
+    const raw = d?.amount ?? d?.value ?? d?.price ?? d?.cost ?? d?.nc ?? d?.naira ?? d?.payload?.amount
+    const n = typeof raw === 'string' ? parseFloat(raw) : Number(raw)
+    return isFinite(n) && n > 0 ? n : 0
+  }
+
+  // Normalize a wide variety of message types coming from third-party SDKs
+  const normalizeType = (t: string): string => {
+    const s = String(t || '').toLowerCase().replace(/[-:]/g, '_')
+    if (s === 'njl_ready' || s === 'ready' || s === 'init' || s === 'sdk_ready' || s === 'app_ready') return 'njl_ready'
+    if (s === 'njl_handshake' || s === 'handshake' || s === 'hello') return 'njl_ready'
+    if (s === 'njl_ping' || s === 'ping') return 'njl_ready'
+    if (s === 'njl_balance' || s === 'balance' || s === 'get_balance' || s === 'wallet_balance' || s === 'request_balance') return 'njl_balance'
+    if (s === 'njl_charge' || s === 'charge' || s === 'pay' || s === 'payment' || s === 'request_payment' || s === 'request_charge' || s === 'debit' || s === 'purchase' || s === 'checkout') return 'njl_charge'
+    if (s === 'njl_payout' || s === 'payout' || s === 'credit' || s === 'reward' || s === 'send_payment' || s === 'transfer_to_user') return 'njl_payout'
+    if (s === 'njl_push' || s === 'push' || s === 'notify' || s === 'send_push' || s === 'notification') return 'njl_push'
+    if (s === 'njl_verify_pin' || s === 'verify_pin' || s === 'request_pin' || s === 'pin') return 'njl_verify_pin'
+    return s.startsWith('njl_') ? s : ''
+  }
+
+  // Parse incoming message data - handles object, stringified JSON, or simple string
   const parseMessageData = (raw: any): any => {
     if (!raw) return null
     if (typeof raw === 'string') {
-      try { return JSON.parse(raw) } catch { return null }
+      try { return JSON.parse(raw) } catch { return { type: raw } }
     }
     return raw
   }
@@ -134,16 +156,16 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
       if (!isFromIframe) return
 
       const data = parseMessageData(event.data)
-      if (!data || typeof data.type !== 'string') return
-      if (!data.type.startsWith('njl_')) return
+      if (!data) return
+      const rawType = data.type || data.action || data.method || data.event
+      const normType = normalizeType(rawType)
+      if (!normType) return
 
       const rid = getRid(data)
-      console.log('[SDK] ← Received:', data.type, 'rid:', rid, data)
+      console.log('[SDK] ← Received:', rawType, '→', normType, 'rid:', rid, data)
 
-      switch (data.type) {
+      switch (normType) {
         case 'njl_ready':
-        case 'njl_handshake':
-        case 'njl_ping':
           console.log('[SDK] Handshake received, sending identify')
           sendIdentify()
           break
@@ -157,16 +179,17 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
             postToIframe(withIds(rid, { type: 'njl_charge_result', success: false, error: 'Auth required' }))
             return
           }
-          if (!data.amount || data.amount <= 0) {
+          const amt = getAmount(data)
+          if (amt <= 0) {
             postToIframe(withIds(rid, { type: 'njl_charge_result', success: false, error: 'Invalid amount' }))
             return
           }
           resultSentRef.current[rid] = false
           setPendingCharge({
-            amount: data.amount,
-            description: data.description || 'Mini App Purchase',
+            amount: amt,
+            description: data.description || data.reason || data.memo || data.label || 'Mini App Purchase',
             requestId: rid,
-            chargeType: data.charge_type || 'one_time',
+            chargeType: data.charge_type || data.chargeType || 'one_time',
           })
           setShowChargeDialog(true)
           break
@@ -177,14 +200,15 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
             postToIframe(withIds(rid, { type: 'njl_payout_result', success: false, error: 'Auth required' }))
             return
           }
-          if (!data.amount || data.amount <= 0) {
+          const amt = getAmount(data)
+          if (amt <= 0) {
             postToIframe(withIds(rid, { type: 'njl_payout_result', success: false, error: 'Invalid amount' }))
             return
           }
           resultSentRef.current[rid] = false
           setPendingPayout({
-            amount: data.amount,
-            description: data.description || 'Payout',
+            amount: amt,
+            description: data.description || data.reason || data.memo || data.label || 'Payout',
             requestId: rid,
           })
           setShowPayoutDialog(true)
@@ -192,13 +216,15 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
         }
 
         case 'njl_push': {
-          if (!user || !data.title || !data.body) {
+          const title = data.title || data.heading
+          const body = data.body || data.message || data.text
+          if (!user || !title || !body) {
             postToIframe(withIds(rid, { type: 'njl_push_result', success: false, error: 'Missing fields' }))
             return
           }
           supabase.functions.invoke('send-push-notification', {
             body: {
-              userId: user.id, title: data.title, body: data.body.substring(0, 200),
+              userId: user.id, title, body: String(body).substring(0, 200),
               icon: app.app_icon_url || '/icon-512.png', badge: '/icon-512.png',
               url: data.url || '/apps', data: { type: 'mini_app', appId: app.id },
             }
@@ -243,7 +269,18 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
   const sendResult = (rid: string, payload: Record<string, unknown>) => {
     if (resultSentRef.current[rid]) return
     resultSentRef.current[rid] = true
+    // Send canonical event
     postToIframe(withIds(rid, payload))
+    // Also send common alias type so SDKs using shorter names still receive it
+    const t = String(payload.type || '')
+    const aliasMap: Record<string, string> = {
+      njl_charge_result: 'charge_result',
+      njl_payout_result: 'payout_result',
+      njl_verify_pin_result: 'verify_pin_result',
+    }
+    if (aliasMap[t]) {
+      postToIframe(withIds(rid, { ...payload, type: aliasMap[t] }))
+    }
   }
 
   const handleConfirmCharge = async () => {
