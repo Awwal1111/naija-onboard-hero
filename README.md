@@ -1,73 +1,113 @@
-# Welcome to your Lovable project
+# Naija Onboard Hero
 
-## Project info
+A full-stack Nigerian fintech and gig-economy platform built with React, Supabase, and Celo blockchain integration.
 
-**URL**: https://lovable.dev/projects/f544a33d-179d-44e2-afa7-bb53e6fa188d
+This repository includes the web application, Supabase function code, developer API docs, and support files for building the platform.
 
-## How can I edit this code?
+## What this project includes
 
-There are several ways of editing your application.
+- Web3 wallet creation, balance, and transfer support
+- Escrow payment flows and secure payouts
+- VTU services for airtime and data purchases
+- Video call and WebRTC integrations
+- AI chat and assistant features
+- Public developer docs and API playground
+- Supabase Edge Functions for backend workflows
+- MiniPay SDK support for external mini-app integration
 
-**Use Lovable**
+## Quick start
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/f544a33d-179d-44e2-afa7-bb53e6fa188d) and start prompting.
+1. Clone the repository:
 
-Changes made via Lovable will be committed automatically to this repo.
+```bash
+git clone https://github.com/Awwal1111/naija-onboard-hero.git
+cd naija-onboard-hero
+```
 
-**Use your preferred IDE**
+2. Install dependencies:
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+```bash
+npm install
+```
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+3. Create a local environment file from example:
 
-Follow these steps:
+```bash
+cp .env.example .env
+```
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+4. Update `.env` with your Supabase project values:
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+```env
+VITE_SUPABASE_URL="https://your-project-ref.supabase.co"
+VITE_SUPABASE_PUBLISHABLE_KEY="your-public-anon-key"
+```
 
-# Step 3: Install the necessary dependencies.
-npm i
+5. Start the development server:
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+6. Open the app in your browser:
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```text
+http://localhost:8081
+```
 
-**Use GitHub Codespaces**
+## Environment variables
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Use the following client env vars in `.env`:
 
-## What technologies are used for this project?
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_PUBLISHABLE_KEY`
 
-This project is built with:
+> `README` is configured so `.env` stays local and is not committed.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Available scripts
 
-## How can I deploy this project?
+- `npm run dev` — start local development server
+- `npm run build` — build the production app
+- `npm run build:dev` — build with development mode
+- `npm run preview` — preview the production build locally
+- `npm run lint` — run ESLint over the project
 
-Simply open [Lovable](https://lovable.dev/projects/f544a33d-179d-44e2-afa7-bb53e6fa188d) and click on Share -> Publish.
+## Developer documentation
 
-## Can I connect a custom domain to my Lovable project?
+The app exposes public developer documentation at:
 
-Yes, you can!
+- `/developers`
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+The `naija-api-sdk/` folder also contains a lightweight SDK and docs scaffold for public API integration.
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+## Project structure
+
+- `src/` — app source code and React components
+- `public/` — static assets
+- `supabase/` — Supabase functions and database migration files
+- `naija-api-sdk/` — SDK demo and package files for public consumption
+
+## Deployment
+
+This app can be deployed to any static hosting provider that supports Vite apps.
+
+For Supabase Edge Functions, use the Supabase CLI to deploy functions after you log in:
+
+```bash
+npx supabase login
+npx supabase functions deploy
+```
+
+## Notes for public repository
+
+- Do not commit `.env` or any secret keys.
+- Use `.env.example` as the template for local configuration.
+- The repo can remain public without exposing your backend keys.
+
+## Want to publish the public SDK?
+
+See `SDK_SETUP_GUIDE.md` for the instructions to publish the SDK repository and package.
+
+## License
+
+MIT
