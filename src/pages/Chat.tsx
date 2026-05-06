@@ -233,6 +233,8 @@ const Chat = () => {
   const [loadingImages, setLoadingImages] = useState<Set<string>>(new Set())
 
   const getMediaUrl = async (mediaUrl: string, isAudio: boolean = false): Promise<string> => {
+    // Catbox URLs (and any full URL) pass through directly — no Supabase egress
+    if (/^https?:\/\//i.test(mediaUrl)) return mediaUrl
     try {
       const { data, error } = await supabase.storage
         .from('chat-media')
