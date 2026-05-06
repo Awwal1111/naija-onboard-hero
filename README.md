@@ -1,103 +1,96 @@
 # NaijaLancers
 
-NaijaLancers is a full-stack Nigerian fintech and gig-economy platform built with React, Supabase, and Celo blockchain integration.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/Awwal1111/naija-onboard-hero/actions)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
-This repository contains the NaijaLancers web application, Supabase functions, developer API docs, and support files for the platform.
+NaijaLancers is a comprehensive fintech and gig-economy platform empowering Nigerian freelancers and businesses. Built with modern web technologies, it provides secure payment solutions, VTU services, and collaborative tools to bridge the gap between talent and opportunity in Nigeria.
 
-Live site: https://naijalancers.name.ng
+## Vision
 
-## What this project includes
+To create a trusted, blockchain-powered ecosystem that democratizes access to financial services and gig opportunities for Nigerians, fostering economic growth through technology.
 
-- Web3 wallet creation, balance, and transfer support
-- Escrow payment flows and secure payouts
-- VTU services for airtime and data purchases
-- Video call and WebRTC integrations
-- AI chat and assistant features
-- Public developer docs and API playground
-- Supabase Edge Functions for backend workflows
-- MiniPay SDK support for external mini-app integration
+## Features
 
-## Quick start
+- **Web3 Wallet Integration**: Create and manage wallets with Celo blockchain support
+- **Secure Payments**: Escrow system for safe transactions between freelancers and clients
+- **VTU Services**: Airtime and data top-up services
+- **Video Conferencing**: WebRTC-powered calls for remote collaboration
+- **AI Assistant**: Intelligent chat support for users
+- **Developer API**: Public SDK for third-party integrations
+- **MiniPay Support**: Seamless mini-app experiences
+
+## Screenshots
+
+<!-- Add screenshots here -->
+
+## Quick Start
 
 1. Clone the repository:
-
-```bash
-git clone https://github.com/Awwal1111/naija-onboard-hero.git
-cd naija-onboard-hero
-```
+   ```bash
+   git clone https://github.com/Awwal1111/naija-onboard-hero.git
+   cd naija-onboard-hero
+   ```
 
 2. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-```bash
-npm install
+3. Set up environment:
+   ```bash
+   cp .env.example .env
+   # Edit .env with your Supabase credentials
+   ```
+
+4. Start development server:
+   ```bash
+   npm run dev
+   ```
+
+5. Visit `http://localhost:8081`
+
+## Environment Variables
+
+- `VITE_SUPABASE_URL`: Your Supabase project URL
+- `VITE_SUPABASE_PUBLISHABLE_KEY`: Supabase anon key
+
+## Project Structure
+
+```
+├── src/                 # React application source
+├── supabase/           # Backend functions and migrations
+├── naija-api-sdk/      # Public API SDK
+├── docs/               # Documentation and guides
+├── public/             # Static assets
+└── dist/               # Build output
 ```
 
-3. Create a local environment file from example:
+## API Documentation
 
-```bash
-cp .env.example .env
-```
-
-4. Update `.env` with your Supabase project values:
-
-```env
-VITE_SUPABASE_URL="https://your-project-ref.supabase.co"
-VITE_SUPABASE_PUBLISHABLE_KEY="your-public-anon-key"
-```
-
-5. Start the development server:
-
-```bash
-npm run dev
-```
-
-6. Open the app in your browser:
-
-```text
-http://localhost:8081
-```
-
-## Environment variables
-
-Use the following client env vars in `.env`:
-
-- `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_PUBLISHABLE_KEY`
-
-> `README` is configured so `.env` stays local and is not committed.
-
-## Available scripts
-
-- `npm run dev` — start local development server
-- `npm run build` — build the production app
-- `npm run build:dev` — build with development mode
-- `npm run preview` — preview the production build locally
-- `npm run lint` — run ESLint over the project
-
-## Developer documentation
-
-The app exposes public developer documentation at:
-
-- `/developers`
-
-The `naija-api-sdk/` folder also contains a lightweight SDK and docs scaffold for public API integration.
-
-## Project structure
-
-- `src/` — app source code and React components
-- `public/` — static assets
-- `supabase/` — Supabase functions and database migration files
-- `naija-api-sdk/` — SDK demo and package files for public consumption
+Access developer docs at `/developers` when running locally, or visit the live site.
 
 ## Deployment
 
-This app can be deployed to any static hosting provider that supports Vite apps.
-
-For Supabase Edge Functions, use the Supabase CLI to deploy functions after you log in:
+Deploy to Vercel, Netlify, or any static host. For Supabase functions:
 
 ```bash
 npx supabase login
 npx supabase functions deploy
+```
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+## License
+
+MIT License - see [LICENSE](LICENSE) for details.
+
+## Support
+
+- [Issues](https://github.com/Awwal1111/naija-onboard-hero/issues)
+- [Discussions](https://github.com/Awwal1111/naija-onboard-hero/discussions)
 ```
 
 ## Notes for public repository
