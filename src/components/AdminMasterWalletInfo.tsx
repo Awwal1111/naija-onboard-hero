@@ -24,7 +24,7 @@ export const AdminMasterWalletInfo = () => {
 
   console.log('[ADMIN] 🔍 Current balance state:', balance)
 
-  const SUPABASE_FUNCTIONS_BASE_URL = import.meta.env.VITE_SUPABASE_URL ?? 'https://jxybqmquymxkvxxpiuhv.supabase.co'
+  const SUPABASE_FUNCTIONS_BASE_URL = import.meta.env.VITE_SUPABASE_URL ?? 'https://your-project-ref.supabase.co'
 
   useEffect(() => {
     fetchMasterWalletInfo()

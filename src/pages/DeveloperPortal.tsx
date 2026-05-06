@@ -453,7 +453,7 @@ export default function DeveloperPortal() {
     try {
       const body = JSON.parse(testInput);
       // Use the correct Supabase URL
-      const url = `${import.meta.env.VITE_SUPABASE_URL ?? 'https://jxybqmquymxkvxxpiuhv.supabase.co'}/functions/v1/developer-api${selectedEndpoint.path}`;
+      const url = `${import.meta.env.VITE_SUPABASE_URL ?? 'https://your-project-ref.supabase.co'}/functions/v1/developer-api${selectedEndpoint.path}`;
       
       const response = await fetch(url, {
         method: selectedEndpoint.method,
