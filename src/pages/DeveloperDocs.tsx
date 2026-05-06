@@ -91,7 +91,7 @@ const WEBHOOK_EVENTS = [
   { event: 'video.room.ended', description: 'A video session ended' },
 ];
 
-const API_BASE_URL = 'https://jxybqmquymxkvxxpiuhv.supabase.co/functions/v1/developer-api';
+const API_BASE_URL = `${import.meta.env.VITE_SUPABASE_URL ?? 'https://jxybqmquymxkvxxpiuhv.supabase.co'}/functions/v1/developer-api`;
 
 const MINIAPP_SDK_EXAMPLE = `<!-- Include in your Mini App's HTML -->
 <script>
@@ -294,7 +294,7 @@ export default function DeveloperDocs() {
     setResponse(null);
 
     try {
-      const url = `https://jxybqmquymxkvxxpiuhv.supabase.co/functions/v1/developer-api${selectedEndpoint.path}`;
+      const url = `${API_BASE_URL}${selectedEndpoint.path}`;
       
       const options: RequestInit = {
         method: selectedEndpoint.method,

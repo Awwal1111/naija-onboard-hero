@@ -24,6 +24,8 @@ export const AdminMasterWalletInfo = () => {
 
   console.log('[ADMIN] 🔍 Current balance state:', balance)
 
+  const SUPABASE_FUNCTIONS_BASE_URL = import.meta.env.VITE_SUPABASE_URL ?? 'https://jxybqmquymxkvxxpiuhv.supabase.co'
+
   useEffect(() => {
     fetchMasterWalletInfo()
   }, [])
@@ -31,7 +33,7 @@ export const AdminMasterWalletInfo = () => {
   const fetchMasterWalletInfo = async () => {
     setLoading(true)
     try {
-      const response = await fetch('https://jxybqmquymxkvxxpiuhv.supabase.co/functions/v1/get-master-wallet-address', {
+      const response = await fetch(`${SUPABASE_FUNCTIONS_BASE_URL}/functions/v1/get-master-wallet-address`, {
         headers: {
           'Content-Type': 'application/json'
         }
@@ -64,7 +66,7 @@ export const AdminMasterWalletInfo = () => {
         return
       }
 
-      const response = await fetch('https://jxybqmquymxkvxxpiuhv.supabase.co/functions/v1/initialize-master-wallet', {
+      const response = await fetch(`${SUPABASE_FUNCTIONS_BASE_URL}/functions/v1/initialize-master-wallet`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
