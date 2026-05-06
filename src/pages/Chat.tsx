@@ -127,19 +127,26 @@ const Chat = () => {
       let mediaUrl = null
       let mediaType = null
 
-      // Upload image if present
+      // EGRESS PROTECTION: Chat images/videos → Catbox (free unlimited bandwidth)
       if (selectedFile) {
-        const fileExt = selectedFile.name.split('.').pop()
-        const fileName = `${user?.id}/${Date.now()}.${fileExt}`
-        
-        const { error: uploadError } = await supabase.storage
-          .from('chat-media')
-          .upload(fileName, selectedFile)
-
-        if (uploadError) throw uploadError
-
-        mediaUrl = fileName
-        mediaType = selectedFile.type
+        const isMedia = selectedFile.type.startsWith('image/') || selectedFile.type.startsWith('video/')
+        if (isMedia) {
+          const { uploadToCatbox } = await import('@/lib/catbox')
+          const result = await uploadToCatbox(selectedFile)
+          if (result.error || !result.url) throw new Error(result.error || 'Upload failed')
+          mediaUrl = result.url
+          mediaType = selectedFile.type
+        } else {
+          // Non-media (docs) still use Supabase
+          const fileExt = selectedFile.name.split('.').pop()
+          const fileName = `${user?.id}/${Date.now()}.${fileExt}`
+          const { error: uploadError } = await supabase.storage
+            .from('chat-media')
+            .upload(fileName, selectedFile)
+          if (uploadError) throw uploadError
+          mediaUrl = fileName
+          mediaType = selectedFile.type
+        }
       }
 
       await sendMessage(
