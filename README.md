@@ -66,9 +66,21 @@ To create a trusted, blockchain-powered ecosystem that democratizes access to fi
 └── dist/               # Build output
 ```
 
+## Live Website
+
+- **Website:** https://naijalancers.name.ng
+- **Facebook:** https://web.facebook.com/profile.php?id=61578071680687&locale=th_TH#
+- **YouTube:** https://www.youtube.com/@naijalancers
+
 ## API Documentation
 
 Access developer docs at `/developers` when running locally, or visit the live site.
+
+## Community & Support
+
+- Report issues: https://github.com/Awwal1111/naija-onboard-hero/issues
+- Discuss features: https://github.com/Awwal1111/naija-onboard-hero/discussions
+- Follow the project on Facebook and YouTube for updates
 
 ## Deployment
 
@@ -91,6 +103,9 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 - [Issues](https://github.com/Awwal1111/naija-onboard-hero/issues)
 - [Discussions](https://github.com/Awwal1111/naija-onboard-hero/discussions)
+- [Website](https://naijalancers.name.ng)
+- [Facebook](https://web.facebook.com/profile.php?id=61578071680687&locale=th_TH#)
+- [YouTube](https://www.youtube.com/@naijalancers)
 ```
 
 ## Notes for public repository
