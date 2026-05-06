@@ -1,8 +1,10 @@
-# Naija Onboard Hero
+# NaijaLancers
 
-A full-stack Nigerian fintech and gig-economy platform built with React, Supabase, and Celo blockchain integration.
+NaijaLancers is a full-stack Nigerian fintech and gig-economy platform built with React, Supabase, and Celo blockchain integration.
 
-This repository includes the web application, Supabase function code, developer API docs, and support files for building the platform.
+This repository contains the NaijaLancers web application, Supabase functions, developer API docs, and support files for the platform.
+
+Live site: https://naijalancers.name.ng
 
 ## What this project includes
 
