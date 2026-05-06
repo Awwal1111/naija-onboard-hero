@@ -123,30 +123,15 @@ const CreateStoryDialog: React.FC<CreateStoryDialogProps> = ({
         setUploadProgress(20)
         
         try {
-          const fileExt = mediaFile.name.split('.').pop() || 'jpg'
-          const fileName = `${user.user.id}/${Date.now()}.${fileExt}`
-          
+          // EGRESS PROTECTION: Upload stories to Catbox (free unlimited bandwidth)
           setUploadProgress(40)
-          
-          const { data: uploadData, error: uploadError } = await supabase.storage
-            .from('stories')
-            .upload(fileName, mediaFile, {
-              cacheControl: '3600',
-              upsert: false
-            })
-          
+          const { uploadToCatbox } = await import('@/lib/catbox')
+          const catboxResult = await uploadToCatbox(mediaFile)
           setUploadProgress(80)
-          
-          if (uploadError) {
-            console.error('Story upload error:', uploadError)
-            throw new Error(uploadError.message || 'Failed to upload image')
+          if (catboxResult.error || !catboxResult.url) {
+            throw new Error(catboxResult.error || 'Failed to upload image')
           }
-          
-          // Get public URL from Supabase
-          const { data: urlData } = supabase.storage
-            .from('stories')
-            .getPublicUrl(uploadData.path)
-          mediaUrl = urlData.publicUrl
+          mediaUrl = catboxResult.url
           
           setUploadProgress(100)
           toast({

@@ -129,30 +129,13 @@ const PostJob = () => {
     const uploadedUrls: string[] = []
 
     try {
+      // EGRESS PROTECTION: Upload job images to Catbox (free unlimited bandwidth)
+      const { uploadToCatbox } = await import('@/lib/catbox')
       for (const file of selectedImages) {
-        const fileExt = file.name.split('.').pop()
-        const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
-
-        const { data, error } = await supabase.storage
-          .from('gig-images')
-          .upload(fileName, file, {
-            cacheControl: '3600',
-            upsert: false
-          })
-
-        if (error) {
-          console.error('Upload error:', error)
-          throw error
-        }
-
-        // Get public URL
-        const { data: urlData } = supabase.storage
-          .from('gig-images')
-          .getPublicUrl(fileName)
-
-        uploadedUrls.push(urlData.publicUrl)
+        const result = await uploadToCatbox(file)
+        if (result.error || !result.url) throw new Error(result.error || 'Upload failed')
+        uploadedUrls.push(result.url)
       }
-
       return uploadedUrls
     } catch (error) {
       console.error('Error uploading images:', error)

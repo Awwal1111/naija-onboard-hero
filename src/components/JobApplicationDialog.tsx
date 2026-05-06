@@ -60,25 +60,16 @@ const JobApplicationDialog: React.FC<JobApplicationDialogProps> = ({
     try {
       let resumeUrl = null
 
-      // Upload resume if provided
+      // EGRESS PROTECTION: Resumes uploaded to Catbox (free unlimited bandwidth)
       if (resumeFile) {
-        const fileExt = resumeFile.name.split('.').pop()
-        const fileName = `${user.id}/${jobPost.id}/resume.${fileExt}`
-        
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('business-uploads')
-          .upload(fileName, resumeFile, { 
-            upsert: true,
-            contentType: resumeFile.type 
-          })
-
-        if (uploadError) throw uploadError
-        
-        const { data: { publicUrl } } = supabase.storage
-          .from('business-uploads')
-          .getPublicUrl(fileName)
-          
-        resumeUrl = publicUrl
+        const formData = new FormData()
+        formData.append('reqtype', 'fileupload')
+        formData.append('fileToUpload', resumeFile)
+        const res = await fetch('https://catbox.moe/user/api.php', { method: 'POST', body: formData })
+        if (!res.ok) throw new Error('Failed to upload resume')
+        const url = (await res.text()).trim()
+        if (!url.startsWith('https://files.catbox.moe/')) throw new Error('Invalid upload response')
+        resumeUrl = url
       }
 
       // Submit application using existing job_post_applications table
