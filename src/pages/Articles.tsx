@@ -59,18 +59,12 @@ const Articles = () => {
     try {
       let screenshotUrl = null
 
-      // Upload image if present
+      // EGRESS PROTECTION: Article screenshots → Catbox
       if (selectedFile && user) {
-        const fileExt = selectedFile.name.split('.').pop()
-        const fileName = `${user.id}/${Date.now()}.${fileExt}`
-        
-        const { error: uploadError } = await supabase.storage
-          .from('article-submissions')
-          .upload(fileName, selectedFile)
-
-        if (uploadError) throw uploadError
-
-        screenshotUrl = fileName
+        const { uploadToCatbox } = await import('@/lib/catbox')
+        const result = await uploadToCatbox(selectedFile)
+        if (result.error || !result.url) throw new Error(result.error || 'Upload failed')
+        screenshotUrl = result.url
       }
 
       const result = await submitArticle(articleId, shortNote, screenshotUrl || undefined)
