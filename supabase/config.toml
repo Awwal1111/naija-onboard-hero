@@ -1,4 +1,4 @@
-project_id = "jxybqmquymxkvxxpiuhv"
+project_id = "your-project-id"
 
 [functions.initialize-master-wallet]
 verify_jwt = true

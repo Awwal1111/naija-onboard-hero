@@ -348,7 +348,7 @@ Your deposits are failing because Alchemy isn't triggering the webhook.
 2. Find your webhook configuration
 3. **Update webhook URL** to:
    ```
-   https://jxybqmquymxkvxxpiuhv.supabase.co/functions/v1/celo-deposit-webhook
+   https://your-project-ref.supabase.co/functions/v1/celo-deposit-webhook
    ```
 4. Enable these events:
    - ✅ Address Activity

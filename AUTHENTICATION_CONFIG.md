@@ -32,7 +32,7 @@ In Google Cloud Console, update your OAuth client:
 - `http://localhost:3000` (for development)
 
 **Authorized Redirect URIs:**
-- `https://jxybqmquymxkvxxpiuhv.supabase.co/auth/v1/callback`
+- `https://your-project.supabase.co/auth/v1/callback`
 
 ### Code Changes Made:
 

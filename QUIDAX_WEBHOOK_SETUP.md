@@ -7,7 +7,7 @@ The Quidax Ramp system uses webhooks to notify your application when transaction
 
 ### Your Webhook Endpoint
 ```
-https://jxybqmquymxkvxxpiuhv.supabase.co/functions/v1/quidax-webhook
+https://your-project-ref.supabase.co/functions/v1/quidax-webhook
 ```
 
 ### Setup Steps in Quidax Dashboard
@@ -23,7 +23,7 @@ https://jxybqmquymxkvxxpiuhv.supabase.co/functions/v1/quidax-webhook
    - Click the "Manage" button
 
 3. **Configure Webhook URL**
-   - Enter webhook URL: `https://jxybqmquymxkvxxpiuhv.supabase.co/functions/v1/quidax-webhook`
+   - Enter webhook URL: `https://your-project-ref.supabase.co/functions/v1/quidax-webhook`
    - Click "Save Changes"
 
 ## How the Webhook Works
@@ -91,7 +91,7 @@ The webhook handler:
 You can test the webhook by sending a POST request:
 
 ```bash
-curl -X POST https://jxybqmquymxkvxxpiuhv.supabase.co/functions/v1/quidax-webhook \
+curl -X POST https://your-project-ref.supabase.co/functions/v1/quidax-webhook \
   -H "Content-Type: application/json" \
   -d '{
     "reference": "test-ref-123",
@@ -104,13 +104,13 @@ curl -X POST https://jxybqmquymxkvxxpiuhv.supabase.co/functions/v1/quidax-webhoo
 
 ### Monitoring Webhook Logs
 View webhook logs in Supabase dashboard:
-- [Quidax Webhook Logs](https://supabase.com/dashboard/project/jxybqmquymxkvxxpiuhv/functions/quidax-webhook/logs)
+- [Quidax Webhook Logs](https://supabase.com/dashboard/project/your-project-id/functions/quidax-webhook/logs)
 
 ## Troubleshooting
 
 ### Webhook Not Firing
 1. Verify webhook URL is configured in Quidax dashboard
-2. Check that URL is exactly: `https://jxybqmquymxkvxxpiuhv.supabase.co/functions/v1/quidax-webhook`
+2. Check that URL is exactly: `https://your-project.supabase.co/functions/v1/quidax-webhook`
 3. Ensure no typos or extra spaces
 4. Check webhook logs for any incoming requests
 

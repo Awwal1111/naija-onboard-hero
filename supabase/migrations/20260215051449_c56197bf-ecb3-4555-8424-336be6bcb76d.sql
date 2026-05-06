@@ -10,8 +10,8 @@ DECLARE
   recipient_id UUID;
   sender_name TEXT;
   msg_preview TEXT;
-  supabase_url TEXT := 'https://jxybqmquymxkvxxpiuhv.supabase.co';
-  anon_key TEXT := 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4eWJxbXF1eW14a3Z4eHBpdWh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1NTg2NTAsImV4cCI6MjA3MjEzNDY1MH0.muLG6PAzyEllY7WHbz_SnUCvwhISPqqaQn0L-kP0VdA';
+  supabase_url TEXT := 'https://your-project-ref.supabase.co';
+  anon_key TEXT := 'your-public-anon-key';
 BEGIN
   -- Get recipient ID
   SELECT CASE 

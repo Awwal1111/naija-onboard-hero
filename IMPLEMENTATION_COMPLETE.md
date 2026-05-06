@@ -88,7 +88,7 @@ You're seeing TypeScript errors because:
 
 **Solutions:**
 1. **Wait for auto-update** - Types will update automatically when you save changes
-2. **Manual regenerate** - Run: `npx supabase gen types typescript --project-id jxybqmquymxkvxxpiuhv > src/integrations/supabase/types.ts`
+2. **Manual regenerate** - Run: `npx supabase gen types typescript --project-id your-project-id > src/integrations/supabase/types.ts`
 3. **Temporary fix** - Add `// @ts-ignore` above problematic lines
 
 The functionality will work despite TypeScript errors - they're just type checking issues!

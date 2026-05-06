@@ -58,8 +58,8 @@ SELECT cron.schedule(
   $$
   SELECT
     net.http_post(
-        url := 'https://jxybqmquymxkvxxpiuhv.supabase.co/functions/v1/daily-telegram-reminders',
-        headers := '{"Content-Type": "application/json", "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4eWJxbXF1eW14a3Z4eHBpdWh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1NTg2NTAsImV4cCI6MjA3MjEzNDY1MH0.muLG6PAzyEllY7WHbz_SnUCvwhISPqqaQn0L-kP0VdA"}'::jsonb,
+        url := 'https://your-project.supabase.co/functions/v1/daily-telegram-reminders',
+        headers := '{"Content-Type": "application/json", "Authorization": "Bearer YOUR_SUPABASE_SERVICE_ROLE_KEY_OR_SECURE_TOKEN"}'::jsonb,
         body := concat('{"time": "', now(), '"}')::jsonb
     ) as request_id;
   $$
@@ -79,8 +79,8 @@ You can manually trigger the reminders to test:
 ```sql
 SELECT
   net.http_post(
-      url := 'https://jxybqmquymxkvxxpiuhv.supabase.co/functions/v1/daily-telegram-reminders',
-      headers := '{"Content-Type": "application/json", "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4eWJxbXF1eW14a3Z4eHBpdWh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1NTg2NTAsImV4cCI6MjA3MjEzNDY1MH0.muLG6PAzyEllY7WHbz_SnUCvwhISPqqaQn0L-kP0VdA"}'::jsonb,
+      url := 'https://your-project-ref.supabase.co/functions/v1/daily-telegram-reminders',
+      headers := '{"Content-Type": "application/json", "Authorization": "Bearer YOUR_SUPABASE_ANON_KEY"}'::jsonb,
       body := concat('{"time": "', now(), '"}')::jsonb
   ) as request_id;
 ```

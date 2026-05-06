@@ -115,8 +115,8 @@ SELECT cron.schedule(
   '0 9 * * 1', -- Every Monday at 9:00 AM
   $$
   SELECT net.http_post(
-    url:='https://jxybqmquymxkvxxpiuhv.supabase.co/functions/v1/weekly-inactive-users-check',
-    headers:='{"Content-Type": "application/json", "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4eWJxbXF1eW14a3Z4eHBpdWh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1NTg2NTAsImV4cCI6MjA3MjEzNDY1MH0.muLG6PAzyEllY7WHbz_SnUCvwhISPqqaQn0L-kP0VdA"}'::jsonb,
+    url:='https://your-project-ref.supabase.co/functions/v1/weekly-inactive-users-check',
+    headers:='{"Content-Type": "application/json", "Authorization": "Bearer YOUR_SUPABASE_ANON_KEY"}'::jsonb,
     body:=concat('{"time": "', now(), '"}')::jsonb
   ) as request_id;
   $$
@@ -283,7 +283,7 @@ fiveMinutesAgo.setMinutes(fiveMinutesAgo.getMinutes() - 10); // 10 minutes inste
 ```bash
 # Manually invoke the function:
 curl -X POST \
-  'https://jxybqmquymxkvxxpiuhv.supabase.co/functions/v1/weekly-inactive-users-check' \
+  'https://your-project-ref.supabase.co/functions/v1/weekly-inactive-users-check' \
   -H 'Authorization: Bearer YOUR_ANON_KEY' \
   -H 'Content-Type: application/json'
 ```

@@ -324,9 +324,9 @@ ORDER BY created_at DESC;
 - [Supabase Edge Functions](https://supabase.com/docs/guides/functions)
 
 ### Supabase Dashboard Links
-- Edge Functions: https://supabase.com/dashboard/project/jxybqmquymxkvxxpiuhv/functions
-- Function Logs: https://supabase.com/dashboard/project/jxybqmquymxkvxxpiuhv/functions/{function-name}/logs
-- Secrets: https://supabase.com/dashboard/project/jxybqmquymxkvxxpiuhv/settings/functions
+- Edge Functions: https://supabase.com/dashboard/project/your-project-id/functions
+- Function Logs: https://supabase.com/dashboard/project/your-project-id/functions/{function-name}/logs
+- Secrets: https://supabase.com/dashboard/project/your-project-id/settings/functions
 
 ## Summary
 
