@@ -48,6 +48,9 @@ verify_jwt = false
 [functions.create-transaction]
 verify_jwt = true
 
+[functions.developer-api]
+verify_jwt = false
+
 [functions.create-payout]
 verify_jwt = true
 
