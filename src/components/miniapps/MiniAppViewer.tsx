@@ -502,7 +502,10 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
                 <p className="text-sm text-muted-foreground mt-1">{pendingCharge?.description}</p>
               </div>
               <div className="bg-muted rounded-xl p-4">
-                <p className="text-2xl font-bold text-primary">₦{pendingCharge?.amount}NC</p>
+                <p className="text-2xl font-bold text-primary">{pendingCharge ? formatAmount(pendingCharge.amount, pendingCharge.currency) : ''}</p>
+                {pendingCharge?.currency === 'USDT' && (
+                  <p className="text-[11px] text-muted-foreground mt-1">Sent on-chain (Celo) from your wallet</p>
+                )}
               </div>
               <div className="flex gap-3">
                 <Button variant="outline" className="flex-1" onClick={() => {
