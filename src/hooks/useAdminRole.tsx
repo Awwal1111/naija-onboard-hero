@@ -26,7 +26,7 @@ const TAB_PERMISSIONS: Record<string, AdminRole> = {
   support: 'moderator',
   'mini-apps': 'admin',
   analytics: 'admin',
-  settings: 'super_admin',
+  settings: 'admin',
 }
 
 // Action permissions
