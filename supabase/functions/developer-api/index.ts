@@ -1236,6 +1236,12 @@ serve(async (req) => {
         if (endpoint.startsWith('payments/escrow/') && endpoint.endsWith('/release')) {
           const escrowId = pathParts[2];
           result = await handleReleaseEscrow(developer, escrowId);
+        } else if (endpoint.startsWith('payments/escrow/') && endpoint.endsWith('/fund')) {
+          const escrowId = pathParts[2];
+          result = await handleFundEscrow(developer, escrowId);
+        } else if (endpoint.startsWith('payments/escrow/') && endpoint.endsWith('/refund')) {
+          const escrowId = pathParts[2];
+          result = await handleRefundEscrow(developer, escrowId, body);
         } else if (endpoint.startsWith('webhooks/') && method === 'DELETE') {
           // Delete webhook
           const webhookId = pathParts[1];
