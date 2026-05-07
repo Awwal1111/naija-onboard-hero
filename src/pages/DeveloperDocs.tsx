@@ -378,6 +378,10 @@ export default function DeveloperDocs() {
             <a href="#webhooks" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Webhooks</a>
             <a href="#docs" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Documentation</a>
             <a href="#pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Pricing</a>
+            <a href="https://github.com/Awwal1111/naija-onboard-hero/blob/main/docs/DEVELOPER_API_GUIDE.md" target="_blank" className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+              <BookOpen className="h-4 w-4" />
+              Full Guide
+            </a>
           </nav>
           
           <div className="flex items-center gap-3">
@@ -393,6 +397,20 @@ export default function DeveloperDocs() {
           </div>
         </div>
       </header>
+
+      {/* Important Notice Banner */}
+      <div className="bg-blue-50 border-b border-blue-200 px-4 py-3">
+        <div className="max-w-7xl mx-auto flex items-center gap-3">
+          <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0" />
+          <div className="text-sm text-blue-900">
+            <strong>New:</strong> Read the{' '}
+            <a href="https://github.com/Awwal1111/naija-onboard-hero/blob/main/docs/DEVELOPER_API_GUIDE.md" target="_blank" className="font-semibold underline hover:no-underline">
+              Complete Developer API Guide
+            </a>
+            {' '}for authentication, error codes, webhooks, and production-ready examples.
+          </div>
+        </div>
+      </div>
 
       {/* Hero Section */}
       <section className="py-20 px-4 bg-gradient-to-b from-primary/5 to-background">
