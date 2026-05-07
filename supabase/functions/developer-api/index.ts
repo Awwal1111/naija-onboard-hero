@@ -1146,7 +1146,44 @@ serve(async (req) => {
   }
   
   const params = url.searchParams;
-  
+
+  // ===== Idempotency (mutating endpoints only) =====
+  const MUTATING = method === 'POST' || method === 'PUT' || method === 'DELETE';
+  const idempotencyKey = (req.headers.get('idempotency-key') || '').slice(0, 200).trim();
+  const apiKeyHash = await sha256Hex(apiKey);
+  const requestHash = MUTATING && idempotencyKey
+    ? await sha256Hex(`${method}:${endpoint}:${JSON.stringify(body || {})}`)
+    : '';
+
+  if (MUTATING && idempotencyKey) {
+    const { data: cached } = await supabase
+      .from('api_idempotency')
+      .select('response_body, status_code, request_hash, created_at')
+      .eq('api_key_hash', apiKeyHash)
+      .eq('idempotency_key', idempotencyKey)
+      .maybeSingle();
+
+    if (cached) {
+      // 24h TTL
+      const ageMs = Date.now() - new Date((cached as any).created_at).getTime();
+      if (ageMs < 86_400_000) {
+        if ((cached as any).request_hash !== requestHash) {
+          return new Response(
+            JSON.stringify({ error: 'Idempotency-Key reused with a different request body' }),
+            { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        return new Response(
+          JSON.stringify((cached as any).response_body),
+          {
+            status: (cached as any).status_code,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Idempotent-Replay': 'true' },
+          }
+        );
+      }
+    }
+  }
+
   // Route to handlers
   try {
     switch (endpoint) {
