@@ -87,6 +87,7 @@ const API_PRICING: Record<string, number> = {
   'contracts/deploy': 50, // 50 NC base fee + gas (or NC equiv if platform pays)
   'contracts/call': 5,    // 5 NC base fee + gas
   'contracts/read': 0,    // Read-only is free (no gas, no fee)
+  'escrow/onchain/deploy': 50, // 50 NC + gas
   'default': 0
 };
 
