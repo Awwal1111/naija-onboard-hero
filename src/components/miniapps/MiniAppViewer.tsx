@@ -329,9 +329,34 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
   }
 
   const handleConfirmCharge = async () => {
-    if (!pendingCharge || !user) return
+    if (!pendingCharge) return
     const rid = pendingCharge.requestId
+    const { currency } = pendingCharge
 
+    // USDT: send on-chain via MiniPay/Celo wallet to the app's payout address
+    if (currency === 'USDT') {
+      if (!app.usdt_payout_address) {
+        sendResult(rid, { type: 'njl_charge_result', success: false, currency, error: 'App not configured for USDT' })
+        setPendingCharge(null); setShowChargeDialog(false); return
+      }
+      try {
+        const res = await sendUSDTViaMiniPay(app.usdt_payout_address, pendingCharge.amount)
+        if (res.success && res.txHash) {
+          sendResult(rid, { type: 'njl_charge_result', success: true, currency, txRef: res.txHash, tx_ref: res.txHash, txHash: res.txHash })
+          toast.success(`${pendingCharge.amount} USDT sent to ${app.app_name}`)
+        } else {
+          sendResult(rid, { type: 'njl_charge_result', success: false, currency, error: res.error || 'Transaction failed' })
+          toast.error(res.error || 'USDT payment failed')
+        }
+      } catch (e: any) {
+        sendResult(rid, { type: 'njl_charge_result', success: false, currency, error: e?.message || 'Transaction failed' })
+        toast.error('USDT payment failed')
+      }
+      setPendingCharge(null); setShowChargeDialog(false); return
+    }
+
+    // NC: existing internal flow
+    if (!user) return
     try {
       const txRef = 'njl_tx_' + crypto.randomUUID().replace(/-/g, '').slice(0, 16)
       const { data, error } = await supabase.rpc('process_mini_app_payment', {
@@ -342,13 +367,13 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
       if (error || !result?.success) {
         const errMsg = result?.error || error?.message || 'Payment failed'
         toast.error(errMsg)
-        sendResult(rid, { type: 'njl_charge_result', success: false, error: errMsg })
+        sendResult(rid, { type: 'njl_charge_result', success: false, currency, error: errMsg })
       } else {
-        sendResult(rid, { type: 'njl_charge_result', success: true, txRef: result.tx_ref, tx_ref: result.tx_ref })
+        sendResult(rid, { type: 'njl_charge_result', success: true, currency, txRef: result.tx_ref, tx_ref: result.tx_ref })
         toast.success(`₦${pendingCharge.amount}NC paid to ${app.app_name}`)
       }
     } catch {
-      sendResult(rid, { type: 'njl_charge_result', success: false, error: 'Payment failed' })
+      sendResult(rid, { type: 'njl_charge_result', success: false, currency, error: 'Payment failed' })
       toast.error('Payment failed')
     }
     setPendingCharge(null)
