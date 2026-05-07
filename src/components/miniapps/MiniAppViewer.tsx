@@ -20,7 +20,6 @@ interface MiniApp {
   app_icon_url: string | null
   app_url: string
   sdk_app_id: string
-  usdt_payout_address?: string | null
 }
 
 const formatAmount = (amt: number, currency: Currency) =>
