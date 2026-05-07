@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
+import { initPostHog } from '@/lib/posthog'
 
 const WalletInitializer = lazy(() => import('@/components/WalletInitializer'))
 const GlobalCallManager = lazy(() => import('@/components/GlobalCallManager'))
@@ -18,10 +19,14 @@ export const DeferredManagers = () => {
   useEffect(() => {
     const ric = window.requestIdleCallback
     let handle: number
+    const start = () => {
+      setReady(true)
+      initPostHog()
+    }
     if (ric) {
-      handle = ric(() => setReady(true), { timeout: 3000 })
+      handle = ric(start, { timeout: 3000 })
     } else {
-      handle = window.setTimeout(() => setReady(true), 1500)
+      handle = window.setTimeout(start, 1500)
     }
     return () => {
       if (ric && window.cancelIdleCallback) {

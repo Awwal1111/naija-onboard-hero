@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react'
 import { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/integrations/supabase/client'
+import { identifyUser, resetPostHog } from '@/lib/posthog'
 
 interface AuthContextType {
   user: User | null
@@ -49,6 +50,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(sess?.user ?? null)
     setLoading(false)
     setAuthTimedOut(false)
+    if (sess?.user) {
+      identifyUser(sess.user.id, { email: sess.user.email })
+    }
   }
 
   const retryAuth = () => {
@@ -126,6 +130,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           } else {
             setSession(sess)
             setUser(sess?.user ?? null)
+            if (sess?.user) identifyUser(sess.user.id, { email: sess.user.email })
           }
           if (sess) scheduleTokenRefresh(sess)
         }
@@ -134,6 +139,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           if (refreshTimer) clearTimeout(refreshTimer)
           setSession(null)
           setUser(null)
+          resetPostHog()
           if (!loadingResolved.current) {
             resolveLoading(null)
           }
