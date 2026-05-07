@@ -433,6 +433,15 @@ const MiniAppsMarketplace = () => {
         <MiniAppViewer app={selectedApp} onClose={() => setSelectedApp(null)} />
       )}
 
+      {webhookApp && (
+        <MiniAppWebhookSettings
+          appId={webhookApp.id}
+          appName={webhookApp.name}
+          open={!!webhookApp}
+          onOpenChange={(v) => !v && setWebhookApp(null)}
+        />
+      )}
+
       <Suspense fallback={null}>
         <DepositDialog open={showDepositDialog} onOpenChange={setShowDepositDialog} defaultMethod={depositMethod} />
         <EscrowSearchDialog open={showEscrowSearch} onOpenChange={setShowEscrowSearch} />
