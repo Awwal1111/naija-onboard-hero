@@ -210,10 +210,6 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
             return
           }
           if (currency === 'USDT') {
-            if (!app.usdt_payout_address) {
-              postToIframe(withIds(rid, { type: 'njl_charge_result', success: false, currency, error: 'App not configured for USDT' }))
-              return
-            }
             if (!window.ethereum) {
               postToIframe(withIds(rid, { type: 'njl_charge_result', success: false, currency, error: 'No wallet available' }))
               return
@@ -235,17 +231,25 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
         }
 
         case 'njl_payout': {
+          const amt = getAmount(data)
+          if (amt <= 0) {
+            postToIframe(withIds(rid, { type: 'njl_payout_result', success: false, currency, error: 'Invalid amount' }))
+            return
+          }
           if (currency === 'USDT') {
-            postToIframe(withIds(rid, { type: 'njl_payout_result', success: false, currency, error: 'USDT payouts not supported yet' }))
+            // Developer must supply destination address per-call (MetaMask SDK style)
+            const toAddr = String(data.to || data.toAddress || data.address || data.recipient || '').trim()
+            if (!/^0x[a-fA-F0-9]{40}$/.test(toAddr)) {
+              postToIframe(withIds(rid, { type: 'njl_payout_result', success: false, currency, error: 'Missing or invalid "to" address' }))
+              return
+            }
+            resultSentRef.current[rid] = false
+            setPendingPayout({ amount: amt, description: data.description || 'USDT Payout', requestId: rid, currency, toAddress: toAddr })
+            setShowPayoutDialog(true)
             return
           }
           if (!user) {
             postToIframe(withIds(rid, { type: 'njl_payout_result', success: false, currency, error: 'Auth required' }))
-            return
-          }
-          const amt = getAmount(data)
-          if (amt <= 0) {
-            postToIframe(withIds(rid, { type: 'njl_payout_result', success: false, currency, error: 'Invalid amount' }))
             return
           }
           resultSentRef.current[rid] = false
