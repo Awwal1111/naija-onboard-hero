@@ -357,43 +357,17 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
 
   const handleConfirmCharge = async () => {
     if (!pendingCharge) return
-    const rid = pendingCharge.requestId
     const { currency } = pendingCharge
 
-    // USDT charge: user → master wallet on-chain, then verify & credit dev NC server-side
+    // USDT charge requires PIN — open the PIN dialog and finalize from there.
     if (currency === 'USDT') {
-      try {
-        // 1. Fetch master wallet address
-        const { data: mw, error: mwErr } = await supabase.functions.invoke('get-master-wallet-address')
-        const masterAddr = (mw as any)?.address
-        if (mwErr || !masterAddr) throw new Error('Master wallet unavailable')
-
-        // 2. Send USDT from user wallet → master wallet
-        const sendRes = await sendUSDTViaMiniPay(masterAddr, pendingCharge.amount)
-        if (!sendRes.success || !sendRes.txHash) {
-          throw new Error(sendRes.error || 'On-chain transfer failed')
-        }
-
-        // 3. Server verifies tx and credits developer NC
-        const { data: verifyData, error: verifyErr } = await supabase.functions.invoke('miniapp-usdt-charge', {
-          body: { miniAppId: app.id, txHash: sendRes.txHash, expectedUsdt: pendingCharge.amount },
-        })
-        const v = verifyData as any
-        if (verifyErr || !v?.success) {
-          // Tx is on-chain but credit failed — surface tx hash so support can reconcile
-          sendResult(rid, { type: 'njl_charge_result', success: false, currency, error: v?.error || 'Verification failed', txHash: sendRes.txHash })
-          toast.error('Payment sent but credit pending. Contact support with tx hash.')
-        } else {
-          sendResult(rid, { type: 'njl_charge_result', success: true, currency, txRef: sendRes.txHash, tx_ref: sendRes.txHash, txHash: sendRes.txHash })
-          toast.success(`${pendingCharge.amount} USDT paid to ${app.app_name}`)
-        }
-      } catch (e: any) {
-        sendResult(rid, { type: 'njl_charge_result', success: false, currency, error: e?.message || 'Transaction failed' })
-        toast.error(e?.message || 'USDT payment failed')
-      }
-      setPendingCharge(null); setShowChargeDialog(false); return
+      setShowChargeDialog(false)
+      setChargePinInput('')
+      setShowChargePinDialog(true)
+      return
     }
 
+    const rid = pendingCharge.requestId
     // NC: existing internal flow
     if (!user) return
     try {
@@ -419,33 +393,49 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
     setShowChargeDialog(false)
   }
 
+  // Final step of USDT charge — runs after user confirms PIN.
+  const handleSubmitChargePin = async () => {
+    if (!pendingCharge || !pendingCharge.toAddress) return
+    const rid = pendingCharge.requestId
+    const currency: Currency = 'USDT'
+    if (!chargePinInput || chargePinInput.length < 4) {
+      toast.error('Enter your 4-6 digit PIN')
+      return
+    }
+    try {
+      const { data, error } = await supabase.functions.invoke('miniapp-usdt-charge', {
+        body: {
+          miniAppId: app.id,
+          toAddress: pendingCharge.toAddress,
+          usdtAmount: pendingCharge.amount,
+          pin: chargePinInput,
+        },
+      })
+      const r = data as any
+      if (error || !r?.success) {
+        const msg = r?.error || error?.message || 'Payment failed'
+        sendResult(rid, { type: 'njl_charge_result', success: false, currency, error: msg })
+        toast.error(msg)
+      } else {
+        sendResult(rid, { type: 'njl_charge_result', success: true, currency, txRef: r.txHash, tx_ref: r.txHash, txHash: r.txHash })
+        toast.success(`${pendingCharge.amount} USDT sent to ${app.app_name}`)
+      }
+    } catch (e: any) {
+      sendResult(rid, { type: 'njl_charge_result', success: false, currency, error: e?.message || 'Payment failed' })
+      toast.error(e?.message || 'USDT payment failed')
+    }
+    setPendingCharge(null)
+    setChargePinInput('')
+    setShowChargePinDialog(false)
+  }
+
   const handleConfirmPayout = async () => {
     if (!pendingPayout) return
     const rid = pendingPayout.requestId
     const { currency } = pendingPayout
 
-    // USDT payout: master wallet → developer-supplied address; deduct dev NC
-    if (currency === 'USDT') {
-      try {
-        const { data, error } = await supabase.functions.invoke('miniapp-usdt-payout', {
-          body: { miniAppId: app.id, toAddress: pendingPayout.toAddress, usdtAmount: pendingPayout.amount },
-        })
-        const r = data as any
-        if (error || !r?.success) {
-          const msg = r?.error || error?.message || 'Payout failed'
-          sendResult(rid, { type: 'njl_payout_result', success: false, currency, error: msg })
-          toast.error(msg)
-        } else {
-          sendResult(rid, { type: 'njl_payout_result', success: true, currency, txRef: r.txHash, tx_ref: r.txHash, txHash: r.txHash })
-          toast.success(`${pendingPayout.amount} USDT sent`)
-        }
-      } catch (e: any) {
-        sendResult(rid, { type: 'njl_payout_result', success: false, currency, error: e?.message || 'Payout failed' })
-        toast.error('USDT payout failed')
-      }
-      setPendingPayout(null); setShowPayoutDialog(false); return
-    }
-
+    // USDT payouts are handled inline in the message handler (just returns the
+    // user's wallet address). Anything reaching this dialog is NC.
     if (!user) return
     try {
       const txRef = 'njl_po_' + crypto.randomUUID().replace(/-/g, '').slice(0, 16)
