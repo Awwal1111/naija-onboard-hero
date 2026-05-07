@@ -308,9 +308,8 @@ export default function RampSession() {
 
       {showPinInput && (
         <SecurePinInput
-          isOpen={showPinInput}
-          onClose={() => setShowPinInput(false)}
-          onPinVerified={handlePin}
+          onVerified={handlePin}
+          onCancel={() => setShowPinInput(false)}
           title="Confirm Withdrawal"
           description={`Enter PIN to confirm sell of ${session.token_amount ? session.token_amount.toFixed(6) + ' USDT' : '₦' + Number(session.fiat_amount || 0).toLocaleString()}`}
         />
