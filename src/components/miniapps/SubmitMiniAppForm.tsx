@@ -120,13 +120,6 @@ export const SubmitMiniAppForm = ({ onSuccess }: { onSuccess?: () => void }) => 
       </div>
 
 
-          placeholder="0x... (Celo wallet)"
-        />
-        <p className="text-xs text-muted-foreground mt-1">
-          Required only if your app charges users in USDT (on Celo). Leave blank for NC-only apps.
-        </p>
-      </div>
-
       <Button type="submit" disabled={submitting} className="w-full gap-2">
         <Rocket className="h-4 w-4" />
         {submitting ? 'Submitting...' : 'Submit for Review'}
