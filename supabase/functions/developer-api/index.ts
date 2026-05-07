@@ -70,6 +70,9 @@ const API_PRICING: Record<string, number> = {
   'ai/chat': 1,
   'ramp/quote/buy': 0, // Free quote
   'ramp/quote/sell': 0, // Free quote
+  'ramp/session/buy': 20, // Hosted onramp session
+  'ramp/session/sell': 20, // Hosted offramp session
+  'ramp/session': 0, // Status check is free
   'default': 0
 };
 
