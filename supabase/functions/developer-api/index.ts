@@ -1393,7 +1393,10 @@ serve(async (req) => {
       
       default:
         // Check for dynamic routes
-        if (endpoint.startsWith('payments/escrow/') && endpoint.endsWith('/release')) {
+        if (endpoint.startsWith('ramp/session/') && method === 'GET') {
+          const sid = pathParts[2];
+          result = await handleGetRampSession(developer, sid);
+        } else if (endpoint.startsWith('payments/escrow/') && endpoint.endsWith('/release')) {
           const escrowId = pathParts[2];
           result = await handleReleaseEscrow(developer, escrowId);
         } else if (endpoint.startsWith('payments/escrow/') && endpoint.endsWith('/fund')) {
