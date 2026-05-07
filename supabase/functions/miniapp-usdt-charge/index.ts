@@ -1,9 +1,11 @@
-// Verifies an on-chain USDT (Celo) transfer from the user's wallet to the
-// platform master wallet, then credits the developer's NC balance with the
-// equivalent NC amount (1 USDT = current USD→NGN rate, no platform fee).
+// USDT Charge: deducts NC from the end user (PIN-validated) and sends the
+// equivalent USDT from the platform master wallet to the developer's external
+// address (provided per-call by the SDK). Developer wallet is NEVER stored on
+// our side — they pass it in every charge call (MetaMask-SDK style).
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { ethers } from "https://esm.sh/ethers@6.7.0";
+import CryptoJS from "https://esm.sh/crypto-js@4.1.1";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,7 +14,6 @@ const corsHeaders = {
 
 const CELO_RPC = "https://forno.celo.org";
 const USDT_ADDRESS = "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e";
-const TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
 const EXCHANGE_RATE_API = "https://v6.exchangerate-api.com/v6/c06b378e6d590d4c22aa2998/latest/USD";
 
 serve(async (req) => {
@@ -25,53 +26,26 @@ serve(async (req) => {
     const { data: { user }, error: authErr } = await supabase.auth.getUser(auth.replace("Bearer ", ""));
     if (authErr || !user) throw new Error("Unauthorized");
 
-    const { miniAppId, txHash, expectedUsdt } = await req.json();
-    if (!miniAppId || !txHash || !expectedUsdt) throw new Error("Missing fields");
-    if (!/^0x[0-9a-fA-F]{64}$/.test(txHash)) throw new Error("Invalid txHash");
+    const { miniAppId, toAddress: rawTo, usdtAmount, pin } = await req.json();
+    if (!miniAppId || !rawTo || !usdtAmount || !pin) throw new Error("Missing fields");
+    if (!ethers.isAddress(rawTo)) throw new Error("Invalid destination address");
+    const toAddress = ethers.getAddress(rawTo);
+    const amount = Number(usdtAmount);
+    if (!isFinite(amount) || amount <= 0) throw new Error("Invalid amount");
+    if (amount < 0.5) throw new Error("Minimum charge is 0.5 USDT");
 
-    // Idempotency check
-    const { data: existing } = await supabase.from("crypto_transactions")
-      .select("id").eq("tx_hash", txHash).limit(1).maybeSingle();
-    if (existing) {
-      return new Response(JSON.stringify({ success: true, alreadyProcessed: true }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    }
+    // Verify PIN
+    const { data: secrets } = await supabase.from("user_secrets")
+      .select("transaction_pin").eq("user_id", user.id).maybeSingle();
+    if (!secrets?.transaction_pin) throw new Error("Set up your transaction PIN first");
+    if (String(secrets.transaction_pin) !== String(pin)) throw new Error("Incorrect PIN");
 
-    // Get master wallet address
-    const { data: mw } = await supabase.from("system_settings")
-      .select("value").eq("key", "master_wallet_address").single();
-    if (!mw?.value) throw new Error("Master wallet not configured");
-    const masterAddr = String(mw.value).toLowerCase();
-
-    // Get mini app + developer
+    // Get mini app
     const { data: app } = await supabase.from("mini_apps")
-      .select("id, developer_id, app_name").eq("id", miniAppId).single();
+      .select("id, app_name").eq("id", miniAppId).single();
     if (!app) throw new Error("MiniApp not found");
 
-    // Verify on-chain tx
-    const provider = new ethers.JsonRpcProvider(CELO_RPC);
-    const receipt = await provider.getTransactionReceipt(txHash);
-    if (!receipt || receipt.status !== 1) throw new Error("Transaction not confirmed");
-
-    // Find Transfer log to master wallet on USDT contract
-    const transferLog = receipt.logs.find(l =>
-      l.address.toLowerCase() === USDT_ADDRESS.toLowerCase() &&
-      l.topics[0] === TRANSFER_TOPIC &&
-      l.topics.length >= 3 &&
-      ("0x" + l.topics[2].slice(26).toLowerCase()) === masterAddr
-    );
-    if (!transferLog) throw new Error("Transfer to master wallet not found");
-
-    const fromAddr = "0x" + transferLog.topics[1].slice(26);
-    const amountWei = BigInt(transferLog.data);
-    const usdtAmount = Number(amountWei) / 1e6; // USDT has 6 decimals on Celo
-
-    // Tolerance: at least the expected amount (allow tiny dust over)
-    if (usdtAmount + 0.0001 < Number(expectedUsdt)) {
-      throw new Error(`Underpaid: got ${usdtAmount}, expected ${expectedUsdt}`);
-    }
-
-    // Get USD → NGN rate
+    // Compute NC cost (USDT × current NGN rate, no platform fee)
     let usdToNgn = 1600;
     try {
       const r = await fetch(EXCHANGE_RATE_API, { signal: AbortSignal.timeout(4000) });
@@ -80,42 +54,76 @@ serve(async (req) => {
         if (j.conversion_rates?.NGN) usdToNgn = j.conversion_rates.NGN;
       }
     } catch { /* fallback */ }
+    const ncCost = Math.ceil(amount * usdToNgn);
 
-    const ncCredit = Math.round(usdtAmount * usdToNgn);
+    // Check user NC balance (withdrawable)
+    const { data: profile } = await supabase.from("profiles")
+      .select("wallet_balance, balance_withdrawable").eq("user_id", user.id).single();
+    if (!profile) throw new Error("Profile missing");
+    if ((profile.balance_withdrawable || 0) < ncCost) {
+      throw new Error(`Insufficient NC. Need ${ncCost} NC for ${amount} USDT.`);
+    }
 
-    // Credit developer NC (both wallet and withdrawable)
-    const { data: devProfile } = await supabase.from("profiles")
-      .select("wallet_balance, balance_withdrawable").eq("user_id", app.developer_id).single();
-    if (!devProfile) throw new Error("Developer profile missing");
-
+    // Deduct NC FIRST (refunded if on-chain fails)
     await supabase.from("profiles").update({
-      wallet_balance: (devProfile.wallet_balance || 0) + ncCredit,
-      balance_withdrawable: (devProfile.balance_withdrawable || 0) + ncCredit,
-    }).eq("user_id", app.developer_id);
+      wallet_balance: (profile.wallet_balance || 0) - ncCost,
+      balance_withdrawable: (profile.balance_withdrawable || 0) - ncCost,
+    }).eq("user_id", user.id);
 
-    // Log records
+    // Send USDT from master wallet → developer-supplied address
+    let txHash = "";
+    try {
+      const { data: mw } = await supabase.from("system_settings")
+        .select("value").eq("key", "master_wallet_encrypted").single();
+      if (!mw?.value) throw new Error("Master wallet not initialized");
+      const secret = Deno.env.get("WALLET_ENCRYPTION_SECRET") || "default_secret_change_in_production";
+      const pk = CryptoJS.AES.decrypt(mw.value, secret).toString(CryptoJS.enc.Utf8);
+      if (!pk) throw new Error("Failed to decrypt master wallet");
+
+      const provider = new ethers.JsonRpcProvider(CELO_RPC);
+      const wallet = new ethers.Wallet(pk, provider);
+      const abi = ["function transfer(address to, uint256 amount) returns (bool)", "function balanceOf(address) view returns (uint256)"];
+      const usdt = new ethers.Contract(USDT_ADDRESS, abi, wallet);
+
+      const amountWei = ethers.parseUnits(amount.toFixed(6), 6);
+      const masterBal = await usdt.balanceOf(wallet.address);
+      if (masterBal < amountWei) throw new Error(`Master wallet low on USDT (has ${Number(masterBal) / 1e6})`);
+
+      const tx = await usdt.transfer(toAddress, amountWei);
+      const receipt = await tx.wait();
+      txHash = receipt.hash;
+    } catch (chainErr: any) {
+      // Refund NC
+      await supabase.from("profiles").update({
+        wallet_balance: (profile.wallet_balance || 0),
+        balance_withdrawable: (profile.balance_withdrawable || 0),
+      }).eq("user_id", user.id);
+      throw new Error(`On-chain send failed: ${chainErr?.message || chainErr}. NC refunded.`);
+    }
+
+    // Log
     await supabase.from("crypto_transactions").insert({
       user_id: user.id,
       transaction_type: "miniapp_charge",
-      crypto_amount: usdtAmount,
+      crypto_amount: amount,
       crypto_currency: "USDT",
-      naira_amount: ncCredit,
-      nc_amount: ncCredit,
+      naira_amount: ncCost,
+      nc_amount: ncCost,
       exchange_rate: usdToNgn,
-      wallet_address: fromAddr,
+      wallet_address: toAddress.toLowerCase(),
       tx_hash: txHash,
       status: "confirmed",
     });
 
     await supabase.from("wallet_transactions").insert({
-      user_id: app.developer_id,
-      kind: "miniapp_revenue",
-      amount: ncCredit,
+      user_id: user.id,
+      kind: "miniapp_charge",
+      amount: -ncCost,
       status: "completed",
-      reference: `MiniApp ${app.app_name}: ${usdtAmount} USDT (tx ${txHash.slice(0, 10)}...)`,
+      reference: `MiniApp ${app.app_name}: ${amount} USDT to ${toAddress.slice(0, 8)}... (tx ${txHash.slice(0, 10)}...)`,
     });
 
-    return new Response(JSON.stringify({ success: true, ncCredited: ncCredit, usdtAmount, rate: usdToNgn }),
+    return new Response(JSON.stringify({ success: true, txHash, ncDeducted: ncCost, usdtAmount: amount, rate: usdToNgn }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (e: any) {
     console.error("[miniapp-usdt-charge]", e);
