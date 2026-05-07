@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { SubmitMiniAppForm } from '@/components/miniapps/SubmitMiniAppForm'
 import { MiniAppViewer } from '@/components/miniapps/MiniAppViewer'
+import { MiniAppWebhookSettings } from '@/components/miniapps/MiniAppWebhookSettings'
 import { BottomNavBar } from '@/components/BottomNavBar'
 import { motion } from 'framer-motion'
 
