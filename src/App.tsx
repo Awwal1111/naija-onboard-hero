@@ -236,6 +236,7 @@ const App = () => (
                 <Route path="/campaign/:campaignId" element={<PublicCampaign />} />
                 <Route path="/sitemap.xml" element={<Sitemap />} />
                 <Route path="/sitemap" element={<Sitemap />} />
+                <Route path="/ramp/:sessionId" element={<RampSession />} />
                 
                 {/* Public pages */}
                 <Route path="/" element={<Index />} />
