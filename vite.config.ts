@@ -5,7 +5,20 @@ import { componentTagger } from "lovable-tagger";
 import { VitePWA } from 'vite-plugin-pwa';
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
+export default defineConfig(({ mode }) => {
+  // Explicitly log environment variables for debugging
+  const supabaseUrl = process.env.VITE_SUPABASE_URL;
+  const supabaseKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  const supabaseProjectId = process.env.VITE_SUPABASE_PROJECT_ID;
+
+  if (mode === 'production') {
+    console.log('[Vite Build] Production Environment:');
+    console.log('  VITE_SUPABASE_URL:', supabaseUrl ? '✓ SET' : '✗ MISSING');
+    console.log('  VITE_SUPABASE_PUBLISHABLE_KEY:', supabaseKey ? '✓ SET (' + supabaseKey.substring(0, 20) + '...)' : '✗ MISSING');
+    console.log('  VITE_SUPABASE_PROJECT_ID:', supabaseProjectId ? '✓ SET' : '✗ MISSING');
+  }
+
+  return {
   define: {
     'import.meta.env.VITE_BUILD_ID': JSON.stringify(Date.now().toString(36)),
   },
@@ -113,4 +126,5 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-}));
+};
+});

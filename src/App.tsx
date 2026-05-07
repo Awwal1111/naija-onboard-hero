@@ -70,6 +70,7 @@ const SignUp = lazy(lazyWithRetry(() => import("./pages/SignUp")));
 const ForgotPassword = lazy(lazyWithRetry(() => import("./pages/ForgotPassword")));
 const ResetPassword = lazy(lazyWithRetry(() => import("./pages/ResetPassword")));
 const Onboarding = lazy(lazyWithRetry(() => import("./pages/Onboarding")));
+const DebugPage = lazy(lazyWithRetry(() => import("./pages/Debug")));
 
 // Core pages
 const Index = lazy(lazyWithRetry(() => import("./pages/Index")));
@@ -236,6 +237,7 @@ const App = () => (
                 <Route path="/campaign/:campaignId" element={<PublicCampaign />} />
                 <Route path="/sitemap.xml" element={<Sitemap />} />
                 <Route path="/sitemap" element={<Sitemap />} />
+                <Route path="/debug" element={<DebugPage />} />
                 <Route path="/ramp/:sessionId" element={<RampSession />} />
                 
                 {/* Public pages */}
