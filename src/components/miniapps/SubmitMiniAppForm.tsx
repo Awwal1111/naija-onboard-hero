@@ -19,7 +19,8 @@ export const SubmitMiniAppForm = ({ onSuccess }: { onSuccess?: () => void }) => 
     app_description: '',
     app_url: '',
     app_icon_url: '',
-    category: 'utility'
+    category: 'utility',
+    usdt_payout_address: ''
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
