@@ -1,0 +1,1 @@
+ALTER TABLE public.developer_escrows ADD COLUMN IF NOT EXISTS refund_reason text;
