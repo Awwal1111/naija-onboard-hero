@@ -90,6 +90,9 @@ verify_jwt = true
 [functions.notifications-service]
 verify_jwt = true
 
+[functions.celo-operations]
+verify_jwt = true
+
 [functions.admin-ai-assistant]
 verify_jwt = true
 
