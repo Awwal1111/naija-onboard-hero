@@ -65,6 +65,8 @@ const API_PRICING: Record<string, number> = {
   'video/create-room': 50,
   'video/join-room': 0,
   'ai/chat': 1,
+  'ramp/quote/buy': 0, // Free quote
+  'ramp/quote/sell': 0, // Free quote
   'default': 0
 };
 
