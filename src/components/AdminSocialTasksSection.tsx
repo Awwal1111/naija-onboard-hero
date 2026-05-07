@@ -115,10 +115,10 @@ export const AdminSocialTasksSection = () => {
 
   const handleApprove = async (submissionId: number, earnerId: string, reward: number) => {
     try {
-      // Get the submission to find the task_id
+      // Get the submission to find the task_id and screenshot for cleanup
       const { data: submission } = await supabase
         .from('social_tasks_progress')
-        .select('task_id')
+        .select('task_id, screenshot_url')
         .eq('id', submissionId)
         .single()
 
