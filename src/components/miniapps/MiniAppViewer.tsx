@@ -612,17 +612,6 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
                   Accept {pendingPayout ? formatAmount(pendingPayout.amount, pendingPayout.currency) : ''}
                 </Button>
               </div>
-              </div>
-              <div className="flex gap-3">
-                <Button variant="outline" className="flex-1" onClick={() => {
-                  if (pendingPayout) sendResult(pendingPayout.requestId, { type: 'njl_payout_result', success: false, error: 'User declined' })
-                  setPendingPayout(null)
-                  setShowPayoutDialog(false)
-                }}>Decline</Button>
-                <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700" onClick={handleConfirmPayout}>
-                  {pendingPayout?.currency === 'USDT' ? 'Send' : 'Accept'} {pendingPayout ? formatAmount(pendingPayout.amount, pendingPayout.currency) : ''}
-                </Button>
-              </div>
             </div>
           </DialogContent>
         </Dialog>
