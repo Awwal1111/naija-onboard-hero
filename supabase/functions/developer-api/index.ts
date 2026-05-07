@@ -41,6 +41,8 @@ const RATE_LIMITS: Record<string, number> = {
   'video/create-room': 20,
   'video/join-room': 100,
   'ai/chat': 100,
+  'ramp/quote/buy': 200,
+  'ramp/quote/sell': 200,
   'default': 1000
 };
 
