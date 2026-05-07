@@ -9,6 +9,9 @@ import { toast } from 'sonner'
 import { Dialog, DialogContent, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { detectMiniPaySync, getMiniPayUSDTBalance, sendUSDTViaMiniPay } from '@/lib/minipay'
+
+type Currency = 'NC' | 'USDT'
 
 interface MiniApp {
   id: string
@@ -17,7 +20,11 @@ interface MiniApp {
   app_icon_url: string | null
   app_url: string
   sdk_app_id: string
+  usdt_payout_address?: string | null
 }
+
+const formatAmount = (amt: number, currency: Currency) =>
+  currency === 'USDT' ? `${amt} USDT` : `₦${amt}NC`
 
 interface MiniAppViewerProps {
   app: MiniApp
