@@ -128,6 +128,18 @@ export const SubmitMiniAppForm = ({ onSuccess }: { onSuccess?: () => void }) => 
         </Select>
       </div>
 
+      <div>
+        <Label>USDT Payout Wallet (optional)</Label>
+        <Input
+          value={form.usdt_payout_address}
+          onChange={e => setForm(f => ({ ...f, usdt_payout_address: e.target.value }))}
+          placeholder="0x... (Celo wallet)"
+        />
+        <p className="text-xs text-muted-foreground mt-1">
+          Required only if your app charges users in USDT (on Celo). Leave blank for NC-only apps.
+        </p>
+      </div>
+
       <Button type="submit" disabled={submitting} className="w-full gap-2">
         <Rocket className="h-4 w-4" />
         {submitting ? 'Submitting...' : 'Submit for Review'}
