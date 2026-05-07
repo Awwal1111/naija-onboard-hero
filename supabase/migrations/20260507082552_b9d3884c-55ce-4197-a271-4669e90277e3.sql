@@ -1,0 +1,1 @@
+ALTER TABLE public.mini_apps DROP COLUMN IF EXISTS usdt_payout_address;

@@ -3891,7 +3891,6 @@ export type Database = {
           status: string | null
           total_earnings: number | null
           updated_at: string | null
-          usdt_payout_address: string | null
         }
         Insert: {
           admin_notes?: string | null
@@ -3916,7 +3915,6 @@ export type Database = {
           status?: string | null
           total_earnings?: number | null
           updated_at?: string | null
-          usdt_payout_address?: string | null
         }
         Update: {
           admin_notes?: string | null
@@ -3941,7 +3939,6 @@ export type Database = {
           status?: string | null
           total_earnings?: number | null
           updated_at?: string | null
-          usdt_payout_address?: string | null
         }
         Relationships: [
           {
