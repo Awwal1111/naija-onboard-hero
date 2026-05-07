@@ -139,6 +139,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           if (refreshTimer) clearTimeout(refreshTimer)
           setSession(null)
           setUser(null)
+          resetPostHog()
           if (!loadingResolved.current) {
             resolveLoading(null)
           }
