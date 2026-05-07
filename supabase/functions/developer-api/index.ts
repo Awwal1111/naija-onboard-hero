@@ -52,6 +52,9 @@ const RATE_LIMITS: Record<string, number> = {
   'ramp/session/buy': 100,
   'ramp/session/sell': 100,
   'ramp/session': 200,
+  'contracts/deploy': 20,
+  'contracts/call': 100,
+  'contracts/read': 500,
   'default': 1000
 };
 
