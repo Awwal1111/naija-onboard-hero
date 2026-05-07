@@ -9,7 +9,7 @@ import { toast } from 'sonner'
 import { Dialog, DialogContent, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { detectMiniPaySync, getMiniPayUSDTBalance, sendUSDTViaMiniPay } from '@/lib/minipay'
+import { detectMiniPaySync, getMiniPayUSDTBalance } from '@/lib/minipay'
 
 type Currency = 'NC' | 'USDT'
 
