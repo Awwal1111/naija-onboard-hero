@@ -19,7 +19,8 @@ export const SubmitMiniAppForm = ({ onSuccess }: { onSuccess?: () => void }) => 
     app_description: '',
     app_url: '',
     app_icon_url: '',
-    category: 'utility'
+    category: 'utility',
+    usdt_payout_address: ''
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -40,6 +41,13 @@ export const SubmitMiniAppForm = ({ onSuccess }: { onSuccess?: () => void }) => 
       return
     }
 
+    // Validate USDT payout address (optional)
+    const usdtAddr = form.usdt_payout_address.trim()
+    if (usdtAddr && !/^0x[a-fA-F0-9]{40}$/.test(usdtAddr)) {
+      toast.error('USDT payout address must be a valid 0x... wallet')
+      return
+    }
+
     setSubmitting(true)
     try {
       const { error } = await supabase.from('mini_apps').insert({
@@ -48,13 +56,14 @@ export const SubmitMiniAppForm = ({ onSuccess }: { onSuccess?: () => void }) => 
         app_description: form.app_description,
         app_url: form.app_url,
         app_icon_url: form.app_icon_url || null,
-        category: form.category
-      })
+        category: form.category,
+        ...(usdtAddr ? { usdt_payout_address: usdtAddr } : {})
+      } as any)
 
       if (error) throw error
 
       toast.success('Mini App submitted for review! Admin will approve it shortly.')
-      setForm({ app_name: '', app_description: '', app_url: '', app_icon_url: '', category: 'utility' })
+      setForm({ app_name: '', app_description: '', app_url: '', app_icon_url: '', category: 'utility', usdt_payout_address: '' })
       onSuccess?.()
     } catch (err: any) {
       toast.error(err.message || 'Failed to submit')
@@ -117,6 +126,18 @@ export const SubmitMiniAppForm = ({ onSuccess }: { onSuccess?: () => void }) => 
             ))}
           </SelectContent>
         </Select>
+      </div>
+
+      <div>
+        <Label>USDT Payout Wallet (optional)</Label>
+        <Input
+          value={form.usdt_payout_address}
+          onChange={e => setForm(f => ({ ...f, usdt_payout_address: e.target.value }))}
+          placeholder="0x... (Celo wallet)"
+        />
+        <p className="text-xs text-muted-foreground mt-1">
+          Required only if your app charges users in USDT (on Celo). Leave blank for NC-only apps.
+        </p>
       </div>
 
       <Button type="submit" disabled={submitting} className="w-full gap-2">

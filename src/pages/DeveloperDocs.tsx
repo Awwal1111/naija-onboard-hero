@@ -131,33 +131,40 @@ window.addEventListener('message', (event) => {
 });
 
 // 3. Charge the user (with charge type)
-function chargeUser(amount, description, chargeType) {
+//    currency: 'NC' (default, internal) or 'USDT' (on-chain Celo, sent from user wallet
+//    to the USDT payout address you registered for your app).
+function chargeUser(amount, description, chargeType, currency) {
   const requestId = 'req_' + Math.random().toString(36).slice(2);
   window.parent.postMessage({
     type: 'njl_charge',
     amount: amount,
     description: description,
     charge_type: chargeType, // 'one_time' | 'subscription' | 'tip' | 'purchase'
+    currency: currency || 'NC', // 'NC' | 'USDT'
     requestId: requestId
   }, '*');
 }
 
-// 4. Query user's NC balance
-function getBalance() {
+// 4. Query user balance
+//    currency: 'NC' returns internal NC balance.
+//    'USDT' returns the on-chain USDT balance of the user's connected wallet.
+function getBalance(currency) {
   const requestId = 'bal_' + Math.random().toString(36).slice(2);
   window.parent.postMessage({
     type: 'njl_balance',
+    currency: currency || 'NC',
     requestId: requestId
   }, '*');
 }
 
-// 5. Send money back to user (refund, reward, savings return)
+// 5. Send money back to user (NC only — USDT payouts not supported yet)
 function payoutUser(amount, description) {
   const requestId = 'po_' + Math.random().toString(36).slice(2);
   window.parent.postMessage({
     type: 'njl_payout',
     amount: amount,
     description: description,
+    currency: 'NC',
     requestId: requestId
   }, '*');
 }
@@ -173,9 +180,10 @@ function verifyPin(reason) {
 }
 
 // Examples:
-chargeUser(500, 'Premium Access - 30 Days', 'subscription');
-chargeUser(100, 'Buy In-Game Coins', 'purchase');
-getBalance();
+chargeUser(500, 'Premium Access - 30 Days', 'subscription');     // 500 NC
+chargeUser(1.5, 'Pro Plan', 'subscription', 'USDT');              // 1.5 USDT on Celo
+getBalance();                                                      // NC
+getBalance('USDT');                                                // on-chain USDT
 payoutUser(200, 'Savings withdrawal');
 verifyPin('confirm withdrawal');
 </script>`;
@@ -183,11 +191,11 @@ verifyPin('confirm withdrawal');
 const MINIAPP_SDK_EVENTS = [
   { direction: '← Parent sends', event: 'njl_identify', description: 'Sent automatically when your app loads. Contains user_id, full_name, email, profile_picture_url.' },
   { direction: '→ App sends', event: 'njl_ready', description: 'Send this when your app is ready to receive the identity payload.' },
-  { direction: '→ App sends', event: 'njl_charge', description: 'Request a payment. Fields: amount, description, charge_type (one_time|subscription|tip|purchase), requestId.' },
-  { direction: '← Parent sends', event: 'njl_charge_result', description: 'Payment result. Fields: success, txRef, error, requestId.' },
-  { direction: '→ App sends', event: 'njl_balance', description: 'Query user NC balance. Fields: requestId.' },
-  { direction: '← Parent sends', event: 'njl_balance_result', description: 'Balance result. Fields: balance, requestId.' },
-  { direction: '→ App sends', event: 'njl_payout', description: 'Send money to user (refunds, rewards, savings). Fields: amount, description, requestId.' },
+  { direction: '→ App sends', event: 'njl_charge', description: 'Request a payment. Fields: amount, description, charge_type, currency ("NC" default | "USDT"), requestId. USDT charges go on-chain (Celo) from the user\'s wallet to your registered USDT payout address.' },
+  { direction: '← Parent sends', event: 'njl_charge_result', description: 'Payment result. Fields: success, currency, txRef (NC tx_ref or on-chain txHash), error, requestId.' },
+  { direction: '→ App sends', event: 'njl_balance', description: 'Query user balance. Fields: currency ("NC" | "USDT"), requestId.' },
+  { direction: '← Parent sends', event: 'njl_balance_result', description: 'Balance result. Fields: balance, currency, address (USDT only), requestId.' },
+  { direction: '→ App sends', event: 'njl_payout', description: 'Send money to user (NC only for now). Fields: amount, description, requestId.' },
   { direction: '← Parent sends', event: 'njl_payout_result', description: 'Payout result. Fields: success, txRef, error, requestId.' },
   { direction: '→ App sends', event: 'njl_verify_pin', description: 'Request PIN verification for sensitive actions. Fields: reason, requestId.' },
   { direction: '← Parent sends', event: 'njl_verify_pin_result', description: 'PIN verification result. Fields: success, error, requestId.' },
