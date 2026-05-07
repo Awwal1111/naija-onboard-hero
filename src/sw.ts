@@ -17,14 +17,28 @@ precacheAndRoute(self.__WB_MANIFEST)
 self.skipWaiting()
 clientsClaim()
 
-// Cache Supabase storage images with CacheFirst
+// Catbox + Cloudinary images are immutable (hashed URLs) → cache aggressively
+registerRoute(
+  ({ url }) =>
+    url.hostname === 'files.catbox.moe' ||
+    url.hostname === 'res.cloudinary.com',
+  new CacheFirst({
+    cacheName: 'public-media',
+    plugins: [
+      new CacheableResponsePlugin({ statuses: [200] }),
+      new ExpirationPlugin({ maxEntries: 800, maxAgeSeconds: 365 * 24 * 60 * 60 }),
+    ],
+  })
+)
+
+// Cache Supabase storage images with CacheFirst (KYC/private only after migration)
 registerRoute(
   ({ url }) => url.hostname.includes('supabase.co') && url.pathname.includes('/storage/'),
   new CacheFirst({
     cacheName: 'supabase-images',
     plugins: [
       new CacheableResponsePlugin({ statuses: [200] }),
-      new ExpirationPlugin({ maxEntries: 500, maxAgeSeconds: 30 * 24 * 60 * 60 }),
+      new ExpirationPlugin({ maxEntries: 200, maxAgeSeconds: 30 * 24 * 60 * 60 }),
     ],
   })
 )
