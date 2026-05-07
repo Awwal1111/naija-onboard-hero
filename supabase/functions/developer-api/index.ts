@@ -43,6 +43,9 @@ const RATE_LIMITS: Record<string, number> = {
   'ai/chat': 100,
   'ramp/quote/buy': 200,
   'ramp/quote/sell': 200,
+  'ramp/session/buy': 100,
+  'ramp/session/sell': 100,
+  'ramp/session': 200,
   'default': 1000
 };
 
