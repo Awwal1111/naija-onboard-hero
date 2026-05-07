@@ -1380,22 +1380,36 @@ serve(async (req) => {
   }
   
   const statusCode = result.status || (result.error ? 400 : 200);
-  
+  const responseBody = result.error ? { error: result.error } : (result.data ?? {});
+
   // Deduct balance and log usage
   if (statusCode < 400 && cost > 0) {
     await deductBalance(developer.user_id, cost);
   }
   await logApiUsage(developer.user_id, endpoint, method, statusCode, statusCode < 400 ? cost : 0);
-  
+
+  // Persist idempotent response (only successful 2xx — failed mutations can be retried freely)
+  if (MUTATING && idempotencyKey && statusCode >= 200 && statusCode < 300) {
+    await supabase.from('api_idempotency').upsert({
+      developer_id: developer.user_id,
+      api_key_hash: apiKeyHash,
+      idempotency_key: idempotencyKey,
+      endpoint,
+      request_hash: requestHash,
+      response_body: responseBody,
+      status_code: statusCode,
+    }, { onConflict: 'api_key_hash,idempotency_key' }).then(() => {}, (e) => console.error('[API] idempotency save error', e));
+  }
+
   return new Response(
-    JSON.stringify(result.error ? { error: result.error } : result.data),
-    { 
-      status: statusCode, 
-      headers: { 
-        ...corsHeaders, 
+    JSON.stringify(responseBody),
+    {
+      status: statusCode,
+      headers: {
+        ...corsHeaders,
         'Content-Type': 'application/json',
-        'X-RateLimit-Remaining': rateLimit.remaining.toString()
-      } 
+        'X-RateLimit-Remaining': rateLimit.remaining.toString(),
+      },
     }
   );
 });
