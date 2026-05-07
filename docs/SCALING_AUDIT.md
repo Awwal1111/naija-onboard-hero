@@ -126,6 +126,32 @@
 
 ---
 
+## 🧱 Reduce Supabase responsibility
+
+Supabase should be the data and auth layer, not the entire app execution engine. The fastest scaling win is to offload heavy or high-volume work to dedicated workers or an external queue.
+
+- Keep Supabase Edge Functions for lightweight validation, auth checks, and transactional state updates only.
+- Offload long-running and high-throughput jobs to a separate worker service:
+  - Bulk email / SMS / push campaigns
+  - Weekly/daily digest generation
+  - AI/LLM orchestration and search enrichment
+  - Webhook fan-out and retry handling
+  - Data scraping and third-party enrichment
+- Use a task queue or scheduler for background jobs:
+  - Redis queue, BullMQ, RabbitMQ, or a lightweight worker on a VM/Cloud Run container
+  - Supabase scheduled functions can still enqueue work, but actual processing should happen externally
+- Prefer a single webhook aggregator that validates and deduplicates events, then pushes jobs to the worker queue.
+- Cache frequently read, low-change data at the edge or CDN (public listings, service configs, package catalogs).
+- Store large event/log history off-DB in a log store or warehouse if possible.
+
+This reduces:
+- Number of active Supabase functions
+- Concurrent PostgreSQL connections
+- Cold start / function execution time
+- Risk of runaway cost from heavy background workloads
+
+---
+
 ## Infrastructure Upgrade Path
 
 | Tier | Users | Concurrent | Connections | Cost |
