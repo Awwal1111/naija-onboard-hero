@@ -209,13 +209,27 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
             postToIframe(withIds(rid, { type: 'njl_charge_result', success: false, currency, error: 'Invalid amount' }))
             return
           }
+          if (!user) {
+            postToIframe(withIds(rid, { type: 'njl_charge_result', success: false, currency, error: 'Auth required' }))
+            return
+          }
           if (currency === 'USDT') {
-            if (!window.ethereum) {
-              postToIframe(withIds(rid, { type: 'njl_charge_result', success: false, currency, error: 'No wallet available' }))
+            // Developer must supply their own destination address per call.
+            const toAddr = String(data.to || data.toAddress || data.address || data.recipient || '').trim()
+            if (!/^0x[a-fA-F0-9]{40}$/.test(toAddr)) {
+              postToIframe(withIds(rid, { type: 'njl_charge_result', success: false, currency, error: 'Missing or invalid "to" address' }))
               return
             }
-          } else if (!user) {
-            postToIframe(withIds(rid, { type: 'njl_charge_result', success: false, currency, error: 'Auth required' }))
+            resultSentRef.current[rid] = false
+            setPendingCharge({
+              amount: amt,
+              description: data.description || data.reason || data.memo || data.label || 'Mini App Purchase',
+              requestId: rid,
+              chargeType: data.charge_type || data.chargeType || 'one_time',
+              currency,
+              toAddress: toAddr,
+            } as any)
+            setShowChargeDialog(true)
             return
           }
           resultSentRef.current[rid] = false
