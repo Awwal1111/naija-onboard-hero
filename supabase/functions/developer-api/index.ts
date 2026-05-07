@@ -18,7 +18,7 @@ const CELO_RPC = "https://forno.celo.org";
 
 // Token addresses on Celo Mainnet
 const CUSD_ADDRESS = "0x765de816845861e75a25fca122bb6898b8b1282a";
-const USDT_ADDRESS = "0x48065fbBe25f71C9282ddf5e1cD6d6A887483D5e";
+const USDT_ADDRESS = "0x48065fbbe25f71c9282ddf5e1cd6d6a887483d5e";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
