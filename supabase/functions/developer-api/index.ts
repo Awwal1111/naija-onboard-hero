@@ -1419,6 +1419,26 @@ serve(async (req) => {
       case 'contracts/read':
         result = await handleContractRead(developer, body);
         break;
+
+      // On-chain Escrow (real money, ERC20 cUSD/USDT on Celo)
+      case 'escrow/onchain/deploy': {
+        const { token = 'cUSD', payer, payee, arbiter, external_user_id, gas_payer = 'wallet' } = body;
+        const tokenAddr = token === 'CELO' ? null
+          : token === 'USDT' ? USDT_ADDRESS
+          : CUSD_ADDRESS;
+        if (!tokenAddr) { result = { error: 'Only ERC20 tokens (cUSD/USDT) supported for on-chain escrow', status: 400 }; break; }
+        if (!payer || !payee) { result = { error: 'payer and payee addresses required', status: 400 }; break; }
+        const arb = arbiter || Deno.env.get('CELO_MASTER_WALLET_ADDRESS');
+        result = await handleContractDeploy(developer, {
+          bytecode: ESCROW_BYTECODE,
+          abi: ESCROW_ABI,
+          constructor_args: [tokenAddr, payer, payee, arb],
+          external_user_id,
+          gas_payer,
+        });
+        if (result.data) result.data.escrow_token = token;
+        break;
+      }
       
       // VTU APIs
       case 'vtu/airtime':
