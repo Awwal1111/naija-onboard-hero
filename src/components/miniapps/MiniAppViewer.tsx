@@ -137,17 +137,43 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
     return raw
   }
 
-  // Handle balance query
-  const handleBalance = useCallback(async (rid: string) => {
+  // Parse currency: default NC, accept "USDT" (case-insensitive)
+  const getCurrency = (d: any): Currency => {
+    const c = String(d?.currency || d?.token || d?.asset || 'NC').toUpperCase()
+    return c === 'USDT' ? 'USDT' : 'NC'
+  }
+
+  // Handle balance query (NC or on-chain USDT)
+  const handleBalance = useCallback(async (rid: string, currency: Currency) => {
+    if (currency === 'USDT') {
+      const { isMiniPay } = detectMiniPaySync()
+      if (!window.ethereum) {
+        postToIframe(withIds(rid, { type: 'njl_balance_result', balance: 0, currency: 'USDT', error: 'No wallet connected' }))
+        return
+      }
+      try {
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' }) as string[]
+        const addr = accounts?.[0]
+        if (!addr) {
+          postToIframe(withIds(rid, { type: 'njl_balance_result', balance: 0, currency: 'USDT', error: 'No wallet connected' }))
+          return
+        }
+        const bal = await getMiniPayUSDTBalance(addr)
+        postToIframe(withIds(rid, { type: 'njl_balance_result', balance: parseFloat(bal), currency: 'USDT', address: addr, isMiniPay }))
+      } catch {
+        postToIframe(withIds(rid, { type: 'njl_balance_result', balance: 0, currency: 'USDT', error: 'Fetch failed' }))
+      }
+      return
+    }
     if (!user) {
-      postToIframe(withIds(rid, { type: 'njl_balance_result', balance: 0, error: 'Auth required' }))
+      postToIframe(withIds(rid, { type: 'njl_balance_result', balance: 0, currency: 'NC', error: 'Auth required' }))
       return
     }
     try {
       const { data } = await supabase.from('profiles').select('wallet_balance').eq('user_id', user.id).single()
-      postToIframe(withIds(rid, { type: 'njl_balance_result', balance: (data as any)?.wallet_balance || 0 }))
+      postToIframe(withIds(rid, { type: 'njl_balance_result', balance: (data as any)?.wallet_balance || 0, currency: 'NC' }))
     } catch {
-      postToIframe(withIds(rid, { type: 'njl_balance_result', balance: 0, error: 'Fetch failed' }))
+      postToIframe(withIds(rid, { type: 'njl_balance_result', balance: 0, currency: 'NC', error: 'Fetch failed' }))
     }
   }, [user, postToIframe, withIds])
 
@@ -155,10 +181,6 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
   useEffect(() => {
     const handler = (event: MessageEvent) => {
       // Validate sender is THIS iframe (window reference equality).
-      // We intentionally do NOT enforce event.origin === allowedOrigin
-      // because mini apps may redirect to sub-origins; trusting the
-      // window reference is sufficient since only this iframe can post
-      // as its own contentWindow.
       const isFromIframe = event.source === iframeRef.current?.contentWindow
       if (!isFromIframe) return
 
@@ -169,7 +191,8 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
       if (!normType) return
 
       const rid = getRid(data)
-      console.log('[SDK] ← Received:', rawType, '→', normType, 'rid:', rid, data)
+      const currency = getCurrency(data)
+      console.log('[SDK] ← Received:', rawType, '→', normType, 'rid:', rid, 'currency:', currency, data)
 
       switch (normType) {
         case 'njl_ready':
@@ -178,17 +201,26 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
           break
 
         case 'njl_balance':
-          handleBalance(rid)
+          handleBalance(rid, currency)
           break
 
         case 'njl_charge': {
-          if (!user) {
-            postToIframe(withIds(rid, { type: 'njl_charge_result', success: false, error: 'Auth required' }))
-            return
-          }
           const amt = getAmount(data)
           if (amt <= 0) {
-            postToIframe(withIds(rid, { type: 'njl_charge_result', success: false, error: 'Invalid amount' }))
+            postToIframe(withIds(rid, { type: 'njl_charge_result', success: false, currency, error: 'Invalid amount' }))
+            return
+          }
+          if (currency === 'USDT') {
+            if (!app.usdt_payout_address) {
+              postToIframe(withIds(rid, { type: 'njl_charge_result', success: false, currency, error: 'App not configured for USDT' }))
+              return
+            }
+            if (!window.ethereum) {
+              postToIframe(withIds(rid, { type: 'njl_charge_result', success: false, currency, error: 'No wallet available' }))
+              return
+            }
+          } else if (!user) {
+            postToIframe(withIds(rid, { type: 'njl_charge_result', success: false, currency, error: 'Auth required' }))
             return
           }
           resultSentRef.current[rid] = false
@@ -197,19 +229,24 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
             description: data.description || data.reason || data.memo || data.label || 'Mini App Purchase',
             requestId: rid,
             chargeType: data.charge_type || data.chargeType || 'one_time',
+            currency,
           })
           setShowChargeDialog(true)
           break
         }
 
         case 'njl_payout': {
+          if (currency === 'USDT') {
+            postToIframe(withIds(rid, { type: 'njl_payout_result', success: false, currency, error: 'USDT payouts not supported yet' }))
+            return
+          }
           if (!user) {
-            postToIframe(withIds(rid, { type: 'njl_payout_result', success: false, error: 'Auth required' }))
+            postToIframe(withIds(rid, { type: 'njl_payout_result', success: false, currency, error: 'Auth required' }))
             return
           }
           const amt = getAmount(data)
           if (amt <= 0) {
-            postToIframe(withIds(rid, { type: 'njl_payout_result', success: false, error: 'Invalid amount' }))
+            postToIframe(withIds(rid, { type: 'njl_payout_result', success: false, currency, error: 'Invalid amount' }))
             return
           }
           resultSentRef.current[rid] = false
@@ -217,6 +254,7 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
             amount: amt,
             description: data.description || data.reason || data.memo || data.label || 'Payout',
             requestId: rid,
+            currency,
           })
           setShowPayoutDialog(true)
           break
