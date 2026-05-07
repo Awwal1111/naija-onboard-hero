@@ -188,6 +188,7 @@ export const AdminSocialTasksSection = () => {
       })
 
       toast.success(`Approved! ${reward} NC credited to user (withdrawable)`)
+      deleteSupabaseStorageFile((submission as any)?.screenshot_url)
       fetchSubmissions()
     } catch (error) {
       console.error('Error approving submission:', error)
