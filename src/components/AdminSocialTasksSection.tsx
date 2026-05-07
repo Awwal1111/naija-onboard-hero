@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { ExternalLink, CheckCircle, XCircle, Clock } from 'lucide-react'
 import { toast } from 'sonner'
+import { deleteSupabaseStorageFile } from '@/lib/storageCleanup'
 
 interface SocialTaskSubmission {
   id: number
@@ -115,10 +116,10 @@ export const AdminSocialTasksSection = () => {
 
   const handleApprove = async (submissionId: number, earnerId: string, reward: number) => {
     try {
-      // Get the submission to find the task_id
+      // Get the submission to find the task_id and screenshot for cleanup
       const { data: submission } = await supabase
         .from('social_tasks_progress')
-        .select('task_id')
+        .select('task_id, screenshot_url')
         .eq('id', submissionId)
         .single()
 
@@ -188,6 +189,7 @@ export const AdminSocialTasksSection = () => {
       })
 
       toast.success(`Approved! ${reward} NC credited to user (withdrawable)`)
+      deleteSupabaseStorageFile((submission as any)?.screenshot_url)
       fetchSubmissions()
     } catch (error) {
       console.error('Error approving submission:', error)
@@ -197,6 +199,12 @@ export const AdminSocialTasksSection = () => {
 
   const handleReject = async (submissionId: number) => {
     try {
+      const { data: subRow } = await supabase
+        .from('social_tasks_progress')
+        .select('screenshot_url')
+        .eq('id', submissionId)
+        .maybeSingle()
+
       const { error } = await supabase
         .from('social_tasks_progress')
         .update({ status: 'rejected' })
@@ -204,6 +212,7 @@ export const AdminSocialTasksSection = () => {
 
       if (error) throw error
       toast.success('Submission rejected')
+      deleteSupabaseStorageFile(subRow?.screenshot_url)
       fetchSubmissions()
     } catch (error) {
       console.error('Error rejecting submission:', error)

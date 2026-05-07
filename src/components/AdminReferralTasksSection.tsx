@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { CheckCircle, XCircle, Gift } from 'lucide-react'
 import { toast } from 'sonner'
+import { deleteSupabaseStorageFile } from '@/lib/storageCleanup'
 
 interface ReferralTaskSubmission {
   id: string
@@ -132,6 +133,13 @@ export const AdminReferralTasksSection = () => {
 
   const handleApprove = async (submissionId: string, userId: string, reward: number, taskTitle?: string) => {
     try {
+      // Fetch proof URL so we can clean up storage after approval
+      const { data: subRow } = await supabase
+        .from('referral_submissions')
+        .select('proof_url')
+        .eq('id', submissionId)
+        .maybeSingle()
+
       // Update submission status
       const { error: updateError } = await supabase
         .from('referral_submissions')
@@ -186,6 +194,8 @@ export const AdminReferralTasksSection = () => {
       })
 
       toast.success(`Approved! ${reward} NC credited to user`)
+      // Best-effort: free storage by removing the proof image
+      deleteSupabaseStorageFile(subRow?.proof_url)
       fetchSubmissions()
     } catch (error) {
       console.error('Error approving submission:', error)
@@ -195,6 +205,12 @@ export const AdminReferralTasksSection = () => {
 
   const handleReject = async (submissionId: string, userId: string, taskTitle?: string, reason?: string) => {
     try {
+      const { data: subRow } = await supabase
+        .from('referral_submissions')
+        .select('proof_url')
+        .eq('id', submissionId)
+        .maybeSingle()
+
       const { error } = await supabase
         .from('referral_submissions')
         .update({ 
@@ -220,6 +236,7 @@ export const AdminReferralTasksSection = () => {
       })
 
       toast.success('Submission rejected')
+      deleteSupabaseStorageFile(subRow?.proof_url)
       fetchSubmissions()
     } catch (error) {
       console.error('Error rejecting submission:', error)
