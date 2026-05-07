@@ -20,7 +20,6 @@ interface MiniApp {
   app_icon_url: string | null
   app_url: string
   sdk_app_id: string
-  usdt_payout_address?: string | null
 }
 
 const formatAmount = (amt: number, currency: Currency) =>
@@ -46,7 +45,7 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
     amount: number; description: string; requestId: string; chargeType: string; currency: Currency
   } | null>(null)
   const [pendingPayout, setPendingPayout] = useState<{
-    amount: number; description: string; requestId: string; currency: Currency
+    amount: number; description: string; requestId: string; currency: Currency; toAddress?: string
   } | null>(null)
 
   // Track whether we already sent a result for the current pending request
@@ -211,10 +210,6 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
             return
           }
           if (currency === 'USDT') {
-            if (!app.usdt_payout_address) {
-              postToIframe(withIds(rid, { type: 'njl_charge_result', success: false, currency, error: 'App not configured for USDT' }))
-              return
-            }
             if (!window.ethereum) {
               postToIframe(withIds(rid, { type: 'njl_charge_result', success: false, currency, error: 'No wallet available' }))
               return
@@ -236,17 +231,25 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
         }
 
         case 'njl_payout': {
+          const amt = getAmount(data)
+          if (amt <= 0) {
+            postToIframe(withIds(rid, { type: 'njl_payout_result', success: false, currency, error: 'Invalid amount' }))
+            return
+          }
           if (currency === 'USDT') {
-            postToIframe(withIds(rid, { type: 'njl_payout_result', success: false, currency, error: 'USDT payouts not supported yet' }))
+            // Developer must supply destination address per-call (MetaMask SDK style)
+            const toAddr = String(data.to || data.toAddress || data.address || data.recipient || '').trim()
+            if (!/^0x[a-fA-F0-9]{40}$/.test(toAddr)) {
+              postToIframe(withIds(rid, { type: 'njl_payout_result', success: false, currency, error: 'Missing or invalid "to" address' }))
+              return
+            }
+            resultSentRef.current[rid] = false
+            setPendingPayout({ amount: amt, description: data.description || 'USDT Payout', requestId: rid, currency, toAddress: toAddr })
+            setShowPayoutDialog(true)
             return
           }
           if (!user) {
             postToIframe(withIds(rid, { type: 'njl_payout_result', success: false, currency, error: 'Auth required' }))
-            return
-          }
-          const amt = getAmount(data)
-          if (amt <= 0) {
-            postToIframe(withIds(rid, { type: 'njl_payout_result', success: false, currency, error: 'Invalid amount' }))
             return
           }
           resultSentRef.current[rid] = false
@@ -333,24 +336,36 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
     const rid = pendingCharge.requestId
     const { currency } = pendingCharge
 
-    // USDT: send on-chain via MiniPay/Celo wallet to the app's payout address
+    // USDT charge: user → master wallet on-chain, then verify & credit dev NC server-side
     if (currency === 'USDT') {
-      if (!app.usdt_payout_address) {
-        sendResult(rid, { type: 'njl_charge_result', success: false, currency, error: 'App not configured for USDT' })
-        setPendingCharge(null); setShowChargeDialog(false); return
-      }
       try {
-        const res = await sendUSDTViaMiniPay(app.usdt_payout_address, pendingCharge.amount)
-        if (res.success && res.txHash) {
-          sendResult(rid, { type: 'njl_charge_result', success: true, currency, txRef: res.txHash, tx_ref: res.txHash, txHash: res.txHash })
-          toast.success(`${pendingCharge.amount} USDT sent to ${app.app_name}`)
+        // 1. Fetch master wallet address
+        const { data: mw, error: mwErr } = await supabase.functions.invoke('get-master-wallet-address')
+        const masterAddr = (mw as any)?.address
+        if (mwErr || !masterAddr) throw new Error('Master wallet unavailable')
+
+        // 2. Send USDT from user wallet → master wallet
+        const sendRes = await sendUSDTViaMiniPay(masterAddr, pendingCharge.amount)
+        if (!sendRes.success || !sendRes.txHash) {
+          throw new Error(sendRes.error || 'On-chain transfer failed')
+        }
+
+        // 3. Server verifies tx and credits developer NC
+        const { data: verifyData, error: verifyErr } = await supabase.functions.invoke('miniapp-usdt-charge', {
+          body: { miniAppId: app.id, txHash: sendRes.txHash, expectedUsdt: pendingCharge.amount },
+        })
+        const v = verifyData as any
+        if (verifyErr || !v?.success) {
+          // Tx is on-chain but credit failed — surface tx hash so support can reconcile
+          sendResult(rid, { type: 'njl_charge_result', success: false, currency, error: v?.error || 'Verification failed', txHash: sendRes.txHash })
+          toast.error('Payment sent but credit pending. Contact support with tx hash.')
         } else {
-          sendResult(rid, { type: 'njl_charge_result', success: false, currency, error: res.error || 'Transaction failed' })
-          toast.error(res.error || 'USDT payment failed')
+          sendResult(rid, { type: 'njl_charge_result', success: true, currency, txRef: sendRes.txHash, tx_ref: sendRes.txHash, txHash: sendRes.txHash })
+          toast.success(`${pendingCharge.amount} USDT paid to ${app.app_name}`)
         }
       } catch (e: any) {
         sendResult(rid, { type: 'njl_charge_result', success: false, currency, error: e?.message || 'Transaction failed' })
-        toast.error('USDT payment failed')
+        toast.error(e?.message || 'USDT payment failed')
       }
       setPendingCharge(null); setShowChargeDialog(false); return
     }
@@ -381,9 +396,33 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
   }
 
   const handleConfirmPayout = async () => {
-    if (!pendingPayout || !user) return
+    if (!pendingPayout) return
     const rid = pendingPayout.requestId
+    const { currency } = pendingPayout
 
+    // USDT payout: master wallet → developer-supplied address; deduct dev NC
+    if (currency === 'USDT') {
+      try {
+        const { data, error } = await supabase.functions.invoke('miniapp-usdt-payout', {
+          body: { miniAppId: app.id, toAddress: pendingPayout.toAddress, usdtAmount: pendingPayout.amount },
+        })
+        const r = data as any
+        if (error || !r?.success) {
+          const msg = r?.error || error?.message || 'Payout failed'
+          sendResult(rid, { type: 'njl_payout_result', success: false, currency, error: msg })
+          toast.error(msg)
+        } else {
+          sendResult(rid, { type: 'njl_payout_result', success: true, currency, txRef: r.txHash, tx_ref: r.txHash, txHash: r.txHash })
+          toast.success(`${pendingPayout.amount} USDT sent`)
+        }
+      } catch (e: any) {
+        sendResult(rid, { type: 'njl_payout_result', success: false, currency, error: e?.message || 'Payout failed' })
+        toast.error('USDT payout failed')
+      }
+      setPendingPayout(null); setShowPayoutDialog(false); return
+    }
+
+    if (!user) return
     try {
       const txRef = 'njl_po_' + crypto.randomUUID().replace(/-/g, '').slice(0, 16)
       const { data, error } = await supabase.rpc('process_mini_app_payout', {
@@ -544,8 +583,13 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
                 <p className="text-sm text-muted-foreground mt-1">wants to send you money</p>
               </div>
               <div className="bg-muted rounded-xl p-4">
-                <p className="text-2xl font-bold text-emerald-600">+₦{pendingPayout?.amount}NC</p>
+                <p className="text-2xl font-bold text-emerald-600">
+                  {pendingPayout ? `+${formatAmount(pendingPayout.amount, pendingPayout.currency)}` : ''}
+                </p>
                 <p className="text-sm text-muted-foreground mt-1">{pendingPayout?.description}</p>
+                {pendingPayout?.currency === 'USDT' && pendingPayout.toAddress && (
+                  <p className="text-[10px] text-muted-foreground mt-2 break-all">→ {pendingPayout.toAddress}</p>
+                )}
               </div>
               <div className="flex gap-3">
                 <Button variant="outline" className="flex-1" onClick={() => {
@@ -554,7 +598,7 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
                   setShowPayoutDialog(false)
                 }}>Decline</Button>
                 <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700" onClick={handleConfirmPayout}>
-                  Accept ₦{pendingPayout?.amount}NC
+                  {pendingPayout?.currency === 'USDT' ? 'Send' : 'Accept'} {pendingPayout ? formatAmount(pendingPayout.amount, pendingPayout.currency) : ''}
                 </Button>
               </div>
             </div>
