@@ -1322,6 +1322,14 @@ serve(async (req) => {
       case 'ramp/quote/sell':
         result = await handleRampQuoteSell(body);
         break;
+
+      // Hosted Ramp Sessions (developer creates, end-user completes on naijalancers.name.ng)
+      case 'ramp/session/buy':
+        result = await handleCreateRampSession(developer, 'buy', body);
+        break;
+      case 'ramp/session/sell':
+        result = await handleCreateRampSession(developer, 'sell', body);
+        break;
       
       // Webhook Management APIs
       case 'webhooks':
