@@ -1407,6 +1407,17 @@ serve(async (req) => {
       case 'wallet/transfer':
         result = await handleWalletTransfer(developer, body);
         break;
+
+      // Contract APIs (Celo)
+      case 'contracts/deploy':
+        result = await handleContractDeploy(developer, body);
+        break;
+      case 'contracts/call':
+        result = await handleContractCall(developer, body);
+        break;
+      case 'contracts/read':
+        result = await handleContractRead(developer, body);
+        break;
       
       // VTU APIs
       case 'vtu/airtime':
