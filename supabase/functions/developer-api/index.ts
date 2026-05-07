@@ -56,6 +56,7 @@ const RATE_LIMITS: Record<string, number> = {
   'contracts/deploy': 20,
   'contracts/call': 100,
   'contracts/read': 500,
+  'escrow/onchain/deploy': 20,
   'default': 1000
 };
 
