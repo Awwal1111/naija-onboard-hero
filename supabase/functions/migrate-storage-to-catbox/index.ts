@@ -67,21 +67,13 @@ serve(async (req) => {
 
   try {
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!)
-
-    // TEMP: allow batch run with shared bypass token; remove after migration completes
-    const auth = req.headers.get("authorization") || ""
-    const bearer = auth.replace("Bearer ", "")
-    const BYPASS = "naijalancers-migrate-2026"
-    const isBypass = bearer === BYPASS
-
-    if (!isBypass) {
-      if (!auth) throw new Error("No authorization")
-      const { data: { user }, error: authErr } = await supabase.auth.getUser(bearer)
-      if (authErr || !user) throw new Error("Unauthorized")
-      const { data: roles } = await supabase.from('user_roles').select('role').eq('user_id', user.id).limit(5)
-      const ok = (roles || []).some((r: any) => ['admin', 'super_admin', 'moderator'].includes(r.role))
-      if (!ok) throw new Error("Admin only")
-    }
+    const auth = req.headers.get("authorization")
+    if (!auth) throw new Error("No authorization")
+    const { data: { user }, error: authErr } = await supabase.auth.getUser(auth.replace("Bearer ", ""))
+    if (authErr || !user) throw new Error("Unauthorized")
+    const { data: roles } = await supabase.from('user_roles').select('role').eq('user_id', user.id).limit(5)
+    const ok = (roles || []).some((r: any) => ['admin', 'super_admin', 'moderator'].includes(r.role))
+    if (!ok) throw new Error("Admin only")
 
     const { table, limit = 25, dryRun = false } = await req.json()
     const cfg = TABLE_MAP[String(table)]
