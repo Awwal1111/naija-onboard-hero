@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { ExternalLink, CheckCircle, XCircle, Clock } from 'lucide-react'
 import { toast } from 'sonner'
+import { deleteSupabaseStorageFile } from '@/lib/storageCleanup'
 
 interface SocialTaskSubmission {
   id: number
