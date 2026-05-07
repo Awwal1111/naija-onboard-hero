@@ -134,7 +134,7 @@ window.addEventListener('message', (event) => {
 //    currency: 'NC' (default, internal) or 'USDT' (on-chain Celo).
 //    USDT: NC is deducted from the user (PIN-verified). The platform master
 //    wallet sends the equivalent USDT to ANY external 0x address you pass in
-//    `to` — your treasury, a smart contract, a partner wallet, anything.
+//    "to" — your treasury, a smart contract, a partner wallet, anything.
 //    The result includes user_id so you know which user paid.
 function chargeUser(amount, description, chargeType, currency, toAddress) {
   const requestId = 'req_' + Math.random().toString(36).slice(2);
