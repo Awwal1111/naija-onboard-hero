@@ -25,7 +25,7 @@ async function uploadToCatbox(blob: Blob, filename: string): Promise<string> {
   const ctrl = new AbortController()
   const t = setTimeout(() => ctrl.abort(), 25_000)
   try {
-    const r = await fetch('https://catbox.moe/user/api.php', { method: 'POST', body: fd, signal: ctrl.signal })
+    const r = await fetch('https://catbox.moe/user/api.php', { method: 'POST', body: fd, signal: ctrl.signal, headers: { 'User-Agent': 'Mozilla/5.0 (compatible; NaijaLancersMigrator/1.0)' } })
     if (!r.ok) throw new Error(`Catbox HTTP ${r.status}`)
     const url = (await r.text()).trim()
     if (!url.startsWith('https://files.catbox.moe/')) throw new Error('Bad Catbox response')
