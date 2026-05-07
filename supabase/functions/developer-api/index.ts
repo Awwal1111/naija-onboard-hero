@@ -1424,21 +1424,39 @@ serve(async (req) => {
 
       // On-chain Escrow (real money, ERC20 cUSD/USDT on Celo)
       case 'escrow/onchain/deploy': {
-        const { token = 'cUSD', payer, payee, arbiter, external_user_id, gas_payer = 'wallet' } = body;
+        const {
+          token = 'cUSD', payer, payee, arbiter, external_user_id, gas_payer = 'wallet',
+          dev_fee_bps = 0, dev_fee_recipient,
+        } = body;
         const tokenAddr = token === 'CELO' ? null
           : token === 'USDT' ? USDT_ADDRESS
           : CUSD_ADDRESS;
         if (!tokenAddr) { result = { error: 'Only ERC20 tokens (cUSD/USDT) supported for on-chain escrow', status: 400 }; break; }
         if (!payer || !payee) { result = { error: 'payer and payee addresses required', status: 400 }; break; }
-        const arb = arbiter || Deno.env.get('CELO_MASTER_WALLET_ADDRESS');
+        const platformAddr = Deno.env.get('CELO_MASTER_WALLET_ADDRESS');
+        if (!platformAddr) { result = { error: 'Platform wallet not configured', status: 500 }; break; }
+        const arb = arbiter || platformAddr;
+        const devBps = Math.max(0, Math.min(2000, Number(dev_fee_bps) || 0));   // cap dev fee at 20%
+        const platformBps = 50; // 0.5% NaijaLancers cut on every release
+        const devRecipient = dev_fee_recipient || platformAddr; // fallback so tx doesn't revert if dev didn't supply one
+        if (devBps + platformBps >= 10000) { result = { error: 'Fee too high', status: 400 }; break; }
         result = await handleContractDeploy(developer, {
           bytecode: ESCROW_BYTECODE,
           abi: ESCROW_ABI,
-          constructor_args: [tokenAddr, payer, payee, arb],
+          constructor_args: [tokenAddr, payer, payee, arb, devRecipient, devBps, platformAddr, platformBps],
           external_user_id,
           gas_payer,
         });
-        if (result.data) result.data.escrow_token = token;
+        if (result.data) {
+          result.data.escrow_token = token;
+          result.data.fees = { dev_bps: devBps, platform_bps: platformBps, dev_recipient: devRecipient, platform_recipient: platformAddr };
+        }
+        break;
+      }
+
+      case 'escrow/onchain/source': {
+        const { ESCROW_SOURCE } = await import('./escrow-contract.ts');
+        result = { data: { source: ESCROW_SOURCE, compiler: 'solc 0.8.24', optimizer: { enabled: true, runs: 200 } } };
         break;
       }
       
