@@ -665,6 +665,45 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* USDT Charge PIN Dialog */}
+        <Dialog open={showChargePinDialog} onOpenChange={(open) => {
+          if (!open && pendingCharge) {
+            sendResult(pendingCharge.requestId, { type: 'njl_charge_result', success: false, currency: 'USDT', error: 'User cancelled' })
+            setPendingCharge(null)
+            setChargePinInput('')
+          }
+          setShowChargePinDialog(open)
+        }}>
+          <DialogContent className="max-w-sm">
+            <DialogDescription className="sr-only">Enter your PIN to authorize this USDT payment.</DialogDescription>
+            <div className="text-center space-y-4">
+              <div className="w-14 h-14 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center">
+                <Fingerprint className="h-7 w-7 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-foreground">Authorize {pendingCharge?.amount} USDT</h3>
+                <p className="text-sm text-muted-foreground mt-1">to {app.app_name}</p>
+                <p className="text-xs text-muted-foreground mt-2">NC will be deducted from your wallet</p>
+              </div>
+              <Input
+                type="password" inputMode="numeric" maxLength={6}
+                placeholder="••••••" className="text-center text-2xl tracking-[0.5em]"
+                value={chargePinInput} onChange={e => setChargePinInput(e.target.value.replace(/\D/g, ''))}
+              />
+              <div className="flex gap-3">
+                <Button variant="outline" className="flex-1" onClick={() => {
+                  if (pendingCharge) sendResult(pendingCharge.requestId, { type: 'njl_charge_result', success: false, currency: 'USDT', error: 'User cancelled' })
+                  setShowChargePinDialog(false)
+                  setPendingCharge(null)
+                  setChargePinInput('')
+                }}>Cancel</Button>
+                <Button className="flex-1" onClick={handleSubmitChargePin}>Pay</Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
       </motion.div>
     </AnimatePresence>
   )
