@@ -131,33 +131,40 @@ window.addEventListener('message', (event) => {
 });
 
 // 3. Charge the user (with charge type)
-function chargeUser(amount, description, chargeType) {
+//    currency: 'NC' (default, internal) or 'USDT' (on-chain Celo, sent from user wallet
+//    to the USDT payout address you registered for your app).
+function chargeUser(amount, description, chargeType, currency) {
   const requestId = 'req_' + Math.random().toString(36).slice(2);
   window.parent.postMessage({
     type: 'njl_charge',
     amount: amount,
     description: description,
     charge_type: chargeType, // 'one_time' | 'subscription' | 'tip' | 'purchase'
+    currency: currency || 'NC', // 'NC' | 'USDT'
     requestId: requestId
   }, '*');
 }
 
-// 4. Query user's NC balance
-function getBalance() {
+// 4. Query user balance
+//    currency: 'NC' returns internal NC balance.
+//    'USDT' returns the on-chain USDT balance of the user's connected wallet.
+function getBalance(currency) {
   const requestId = 'bal_' + Math.random().toString(36).slice(2);
   window.parent.postMessage({
     type: 'njl_balance',
+    currency: currency || 'NC',
     requestId: requestId
   }, '*');
 }
 
-// 5. Send money back to user (refund, reward, savings return)
+// 5. Send money back to user (NC only — USDT payouts not supported yet)
 function payoutUser(amount, description) {
   const requestId = 'po_' + Math.random().toString(36).slice(2);
   window.parent.postMessage({
     type: 'njl_payout',
     amount: amount,
     description: description,
+    currency: 'NC',
     requestId: requestId
   }, '*');
 }
@@ -173,9 +180,10 @@ function verifyPin(reason) {
 }
 
 // Examples:
-chargeUser(500, 'Premium Access - 30 Days', 'subscription');
-chargeUser(100, 'Buy In-Game Coins', 'purchase');
-getBalance();
+chargeUser(500, 'Premium Access - 30 Days', 'subscription');     // 500 NC
+chargeUser(1.5, 'Pro Plan', 'subscription', 'USDT');              // 1.5 USDT on Celo
+getBalance();                                                      // NC
+getBalance('USDT');                                                // on-chain USDT
 payoutUser(200, 'Savings withdrawal');
 verifyPin('confirm withdrawal');
 </script>`;
