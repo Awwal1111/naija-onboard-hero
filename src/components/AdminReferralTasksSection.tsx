@@ -132,6 +132,13 @@ export const AdminReferralTasksSection = () => {
 
   const handleApprove = async (submissionId: string, userId: string, reward: number, taskTitle?: string) => {
     try {
+      // Fetch proof URL so we can clean up storage after approval
+      const { data: subRow } = await supabase
+        .from('referral_submissions')
+        .select('proof_url')
+        .eq('id', submissionId)
+        .maybeSingle()
+
       // Update submission status
       const { error: updateError } = await supabase
         .from('referral_submissions')
