@@ -1003,108 +1003,55 @@ async function handlePayoutCredit(developer: DeveloperProfile, body: any) {
     return { error: 'user_id or email required', status: 400 };
   }
 
-  // Re-fetch developer balance (avoid stale)
-  const { data: devProfile, error: devErr } = await supabase
-    .from('profiles')
-    .select('user_id, wallet_balance')
-    .eq('user_id', developer.user_id)
-    .maybeSingle();
-
-  if (devErr || !devProfile) {
-    return { error: 'Developer profile not found', status: 500 };
-  }
-  const devBalance = Number(devProfile.wallet_balance || 0);
-  if (devBalance < amt) {
-    return { error: 'Insufficient developer NC balance', status: 402 };
-  }
-
   // Resolve recipient
-  let target: { user_id: string; wallet_balance: number } | null = null;
-  if (user_id) {
+  let targetId: string | null = user_id || null;
+  if (!targetId && email) {
     const { data } = await supabase
       .from('profiles')
-      .select('user_id, wallet_balance')
-      .eq('user_id', user_id)
-      .maybeSingle();
-    target = data as any;
-  } else if (email) {
-    const { data } = await supabase
-      .from('profiles')
-      .select('user_id, wallet_balance')
+      .select('user_id')
       .eq('email', email)
       .maybeSingle();
-    target = data as any;
+    targetId = (data as any)?.user_id || null;
   }
-
-  if (!target) return { error: 'Recipient user not found', status: 404 };
-  if (target.user_id === developer.user_id) {
-    return { error: 'Cannot payout to yourself', status: 400 };
-  }
-
-  // Debit developer
-  const { error: debitErr } = await supabase
-    .from('profiles')
-    .update({ wallet_balance: devBalance - amt })
-    .eq('user_id', developer.user_id);
-  if (debitErr) return { error: 'Failed to debit developer wallet', status: 500 };
-
-  // Re-fetch recipient balance & credit
-  const { data: freshTarget } = await supabase
-    .from('profiles')
-    .select('wallet_balance')
-    .eq('user_id', target.user_id)
-    .maybeSingle();
-  const targetBalance = Number(freshTarget?.wallet_balance || 0);
-
-  const { error: creditErr } = await supabase
-    .from('profiles')
-    .update({ wallet_balance: targetBalance + amt })
-    .eq('user_id', target.user_id);
-
-  if (creditErr) {
-    // Refund developer on failure
-    await supabase
-      .from('profiles')
-      .update({ wallet_balance: devBalance })
-      .eq('user_id', developer.user_id);
-    return { error: 'Failed to credit recipient', status: 500 };
-  }
+  if (!targetId) return { error: 'Recipient user not found', status: 404 };
 
   const txRef = reference || `dev_payout_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
-  await supabase.from('wallet_transactions').insert([
-    {
-      user_id: developer.user_id,
-      amount: -amt,
-      type: 'developer_payout',
-      status: 'completed',
-      description: description || `API payout to ${target.user_id}`,
-      reference: txRef,
-    },
-    {
-      user_id: target.user_id,
-      amount: amt,
-      type: 'developer_credit',
-      status: 'completed',
-      description: description || `API credit from developer ${developer.user_id}`,
-      reference: txRef,
-    },
-  ]).then(() => {}, () => {});
+
+  const { data, error } = await supabase.rpc('developer_payout_atomic', {
+    p_developer_id: developer.user_id,
+    p_recipient_user_id: targetId,
+    p_amount: amt,
+    p_reference: txRef,
+    p_description: description || null,
+  });
+
+  if (error) {
+    console.error('[API] developer_payout_atomic error:', error);
+    return { error: 'Payout failed', status: 500 };
+  }
+  const res = data as any;
+  if (!res?.ok) {
+    const msg = String(res?.error || 'Payout failed');
+    const status = msg.toLowerCase().includes('insufficient') ? 402
+      : msg.toLowerCase().includes('not found') ? 404 : 400;
+    return { error: msg, status };
+  }
 
   triggerWebhook(developer.user_id, 'wallet.payout', {
     reference: txRef,
-    recipient_user_id: target.user_id,
-    amount: amt,
+    recipient_user_id: res.recipient_user_id,
+    amount: res.amount,
     currency: 'NC',
   });
 
   return {
     data: {
       reference: txRef,
-      recipient_user_id: target.user_id,
-      amount: amt,
+      recipient_user_id: res.recipient_user_id,
+      amount: res.amount,
       currency: 'NC',
       status: 'completed',
-      developer_balance_after: devBalance - amt,
+      developer_balance_after: res.developer_balance_after,
     },
   };
 }
