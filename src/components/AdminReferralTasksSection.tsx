@@ -193,6 +193,8 @@ export const AdminReferralTasksSection = () => {
       })
 
       toast.success(`Approved! ${reward} NC credited to user`)
+      // Best-effort: free storage by removing the proof image
+      deleteSupabaseStorageFile(subRow?.proof_url)
       fetchSubmissions()
     } catch (error) {
       console.error('Error approving submission:', error)
