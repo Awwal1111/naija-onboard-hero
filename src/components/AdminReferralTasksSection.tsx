@@ -204,6 +204,12 @@ export const AdminReferralTasksSection = () => {
 
   const handleReject = async (submissionId: string, userId: string, taskTitle?: string, reason?: string) => {
     try {
+      const { data: subRow } = await supabase
+        .from('referral_submissions')
+        .select('proof_url')
+        .eq('id', submissionId)
+        .maybeSingle()
+
       const { error } = await supabase
         .from('referral_submissions')
         .update({ 
