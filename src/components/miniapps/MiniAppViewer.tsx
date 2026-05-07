@@ -45,7 +45,7 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
     amount: number; description: string; requestId: string; chargeType: string; currency: Currency
   } | null>(null)
   const [pendingPayout, setPendingPayout] = useState<{
-    amount: number; description: string; requestId: string; currency: Currency
+    amount: number; description: string; requestId: string; currency: Currency; toAddress?: string
   } | null>(null)
 
   // Track whether we already sent a result for the current pending request
