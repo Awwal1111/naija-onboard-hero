@@ -252,29 +252,31 @@ response = requests.post(
 wallet = response.json()
 print(wallet['address'])`,
 
-  webhook: `// Express.js webhook handler
+  webhook: `// MiniApp Charge Webhook (Express.js)
+// Configure URL + view secret in Apps → My Apps → Webhook & Secret
 const crypto = require('crypto');
 
-app.post('/webhook', (req, res) => {
-  const signature = req.headers['x-naijalancers-signature'];
-  const [timestamp, hash] = signature.split(',').map(p => p.split('=')[1]);
-  
-  // Verify signature
-  const payload = \`\${timestamp}.\${JSON.stringify(req.body)}\`;
-  const expectedHash = crypto
-    .createHmac('sha256', process.env.WEBHOOK_SECRET)
-    .update(payload)
-    .digest('hex');
-  
-  if (hash === expectedHash) {
-    // Process event
-    const { event, data } = req.body;
-    console.log(\`Received: \${event}\`, data);
-    res.status(200).send('OK');
-  } else {
-    res.status(401).send('Invalid signature');
+app.post('/naijalancers-webhook',
+  express.raw({ type: 'application/json' }),
+  (req, res) => {
+    const sig = req.headers['x-naijalancers-signature']; // "sha256=<hex>"
+    const expected = 'sha256=' + crypto
+      .createHmac('sha256', process.env.NAIJALANCERS_WEBHOOK_SECRET)
+      .update(req.body) // raw body buffer
+      .digest('hex');
+
+    if (sig !== expected) return res.status(401).send('bad signature');
+
+    const evt = JSON.parse(req.body.toString());
+    // evt = { event: "charge.completed", request_id, mini_app_id, user_id,
+    //         to_address, usdt_amount, nc_amount, exchange_rate, tx_hash, timestamp }
+    if (evt.event === 'charge.completed') {
+      // Idempotent: store evt.request_id, ignore if already processed
+      grantUserAccess(evt.user_id, evt.usdt_amount);
+    }
+    res.status(200).send('ok');
   }
-});`
+);`
 };
 
 export default function DeveloperDocs() {
