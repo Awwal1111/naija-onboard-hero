@@ -601,9 +601,17 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
                   {pendingPayout ? `+${formatAmount(pendingPayout.amount, pendingPayout.currency)}` : ''}
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">{pendingPayout?.description}</p>
-                {pendingPayout?.currency === 'USDT' && pendingPayout.toAddress && (
-                  <p className="text-[10px] text-muted-foreground mt-2 break-all">→ {pendingPayout.toAddress}</p>
-                )}
+              </div>
+              <div className="flex gap-3">
+                <Button variant="outline" className="flex-1" onClick={() => {
+                  if (pendingPayout) sendResult(pendingPayout.requestId, { type: 'njl_payout_result', success: false, error: 'User declined' })
+                  setPendingPayout(null)
+                  setShowPayoutDialog(false)
+                }}>Decline</Button>
+                <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700" onClick={handleConfirmPayout}>
+                  Accept {pendingPayout ? formatAmount(pendingPayout.amount, pendingPayout.currency) : ''}
+                </Button>
+              </div>
               </div>
               <div className="flex gap-3">
                 <Button variant="outline" className="flex-1" onClick={() => {
