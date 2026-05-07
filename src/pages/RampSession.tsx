@@ -155,14 +155,12 @@ export default function RampSession() {
       const url = `https://ramp.quidax.io/?${params.toString()}`;
       window.open(url, '_blank', 'noopener,noreferrer');
 
-      // Mark completed (developer is notified via webhook; final settlement is verified by webhook)
-      const { error: completeErr } = await supabase.functions.invoke('developer-ramp-session', {
-        body: { action: 'complete', session_id: session.session_id, reference },
-      });
-      if (completeErr) console.warn('complete error', completeErr);
-
-      setCompleted(true);
-      toast.success('Quidax opened in a new tab. Complete payment there.');
+      // NOTE: do NOT mark session completed here. The Quidax webhook will flip
+      // the developer_ramp_sessions row to 'completed' once payment settles
+      // and fire the ramp.*.session.completed webhook to the developer.
+      // Session stays 'in_progress' (set by the claim step) until then.
+      setCompleted(true); // local UI confirmation only
+      toast.success('Quidax opened in a new tab. We will notify the partner app once payment settles.');
 
       const successUrl = session.metadata?.success_url;
       if (successUrl) {
