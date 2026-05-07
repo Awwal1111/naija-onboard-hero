@@ -43,10 +43,10 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
   const [pinInput, setPinInput] = useState('')
   const [pendingPinRequest, setPendingPinRequest] = useState<{ reason: string; requestId: string } | null>(null)
   const [pendingCharge, setPendingCharge] = useState<{
-    amount: number; description: string; requestId: string; chargeType: string
+    amount: number; description: string; requestId: string; chargeType: string; currency: Currency
   } | null>(null)
   const [pendingPayout, setPendingPayout] = useState<{
-    amount: number; description: string; requestId: string
+    amount: number; description: string; requestId: string; currency: Currency
   } | null>(null)
 
   // Track whether we already sent a result for the current pending request
