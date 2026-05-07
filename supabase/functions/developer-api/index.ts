@@ -5,7 +5,7 @@ import CryptoJS from "https://esm.sh/crypto-js@4.1.1";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key, idempotency-key',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
 };
 
@@ -21,6 +21,12 @@ const CUSD_ADDRESS = "0x765de816845861e75a25fca122bb6898b8b1282a";
 const USDT_ADDRESS = "0x48065fbBe25f71C9282ddf5e1cD6d6A887483D5e";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+async function sha256Hex(input: string): Promise<string> {
+  const buf = new TextEncoder().encode(input);
+  const hash = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
 
 // Rate limit configurations per endpoint (requests per hour)
 const RATE_LIMITS: Record<string, number> = {
@@ -725,198 +731,139 @@ async function handleAiChat(developer: DeveloperProfile, body: any) {
 
 // ESCROW/PAYMENT APIS
 async function handleCreateEscrow(developer: DeveloperProfile, body: any) {
-  const { payer_external_id, payee_external_id, amount, currency = 'NGN', description } = body;
-  
+  const { payer_external_id, payee_external_id, payee_user_id, payee_email, amount, currency = 'NGN', description } = body;
+
   if (!payer_external_id || !payee_external_id || !amount) {
     return { error: 'payer_external_id, payee_external_id, and amount required', status: 400 };
   }
-  
+  if (!payee_user_id && !payee_email) {
+    return { error: 'payee_user_id or payee_email required (escrow releases pay a NaijaLancers user)', status: 400 };
+  }
+  const amt = Number(amount);
+  if (!amt || amt <= 0) {
+    return { error: 'amount must be a positive number', status: 400 };
+  }
+
+  // Verify payee exists
+  let resolvedPayee: string | null = payee_user_id || null;
+  if (!resolvedPayee && payee_email) {
+    const { data } = await supabase.from('profiles').select('user_id').eq('email', payee_email).maybeSingle();
+    resolvedPayee = (data as any)?.user_id || null;
+    if (!resolvedPayee) return { error: 'Payee email not found on NaijaLancers', status: 404 };
+  } else if (resolvedPayee) {
+    const { data } = await supabase.from('profiles').select('user_id').eq('user_id', resolvedPayee).maybeSingle();
+    if (!data) return { error: 'Payee user_id not found', status: 404 };
+  }
+
   const escrowId = `escrow_${developer.user_id.slice(0, 8)}_${Date.now()}`;
-  
+
   const { error } = await supabase.from('developer_escrows').insert({
     developer_id: developer.user_id,
     escrow_id: escrowId,
     payer_external_id,
     payee_external_id,
-    amount,
+    payee_user_id: resolvedPayee,
+    payee_email: payee_email || null,
+    amount: amt,
     currency,
     description,
     status: 'pending',
-    created_at: new Date().toISOString()
   });
-  
+
   if (error) {
     console.error('[API] Escrow creation error:', error);
     return { error: 'Failed to create escrow', status: 500 };
   }
-  
-  // Trigger webhook for escrow creation
+
   triggerWebhook(developer.user_id, 'escrow.created', {
-    escrow_id: escrowId,
-    payer_external_id,
-    payee_external_id,
-    amount,
-    currency,
-    status: 'pending'
+    escrow_id: escrowId, payer_external_id, payee_external_id, payee_user_id: resolvedPayee, amount: amt, currency, status: 'pending',
   });
-  
+
   return {
     data: {
       escrow_id: escrowId,
       payer_external_id,
       payee_external_id,
-      amount,
+      payee_user_id: resolvedPayee,
+      amount: amt,
       currency,
       status: 'pending',
       description,
       actions: {
         fund: `/payments/escrow/${escrowId}/fund`,
         release: `/payments/escrow/${escrowId}/release`,
-        refund: `/payments/escrow/${escrowId}/refund`
-      }
-    }
-  };
-}
-
-async function handleReleaseEscrow(developer: DeveloperProfile, escrowId: string) {
-  const { data: escrow, error: fetchError } = await supabase
-    .from('developer_escrows')
-    .select('*')
-    .eq('developer_id', developer.user_id)
-    .eq('escrow_id', escrowId)
-    .single();
-  
-  if (fetchError || !escrow) {
-    return { error: 'Escrow not found', status: 404 };
-  }
-  
-  if (escrow.status !== 'funded') {
-    return { error: `Cannot release escrow with status: ${escrow.status}`, status: 400 };
-  }
-  
-  const { error } = await supabase
-    .from('developer_escrows')
-    .update({ status: 'released', released_at: new Date().toISOString() })
-    .eq('escrow_id', escrowId);
-  
-  if (error) {
-    return { error: 'Failed to release escrow', status: 500 };
-  }
-  
-  // Trigger webhook for escrow release
-  triggerWebhook(developer.user_id, 'escrow.released', {
-    escrow_id: escrowId,
-    amount: escrow.amount,
-    payee_external_id: escrow.payee_external_id,
-    released_at: new Date().toISOString()
-  });
-  
-  return {
-    data: {
-      escrow_id: escrowId,
-      status: 'released',
-      released_at: new Date().toISOString(),
-      amount: escrow.amount,
-      payee_external_id: escrow.payee_external_id
-    }
+        refund: `/payments/escrow/${escrowId}/refund`,
+      },
+    },
   };
 }
 
 async function handleFundEscrow(developer: DeveloperProfile, escrowId: string) {
-  const { data: escrow, error: fetchError } = await supabase
-    .from('developer_escrows')
-    .select('escrow_id, status, amount, currency, payer_external_id, payee_external_id')
-    .eq('developer_id', developer.user_id)
-    .eq('escrow_id', escrowId)
-    .limit(1)
-    .maybeSingle();
-
-  if (fetchError || !escrow) {
-    return { error: 'Escrow not found', status: 404 };
-  }
-  if (escrow.status !== 'pending') {
-    return { error: `Cannot fund escrow with status: ${escrow.status}`, status: 400 };
-  }
-
-  const fundedAt = new Date().toISOString();
-  const { error } = await supabase
-    .from('developer_escrows')
-    .update({ status: 'funded', funded_at: fundedAt })
-    .eq('escrow_id', escrowId)
-    .eq('developer_id', developer.user_id);
-
+  const { data, error } = await supabase.rpc('fund_developer_escrow', {
+    p_developer_id: developer.user_id,
+    p_escrow_id: escrowId,
+  });
   if (error) {
+    console.error('[API] fund_developer_escrow error:', error);
     return { error: 'Failed to fund escrow', status: 500 };
   }
-
+  const res = data as any;
+  if (!res?.ok) {
+    const msg = String(res?.error || 'Failed to fund escrow');
+    const status = msg.toLowerCase().includes('insufficient') ? 402
+      : msg.toLowerCase().includes('not found') ? 404 : 400;
+    return { error: msg, status };
+  }
   triggerWebhook(developer.user_id, 'escrow.funded', {
-    escrow_id: escrowId,
-    amount: escrow.amount,
-    currency: escrow.currency,
-    payer_external_id: escrow.payer_external_id,
-    funded_at: fundedAt,
+    escrow_id: escrowId, amount: res.amount, funded_at: res.funded_at,
   });
+  return { data: { escrow_id: escrowId, status: 'funded', amount: res.amount, funded_at: res.funded_at } };
+}
 
-  return {
-    data: {
-      escrow_id: escrowId,
-      status: 'funded',
-      funded_at: fundedAt,
-      amount: escrow.amount,
-      currency: escrow.currency,
-    },
-  };
+async function handleReleaseEscrow(developer: DeveloperProfile, escrowId: string) {
+  const { data, error } = await supabase.rpc('release_developer_escrow', {
+    p_developer_id: developer.user_id,
+    p_escrow_id: escrowId,
+  });
+  if (error) {
+    console.error('[API] release_developer_escrow error:', error);
+    return { error: 'Failed to release escrow', status: 500 };
+  }
+  const res = data as any;
+  if (!res?.ok) {
+    const msg = String(res?.error || 'Failed to release escrow');
+    const status = msg.toLowerCase().includes('not found') ? 404 : 400;
+    return { error: msg, status };
+  }
+  triggerWebhook(developer.user_id, 'escrow.released', {
+    escrow_id: escrowId, amount: res.amount, payee_user_id: res.payee_user_id, released_at: res.released_at,
+  });
+  return { data: { escrow_id: escrowId, status: 'released', amount: res.amount, payee_user_id: res.payee_user_id, released_at: res.released_at } };
 }
 
 async function handleRefundEscrow(developer: DeveloperProfile, escrowId: string, body: any) {
-  const { data: escrow, error: fetchError } = await supabase
-    .from('developer_escrows')
-    .select('escrow_id, status, amount, currency, payer_external_id, payee_external_id')
-    .eq('developer_id', developer.user_id)
-    .eq('escrow_id', escrowId)
-    .limit(1)
-    .maybeSingle();
-
-  if (fetchError || !escrow) {
-    return { error: 'Escrow not found', status: 404 };
-  }
-  if (escrow.status !== 'funded' && escrow.status !== 'pending') {
-    return { error: `Cannot refund escrow with status: ${escrow.status}`, status: 400 };
-  }
-
-  const refundedAt = new Date().toISOString();
   const reason = (body && typeof body.reason === 'string') ? body.reason.slice(0, 500) : null;
-
-  const { error } = await supabase
-    .from('developer_escrows')
-    .update({ status: 'refunded', refunded_at: refundedAt, refund_reason: reason })
-    .eq('escrow_id', escrowId)
-    .eq('developer_id', developer.user_id);
-
+  const { data, error } = await supabase.rpc('refund_developer_escrow', {
+    p_developer_id: developer.user_id,
+    p_escrow_id: escrowId,
+    p_reason: reason,
+  });
   if (error) {
+    console.error('[API] refund_developer_escrow error:', error);
     return { error: 'Failed to refund escrow', status: 500 };
   }
-
+  const res = data as any;
+  if (!res?.ok) {
+    const msg = String(res?.error || 'Failed to refund escrow');
+    const status = msg.toLowerCase().includes('not found') ? 404 : 400;
+    return { error: msg, status };
+  }
   triggerWebhook(developer.user_id, 'escrow.refunded', {
-    escrow_id: escrowId,
-    amount: escrow.amount,
-    currency: escrow.currency,
-    payer_external_id: escrow.payer_external_id,
-    reason,
-    refunded_at: refundedAt,
+    escrow_id: escrowId, amount: res.amount, reason, refunded_at: res.refunded_at,
   });
-
-  return {
-    data: {
-      escrow_id: escrowId,
-      status: 'refunded',
-      refunded_at: refundedAt,
-      amount: escrow.amount,
-      currency: escrow.currency,
-      reason,
-    },
-  };
+  return { data: { escrow_id: escrowId, status: 'refunded', amount: res.amount, reason, refunded_at: res.refunded_at } };
 }
+
 // QUIDAX RAMP QUOTES — read-only NGN<>USDT (CELO) live pricing
 const QUIDAX_RAMP_BASE = 'https://ramp-be.quidax.io/api/v1/merchants';
 
@@ -1062,108 +1009,55 @@ async function handlePayoutCredit(developer: DeveloperProfile, body: any) {
     return { error: 'user_id or email required', status: 400 };
   }
 
-  // Re-fetch developer balance (avoid stale)
-  const { data: devProfile, error: devErr } = await supabase
-    .from('profiles')
-    .select('user_id, wallet_balance')
-    .eq('user_id', developer.user_id)
-    .maybeSingle();
-
-  if (devErr || !devProfile) {
-    return { error: 'Developer profile not found', status: 500 };
-  }
-  const devBalance = Number(devProfile.wallet_balance || 0);
-  if (devBalance < amt) {
-    return { error: 'Insufficient developer NC balance', status: 402 };
-  }
-
   // Resolve recipient
-  let target: { user_id: string; wallet_balance: number } | null = null;
-  if (user_id) {
+  let targetId: string | null = user_id || null;
+  if (!targetId && email) {
     const { data } = await supabase
       .from('profiles')
-      .select('user_id, wallet_balance')
-      .eq('user_id', user_id)
-      .maybeSingle();
-    target = data as any;
-  } else if (email) {
-    const { data } = await supabase
-      .from('profiles')
-      .select('user_id, wallet_balance')
+      .select('user_id')
       .eq('email', email)
       .maybeSingle();
-    target = data as any;
+    targetId = (data as any)?.user_id || null;
   }
-
-  if (!target) return { error: 'Recipient user not found', status: 404 };
-  if (target.user_id === developer.user_id) {
-    return { error: 'Cannot payout to yourself', status: 400 };
-  }
-
-  // Debit developer
-  const { error: debitErr } = await supabase
-    .from('profiles')
-    .update({ wallet_balance: devBalance - amt })
-    .eq('user_id', developer.user_id);
-  if (debitErr) return { error: 'Failed to debit developer wallet', status: 500 };
-
-  // Re-fetch recipient balance & credit
-  const { data: freshTarget } = await supabase
-    .from('profiles')
-    .select('wallet_balance')
-    .eq('user_id', target.user_id)
-    .maybeSingle();
-  const targetBalance = Number(freshTarget?.wallet_balance || 0);
-
-  const { error: creditErr } = await supabase
-    .from('profiles')
-    .update({ wallet_balance: targetBalance + amt })
-    .eq('user_id', target.user_id);
-
-  if (creditErr) {
-    // Refund developer on failure
-    await supabase
-      .from('profiles')
-      .update({ wallet_balance: devBalance })
-      .eq('user_id', developer.user_id);
-    return { error: 'Failed to credit recipient', status: 500 };
-  }
+  if (!targetId) return { error: 'Recipient user not found', status: 404 };
 
   const txRef = reference || `dev_payout_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
-  await supabase.from('wallet_transactions').insert([
-    {
-      user_id: developer.user_id,
-      amount: -amt,
-      type: 'developer_payout',
-      status: 'completed',
-      description: description || `API payout to ${target.user_id}`,
-      reference: txRef,
-    },
-    {
-      user_id: target.user_id,
-      amount: amt,
-      type: 'developer_credit',
-      status: 'completed',
-      description: description || `API credit from developer ${developer.user_id}`,
-      reference: txRef,
-    },
-  ]).then(() => {}, () => {});
+
+  const { data, error } = await supabase.rpc('developer_payout_atomic', {
+    p_developer_id: developer.user_id,
+    p_recipient_user_id: targetId,
+    p_amount: amt,
+    p_reference: txRef,
+    p_description: description || null,
+  });
+
+  if (error) {
+    console.error('[API] developer_payout_atomic error:', error);
+    return { error: 'Payout failed', status: 500 };
+  }
+  const res = data as any;
+  if (!res?.ok) {
+    const msg = String(res?.error || 'Payout failed');
+    const status = msg.toLowerCase().includes('insufficient') ? 402
+      : msg.toLowerCase().includes('not found') ? 404 : 400;
+    return { error: msg, status };
+  }
 
   triggerWebhook(developer.user_id, 'wallet.payout', {
     reference: txRef,
-    recipient_user_id: target.user_id,
-    amount: amt,
+    recipient_user_id: res.recipient_user_id,
+    amount: res.amount,
     currency: 'NC',
   });
 
   return {
     data: {
       reference: txRef,
-      recipient_user_id: target.user_id,
-      amount: amt,
+      recipient_user_id: res.recipient_user_id,
+      amount: res.amount,
       currency: 'NC',
       status: 'completed',
-      developer_balance_after: devBalance - amt,
+      developer_balance_after: res.developer_balance_after,
     },
   };
 }
@@ -1258,7 +1152,44 @@ serve(async (req) => {
   }
   
   const params = url.searchParams;
-  
+
+  // ===== Idempotency (mutating endpoints only) =====
+  const MUTATING = method === 'POST' || method === 'PUT' || method === 'DELETE';
+  const idempotencyKey = (req.headers.get('idempotency-key') || '').slice(0, 200).trim();
+  const apiKeyHash = await sha256Hex(apiKey);
+  const requestHash = MUTATING && idempotencyKey
+    ? await sha256Hex(`${method}:${endpoint}:${JSON.stringify(body || {})}`)
+    : '';
+
+  if (MUTATING && idempotencyKey) {
+    const { data: cached } = await supabase
+      .from('api_idempotency')
+      .select('response_body, status_code, request_hash, created_at')
+      .eq('api_key_hash', apiKeyHash)
+      .eq('idempotency_key', idempotencyKey)
+      .maybeSingle();
+
+    if (cached) {
+      // 24h TTL
+      const ageMs = Date.now() - new Date((cached as any).created_at).getTime();
+      if (ageMs < 86_400_000) {
+        if ((cached as any).request_hash !== requestHash) {
+          return new Response(
+            JSON.stringify({ error: 'Idempotency-Key reused with a different request body' }),
+            { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        return new Response(
+          JSON.stringify((cached as any).response_body),
+          {
+            status: (cached as any).status_code,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Idempotent-Replay': 'true' },
+          }
+        );
+      }
+    }
+  }
+
   // Route to handlers
   try {
     switch (endpoint) {
@@ -1455,22 +1386,36 @@ serve(async (req) => {
   }
   
   const statusCode = result.status || (result.error ? 400 : 200);
-  
+  const responseBody = result.error ? { error: result.error } : (result.data ?? {});
+
   // Deduct balance and log usage
   if (statusCode < 400 && cost > 0) {
     await deductBalance(developer.user_id, cost);
   }
   await logApiUsage(developer.user_id, endpoint, method, statusCode, statusCode < 400 ? cost : 0);
-  
+
+  // Persist idempotent response (only successful 2xx — failed mutations can be retried freely)
+  if (MUTATING && idempotencyKey && statusCode >= 200 && statusCode < 300) {
+    await supabase.from('api_idempotency').upsert({
+      developer_id: developer.user_id,
+      api_key_hash: apiKeyHash,
+      idempotency_key: idempotencyKey,
+      endpoint,
+      request_hash: requestHash,
+      response_body: responseBody,
+      status_code: statusCode,
+    }, { onConflict: 'api_key_hash,idempotency_key' }).then(() => {}, (e) => console.error('[API] idempotency save error', e));
+  }
+
   return new Response(
-    JSON.stringify(result.error ? { error: result.error } : result.data),
-    { 
-      status: statusCode, 
-      headers: { 
-        ...corsHeaders, 
+    JSON.stringify(responseBody),
+    {
+      status: statusCode,
+      headers: {
+        ...corsHeaders,
         'Content-Type': 'application/json',
-        'X-RateLimit-Remaining': rateLimit.remaining.toString()
-      } 
+        'X-RateLimit-Remaining': rateLimit.remaining.toString(),
+      },
     }
   );
 });

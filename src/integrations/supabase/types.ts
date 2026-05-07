@@ -373,6 +373,42 @@ export type Database = {
           },
         ]
       }
+      api_idempotency: {
+        Row: {
+          api_key_hash: string
+          created_at: string
+          developer_id: string
+          endpoint: string
+          id: string
+          idempotency_key: string
+          request_hash: string
+          response_body: Json
+          status_code: number
+        }
+        Insert: {
+          api_key_hash: string
+          created_at?: string
+          developer_id: string
+          endpoint: string
+          id?: string
+          idempotency_key: string
+          request_hash: string
+          response_body: Json
+          status_code: number
+        }
+        Update: {
+          api_key_hash?: string
+          created_at?: string
+          developer_id?: string
+          endpoint?: string
+          id?: string
+          idempotency_key?: string
+          request_hash?: string
+          response_body?: Json
+          status_code?: number
+        }
+        Relationships: []
+      }
       api_rate_limits: {
         Row: {
           created_at: string
@@ -1483,9 +1519,13 @@ export type Database = {
           developer_id: string
           escrow_id: string
           funded_at: string | null
+          held_amount: number
           id: string
+          payee_email: string | null
           payee_external_id: string
+          payee_user_id: string | null
           payer_external_id: string
+          payout_reference: string | null
           refund_reason: string | null
           refunded_at: string | null
           released_at: string | null
@@ -1499,9 +1539,13 @@ export type Database = {
           developer_id: string
           escrow_id: string
           funded_at?: string | null
+          held_amount?: number
           id?: string
+          payee_email?: string | null
           payee_external_id: string
+          payee_user_id?: string | null
           payer_external_id: string
+          payout_reference?: string | null
           refund_reason?: string | null
           refunded_at?: string | null
           released_at?: string | null
@@ -1515,9 +1559,13 @@ export type Database = {
           developer_id?: string
           escrow_id?: string
           funded_at?: string | null
+          held_amount?: number
           id?: string
+          payee_email?: string | null
           payee_external_id?: string
+          payee_user_id?: string | null
           payer_external_id?: string
+          payout_reference?: string | null
           refund_reason?: string | null
           refunded_at?: string | null
           released_at?: string | null
@@ -7739,10 +7787,24 @@ export type Database = {
         Args: { p_amount: number; p_user_id: string }
         Returns: boolean
       }
+      developer_payout_atomic: {
+        Args: {
+          p_amount: number
+          p_description?: string
+          p_developer_id: string
+          p_recipient_user_id: string
+          p_reference: string
+        }
+        Returns: Json
+      }
       expire_expert_boosts: { Args: never; Returns: undefined }
       file_dispute_safepay: {
         Args: { p_reason: string; p_safepay_id: string }
         Returns: undefined
+      }
+      fund_developer_escrow: {
+        Args: { p_developer_id: string; p_escrow_id: string }
+        Returns: Json
       }
       generate_api_key: { Args: never; Returns: string }
       generate_certificate_id: { Args: never; Returns: string }
@@ -8174,9 +8236,17 @@ export type Database = {
         Returns: Json
       }
       refresh_admin_stats: { Args: never; Returns: undefined }
+      refund_developer_escrow: {
+        Args: { p_developer_id: string; p_escrow_id: string; p_reason?: string }
+        Returns: Json
+      }
       refund_safepay: {
         Args: { p_escrow_id: string; p_requester: string }
         Returns: undefined
+      }
+      release_developer_escrow: {
+        Args: { p_developer_id: string; p_escrow_id: string }
+        Returns: Json
       }
       release_safepay: {
         Args: { p_escrow_id: string; p_releaser: string }

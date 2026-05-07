@@ -70,6 +70,67 @@ serve(async (req) => {
       console.error("[QUIDAX_WEBHOOK] Failed to update transaction:", updateError);
     }
 
+    // ===== Developer-API ramp session linkage =====
+    // RampSession.tsx creates references like `${rampSessionId}_${ts}` and stores
+    // ramp_session_id inside quidax_data. Promote the linked developer_ramp_sessions
+    // row on terminal status and fire a webhook to the developer.
+    try {
+      const txData: any = transaction.quidax_data || {};
+      const rampSessionId: string | null = txData?.ramp_session_id || (
+        typeof reference === 'string' && reference.startsWith('rs_')
+          ? reference.split('_').slice(0, 5).join('_')
+          : null
+      );
+      if (rampSessionId) {
+        const { data: rampSession } = await supabase
+          .from('developer_ramp_sessions')
+          .select('session_id, developer_id, type, token, fiat_amount, token_amount, external_user_id, status')
+          .eq('session_id', rampSessionId)
+          .maybeSingle();
+
+        if (rampSession && rampSession.status !== 'completed' && rampSession.status !== 'failed') {
+          if (status === 'completed' || status === 'success') {
+            await supabase
+              .from('developer_ramp_sessions')
+              .update({ status: 'completed', completed_at: new Date().toISOString(), reference })
+              .eq('session_id', rampSessionId);
+            await supabase.functions.invoke('developer-webhook', {
+              body: {
+                action: 'trigger',
+                developer_id: rampSession.developer_id,
+                event_type: `ramp.${rampSession.type}.session.completed`,
+                payload: {
+                  session_id: rampSession.session_id,
+                  type: rampSession.type,
+                  token: rampSession.token,
+                  fiat_amount: rampSession.fiat_amount,
+                  token_amount: rampSession.token_amount,
+                  external_user_id: rampSession.external_user_id,
+                  reference,
+                },
+              },
+            });
+            console.log(`[QUIDAX_WEBHOOK] Promoted dev ramp session ${rampSessionId} to completed`);
+          } else if (status === 'failed' || status === 'cancelled') {
+            await supabase
+              .from('developer_ramp_sessions')
+              .update({ status: 'failed', reference })
+              .eq('session_id', rampSessionId);
+            await supabase.functions.invoke('developer-webhook', {
+              body: {
+                action: 'trigger',
+                developer_id: rampSession.developer_id,
+                event_type: `ramp.${rampSession.type}.session.failed`,
+                payload: { session_id: rampSession.session_id, type: rampSession.type, reference, reason: status },
+              },
+            });
+          }
+        }
+      }
+    } catch (e) {
+      console.error('[QUIDAX_WEBHOOK] dev ramp session linkage error:', e);
+    }
+
     const txType = transaction_type || transaction.transaction_type;
 
     if (txType === 'on_ramp') {
