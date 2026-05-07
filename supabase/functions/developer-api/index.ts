@@ -1174,6 +1174,14 @@ serve(async (req) => {
       case 'payments/credit':
         result = await handlePayoutCredit(developer, body);
         break;
+
+      // Quidax Ramp Quotes (read-only, NGN<>USDT live pricing)
+      case 'ramp/quote/buy':
+        result = await handleRampQuoteBuy(body);
+        break;
+      case 'ramp/quote/sell':
+        result = await handleRampQuoteSell(body);
+        break;
       
       // Webhook Management APIs
       case 'webhooks':
