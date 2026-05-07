@@ -235,6 +235,7 @@ export const AdminReferralTasksSection = () => {
       })
 
       toast.success('Submission rejected')
+      deleteSupabaseStorageFile(subRow?.proof_url)
       fetchSubmissions()
     } catch (error) {
       console.error('Error rejecting submission:', error)
