@@ -43,6 +43,9 @@ const RATE_LIMITS: Record<string, number> = {
   'ai/chat': 100,
   'ramp/quote/buy': 200,
   'ramp/quote/sell': 200,
+  'ramp/session/buy': 100,
+  'ramp/session/sell': 100,
+  'ramp/session': 200,
   'default': 1000
 };
 
@@ -67,6 +70,9 @@ const API_PRICING: Record<string, number> = {
   'ai/chat': 1,
   'ramp/quote/buy': 0, // Free quote
   'ramp/quote/sell': 0, // Free quote
+  'ramp/session/buy': 20, // Hosted onramp session
+  'ramp/session/sell': 20, // Hosted offramp session
+  'ramp/session': 0, // Status check is free
   'default': 0
 };
 
@@ -966,6 +972,85 @@ async function handleRampQuoteSell(body: any) {
   }
 }
 
+// HOSTED RAMP SESSIONS — developer creates a session, end-user completes on naijalancers.name.ng
+const APP_BASE_URL = Deno.env.get('APP_BASE_URL') || 'https://naijalancers.name.ng';
+
+async function handleCreateRampSession(developer: DeveloperProfile, side: 'buy' | 'sell', body: any) {
+  const token = String(body?.token || 'usdt').toLowerCase();
+  const fiatAmount = side === 'buy' ? Number(body?.fiat_amount) : null;
+  const tokenAmount = side === 'sell' ? Number(body?.token_amount) : null;
+  const externalUserId = body?.external_user_id ? String(body.external_user_id).slice(0, 128) : null;
+  const externalUserEmail = body?.external_user_email ? String(body.external_user_email).slice(0, 256) : null;
+  const metadata = (body?.metadata && typeof body.metadata === 'object') ? body.metadata : {};
+  const successUrl = body?.success_url ? String(body.success_url).slice(0, 500) : null;
+  const cancelUrl = body?.cancel_url ? String(body.cancel_url).slice(0, 500) : null;
+
+  if (side === 'buy' && (!fiatAmount || fiatAmount < 3000)) {
+    return { error: 'fiat_amount required and must be >= 3000 NGN', status: 400 };
+  }
+  if (side === 'sell' && (!tokenAmount || tokenAmount <= 0)) {
+    return { error: 'token_amount required and must be > 0', status: 400 };
+  }
+
+  const sessionId = `rs_${side}_${developer.user_id.slice(0, 8)}_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
+  const redirectUrl = `${APP_BASE_URL}/ramp/${sessionId}`;
+
+  const { error } = await supabase.from('developer_ramp_sessions').insert({
+    developer_id: developer.user_id,
+    session_id: sessionId,
+    type: side,
+    token,
+    fiat_amount: fiatAmount,
+    token_amount: tokenAmount,
+    external_user_id: externalUserId,
+    external_user_email: externalUserEmail,
+    metadata: { ...metadata, success_url: successUrl, cancel_url: cancelUrl },
+    status: 'pending',
+    redirect_url: redirectUrl,
+  });
+
+  if (error) {
+    console.error('[API] Ramp session create error:', error);
+    return { error: 'Failed to create ramp session', status: 500 };
+  }
+
+  triggerWebhook(developer.user_id, `ramp.${side}.session.created`, {
+    session_id: sessionId,
+    type: side,
+    token,
+    fiat_amount: fiatAmount,
+    token_amount: tokenAmount,
+    external_user_id: externalUserId,
+    redirect_url: redirectUrl,
+  });
+
+  return {
+    data: {
+      session_id: sessionId,
+      type: side,
+      token,
+      fiat_amount: fiatAmount,
+      token_amount: tokenAmount,
+      status: 'pending',
+      redirect_url: redirectUrl,
+      expires_in_seconds: 7200,
+    },
+  };
+}
+
+async function handleGetRampSession(developer: DeveloperProfile, sessionId: string) {
+  if (!sessionId) return { error: 'session_id required', status: 400 };
+  const { data, error } = await supabase
+    .from('developer_ramp_sessions')
+    .select('session_id, type, token, fiat_amount, token_amount, status, reference, redirect_url, external_user_id, external_user_email, naijalancers_user_id, completed_at, expires_at, created_at')
+    .eq('developer_id', developer.user_id)
+    .eq('session_id', sessionId)
+    .maybeSingle();
+  if (error || !data) return { error: 'Session not found', status: 404 };
+  return { data };
+}
+
+
 async function handlePayoutCredit(developer: DeveloperProfile, body: any) {
   const { user_id, email, amount, reference, description } = body || {};
 
@@ -1237,6 +1322,14 @@ serve(async (req) => {
       case 'ramp/quote/sell':
         result = await handleRampQuoteSell(body);
         break;
+
+      // Hosted Ramp Sessions (developer creates, end-user completes on naijalancers.name.ng)
+      case 'ramp/session/buy':
+        result = await handleCreateRampSession(developer, 'buy', body);
+        break;
+      case 'ramp/session/sell':
+        result = await handleCreateRampSession(developer, 'sell', body);
+        break;
       
       // Webhook Management APIs
       case 'webhooks':
@@ -1300,7 +1393,10 @@ serve(async (req) => {
       
       default:
         // Check for dynamic routes
-        if (endpoint.startsWith('payments/escrow/') && endpoint.endsWith('/release')) {
+        if (endpoint.startsWith('ramp/session/') && method === 'GET') {
+          const sid = pathParts[2];
+          result = await handleGetRampSession(developer, sid);
+        } else if (endpoint.startsWith('payments/escrow/') && endpoint.endsWith('/release')) {
           const escrowId = pathParts[2];
           result = await handleReleaseEscrow(developer, escrowId);
         } else if (endpoint.startsWith('payments/escrow/') && endpoint.endsWith('/fund')) {

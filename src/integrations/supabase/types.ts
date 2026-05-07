@@ -1525,6 +1525,69 @@ export type Database = {
         }
         Relationships: []
       }
+      developer_ramp_sessions: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          developer_id: string
+          expires_at: string
+          external_user_email: string | null
+          external_user_id: string | null
+          fiat_amount: number | null
+          id: string
+          metadata: Json | null
+          naijalancers_user_id: string | null
+          redirect_url: string | null
+          reference: string | null
+          session_id: string
+          status: string
+          token: string
+          token_amount: number | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          developer_id: string
+          expires_at?: string
+          external_user_email?: string | null
+          external_user_id?: string | null
+          fiat_amount?: number | null
+          id?: string
+          metadata?: Json | null
+          naijalancers_user_id?: string | null
+          redirect_url?: string | null
+          reference?: string | null
+          session_id: string
+          status?: string
+          token?: string
+          token_amount?: number | null
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          developer_id?: string
+          expires_at?: string
+          external_user_email?: string | null
+          external_user_id?: string | null
+          fiat_amount?: number | null
+          id?: string
+          metadata?: Json | null
+          naijalancers_user_id?: string | null
+          redirect_url?: string | null
+          reference?: string | null
+          session_id?: string
+          status?: string
+          token?: string
+          token_amount?: number | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       developer_video_rooms: {
         Row: {
           created_at: string

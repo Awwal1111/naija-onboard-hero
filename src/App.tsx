@@ -173,6 +173,7 @@ const PublicGigs = lazy(lazyWithRetry(() => import("./pages/PublicGigs")));
 const PublicExperts = lazy(lazyWithRetry(() => import("./pages/PublicExperts")));
 const PublicJobs = lazy(lazyWithRetry(() => import("./pages/PublicJobs")));
 const Sitemap = lazy(lazyWithRetry(() => import("./pages/Sitemap")));
+const RampSession = lazy(lazyWithRetry(() => import("./pages/RampSession")));
 const InstallApp = lazy(lazyWithRetry(() => import("./pages/InstallApp")));
 
 // Static pages
@@ -235,6 +236,7 @@ const App = () => (
                 <Route path="/campaign/:campaignId" element={<PublicCampaign />} />
                 <Route path="/sitemap.xml" element={<Sitemap />} />
                 <Route path="/sitemap" element={<Sitemap />} />
+                <Route path="/ramp/:sessionId" element={<RampSession />} />
                 
                 {/* Public pages */}
                 <Route path="/" element={<Index />} />
