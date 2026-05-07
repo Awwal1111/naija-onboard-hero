@@ -32,11 +32,10 @@ export async function compressImage(file: File, opts?: Partial<typeof COMPRESSIO
   if (file.type === 'image/gif') return file // preserve animation
   if (file.size <= 200 * 1024) return file   // already small
   try {
-    const compressed = await imageCompression(file, { ...COMPRESSION_DEFAULTS, ...opts })
-    // Some browsers return Blob; coerce to File preserving name
+    const compressed: Blob = await imageCompression(file, { ...COMPRESSION_DEFAULTS, ...opts })
     return compressed instanceof File
       ? compressed
-      : new File([compressed], file.name, { type: compressed.type || file.type })
+      : new File([compressed], file.name, { type: (compressed as Blob).type || file.type })
   } catch (e) {
     console.warn('[upload] compression failed, using original', e)
     return file
