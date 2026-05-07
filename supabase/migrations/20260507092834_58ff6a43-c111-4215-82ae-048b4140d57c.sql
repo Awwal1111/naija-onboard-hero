@@ -1,0 +1,1 @@
+UPDATE profiles SET profile_picture_url = NULL WHERE id = '8ffdefec-4f1a-4713-b8d6-e3cee5d1be3b';
