@@ -514,7 +514,7 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
                   setShowChargeDialog(false)
                 }}>Cancel</Button>
                 <Button className="flex-1" onClick={handleConfirmCharge}>
-                  Pay ₦{pendingCharge?.amount}NC
+                  Pay {pendingCharge ? formatAmount(pendingCharge.amount, pendingCharge.currency) : ''}
                 </Button>
               </div>
             </div>
