@@ -204,8 +204,8 @@ const MINIAPP_SDK_EVENTS = [
   { direction: '← Parent sends', event: 'njl_charge_result', description: 'Payment result. Fields: success, currency, txRef (NC tx_ref or on-chain txHash), user_id (which user paid), to (USDT only), amount (USDT only), error, requestId.' },
   { direction: '→ App sends', event: 'njl_balance', description: 'Query user balance. Fields: currency ("NC" | "USDT"), requestId.' },
   { direction: '← Parent sends', event: 'njl_balance_result', description: 'Balance result. Fields: balance, currency, address (USDT only), requestId.' },
-  { direction: '→ App sends', event: 'njl_payout', description: 'Pay a user. Fields: amount, description, currency ("NC" | "USDT"), requestId. NC payouts credit the user\'s internal balance. USDT payouts return the user\'s wallet address only — your contract handles the actual on-chain send.' },
-  { direction: '← Parent sends', event: 'njl_payout_result', description: 'Payout result. NC: { success, txRef, error }. USDT: { success, address, wallet_address, amount } — use address to send USDT yourself.' },
+  { direction: '→ App sends', event: 'njl_payout', description: 'Pay a user. Fields: amount, description, currency ("NC" | "USDT"), requestId. NC payouts credit the user\'s internal balance. USDT payouts return the user\'s wallet address + profile — your contract handles the actual on-chain send.' },
+  { direction: '← Parent sends', event: 'njl_payout_result', description: 'Payout result. NC: { success, txRef, error }. USDT: { success, wallet_address, amount, user: { user_id, full_name, email, phone, profile_picture_url, wallet_address, country } } — use wallet_address to send USDT yourself.' },
   { direction: '→ App sends', event: 'njl_verify_pin', description: 'Request PIN verification for sensitive actions. Fields: reason, requestId.' },
   { direction: '← Parent sends', event: 'njl_verify_pin_result', description: 'PIN verification result. Fields: success, error, requestId.' },
 ];
