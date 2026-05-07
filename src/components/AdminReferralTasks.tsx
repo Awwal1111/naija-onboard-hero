@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -19,6 +19,8 @@ export const AdminReferralTasks = () => {
   const [rejectOpen, setRejectOpen] = useState(false)
   const [rejectingId, setRejectingId] = useState<string | null>(null)
   const [rejectReason, setRejectReason] = useState('')
+  const [proofUrls, setProofUrls] = useState<Record<string, string>>({})
+  const [loadingProofUrls, setLoadingProofUrls] = useState<Set<string>>(new Set())
 
   const [formData, setFormData] = useState({
     title: '',
@@ -90,6 +92,67 @@ export const AdminReferralTasks = () => {
     setRejectingId(submissionId)
     setRejectOpen(true)
   }
+
+  const getProofUrl = async (mediaUrl: string) => {
+    if (mediaUrl.startsWith('http://') || mediaUrl.startsWith('https://') || mediaUrl.startsWith('data:')) {
+      return mediaUrl
+    }
+
+    const { data, error } = await supabase.storage
+      .from('referral-tasks')
+      .createSignedUrl(mediaUrl, 3600)
+
+    if (error) {
+      console.error('Error creating signed URL for referral proof:', error)
+      return mediaUrl
+    }
+
+    return data.signedUrl
+  }
+
+  useEffect(() => {
+    const loadProofUrls = async () => {
+      const urlsToLoad: string[] = []
+
+      submissions.forEach((submission) => {
+        if (
+          submission.proof_url &&
+          !proofUrls[submission.proof_url] &&
+          !loadingProofUrls.has(submission.proof_url)
+        ) {
+          urlsToLoad.push(submission.proof_url)
+        }
+      })
+
+      if (urlsToLoad.length === 0) return
+
+      setLoadingProofUrls((prev) => {
+        const next = new Set(prev)
+        urlsToLoad.forEach((url) => next.add(url))
+        return next
+      })
+
+      const urls: Record<string, string> = {}
+      await Promise.all(
+        urlsToLoad.map(async (mediaUrl) => {
+          const url = await getProofUrl(mediaUrl)
+          if (url) urls[mediaUrl] = url
+        })
+      )
+
+      if (Object.keys(urls).length > 0) {
+        setProofUrls((prev) => ({ ...prev, ...urls }))
+      }
+
+      setLoadingProofUrls((prev) => {
+        const next = new Set(prev)
+        urlsToLoad.forEach((url) => next.delete(url))
+        return next
+      })
+    }
+
+    loadProofUrls()
+  }, [submissions])
 
   if (loading) {
     return <div className="flex justify-center p-8">Loading...</div>
@@ -232,17 +295,25 @@ export const AdminReferralTasks = () => {
                     <div>
                       <Label>Proof Screenshot:</Label>
                       <div className="mt-2">
-                        <img 
-                          src={submission.proof_url} 
-                          alt="Proof screenshot" 
-                          className="max-w-full h-auto max-h-64 rounded border"
-                        />
-                        <Button variant="outline" size="sm" className="mt-2" asChild>
-                          <a href={submission.proof_url} target="_blank" rel="noopener noreferrer">
-                            <Eye className="h-4 w-4 mr-2" />
-                            View Full Size
-                          </a>
-                        </Button>
+                        {loadingProofUrls.has(submission.proof_url) ? (
+                          <div className="w-full h-64 bg-muted rounded-lg flex items-center justify-center">
+                            <span className="text-sm text-muted-foreground">Loading image...</span>
+                          </div>
+                        ) : (
+                          <>
+                            <img 
+                              src={proofUrls[submission.proof_url] || submission.proof_url} 
+                              alt="Proof screenshot" 
+                              className="max-w-full h-auto max-h-64 rounded border"
+                            />
+                            <Button variant="outline" size="sm" className="mt-2" asChild>
+                              <a href={proofUrls[submission.proof_url] || submission.proof_url} target="_blank" rel="noopener noreferrer">
+                                <Eye className="h-4 w-4 mr-2" />
+                                View Full Size
+                              </a>
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </div>
                   )}
