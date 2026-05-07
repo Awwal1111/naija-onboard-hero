@@ -3891,6 +3891,8 @@ export type Database = {
           status: string | null
           total_earnings: number | null
           updated_at: string | null
+          webhook_secret: string | null
+          webhook_url: string | null
         }
         Insert: {
           admin_notes?: string | null
@@ -3915,6 +3917,8 @@ export type Database = {
           status?: string | null
           total_earnings?: number | null
           updated_at?: string | null
+          webhook_secret?: string | null
+          webhook_url?: string | null
         }
         Update: {
           admin_notes?: string | null
@@ -3939,6 +3943,8 @@ export type Database = {
           status?: string | null
           total_earnings?: number | null
           updated_at?: string | null
+          webhook_secret?: string | null
+          webhook_url?: string | null
         }
         Relationships: [
           {
@@ -3954,6 +3960,74 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles_public"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      miniapp_charges: {
+        Row: {
+          created_at: string
+          error: string | null
+          exchange_rate: number
+          id: string
+          mini_app_id: string
+          nc_amount: number
+          ngn_amount: number
+          request_id: string
+          status: string
+          to_address: string
+          tx_hash: string | null
+          updated_at: string
+          usdt_amount: number
+          user_id: string
+          webhook_attempts: number
+          webhook_delivered: boolean
+          webhook_last_error: string | null
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          exchange_rate: number
+          id?: string
+          mini_app_id: string
+          nc_amount: number
+          ngn_amount: number
+          request_id: string
+          status?: string
+          to_address: string
+          tx_hash?: string | null
+          updated_at?: string
+          usdt_amount: number
+          user_id: string
+          webhook_attempts?: number
+          webhook_delivered?: boolean
+          webhook_last_error?: string | null
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          exchange_rate?: number
+          id?: string
+          mini_app_id?: string
+          nc_amount?: number
+          ngn_amount?: number
+          request_id?: string
+          status?: string
+          to_address?: string
+          tx_hash?: string | null
+          updated_at?: string
+          usdt_amount?: number
+          user_id?: string
+          webhook_attempts?: number
+          webhook_delivered?: boolean
+          webhook_last_error?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "miniapp_charges_mini_app_id_fkey"
+            columns: ["mini_app_id"]
+            isOneToOne: false
+            referencedRelation: "mini_apps"
+            referencedColumns: ["id"]
           },
         ]
       }

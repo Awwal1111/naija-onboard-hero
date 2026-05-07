@@ -200,8 +200,8 @@ verifyPin('confirm withdrawal');
 const MINIAPP_SDK_EVENTS = [
   { direction: '← Parent sends', event: 'njl_identify', description: 'Sent automatically when your app loads. Contains user_id, full_name, email, profile_picture_url.' },
   { direction: '→ App sends', event: 'njl_ready', description: 'Send this when your app is ready to receive the identity payload.' },
-  { direction: '→ App sends', event: 'njl_charge', description: 'Request a payment. Fields: amount, description, charge_type, currency ("NC" default | "USDT"), to (REQUIRED for USDT — ANY external 0x destination address), requestId. USDT charges deduct NC from the user (PIN-verified) and the master wallet sends USDT to that address.' },
-  { direction: '← Parent sends', event: 'njl_charge_result', description: 'Payment result. Fields: success, currency, txRef (NC tx_ref or on-chain txHash), user_id (which user paid), to (USDT only), amount (USDT only), error, requestId.' },
+  { direction: '→ App sends', event: 'njl_charge', description: 'Request a payment. Fields: amount, description, charge_type, currency ("NC" default | "USDT"), to (REQUIRED for USDT — ANY external 0x destination address), requestId (REQUIRED, unique per charge — used for idempotency, safe to retry).' },
+  { direction: '← Parent sends', event: 'njl_charge_result', description: 'Payment result. Fields: success, currency, txRef, user_id, to, amount, error, requestId, duplicate (true if requestId was already processed). Also delivered to your registered webhook URL signed with HMAC-SHA256 (header X-Naijalancers-Signature: sha256=<hex>) — verify on your backend before granting value.' },
   { direction: '→ App sends', event: 'njl_balance', description: 'Query user balance. Fields: currency ("NC" | "USDT"), requestId.' },
   { direction: '← Parent sends', event: 'njl_balance_result', description: 'Balance result. Fields: balance, currency, address (USDT only), requestId.' },
   { direction: '→ App sends', event: 'njl_payout', description: 'Pay a user. Fields: amount, description, currency ("NC" | "USDT"), requestId. NC payouts credit the user\'s internal balance. USDT payouts return the user\'s wallet address + profile — your contract handles the actual on-chain send.' },
@@ -252,29 +252,31 @@ response = requests.post(
 wallet = response.json()
 print(wallet['address'])`,
 
-  webhook: `// Express.js webhook handler
+  webhook: `// MiniApp Charge Webhook (Express.js)
+// Configure URL + view secret in Apps → My Apps → Webhook & Secret
 const crypto = require('crypto');
 
-app.post('/webhook', (req, res) => {
-  const signature = req.headers['x-naijalancers-signature'];
-  const [timestamp, hash] = signature.split(',').map(p => p.split('=')[1]);
-  
-  // Verify signature
-  const payload = \`\${timestamp}.\${JSON.stringify(req.body)}\`;
-  const expectedHash = crypto
-    .createHmac('sha256', process.env.WEBHOOK_SECRET)
-    .update(payload)
-    .digest('hex');
-  
-  if (hash === expectedHash) {
-    // Process event
-    const { event, data } = req.body;
-    console.log(\`Received: \${event}\`, data);
-    res.status(200).send('OK');
-  } else {
-    res.status(401).send('Invalid signature');
+app.post('/naijalancers-webhook',
+  express.raw({ type: 'application/json' }),
+  (req, res) => {
+    const sig = req.headers['x-naijalancers-signature']; // "sha256=<hex>"
+    const expected = 'sha256=' + crypto
+      .createHmac('sha256', process.env.NAIJALANCERS_WEBHOOK_SECRET)
+      .update(req.body) // raw body buffer
+      .digest('hex');
+
+    if (sig !== expected) return res.status(401).send('bad signature');
+
+    const evt = JSON.parse(req.body.toString());
+    // evt = { event: "charge.completed", request_id, mini_app_id, user_id,
+    //         to_address, usdt_amount, nc_amount, exchange_rate, tx_hash, timestamp }
+    if (evt.event === 'charge.completed') {
+      // Idempotent: store evt.request_id, ignore if already processed
+      grantUserAccess(evt.user_id, evt.usdt_amount);
+    }
+    res.status(200).send('ok');
   }
-});`
+);`
 };
 
 export default function DeveloperDocs() {

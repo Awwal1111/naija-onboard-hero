@@ -418,6 +418,7 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
           toAddress: pendingCharge.toAddress,
           usdtAmount: pendingCharge.amount,
           pin: chargePinInput,
+          requestId: rid,
         },
       })
       const r = data as any

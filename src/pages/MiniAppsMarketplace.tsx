@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { SubmitMiniAppForm } from '@/components/miniapps/SubmitMiniAppForm'
 import { MiniAppViewer } from '@/components/miniapps/MiniAppViewer'
+import { MiniAppWebhookSettings } from '@/components/miniapps/MiniAppWebhookSettings'
 import { BottomNavBar } from '@/components/BottomNavBar'
 import { motion } from 'framer-motion'
 
@@ -100,6 +101,7 @@ const MiniAppsMarketplace = () => {
   const [showEscrowSearch, setShowEscrowSearch] = useState(false)
   const [showNCConverter, setShowNCConverter] = useState(false)
   const [showTransferDialog, setShowTransferDialog] = useState(false)
+  const [webhookApp, setWebhookApp] = useState<{ id: string; name: string } | null>(null)
   const { user } = useAuth()
   const { isNigerian } = useUserCountry()
   const navigate = useNavigate()
@@ -416,6 +418,11 @@ const MiniAppsMarketplace = () => {
                   </div>
                   <Badge className={statusColor(app.status)}>{app.status}</Badge>
                 </div>
+                <div className="mt-3 flex justify-end">
+                  <Button size="sm" variant="outline" onClick={() => setWebhookApp({ id: app.id, name: app.app_name })}>
+                    Webhook & Secret
+                  </Button>
+                </div>
               </div>
             ))
           )}
@@ -424,6 +431,15 @@ const MiniAppsMarketplace = () => {
 
       {selectedApp && (
         <MiniAppViewer app={selectedApp} onClose={() => setSelectedApp(null)} />
+      )}
+
+      {webhookApp && (
+        <MiniAppWebhookSettings
+          appId={webhookApp.id}
+          appName={webhookApp.name}
+          open={!!webhookApp}
+          onOpenChange={(v) => !v && setWebhookApp(null)}
+        />
       )}
 
       <Suspense fallback={null}>
