@@ -792,145 +792,72 @@ async function handleCreateEscrow(developer: DeveloperProfile, body: any) {
   };
 }
 
-async function handleReleaseEscrow(developer: DeveloperProfile, escrowId: string) {
-  const { data: escrow, error: fetchError } = await supabase
-    .from('developer_escrows')
-    .select('*')
-    .eq('developer_id', developer.user_id)
-    .eq('escrow_id', escrowId)
-    .single();
-  
-  if (fetchError || !escrow) {
-    return { error: 'Escrow not found', status: 404 };
-  }
-  
-  if (escrow.status !== 'funded') {
-    return { error: `Cannot release escrow with status: ${escrow.status}`, status: 400 };
-  }
-  
-  const { error } = await supabase
-    .from('developer_escrows')
-    .update({ status: 'released', released_at: new Date().toISOString() })
-    .eq('escrow_id', escrowId);
-  
-  if (error) {
-    return { error: 'Failed to release escrow', status: 500 };
-  }
-  
-  // Trigger webhook for escrow release
-  triggerWebhook(developer.user_id, 'escrow.released', {
-    escrow_id: escrowId,
-    amount: escrow.amount,
-    payee_external_id: escrow.payee_external_id,
-    released_at: new Date().toISOString()
-  });
-  
-  return {
-    data: {
-      escrow_id: escrowId,
-      status: 'released',
-      released_at: new Date().toISOString(),
-      amount: escrow.amount,
-      payee_external_id: escrow.payee_external_id
-    }
-  };
-}
-
 async function handleFundEscrow(developer: DeveloperProfile, escrowId: string) {
-  const { data: escrow, error: fetchError } = await supabase
-    .from('developer_escrows')
-    .select('escrow_id, status, amount, currency, payer_external_id, payee_external_id')
-    .eq('developer_id', developer.user_id)
-    .eq('escrow_id', escrowId)
-    .limit(1)
-    .maybeSingle();
-
-  if (fetchError || !escrow) {
-    return { error: 'Escrow not found', status: 404 };
-  }
-  if (escrow.status !== 'pending') {
-    return { error: `Cannot fund escrow with status: ${escrow.status}`, status: 400 };
-  }
-
-  const fundedAt = new Date().toISOString();
-  const { error } = await supabase
-    .from('developer_escrows')
-    .update({ status: 'funded', funded_at: fundedAt })
-    .eq('escrow_id', escrowId)
-    .eq('developer_id', developer.user_id);
-
+  const { data, error } = await supabase.rpc('fund_developer_escrow', {
+    p_developer_id: developer.user_id,
+    p_escrow_id: escrowId,
+  });
   if (error) {
+    console.error('[API] fund_developer_escrow error:', error);
     return { error: 'Failed to fund escrow', status: 500 };
   }
-
+  const res = data as any;
+  if (!res?.ok) {
+    const msg = String(res?.error || 'Failed to fund escrow');
+    const status = msg.toLowerCase().includes('insufficient') ? 402
+      : msg.toLowerCase().includes('not found') ? 404 : 400;
+    return { error: msg, status };
+  }
   triggerWebhook(developer.user_id, 'escrow.funded', {
-    escrow_id: escrowId,
-    amount: escrow.amount,
-    currency: escrow.currency,
-    payer_external_id: escrow.payer_external_id,
-    funded_at: fundedAt,
+    escrow_id: escrowId, amount: res.amount, funded_at: res.funded_at,
   });
+  return { data: { escrow_id: escrowId, status: 'funded', amount: res.amount, funded_at: res.funded_at } };
+}
 
-  return {
-    data: {
-      escrow_id: escrowId,
-      status: 'funded',
-      funded_at: fundedAt,
-      amount: escrow.amount,
-      currency: escrow.currency,
-    },
-  };
+async function handleReleaseEscrow(developer: DeveloperProfile, escrowId: string) {
+  const { data, error } = await supabase.rpc('release_developer_escrow', {
+    p_developer_id: developer.user_id,
+    p_escrow_id: escrowId,
+  });
+  if (error) {
+    console.error('[API] release_developer_escrow error:', error);
+    return { error: 'Failed to release escrow', status: 500 };
+  }
+  const res = data as any;
+  if (!res?.ok) {
+    const msg = String(res?.error || 'Failed to release escrow');
+    const status = msg.toLowerCase().includes('not found') ? 404 : 400;
+    return { error: msg, status };
+  }
+  triggerWebhook(developer.user_id, 'escrow.released', {
+    escrow_id: escrowId, amount: res.amount, payee_user_id: res.payee_user_id, released_at: res.released_at,
+  });
+  return { data: { escrow_id: escrowId, status: 'released', amount: res.amount, payee_user_id: res.payee_user_id, released_at: res.released_at } };
 }
 
 async function handleRefundEscrow(developer: DeveloperProfile, escrowId: string, body: any) {
-  const { data: escrow, error: fetchError } = await supabase
-    .from('developer_escrows')
-    .select('escrow_id, status, amount, currency, payer_external_id, payee_external_id')
-    .eq('developer_id', developer.user_id)
-    .eq('escrow_id', escrowId)
-    .limit(1)
-    .maybeSingle();
-
-  if (fetchError || !escrow) {
-    return { error: 'Escrow not found', status: 404 };
-  }
-  if (escrow.status !== 'funded' && escrow.status !== 'pending') {
-    return { error: `Cannot refund escrow with status: ${escrow.status}`, status: 400 };
-  }
-
-  const refundedAt = new Date().toISOString();
   const reason = (body && typeof body.reason === 'string') ? body.reason.slice(0, 500) : null;
-
-  const { error } = await supabase
-    .from('developer_escrows')
-    .update({ status: 'refunded', refunded_at: refundedAt, refund_reason: reason })
-    .eq('escrow_id', escrowId)
-    .eq('developer_id', developer.user_id);
-
+  const { data, error } = await supabase.rpc('refund_developer_escrow', {
+    p_developer_id: developer.user_id,
+    p_escrow_id: escrowId,
+    p_reason: reason,
+  });
   if (error) {
+    console.error('[API] refund_developer_escrow error:', error);
     return { error: 'Failed to refund escrow', status: 500 };
   }
-
+  const res = data as any;
+  if (!res?.ok) {
+    const msg = String(res?.error || 'Failed to refund escrow');
+    const status = msg.toLowerCase().includes('not found') ? 404 : 400;
+    return { error: msg, status };
+  }
   triggerWebhook(developer.user_id, 'escrow.refunded', {
-    escrow_id: escrowId,
-    amount: escrow.amount,
-    currency: escrow.currency,
-    payer_external_id: escrow.payer_external_id,
-    reason,
-    refunded_at: refundedAt,
+    escrow_id: escrowId, amount: res.amount, reason, refunded_at: res.refunded_at,
   });
-
-  return {
-    data: {
-      escrow_id: escrowId,
-      status: 'refunded',
-      refunded_at: refundedAt,
-      amount: escrow.amount,
-      currency: escrow.currency,
-      reason,
-    },
-  };
+  return { data: { escrow_id: escrowId, status: 'refunded', amount: res.amount, reason, refunded_at: res.refunded_at } };
 }
+
 // QUIDAX RAMP QUOTES — read-only NGN<>USDT (CELO) live pricing
 const QUIDAX_RAMP_BASE = 'https://ramp-be.quidax.io/api/v1/merchants';
 
