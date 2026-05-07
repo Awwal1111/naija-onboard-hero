@@ -725,56 +725,70 @@ async function handleAiChat(developer: DeveloperProfile, body: any) {
 
 // ESCROW/PAYMENT APIS
 async function handleCreateEscrow(developer: DeveloperProfile, body: any) {
-  const { payer_external_id, payee_external_id, amount, currency = 'NGN', description } = body;
-  
+  const { payer_external_id, payee_external_id, payee_user_id, payee_email, amount, currency = 'NGN', description } = body;
+
   if (!payer_external_id || !payee_external_id || !amount) {
     return { error: 'payer_external_id, payee_external_id, and amount required', status: 400 };
   }
-  
+  if (!payee_user_id && !payee_email) {
+    return { error: 'payee_user_id or payee_email required (escrow releases pay a NaijaLancers user)', status: 400 };
+  }
+  const amt = Number(amount);
+  if (!amt || amt <= 0) {
+    return { error: 'amount must be a positive number', status: 400 };
+  }
+
+  // Verify payee exists
+  let resolvedPayee: string | null = payee_user_id || null;
+  if (!resolvedPayee && payee_email) {
+    const { data } = await supabase.from('profiles').select('user_id').eq('email', payee_email).maybeSingle();
+    resolvedPayee = (data as any)?.user_id || null;
+    if (!resolvedPayee) return { error: 'Payee email not found on NaijaLancers', status: 404 };
+  } else if (resolvedPayee) {
+    const { data } = await supabase.from('profiles').select('user_id').eq('user_id', resolvedPayee).maybeSingle();
+    if (!data) return { error: 'Payee user_id not found', status: 404 };
+  }
+
   const escrowId = `escrow_${developer.user_id.slice(0, 8)}_${Date.now()}`;
-  
+
   const { error } = await supabase.from('developer_escrows').insert({
     developer_id: developer.user_id,
     escrow_id: escrowId,
     payer_external_id,
     payee_external_id,
-    amount,
+    payee_user_id: resolvedPayee,
+    payee_email: payee_email || null,
+    amount: amt,
     currency,
     description,
     status: 'pending',
-    created_at: new Date().toISOString()
   });
-  
+
   if (error) {
     console.error('[API] Escrow creation error:', error);
     return { error: 'Failed to create escrow', status: 500 };
   }
-  
-  // Trigger webhook for escrow creation
+
   triggerWebhook(developer.user_id, 'escrow.created', {
-    escrow_id: escrowId,
-    payer_external_id,
-    payee_external_id,
-    amount,
-    currency,
-    status: 'pending'
+    escrow_id: escrowId, payer_external_id, payee_external_id, payee_user_id: resolvedPayee, amount: amt, currency, status: 'pending',
   });
-  
+
   return {
     data: {
       escrow_id: escrowId,
       payer_external_id,
       payee_external_id,
-      amount,
+      payee_user_id: resolvedPayee,
+      amount: amt,
       currency,
       status: 'pending',
       description,
       actions: {
         fund: `/payments/escrow/${escrowId}/fund`,
         release: `/payments/escrow/${escrowId}/release`,
-        refund: `/payments/escrow/${escrowId}/refund`
-      }
-    }
+        refund: `/payments/escrow/${escrowId}/refund`,
+      },
+    },
   };
 }
 
