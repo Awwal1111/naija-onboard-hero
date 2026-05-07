@@ -84,6 +84,9 @@ verify_jwt = true
 [functions.check-celo-deposits]
 verify_jwt = true
 
+[functions.ai-services]
+verify_jwt = true
+
 [functions.admin-ai-assistant]
 verify_jwt = true
 
