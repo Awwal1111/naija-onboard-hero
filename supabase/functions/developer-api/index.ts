@@ -82,6 +82,9 @@ const API_PRICING: Record<string, number> = {
   'ramp/session/buy': 20, // Hosted onramp session
   'ramp/session/sell': 20, // Hosted offramp session
   'ramp/session': 0, // Status check is free
+  'contracts/deploy': 50, // 50 NC base fee + gas (or NC equiv if platform pays)
+  'contracts/call': 5,    // 5 NC base fee + gas
+  'contracts/read': 0,    // Read-only is free (no gas, no fee)
   'default': 0
 };
 
