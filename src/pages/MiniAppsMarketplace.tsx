@@ -418,6 +418,11 @@ const MiniAppsMarketplace = () => {
                   </div>
                   <Badge className={statusColor(app.status)}>{app.status}</Badge>
                 </div>
+                <div className="mt-3 flex justify-end">
+                  <Button size="sm" variant="outline" onClick={() => setWebhookApp({ id: app.id, name: app.app_name })}>
+                    Webhook & Secret
+                  </Button>
+                </div>
               </div>
             ))
           )}
