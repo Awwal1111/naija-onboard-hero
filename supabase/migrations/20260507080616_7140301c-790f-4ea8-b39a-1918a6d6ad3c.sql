@@ -1,0 +1,1 @@
+ALTER TABLE public.mini_apps ADD COLUMN IF NOT EXISTS usdt_payout_address text;
