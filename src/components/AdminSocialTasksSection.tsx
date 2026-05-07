@@ -198,6 +198,12 @@ export const AdminSocialTasksSection = () => {
 
   const handleReject = async (submissionId: number) => {
     try {
+      const { data: subRow } = await supabase
+        .from('social_tasks_progress')
+        .select('screenshot_url')
+        .eq('id', submissionId)
+        .maybeSingle()
+
       const { error } = await supabase
         .from('social_tasks_progress')
         .update({ status: 'rejected' })
@@ -205,6 +211,7 @@ export const AdminSocialTasksSection = () => {
 
       if (error) throw error
       toast.success('Submission rejected')
+      deleteSupabaseStorageFile(subRow?.screenshot_url)
       fetchSubmissions()
     } catch (error) {
       console.error('Error rejecting submission:', error)
