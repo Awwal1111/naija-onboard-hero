@@ -812,7 +812,101 @@ async function handleReleaseEscrow(developer: DeveloperProfile, escrowId: string
   };
 }
 
-// PAYOUT/CREDIT API — credit a NaijaLancers user's NC wallet from developer's NC balance
+async function handleFundEscrow(developer: DeveloperProfile, escrowId: string) {
+  const { data: escrow, error: fetchError } = await supabase
+    .from('developer_escrows')
+    .select('escrow_id, status, amount, currency, payer_external_id, payee_external_id')
+    .eq('developer_id', developer.user_id)
+    .eq('escrow_id', escrowId)
+    .limit(1)
+    .maybeSingle();
+
+  if (fetchError || !escrow) {
+    return { error: 'Escrow not found', status: 404 };
+  }
+  if (escrow.status !== 'pending') {
+    return { error: `Cannot fund escrow with status: ${escrow.status}`, status: 400 };
+  }
+
+  const fundedAt = new Date().toISOString();
+  const { error } = await supabase
+    .from('developer_escrows')
+    .update({ status: 'funded', funded_at: fundedAt })
+    .eq('escrow_id', escrowId)
+    .eq('developer_id', developer.user_id);
+
+  if (error) {
+    return { error: 'Failed to fund escrow', status: 500 };
+  }
+
+  triggerWebhook(developer.user_id, 'escrow.funded', {
+    escrow_id: escrowId,
+    amount: escrow.amount,
+    currency: escrow.currency,
+    payer_external_id: escrow.payer_external_id,
+    funded_at: fundedAt,
+  });
+
+  return {
+    data: {
+      escrow_id: escrowId,
+      status: 'funded',
+      funded_at: fundedAt,
+      amount: escrow.amount,
+      currency: escrow.currency,
+    },
+  };
+}
+
+async function handleRefundEscrow(developer: DeveloperProfile, escrowId: string, body: any) {
+  const { data: escrow, error: fetchError } = await supabase
+    .from('developer_escrows')
+    .select('escrow_id, status, amount, currency, payer_external_id, payee_external_id')
+    .eq('developer_id', developer.user_id)
+    .eq('escrow_id', escrowId)
+    .limit(1)
+    .maybeSingle();
+
+  if (fetchError || !escrow) {
+    return { error: 'Escrow not found', status: 404 };
+  }
+  if (escrow.status !== 'funded' && escrow.status !== 'pending') {
+    return { error: `Cannot refund escrow with status: ${escrow.status}`, status: 400 };
+  }
+
+  const refundedAt = new Date().toISOString();
+  const reason = (body && typeof body.reason === 'string') ? body.reason.slice(0, 500) : null;
+
+  const { error } = await supabase
+    .from('developer_escrows')
+    .update({ status: 'refunded', refunded_at: refundedAt, refund_reason: reason })
+    .eq('escrow_id', escrowId)
+    .eq('developer_id', developer.user_id);
+
+  if (error) {
+    return { error: 'Failed to refund escrow', status: 500 };
+  }
+
+  triggerWebhook(developer.user_id, 'escrow.refunded', {
+    escrow_id: escrowId,
+    amount: escrow.amount,
+    currency: escrow.currency,
+    payer_external_id: escrow.payer_external_id,
+    reason,
+    refunded_at: refundedAt,
+  });
+
+  return {
+    data: {
+      escrow_id: escrowId,
+      status: 'refunded',
+      refunded_at: refundedAt,
+      amount: escrow.amount,
+      currency: escrow.currency,
+      reason,
+    },
+  };
+}
 async function handlePayoutCredit(developer: DeveloperProfile, body: any) {
   const { user_id, email, amount, reference, description } = body || {};
 
