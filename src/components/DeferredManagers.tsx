@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
+import { initPostHog } from '@/lib/posthog'
 
 const WalletInitializer = lazy(() => import('@/components/WalletInitializer'))
 const GlobalCallManager = lazy(() => import('@/components/GlobalCallManager'))
