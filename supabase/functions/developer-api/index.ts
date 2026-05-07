@@ -911,6 +911,61 @@ async function handleRefundEscrow(developer: DeveloperProfile, escrowId: string,
     },
   };
 }
+// QUIDAX RAMP QUOTES — read-only NGN<>USDT (CELO) live pricing
+const QUIDAX_RAMP_BASE = 'https://ramp-be.quidax.io/api/v1/merchants';
+
+async function handleRampQuoteBuy(body: any) {
+  const fiatAmount = Number(body?.fiat_amount);
+  const token = String(body?.token || 'usdt').toLowerCase();
+  if (!fiatAmount || fiatAmount <= 0) {
+    return { error: 'fiat_amount (NGN) required and must be > 0', status: 400 };
+  }
+  const QUIDAX_PRIVATE_KEY = Deno.env.get('QUIDAX_PRIVATE_KEY');
+  if (!QUIDAX_PRIVATE_KEY) {
+    return { error: 'Ramp service not configured', status: 503 };
+  }
+  try {
+    const url = `${QUIDAX_RAMP_BASE}/purchase_quotes/buy?currency=ngn&token=${encodeURIComponent(token)}&fiat_amount=${fiatAmount}&token_network=celo`;
+    const resp = await fetch(url, {
+      headers: { accept: 'application/json', 'x-private-key': QUIDAX_PRIVATE_KEY },
+    });
+    const data = await resp.json();
+    if (!resp.ok) {
+      return { error: data?.message || 'Quote unavailable', status: resp.status };
+    }
+    return { data: { side: 'buy', fiat_currency: 'NGN', fiat_amount: fiatAmount, token, network: 'celo', quote: data?.data || data } };
+  } catch (e: any) {
+    console.error('[API] ramp buy quote error:', e);
+    return { error: 'Failed to fetch quote', status: 502 };
+  }
+}
+
+async function handleRampQuoteSell(body: any) {
+  const tokenAmount = Number(body?.token_amount);
+  const token = String(body?.token || 'usdt').toUpperCase();
+  if (!tokenAmount || tokenAmount <= 0) {
+    return { error: 'token_amount required and must be > 0', status: 400 };
+  }
+  const QUIDAX_PRIVATE_KEY = Deno.env.get('QUIDAX_PRIVATE_KEY');
+  if (!QUIDAX_PRIVATE_KEY) {
+    return { error: 'Ramp service not configured', status: 503 };
+  }
+  try {
+    const url = `${QUIDAX_RAMP_BASE}/purchase_quotes/sell?token=${encodeURIComponent(token)}&currency=NGN&token_amount=${tokenAmount}&token_network=CELO`;
+    const resp = await fetch(url, {
+      headers: { accept: 'application/json', 'x-private-key': QUIDAX_PRIVATE_KEY },
+    });
+    const data = await resp.json();
+    if (!resp.ok) {
+      return { error: data?.message || 'Quote unavailable', status: resp.status };
+    }
+    return { data: { side: 'sell', fiat_currency: 'NGN', token_amount: tokenAmount, token, network: 'CELO', quote: data?.data || data } };
+  } catch (e: any) {
+    console.error('[API] ramp sell quote error:', e);
+    return { error: 'Failed to fetch quote', status: 502 };
+  }
+}
+
 async function handlePayoutCredit(developer: DeveloperProfile, body: any) {
   const { user_id, email, amount, reference, description } = body || {};
 
