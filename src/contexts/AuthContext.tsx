@@ -130,6 +130,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           } else {
             setSession(sess)
             setUser(sess?.user ?? null)
+            if (sess?.user) identifyUser(sess.user.id, { email: sess.user.email })
           }
           if (sess) scheduleTokenRefresh(sess)
         }
