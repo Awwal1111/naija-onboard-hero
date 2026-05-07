@@ -598,7 +598,7 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
                   setShowPayoutDialog(false)
                 }}>Decline</Button>
                 <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700" onClick={handleConfirmPayout}>
-                  Accept ₦{pendingPayout?.amount}NC
+                  {pendingPayout?.currency === 'USDT' ? 'Send' : 'Accept'} {pendingPayout ? formatAmount(pendingPayout.amount, pendingPayout.currency) : ''}
                 </Button>
               </div>
             </div>
