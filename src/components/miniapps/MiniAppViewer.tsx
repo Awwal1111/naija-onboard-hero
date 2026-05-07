@@ -232,20 +232,28 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
 
         case 'njl_payout': {
           const amt = getAmount(data)
-          if (amt <= 0) {
-            postToIframe(withIds(rid, { type: 'njl_payout_result', success: false, currency, error: 'Invalid amount' }))
-            return
-          }
           if (currency === 'USDT') {
-            // Developer must supply destination address per-call (MetaMask SDK style)
-            const toAddr = String(data.to || data.toAddress || data.address || data.recipient || '').trim()
-            if (!/^0x[a-fA-F0-9]{40}$/.test(toAddr)) {
-              postToIframe(withIds(rid, { type: 'njl_payout_result', success: false, currency, error: 'Missing or invalid "to" address' }))
+            // For USDT payouts we DO NOT move funds. The platform simply returns
+            // the user's connected wallet address — the developer's own contract
+            // / external system is responsible for sending USDT to that address.
+            const addr = (profile as any)?.celo_wallet_address || ''
+            if (!addr) {
+              postToIframe(withIds(rid, { type: 'njl_payout_result', success: false, currency, error: 'User has no connected wallet' }))
               return
             }
-            resultSentRef.current[rid] = false
-            setPendingPayout({ amount: amt, description: data.description || 'USDT Payout', requestId: rid, currency, toAddress: toAddr })
-            setShowPayoutDialog(true)
+            postToIframe(withIds(rid, {
+              type: 'njl_payout_result',
+              success: true,
+              currency,
+              address: addr,
+              wallet_address: addr,
+              amount: amt,
+              note: 'Send USDT directly to this address from your own contract/wallet.',
+            }))
+            return
+          }
+          if (amt <= 0) {
+            postToIframe(withIds(rid, { type: 'njl_payout_result', success: false, currency, error: 'Invalid amount' }))
             return
           }
           if (!user) {
