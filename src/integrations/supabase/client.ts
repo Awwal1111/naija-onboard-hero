@@ -5,6 +5,15 @@ import type { Database } from './types';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL ?? "https://your-project-ref.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "your-public-anon-key";
 
+// Debug logging
+if (typeof window !== 'undefined') {
+  console.log('[Supabase] URL configured:', SUPABASE_URL);
+  console.log('[Supabase] Key configured:', SUPABASE_PUBLISHABLE_KEY.substring(0, 20) + '...');
+  if (SUPABASE_URL.includes('your-project-ref') || SUPABASE_PUBLISHABLE_KEY.includes('your-public-anon')) {
+    console.error('[Supabase] ⚠️ WARNING: Using placeholder credentials! Set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY environment variables.');
+  }
+}
+
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
