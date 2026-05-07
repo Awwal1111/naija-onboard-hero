@@ -1978,6 +1978,7 @@ const EnhancedAdminDashboard = () => {
 
           {/* Settings Tab */}
           <TabsContent value="settings" className="space-y-6">
+            <StorageMigrationCard />
             <AdminSettingsTab />
           </TabsContent>
 
