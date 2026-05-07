@@ -50,6 +50,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(sess?.user ?? null)
     setLoading(false)
     setAuthTimedOut(false)
+    if (sess?.user) {
+      identifyUser(sess.user.id, { email: sess.user.email })
+    }
   }
 
   const retryAuth = () => {
