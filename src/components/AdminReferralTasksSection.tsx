@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { CheckCircle, XCircle, Gift } from 'lucide-react'
 import { toast } from 'sonner'
+import { deleteSupabaseStorageFile } from '@/lib/storageCleanup'
 
 interface ReferralTaskSubmission {
   id: string
