@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { ethers } from "https://esm.sh/ethers@6.7.0";
 import CryptoJS from "https://esm.sh/crypto-js@4.1.1";
+import { ESCROW_ABI, ESCROW_BYTECODE } from "./escrow-contract.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -18,7 +19,7 @@ const CELO_RPC = "https://forno.celo.org";
 
 // Token addresses on Celo Mainnet
 const CUSD_ADDRESS = "0x765de816845861e75a25fca122bb6898b8b1282a";
-const USDT_ADDRESS = "0x48065fbBe25f71C9282ddf5e1cD6d6A887483D5e";
+const USDT_ADDRESS = "0x48065fbbe25f71c9282ddf5e1cd6d6a887483d5e";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
@@ -55,6 +56,7 @@ const RATE_LIMITS: Record<string, number> = {
   'contracts/deploy': 20,
   'contracts/call': 100,
   'contracts/read': 500,
+  'escrow/onchain/deploy': 20,
   'default': 1000
 };
 
@@ -85,6 +87,7 @@ const API_PRICING: Record<string, number> = {
   'contracts/deploy': 50, // 50 NC base fee + gas (or NC equiv if platform pays)
   'contracts/call': 5,    // 5 NC base fee + gas
   'contracts/read': 0,    // Read-only is free (no gas, no fee)
+  'escrow/onchain/deploy': 50, // 50 NC + gas
   'default': 0
 };
 
@@ -1418,6 +1421,26 @@ serve(async (req) => {
       case 'contracts/read':
         result = await handleContractRead(developer, body);
         break;
+
+      // On-chain Escrow (real money, ERC20 cUSD/USDT on Celo)
+      case 'escrow/onchain/deploy': {
+        const { token = 'cUSD', payer, payee, arbiter, external_user_id, gas_payer = 'wallet' } = body;
+        const tokenAddr = token === 'CELO' ? null
+          : token === 'USDT' ? USDT_ADDRESS
+          : CUSD_ADDRESS;
+        if (!tokenAddr) { result = { error: 'Only ERC20 tokens (cUSD/USDT) supported for on-chain escrow', status: 400 }; break; }
+        if (!payer || !payee) { result = { error: 'payer and payee addresses required', status: 400 }; break; }
+        const arb = arbiter || Deno.env.get('CELO_MASTER_WALLET_ADDRESS');
+        result = await handleContractDeploy(developer, {
+          bytecode: ESCROW_BYTECODE,
+          abi: ESCROW_ABI,
+          constructor_args: [tokenAddr, payer, payee, arb],
+          external_user_id,
+          gas_payer,
+        });
+        if (result.data) result.data.escrow_token = token;
+        break;
+      }
       
       // VTU APIs
       case 'vtu/airtime':
