@@ -16,6 +16,8 @@ import {
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { useNavigate } from 'react-router-dom';
+import DeveloperEscrow from '@/components/developer/DeveloperEscrow';
+import { ShieldCheck } from 'lucide-react';
 
 interface ApiEndpoint {
   method: 'GET' | 'POST' | 'PUT' | 'DELETE';
