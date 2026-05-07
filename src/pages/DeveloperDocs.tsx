@@ -132,9 +132,10 @@ window.addEventListener('message', (event) => {
 
 // 3. Charge the user
 //    currency: 'NC' (default, internal) or 'USDT' (on-chain Celo).
-//    USDT charges send to the platform master wallet; we credit your developer
-//    NC balance with the equivalent (1 USDT ≈ current USD/NGN rate).
-function chargeUser(amount, description, chargeType, currency) {
+//    USDT: NC is deducted from the user (PIN-verified). The platform master
+//    wallet sends the equivalent USDT to ANY address you supply via "to"
+//    (your contract, treasury, etc. — MetaMask-SDK style, not stored).
+function chargeUser(amount, description, chargeType, currency, toAddress) {
   const requestId = 'req_' + Math.random().toString(36).slice(2);
   window.parent.postMessage({
     type: 'njl_charge',
@@ -142,6 +143,7 @@ function chargeUser(amount, description, chargeType, currency) {
     description: description,
     charge_type: chargeType, // 'one_time' | 'subscription' | 'tip' | 'purchase'
     currency: currency || 'NC', // 'NC' | 'USDT'
+    to: toAddress,              // REQUIRED when currency === 'USDT'
     requestId: requestId
   }, '*');
 }
@@ -158,19 +160,18 @@ function getBalance(currency) {
   }, '*');
 }
 
-// 5. Send money back to user
+// 5. Send money to a user
 //    NC: credits user's internal NC balance.
-//    USDT: sends USDT from platform master wallet to ANY address you supply
-//    (MetaMask-SDK style — must include "to"). Your developer NC balance
-//    is debited the equivalent. You must have enough NC.
-function payoutUser(amount, description, currency, toAddress) {
+//    USDT: the platform does NOT move funds. We simply return the user's
+//    connected wallet address — your own contract / external system is
+//    responsible for sending USDT to that address.
+function payoutUser(amount, description, currency) {
   const requestId = 'po_' + Math.random().toString(36).slice(2);
   window.parent.postMessage({
     type: 'njl_payout',
     amount: amount,
     description: description,
     currency: currency || 'NC', // 'NC' | 'USDT'
-    to: toAddress,              // required when currency === 'USDT'
     requestId: requestId
   }, '*');
 }
@@ -186,11 +187,12 @@ function verifyPin(reason) {
 }
 
 // Examples:
-chargeUser(500, 'Premium Access - 30 Days', 'subscription');     // 500 NC
-chargeUser(1.5, 'Pro Plan', 'subscription', 'USDT');              // 1.5 USDT on Celo
-getBalance();                                                      // NC
-getBalance('USDT');                                                // on-chain USDT
-payoutUser(200, 'Savings withdrawal');
+chargeUser(500, 'Premium Access - 30 Days', 'subscription');                          // 500 NC
+chargeUser(1.5, 'Pro Plan', 'subscription', 'USDT', '0xYourTreasuryAddress');         // 1.5 USDT to your address
+getBalance();                                                                          // NC
+getBalance('USDT');                                                                    // on-chain USDT
+payoutUser(200, 'Savings withdrawal');                                                 // NC credit
+payoutUser(5, 'Reward', 'USDT');                                                       // returns user's wallet address; you send USDT yourself
 verifyPin('confirm withdrawal');
 </script>`;
 
