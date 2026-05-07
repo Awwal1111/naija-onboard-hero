@@ -52,6 +52,9 @@ const RATE_LIMITS: Record<string, number> = {
   'ramp/session/buy': 100,
   'ramp/session/sell': 100,
   'ramp/session': 200,
+  'contracts/deploy': 20,
+  'contracts/call': 100,
+  'contracts/read': 500,
   'default': 1000
 };
 
@@ -79,6 +82,9 @@ const API_PRICING: Record<string, number> = {
   'ramp/session/buy': 20, // Hosted onramp session
   'ramp/session/sell': 20, // Hosted offramp session
   'ramp/session': 0, // Status check is free
+  'contracts/deploy': 50, // 50 NC base fee + gas (or NC equiv if platform pays)
+  'contracts/call': 5,    // 5 NC base fee + gas
+  'contracts/read': 0,    // Read-only is free (no gas, no fee)
   'default': 0
 };
 
@@ -386,7 +392,205 @@ async function handleWalletTransfer(developer: DeveloperProfile, body: any) {
   }
 }
 
-// VTU APIS
+// ============= CONTRACT APIS (Celo) =============
+
+const CELO_GAS_TO_NC_RATE = 5500; // 1 CELO ~ ₦5,500 base; +20% markup applied below
+const PLATFORM_GAS_MARKUP = 1.20;
+
+async function getDeveloperSigner(developer: DeveloperProfile, externalUserId: string | undefined) {
+  // If externalUserId provided -> use developer's managed wallet for that end-user.
+  // Otherwise -> use developer's OWN platform wallet (dev_<userId>).
+  const lookupId = externalUserId || `dev_${developer.user_id}`;
+  let { data: wallet } = await supabase
+    .from('developer_wallets')
+    .select('wallet_address, encrypted_private_key')
+    .eq('developer_id', developer.user_id)
+    .eq('external_user_id', lookupId)
+    .maybeSingle();
+
+  // Auto-provision the developer's own signing wallet if missing
+  if (!wallet && !externalUserId) {
+    const w = ethers.Wallet.createRandom();
+    const enc = CryptoJS.AES.encrypt(w.privateKey, WALLET_ENCRYPTION_SECRET).toString();
+    const { error } = await supabase.from('developer_wallets').insert({
+      developer_id: developer.user_id,
+      external_user_id: lookupId,
+      wallet_address: w.address.toLowerCase(),
+      encrypted_private_key: enc,
+    });
+    if (error) throw new Error('Could not provision developer signing wallet');
+    wallet = { wallet_address: w.address.toLowerCase(), encrypted_private_key: enc };
+  }
+  if (!wallet) throw new Error('Wallet not found for external_user_id');
+
+  const bytes = CryptoJS.AES.decrypt(wallet.encrypted_private_key, WALLET_ENCRYPTION_SECRET);
+  const privateKey = bytes.toString(CryptoJS.enc.Utf8);
+  const provider = new ethers.JsonRpcProvider(CELO_RPC);
+  return { signer: new ethers.Wallet(privateKey, provider), provider, address: wallet.wallet_address };
+}
+
+function getPlatformRelayer() {
+  const pk = Deno.env.get('CELO_MASTER_WALLET_PRIVATE_KEY');
+  if (!pk) throw new Error('Platform relayer not configured');
+  const provider = new ethers.JsonRpcProvider(CELO_RPC);
+  return { signer: new ethers.Wallet(pk, provider), provider };
+}
+
+async function chargeNcForGas(developer: DeveloperProfile, gasCostCelo: bigint) {
+  const celo = Number(ethers.formatEther(gasCostCelo));
+  const nc = Math.ceil(celo * CELO_GAS_TO_NC_RATE * PLATFORM_GAS_MARKUP);
+  if ((developer.wallet_balance || 0) < nc) {
+    throw new Error(`Insufficient NC for platform gas. Required ~${nc} NC`);
+  }
+  const ok = await deductBalance(developer.user_id, nc);
+  if (!ok) throw new Error('Failed to deduct NC for platform gas');
+  return { nc, celo };
+}
+
+async function handleContractDeploy(developer: DeveloperProfile, body: any) {
+  const { bytecode, abi, constructor_args = [], external_user_id, gas_payer = 'wallet', value } = body;
+  if (!bytecode || !abi) return { error: 'bytecode and abi required', status: 400 };
+  if (!Array.isArray(abi)) return { error: 'abi must be an array', status: 400 };
+
+  try {
+    let signer: ethers.Wallet;
+    let fromAddress: string;
+    let provider: ethers.JsonRpcProvider;
+    let platformGasNc = 0;
+
+    if (gas_payer === 'platform') {
+      const r = getPlatformRelayer();
+      signer = r.signer; provider = r.provider; fromAddress = await signer.getAddress();
+    } else {
+      const w = await getDeveloperSigner(developer, external_user_id);
+      signer = w.signer; provider = w.provider; fromAddress = w.address;
+    }
+
+    const factory = new ethers.ContractFactory(abi, bytecode, signer);
+    const deployTx = await factory.getDeployTransaction(...constructor_args, value ? { value: ethers.parseEther(String(value)) } : {});
+
+    // Gas pre-check
+    const gasEstimate = await provider.estimateGas({ ...deployTx, from: fromAddress });
+    const feeData = await provider.getFeeData();
+    const gasPrice = feeData.gasPrice ?? ethers.parseUnits('5', 'gwei');
+    const gasCost = gasEstimate * gasPrice;
+
+    if (gas_payer === 'wallet') {
+      const bal = await provider.getBalance(fromAddress);
+      if (bal < gasCost) {
+        return { error: 'Insufficient CELO for gas', status: 402, data: { required_wei: gasCost.toString(), balance_wei: bal.toString(), from: fromAddress } };
+      }
+    } else {
+      const charged = await chargeNcForGas(developer, gasCost);
+      platformGasNc = charged.nc;
+    }
+
+    const contract = await factory.deploy(...constructor_args, value ? { value: ethers.parseEther(String(value)) } : {});
+    const receipt = await contract.deploymentTransaction()?.wait();
+    const address = await contract.getAddress();
+
+    triggerWebhook(developer.user_id, 'contract.deployed', {
+      address, tx_hash: receipt?.hash, deployer: fromAddress, gas_payer
+    });
+
+    return {
+      data: {
+        address,
+        transaction_hash: receipt?.hash,
+        deployer: fromAddress,
+        gas_used: receipt?.gasUsed?.toString(),
+        gas_payer,
+        platform_gas_nc_charged: platformGasNc || undefined,
+        explorer_url: `https://celoscan.io/address/${address}`,
+        network: 'celo-mainnet'
+      }
+    };
+  } catch (e: any) {
+    console.error('[API] contract deploy error', e);
+    return { error: e.message || 'Deploy failed', status: 500 };
+  }
+}
+
+async function handleContractCall(developer: DeveloperProfile, body: any) {
+  const { address, abi, method, args = [], external_user_id, gas_payer = 'wallet', value } = body;
+  if (!address || !abi || !method) return { error: 'address, abi, method required', status: 400 };
+
+  try {
+    let signer: ethers.Wallet;
+    let from: string;
+    let provider: ethers.JsonRpcProvider;
+    let platformGasNc = 0;
+
+    if (gas_payer === 'platform') {
+      const r = getPlatformRelayer();
+      signer = r.signer; provider = r.provider; from = await signer.getAddress();
+    } else {
+      const w = await getDeveloperSigner(developer, external_user_id);
+      signer = w.signer; provider = w.provider; from = w.address;
+    }
+
+    const contract = new ethers.Contract(address, abi, signer);
+    if (typeof contract[method] !== 'function') return { error: `Method ${method} not found in ABI`, status: 400 };
+
+    const overrides: any = value ? { value: ethers.parseEther(String(value)) } : {};
+    const gasEstimate = await contract[method].estimateGas(...args, overrides);
+    const feeData = await provider.getFeeData();
+    const gasPrice = feeData.gasPrice ?? ethers.parseUnits('5', 'gwei');
+    const gasCost = gasEstimate * gasPrice;
+
+    if (gas_payer === 'wallet') {
+      const bal = await provider.getBalance(from);
+      if (bal < gasCost + (overrides.value || 0n)) {
+        return { error: 'Insufficient CELO for gas + value', status: 402, data: { required_wei: (gasCost + (overrides.value || 0n)).toString(), balance_wei: bal.toString(), from } };
+      }
+    } else {
+      const charged = await chargeNcForGas(developer, gasCost);
+      platformGasNc = charged.nc;
+    }
+
+    const tx = await contract[method](...args, overrides);
+    const receipt = await tx.wait();
+
+    return {
+      data: {
+        transaction_hash: receipt.hash,
+        from, to: address, method,
+        gas_used: receipt.gasUsed?.toString(),
+        gas_payer,
+        platform_gas_nc_charged: platformGasNc || undefined,
+        status: receipt.status === 1 ? 'success' : 'failed',
+        explorer_url: `https://celoscan.io/tx/${receipt.hash}`
+      }
+    };
+  } catch (e: any) {
+    console.error('[API] contract call error', e);
+    return { error: e.message || 'Call failed', status: 500 };
+  }
+}
+
+async function handleContractRead(developer: DeveloperProfile, body: any) {
+  const { address, abi, method, args = [] } = body;
+  if (!address || !abi || !method) return { error: 'address, abi, method required', status: 400 };
+  try {
+    const provider = new ethers.JsonRpcProvider(CELO_RPC);
+    const contract = new ethers.Contract(address, abi, provider);
+    if (typeof contract[method] !== 'function') return { error: `Method ${method} not found in ABI`, status: 400 };
+    const raw = await contract[method](...args);
+    // Normalize BigInt for JSON
+    const normalize = (v: any): any => {
+      if (typeof v === 'bigint') return v.toString();
+      if (Array.isArray(v)) return v.map(normalize);
+      if (v && typeof v === 'object' && v.toArray) return normalize(v.toArray());
+      return v;
+    };
+    return { data: { result: normalize(raw), address, method } };
+  } catch (e: any) {
+    console.error('[API] contract read error', e);
+    return { error: e.message || 'Read failed', status: 500 };
+  }
+}
+
+
 async function handleVtuAirtime(developer: DeveloperProfile, body: any) {
   const { network, phone, amount } = body;
   
@@ -1202,6 +1406,17 @@ serve(async (req) => {
         break;
       case 'wallet/transfer':
         result = await handleWalletTransfer(developer, body);
+        break;
+
+      // Contract APIs (Celo)
+      case 'contracts/deploy':
+        result = await handleContractDeploy(developer, body);
+        break;
+      case 'contracts/call':
+        result = await handleContractCall(developer, body);
+        break;
+      case 'contracts/read':
+        result = await handleContractRead(developer, body);
         break;
       
       // VTU APIs
