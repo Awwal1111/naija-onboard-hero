@@ -382,7 +382,7 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
         toast.error(errMsg)
         sendResult(rid, { type: 'njl_charge_result', success: false, currency, error: errMsg })
       } else {
-        sendResult(rid, { type: 'njl_charge_result', success: true, currency, txRef: result.tx_ref, tx_ref: result.tx_ref })
+        sendResult(rid, { type: 'njl_charge_result', success: true, currency, txRef: result.tx_ref, tx_ref: result.tx_ref, user_id: user.id })
         toast.success(`₦${pendingCharge.amount}NC paid to ${app.app_name}`)
       }
     } catch {
@@ -417,7 +417,7 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
         sendResult(rid, { type: 'njl_charge_result', success: false, currency, error: msg })
         toast.error(msg)
       } else {
-        sendResult(rid, { type: 'njl_charge_result', success: true, currency, txRef: r.txHash, tx_ref: r.txHash, txHash: r.txHash })
+        sendResult(rid, { type: 'njl_charge_result', success: true, currency, txRef: r.txHash, tx_ref: r.txHash, txHash: r.txHash, user_id: user?.id, to: pendingCharge.toAddress, amount: pendingCharge.amount })
         toast.success(`${pendingCharge.amount} USDT sent to ${app.app_name}`)
       }
     } catch (e: any) {

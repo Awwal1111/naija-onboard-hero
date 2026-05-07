@@ -133,8 +133,9 @@ window.addEventListener('message', (event) => {
 // 3. Charge the user
 //    currency: 'NC' (default, internal) or 'USDT' (on-chain Celo).
 //    USDT: NC is deducted from the user (PIN-verified). The platform master
-//    wallet sends the equivalent USDT to ANY address you supply via "to"
-//    (your contract, treasury, etc. — MetaMask-SDK style, not stored).
+//    wallet sends the equivalent USDT to ANY external 0x address you pass in
+//    "to" — your treasury, a smart contract, a partner wallet, anything.
+//    The result includes user_id so you know which user paid.
 function chargeUser(amount, description, chargeType, currency, toAddress) {
   const requestId = 'req_' + Math.random().toString(36).slice(2);
   window.parent.postMessage({
@@ -199,8 +200,8 @@ verifyPin('confirm withdrawal');
 const MINIAPP_SDK_EVENTS = [
   { direction: '← Parent sends', event: 'njl_identify', description: 'Sent automatically when your app loads. Contains user_id, full_name, email, profile_picture_url.' },
   { direction: '→ App sends', event: 'njl_ready', description: 'Send this when your app is ready to receive the identity payload.' },
-  { direction: '→ App sends', event: 'njl_charge', description: 'Request a payment. Fields: amount, description, charge_type, currency ("NC" default | "USDT"), to (REQUIRED for USDT — your destination 0x address), requestId. USDT charges deduct NC from the user (PIN-verified) and the master wallet sends USDT to your address.' },
-  { direction: '← Parent sends', event: 'njl_charge_result', description: 'Payment result. Fields: success, currency, txRef (NC tx_ref or on-chain txHash), error, requestId.' },
+  { direction: '→ App sends', event: 'njl_charge', description: 'Request a payment. Fields: amount, description, charge_type, currency ("NC" default | "USDT"), to (REQUIRED for USDT — ANY external 0x destination address), requestId. USDT charges deduct NC from the user (PIN-verified) and the master wallet sends USDT to that address.' },
+  { direction: '← Parent sends', event: 'njl_charge_result', description: 'Payment result. Fields: success, currency, txRef (NC tx_ref or on-chain txHash), user_id (which user paid), to (USDT only), amount (USDT only), error, requestId.' },
   { direction: '→ App sends', event: 'njl_balance', description: 'Query user balance. Fields: currency ("NC" | "USDT"), requestId.' },
   { direction: '← Parent sends', event: 'njl_balance_result', description: 'Balance result. Fields: balance, currency, address (USDT only), requestId.' },
   { direction: '→ App sends', event: 'njl_payout', description: 'Pay a user. Fields: amount, description, currency ("NC" | "USDT"), requestId. NC payouts credit the user\'s internal balance. USDT payouts return the user\'s wallet address only — your contract handles the actual on-chain send.' },
