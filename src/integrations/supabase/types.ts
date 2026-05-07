@@ -1486,6 +1486,7 @@ export type Database = {
           id: string
           payee_external_id: string
           payer_external_id: string
+          refund_reason: string | null
           refunded_at: string | null
           released_at: string | null
           status: string | null
@@ -1501,6 +1502,7 @@ export type Database = {
           id?: string
           payee_external_id: string
           payer_external_id: string
+          refund_reason?: string | null
           refunded_at?: string | null
           released_at?: string | null
           status?: string | null
@@ -1516,6 +1518,7 @@ export type Database = {
           id?: string
           payee_external_id?: string
           payer_external_id?: string
+          refund_reason?: string | null
           refunded_at?: string | null
           released_at?: string | null
           status?: string | null
