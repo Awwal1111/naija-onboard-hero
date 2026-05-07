@@ -264,7 +264,16 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
               address: addr,
               wallet_address: addr,
               amount: amt,
-              note: 'Send USDT directly to this address from your own contract/wallet.',
+              user: {
+                user_id: user?.id,
+                full_name: profile?.full_name || '',
+                email: user?.email || '',
+                phone: (profile as any)?.phone_number || '',
+                profile_picture_url: profile?.profile_picture_url || '',
+                wallet_address: addr,
+                country: (profile as any)?.country_code || '',
+              },
+              note: 'Send USDT directly to wallet_address from your own contract/wallet.',
             }))
             return
           }
