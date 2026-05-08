@@ -17,7 +17,8 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { useNavigate } from 'react-router-dom';
 import DeveloperEscrow from '@/components/developer/DeveloperEscrow';
-import { ShieldCheck } from 'lucide-react';
+import DeveloperMoneyFlows from '@/components/developer/DeveloperMoneyFlows';
+import { ShieldCheck, Banknote } from 'lucide-react';
 
 interface ApiEndpoint {
   method: 'GET' | 'POST' | 'PUT' | 'DELETE';
@@ -673,10 +674,17 @@ export default function DeveloperPortal() {
             <TabsTrigger value="playground" className="gap-2">
               <Terminal className="h-4 w-4" /> Playground
             </TabsTrigger>
+            <TabsTrigger value="money" className="gap-2">
+              <Banknote className="h-4 w-4" /> Money
+            </TabsTrigger>
             <TabsTrigger value="escrow" className="gap-2">
               <ShieldCheck className="h-4 w-4" /> Escrow
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="money" className="space-y-4">
+            <DeveloperMoneyFlows apiKey={apiKey} />
+          </TabsContent>
 
           <TabsContent value="escrow" className="space-y-4">
             <DeveloperEscrow apiKey={apiKey} />

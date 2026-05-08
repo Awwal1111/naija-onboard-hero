@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAdminReferralTasks, ReferralTask } from '@/hooks/useReferralTasks'
 import { Plus, Edit, Trash2, Eye, Check, X } from 'lucide-react'
+import { supabase } from '@/integrations/supabase/client'
 
 export const AdminReferralTasks = () => {
   const { tasks, submissions, loading, createTask, updateTask, deleteTask, approveSubmission, rejectSubmission } = useAdminReferralTasks()
