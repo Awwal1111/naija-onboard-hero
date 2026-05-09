@@ -948,44 +948,114 @@ export default function DeveloperPortal() {
 
             {/* Endpoints List */}
             <div className="grid gap-3">
-              {filteredEndpoints.map((endpoint, i) => (
-                <Card 
-                  key={i} 
-                  className={`cursor-pointer transition-all hover:border-primary ${
-                    selectedEndpoint?.path === endpoint.path ? 'border-primary ring-2 ring-primary/20' : ''
-                  }`}
-                  onClick={() => {
-                    setSelectedEndpoint(endpoint);
-                    setTestInput(JSON.stringify(
-                      Object.fromEntries(
-                        (endpoint.params || [])
-                          .filter(p => p.required)
-                          .map(p => [p.name, p.type === 'number' ? 0 : ''])
-                      ),
-                      null, 2
-                    ));
-                  }}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Badge className={`${methodColors[endpoint.method]} text-white text-xs`}>
-                            {endpoint.method}
-                          </Badge>
-                          <code className="text-sm font-mono truncate">{endpoint.path}</code>
+              {filteredEndpoints.map((endpoint, i) => {
+                const isOpen = selectedEndpoint?.path === endpoint.path;
+                const baseUrl = `${import.meta.env.VITE_SUPABASE_URL ?? 'https://YOUR_PROJECT.supabase.co'}/functions/v1/developer-api`;
+                const exampleBody = Object.fromEntries(
+                  (endpoint.params || []).filter(p => p.required)
+                    .map(p => [p.name, p.type === 'number' ? 0 : p.type === 'array' ? [] : p.type === 'object' ? {} : `<${p.name}>`])
+                );
+                const curl = `curl -X ${endpoint.method} '${baseUrl}${endpoint.path}' \\
+  -H 'x-api-key: YOUR_API_KEY' \\
+  -H 'Content-Type: application/json'${endpoint.method !== 'GET' ? ` \\
+  -d '${JSON.stringify(exampleBody)}'` : ''}`;
+                const js = `const res = await fetch('${baseUrl}${endpoint.path}', {
+  method: '${endpoint.method}',
+  headers: {
+    'x-api-key': 'YOUR_API_KEY',
+    'Content-Type': 'application/json',
+  },${endpoint.method !== 'GET' ? `
+  body: JSON.stringify(${JSON.stringify(exampleBody, null, 2)}),` : ''}
+});
+const data = await res.json();`;
+                return (
+                  <Card
+                    key={i}
+                    className={`transition-all hover:border-primary ${isOpen ? 'border-primary ring-2 ring-primary/20' : ''}`}
+                  >
+                    <CardContent className="p-4">
+                      <div
+                        className="flex items-start justify-between gap-4 cursor-pointer"
+                        onClick={() => {
+                          setSelectedEndpoint(isOpen ? null : endpoint);
+                          setTestInput(JSON.stringify(exampleBody, null, 2));
+                        }}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge className={`${methodColors[endpoint.method]} text-white text-xs`}>
+                              {endpoint.method}
+                            </Badge>
+                            <code className="text-sm font-mono truncate">{endpoint.path}</code>
+                          </div>
+                          <p className="text-sm text-muted-foreground">{endpoint.description}</p>
+                          <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                            <span>Rate: {endpoint.rateLimit}/hr</span>
+                            <span>Cost: {endpoint.cost > 0 ? `₦${endpoint.cost}` : 'Free'}</span>
+                          </div>
                         </div>
-                        <p className="text-sm text-muted-foreground">{endpoint.description}</p>
-                        <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                          <span>Rate: {endpoint.rateLimit}/hr</span>
-                          <span>Cost: {endpoint.cost > 0 ? `₦${endpoint.cost}` : 'Free'}</span>
-                        </div>
+                        <ChevronRight className={`h-5 w-5 text-muted-foreground flex-shrink-0 transition-transform ${isOpen ? 'rotate-90' : ''}`} />
                       </div>
-                      <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+
+                      {isOpen && (
+                        <div className="mt-4 space-y-3 border-t pt-4">
+                          {endpoint.params && endpoint.params.length > 0 && (
+                            <div>
+                              <h4 className="text-xs font-semibold mb-2 text-muted-foreground uppercase">Parameters</h4>
+                              <div className="space-y-1.5">
+                                {endpoint.params.map((p, j) => (
+                                  <div key={j} className="text-xs">
+                                    <code className="bg-muted px-1.5 py-0.5 rounded">{p.name}</code>
+                                    <span className="text-muted-foreground ml-2">{p.type}{p.required && ' • required'}</span>
+                                    <p className="text-muted-foreground mt-0.5 ml-1">{p.description}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          <div>
+                            <div className="flex items-center justify-between mb-1.5">
+                              <h4 className="text-xs font-semibold text-muted-foreground uppercase">cURL</h4>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 text-xs gap-1"
+                                onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(curl); toast.success('Copied'); }}
+                              >
+                                <Copy className="h-3 w-3" /> Copy
+                              </Button>
+                            </div>
+                            <pre className="bg-muted text-xs p-3 rounded overflow-x-auto font-mono">{curl}</pre>
+                          </div>
+
+                          <div>
+                            <div className="flex items-center justify-between mb-1.5">
+                              <h4 className="text-xs font-semibold text-muted-foreground uppercase">JavaScript</h4>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 text-xs gap-1"
+                                onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(js); toast.success('Copied'); }}
+                              >
+                                <Copy className="h-3 w-3" /> Copy
+                              </Button>
+                            </div>
+                            <pre className="bg-muted text-xs p-3 rounded overflow-x-auto font-mono">{js}</pre>
+                          </div>
+
+                          {endpoint.response && (
+                            <div>
+                              <h4 className="text-xs font-semibold mb-1.5 text-muted-foreground uppercase">Example response</h4>
+                              <pre className="bg-muted text-xs p-3 rounded overflow-x-auto font-mono">{endpoint.response}</pre>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           </TabsContent>
 
