@@ -221,18 +221,172 @@ const API_ENDPOINTS: ApiEndpoint[] = [
   },
   {
     method: 'POST',
-    path: '/quidax-proxy/instant_orders',
-    description: 'Create an on/off-ramp order using OUR Quidax merchant. We handle KYC, you keep the user.',
+    path: '/payments/escrow/create',
+    description: 'Create off-chain NC escrow (held in our ledger, instant release)',
+    category: 'Payments',
+    cost: 10,
+    rateLimit: 50,
+    params: [
+      { name: 'payer_external_id', type: 'string', required: true, description: 'Buyer user ID' },
+      { name: 'payee_external_id', type: 'string', required: true, description: 'Seller user ID' },
+      { name: 'amount', type: 'number', required: true, description: 'Amount in NC (Naira)' },
+      { name: 'description', type: 'string', required: false, description: 'Description' }
+    ],
+    response: '{ "escrow_id": "esc_...", "status": "funded" }'
+  },
+  {
+    method: 'POST',
+    path: '/payments/escrow/release',
+    description: 'Release escrow to seller (instant NC credit)',
+    category: 'Payments',
+    cost: 0,
+    rateLimit: 100,
+    params: [
+      { name: 'escrow_id', type: 'string', required: true, description: 'Escrow ID returned by create' }
+    ],
+    response: '{ "status": "released", "amount_credited": 1000 }'
+  },
+  {
+    method: 'POST',
+    path: '/payments/escrow/refund',
+    description: 'Refund escrow back to buyer',
+    category: 'Payments',
+    cost: 0,
+    rateLimit: 100,
+    params: [
+      { name: 'escrow_id', type: 'string', required: true, description: 'Escrow ID' }
+    ],
+    response: '{ "status": "refunded" }'
+  },
+  {
+    method: 'POST',
+    path: '/payments/credit',
+    description: 'Instantly credit NC to one of your end-users (debits your developer NC balance)',
+    category: 'Payments',
+    cost: 0,
+    rateLimit: 200,
+    params: [
+      { name: 'external_user_id', type: 'string', required: true, description: 'Recipient user ID' },
+      { name: 'amount', type: 'number', required: true, description: 'NC to credit' },
+      { name: 'reference', type: 'string', required: false, description: 'Your idempotency / display reference' }
+    ],
+    response: '{ "status": "credited", "new_balance": 5000 }'
+  },
+  {
+    method: 'POST',
+    path: '/payments/payout',
+    description: 'Debit NC from one of your end-users (returns NC to your developer balance)',
+    category: 'Payments',
+    cost: 0,
+    rateLimit: 200,
+    params: [
+      { name: 'external_user_id', type: 'string', required: true, description: 'User to debit' },
+      { name: 'amount', type: 'number', required: true, description: 'NC to debit' },
+      { name: 'reference', type: 'string', required: false, description: 'Reference' }
+    ],
+    response: '{ "status": "paid", "new_balance": 4500 }'
+  },
+  {
+    method: 'POST',
+    path: '/ramp/quote/buy',
+    description: 'Quote: NGN → USDT (deposit)',
+    category: 'Payments',
+    cost: 0,
+    rateLimit: 200,
+    params: [
+      { name: 'ngn_amount', type: 'number', required: true, description: 'Amount in NGN to spend' }
+    ],
+    response: '{ "ngn": 10000, "usdt": 6.45, "rate": 1550.0 }'
+  },
+  {
+    method: 'POST',
+    path: '/ramp/quote/sell',
+    description: 'Quote: USDT → NGN (withdraw)',
+    category: 'Payments',
+    cost: 0,
+    rateLimit: 200,
+    params: [
+      { name: 'usdt_amount', type: 'number', required: true, description: 'USDT to sell' }
+    ],
+    response: '{ "usdt": 10, "ngn": 15400, "rate": 1540.0 }'
+  },
+  {
+    method: 'POST',
+    path: '/ramp/session/buy',
+    description: 'Hosted Quidax checkout (NGN card/bank → NC) for an end-user',
     category: 'Payments',
     cost: 50,
-    rateLimit: 30,
+    rateLimit: 50,
     params: [
-      { name: 'bid_currency', type: 'string', required: true, description: 'Currency to spend' },
-      { name: 'ask_currency', type: 'string', required: true, description: 'Currency to receive' },
-      { name: 'type', type: 'string', required: true, description: 'buy or sell' },
-      { name: 'volume', type: 'number', required: true, description: 'Amount' }
+      { name: 'external_user_id', type: 'string', required: true, description: 'User who is depositing' },
+      { name: 'ngn_amount', type: 'number', required: true, description: 'NGN to deposit' },
+      { name: 'redirect_url', type: 'string', required: false, description: 'Where to send the user after payment' }
     ],
-    response: '{ "data": { "id": "...", "status": "pending", "payment_url": "..." } }'
+    response: '{ "session_id": "...", "checkout_url": "https://...", "expires_at": "..." }'
+  },
+  {
+    method: 'POST',
+    path: '/ramp/session/sell',
+    description: 'Withdraw NC to a Nigerian bank account',
+    category: 'Payments',
+    cost: 50,
+    rateLimit: 50,
+    params: [
+      { name: 'external_user_id', type: 'string', required: true, description: 'User withdrawing' },
+      { name: 'ngn_amount', type: 'number', required: true, description: 'NGN to withdraw' },
+      { name: 'bank_code', type: 'string', required: true, description: 'Nigerian bank code' },
+      { name: 'account_number', type: 'string', required: true, description: '10-digit NUBAN' }
+    ],
+    response: '{ "payout_id": "...", "status": "processing" }'
+  },
+  // On-chain escrow + contracts
+  {
+    method: 'POST',
+    path: '/escrow/onchain/deploy',
+    description: 'Deploy a per-deal Solidity escrow contract on Celo (cUSD/USDT)',
+    category: 'Web3 Wallet',
+    cost: 100,
+    rateLimit: 20,
+    params: [
+      { name: 'external_user_id', type: 'string', required: true, description: 'Deployer (signs gasless tx via managed wallet)' },
+      { name: 'buyer_address', type: 'string', required: true, description: '0x address of buyer' },
+      { name: 'seller_address', type: 'string', required: true, description: '0x address of seller' },
+      { name: 'token', type: 'string', required: true, description: 'cUSD or USDT' },
+      { name: 'fee_bps', type: 'number', required: false, description: 'Your fee in basis points (max 2000 = 20%)' },
+      { name: 'fee_recipient', type: 'string', required: false, description: '0x address (default: platform)' }
+    ],
+    response: '{ "contract_address": "0x...", "tx_hash": "0x...", "explorer_url": "..." }'
+  },
+  {
+    method: 'POST',
+    path: '/contracts/call',
+    description: 'Sign and send any contract call from a managed user wallet (gasless, billed in NC)',
+    category: 'Web3 Wallet',
+    cost: 20,
+    rateLimit: 50,
+    params: [
+      { name: 'external_user_id', type: 'string', required: true, description: 'Whose managed wallet should sign' },
+      { name: 'contract_address', type: 'string', required: true, description: 'Target 0x contract' },
+      { name: 'abi', type: 'array', required: true, description: 'Function ABI fragment' },
+      { name: 'method', type: 'string', required: true, description: 'Method name (e.g. release)' },
+      { name: 'args', type: 'array', required: false, description: 'Method arguments' }
+    ],
+    response: '{ "tx_hash": "0x...", "block_number": 12345 }'
+  },
+  {
+    method: 'POST',
+    path: '/contracts/read',
+    description: 'Read-only contract call (no gas, no signing)',
+    category: 'Web3 Wallet',
+    cost: 0,
+    rateLimit: 200,
+    params: [
+      { name: 'contract_address', type: 'string', required: true, description: 'Target contract' },
+      { name: 'abi', type: 'array', required: true, description: 'Function ABI fragment' },
+      { name: 'method', type: 'string', required: true, description: 'View method name' },
+      { name: 'args', type: 'array', required: false, description: 'Arguments' }
+    ],
+    response: '{ "result": "..." }'
   }
 ];
 
@@ -794,44 +948,114 @@ export default function DeveloperPortal() {
 
             {/* Endpoints List */}
             <div className="grid gap-3">
-              {filteredEndpoints.map((endpoint, i) => (
-                <Card 
-                  key={i} 
-                  className={`cursor-pointer transition-all hover:border-primary ${
-                    selectedEndpoint?.path === endpoint.path ? 'border-primary ring-2 ring-primary/20' : ''
-                  }`}
-                  onClick={() => {
-                    setSelectedEndpoint(endpoint);
-                    setTestInput(JSON.stringify(
-                      Object.fromEntries(
-                        (endpoint.params || [])
-                          .filter(p => p.required)
-                          .map(p => [p.name, p.type === 'number' ? 0 : ''])
-                      ),
-                      null, 2
-                    ));
-                  }}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Badge className={`${methodColors[endpoint.method]} text-white text-xs`}>
-                            {endpoint.method}
-                          </Badge>
-                          <code className="text-sm font-mono truncate">{endpoint.path}</code>
+              {filteredEndpoints.map((endpoint, i) => {
+                const isOpen = selectedEndpoint?.path === endpoint.path;
+                const baseUrl = `${import.meta.env.VITE_SUPABASE_URL ?? 'https://YOUR_PROJECT.supabase.co'}/functions/v1/developer-api`;
+                const exampleBody = Object.fromEntries(
+                  (endpoint.params || []).filter(p => p.required)
+                    .map(p => [p.name, p.type === 'number' ? 0 : p.type === 'array' ? [] : p.type === 'object' ? {} : `<${p.name}>`])
+                );
+                const curl = `curl -X ${endpoint.method} '${baseUrl}${endpoint.path}' \\
+  -H 'x-api-key: YOUR_API_KEY' \\
+  -H 'Content-Type: application/json'${endpoint.method !== 'GET' ? ` \\
+  -d '${JSON.stringify(exampleBody)}'` : ''}`;
+                const js = `const res = await fetch('${baseUrl}${endpoint.path}', {
+  method: '${endpoint.method}',
+  headers: {
+    'x-api-key': 'YOUR_API_KEY',
+    'Content-Type': 'application/json',
+  },${endpoint.method !== 'GET' ? `
+  body: JSON.stringify(${JSON.stringify(exampleBody, null, 2)}),` : ''}
+});
+const data = await res.json();`;
+                return (
+                  <Card
+                    key={i}
+                    className={`transition-all hover:border-primary ${isOpen ? 'border-primary ring-2 ring-primary/20' : ''}`}
+                  >
+                    <CardContent className="p-4">
+                      <div
+                        className="flex items-start justify-between gap-4 cursor-pointer"
+                        onClick={() => {
+                          setSelectedEndpoint(isOpen ? null : endpoint);
+                          setTestInput(JSON.stringify(exampleBody, null, 2));
+                        }}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge className={`${methodColors[endpoint.method]} text-white text-xs`}>
+                              {endpoint.method}
+                            </Badge>
+                            <code className="text-sm font-mono truncate">{endpoint.path}</code>
+                          </div>
+                          <p className="text-sm text-muted-foreground">{endpoint.description}</p>
+                          <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                            <span>Rate: {endpoint.rateLimit}/hr</span>
+                            <span>Cost: {endpoint.cost > 0 ? `₦${endpoint.cost}` : 'Free'}</span>
+                          </div>
                         </div>
-                        <p className="text-sm text-muted-foreground">{endpoint.description}</p>
-                        <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                          <span>Rate: {endpoint.rateLimit}/hr</span>
-                          <span>Cost: {endpoint.cost > 0 ? `₦${endpoint.cost}` : 'Free'}</span>
-                        </div>
+                        <ChevronRight className={`h-5 w-5 text-muted-foreground flex-shrink-0 transition-transform ${isOpen ? 'rotate-90' : ''}`} />
                       </div>
-                      <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+
+                      {isOpen && (
+                        <div className="mt-4 space-y-3 border-t pt-4">
+                          {endpoint.params && endpoint.params.length > 0 && (
+                            <div>
+                              <h4 className="text-xs font-semibold mb-2 text-muted-foreground uppercase">Parameters</h4>
+                              <div className="space-y-1.5">
+                                {endpoint.params.map((p, j) => (
+                                  <div key={j} className="text-xs">
+                                    <code className="bg-muted px-1.5 py-0.5 rounded">{p.name}</code>
+                                    <span className="text-muted-foreground ml-2">{p.type}{p.required && ' • required'}</span>
+                                    <p className="text-muted-foreground mt-0.5 ml-1">{p.description}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          <div>
+                            <div className="flex items-center justify-between mb-1.5">
+                              <h4 className="text-xs font-semibold text-muted-foreground uppercase">cURL</h4>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 text-xs gap-1"
+                                onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(curl); toast.success('Copied'); }}
+                              >
+                                <Copy className="h-3 w-3" /> Copy
+                              </Button>
+                            </div>
+                            <pre className="bg-muted text-xs p-3 rounded overflow-x-auto font-mono">{curl}</pre>
+                          </div>
+
+                          <div>
+                            <div className="flex items-center justify-between mb-1.5">
+                              <h4 className="text-xs font-semibold text-muted-foreground uppercase">JavaScript</h4>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 text-xs gap-1"
+                                onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(js); toast.success('Copied'); }}
+                              >
+                                <Copy className="h-3 w-3" /> Copy
+                              </Button>
+                            </div>
+                            <pre className="bg-muted text-xs p-3 rounded overflow-x-auto font-mono">{js}</pre>
+                          </div>
+
+                          {endpoint.response && (
+                            <div>
+                              <h4 className="text-xs font-semibold mb-1.5 text-muted-foreground uppercase">Example response</h4>
+                              <pre className="bg-muted text-xs p-3 rounded overflow-x-auto font-mono">{endpoint.response}</pre>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           </TabsContent>
 
