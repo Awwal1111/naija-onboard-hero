@@ -393,6 +393,24 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
       } else {
         sendResult(rid, { type: 'njl_charge_result', success: true, currency, txRef: result.tx_ref, tx_ref: result.tx_ref, user_id: user.id })
         toast.success(`₦${pendingCharge.amount}NC paid to ${app.app_name}`)
+        // Fire-and-forget signed webhook to developer's backend (NC charges).
+        // USDT charges already deliver from the miniapp-usdt-charge function.
+        supabase.functions.invoke('miniapp-deliver-webhook', {
+          body: {
+            miniAppId: app.id,
+            event: 'charge.completed',
+            data: {
+              request_id: rid,
+              tx_ref: result.tx_ref,
+              user_id: user.id,
+              currency: 'NC',
+              amount: pendingCharge.amount,
+              description: pendingCharge.description,
+              developer_amount: result.developer_amount,
+              commission_amount: result.commission_amount,
+            },
+          },
+        }).catch((err) => console.warn('[miniapp webhook]', err))
       }
     } catch {
       sendResult(rid, { type: 'njl_charge_result', success: false, currency, error: 'Payment failed' })
