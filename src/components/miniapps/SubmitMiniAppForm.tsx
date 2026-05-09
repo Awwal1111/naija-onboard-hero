@@ -20,7 +20,9 @@ export const SubmitMiniAppForm = ({ onSuccess }: { onSuccess?: () => void }) => 
     app_url: '',
     app_icon_url: '',
     category: 'utility',
+    webhook_url: '',
   })
+  const [generatedSecret, setGeneratedSecret] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
