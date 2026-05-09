@@ -44,6 +44,18 @@ export const SubmitMiniAppForm = ({ onSuccess }: { onSuccess?: () => void }) => 
 
     setSubmitting(true)
     try {
+      // Validate webhook URL if provided
+      let webhook_secret: string | null = null
+      if (form.webhook_url) {
+        if (!/^https:\/\//i.test(form.webhook_url)) {
+          toast.error('Webhook URL must start with https://')
+          setSubmitting(false)
+          return
+        }
+        webhook_secret = Array.from(crypto.getRandomValues(new Uint8Array(32)))
+          .map(b => b.toString(16).padStart(2, '0')).join('')
+      }
+
       const { error } = await supabase.from('mini_apps').insert({
         developer_id: user.id,
         app_name: form.app_name,
@@ -51,12 +63,19 @@ export const SubmitMiniAppForm = ({ onSuccess }: { onSuccess?: () => void }) => 
         app_url: form.app_url,
         app_icon_url: form.app_icon_url || null,
         category: form.category,
+        webhook_url: form.webhook_url || null,
+        webhook_secret,
       } as any)
 
       if (error) throw error
 
-      toast.success('Mini App submitted for review! Admin will approve it shortly.')
-      setForm({ app_name: '', app_description: '', app_url: '', app_icon_url: '', category: 'utility' })
+      if (webhook_secret) {
+        setGeneratedSecret(webhook_secret)
+        toast.success('App submitted! Save your webhook secret below — it will not be shown again.')
+      } else {
+        toast.success('Mini App submitted for review! Admin will approve it shortly.')
+      }
+      setForm({ app_name: '', app_description: '', app_url: '', app_icon_url: '', category: 'utility', webhook_url: '' })
       onSuccess?.()
     } catch (err: any) {
       toast.error(err.message || 'Failed to submit')
