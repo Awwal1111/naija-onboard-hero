@@ -221,18 +221,172 @@ const API_ENDPOINTS: ApiEndpoint[] = [
   },
   {
     method: 'POST',
-    path: '/quidax-proxy/instant_orders',
-    description: 'Create an on/off-ramp order using OUR Quidax merchant. We handle KYC, you keep the user.',
+    path: '/payments/escrow/create',
+    description: 'Create off-chain NC escrow (held in our ledger, instant release)',
+    category: 'Payments',
+    cost: 10,
+    rateLimit: 50,
+    params: [
+      { name: 'payer_external_id', type: 'string', required: true, description: 'Buyer user ID' },
+      { name: 'payee_external_id', type: 'string', required: true, description: 'Seller user ID' },
+      { name: 'amount', type: 'number', required: true, description: 'Amount in NC (Naira)' },
+      { name: 'description', type: 'string', required: false, description: 'Description' }
+    ],
+    response: '{ "escrow_id": "esc_...", "status": "funded" }'
+  },
+  {
+    method: 'POST',
+    path: '/payments/escrow/release',
+    description: 'Release escrow to seller (instant NC credit)',
+    category: 'Payments',
+    cost: 0,
+    rateLimit: 100,
+    params: [
+      { name: 'escrow_id', type: 'string', required: true, description: 'Escrow ID returned by create' }
+    ],
+    response: '{ "status": "released", "amount_credited": 1000 }'
+  },
+  {
+    method: 'POST',
+    path: '/payments/escrow/refund',
+    description: 'Refund escrow back to buyer',
+    category: 'Payments',
+    cost: 0,
+    rateLimit: 100,
+    params: [
+      { name: 'escrow_id', type: 'string', required: true, description: 'Escrow ID' }
+    ],
+    response: '{ "status": "refunded" }'
+  },
+  {
+    method: 'POST',
+    path: '/payments/credit',
+    description: 'Instantly credit NC to one of your end-users (debits your developer NC balance)',
+    category: 'Payments',
+    cost: 0,
+    rateLimit: 200,
+    params: [
+      { name: 'external_user_id', type: 'string', required: true, description: 'Recipient user ID' },
+      { name: 'amount', type: 'number', required: true, description: 'NC to credit' },
+      { name: 'reference', type: 'string', required: false, description: 'Your idempotency / display reference' }
+    ],
+    response: '{ "status": "credited", "new_balance": 5000 }'
+  },
+  {
+    method: 'POST',
+    path: '/payments/payout',
+    description: 'Debit NC from one of your end-users (returns NC to your developer balance)',
+    category: 'Payments',
+    cost: 0,
+    rateLimit: 200,
+    params: [
+      { name: 'external_user_id', type: 'string', required: true, description: 'User to debit' },
+      { name: 'amount', type: 'number', required: true, description: 'NC to debit' },
+      { name: 'reference', type: 'string', required: false, description: 'Reference' }
+    ],
+    response: '{ "status": "paid", "new_balance": 4500 }'
+  },
+  {
+    method: 'POST',
+    path: '/ramp/quote/buy',
+    description: 'Quote: NGN → USDT (deposit)',
+    category: 'Payments',
+    cost: 0,
+    rateLimit: 200,
+    params: [
+      { name: 'ngn_amount', type: 'number', required: true, description: 'Amount in NGN to spend' }
+    ],
+    response: '{ "ngn": 10000, "usdt": 6.45, "rate": 1550.0 }'
+  },
+  {
+    method: 'POST',
+    path: '/ramp/quote/sell',
+    description: 'Quote: USDT → NGN (withdraw)',
+    category: 'Payments',
+    cost: 0,
+    rateLimit: 200,
+    params: [
+      { name: 'usdt_amount', type: 'number', required: true, description: 'USDT to sell' }
+    ],
+    response: '{ "usdt": 10, "ngn": 15400, "rate": 1540.0 }'
+  },
+  {
+    method: 'POST',
+    path: '/ramp/session/buy',
+    description: 'Hosted Quidax checkout (NGN card/bank → NC) for an end-user',
     category: 'Payments',
     cost: 50,
-    rateLimit: 30,
+    rateLimit: 50,
     params: [
-      { name: 'bid_currency', type: 'string', required: true, description: 'Currency to spend' },
-      { name: 'ask_currency', type: 'string', required: true, description: 'Currency to receive' },
-      { name: 'type', type: 'string', required: true, description: 'buy or sell' },
-      { name: 'volume', type: 'number', required: true, description: 'Amount' }
+      { name: 'external_user_id', type: 'string', required: true, description: 'User who is depositing' },
+      { name: 'ngn_amount', type: 'number', required: true, description: 'NGN to deposit' },
+      { name: 'redirect_url', type: 'string', required: false, description: 'Where to send the user after payment' }
     ],
-    response: '{ "data": { "id": "...", "status": "pending", "payment_url": "..." } }'
+    response: '{ "session_id": "...", "checkout_url": "https://...", "expires_at": "..." }'
+  },
+  {
+    method: 'POST',
+    path: '/ramp/session/sell',
+    description: 'Withdraw NC to a Nigerian bank account',
+    category: 'Payments',
+    cost: 50,
+    rateLimit: 50,
+    params: [
+      { name: 'external_user_id', type: 'string', required: true, description: 'User withdrawing' },
+      { name: 'ngn_amount', type: 'number', required: true, description: 'NGN to withdraw' },
+      { name: 'bank_code', type: 'string', required: true, description: 'Nigerian bank code' },
+      { name: 'account_number', type: 'string', required: true, description: '10-digit NUBAN' }
+    ],
+    response: '{ "payout_id": "...", "status": "processing" }'
+  },
+  // On-chain escrow + contracts
+  {
+    method: 'POST',
+    path: '/escrow/onchain/deploy',
+    description: 'Deploy a per-deal Solidity escrow contract on Celo (cUSD/USDT)',
+    category: 'Web3 Wallet',
+    cost: 100,
+    rateLimit: 20,
+    params: [
+      { name: 'external_user_id', type: 'string', required: true, description: 'Deployer (signs gasless tx via managed wallet)' },
+      { name: 'buyer_address', type: 'string', required: true, description: '0x address of buyer' },
+      { name: 'seller_address', type: 'string', required: true, description: '0x address of seller' },
+      { name: 'token', type: 'string', required: true, description: 'cUSD or USDT' },
+      { name: 'fee_bps', type: 'number', required: false, description: 'Your fee in basis points (max 2000 = 20%)' },
+      { name: 'fee_recipient', type: 'string', required: false, description: '0x address (default: platform)' }
+    ],
+    response: '{ "contract_address": "0x...", "tx_hash": "0x...", "explorer_url": "..." }'
+  },
+  {
+    method: 'POST',
+    path: '/contracts/call',
+    description: 'Sign and send any contract call from a managed user wallet (gasless, billed in NC)',
+    category: 'Web3 Wallet',
+    cost: 20,
+    rateLimit: 50,
+    params: [
+      { name: 'external_user_id', type: 'string', required: true, description: 'Whose managed wallet should sign' },
+      { name: 'contract_address', type: 'string', required: true, description: 'Target 0x contract' },
+      { name: 'abi', type: 'array', required: true, description: 'Function ABI fragment' },
+      { name: 'method', type: 'string', required: true, description: 'Method name (e.g. release)' },
+      { name: 'args', type: 'array', required: false, description: 'Method arguments' }
+    ],
+    response: '{ "tx_hash": "0x...", "block_number": 12345 }'
+  },
+  {
+    method: 'POST',
+    path: '/contracts/read',
+    description: 'Read-only contract call (no gas, no signing)',
+    category: 'Web3 Wallet',
+    cost: 0,
+    rateLimit: 200,
+    params: [
+      { name: 'contract_address', type: 'string', required: true, description: 'Target contract' },
+      { name: 'abi', type: 'array', required: true, description: 'Function ABI fragment' },
+      { name: 'method', type: 'string', required: true, description: 'View method name' },
+      { name: 'args', type: 'array', required: false, description: 'Arguments' }
+    ],
+    response: '{ "result": "..." }'
   }
 ];
 
