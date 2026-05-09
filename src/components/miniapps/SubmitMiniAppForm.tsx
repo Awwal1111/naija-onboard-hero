@@ -139,7 +139,35 @@ export const SubmitMiniAppForm = ({ onSuccess }: { onSuccess?: () => void }) => 
           </SelectContent>
         </Select>
       </div>
+      <div>
+        <Label>Webhook URL (optional)</Label>
+        <Input
+          value={form.webhook_url}
+          onChange={e => setForm(f => ({ ...f, webhook_url: e.target.value }))}
+          placeholder="https://your-backend.com/api/naijalancers-webhook"
+          type="url"
+        />
+        <p className="text-xs text-muted-foreground mt-1">
+          We POST signed events (e.g. <code>charge.completed</code>) here. Verify the
+          <code className="ml-1">X-Naijalancers-Signature</code> header (HMAC-SHA256 of the raw body).
+        </p>
+      </div>
 
+      {generatedSecret && (
+        <div className="rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 p-3 text-xs">
+          <p className="font-semibold mb-1">Your webhook signing secret (copy now — shown only once):</p>
+          <code className="block break-all bg-background p-2 rounded font-mono">{generatedSecret}</code>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="mt-2"
+            onClick={() => { navigator.clipboard.writeText(generatedSecret); toast.success('Secret copied') }}
+          >
+            Copy secret
+          </Button>
+        </div>
+      )}
 
       <Button type="submit" disabled={submitting} className="w-full gap-2">
         <Rocket className="h-4 w-4" />
