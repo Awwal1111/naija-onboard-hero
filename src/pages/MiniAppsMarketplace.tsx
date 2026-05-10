@@ -218,7 +218,7 @@ const MiniAppsMarketplace = () => {
         setShowEscrowSearch(true)
         break
       case 'escrowhubs':
-        window.open('https://celo.escrowhubs.io', '_blank', 'noopener,noreferrer')
+        setShowEscrowHubs(true)
         break
       case 'nc_converter':
         setShowNCConverter(true)
