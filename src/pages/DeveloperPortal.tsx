@@ -400,16 +400,25 @@ const CATEGORIES = [
   { id: 'Payments', label: 'Payments', icon: Shield }
 ];
 
+const getExampleBody = (endpoint: ApiEndpoint) => Object.fromEntries(
+  (endpoint.params || [])
+    .filter((param) => param.required)
+    .map((param) => [
+      param.name,
+      param.type === 'number' ? 0 : param.type === 'array' ? [] : param.type === 'object' ? {} : `<${param.name}>`
+    ])
+);
+
 export default function DeveloperPortal() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [showApiKey, setShowApiKey] = useState(false);
   const [loading, setLoading] = useState(true);
   const [regenerating, setRegenerating] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedEndpoint, setSelectedEndpoint] = useState<ApiEndpoint | null>(null);
-  const [testInput, setTestInput] = useState('{}');
+  const [selectedEndpoint, setSelectedEndpoint] = useState<ApiEndpoint | null>(API_ENDPOINTS[0] ?? null);
+  const [testInput, setTestInput] = useState(() => JSON.stringify(getExampleBody(API_ENDPOINTS[0]), null, 2));
   const [testResult, setTestResult] = useState<string | null>(null);
   const [testing, setTesting] = useState(false);
   const [usage, setUsage] = useState<{ total_calls: number; total_cost: number; this_month: number } | null>(null);
@@ -422,10 +431,13 @@ export default function DeveloperPortal() {
   const [quidaxStats, setQuidaxStats] = useState({ calls: 0, earned: 0 });
 
   useEffect(() => {
-    if (user) {
-      fetchDeveloperData();
+    if (authLoading) return;
+    if (!user) {
+      setLoading(false);
+      return;
     }
-  }, [user]);
+    fetchDeveloperData();
+  }, [user, authLoading]);
 
   const fetchDeveloperData = async () => {
     try {
@@ -659,7 +671,7 @@ export default function DeveloperPortal() {
   }
 
   // Show upgrade prompt if not a developer
-  if (accountType !== 'developer') {
+  if (user && accountType !== 'developer') {
     return (
       <div className="min-h-screen bg-background p-4 md:p-8">
         <Button variant="ghost" onClick={() => navigate(-1)} className="mb-6">
@@ -742,51 +754,65 @@ export default function DeveloperPortal() {
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
               <Shield className="h-5 w-5" />
-              Your API Key
+              {user ? 'Your API Key' : 'Developer access'}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <div className="relative flex-1">
-                <Input
-                  type={showApiKey ? 'text' : 'password'}
-                  value={apiKey || ''}
-                  readOnly
-                  className="pr-10 font-mono text-sm"
-                />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
-                  onClick={() => setShowApiKey(!showApiKey)}
-                >
-                  {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </Button>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={copyApiKey}>
-                  <Copy className="h-4 w-4 mr-2" /> Copy
-                </Button>
-                <Button variant="outline" onClick={regenerateApiKey} disabled={regenerating}>
-                  {regenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                </Button>
-              </div>
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              Include in requests: <code className="bg-muted px-1 rounded">x-api-key: YOUR_API_KEY</code>
-            </p>
-            <div className="mt-4 flex items-center justify-between p-3 rounded-lg border bg-muted/30">
-              <div className="flex items-center gap-2">
-                <Power className={`h-4 w-4 ${apiKeyEnabled ? 'text-emerald-500' : 'text-destructive'}`} />
-                <div>
-                  <p className="text-sm font-medium">{apiKeyEnabled ? 'Key is active' : 'Key is disabled'}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {apiKeyEnabled ? 'Accepting API requests' : 'All requests will return 403'}
-                  </p>
+            {user ? (
+              <>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="relative flex-1">
+                    <Input
+                      type={showApiKey ? 'text' : 'password'}
+                      value={apiKey || ''}
+                      readOnly
+                      className="pr-10 font-mono text-sm"
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                      onClick={() => setShowApiKey(!showApiKey)}
+                    >
+                      {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={copyApiKey}>
+                      <Copy className="h-4 w-4 mr-2" /> Copy
+                    </Button>
+                    <Button variant="outline" onClick={regenerateApiKey} disabled={regenerating}>
+                      {regenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Include in requests: <code className="bg-muted px-1 rounded">x-api-key: YOUR_API_KEY</code>
+                </p>
+                <div className="mt-4 flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+                  <div className="flex items-center gap-2">
+                    <Power className={`h-4 w-4 ${apiKeyEnabled ? 'text-emerald-500' : 'text-destructive'}`} />
+                    <div>
+                      <p className="text-sm font-medium">{apiKeyEnabled ? 'Key is active' : 'Key is disabled'}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {apiKeyEnabled ? 'Accepting API requests' : 'All requests will return 403'}
+                      </p>
+                    </div>
+                  </div>
+                  <Switch checked={apiKeyEnabled} onCheckedChange={toggleApiKey} disabled={togglingKey} />
+                </div>
+              </>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Browse the full API reference and code examples in read-only mode. Sign in to generate an API key, test endpoints, and use the money or escrow tools.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button onClick={() => navigate('/login')}>Sign in</Button>
+                  <Button variant="outline" onClick={() => navigate('/signup')}>Create account</Button>
                 </div>
               </div>
-              <Switch checked={apiKeyEnabled} onCheckedChange={toggleApiKey} disabled={togglingKey} />
-            </div>
+            )}
           </CardContent>
         </Card>
 
@@ -951,10 +977,7 @@ export default function DeveloperPortal() {
               {filteredEndpoints.map((endpoint, i) => {
                 const isOpen = selectedEndpoint?.path === endpoint.path;
                 const baseUrl = `${import.meta.env.VITE_SUPABASE_URL ?? 'https://YOUR_PROJECT.supabase.co'}/functions/v1/developer-api`;
-                const exampleBody = Object.fromEntries(
-                  (endpoint.params || []).filter(p => p.required)
-                    .map(p => [p.name, p.type === 'number' ? 0 : p.type === 'array' ? [] : p.type === 'object' ? {} : `<${p.name}>`])
-                );
+                const exampleBody = getExampleBody(endpoint);
                 const curl = `curl -X ${endpoint.method} '${baseUrl}${endpoint.path}' \\
   -H 'x-api-key: YOUR_API_KEY' \\
   -H 'Content-Type: application/json'${endpoint.method !== 'GET' ? ` \\
@@ -1149,7 +1172,7 @@ const response = await fetch('${import.meta.env.VITE_SUPABASE_URL}/functions/v1/
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
-    'x-api-key': '${apiKey?.slice(0, 8)}...'
+    'x-api-key': '${apiKey ? `${apiKey.slice(0, 8)}...` : 'YOUR_API_KEY'}'
   },
   body: JSON.stringify({
     external_user_id: 'your-user-123'
