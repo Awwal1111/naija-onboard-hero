@@ -18,6 +18,7 @@ const DepositDialog = lazy(() => import('@/components/DepositDialog').then(m => 
 const EscrowSearchDialog = lazy(() => import('@/components/EscrowSearchDialog').then(m => ({ default: m.EscrowSearchDialog })))
 const NCConverterDialog = lazy(() => import('@/components/miniapps/NCConverterDialog').then(m => ({ default: m.NCConverterDialog })))
 const TransferDialog = lazy(() => import('@/components/TransferDialog').then(m => ({ default: m.TransferDialog })))
+const EscrowHubsDialog = lazy(() => import('@/components/miniapps/EscrowHubsDialog').then(m => ({ default: m.EscrowHubsDialog })))
 
 interface MiniApp {
   id: string
