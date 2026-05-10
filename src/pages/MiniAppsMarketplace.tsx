@@ -103,6 +103,7 @@ const MiniAppsMarketplace = () => {
   const [showNCConverter, setShowNCConverter] = useState(false)
   const [showTransferDialog, setShowTransferDialog] = useState(false)
   const [webhookApp, setWebhookApp] = useState<{ id: string; name: string } | null>(null)
+  const [showEscrowHubs, setShowEscrowHubs] = useState(false)
   const { user } = useAuth()
   const { isNigerian } = useUserCountry()
   const navigate = useNavigate()
