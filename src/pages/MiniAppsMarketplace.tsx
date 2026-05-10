@@ -449,6 +449,7 @@ const MiniAppsMarketplace = () => {
         <EscrowSearchDialog open={showEscrowSearch} onOpenChange={setShowEscrowSearch} />
         <NCConverterDialog open={showNCConverter} onClose={() => setShowNCConverter(false)} />
         <TransferDialog open={showTransferDialog} onOpenChange={setShowTransferDialog} />
+        <EscrowHubsDialog open={showEscrowHubs} onOpenChange={setShowEscrowHubs} />
       </Suspense>
 
       <BottomNavBar />
