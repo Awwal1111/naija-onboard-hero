@@ -18,6 +18,7 @@ const DepositDialog = lazy(() => import('@/components/DepositDialog').then(m => 
 const EscrowSearchDialog = lazy(() => import('@/components/EscrowSearchDialog').then(m => ({ default: m.EscrowSearchDialog })))
 const NCConverterDialog = lazy(() => import('@/components/miniapps/NCConverterDialog').then(m => ({ default: m.NCConverterDialog })))
 const TransferDialog = lazy(() => import('@/components/TransferDialog').then(m => ({ default: m.TransferDialog })))
+const EscrowHubsDialog = lazy(() => import('@/components/miniapps/EscrowHubsDialog').then(m => ({ default: m.EscrowHubsDialog })))
 
 interface MiniApp {
   id: string
@@ -102,6 +103,7 @@ const MiniAppsMarketplace = () => {
   const [showNCConverter, setShowNCConverter] = useState(false)
   const [showTransferDialog, setShowTransferDialog] = useState(false)
   const [webhookApp, setWebhookApp] = useState<{ id: string; name: string } | null>(null)
+  const [showEscrowHubs, setShowEscrowHubs] = useState(false)
   const { user } = useAuth()
   const { isNigerian } = useUserCountry()
   const navigate = useNavigate()
@@ -216,7 +218,7 @@ const MiniAppsMarketplace = () => {
         setShowEscrowSearch(true)
         break
       case 'escrowhubs':
-        window.open('https://celo.escrowhubs.io', '_blank', 'noopener,noreferrer')
+        setShowEscrowHubs(true)
         break
       case 'nc_converter':
         setShowNCConverter(true)
@@ -447,6 +449,7 @@ const MiniAppsMarketplace = () => {
         <EscrowSearchDialog open={showEscrowSearch} onOpenChange={setShowEscrowSearch} />
         <NCConverterDialog open={showNCConverter} onClose={() => setShowNCConverter(false)} />
         <TransferDialog open={showTransferDialog} onOpenChange={setShowTransferDialog} />
+        <EscrowHubsDialog open={showEscrowHubs} onOpenChange={setShowEscrowHubs} />
       </Suspense>
 
       <BottomNavBar />
