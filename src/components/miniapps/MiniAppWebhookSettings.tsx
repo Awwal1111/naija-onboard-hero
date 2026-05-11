@@ -47,27 +47,27 @@ export function MiniAppWebhookSettings({ appId, appName, open, onOpenChange }: P
       setSaving(false)
       return
     }
-    const { error } = await supabase.from('mini_apps')
-      .update({ webhook_url: webhookUrl.trim() || null })
-      .eq('id', appId)
-      .select('id')
-      .single()
+    const { data, error } = await supabase.functions.invoke('miniapp-save-webhook', {
+      body: { appId, webhookUrl: webhookUrl.trim() || null },
+    })
     setSaving(false)
     if (error) toast.error(error.message)
-    else toast.success('Webhook URL saved')
+    else {
+      setWebhookUrl((data as any)?.webhook_url || '')
+      setSecret((data as any)?.webhook_secret || secret)
+      toast.success('Webhook URL saved')
+    }
   }
 
   const rotate = async () => {
     if (!confirm('Rotate signing secret? Your current backend will stop verifying until you update it.')) return
     const newSecret = Array.from(crypto.getRandomValues(new Uint8Array(32)))
       .map(b => b.toString(16).padStart(2, '0')).join('')
-    const { error } = await supabase.from('mini_apps')
-      .update({ webhook_secret: newSecret })
-      .eq('id', appId)
-      .select('id')
-      .single()
+    const { data, error } = await supabase.functions.invoke('miniapp-save-webhook', {
+      body: { appId, webhookUrl: webhookUrl.trim() || null, rotateSecret: true },
+    })
     if (error) return toast.error(error.message)
-    setSecret(newSecret)
+    setSecret((data as any)?.webhook_secret || newSecret)
     setShowSecret(true)
     toast.success('New secret generated')
   }
