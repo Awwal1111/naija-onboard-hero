@@ -61,13 +61,11 @@ export function MiniAppWebhookSettings({ appId, appName, open, onOpenChange }: P
 
   const rotate = async () => {
     if (!confirm('Rotate signing secret? Your current backend will stop verifying until you update it.')) return
-    const newSecret = Array.from(crypto.getRandomValues(new Uint8Array(32)))
-      .map(b => b.toString(16).padStart(2, '0')).join('')
     const { data, error } = await supabase.functions.invoke('miniapp-save-webhook', {
       body: { appId, webhookUrl: webhookUrl.trim() || null, rotateSecret: true },
     })
     if (error) return toast.error(error.message)
-    setSecret((data as any)?.webhook_secret || newSecret)
+    setSecret((data as any)?.webhook_secret || '')
     setShowSecret(true)
     toast.success('New secret generated')
   }
