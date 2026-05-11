@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Shield } from 'lucide-react'
 import { toast } from 'sonner'
+import { Button } from '@/components/ui/button'
 
 const ESCROWHUBS_ORIGIN = 'https://celo.escrowhubs.io'
 
@@ -12,17 +13,27 @@ interface Props {
 
 export const EscrowHubsDialog = ({ open, onOpenChange }: Props) => {
   const frameRef = useRef<HTMLIFrameElement>(null)
+  const [isReady, setIsReady] = useState(false)
+  const [lastEscrowAddress, setLastEscrowAddress] = useState<string | null>(null)
+
+  const postToFrame = (type: string, payload: Record<string, unknown>) => {
+    frameRef.current?.contentWindow?.postMessage({ type, payload }, ESCROWHUBS_ORIGIN)
+  }
 
   useEffect(() => {
     if (!open) return
+    setIsReady(false)
+    setLastEscrowAddress(null)
     const onMessage = (event: MessageEvent) => {
       if (event.origin !== ESCROWHUBS_ORIGIN) return
       const { type, ...rest } = (event.data || {}) as { type?: string; [k: string]: any }
       switch (type) {
         case 'escrowhubs:ready':
-          // Bridge active
+          setIsReady(true)
+          toast.success('EscrowHubs connected')
           break
         case 'chargeComplete':
+          if (rest.escrowAddress) setLastEscrowAddress(rest.escrowAddress)
           toast.success('Escrow created', { description: `Address: ${rest.escrowAddress?.slice(0, 10)}...` })
           break
         case 'payoutComplete':
@@ -61,6 +72,37 @@ export const EscrowHubsDialog = ({ open, onOpenChange }: Props) => {
           className="flex-1 w-full border-0"
           title="EscrowHubs"
         />
+        <div className="border-t border-border px-4 py-3 flex flex-wrap gap-2 items-center justify-between bg-background">
+          <div className="text-xs text-muted-foreground">
+            {isReady ? 'Bridge ready' : 'Waiting for EscrowHubs bridge…'}
+            {lastEscrowAddress ? ` • Last escrow: ${lastEscrowAddress.slice(0, 10)}...` : ''}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={!isReady || !lastEscrowAddress}
+              onClick={() => lastEscrowAddress && postToFrame('getEscrowStatus', {
+                escrowAddress: lastEscrowAddress,
+                requestId: `status_${Date.now()}`,
+              })}
+            >
+              Check status
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              disabled={!isReady || !lastEscrowAddress}
+              onClick={() => lastEscrowAddress && postToFrame('payoutUser', {
+                escrowAddress: lastEscrowAddress,
+                requestId: `payout_${Date.now()}`,
+              })}
+            >
+              Release payout
+            </Button>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   )
