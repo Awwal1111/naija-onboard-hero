@@ -76,7 +76,14 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
 
   // Always include both requestId and request_id
   const withIds = useCallback((rid: string, payload: Record<string, unknown>) => ({
-    ...payload, requestId: rid, request_id: rid,
+    ...payload,
+    requestId: rid,
+    request_id: rid,
+    payload: {
+      ...payload,
+      requestId: rid,
+      request_id: rid,
+    },
   }), [])
 
   // Build identify payload - works even with partial profile
@@ -104,26 +111,42 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
     if (payload) postToIframe(payload)
   }, [buildIdentify, postToIframe])
 
+  const getField = (d: any, keys: string[]) => {
+    for (const key of keys) {
+      const root = d?.[key]
+      if (root !== undefined && root !== null && root !== '') return root
+      const nested = d?.payload?.[key]
+      if (nested !== undefined && nested !== null && nested !== '') return nested
+    }
+    return undefined
+  }
+
   // Extract requestId from many possible formats
   const getRid = (d: any): string =>
-    d?.requestId || d?.request_id || d?.id || d?.tx_ref || d?.txRef || d?.nonce || `auto_${Date.now()}_${Math.random().toString(36).slice(2,8)}`
+    String(
+      getField(d, ['requestId', 'request_id', 'id', 'tx_ref', 'txRef', 'nonce']) ||
+      `auto_${Date.now()}_${Math.random().toString(36).slice(2,8)}`
+    )
 
   // Extract amount from many possible formats and coerce to number
   const getAmount = (d: any): number => {
-    const raw = d?.amount ?? d?.value ?? d?.price ?? d?.cost ?? d?.nc ?? d?.naira ?? d?.payload?.amount
+    const raw = getField(d, ['amount', 'value', 'price', 'cost', 'nc', 'naira'])
     const n = typeof raw === 'string' ? parseFloat(raw) : Number(raw)
     return isFinite(n) && n > 0 ? n : 0
   }
 
   // Normalize a wide variety of message types coming from third-party SDKs
   const normalizeType = (t: string): string => {
-    const s = String(t || '').toLowerCase().replace(/[-:]/g, '_')
+    const s = String(t || '')
+      .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+      .toLowerCase()
+      .replace(/[-:]/g, '_')
     if (s === 'njl_ready' || s === 'ready' || s === 'init' || s === 'sdk_ready' || s === 'app_ready') return 'njl_ready'
     if (s === 'njl_handshake' || s === 'handshake' || s === 'hello') return 'njl_ready'
     if (s === 'njl_ping' || s === 'ping') return 'njl_ready'
     if (s === 'njl_balance' || s === 'balance' || s === 'get_balance' || s === 'wallet_balance' || s === 'request_balance') return 'njl_balance'
-    if (s === 'njl_charge' || s === 'charge' || s === 'pay' || s === 'payment' || s === 'request_payment' || s === 'request_charge' || s === 'debit' || s === 'purchase' || s === 'checkout') return 'njl_charge'
-    if (s === 'njl_payout' || s === 'payout' || s === 'credit' || s === 'reward' || s === 'send_payment' || s === 'transfer_to_user') return 'njl_payout'
+    if (s === 'njl_charge' || s === 'charge' || s === 'charge_user' || s === 'pay' || s === 'payment' || s === 'request_payment' || s === 'request_charge' || s === 'debit' || s === 'purchase' || s === 'checkout') return 'njl_charge'
+    if (s === 'njl_payout' || s === 'payout' || s === 'payout_user' || s === 'credit' || s === 'reward' || s === 'send_payment' || s === 'transfer_to_user') return 'njl_payout'
     if (s === 'njl_push' || s === 'push' || s === 'notify' || s === 'send_push' || s === 'notification') return 'njl_push'
     if (s === 'njl_verify_pin' || s === 'verify_pin' || s === 'request_pin' || s === 'pin') return 'njl_verify_pin'
     return s.startsWith('njl_') ? s : ''
@@ -140,7 +163,7 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
 
   // Parse currency: default NC, accept "USDT" (case-insensitive)
   const getCurrency = (d: any): Currency => {
-    const c = String(d?.currency || d?.token || d?.asset || 'NC').toUpperCase()
+    const c = String(getField(d, ['currency', 'token', 'asset']) || 'NC').toUpperCase()
     return c === 'USDT' ? 'USDT' : 'NC'
   }
 
@@ -217,7 +240,7 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
           }
           if (currency === 'USDT') {
             // Developer must supply their own destination address per call.
-            const toAddr = String(data.to || data.toAddress || data.address || data.recipient || '').trim()
+            const toAddr = String(getField(data, ['to', 'toAddress', 'address', 'recipient', 'beneficiary']) || '').trim()
             if (!/^0x[a-fA-F0-9]{40}$/.test(toAddr)) {
               postToIframe(withIds(rid, { type: 'njl_charge_result', success: false, currency, error: 'Missing or invalid "to" address' }))
               return
@@ -225,9 +248,9 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
             resultSentRef.current[rid] = false
             setPendingCharge({
               amount: amt,
-              description: data.description || data.reason || data.memo || data.label || 'Mini App Purchase',
+              description: String(getField(data, ['description', 'reason', 'memo', 'label']) || 'Mini App Purchase'),
               requestId: rid,
-              chargeType: data.charge_type || data.chargeType || 'one_time',
+              chargeType: String(getField(data, ['charge_type', 'chargeType']) || 'one_time'),
               currency,
               toAddress: toAddr,
             } as any)
@@ -237,9 +260,9 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
           resultSentRef.current[rid] = false
           setPendingCharge({
             amount: amt,
-            description: data.description || data.reason || data.memo || data.label || 'Mini App Purchase',
+            description: String(getField(data, ['description', 'reason', 'memo', 'label']) || 'Mini App Purchase'),
             requestId: rid,
-            chargeType: data.charge_type || data.chargeType || 'one_time',
+            chargeType: String(getField(data, ['charge_type', 'chargeType']) || 'one_time'),
             currency,
           })
           setShowChargeDialog(true)
@@ -288,7 +311,7 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
           resultSentRef.current[rid] = false
           setPendingPayout({
             amount: amt,
-            description: data.description || data.reason || data.memo || data.label || 'Payout',
+            description: String(getField(data, ['description', 'reason', 'memo', 'label']) || 'Payout'),
             requestId: rid,
             currency,
           })
@@ -361,6 +384,20 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
     }
     if (aliasMap[t]) {
       postToIframe(withIds(rid, { ...payload, type: aliasMap[t] }))
+    }
+
+    if (t === 'njl_charge_result' && payload.success === true) {
+      postToIframe(withIds(rid, { ...payload, type: 'chargeComplete' }))
+    }
+    if (t === 'njl_payout_result' && payload.success === true) {
+      postToIframe(withIds(rid, { ...payload, type: 'payoutComplete' }))
+    }
+    if ((t === 'njl_charge_result' || t === 'njl_payout_result') && payload.success === false) {
+      postToIframe(withIds(rid, {
+        type: 'error',
+        originalType: t === 'njl_charge_result' ? 'chargeUser' : 'payoutUser',
+        message: String(payload.error || 'Request failed'),
+      }))
     }
   }
 
