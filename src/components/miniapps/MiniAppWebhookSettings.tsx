@@ -28,7 +28,12 @@ export function MiniAppWebhookSettings({ appId, appName, open, onOpenChange }: P
       .select('webhook_url, webhook_secret')
       .eq('id', appId)
       .maybeSingle()
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) {
+          toast.error(error.message)
+          setLoading(false)
+          return
+        }
         setWebhookUrl((data as any)?.webhook_url || '')
         setSecret((data as any)?.webhook_secret || '')
         setLoading(false)
@@ -43,8 +48,10 @@ export function MiniAppWebhookSettings({ appId, appName, open, onOpenChange }: P
       return
     }
     const { error } = await supabase.from('mini_apps')
-      .update({ webhook_url: webhookUrl || null })
+      .update({ webhook_url: webhookUrl.trim() || null })
       .eq('id', appId)
+      .select('id')
+      .single()
     setSaving(false)
     if (error) toast.error(error.message)
     else toast.success('Webhook URL saved')
@@ -57,6 +64,8 @@ export function MiniAppWebhookSettings({ appId, appName, open, onOpenChange }: P
     const { error } = await supabase.from('mini_apps')
       .update({ webhook_secret: newSecret })
       .eq('id', appId)
+      .select('id')
+      .single()
     if (error) return toast.error(error.message)
     setSecret(newSecret)
     setShowSecret(true)
