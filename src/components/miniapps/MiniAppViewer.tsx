@@ -76,7 +76,14 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
 
   // Always include both requestId and request_id
   const withIds = useCallback((rid: string, payload: Record<string, unknown>) => ({
-    ...payload, requestId: rid, request_id: rid,
+    ...payload,
+    requestId: rid,
+    request_id: rid,
+    payload: {
+      ...payload,
+      requestId: rid,
+      request_id: rid,
+    },
   }), [])
 
   // Build identify payload - works even with partial profile
