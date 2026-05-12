@@ -848,6 +848,9 @@ export default function DeveloperPortal() {
             <TabsTrigger value="endpoints" className="gap-2">
               <BookOpen className="h-4 w-4" /> API Reference
             </TabsTrigger>
+            <TabsTrigger value="sdk" className="gap-2">
+              <Code className="h-4 w-4" /> SDK & Webhooks
+            </TabsTrigger>
             <TabsTrigger value="stats" className="gap-2">
               <BarChart3 className="h-4 w-4" /> Stats
             </TabsTrigger>
@@ -1080,6 +1083,88 @@ const data = await res.json();`;
                 );
               })}
             </div>
+          </TabsContent>
+
+          <TabsContent value="sdk" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Mini App SDK Reference</CardTitle>
+                <CardDescription>Direct access to the SDK events, webhook flow, and code examples you said were missing.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div className="rounded-lg border p-4 space-y-2">
+                    <h3 className="font-medium">Core events</h3>
+                    <ul className="text-sm text-muted-foreground space-y-1">
+                      <li><code>njl_ready</code> — app announces it is ready</li>
+                      <li><code>njl_identify</code> — NaijaLancers sends signed-in user context</li>
+                      <li><code>njl_charge</code> → <code>njl_charge_result</code></li>
+                      <li><code>njl_payout</code> → <code>njl_payout_result</code></li>
+                      <li><code>njl_verify_pin</code> → <code>njl_verify_pin_result</code></li>
+                    </ul>
+                  </div>
+                  <div className="rounded-lg border p-4 space-y-2">
+                    <h3 className="font-medium">Webhook delivery</h3>
+                    <ul className="text-sm text-muted-foreground space-y-1">
+                      <li>Configure per app in <code>Apps → My Apps → Webhook &amp; Secret</code></li>
+                      <li>Header: <code>X-Naijalancers-Signature: sha256=&lt;hex&gt;</code></li>
+                      <li>Verify against the raw request body using your webhook secret</li>
+                      <li>Successful NC and USDT charges are delivered as <code>charge.completed</code></li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-medium">Mini app charge example</h3>
+                    <Button asChild variant="outline" size="sm" className="gap-2">
+                      <a href="/developers#miniapp-sdk">
+                        Open full SDK docs <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
+                    </Button>
+                  </div>
+                  <pre className="bg-muted text-xs p-3 rounded overflow-x-auto font-mono">{`const requestId = 'req_' + Math.random().toString(36).slice(2);
+window.parent.postMessage({
+  type: 'njl_charge',
+  amount: 1.5,
+  description: 'Pro Plan',
+  charge_type: 'subscription',
+  currency: 'USDT',
+  to: '0xYourTreasuryAddress',
+  requestId,
+}, '*');
+
+window.addEventListener('message', (event) => {
+  if (event.data?.type === 'njl_charge_result') {
+    console.log(event.data.success, event.data.txRef, event.data.error);
+  }
+});`}</pre>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-medium">Webhook verification example</h3>
+                    <Button asChild variant="outline" size="sm" className="gap-2">
+                      <a href="/developers#webhooks">
+                        Open webhook docs <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
+                    </Button>
+                  </div>
+                  <pre className="bg-muted text-xs p-3 rounded overflow-x-auto font-mono">{`const sig = req.headers['x-naijalancers-signature'];
+const expected = 'sha256=' + crypto
+  .createHmac('sha256', process.env.NAIJALANCERS_WEBHOOK_SECRET)
+  .update(rawBody)
+  .digest('hex');
+
+if (sig !== expected) return res.status(401).end();
+
+const evt = JSON.parse(rawBody.toString());
+if (evt.event === 'charge.completed') {
+  // store evt.request_id idempotently before granting value
+}`}</pre>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="playground" className="space-y-4">
