@@ -370,11 +370,17 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
 
   // --- Action handlers ---
 
+  const postResultPayload = useCallback((rid: string, payload: Record<string, unknown>) => {
+    postToIframe(withIds(rid, payload))
+    setTimeout(() => postToIframe(withIds(rid, payload)), 180)
+    setTimeout(() => postToIframe(withIds(rid, payload)), 700)
+  }, [postToIframe, withIds])
+
   const sendResult = (rid: string, payload: Record<string, unknown>) => {
     if (resultSentRef.current[rid]) return
     resultSentRef.current[rid] = true
     // Send canonical event
-    postToIframe(withIds(rid, payload))
+    postResultPayload(rid, payload)
     // Also send common alias type so SDKs using shorter names still receive it
     const t = String(payload.type || '')
     const aliasMap: Record<string, string> = {
@@ -383,21 +389,21 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
       njl_verify_pin_result: 'verify_pin_result',
     }
     if (aliasMap[t]) {
-      postToIframe(withIds(rid, { ...payload, type: aliasMap[t] }))
+      postResultPayload(rid, { ...payload, type: aliasMap[t] })
     }
 
     if (t === 'njl_charge_result' && payload.success === true) {
-      postToIframe(withIds(rid, { ...payload, type: 'chargeComplete' }))
+      postResultPayload(rid, { ...payload, type: 'chargeComplete' })
     }
     if (t === 'njl_payout_result' && payload.success === true) {
-      postToIframe(withIds(rid, { ...payload, type: 'payoutComplete' }))
+      postResultPayload(rid, { ...payload, type: 'payoutComplete' })
     }
     if ((t === 'njl_charge_result' || t === 'njl_payout_result') && payload.success === false) {
-      postToIframe(withIds(rid, {
+      postResultPayload(rid, {
         type: 'error',
         originalType: t === 'njl_charge_result' ? 'chargeUser' : 'payoutUser',
         message: String(payload.error || 'Request failed'),
-      }))
+      })
     }
   }
 
