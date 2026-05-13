@@ -21,6 +21,7 @@ import { useVerification } from '@/hooks/useVerification'
 import { supabase } from '@/integrations/supabase/client'
 import { toast } from 'sonner'
 import { IvoryPayWithdrawalCard } from './IvoryPayWithdrawalCard'
+import { PretiumWithdrawalCard } from './PretiumWithdrawalCard'
 
 interface WithdrawalDialogProps {
   open: boolean
