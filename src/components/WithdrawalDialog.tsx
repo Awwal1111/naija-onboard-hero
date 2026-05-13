@@ -290,6 +290,15 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
             />
           </TabsContent>
 
+          {isNigerian && (
+            <TabsContent value="pretium" className="space-y-4">
+              <PretiumWithdrawalCard
+                currentBalance={currentBalance}
+                onSuccess={() => onOpenChange(false)}
+              />
+            </TabsContent>
+          )}
+
           {/* Bank Transfer Tab - Nigerian users only */}
           {isNigerian && (
             <TabsContent value="ramp" className="space-y-4">
