@@ -161,32 +161,32 @@ serve(async (req) => {
 
       let txHash: string | null = null;
       try {
-        const transferResp = await fetch(
-          `${Deno.env.get("SUPABASE_URL")}/functions/v1/celo-master-transfer`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
-            },
-            body: JSON.stringify({
-              to: settlementAddress,
-              amount: usdtAmount.toFixed(6),
-              token: "USDT",
-            }),
-          }
+        const masterPk = Deno.env.get("CELO_MASTER_WALLET_PRIVATE_KEY");
+        if (!masterPk) throw new Error("Master wallet not configured");
+        const provider = new ethers.JsonRpcProvider(CELO_RPC);
+        const signer = new ethers.Wallet(masterPk, provider);
+        const erc20 = new ethers.Contract(
+          USDT_ADDRESS_CELO,
+          [
+            "function transfer(address to, uint256 amount) returns (bool)",
+            "function decimals() view returns (uint8)",
+            "function balanceOf(address) view returns (uint256)",
+          ],
+          signer,
         );
-        const transferData = await transferResp.json().catch(() => ({}));
-        txHash = transferData?.txHash || transferData?.hash || transferData?.transaction_hash || null;
-        if (!transferResp.ok || !txHash) {
-          throw new Error(transferData?.error || "On-chain settlement failed");
-        }
+        const decimals: number = Number(await erc20.decimals());
+        const value = ethers.parseUnits(usdtAmount.toFixed(decimals), decimals);
+        const bal: bigint = await erc20.balanceOf(signer.address);
+        if (bal < value) throw new Error("Master wallet USDT balance too low");
+        const tx = await erc20.transfer(ethers.getAddress(settlementAddress), value);
+        const receipt = await tx.wait();
+        txHash = receipt?.hash || tx.hash;
+        if (!txHash) throw new Error("No tx hash returned");
+        console.log("[PRETIUM-RAMP] Settlement tx:", txHash);
       } catch (err: any) {
-        // No master-transfer function available — log a placeholder and let
-        // ops settle manually. We still record the row so support can finish it.
         console.error("[PRETIUM-RAMP] settlement transfer failed:", err?.message);
         await refund(`Settlement transfer failed: ${err?.message || "unknown"}`);
-        return json({ error: "Could not settle on-chain. Try again or use crypto withdrawal." }, 500);
+        return json({ error: `Could not settle on-chain: ${err?.message || "unknown"}` }, 500);
       }
 
       const callbackUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/pretium-webhook?ref=${reference}`;
