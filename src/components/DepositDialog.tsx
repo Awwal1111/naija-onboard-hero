@@ -328,6 +328,13 @@ export const DepositDialog = ({ open, onOpenChange, defaultMethod }: DepositDial
           }} />
         )}
 
+        {selectedMethod === 'pretium' && (
+          <PretiumDepositCard onPending={() => {
+            onOpenChange(false)
+            setSelectedMethod('main')
+          }} />
+        )}
+
         {(selectedMethod === 'metamask' || selectedMethod === 'valora') && (
           <WalletDepositCard
             walletKind={selectedMethod}
