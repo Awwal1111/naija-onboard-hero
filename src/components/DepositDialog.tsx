@@ -129,7 +129,7 @@ export const DepositDialog = ({ open, onOpenChange, defaultMethod }: DepositDial
     window.dispatchEvent(event)
   }
 
-  const handleMethodSelect = (method: 'ramp' | 'crypto' | 'telegram' | 'minipay' | 'ivorypay' | 'metamask' | 'valora') => {
+  const handleMethodSelect = (method: 'ramp' | 'crypto' | 'telegram' | 'minipay' | 'ivorypay' | 'metamask' | 'valora' | 'pretium') => {
     if (method === 'ramp') {
       handleOpenQuidaxWidget()
     } else {
