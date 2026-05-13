@@ -6,7 +6,7 @@ import { useMiniPay } from '@/hooks/useMiniPay'
 import { useUserCountry } from '@/hooks/useUserCountry'
 
 interface DepositMethodsProps {
-  onSelectMethod: (method: 'ramp' | 'crypto' | 'telegram' | 'minipay' | 'ivorypay' | 'metamask' | 'valora') => void
+  onSelectMethod: (method: 'ramp' | 'crypto' | 'telegram' | 'minipay' | 'ivorypay' | 'metamask' | 'valora' | 'pretium') => void
 }
 
 export const DepositMethods = ({ onSelectMethod }: DepositMethodsProps) => {
