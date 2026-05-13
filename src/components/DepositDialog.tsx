@@ -180,6 +180,7 @@ export const DepositDialog = ({ open, onOpenChange, defaultMethod }: DepositDial
                  selectedMethod === 'crypto' ? 'Crypto Deposit' : 
                  selectedMethod === 'minipay' ? 'MiniPay Deposit' :
                  selectedMethod === 'ivorypay' ? 'IvoryPay Deposit' :
+                 selectedMethod === 'pretium' ? 'Pretium Deposit' :
                  selectedMethod === 'metamask' ? 'MetaMask Deposit' :
                  selectedMethod === 'valora' ? 'Valora Deposit' :
                  'Telegram Bot'}
@@ -189,6 +190,7 @@ export const DepositDialog = ({ open, onOpenChange, defaultMethod }: DepositDial
                  selectedMethod === 'crypto' ? 'Send crypto to your wallet address' :
                  selectedMethod === 'minipay' ? 'Deposit directly from MiniPay' :
                  selectedMethod === 'ivorypay' ? 'Pay via bank or crypto through IvoryPay' :
+                 selectedMethod === 'pretium' ? 'Pay with mobile money via Pretium' :
                  selectedMethod === 'metamask' ? 'Open MetaMask and transfer to your NaijaLancers wallet' :
                  selectedMethod === 'valora' ? 'Open Valora and transfer to your NaijaLancers wallet' :
                  'Deposit via Telegram bot'}
