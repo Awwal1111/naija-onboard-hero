@@ -4717,6 +4717,78 @@ export type Database = {
         }
         Relationships: []
       }
+      pretium_transactions: {
+        Row: {
+          account_name: string | null
+          account_number: string | null
+          asset: string | null
+          asset_amount: number | null
+          bank_code: string | null
+          chain: string | null
+          created_at: string
+          currency: string
+          fiat_amount: number | null
+          id: string
+          is_released: boolean | null
+          metadata: Json | null
+          receipt_number: string | null
+          recipient_address: string | null
+          reference: string
+          status: string
+          transaction_code: string | null
+          transaction_hash: string | null
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_name?: string | null
+          account_number?: string | null
+          asset?: string | null
+          asset_amount?: number | null
+          bank_code?: string | null
+          chain?: string | null
+          created_at?: string
+          currency: string
+          fiat_amount?: number | null
+          id?: string
+          is_released?: boolean | null
+          metadata?: Json | null
+          receipt_number?: string | null
+          recipient_address?: string | null
+          reference: string
+          status?: string
+          transaction_code?: string | null
+          transaction_hash?: string | null
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_name?: string | null
+          account_number?: string | null
+          asset?: string | null
+          asset_amount?: number | null
+          bank_code?: string | null
+          chain?: string | null
+          created_at?: string
+          currency?: string
+          fiat_amount?: number | null
+          id?: string
+          is_released?: boolean | null
+          metadata?: Json | null
+          receipt_number?: string | null
+          recipient_address?: string | null
+          reference?: string
+          status?: string
+          transaction_code?: string | null
+          transaction_hash?: string | null
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       product_downloads: {
         Row: {
           buyer_id: string

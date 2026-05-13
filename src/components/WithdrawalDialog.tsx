@@ -21,6 +21,7 @@ import { useVerification } from '@/hooks/useVerification'
 import { supabase } from '@/integrations/supabase/client'
 import { toast } from 'sonner'
 import { IvoryPayWithdrawalCard } from './IvoryPayWithdrawalCard'
+import { PretiumWithdrawalCard } from './PretiumWithdrawalCard'
 
 interface WithdrawalDialogProps {
   open: boolean
@@ -157,24 +158,29 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
         </DialogHeader>
         
         <Tabs defaultValue="crypto" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 h-auto">
-            <TabsTrigger value="crypto" className="gap-1 sm:gap-2 text-xs sm:text-sm py-2">
-              <Coins className="h-3 w-3 sm:h-4 sm:w-4" />
+          <TabsList className={`grid w-full ${isNigerian ? 'grid-cols-4' : 'grid-cols-3'} h-auto`}>
+            <TabsTrigger value="crypto" className="gap-1 text-xs py-2">
+              <Coins className="h-3 w-3" />
               <span>Crypto</span>
             </TabsTrigger>
-            <TabsTrigger value="ivorypay" className="gap-1 sm:gap-2 text-xs sm:text-sm py-2">
-              <Globe className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span>Bank</span>
-            </TabsTrigger>
             {isNigerian && (
-              <TabsTrigger value="ramp" className="gap-1 sm:gap-2 text-xs sm:text-sm py-2">
-                <ArrowDownUp className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span>Quidax</span>
+              <TabsTrigger value="pretium" className="gap-1 text-xs py-2">
+                <Globe className="h-3 w-3" />
+                <span>Pretium</span>
               </TabsTrigger>
             )}
-            {!isNigerian && (
-              <TabsTrigger value="minipay-guide" className="gap-1 sm:gap-2 text-xs sm:text-sm py-2">
-                <Smartphone className="h-3 w-3 sm:h-4 sm:w-4" />
+            <TabsTrigger value="ivorypay" className="gap-1 text-xs py-2">
+              <Globe className="h-3 w-3" />
+              <span>IvoryPay</span>
+            </TabsTrigger>
+            {isNigerian ? (
+              <TabsTrigger value="ramp" className="gap-1 text-xs py-2">
+                <ArrowDownUp className="h-3 w-3" />
+                <span>Quidax</span>
+              </TabsTrigger>
+            ) : (
+              <TabsTrigger value="minipay-guide" className="gap-1 text-xs py-2">
+                <Smartphone className="h-3 w-3" />
                 <span>MiniPay</span>
               </TabsTrigger>
             )}
@@ -283,6 +289,15 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
               onSuccess={() => onOpenChange(false)}
             />
           </TabsContent>
+
+          {isNigerian && (
+            <TabsContent value="pretium" className="space-y-4">
+              <PretiumWithdrawalCard
+                currentBalance={currentBalance}
+                onSuccess={() => onOpenChange(false)}
+              />
+            </TabsContent>
+          )}
 
           {/* Bank Transfer Tab - Nigerian users only */}
           {isNigerian && (
