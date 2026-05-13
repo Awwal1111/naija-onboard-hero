@@ -14,10 +14,11 @@ import { DepositMethods } from './DepositMethods'
 import { MiniPayDepositCard } from './MiniPayDepositCard'
 import { IvoryPayDepositCard } from './IvoryPayDepositCard'
 import { WalletDepositCard } from './WalletDepositCard'
+import { PretiumDepositCard } from './PretiumDepositCard'
 import { useMiniPay } from '@/hooks/useMiniPay'
 import { CUSD_ADDRESS, USDT_ADDRESS } from '@/lib/minipay'
 
-type DepositMethod = 'main' | 'ramp' | 'crypto' | 'telegram' | 'minipay' | 'ivorypay' | 'metamask' | 'valora'
+type DepositMethod = 'main' | 'ramp' | 'crypto' | 'telegram' | 'minipay' | 'ivorypay' | 'metamask' | 'valora' | 'pretium'
 
 interface DepositDialogProps {
   open: boolean
