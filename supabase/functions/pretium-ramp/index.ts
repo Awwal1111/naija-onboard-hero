@@ -1,5 +1,10 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { ethers } from "https://esm.sh/ethers@6.7.0";
+
+const CELO_RPC = "https://forno.celo.org";
+const USDT_ADDRESS_CELO = "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e";
+const CUSD_ADDRESS_CELO = "0x765DE816845861e75A25fCA122bb6898B8B1282a";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
