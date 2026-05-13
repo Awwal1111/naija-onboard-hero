@@ -65,14 +65,34 @@ export const DepositMethods = ({ onSelectMethod }: DepositMethodsProps) => {
         </Card>
       )}
 
+      {/* Pretium Mobile Money — for non-Nigerians */}
+      {!isNigerian && (
+        <Card className={`${!isMiniPay ? 'border-primary/20 bg-gradient-to-br from-primary/5 to-transparent' : 'hover:border-primary/40'} transition-colors relative overflow-hidden`}>
+          {!isMiniPay && (
+            <Badge className="absolute top-4 right-4 bg-primary">
+              <Sparkles className="h-3 w-3 mr-1" />
+              Recommended
+            </Badge>
+          )}
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Globe className="h-5 w-5 text-primary" />
+              Pretium Mobile Money
+            </CardTitle>
+            <CardDescription>
+              M-Pesa, MTN, Airtel • Kenya, Ghana, Uganda, Malawi, DR Congo
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <BrandButton onClick={() => onSelectMethod('pretium')} variant={!isMiniPay ? 'primary' : 'outline'} className="w-full">
+              Deposit with Mobile Money
+            </BrandButton>
+          </CardContent>
+        </Card>
+      )}
+
       {/* IvoryPay - International Fiat/Crypto Ramp */}
-      <Card className={`${!isNigerian && !isMiniPay ? 'border-primary/20 bg-gradient-to-br from-primary/5 to-transparent' : 'hover:border-amber-500/40'} transition-colors relative overflow-hidden`}>
-        {!isNigerian && !isMiniPay && (
-          <Badge className="absolute top-4 right-4 bg-primary">
-            <Sparkles className="h-3 w-3 mr-1" />
-            Recommended
-          </Badge>
-        )}
+      <Card className="hover:border-amber-500/40 transition-colors relative overflow-hidden">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <Globe className="h-5 w-5 text-amber-600" />
@@ -83,7 +103,7 @@ export const DepositMethods = ({ onSelectMethod }: DepositMethodsProps) => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <BrandButton onClick={() => onSelectMethod('ivorypay')} variant={!isNigerian && !isMiniPay ? 'primary' : 'outline'} className="w-full">
+          <BrandButton onClick={() => onSelectMethod('ivorypay')} variant="outline" className="w-full">
             Deposit via IvoryPay
           </BrandButton>
         </CardContent>
