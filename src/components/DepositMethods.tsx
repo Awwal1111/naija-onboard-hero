@@ -6,7 +6,7 @@ import { useMiniPay } from '@/hooks/useMiniPay'
 import { useUserCountry } from '@/hooks/useUserCountry'
 
 interface DepositMethodsProps {
-  onSelectMethod: (method: 'ramp' | 'crypto' | 'telegram' | 'minipay' | 'ivorypay' | 'metamask' | 'valora' | 'pretium') => void
+  onSelectMethod: (method: 'ramp' | 'crypto' | 'telegram' | 'minipay' | 'ivorypay' | 'metamask' | 'valora' | 'pretium' | 'mtpelerin') => void
 }
 
 export const DepositMethods = ({ onSelectMethod }: DepositMethodsProps) => {
@@ -90,6 +90,24 @@ export const DepositMethods = ({ onSelectMethod }: DepositMethodsProps) => {
           </CardContent>
         </Card>
       )}
+
+      {/* Mt Pelerin - Global card / bank / SEPA ramp */}
+      <Card className="hover:border-primary/40 transition-colors relative overflow-hidden">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Globe className="h-5 w-5 text-primary" />
+            Mt Pelerin (Card / Bank / SEPA)
+          </CardTitle>
+          <CardDescription>
+            Buy USDT or cUSD with card, bank transfer or SEPA • 60+ countries
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <BrandButton onClick={() => onSelectMethod('mtpelerin')} variant="outline" className="w-full">
+            Deposit with Mt Pelerin
+          </BrandButton>
+        </CardContent>
+      </Card>
 
       {/* IvoryPay - International Fiat/Crypto Ramp */}
       <Card className="hover:border-amber-500/40 transition-colors relative overflow-hidden">

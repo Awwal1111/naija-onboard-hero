@@ -15,10 +15,11 @@ import { MiniPayDepositCard } from './MiniPayDepositCard'
 import { IvoryPayDepositCard } from './IvoryPayDepositCard'
 import { WalletDepositCard } from './WalletDepositCard'
 import { PretiumDepositCard } from './PretiumDepositCard'
+import { MtPelerinCard } from './MtPelerinCard'
 import { useMiniPay } from '@/hooks/useMiniPay'
 import { CUSD_ADDRESS, USDT_ADDRESS } from '@/lib/minipay'
 
-type DepositMethod = 'main' | 'ramp' | 'crypto' | 'telegram' | 'minipay' | 'ivorypay' | 'metamask' | 'valora' | 'pretium'
+type DepositMethod = 'main' | 'ramp' | 'crypto' | 'telegram' | 'minipay' | 'ivorypay' | 'metamask' | 'valora' | 'pretium' | 'mtpelerin'
 
 interface DepositDialogProps {
   open: boolean
@@ -129,7 +130,7 @@ export const DepositDialog = ({ open, onOpenChange, defaultMethod }: DepositDial
     window.dispatchEvent(event)
   }
 
-  const handleMethodSelect = (method: 'ramp' | 'crypto' | 'telegram' | 'minipay' | 'ivorypay' | 'metamask' | 'valora' | 'pretium') => {
+  const handleMethodSelect = (method: 'ramp' | 'crypto' | 'telegram' | 'minipay' | 'ivorypay' | 'metamask' | 'valora' | 'pretium' | 'mtpelerin') => {
     if (method === 'ramp') {
       handleOpenQuidaxWidget()
     } else {
@@ -181,6 +182,7 @@ export const DepositDialog = ({ open, onOpenChange, defaultMethod }: DepositDial
                  selectedMethod === 'minipay' ? 'MiniPay Deposit' :
                  selectedMethod === 'ivorypay' ? 'IvoryPay Deposit' :
                  selectedMethod === 'pretium' ? 'Pretium Deposit' :
+                 selectedMethod === 'mtpelerin' ? 'Mt Pelerin Deposit' :
                  selectedMethod === 'metamask' ? 'MetaMask Deposit' :
                  selectedMethod === 'valora' ? 'Valora Deposit' :
                  'Telegram Bot'}
@@ -191,6 +193,7 @@ export const DepositDialog = ({ open, onOpenChange, defaultMethod }: DepositDial
                  selectedMethod === 'minipay' ? 'Deposit directly from MiniPay' :
                  selectedMethod === 'ivorypay' ? 'Pay via bank or crypto through IvoryPay' :
                  selectedMethod === 'pretium' ? 'Pay with mobile money via Pretium' :
+                 selectedMethod === 'mtpelerin' ? 'Buy crypto via card, bank transfer or SEPA' :
                  selectedMethod === 'metamask' ? 'Open MetaMask and transfer to your NaijaLancers wallet' :
                  selectedMethod === 'valora' ? 'Open Valora and transfer to your NaijaLancers wallet' :
                  'Deposit via Telegram bot'}
@@ -333,6 +336,10 @@ export const DepositDialog = ({ open, onOpenChange, defaultMethod }: DepositDial
             onOpenChange(false)
             setSelectedMethod('main')
           }} />
+        )}
+
+        {selectedMethod === 'mtpelerin' && (
+          <MtPelerinCard mode="buy" defaultCrypto="USDT" />
         )}
 
         {(selectedMethod === 'metamask' || selectedMethod === 'valora') && (
