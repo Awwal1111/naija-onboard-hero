@@ -242,6 +242,8 @@ const App = () => (
                 
                 {/* Public pages */}
                 <Route path="/" element={<Index />} />
+                <Route path="/index" element={<Index />} />
+                <Route path="/index.html" element={<Index />} />
                 <Route path="/install" element={<InstallApp />} />
                 <Route path="/welcome" element={<Welcome />} />
                 <Route path="/login" element={<Login />} />
