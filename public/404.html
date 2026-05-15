@@ -4,10 +4,9 @@
   <meta charset="utf-8">
   <title>NaijaLancers</title>
   <script>
-    // SPA fallback - redirect all 404s to the main app
-    // This handles page refreshes on client-side routes
     var path = window.location.pathname + window.location.search + window.location.hash;
-    window.location.replace('/' + '?redirect=' + encodeURIComponent(path));
+    var normalized = path === '/index' || path === '/index.html' ? '/' : path;
+    window.location.replace('/' + '?redirect=' + encodeURIComponent(normalized));
   </script>
 </head>
 <body>
