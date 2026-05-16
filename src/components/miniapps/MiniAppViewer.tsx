@@ -204,9 +204,15 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
   // Main message handler - attached BEFORE iframe loads to catch early njl_ready
   useEffect(() => {
     const handler = (event: MessageEvent) => {
-      // Validate sender is THIS iframe (window reference equality).
+      // Validate sender. Prefer window-identity match; fall back to origin
+      // match because sandboxed iframes that navigate, redirect, or embed
+      // nested frames can break strict source === contentWindow comparisons,
+      // which previously caused us to silently drop charge requests and the
+      // mini-app's SDK to time out waiting for njl_charge_result.
       const isFromIframe = event.source === iframeRef.current?.contentWindow
-      if (!isFromIframe) return
+      const isFromAllowedOrigin =
+        allowedOrigin !== '*' && event.origin === allowedOrigin
+      if (!isFromIframe && !isFromAllowedOrigin) return
 
       const data = parseMessageData(event.data)
       if (!data) return
@@ -217,6 +223,16 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
       const rid = getRid(data)
       const currency = getCurrency(data)
       console.log('[SDK] ← Received:', rawType, '→', normType, 'rid:', rid, 'currency:', currency, data)
+
+      // Immediate ACK so SDKs with short timeouts (often 15-30s) know we
+      // received the request and can reset/extend their wait window while
+      // the user reads our confirm dialog. Harmless for SDKs that ignore it.
+      if (normType === 'njl_charge' || normType === 'njl_payout' || normType === 'njl_verify_pin') {
+        const ackType = `${normType}_received`
+        const pendingType = `${normType}_pending`
+        postToIframe(withIds(rid, { type: ackType, received: true, currency }))
+        postToIframe(withIds(rid, { type: pendingType, status: 'awaiting_user_confirmation', currency }))
+      }
 
       switch (normType) {
         case 'njl_ready':
