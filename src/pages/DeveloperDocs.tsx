@@ -99,16 +99,27 @@ const MINIAPP_SDK_EXAMPLE = `<!-- Include in your Mini App's HTML -->
 window.parent.postMessage({ type: 'njl_ready' }, '*');
 
 // 2. Listen for events from the parent app
+//    IMPORTANT: njl_charge_received / njl_charge_pending are ACK events sent
+//    immediately when the parent receives your request. If your SDK uses a
+//    timeout, RESET it when you get an ACK — the user may take 30s+ to
+//    confirm in the parent's PIN/confirm dialog. Recommended timeout is
+//    at least 5 MINUTES from last ACK. Never time out in under 60 seconds.
 window.addEventListener('message', (event) => {
   const data = event.data;
-  
+
   if (data.type === 'njl_identify') {
     console.log('User ID:', data.user.user_id);
-    console.log('Name:', data.user.full_name);
-    console.log('Email:', data.user.email);
-    console.log('Avatar:', data.user.profile_picture_url);
   }
-  
+
+  // ACK events — reset your local timeout when you see these
+  if (data.type === 'njl_charge_received' || data.type === 'njl_charge_pending' ||
+      data.type === 'njl_payout_received' || data.type === 'njl_payout_pending' ||
+      data.type === 'njl_verify_pin_received' || data.type === 'njl_verify_pin_pending') {
+    console.log('[njl] ack:', data.type, data.requestId);
+    // resetTimeout(data.requestId);
+    return;
+  }
+
   if (data.type === 'njl_charge_result') {
     if (data.success) {
       console.log('Payment successful! Ref:', data.txRef);
