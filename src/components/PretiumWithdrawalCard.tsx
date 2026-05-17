@@ -42,7 +42,15 @@ export const PretiumWithdrawalCard = ({ currentBalance, onSuccess }: Props) => {
           toast.error(data?.error || error?.message || 'Could not load banks')
           return
         }
-        setBanks((data.banks || []) as Bank[])
+        // Normalize bank shape (Pretium may return code/name in different casings)
+        // and filter out any without a non-empty Code (Radix Select crashes on empty value).
+        const normalized: Bank[] = ((data.banks || []) as any[])
+          .map((b) => ({
+            Code: String(b?.Code ?? b?.code ?? b?.bank_code ?? '').trim(),
+            Name: String(b?.Name ?? b?.name ?? b?.bank_name ?? '').trim(),
+          }))
+          .filter((b) => b.Code && b.Name)
+        setBanks(normalized)
       })
       .finally(() => !cancelled && setBanksLoading(false))
     return () => { cancelled = true }
