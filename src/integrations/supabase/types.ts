@@ -5674,6 +5674,63 @@ export type Database = {
           },
         ]
       }
+      reloadly_transactions: {
+        Row: {
+          country_code: string | null
+          created_at: string
+          failure_reason: string | null
+          id: string
+          local_amount: number | null
+          local_currency: string | null
+          metadata: Json | null
+          nc_amount: number
+          product_type: string
+          provider: string | null
+          recipient: string | null
+          reloadly_transaction_id: string | null
+          status: string
+          updated_at: string
+          usd_amount: number | null
+          user_id: string
+        }
+        Insert: {
+          country_code?: string | null
+          created_at?: string
+          failure_reason?: string | null
+          id?: string
+          local_amount?: number | null
+          local_currency?: string | null
+          metadata?: Json | null
+          nc_amount?: number
+          product_type: string
+          provider?: string | null
+          recipient?: string | null
+          reloadly_transaction_id?: string | null
+          status?: string
+          updated_at?: string
+          usd_amount?: number | null
+          user_id: string
+        }
+        Update: {
+          country_code?: string | null
+          created_at?: string
+          failure_reason?: string | null
+          id?: string
+          local_amount?: number | null
+          local_currency?: string | null
+          metadata?: Json | null
+          nc_amount?: number
+          product_type?: string
+          provider?: string | null
+          recipient?: string | null
+          reloadly_transaction_id?: string | null
+          status?: string
+          updated_at?: string
+          usd_amount?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       safepay_actions: {
         Row: {
           action_by: string

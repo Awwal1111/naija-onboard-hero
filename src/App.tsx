@@ -183,6 +183,7 @@ const HelpCenter = lazy(lazyWithRetry(() => import("./pages/HelpCenter")));
 const TermsConditions = lazy(lazyWithRetry(() => import("./pages/TermsConditions")));
 const PrivacyPolicy = lazy(lazyWithRetry(() => import("./pages/PrivacyPolicy")));
 const RefundPolicy = lazy(lazyWithRetry(() => import("./pages/RefundPolicy")));
+const Utilities = lazy(lazyWithRetry(() => import("./pages/Utilities")));
 const NotFound = lazy(lazyWithRetry(() => import("./pages/NotFound")));
 
 // Lazy load heavy components
@@ -257,6 +258,8 @@ const App = () => (
                 <Route path="/terms-conditions" element={<TermsConditions />} />
                 <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                 <Route path="/refund-policy" element={<RefundPolicy />} />
+                <Route path="/utilities" element={<Utilities />} />
+                <Route path="/bills" element={<Utilities />} />
                 <Route path="/developers" element={<DeveloperDocs />} />
                 <Route path="/verify-certificate/:certificateId" element={<VerifyCertificate />} />
                 <Route path="/payment-success" element={<PaymentSuccess />} />
