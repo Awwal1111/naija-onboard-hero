@@ -183,6 +183,7 @@ const HelpCenter = lazy(lazyWithRetry(() => import("./pages/HelpCenter")));
 const TermsConditions = lazy(lazyWithRetry(() => import("./pages/TermsConditions")));
 const PrivacyPolicy = lazy(lazyWithRetry(() => import("./pages/PrivacyPolicy")));
 const RefundPolicy = lazy(lazyWithRetry(() => import("./pages/RefundPolicy")));
+const Utilities = lazy(lazyWithRetry(() => import("./pages/Utilities")));
 const NotFound = lazy(lazyWithRetry(() => import("./pages/NotFound")));
 
 // Lazy load heavy components
