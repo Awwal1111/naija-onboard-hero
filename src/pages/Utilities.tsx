@@ -39,9 +39,9 @@ function FailureBanner({ msg }: { msg: string }) {
 
 const Utilities = () => {
   const { user } = useAuth();
-  const { wallet } = useWallet();
+  const { balance } = useWallet();
   const navigate = useNavigate();
-  const withdrawable = Number((wallet as any)?.balance_withdrawable ?? 0);
+  const withdrawable = Number(balance?.withdrawable ?? 0);
 
   if (!user) {
     return (
