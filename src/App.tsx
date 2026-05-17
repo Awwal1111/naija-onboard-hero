@@ -258,6 +258,8 @@ const App = () => (
                 <Route path="/terms-conditions" element={<TermsConditions />} />
                 <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                 <Route path="/refund-policy" element={<RefundPolicy />} />
+                <Route path="/utilities" element={<Utilities />} />
+                <Route path="/bills" element={<Utilities />} />
                 <Route path="/developers" element={<DeveloperDocs />} />
                 <Route path="/verify-certificate/:certificateId" element={<VerifyCertificate />} />
                 <Route path="/payment-success" element={<PaymentSuccess />} />
