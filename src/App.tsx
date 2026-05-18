@@ -265,6 +265,8 @@ const App = () => (
                 <Route path="/verify-certificate/:certificateId" element={<VerifyCertificate />} />
                 <Route path="/payment-success" element={<PaymentSuccess />} />
                 <Route path="/payment-failed" element={<PaymentFailed />} />
+                <Route path="/pay/u/:userId" element={<PayLink />} />
+                <Route path="/pay/req/:shortCode" element={<PayLink />} />
                 
                 {/* Protected routes */}
                 <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
