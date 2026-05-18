@@ -16,7 +16,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 interface RecipientInfo {
   user_id: string
   full_name: string | null
-  avatar_url?: string | null
+  profile_picture_url?: string | null
 }
 
 interface RequestInfo {
