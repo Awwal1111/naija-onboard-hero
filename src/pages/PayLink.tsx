@@ -74,7 +74,7 @@ export default function PayLink() {
         if (!targetUserId) throw new Error('No recipient specified')
         const { data: prof, error: profErr } = await supabase
           .from('profiles')
-          .select('user_id, full_name, avatar_url')
+          .select('user_id, full_name, profile_picture_url')
           .eq('user_id', targetUserId)
           .limit(1)
           .maybeSingle()
@@ -104,41 +104,16 @@ export default function PayLink() {
 
     setSubmitting(true)
     try {
-      // Look up recipient email for the existing transfer_funds RPC
-      const { data: emailLookup } = await supabase.rpc('lookup_user_by_email', { lookup_email: '' as any }).single()
-      void emailLookup
-      // The RPC uses recipient_email; fetch it from profiles
-      const { data: emailRow } = await supabase
-        .from('profiles')
-        .select('email')
-        .eq('user_id', recipient.user_id)
-        .limit(1)
-        .maybeSingle()
-      const recipientEmail = (emailRow as any)?.email
-      if (!recipientEmail) throw new Error('Recipient email is unavailable; cannot transfer.')
-
-      const { data, error: rpcErr } = await supabase.rpc('transfer_funds', {
-        sender_id: user.id,
-        recipient_email: recipientEmail,
-        amount: amt,
-        pin_hash: pin,
+      const { data, error: fnErr } = await supabase.functions.invoke('pay-via-link', {
+        body: {
+          recipient_user_id: recipient.user_id,
+          amount: amt,
+          pin,
+          request_id: request?.id || null,
+        },
       })
-      if (rpcErr) throw rpcErr
-      const result = data as any
-      if (!result?.success) throw new Error(result?.error || 'Transfer failed')
-
-      // Mark request as paid if applicable
-      if (request) {
-        await supabase
-          .from('payment_requests')
-          .update({
-            status: 'paid',
-            paid_by_user_id: user.id,
-            paid_at: new Date().toISOString(),
-            paid_amount: amt,
-          })
-          .eq('id', request.id)
-      }
+      if (fnErr) throw fnErr
+      if (!(data as any)?.success) throw new Error((data as any)?.error || 'Payment failed')
 
       await refreshWallet()
       setDone(true)
