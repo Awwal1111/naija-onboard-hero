@@ -183,7 +183,7 @@ export default function PayLink() {
           <CardContent className="space-y-4">
             <div className="flex items-center gap-3 p-3 rounded-md bg-muted">
               <Avatar className="h-10 w-10">
-                <AvatarImage src={recipient?.avatar_url || undefined} />
+                <AvatarImage src={recipient?.profile_picture_url || undefined} />
                 <AvatarFallback><User className="h-4 w-4" /></AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
