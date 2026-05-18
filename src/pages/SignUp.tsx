@@ -401,7 +401,7 @@ const SignUp = () => {
                     Terms & Conditions
                   </Link>
                   {' '}and{' '}
-                  <Link to="/privacy-policy" className="text-primary hover:text-primary/80 underline font-medium">
+                  <Link to="/policy-privacy" className="text-primary hover:text-primary/80 underline font-medium">
                     Privacy Policy
                   </Link>
                 </label>

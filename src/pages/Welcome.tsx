@@ -646,7 +646,7 @@ const Welcome = () => {
                     </Link>
                   </li>
                   <li>
-                    <Link to="/privacy-policy" className="text-sm text-text-secondary hover:text-primary transition-colors">
+                    <Link to="/policy-privacy" className="text-sm text-text-secondary hover:text-primary transition-colors">
                       Privacy Policy
                     </Link>
                   </li>
