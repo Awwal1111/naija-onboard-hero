@@ -175,6 +175,7 @@ const PublicExperts = lazy(lazyWithRetry(() => import("./pages/PublicExperts")))
 const PublicJobs = lazy(lazyWithRetry(() => import("./pages/PublicJobs")));
 const Sitemap = lazy(lazyWithRetry(() => import("./pages/Sitemap")));
 const RampSession = lazy(lazyWithRetry(() => import("./pages/RampSession")));
+const PayLink = lazy(lazyWithRetry(() => import("./pages/PayLink")));
 const InstallApp = lazy(lazyWithRetry(() => import("./pages/InstallApp")));
 
 // Static pages
