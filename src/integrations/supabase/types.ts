@@ -4178,6 +4178,51 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_requests: {
+        Row: {
+          amount: number | null
+          created_at: string
+          creator_user_id: string
+          expires_at: string | null
+          id: string
+          note: string | null
+          paid_amount: number | null
+          paid_at: string | null
+          paid_by_user_id: string | null
+          short_code: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string
+          creator_user_id: string
+          expires_at?: string | null
+          id?: string
+          note?: string | null
+          paid_amount?: number | null
+          paid_at?: string | null
+          paid_by_user_id?: string | null
+          short_code: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string
+          creator_user_id?: string
+          expires_at?: string | null
+          id?: string
+          note?: string | null
+          paid_amount?: number | null
+          paid_at?: string | null
+          paid_by_user_id?: string | null
+          short_code?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       payouts: {
         Row: {
           admin_notes: string | null

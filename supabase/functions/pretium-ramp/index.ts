@@ -94,10 +94,63 @@ serve(async (req) => {
 
     // ---------- Off-ramp NGN: convert NC → bank ----------
     if (action === "offrampNGN") {
-      const { ncAmount, account_name, account_number, bank_name, bank_code } = body;
+      const { ncAmount, account_name, account_number, bank_name, bank_code, dryRun } = body;
       if (!ncAmount || ncAmount < 1000) return json({ error: "Minimum withdrawal is NC 1000" }, 400);
       if (!account_number || !bank_code || !account_name || !bank_name) {
         return json({ error: "Missing bank details" }, 400);
+      }
+
+      // Dry-run: validate end-to-end wiring without debiting funds or sending on-chain.
+      // Re-runs validateAccount + exchange-rate + master-wallet balance check.
+      if (dryRun) {
+        const checks: Record<string, any> = {};
+        const v = await callPretium(`/v1/validation/NGN`, {
+          method: "POST",
+          body: JSON.stringify({ account_number: String(account_number), bank_code: String(bank_code) }),
+        });
+        checks.validateAccount = { ok: v.resp.ok, status: v.resp.status, body: v.data };
+        const r = await callPretium(`/v1/exchange-rate`, {
+          method: "POST",
+          body: JSON.stringify({ currency_code: "NGN" }),
+        });
+        checks.exchangeRate = { ok: r.resp.ok, status: r.resp.status, body: r.data };
+        try {
+          const masterPk = Deno.env.get("CELO_MASTER_WALLET_PRIVATE_KEY");
+          const settlement = Deno.env.get("PRETIUM_SETTLEMENT_ADDRESS")?.trim();
+          if (!masterPk) throw new Error("Master wallet not configured");
+          if (!settlement) throw new Error("Settlement address not configured");
+          const provider = new ethers.JsonRpcProvider(CELO_RPC);
+          const signer = new ethers.Wallet(masterPk, provider);
+          const erc20 = new ethers.Contract(
+            USDT_ADDRESS_CELO,
+            ["function decimals() view returns (uint8)", "function balanceOf(address) view returns (uint256)"],
+            signer,
+          );
+          const decimals: number = Number(await erc20.decimals());
+          const bal: bigint = await erc20.balanceOf(signer.address);
+          const usdtNeeded = Number(ncAmount) / 1600;
+          const value = ethers.parseUnits(usdtNeeded.toFixed(decimals), decimals);
+          checks.masterWallet = {
+            ok: true,
+            address: signer.address,
+            settlement,
+            usdt_balance: ethers.formatUnits(bal, decimals),
+            usdt_needed: usdtNeeded.toFixed(decimals),
+            sufficient: bal >= value,
+          };
+        } catch (e: any) {
+          checks.masterWallet = { ok: false, error: e?.message || "unknown" };
+        }
+        const allOk = checks.validateAccount?.ok && checks.exchangeRate?.ok && checks.masterWallet?.ok && checks.masterWallet?.sufficient;
+        return json({
+          success: true,
+          dryRun: true,
+          allOk,
+          message: allOk
+            ? "All Pretium checks passed. Live withdrawal would succeed."
+            : "Pretium dry-run found one or more issues — see checks.",
+          checks,
+        });
       }
 
       const { data: profile } = await supabaseAdmin
