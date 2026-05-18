@@ -17,7 +17,7 @@ export default function Sitemap() {
         { loc: '/faq', lastmod: new Date().toISOString().split('T')[0], priority: '0.7' },
         { loc: '/fundraising', lastmod: new Date().toISOString().split('T')[0], priority: '0.8' },
         { loc: '/terms-conditions', lastmod: new Date().toISOString().split('T')[0], priority: '0.5' },
-        { loc: '/privacy-policy', lastmod: new Date().toISOString().split('T')[0], priority: '0.5' }
+        { loc: '/policy-privacy', lastmod: new Date().toISOString().split('T')[0], priority: '0.5' }
       );
 
       // Public expert profiles (using /p/ prefix for SEO - no redirects)

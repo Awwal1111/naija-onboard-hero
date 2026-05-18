@@ -20,7 +20,7 @@ Allow: /faq
 Allow: /help
 Allow: /fundraising
 Allow: /terms-conditions
-Allow: /privacy-policy
+Allow: /policy-privacy
 Allow: /refund-policy
 Allow: /developers
 Allow: /install
