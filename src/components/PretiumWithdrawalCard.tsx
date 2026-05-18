@@ -209,13 +209,23 @@ export const PretiumWithdrawalCard = ({ currentBalance, onSuccess }: Props) => {
             description={`Withdraw NC ${parseFloat(amount).toLocaleString()} to ${verifiedName}`}
           />
         ) : (
-          <BrandButton
-            className="w-full"
-            onClick={handleContinue}
-            disabled={isLoading || !amount || !verifiedName}
-          >
-            {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing…</> : <><Send className="mr-2 h-4 w-4" /> Withdraw via Pretium</>}
-          </BrandButton>
+          <div className="space-y-2">
+            <BrandButton
+              className="w-full"
+              onClick={handleContinue}
+              disabled={isLoading || !amount || !verifiedName}
+            >
+              {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing…</> : <><Send className="mr-2 h-4 w-4" /> Withdraw via Pretium</>}
+            </BrandButton>
+            <BrandButton
+              variant="outline"
+              className="w-full"
+              onClick={handleDryRun}
+              disabled={isLoading || !verifiedName}
+            >
+              Test Pretium (no funds spent)
+            </BrandButton>
+          </div>
         )}
       </CardContent>
     </Card>
