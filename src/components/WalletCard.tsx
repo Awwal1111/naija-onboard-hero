@@ -1,10 +1,11 @@
 import React, { useState } from 'react'
-import { Plus, Minus, Eye, EyeOff, Send } from 'lucide-react'
+import { Plus, Minus, Eye, EyeOff, Send, QrCode, Link as LinkIcon } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { BrandButton } from '@/components/ui/brand-button'
 import { useWallet, WalletBalance } from '@/hooks/useWallet'
 import { useUserCountry } from '@/hooks/useUserCountry'
 import { useCurrency, CURRENCIES, CurrencyCode } from '@/hooks/useCurrency'
+import { useCeloWallet } from '@/hooks/useCeloWallet'
 import {
   Select,
   SelectContent,
@@ -15,10 +16,13 @@ import {
 import { DepositDialog } from './DepositDialog'
 import { WithdrawalDialog } from './WithdrawalDialog'
 import { TransferDialog } from './TransferDialog'
+import { WalletQRSheet } from './WalletQRSheet'
+import { CreatePaymentLinkDialog } from './CreatePaymentLinkDialog'
 
 export const WalletCard = () => {
   const { balance, loading } = useWallet()
   const { isNigerian } = useUserCountry()
+  const { address: celoAddress } = useCeloWallet()
   const { currency, setCurrency, formatPreferred, convertFromNC } = useCurrency()
   const [showBalance, setShowBalance] = useState(true)
   const [showDeposit, setShowDeposit] = useState(false)
