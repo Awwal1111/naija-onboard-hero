@@ -1,10 +1,11 @@
 import React, { useState } from 'react'
-import { Plus, Minus, Eye, EyeOff, Send } from 'lucide-react'
+import { Plus, Minus, Eye, EyeOff, Send, QrCode, Link as LinkIcon } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { BrandButton } from '@/components/ui/brand-button'
 import { useWallet, WalletBalance } from '@/hooks/useWallet'
 import { useUserCountry } from '@/hooks/useUserCountry'
 import { useCurrency, CURRENCIES, CurrencyCode } from '@/hooks/useCurrency'
+import { useCeloWallet } from '@/hooks/useCeloWallet'
 import {
   Select,
   SelectContent,
@@ -15,15 +16,20 @@ import {
 import { DepositDialog } from './DepositDialog'
 import { WithdrawalDialog } from './WithdrawalDialog'
 import { TransferDialog } from './TransferDialog'
+import { WalletQRSheet } from './WalletQRSheet'
+import { CreatePaymentLinkDialog } from './CreatePaymentLinkDialog'
 
 export const WalletCard = () => {
   const { balance, loading } = useWallet()
   const { isNigerian } = useUserCountry()
+  const { address: celoAddress } = useCeloWallet()
   const { currency, setCurrency, formatPreferred, convertFromNC } = useCurrency()
   const [showBalance, setShowBalance] = useState(true)
   const [showDeposit, setShowDeposit] = useState(false)
   const [showWithdrawal, setShowWithdrawal] = useState(false)
   const [showTransfer, setShowTransfer] = useState(false)
+  const [showQR, setShowQR] = useState(false)
+  const [showPayLink, setShowPayLink] = useState(false)
 
   const curr = CURRENCIES[currency]
 
@@ -140,7 +146,28 @@ export const WalletCard = () => {
                 Withdraw
               </BrandButton>
             </div>
-            
+
+            <div className="grid grid-cols-2 gap-2">
+              <BrandButton
+                variant="outline"
+                size="sm"
+                onClick={() => setShowQR(true)}
+                className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+              >
+                <QrCode className="h-4 w-4 mr-1" />
+                Receive / Scan
+              </BrandButton>
+              <BrandButton
+                variant="outline"
+                size="sm"
+                onClick={() => setShowPayLink(true)}
+                className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+              >
+                <LinkIcon className="h-4 w-4 mr-1" />
+                Payment Link
+              </BrandButton>
+            </div>
+
             {balance.withdrawable < 100 && (
               <p className="text-xs text-white/70">
                 Minimum withdrawal: NC 100 (~$0.06)
@@ -162,6 +189,15 @@ export const WalletCard = () => {
         open={showWithdrawal} 
         onOpenChange={setShowWithdrawal}
         currentBalance={balance.withdrawable}
+      />
+      <WalletQRSheet
+        open={showQR}
+        onOpenChange={setShowQR}
+        receiveAddress={celoAddress || null}
+      />
+      <CreatePaymentLinkDialog
+        open={showPayLink}
+        onOpenChange={setShowPayLink}
       />
     </>
   )
