@@ -28,6 +28,8 @@ export const WalletCard = () => {
   const [showDeposit, setShowDeposit] = useState(false)
   const [showWithdrawal, setShowWithdrawal] = useState(false)
   const [showTransfer, setShowTransfer] = useState(false)
+  const [showQR, setShowQR] = useState(false)
+  const [showPayLink, setShowPayLink] = useState(false)
 
   const curr = CURRENCIES[currency]
 
@@ -144,7 +146,28 @@ export const WalletCard = () => {
                 Withdraw
               </BrandButton>
             </div>
-            
+
+            <div className="grid grid-cols-2 gap-2">
+              <BrandButton
+                variant="outline"
+                size="sm"
+                onClick={() => setShowQR(true)}
+                className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+              >
+                <QrCode className="h-4 w-4 mr-1" />
+                Receive / Scan
+              </BrandButton>
+              <BrandButton
+                variant="outline"
+                size="sm"
+                onClick={() => setShowPayLink(true)}
+                className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+              >
+                <LinkIcon className="h-4 w-4 mr-1" />
+                Payment Link
+              </BrandButton>
+            </div>
+
             {balance.withdrawable < 100 && (
               <p className="text-xs text-white/70">
                 Minimum withdrawal: NC 100 (~$0.06)
