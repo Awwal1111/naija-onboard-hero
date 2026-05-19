@@ -271,7 +271,7 @@ const RefundPolicy = () => {
             <Button variant="link" onClick={() => navigate('/terms-conditions')}>
               Terms of Service
             </Button>
-            <Button variant="link" onClick={() => navigate('/policy-privacy')}>
+            <Button variant="link" onClick={() => navigate('/privacy-policy')}>
               Privacy Policy
             </Button>
             <Button variant="link" onClick={() => navigate('/help')}>
