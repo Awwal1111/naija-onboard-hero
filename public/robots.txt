@@ -20,8 +20,11 @@ Allow: /faq
 Allow: /help
 Allow: /fundraising
 Allow: /terms-conditions
-Allow: /policy-privacy
+Allow: /privacy-policy
 Allow: /refund-policy
+Allow: /account-deletion
+Allow: /delete-account
+Allow: /data-deletion
 Allow: /developers
 Allow: /install
 Allow: /login

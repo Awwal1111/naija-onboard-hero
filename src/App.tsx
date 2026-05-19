@@ -183,6 +183,7 @@ const FAQ = lazy(lazyWithRetry(() => import("./pages/FAQ")));
 const HelpCenter = lazy(lazyWithRetry(() => import("./pages/HelpCenter")));
 const TermsConditions = lazy(lazyWithRetry(() => import("./pages/TermsConditions")));
 const PrivacyPolicy = lazy(lazyWithRetry(() => import("./pages/PrivacyPolicy")));
+const AccountDeletion = lazy(lazyWithRetry(() => import("./pages/AccountDeletion")));
 const RefundPolicy = lazy(lazyWithRetry(() => import("./pages/RefundPolicy")));
 const Utilities = lazy(lazyWithRetry(() => import("./pages/Utilities")));
 const NotFound = lazy(lazyWithRetry(() => import("./pages/NotFound")));
@@ -257,7 +258,10 @@ const App = () => (
                 <Route path="/faq" element={<FAQ />} />
                 <Route path="/help" element={<HelpCenter />} />
                 <Route path="/terms-conditions" element={<TermsConditions />} />
-                <Route path="/policy-privacy" element={<PrivacyPolicy />} />
+                <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                <Route path="/account-deletion" element={<AccountDeletion />} />
+                <Route path="/data-deletion" element={<AccountDeletion />} />
+                <Route path="/delete-account" element={<AccountDeletion />} />
                 <Route path="/refund-policy" element={<RefundPolicy />} />
                 <Route path="/utilities" element={<Utilities />} />
                 <Route path="/bills" element={<Utilities />} />

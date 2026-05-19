@@ -25,6 +25,21 @@ const json = (body: unknown, status = 200) =>
     headers: { "Content-Type": "application/json", ...corsHeaders },
   });
 
+/** Normalize a private key string: trim, strip quotes/whitespace, ensure 0x-prefixed 32-byte hex */
+function normalizeMasterKey(raw: string | undefined): string {
+  if (!raw) throw new Error("Master wallet private key not configured (CELO_MASTER_WALLET_PRIVATE_KEY)");
+  let k = raw.trim().replace(/^['"]|['"]$/g, "").replace(/\s+/g, "");
+  if (!k.startsWith("0x") && !k.startsWith("0X")) k = "0x" + k;
+  const hex = k.slice(2);
+  if (!/^[0-9a-fA-F]{64}$/.test(hex)) {
+    throw new Error(
+      `Master wallet private key is malformed: expected 0x + 64 hex chars (32 bytes), got length ${hex.length}. ` +
+      `Re-paste the secret without spaces, quotes, or line breaks.`,
+    );
+  }
+  return k;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -115,9 +130,8 @@ serve(async (req) => {
         });
         checks.exchangeRate = { ok: r.resp.ok, status: r.resp.status, body: r.data };
         try {
-          const masterPk = Deno.env.get("CELO_MASTER_WALLET_PRIVATE_KEY");
+          const masterPk = normalizeMasterKey(Deno.env.get("CELO_MASTER_WALLET_PRIVATE_KEY"));
           const settlement = Deno.env.get("PRETIUM_SETTLEMENT_ADDRESS")?.trim();
-          if (!masterPk) throw new Error("Master wallet not configured");
           if (!settlement) throw new Error("Settlement address not configured");
           const provider = new ethers.JsonRpcProvider(CELO_RPC);
           const signer = new ethers.Wallet(masterPk, provider);
@@ -214,8 +228,7 @@ serve(async (req) => {
 
       let txHash: string | null = null;
       try {
-        const masterPk = Deno.env.get("CELO_MASTER_WALLET_PRIVATE_KEY");
-        if (!masterPk) throw new Error("Master wallet not configured");
+        const masterPk = normalizeMasterKey(Deno.env.get("CELO_MASTER_WALLET_PRIVATE_KEY"));
         const provider = new ethers.JsonRpcProvider(CELO_RPC);
         const signer = new ethers.Wallet(masterPk, provider);
         const erc20 = new ethers.Contract(
