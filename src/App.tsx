@@ -259,6 +259,9 @@ const App = () => (
                 <Route path="/help" element={<HelpCenter />} />
                 <Route path="/terms-conditions" element={<TermsConditions />} />
                 <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                <Route path="/account-deletion" element={<AccountDeletion />} />
+                <Route path="/data-deletion" element={<AccountDeletion />} />
+                <Route path="/delete-account" element={<AccountDeletion />} />
                 <Route path="/refund-policy" element={<RefundPolicy />} />
                 <Route path="/utilities" element={<Utilities />} />
                 <Route path="/bills" element={<Utilities />} />
