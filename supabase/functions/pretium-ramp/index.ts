@@ -25,6 +25,21 @@ const json = (body: unknown, status = 200) =>
     headers: { "Content-Type": "application/json", ...corsHeaders },
   });
 
+/** Normalize a private key string: trim, strip quotes/whitespace, ensure 0x-prefixed 32-byte hex */
+function normalizeMasterKey(raw: string | undefined): string {
+  if (!raw) throw new Error("Master wallet private key not configured (CELO_MASTER_WALLET_PRIVATE_KEY)");
+  let k = raw.trim().replace(/^['"]|['"]$/g, "").replace(/\s+/g, "");
+  if (!k.startsWith("0x") && !k.startsWith("0X")) k = "0x" + k;
+  const hex = k.slice(2);
+  if (!/^[0-9a-fA-F]{64}$/.test(hex)) {
+    throw new Error(
+      `Master wallet private key is malformed: expected 0x + 64 hex chars (32 bytes), got length ${hex.length}. ` +
+      `Re-paste the secret without spaces, quotes, or line breaks.`,
+    );
+  }
+  return k;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
