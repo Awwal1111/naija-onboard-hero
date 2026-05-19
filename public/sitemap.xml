@@ -90,6 +90,12 @@
     <changefreq>monthly</changefreq>
     <priority>0.4</priority>
   </url>
+  <url>
+    <loc>https://naijalancers.name.ng/account-deletion</loc>
+    <lastmod>2026-05-19</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
   <!-- Expert Profiles -->
   <url>
     <loc>https://naijalancers.name.ng/p/expert/bbd23893-7698-4d9f-856e-904e8c9d218b</loc>
