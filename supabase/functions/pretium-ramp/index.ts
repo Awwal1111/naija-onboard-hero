@@ -130,9 +130,8 @@ serve(async (req) => {
         });
         checks.exchangeRate = { ok: r.resp.ok, status: r.resp.status, body: r.data };
         try {
-          const masterPk = Deno.env.get("CELO_MASTER_WALLET_PRIVATE_KEY");
+          const masterPk = normalizeMasterKey(Deno.env.get("CELO_MASTER_WALLET_PRIVATE_KEY"));
           const settlement = Deno.env.get("PRETIUM_SETTLEMENT_ADDRESS")?.trim();
-          if (!masterPk) throw new Error("Master wallet not configured");
           if (!settlement) throw new Error("Settlement address not configured");
           const provider = new ethers.JsonRpcProvider(CELO_RPC);
           const signer = new ethers.Wallet(masterPk, provider);
