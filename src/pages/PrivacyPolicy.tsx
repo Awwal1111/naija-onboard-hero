@@ -300,6 +300,11 @@ const PrivacyPolicy = () => {
           <p className="text-text-secondary text-xs mt-2">
             This Privacy Policy may be updated periodically. Continued use constitutes acceptance of changes.
           </p>
+          <p className="text-sm mt-4">
+            <a href="/account-deletion" className="text-primary underline font-medium">
+              Request account &amp; data deletion →
+            </a>
+          </p>
         </div>
       </div>
     </div>
