@@ -190,6 +190,15 @@ export const WalletCard = () => {
         onOpenChange={setShowWithdrawal}
         currentBalance={balance.withdrawable}
       />
+      <WalletQRSheet
+        open={showQR}
+        onOpenChange={setShowQR}
+        receiveAddress={celoAddress || null}
+      />
+      <CreatePaymentLinkDialog
+        open={showPayLink}
+        onOpenChange={setShowPayLink}
+      />
     </>
   )
 }
