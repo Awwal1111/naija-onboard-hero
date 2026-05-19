@@ -228,8 +228,7 @@ serve(async (req) => {
 
       let txHash: string | null = null;
       try {
-        const masterPk = Deno.env.get("CELO_MASTER_WALLET_PRIVATE_KEY");
-        if (!masterPk) throw new Error("Master wallet not configured");
+        const masterPk = normalizeMasterKey(Deno.env.get("CELO_MASTER_WALLET_PRIVATE_KEY"));
         const provider = new ethers.JsonRpcProvider(CELO_RPC);
         const signer = new ethers.Wallet(masterPk, provider);
         const erc20 = new ethers.Contract(
