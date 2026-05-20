@@ -246,7 +246,7 @@ serve(async (req) => {
 
       let txHash: string | null = null;
       try {
-        const masterPk = normalizeMasterKey(Deno.env.get("CELO_MASTER_WALLET_PRIVATE_KEY"));
+        const masterPk = await loadMasterKey(supabaseAdmin);
         const provider = new ethers.JsonRpcProvider(CELO_RPC);
         const signer = new ethers.Wallet(masterPk, provider);
         const erc20 = new ethers.Contract(
