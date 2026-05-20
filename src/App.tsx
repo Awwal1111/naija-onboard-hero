@@ -272,6 +272,8 @@ const App = () => (
                 <Route path="/payment-failed" element={<PaymentFailed />} />
                 <Route path="/pay/u/:userId" element={<PayLink />} />
                 <Route path="/pay/req/:shortCode" element={<PayLink />} />
+                <Route path="/premium" element={<Premium />} />
+                <Route path="/upgrade" element={<Premium />} />
                 
                 {/* Protected routes */}
                 <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
