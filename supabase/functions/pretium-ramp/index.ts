@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { ethers } from "https://esm.sh/ethers@6.7.0";
+import CryptoJS from "https://esm.sh/crypto-js@4.2.0";
 
 const CELO_RPC = "https://forno.celo.org";
 const USDT_ADDRESS_CELO = "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e";
@@ -13,8 +14,6 @@ const corsHeaders = {
 
 const PRETIUM_BASE = "https://api.xwift.africa";
 
-// Approximate USDT→fiat rates used as fallback when the live exchange-rate
-// endpoint fails. Values intentionally conservative.
 const USDT_TO_FIAT: Record<string, number> = {
   NGN: 1600, KES: 130, GHS: 12, UGX: 3800, MWK: 1700, CDF: 2800, ETB: 130,
 };
@@ -25,19 +24,38 @@ const json = (body: unknown, status = 200) =>
     headers: { "Content-Type": "application/json", ...corsHeaders },
   });
 
-/** Normalize a private key string: trim, strip quotes/whitespace, ensure 0x-prefixed 32-byte hex */
-function normalizeMasterKey(raw: string | undefined): string {
-  if (!raw) throw new Error("Master wallet private key not configured (CELO_MASTER_WALLET_PRIVATE_KEY)");
+function normalizeHexKey(raw: string): string {
   let k = raw.trim().replace(/^['"]|['"]$/g, "").replace(/\s+/g, "");
   if (!k.startsWith("0x") && !k.startsWith("0X")) k = "0x" + k;
   const hex = k.slice(2);
   if (!/^[0-9a-fA-F]{64}$/.test(hex)) {
-    throw new Error(
-      `Master wallet private key is malformed: expected 0x + 64 hex chars (32 bytes), got length ${hex.length}. ` +
-      `Re-paste the secret without spaces, quotes, or line breaks.`,
-    );
+    throw new Error(`Master wallet private key malformed: expected 0x + 64 hex chars, got length ${hex.length}.`);
   }
   return k;
+}
+
+/**
+ * Load master wallet key — mirrors celo-withdrawal/process-quidax-sell:
+ * 1. Prefer encrypted key in system_settings.master_wallet_encrypted
+ *    (decrypted with WALLET_ENCRYPTION_SECRET)
+ * 2. Fall back to raw CELO_MASTER_WALLET_PRIVATE_KEY env var
+ */
+async function loadMasterKey(supabaseAdmin: any): Promise<string> {
+  try {
+    const { data } = await supabaseAdmin
+      .from("system_settings").select("value")
+      .eq("key", "master_wallet_encrypted").maybeSingle();
+    if (data?.value) {
+      const encSecret = Deno.env.get("WALLET_ENCRYPTION_SECRET") || "default_secret_change_in_production";
+      const decrypted = CryptoJS.AES.decrypt(data.value, encSecret).toString(CryptoJS.enc.Utf8);
+      if (decrypted && decrypted.length >= 64) return normalizeHexKey(decrypted);
+    }
+  } catch (e) {
+    console.warn("[PRETIUM-RAMP] encrypted master key load failed:", (e as Error)?.message);
+  }
+  const raw = Deno.env.get("CELO_MASTER_WALLET_PRIVATE_KEY");
+  if (!raw) throw new Error("Master wallet key unavailable (system_settings.master_wallet_encrypted missing and CELO_MASTER_WALLET_PRIVATE_KEY not set)");
+  return normalizeHexKey(raw);
 }
 
 serve(async (req) => {
@@ -130,7 +148,7 @@ serve(async (req) => {
         });
         checks.exchangeRate = { ok: r.resp.ok, status: r.resp.status, body: r.data };
         try {
-          const masterPk = normalizeMasterKey(Deno.env.get("CELO_MASTER_WALLET_PRIVATE_KEY"));
+          const masterPk = await loadMasterKey(supabaseAdmin);
           const settlement = Deno.env.get("PRETIUM_SETTLEMENT_ADDRESS")?.trim();
           if (!settlement) throw new Error("Settlement address not configured");
           const provider = new ethers.JsonRpcProvider(CELO_RPC);
@@ -228,7 +246,7 @@ serve(async (req) => {
 
       let txHash: string | null = null;
       try {
-        const masterPk = normalizeMasterKey(Deno.env.get("CELO_MASTER_WALLET_PRIVATE_KEY"));
+        const masterPk = await loadMasterKey(supabaseAdmin);
         const provider = new ethers.JsonRpcProvider(CELO_RPC);
         const signer = new ethers.Wallet(masterPk, provider);
         const erc20 = new ethers.Contract(
