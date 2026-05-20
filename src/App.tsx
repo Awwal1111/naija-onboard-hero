@@ -184,6 +184,7 @@ const HelpCenter = lazy(lazyWithRetry(() => import("./pages/HelpCenter")));
 const TermsConditions = lazy(lazyWithRetry(() => import("./pages/TermsConditions")));
 const PrivacyPolicy = lazy(lazyWithRetry(() => import("./pages/PrivacyPolicy")));
 const AccountDeletion = lazy(lazyWithRetry(() => import("./pages/AccountDeletion")));
+const Premium = lazy(lazyWithRetry(() => import("./pages/Premium")));
 const RefundPolicy = lazy(lazyWithRetry(() => import("./pages/RefundPolicy")));
 const Utilities = lazy(lazyWithRetry(() => import("./pages/Utilities")));
 const NotFound = lazy(lazyWithRetry(() => import("./pages/NotFound")));
