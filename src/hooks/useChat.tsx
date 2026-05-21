@@ -256,6 +256,11 @@ export const useChat = (otherUserId: string) => {
       return
     }
 
+    const allowed = await enforce('chat_send', 20, 24, 'chat messages')
+    if (!allowed) return
+
+
+
     try {
       // If replying, get the original message details
       let replyToContent = null
