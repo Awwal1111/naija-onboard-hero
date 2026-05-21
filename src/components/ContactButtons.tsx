@@ -30,6 +30,8 @@ export const ContactButtons = ({
   const location = useLocation();
   const navigate = useNavigate();
   const { isPremium } = usePremiumGate();
+
+  const formatWhatsAppLink = (number: string) => {
     let formatted = number.replace(/[\s-]/g, '');
     if (formatted.startsWith('0')) {
       formatted = '234' + formatted.substring(1);
@@ -55,6 +57,22 @@ export const ContactButtons = ({
   const hasAnyContact = phoneNumber || email || whatsappNumber || googleMeetLink || facebookUrl;
 
   if (!hasAnyContact) return null;
+
+  // Free users cannot view other users' contact details
+  if (!isPremium) {
+    return (
+      <div className="flex flex-col gap-2 rounded-lg border border-dashed border-primary/30 bg-primary/5 p-3">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Lock className="h-4 w-4" />
+          <span>Contact details are hidden for free accounts.</span>
+        </div>
+        <Button size="sm" onClick={() => navigate('/premium')} className="gap-1">
+          <Crown className="h-4 w-4" />
+          Upgrade to view contacts
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-wrap gap-2">
