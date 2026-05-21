@@ -115,6 +115,31 @@ export const useChat = (otherUserId: string) => {
           setChat(existingChat)
           await fetchMessages(existingChat.id)
         } else {
+          // Free-tier: can only DM strangers if premium, connected, or has sent a proposal
+          if (!isPremium) {
+            const [{ count: connCount }, { count: propCount }] = await Promise.all([
+              supabase
+                .from('connections')
+                .select('id', { count: 'exact', head: true })
+                .or(
+                  `and(requester_id.eq.${user.id},receiver_id.eq.${otherUserId}),and(requester_id.eq.${otherUserId},receiver_id.eq.${user.id})`
+                )
+                .eq('status', 'accepted'),
+              supabase
+                .from('job_proposals')
+                .select('id', { count: 'exact', head: true })
+                .eq('freelancer_id', user.id)
+                .limit(1),
+            ])
+            const isConnected = (connCount ?? 0) > 0
+            const hasProposal = (propCount ?? 0) > 0
+            if (!isConnected && !hasProposal) {
+              upsell(
+                'Free users can only message connections or after sending a proposal. Upgrade to Premium to message anyone.'
+              )
+              throw new Error('Direct message blocked for free users')
+            }
+          }
           console.log('Creating new chat')
           // Create new chat
           const { data: newChat, error } = await supabase
