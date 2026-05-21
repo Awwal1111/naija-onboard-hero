@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
-import { Phone, Mail, MessageCircle, Video, Facebook } from "lucide-react";
+import { Phone, Mail, MessageCircle, Video, Facebook, Lock, Crown } from "lucide-react";
 import { trackCommunicationClick, ButtonType } from "@/lib/communicationAnalytics";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { usePremiumGate } from "@/hooks/usePremiumGate";
 
 interface ContactButtonsProps {
   userId: string;
@@ -27,8 +28,8 @@ export const ContactButtons = ({
   sourceContext,
 }: ContactButtonsProps) => {
   const location = useLocation();
-
-  const formatWhatsAppLink = (number: string) => {
+  const navigate = useNavigate();
+  const { isPremium } = usePremiumGate();
     let formatted = number.replace(/[\s-]/g, '');
     if (formatted.startsWith('0')) {
       formatted = '234' + formatted.substring(1);
