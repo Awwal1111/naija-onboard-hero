@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/use-toast'
+import { usePremiumGate } from '@/hooks/usePremiumGate'
 
 interface ChatContext {
   context?: 'story' | 'gig' | 'expert' | 'job' | 'post' | 'profile'
@@ -56,6 +57,7 @@ interface Profile {
 export const useChat = (otherUserId: string) => {
   const { user } = useAuth()
   const { toast } = useToast()
+  const { isPremium, enforce, upsell } = usePremiumGate()
   const [messages, setMessages] = useState<Message[]>([])
   const [chat, setChat] = useState<Chat | null>(null)
   const [otherUser, setOtherUser] = useState<Profile | null>(null)
@@ -113,6 +115,23 @@ export const useChat = (otherUserId: string) => {
           setChat(existingChat)
           await fetchMessages(existingChat.id)
         } else {
+          // Free-tier: can only DM strangers if premium, connected, or has applied to their job
+          if (!isPremium) {
+            const { count: connCount } = await supabase
+              .from('connections')
+              .select('id', { count: 'exact', head: true })
+              .or(
+                `and(user1_id.eq.${user.id},user2_id.eq.${otherUserId}),and(user1_id.eq.${otherUserId},user2_id.eq.${user.id})`
+              )
+              .eq('status', 'accepted')
+            const isConnected = (connCount ?? 0) > 0
+            if (!isConnected) {
+              upsell(
+                'Free users can only message connections. Connect first or upgrade to Premium to message anyone.'
+              )
+              throw new Error('Direct message blocked for free users')
+            }
+          }
           console.log('Creating new chat')
           // Create new chat
           const { data: newChat, error } = await supabase
@@ -236,6 +255,11 @@ export const useChat = (otherUserId: string) => {
       })
       return
     }
+
+    const allowed = await enforce('chat_send', 20, 24, 'chat messages')
+    if (!allowed) return
+
+
 
     try {
       // If replying, get the original message details

@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { useQueryClient } from '@tanstack/react-query'
 import { AIWritingAssistant } from '@/components/AIWritingAssistant'
+import { usePremiumGate } from '@/hooks/usePremiumGate'
 
 interface EditPostDialogProps {
   isOpen: boolean
@@ -27,6 +28,7 @@ const EditPostDialog: React.FC<EditPostDialogProps> = ({
 }) => {
   const { toast } = useToast()
   const queryClient = useQueryClient()
+  const { enforce } = usePremiumGate()
   const [title, setTitle] = useState(post.title || '')
   const [content, setContent] = useState(post.content || '')
   const [saving, setSaving] = useState(false)
@@ -47,6 +49,9 @@ const EditPostDialog: React.FC<EditPostDialogProps> = ({
       })
       return
     }
+
+    const allowed = await enforce('edit_action', 1, 24, 'edits')
+    if (!allowed) return
 
     setSaving(true)
     try {

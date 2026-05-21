@@ -6764,6 +6764,30 @@ export type Database = {
         }
         Relationships: []
       }
+      usage_counters: {
+        Row: {
+          count: number
+          key: string
+          updated_at: string
+          user_id: string
+          window_start: string
+        }
+        Insert: {
+          count?: number
+          key: string
+          updated_at?: string
+          user_id: string
+          window_start?: string
+        }
+        Update: {
+          count?: number
+          key?: string
+          updated_at?: string
+          user_id?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       usdt_staking_positions: {
         Row: {
           amount_earned: number
@@ -8327,6 +8351,10 @@ export type Database = {
           user_id: string
         }
         Returns: boolean
+      }
+      increment_usage: {
+        Args: { _key: string; _window_hours: number }
+        Returns: number
       }
       increment_wallet_balance: {
         Args: { amount_to_add: number; target_user_id: string }

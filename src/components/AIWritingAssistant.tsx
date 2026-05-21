@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/integrations/supabase/client'
+import { usePremiumGate } from '@/hooks/usePremiumGate'
 
 type WritingMode = 
   | 'refine_message' 
@@ -191,6 +192,8 @@ export const AIWritingAssistant: React.FC<AIWritingAssistantProps> = ({
 
   const availableModes = contextModes[context] || contextModes.message
 
+  const { enforce } = usePremiumGate()
+
   const handleModeSelect = async (mode: WritingMode) => {
     if (!inputText.trim() && !['write_bio', 'write_post', 'write_proposal', 'write_job_description'].includes(mode)) {
       toast({
@@ -201,9 +204,14 @@ export const AIWritingAssistant: React.FC<AIWritingAssistantProps> = ({
       return
     }
 
+    const ok = await enforce('ai_use', 3, 24, 'AI assistant uses')
+    if (!ok) return
+
     setSelectedMode(mode)
     setIsLoading(true)
     setResult(null)
+
+
 
     try {
       const { data, error } = await supabase.functions.invoke('ai-writing-assistant', {

@@ -1,7 +1,7 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Briefcase, FileText, Bell, BarChart3, Settings, Video, Wallet, Bookmark, Search, Package, Users, FolderKanban, Timer, Award, Bot, PlusCircle, Target, Bug, HelpCircle, ShieldAlert } from "lucide-react";
+import { User, Briefcase, FileText, Bell, BarChart3, Settings, Video, Wallet, Bookmark, Search, Package, Users, FolderKanban, Timer, Award, Bot, PlusCircle, Target, Bug, HelpCircle, ShieldAlert, Crown } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useRoleFeatures } from "@/hooks/useRoleFeatures";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +33,7 @@ export const MoreMenuDrawer = ({ open, onOpenChange }: MoreMenuDrawerProps) => {
   const modeColor = mode === 'freelancer' ? 'bg-emerald-500' : mode === 'client' ? 'bg-blue-500' : 'bg-purple-500';
 
   const primaryItems = [
+    { icon: Crown, label: "Go Premium", path: "/premium", color: "text-amber-500", description: "Unlock all features", forRoles: ['freelancer', 'client', 'both'] },
     { icon: BarChart3, label: "Dashboard", path: "/dashboard", color: "text-primary", description: "Analytics & insights", forRoles: ['freelancer', 'both'] },
     { icon: Target, label: "Hiring Hub", path: "/client-dashboard", color: "text-blue-500", description: "Manage your hires", forRoles: ['client', 'both'] },
     { icon: Bell, label: "Notifications", path: "/notifications", color: "text-rose-500", description: "All your alerts", forRoles: ['freelancer', 'client', 'both'] },
