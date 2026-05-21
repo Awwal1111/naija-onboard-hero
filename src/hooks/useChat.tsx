@@ -57,9 +57,6 @@ interface Profile {
 export const useChat = (otherUserId: string) => {
   const { user } = useAuth()
   const { toast } = useToast()
-export const useChat = (otherUserId: string) => {
-  const { user } = useAuth()
-  const { toast } = useToast()
   const { isPremium, enforce, upsell } = usePremiumGate()
   const [messages, setMessages] = useState<Message[]>([])
   const [chat, setChat] = useState<Chat | null>(null)
