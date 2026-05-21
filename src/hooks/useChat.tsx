@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/use-toast'
+import { usePremiumGate } from '@/hooks/usePremiumGate'
 
 interface ChatContext {
   context?: 'story' | 'gig' | 'expert' | 'job' | 'post' | 'profile'
@@ -56,6 +57,10 @@ interface Profile {
 export const useChat = (otherUserId: string) => {
   const { user } = useAuth()
   const { toast } = useToast()
+export const useChat = (otherUserId: string) => {
+  const { user } = useAuth()
+  const { toast } = useToast()
+  const { isPremium, enforce, upsell } = usePremiumGate()
   const [messages, setMessages] = useState<Message[]>([])
   const [chat, setChat] = useState<Chat | null>(null)
   const [otherUser, setOtherUser] = useState<Profile | null>(null)
