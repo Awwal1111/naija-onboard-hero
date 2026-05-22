@@ -6,21 +6,30 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { useSkills } from '@/hooks/useSkills'
 import { useAuth } from '@/hooks/useAuth'
+import { usePremiumGate } from '@/hooks/usePremiumGate'
 
 interface SkillsSectionProps {
   userId?: string
   isOwnProfile?: boolean
 }
 
+const FREE_SKILL_LIMIT = 2
+
 const SkillsSection: React.FC<SkillsSectionProps> = ({ userId, isOwnProfile = false }) => {
   const { user } = useAuth()
   const { skills, loading, addSkill, endorseSkill, removeEndorsement, deleteSkill } = useSkills(userId)
+  const { isPremium, upsell } = usePremiumGate()
   const [isAdding, setIsAdding] = useState(false)
   const [newSkillName, setNewSkillName] = useState('')
 
   const handleAddSkill = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newSkillName.trim()) return
+
+    if (!isPremium && skills.length >= FREE_SKILL_LIMIT) {
+      upsell(`Free accounts can add up to ${FREE_SKILL_LIMIT} skills. Upgrade for unlimited skills.`)
+      return
+    }
 
     const { error } = await addSkill(newSkillName.trim())
     if (!error) {
