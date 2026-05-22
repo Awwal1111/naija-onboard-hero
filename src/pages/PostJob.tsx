@@ -15,6 +15,7 @@ const PostJob = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { toast } = useToast()
+  const { isPremium, upsell } = usePremiumGate()
   const fileInputRef = useRef<HTMLInputElement>(null)
   
   const [loading, setLoading] = useState(false)
