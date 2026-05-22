@@ -5,6 +5,7 @@ import { BrandInput } from '@/components/ui/brand-input';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
+import { usePremiumGate } from '@/hooks/usePremiumGate';
 import { Badge } from '@/components/ui/badge';
 
 interface Message {
