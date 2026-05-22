@@ -98,7 +98,6 @@ const ActiveCallInterface: React.FC<ActiveCallInterfaceProps> = ({
     }
   }, [screenStream])
 
-  // Track call duration
   const { isPremium, upsell } = usePremiumGate()
 
   // Track call duration + free-tier 10-minute cap
