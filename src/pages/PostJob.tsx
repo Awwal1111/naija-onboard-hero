@@ -228,6 +228,19 @@ const PostJob = () => {
       return
     }
 
+    // Free users: max 1 active gig
+    if (!isPremium && user) {
+      const { count } = await supabase
+        .from('jobs_services')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .limit(2)
+      if ((count || 0) >= 1) {
+        upsell('Free accounts can post 1 gig. Upgrade to Premium for unlimited gigs.')
+        return
+      }
+    }
+
     setLoading(true)
 
     try {
