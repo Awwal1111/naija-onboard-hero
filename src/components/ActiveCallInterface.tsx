@@ -3,6 +3,9 @@ import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Phone, Mic, MicOff, Video, VideoOff, PhoneOff, Monitor, MonitorOff } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { usePremiumGate } from '@/hooks/usePremiumGate'
+
+const FREE_CALL_MAX_SECONDS = 10 * 60
 
 interface ActiveCallInterfaceProps {
   localStream: MediaStream | null
