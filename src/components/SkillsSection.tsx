@@ -64,9 +64,20 @@ const SkillsSection: React.FC<SkillsSectionProps> = ({ userId, isOwnProfile = fa
       <div className="flex items-center justify-between">
         <h3 className="text-xl font-semibold text-text-primary">Skills</h3>
         {isOwnProfile && !isAdding && (
-          <Button size="sm" variant="outline" onClick={() => setIsAdding(true)} className="gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              if (!isPremium && skills.length >= FREE_SKILL_LIMIT) {
+                upsell(`Free accounts can add up to ${FREE_SKILL_LIMIT} skills. Upgrade for unlimited skills.`)
+                return
+              }
+              setIsAdding(true)
+            }}
+            className="gap-2"
+          >
             <Plus className="h-4 w-4" />
-            Add Skill
+            Add Skill {!isPremium && `(${skills.length}/${FREE_SKILL_LIMIT})`}
           </Button>
         )}
       </div>
