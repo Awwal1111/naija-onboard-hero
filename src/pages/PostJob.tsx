@@ -77,14 +77,15 @@ const PostJob = () => {
     const files = Array.from(e.target.files || [])
     if (files.length === 0) return
 
-    // Limit to 5 images
+    // Free users: max 1 image. Premium: 5
+    const maxImages = isPremium ? 5 : 1
     const totalImages = selectedImages.length + files.length
-    if (totalImages > 5) {
-      toast({
-        title: 'Too many images',
-        description: 'You can upload a maximum of 5 images',
-        variant: 'destructive'
-      })
+    if (totalImages > maxImages) {
+      if (!isPremium) {
+        upsell(`Free accounts can upload 1 image per gig. Upgrade to add up to 5 images.`)
+      } else {
+        toast({ title: 'Too many images', description: 'Max 5 images per gig', variant: 'destructive' })
+      }
       return
     }
 
