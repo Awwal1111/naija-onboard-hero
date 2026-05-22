@@ -21,6 +21,7 @@ interface Message {
 
 const AIChatInterface = () => {
   const { toast } = useToast();
+  const { enforce } = usePremiumGate();
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
