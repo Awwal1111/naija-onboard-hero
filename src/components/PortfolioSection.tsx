@@ -167,13 +167,17 @@ const PortfolioSection: React.FC<PortfolioSectionProps> = ({ userId, isOwnProfil
           Portfolio
           {isOwnProfile && (
             <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
+              if (open && !editingItem && !isPremium && items.length >= FREE_PORTFOLIO_LIMIT) {
+                upsell(`Free accounts can add up to ${FREE_PORTFOLIO_LIMIT} portfolio item. Upgrade for unlimited.`)
+                return
+              }
               setIsCreateDialogOpen(open)
               if (!open) resetForm()
             }}>
               <DialogTrigger asChild>
                 <Button size="sm" className="gap-2">
                   <Plus className="h-4 w-4" />
-                  Add Item
+                  Add Item {!isPremium && `(${items.length}/${FREE_PORTFOLIO_LIMIT})`}
                 </Button>
               </DialogTrigger>
             <DialogContent className="max-w-md">
