@@ -103,6 +103,7 @@ export const useAICopilot = () => {
   const { user } = useAuth();
   const { profile } = useProfile();
   const { toast } = useToast();
+  const { enforce } = usePremiumGate();
   const [settings, setSettings] = useState<CopilotSettings | null>(null);
   const [messages, setMessages] = useState<CopilotMessage[]>([]);
   const [savedOutputs, setSavedOutputs] = useState<SavedOutput[]>([]);
