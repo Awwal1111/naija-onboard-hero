@@ -99,16 +99,26 @@ const ActiveCallInterface: React.FC<ActiveCallInterfaceProps> = ({
   }, [screenStream])
 
   // Track call duration
+  const { isPremium, upsell } = usePremiumGate()
+
+  // Track call duration + free-tier 10-minute cap
   useEffect(() => {
     if (callStatus === 'connected') {
       const interval = setInterval(() => {
-        setCallDuration(prev => prev + 1)
+        setCallDuration(prev => {
+          const next = prev + 1
+          if (!isPremium && next >= FREE_CALL_MAX_SECONDS) {
+            upsell('Free calls are limited to 10 minutes. Upgrade to Premium for unlimited.')
+            onEndCall()
+          }
+          return next
+        })
       }, 1000)
       return () => clearInterval(interval)
     } else {
       setCallDuration(0)
     }
-  }, [callStatus])
+  }, [callStatus, isPremium, upsell, onEndCall])
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
