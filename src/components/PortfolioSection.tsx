@@ -26,10 +26,13 @@ interface PortfolioSectionProps {
   isOwnProfile?: boolean
 }
 
+const FREE_PORTFOLIO_LIMIT = 1
+
 const PortfolioSection: React.FC<PortfolioSectionProps> = ({ userId, isOwnProfile = true }) => {
   const { user } = useAuth()
   const { items, loading, addPortfolioItem, updatePortfolioItem, deletePortfolioItem } = usePortfolio(userId)
   const { uploadFile } = useFileUpload()
+  const { isPremium, upsell } = require('@/hooks/usePremiumGate').usePremiumGate()
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<PortfolioItem | null>(null)
   const [formData, setFormData] = useState({
