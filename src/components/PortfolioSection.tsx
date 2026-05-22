@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { usePortfolio } from '@/hooks/usePortfolio'
 import { useAuth } from '@/hooks/useAuth'
 import { useFileUpload } from '@/hooks/useFileUpload'
+import { usePremiumGate } from '@/hooks/usePremiumGate'
 import { toast } from 'sonner'
 import { supabase } from '@/integrations/supabase/client'
 
