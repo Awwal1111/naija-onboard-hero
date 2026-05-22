@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
+import { usePremiumGate } from '@/hooks/usePremiumGate';
 
 export interface CopilotSettings {
   id: string;
