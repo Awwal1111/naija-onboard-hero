@@ -328,6 +328,9 @@ const AIChatInterface = () => {
 
   const handleSend = async () => {
     if ((!input.trim() && !selectedImage) || isLoading) return;
+    const ok = await enforce('ai_use', 3, 24, 'AI messages');
+    if (!ok) return;
+
 
     const userMessage: Message = {
       role: 'user',
