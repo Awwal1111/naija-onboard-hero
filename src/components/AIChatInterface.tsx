@@ -5,6 +5,7 @@ import { BrandInput } from '@/components/ui/brand-input';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
+import { usePremiumGate } from '@/hooks/usePremiumGate';
 import { Badge } from '@/components/ui/badge';
 
 interface Message {
@@ -20,6 +21,7 @@ interface Message {
 
 const AIChatInterface = () => {
   const { toast } = useToast();
+  const { enforce } = usePremiumGate();
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
@@ -326,6 +328,9 @@ const AIChatInterface = () => {
 
   const handleSend = async () => {
     if ((!input.trim() && !selectedImage) || isLoading) return;
+    const ok = await enforce('ai_use', 3, 24, 'AI messages');
+    if (!ok) return;
+
 
     const userMessage: Message = {
       role: 'user',

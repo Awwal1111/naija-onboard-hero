@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { usePortfolio } from '@/hooks/usePortfolio'
 import { useAuth } from '@/hooks/useAuth'
 import { useFileUpload } from '@/hooks/useFileUpload'
+import { usePremiumGate } from '@/hooks/usePremiumGate'
 import { toast } from 'sonner'
 import { supabase } from '@/integrations/supabase/client'
 
@@ -26,10 +27,13 @@ interface PortfolioSectionProps {
   isOwnProfile?: boolean
 }
 
+const FREE_PORTFOLIO_LIMIT = 1
+
 const PortfolioSection: React.FC<PortfolioSectionProps> = ({ userId, isOwnProfile = true }) => {
   const { user } = useAuth()
   const { items, loading, addPortfolioItem, updatePortfolioItem, deletePortfolioItem } = usePortfolio(userId)
   const { uploadFile } = useFileUpload()
+  const { isPremium, upsell } = usePremiumGate()
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<PortfolioItem | null>(null)
   const [formData, setFormData] = useState({
@@ -163,13 +167,17 @@ const PortfolioSection: React.FC<PortfolioSectionProps> = ({ userId, isOwnProfil
           Portfolio
           {isOwnProfile && (
             <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
+              if (open && !editingItem && !isPremium && items.length >= FREE_PORTFOLIO_LIMIT) {
+                upsell(`Free accounts can add up to ${FREE_PORTFOLIO_LIMIT} portfolio item. Upgrade for unlimited.`)
+                return
+              }
               setIsCreateDialogOpen(open)
               if (!open) resetForm()
             }}>
               <DialogTrigger asChild>
                 <Button size="sm" className="gap-2">
                   <Plus className="h-4 w-4" />
-                  Add Item
+                  Add Item {!isPremium && `(${items.length}/${FREE_PORTFOLIO_LIMIT})`}
                 </Button>
               </DialogTrigger>
             <DialogContent className="max-w-md">

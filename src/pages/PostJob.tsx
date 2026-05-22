@@ -9,11 +9,13 @@ import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { AIWritingAssistant } from '@/components/AIWritingAssistant'
+import { usePremiumGate } from '@/hooks/usePremiumGate'
 
 const PostJob = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { toast } = useToast()
+  const { isPremium, upsell } = usePremiumGate()
   const fileInputRef = useRef<HTMLInputElement>(null)
   
   const [loading, setLoading] = useState(false)
@@ -75,14 +77,15 @@ const PostJob = () => {
     const files = Array.from(e.target.files || [])
     if (files.length === 0) return
 
-    // Limit to 5 images
+    // Free users: max 1 image. Premium: 5
+    const maxImages = isPremium ? 5 : 1
     const totalImages = selectedImages.length + files.length
-    if (totalImages > 5) {
-      toast({
-        title: 'Too many images',
-        description: 'You can upload a maximum of 5 images',
-        variant: 'destructive'
-      })
+    if (totalImages > maxImages) {
+      if (!isPremium) {
+        upsell(`Free accounts can upload 1 image per gig. Upgrade to add up to 5 images.`)
+      } else {
+        toast({ title: 'Too many images', description: 'Max 5 images per gig', variant: 'destructive' })
+      }
       return
     }
 
@@ -223,6 +226,19 @@ const PostJob = () => {
     if (formData.description.trim().length < 40) {
       toast({ title: "Description too short", description: "Please describe your service in at least 40 characters so buyers know what they're getting.", variant: "destructive" })
       return
+    }
+
+    // Free users: max 1 active gig
+    if (!isPremium && user) {
+      const { count } = await supabase
+        .from('jobs_services')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .limit(2)
+      if ((count || 0) >= 1) {
+        upsell('Free accounts can post 1 gig. Upgrade to Premium for unlimited gigs.')
+        return
+      }
     }
 
     setLoading(true)

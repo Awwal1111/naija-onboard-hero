@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
+import { usePremiumGate } from '@/hooks/usePremiumGate';
 
 export interface CopilotSettings {
   id: string;
@@ -102,6 +103,7 @@ export const useAICopilot = () => {
   const { user } = useAuth();
   const { profile } = useProfile();
   const { toast } = useToast();
+  const { enforce } = usePremiumGate();
   const [settings, setSettings] = useState<CopilotSettings | null>(null);
   const [messages, setMessages] = useState<CopilotMessage[]>([]);
   const [savedOutputs, setSavedOutputs] = useState<SavedOutput[]>([]);
@@ -195,6 +197,9 @@ export const useAICopilot = () => {
 
   const sendMessage = async (content: string, attachments?: { type: string; url: string }[]) => {
     if (!user || !content.trim()) return;
+    const ok = await enforce('ai_use', 3, 24, 'AI Copilot messages');
+    if (!ok) return;
+
 
     // Check if this is an action-based request (non-streaming)
     const detectedAction = detectAction(content);
