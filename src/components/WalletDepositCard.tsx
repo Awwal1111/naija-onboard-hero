@@ -40,17 +40,21 @@ export const WalletDepositCard = ({ walletKind, recipientAddress, onSuccess }: W
     if (!recipientAddress) return ''
     const t = TOKENS[token]
     const amt = parseFloat(amount)
+    const value = amt > 0 ? BigInt(Math.floor(amt * 10 ** t.decimals)).toString() : ''
+
     if (walletKind === 'metamask') {
       const base = `https://metamask.app.link/send/${t.address}@42220/transfer?address=${recipientAddress}`
-      if (amt > 0) {
-        // uint256 must be the on-chain integer amount (amount * 10^decimals)
-        const value = BigInt(Math.floor(amt * 10 ** t.decimals)).toString()
-        return `${base}&uint256=${value}`
-      }
-      return base
+      return value ? `${base}&uint256=${value}` : base
     }
-    // Valora: open its app browser to this page so user can complete the in-app flow
-    return `https://valoraapp.com/wallet?dappUrl=${encodeURIComponent(window.location.href)}`
+    // Valora: use the universal payment link that pre-fills recipient + token + amount.
+    // Format: https://valoraapp.com/share/payment?address=<to>&token=<sym>&amount=<human>&comment=NaijaLancers
+    const params = new URLSearchParams({
+      address: recipientAddress,
+      token: t.label,
+      ...(amt > 0 ? { amount: String(amt) } : {}),
+      comment: 'NaijaLancers deposit',
+    })
+    return `https://valoraapp.com/share/payment?${params.toString()}`
   }
 
   const handleManualSend = () => {
