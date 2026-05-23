@@ -8,7 +8,7 @@ import { Globe, Info, Copy, ExternalLink } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/integrations/supabase/client'
-import { buildMtPelerinUrl } from '@/lib/mtpelerin'
+import { buildMtPelerinUrl, isMtPelerinAllowedHost, MT_PELERIN_ALLOWED_HOST } from '@/lib/mtpelerin'
 
 interface MtPelerinCardProps {
   /** 'buy' for deposits, 'sell' for withdrawals */
