@@ -113,7 +113,8 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
   const setCurrency = async (code: CurrencyCode) => {
     setCurrencyState(code)
     localStorage.setItem('preferred_currency', code)
-    
+    setHasExplicitChoice(true)
+
     // Save to profile if authenticated
     if (userId) {
       await supabase
