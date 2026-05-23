@@ -88,23 +88,42 @@ export const MtPelerinCard = ({ mode, defaultCrypto = 'USDT' }: MtPelerinCardPro
           </AlertDescription>
         </Alert>
 
-        <div className="overflow-hidden rounded-lg border">
-          <iframe
-            src={widgetUrl}
-            title="Mt Pelerin exchange widget"
-            allow="usb; ethereum; clipboard-write; payment; microphone; camera"
-            loading="lazy"
-            className="w-full h-[640px] block"
-          />
-        </div>
+        {isMtPelerinAllowedHost() ? (
+          <div className="overflow-hidden rounded-lg border">
+            <iframe
+              src={widgetUrl}
+              title="Mt Pelerin exchange widget"
+              allow="usb; ethereum; clipboard-write; payment; microphone; camera"
+              loading="lazy"
+              className="w-full h-[640px] block"
+            />
+          </div>
+        ) : (
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertDescription className="text-xs">
+              The Mt Pelerin widget is locked to <strong>{MT_PELERIN_ALLOWED_HOST}</strong>.
+              On this preview/subdomain it will show "access denied". Tap the button
+              below to open it on the live site.
+            </AlertDescription>
+          </Alert>
+        )}
 
         <BrandButton
           variant="outline"
           className="w-full"
-          onClick={() => window.open(widgetUrl, '_blank', 'noopener,noreferrer')}
+          onClick={() =>
+            window.open(
+              isMtPelerinAllowedHost()
+                ? widgetUrl
+                : `https://${MT_PELERIN_ALLOWED_HOST}${window.location.pathname}${window.location.search}`,
+              '_blank',
+              'noopener,noreferrer',
+            )
+          }
         >
           <ExternalLink className="h-4 w-4 mr-2" />
-          Open in new tab
+          {isMtPelerinAllowedHost() ? 'Open in new tab' : `Open on ${MT_PELERIN_ALLOWED_HOST}`}
         </BrandButton>
       </CardContent>
     </Card>
