@@ -3,6 +3,16 @@
 // every iframe URL — it is not a secret and is safe to include in client code.
 export const MT_PELERIN_CTKN = '6efaf1ac-aec0-4ad6-abcb-dcca479fab62'
 
+// Mt Pelerin binds the integration key to ONE registered domain.
+// Loading the widget on any other host returns "access denied".
+// Our key is registered for the custom domain below — open the widget there.
+export const MT_PELERIN_ALLOWED_HOST = 'naijalancers.name.ng'
+
+export function isMtPelerinAllowedHost(): boolean {
+  if (typeof window === 'undefined') return true
+  return window.location.hostname === MT_PELERIN_ALLOWED_HOST
+}
+
 export type MtPelerinTab = 'buy' | 'sell' | 'swap'
 
 interface MtPelerinUrlOptions {
