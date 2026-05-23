@@ -146,7 +146,7 @@ export const DepositDialog = ({ open, onOpenChange, defaultMethod }: DepositDial
 
     const baseUrl = wallet === 'metamask'
       ? `https://metamask.app.link/send/${tokenAddress}@42220/transfer?address=${walletAddress}`
-      : `https://app.valora.xyz/transfer?address=${walletAddress}`
+      : `https://valoraapp.com/share/payment?address=${walletAddress}&token=cUSD&comment=NaijaLancers%20deposit`
 
     window.open(baseUrl, '_blank', 'noopener,noreferrer')
     toast.success(`${wallet === 'metamask' ? 'MetaMask' : 'Valora'} opened for wallet deposit`)

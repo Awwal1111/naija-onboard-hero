@@ -39,31 +39,31 @@ export const DepositMethods = ({ onSelectMethod }: DepositMethodsProps) => {
         </Card>
       )}
 
-      {/* Bank Deposit - Nigerian users only */}
-      {isNigerian && (
-        <Card className={`${!isMiniPay ? 'border-primary/20 bg-gradient-to-br from-primary/5 to-transparent' : ''} relative overflow-hidden`}>
-          {!isMiniPay && (
-            <Badge className="absolute top-4 right-4 bg-primary">
-              <Sparkles className="h-3 w-3 mr-1" />
-              Recommended
-            </Badge>
-          )}
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <ArrowDownUp className="h-5 w-5 text-primary" />
-              Bank Deposit (₦ Naira)
-            </CardTitle>
-            <CardDescription>
-              Instant funding via secure banking • Nigerian banks only
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <BrandButton onClick={() => onSelectMethod('ramp')} className="w-full" variant={isMiniPay ? 'outline' : 'primary'}>
-              Deposit Now
-            </BrandButton>
-          </CardContent>
-        </Card>
-      )}
+      {/* Quidax — NGN bank-transfer ramp. Available to everyone (Nigerian-first). */}
+      <Card className={`${!isMiniPay ? 'border-primary/20 bg-gradient-to-br from-primary/5 to-transparent' : ''} relative overflow-hidden`}>
+        {!isMiniPay && isNigerian && (
+          <Badge className="absolute top-4 right-4 bg-primary">
+            <Sparkles className="h-3 w-3 mr-1" />
+            Recommended
+          </Badge>
+        )}
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <ArrowDownUp className="h-5 w-5 text-primary" />
+            Quidax {isNigerian ? '(₦ Naira Bank Transfer)' : '(Buy NC with NGN)'}
+          </CardTitle>
+          <CardDescription>
+            {isNigerian
+              ? 'Instant funding via Nigerian bank transfer powered by Quidax'
+              : 'Pay in Nigerian Naira via Quidax — works globally with a Quidax account'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <BrandButton onClick={() => onSelectMethod('ramp')} className="w-full" variant={isMiniPay ? 'outline' : 'primary'}>
+            Deposit via Quidax
+          </BrandButton>
+        </CardContent>
+      </Card>
 
       {/* Pretium Mobile Money — for non-Nigerians */}
       {!isNigerian && (

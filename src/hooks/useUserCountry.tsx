@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useProfile } from './useProfile'
+import { useGeoLocation } from './useGeoLocation'
 
 // Nigerian states list for detection
 const NIGERIAN_STATES = [
@@ -11,35 +12,33 @@ const NIGERIAN_STATES = [
 ]
 
 /**
- * Hook to determine if the current user is Nigerian
- * Used to conditionally show Nigerian-specific UI elements
+ * Determine the user's country. Profile is authoritative; falls back to IP geolocation.
  */
 export const useUserCountry = () => {
   const { profile, loading } = useProfile()
+  const { geo, loading: geoLoading } = useGeoLocation()
 
   const isNigerian = useMemo(() => {
-    if (!profile) return false
-    
-    // Check if they have a Nigerian state set in their profile
-    if (profile.state_name) {
-      return NIGERIAN_STATES.some(state => 
+    if (profile?.state_name) {
+      return NIGERIAN_STATES.some(state =>
         state.toLowerCase() === profile.state_name?.toLowerCase()
       )
     }
-
-    // Default to false for international users (those with city but no state)
+    if (geo?.countryCode) return geo.countryCode === 'NG'
     return false
-  }, [profile])
+  }, [profile, geo])
 
   const country = useMemo(() => {
-    if (!profile) return null
-    return isNigerian ? 'Nigeria' : 'International'
-  }, [profile, isNigerian])
+    if (profile?.state_name && isNigerian) return 'Nigeria'
+    if (geo?.countryName) return geo.countryName
+    return profile ? 'International' : null
+  }, [profile, geo, isNigerian])
 
   return {
     isNigerian,
     country,
-    loading,
-    nigerianStates: NIGERIAN_STATES
+    countryCode: geo?.countryCode || (isNigerian ? 'NG' : null),
+    loading: loading || geoLoading,
+    nigerianStates: NIGERIAN_STATES,
   }
 }
