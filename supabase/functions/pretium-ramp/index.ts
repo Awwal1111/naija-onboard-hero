@@ -194,9 +194,33 @@ serve(async (req) => {
         return json({ error: "Insufficient withdrawable balance" }, 400);
       }
 
-      // 1 USDT ≈ 1600 NC ≈ ₦1600
-      const usdtAmount = Number(ncAmount) / 1600;
-      const fiatAmount = Math.round(usdtAmount * (USDT_TO_FIAT.NGN || 1600));
+      // 1 NC == ₦1 (internal). Fiat payout amount equals NC amount.
+      const fiatAmount = Math.round(Number(ncAmount));
+
+      // CRITICAL: fetch Pretium's LIVE NGN/USDT rate so the on-chain USDT we
+      // send matches what they expect. Hardcoding 1600 caused
+      // "amount mismatch equivalent amount in USD" + auto-refunds.
+      let pretiumRate = 0;
+      try {
+        const { resp: rResp, data: rData } = await callPretium("/v1/exchange-rate", {
+          method: "POST",
+          body: JSON.stringify({ currency_code: "NGN" }),
+        });
+        if (rResp.ok) {
+          // Pretium returns { data: { selling_rate, buying_rate } } — for offramp
+          // (we sell USDT, they pay NGN) use buying_rate; fall back to selling_rate.
+          const d = rData?.data || {};
+          pretiumRate = Number(d.buying_rate || d.selling_rate || d.rate || 0);
+        }
+      } catch (e) {
+        console.warn("[PRETIUM-RAMP] rate fetch failed:", (e as Error)?.message);
+      }
+      if (!pretiumRate || pretiumRate < 100) {
+        return json({ error: "Could not fetch Pretium exchange rate. Try again shortly." }, 502);
+      }
+      const usdtAmount = Number((fiatAmount / pretiumRate).toFixed(6));
+      console.log(`[PRETIUM-RAMP] rate=${pretiumRate} NGN/USDT → ${fiatAmount} NGN = ${usdtAmount} USDT`);
+
       const reference = crypto.randomUUID();
 
       // Debit user
@@ -216,7 +240,7 @@ serve(async (req) => {
         kind: "withdrawal_pending",
         status: "pending",
         reference,
-        metadata: { provider: "pretium", fiat_currency: "NGN", fiat_amount: fiatAmount, bank_code, account_number },
+        metadata: { provider: "pretium", fiat_currency: "NGN", fiat_amount: fiatAmount, pretium_rate: pretiumRate, usdt_amount: usdtAmount, bank_code, account_number },
       });
 
       const refund = async (msg: string) => {
