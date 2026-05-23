@@ -44,6 +44,9 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
     return saved && CURRENCIES[saved] ? saved : 'NC'
   })
   const [userId, setUserId] = useState<string | null>(null)
+  const [hasExplicitChoice, setHasExplicitChoice] = useState<boolean>(
+    () => !!localStorage.getItem('preferred_currency')
+  )
 
   // Get user ID from auth state changes only (no getSession call to avoid race conditions)
   useEffect(() => {
@@ -65,10 +68,47 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
         .then(({ data }) => {
           if (data?.preferred_currency && CURRENCIES[data.preferred_currency as CurrencyCode]) {
             setCurrencyState(data.preferred_currency as CurrencyCode)
+            setHasExplicitChoice(true)
           }
         })
     }
   }, [userId])
+
+  // Auto-detect currency from IP geolocation when user has no explicit choice
+  useEffect(() => {
+    if (hasExplicitChoice) return
+    let cancelled = false
+    const COUNTRY_TO_CURRENCY: Record<string, CurrencyCode> = {
+      NG: 'NGN', US: 'USD', GB: 'GBP', KE: 'KES', GH: 'GHS', ZA: 'ZAR',
+      IN: 'INR', AE: 'AED',
+      DE: 'EUR', FR: 'EUR', IT: 'EUR', ES: 'EUR', NL: 'EUR', BE: 'EUR', IE: 'EUR',
+      PT: 'EUR', AT: 'EUR', FI: 'EUR', GR: 'EUR', LU: 'EUR', SK: 'EUR', SI: 'EUR',
+      EE: 'EUR', LT: 'EUR', LV: 'EUR', MT: 'EUR', CY: 'EUR', HR: 'EUR',
+    }
+    const apply = (cc: string) => {
+      if (cancelled) return
+      const next = COUNTRY_TO_CURRENCY[cc.toUpperCase()]
+      if (next && CURRENCIES[next]) setCurrencyState(next)
+    }
+    try {
+      const cached = localStorage.getItem('geo_location_v1')
+      if (cached) {
+        const parsed = JSON.parse(cached)
+        if (parsed?.data?.countryCode) {
+          apply(parsed.data.countryCode)
+          return
+        }
+      }
+    } catch {}
+    const ctrl = new AbortController()
+    const tid = setTimeout(() => ctrl.abort(), 4000)
+    fetch('https://ipapi.co/json/', { signal: ctrl.signal })
+      .then(r => r.ok ? r.json() : null)
+      .then(j => { if (j?.country_code) apply(j.country_code) })
+      .catch(() => {})
+      .finally(() => clearTimeout(tid))
+    return () => { cancelled = true; ctrl.abort() }
+  }, [hasExplicitChoice])
 
   const setCurrency = async (code: CurrencyCode) => {
     setCurrencyState(code)
