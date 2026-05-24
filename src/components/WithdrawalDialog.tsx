@@ -159,7 +159,7 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
         </DialogHeader>
         
         <Tabs defaultValue="crypto" className="w-full">
-          <TabsList className={`grid w-full ${isNigerian ? 'grid-cols-5' : 'grid-cols-4'} h-auto`}>
+          <TabsList className={`grid w-full ${isNigerian ? 'grid-cols-4' : 'grid-cols-3'} h-auto`}>
             <TabsTrigger value="crypto" className="gap-1 text-xs py-2">
               <Coins className="h-3 w-3" />
               <span>Crypto</span>
@@ -173,10 +173,6 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
             <TabsTrigger value="mtpelerin" className="gap-1 text-xs py-2">
               <Globe className="h-3 w-3" />
               <span>Mt Pelerin</span>
-            </TabsTrigger>
-            <TabsTrigger value="ivorypay" className="gap-1 text-xs py-2">
-              <Globe className="h-3 w-3" />
-              <span>IvoryPay</span>
             </TabsTrigger>
             {isNigerian ? (
               <TabsTrigger value="ramp" className="gap-1 text-xs py-2">
@@ -288,12 +284,6 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
             </Card>
           </TabsContent>
 
-          <TabsContent value="ivorypay" className="space-y-4">
-            <IvoryPayWithdrawalCard
-              currentBalance={currentBalance}
-              onSuccess={() => onOpenChange(false)}
-            />
-          </TabsContent>
 
           <TabsContent value="mtpelerin" className="space-y-4">
             <MtPelerinCard mode="sell" defaultCrypto="USDT" />

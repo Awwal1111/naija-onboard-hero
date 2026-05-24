@@ -39,9 +39,10 @@ export const DepositMethods = ({ onSelectMethod }: DepositMethodsProps) => {
         </Card>
       )}
 
-      {/* Quidax — NGN bank-transfer ramp. Available to everyone (Nigerian-first). */}
+      {/* Quidax — Naira bank ramp. Works globally for anyone with a Quidax account (Nigeria, Ghana,
+          Kenya, South Africa, Uganda, Tanzania, Egypt and other Quidax-supported regions). */}
       <Card className={`${!isMiniPay ? 'border-primary/20 bg-gradient-to-br from-primary/5 to-transparent' : ''} relative overflow-hidden`}>
-        {!isMiniPay && isNigerian && (
+        {!isMiniPay && (
           <Badge className="absolute top-4 right-4 bg-primary">
             <Sparkles className="h-3 w-3 mr-1" />
             Recommended
@@ -50,12 +51,12 @@ export const DepositMethods = ({ onSelectMethod }: DepositMethodsProps) => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <ArrowDownUp className="h-5 w-5 text-primary" />
-            Quidax {isNigerian ? '(₦ Naira Bank Transfer)' : '(Buy NC with NGN)'}
+            Quidax {isNigerian ? '(₦ Bank Transfer)' : '(Buy NC with crypto or NGN)'}
           </CardTitle>
           <CardDescription>
             {isNigerian
               ? 'Instant funding via Nigerian bank transfer powered by Quidax'
-              : 'Pay in Nigerian Naira via Quidax — works globally with a Quidax account'}
+              : 'Pay from your Quidax account — supported across Nigeria, Ghana, Kenya, South Africa, Uganda and more'}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -64,6 +65,7 @@ export const DepositMethods = ({ onSelectMethod }: DepositMethodsProps) => {
           </BrandButton>
         </CardContent>
       </Card>
+
 
       {/* Pretium Mobile Money — for non-Nigerians */}
       {!isNigerian && (
@@ -109,23 +111,7 @@ export const DepositMethods = ({ onSelectMethod }: DepositMethodsProps) => {
         </CardContent>
       </Card>
 
-      {/* IvoryPay - International Fiat/Crypto Ramp */}
-      <Card className="hover:border-amber-500/40 transition-colors relative overflow-hidden">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Globe className="h-5 w-5 text-amber-600" />
-            IvoryPay Deposit
-          </CardTitle>
-          <CardDescription>
-            Pay with bank transfer or crypto • Nigeria, Ghana, Kenya, South Africa
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <BrandButton onClick={() => onSelectMethod('ivorypay')} variant="outline" className="w-full">
-            Deposit via IvoryPay
-          </BrandButton>
-        </CardContent>
-      </Card>
+      {/* IvoryPay temporarily hidden from UI by request — backend left intact */}
 
       {/* Crypto Deposit */}
       <Card className="hover:border-primary/40 transition-colors relative overflow-hidden">

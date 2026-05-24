@@ -33,38 +33,57 @@ export const WalletDepositCard = ({ walletKind, recipientAddress, onSuccess }: W
 
   const walletName = walletKind === 'metamask' ? 'MetaMask' : walletKind === 'valora' ? 'Valora' : 'Wallet'
 
-  // Build a "prefilled send" deep link as fallback when in-page connection isn't available.
-  // MetaMask supports https://metamask.app.link/send/<token>@42220/transfer?address=<to>&uint256=<value>
-  // Valora supports its universal link to its in-app browser. Users without the app see install prompt.
+  // Official deeplink formats (verified May 2026):
+  //  - MetaMask: https://link.metamask.io/send/{contractAddress}@{chainId}/transfer?address={to}&uint256={smallestUnits}
+  //    Docs: https://docs.metamask.io/metamask-connect/evm/guides/metamask-exclusive/use-deeplinks/
+  //  - Valora:   celo://wallet/pay?address={to}&amount={human}&token={cUSD|cEUR|CELO}&currencyCode=USD&displayName=...&comment=...
+  //    Docs: https://github.com/valora-inc/wallet/blob/main/docs/deeplinks.md
   const buildManualSendLink = (): string => {
     if (!recipientAddress) return ''
     const t = TOKENS[token]
     const amt = parseFloat(amount)
-    const value = amt > 0 ? BigInt(Math.floor(amt * 10 ** t.decimals)).toString() : ''
+    const smallestUnits = amt > 0 ? BigInt(Math.floor(amt * 10 ** t.decimals)).toString() : ''
 
     if (walletKind === 'metamask') {
-      const base = `https://metamask.app.link/send/${t.address}@42220/transfer?address=${recipientAddress}`
-      return value ? `${base}&uint256=${value}` : base
+      // Celo mainnet chainId = 42220. link.metamask.io is the canonical universal-link host.
+      const base = `https://link.metamask.io/send/${t.address}@42220/transfer?address=${recipientAddress}`
+      return smallestUnits ? `${base}&uint256=${smallestUnits}` : base
     }
-    // Valora: use the universal payment link that pre-fills recipient + token + amount.
-    // Format: https://valoraapp.com/share/payment?address=<to>&token=<sym>&amount=<human>&comment=NaijaLancers
-    const params = new URLSearchParams({
-      address: recipientAddress,
-      token: t.label,
-      ...(amt > 0 ? { amount: String(amt) } : {}),
-      comment: 'NaijaLancers deposit',
-    })
-    return `https://valoraapp.com/share/payment?${params.toString()}`
+
+    // Valora's pay deeplink only supports cUSD / cEUR / CELO. For USDT / USDC the user has to
+    // open Valora and send manually using the copied address.
+    if (token === 'cUSD') {
+      const params = new URLSearchParams({
+        address: recipientAddress,
+        token: 'cUSD',
+        currencyCode: 'USD',
+        displayName: 'NaijaLancers',
+        comment: 'NaijaLancers deposit',
+        ...(amt > 0 ? { amount: String(amt) } : {}),
+      })
+      return `celo://wallet/pay?${params.toString()}`
+    }
+    return ''
   }
 
   const handleManualSend = () => {
     const url = buildManualSendLink()
     if (!url) {
+      if (walletKind === 'valora' && token !== 'cUSD') {
+        toast.info("Valora's quick-pay link only supports cUSD. Open Valora and paste your wallet address to send USDT/USDC.")
+        navigator.clipboard.writeText(recipientAddress).catch(() => {})
+        return
+      }
       toast.error('Your NaijaLancers wallet is not ready yet')
       return
     }
-    window.open(url, '_blank', 'noopener,noreferrer')
-    toast.info(`Opening ${walletName}… complete the transfer there. NC will credit automatically once confirmed on-chain.`)
+    if (url.startsWith('celo://')) {
+      // Custom-scheme deeplinks must navigate the top frame to trigger the OS handler.
+      window.location.href = url
+    } else {
+      window.open(url, '_blank', 'noopener,noreferrer')
+    }
+    toast.info(`Opening ${walletName}… complete the transfer there. NC credits automatically once confirmed on-chain.`)
   }
 
   const handleConnect = async () => {
