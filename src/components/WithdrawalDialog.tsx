@@ -174,10 +174,6 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
               <Globe className="h-3 w-3" />
               <span>Mt Pelerin</span>
             </TabsTrigger>
-            <TabsTrigger value="ivorypay" className="gap-1 text-xs py-2">
-              <Globe className="h-3 w-3" />
-              <span>IvoryPay</span>
-            </TabsTrigger>
             {isNigerian ? (
               <TabsTrigger value="ramp" className="gap-1 text-xs py-2">
                 <ArrowDownUp className="h-3 w-3" />
@@ -288,12 +284,6 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
             </Card>
           </TabsContent>
 
-          <TabsContent value="ivorypay" className="space-y-4">
-            <IvoryPayWithdrawalCard
-              currentBalance={currentBalance}
-              onSuccess={() => onOpenChange(false)}
-            />
-          </TabsContent>
 
           <TabsContent value="mtpelerin" className="space-y-4">
             <MtPelerinCard mode="sell" defaultCrypto="USDT" />
