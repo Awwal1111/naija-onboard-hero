@@ -91,14 +91,15 @@ export function useExternalWallet() {
           if (isMobile()) {
             const here = window.location.host + window.location.pathname + window.location.search
             if (kind === 'metamask') {
-              // MetaMask universal link — opens MM app's in-app browser at this URL
-              window.location.href = `https://metamask.app.link/dapp/${here}`
+              // Canonical MetaMask universal link opens the dapp inside MetaMask's in-app browser
+              // where window.ethereum is injected. Docs: https://docs.metamask.io/.../use-deeplinks/
+              window.location.href = `https://link.metamask.io/dapp/${here}`
             } else if (kind === 'valora') {
-              // Valora's modern universal link (DappKit / celo://dappkit was deprecated 2024)
-              // wallet.valora.xyz opens the Valora app browser to the given URL
-              window.location.href = `https://valoraapp.com/wallet?dappUrl=${encodeURIComponent(window.location.href)}`
+              // Valora does not publish a documented "open dapp in browser" link. The closest
+              // working entry is the public app page, from which the user opens Discover → URL.
+              // For payments we use the celo://wallet/pay deeplink directly on the deposit card.
+              window.location.href = `https://valoraapp.com/`
             }
-            // Give the OS ~1.5s to switch apps; if it doesn't, the throw below shows guidance.
             await new Promise((r) => setTimeout(r, 1500))
           }
           throw new Error(
