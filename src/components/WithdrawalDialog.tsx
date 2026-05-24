@@ -159,7 +159,7 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
         </DialogHeader>
         
         <Tabs defaultValue="crypto" className="w-full">
-          <TabsList className={`grid w-full ${isNigerian ? 'grid-cols-5' : 'grid-cols-4'} h-auto`}>
+          <TabsList className={`grid w-full ${isNigerian ? 'grid-cols-4' : 'grid-cols-3'} h-auto`}>
             <TabsTrigger value="crypto" className="gap-1 text-xs py-2">
               <Coins className="h-3 w-3" />
               <span>Crypto</span>
