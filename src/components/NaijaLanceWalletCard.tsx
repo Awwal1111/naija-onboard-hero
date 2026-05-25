@@ -2,12 +2,15 @@ import React, { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Wallet, ArrowUpRight, ArrowDownLeft, TrendingUp, Send, Download, Plus, Eye, EyeOff } from 'lucide-react'
+import { Wallet, ArrowUpRight, ArrowDownLeft, TrendingUp, Send, Download, Plus, Eye, EyeOff, QrCode, Link as LinkIcon } from 'lucide-react'
 import { WalletBalance } from '@/hooks/useWallet'
 import { TransferDialog } from '@/components/TransferDialog'
 import { DepositDialog } from '@/components/DepositDialog'
 import { useCurrency } from '@/hooks/useCurrency'
 import { CurrencyConverterDialog } from '@/components/CurrencyConverterDialog'
+import { WalletQRSheet } from '@/components/WalletQRSheet'
+import { CreatePaymentLinkDialog } from '@/components/CreatePaymentLinkDialog'
+import { useCeloWallet } from '@/hooks/useCeloWallet'
 
 interface NaijaLanceWalletCardProps {
   balance: WalletBalance
