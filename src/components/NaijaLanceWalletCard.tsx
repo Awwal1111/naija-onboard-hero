@@ -87,6 +87,28 @@ const NaijaLanceWalletCard: React.FC<NaijaLanceWalletCardProps> = ({
             </Button>
           </div>
 
+          {/* Receive / Pay Link */}
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              onClick={() => setShowQR(true)}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+            >
+              <QrCode className="h-4 w-4" />
+              Receive / Scan
+            </Button>
+            <Button
+              onClick={() => setShowPayLink(true)}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+            >
+              <LinkIcon className="h-4 w-4" />
+              Payment Link
+            </Button>
+          </div>
+
           {/* Exchange Rate Info */}
           <div className="text-center">
             <Badge variant="secondary" className="text-xs">
@@ -98,6 +120,8 @@ const NaijaLanceWalletCard: React.FC<NaijaLanceWalletCardProps> = ({
 
       <TransferDialog open={showTransfer} onOpenChange={setShowTransfer} />
       <DepositDialog open={showDeposit} onOpenChange={setShowDeposit} />
+      <WalletQRSheet open={showQR} onOpenChange={setShowQR} receiveAddress={celoAddress || null} />
+      <CreatePaymentLinkDialog open={showPayLink} onOpenChange={setShowPayLink} />
     </>
   )
 }
