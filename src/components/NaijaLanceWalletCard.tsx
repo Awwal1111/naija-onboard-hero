@@ -2,12 +2,15 @@ import React, { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Wallet, ArrowUpRight, ArrowDownLeft, TrendingUp, Send, Download, Plus, Eye, EyeOff } from 'lucide-react'
+import { Wallet, ArrowUpRight, ArrowDownLeft, TrendingUp, Send, Download, Plus, Eye, EyeOff, QrCode, Link as LinkIcon } from 'lucide-react'
 import { WalletBalance } from '@/hooks/useWallet'
 import { TransferDialog } from '@/components/TransferDialog'
 import { DepositDialog } from '@/components/DepositDialog'
 import { useCurrency } from '@/hooks/useCurrency'
 import { CurrencyConverterDialog } from '@/components/CurrencyConverterDialog'
+import { WalletQRSheet } from '@/components/WalletQRSheet'
+import { CreatePaymentLinkDialog } from '@/components/CreatePaymentLinkDialog'
+import { useCeloWallet } from '@/hooks/useCeloWallet'
 
 interface NaijaLanceWalletCardProps {
   balance: WalletBalance
@@ -23,7 +26,10 @@ const NaijaLanceWalletCard: React.FC<NaijaLanceWalletCardProps> = ({
   const [showTransfer, setShowTransfer] = useState(false)
   const [showDeposit, setShowDeposit] = useState(false)
   const [showBalances, setShowBalances] = useState(true)
+  const [showQR, setShowQR] = useState(false)
+  const [showPayLink, setShowPayLink] = useState(false)
   const { currency, formatPreferred, currencies } = useCurrency()
+  const { address: celoAddress } = useCeloWallet()
 
   return (
     <>
@@ -81,6 +87,28 @@ const NaijaLanceWalletCard: React.FC<NaijaLanceWalletCardProps> = ({
             </Button>
           </div>
 
+          {/* Receive / Pay Link */}
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              onClick={() => setShowQR(true)}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+            >
+              <QrCode className="h-4 w-4" />
+              Receive / Scan
+            </Button>
+            <Button
+              onClick={() => setShowPayLink(true)}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+            >
+              <LinkIcon className="h-4 w-4" />
+              Payment Link
+            </Button>
+          </div>
+
           {/* Exchange Rate Info */}
           <div className="text-center">
             <Badge variant="secondary" className="text-xs">
@@ -92,6 +120,8 @@ const NaijaLanceWalletCard: React.FC<NaijaLanceWalletCardProps> = ({
 
       <TransferDialog open={showTransfer} onOpenChange={setShowTransfer} />
       <DepositDialog open={showDeposit} onOpenChange={setShowDeposit} />
+      <WalletQRSheet open={showQR} onOpenChange={setShowQR} receiveAddress={celoAddress || null} />
+      <CreatePaymentLinkDialog open={showPayLink} onOpenChange={setShowPayLink} />
     </>
   )
 }
