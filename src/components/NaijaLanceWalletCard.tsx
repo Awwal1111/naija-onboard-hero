@@ -26,7 +26,10 @@ const NaijaLanceWalletCard: React.FC<NaijaLanceWalletCardProps> = ({
   const [showTransfer, setShowTransfer] = useState(false)
   const [showDeposit, setShowDeposit] = useState(false)
   const [showBalances, setShowBalances] = useState(true)
+  const [showQR, setShowQR] = useState(false)
+  const [showPayLink, setShowPayLink] = useState(false)
   const { currency, formatPreferred, currencies } = useCurrency()
+  const { address: celoAddress } = useCeloWallet()
 
   return (
     <>
