@@ -1139,9 +1139,25 @@ async function handleCreateRampSession(developer: DeveloperProfile, side: 'buy' 
   const successUrl = body?.success_url ? String(body.success_url).slice(0, 500) : null;
   const cancelUrl = body?.cancel_url ? String(body.cancel_url).slice(0, 500) : null;
 
+  // Pass-through destination_address (Celo EVM address). When provided on a BUY,
+  // bought USDT settles directly at this address — true wallet-as-a-service.
+  // Ignored on SELL (sell flow debits the end-user's NaijaLancers wallet).
+  let destinationAddress: string | null = null;
+  if (side === 'buy' && body?.destination_address) {
+    const raw = String(body.destination_address).trim();
+    if (!/^0x[a-fA-F0-9]{40}$/.test(raw)) {
+      return { error: 'destination_address must be a valid 0x EVM address', status: 400 };
+    }
+    destinationAddress = raw.toLowerCase();
+  }
+
   if (side === 'buy' && (!fiatAmount || fiatAmount < 3000)) {
     return { error: 'fiat_amount required and must be >= 3000 NGN', status: 400 };
   }
+  if (side === 'sell' && (!tokenAmount || tokenAmount <= 0)) {
+    return { error: 'token_amount required and must be > 0', status: 400 };
+  }
+
   if (side === 'sell' && (!tokenAmount || tokenAmount <= 0)) {
     return { error: 'token_amount required and must be > 0', status: 400 };
   }
@@ -1158,6 +1174,7 @@ async function handleCreateRampSession(developer: DeveloperProfile, side: 'buy' 
     token_amount: tokenAmount,
     external_user_id: externalUserId,
     external_user_email: externalUserEmail,
+    destination_address: destinationAddress,
     metadata: { ...metadata, success_url: successUrl, cancel_url: cancelUrl },
     status: 'pending',
     redirect_url: redirectUrl,
@@ -1175,6 +1192,7 @@ async function handleCreateRampSession(developer: DeveloperProfile, side: 'buy' 
     fiat_amount: fiatAmount,
     token_amount: tokenAmount,
     external_user_id: externalUserId,
+    destination_address: destinationAddress,
     redirect_url: redirectUrl,
   });
 
@@ -1185,6 +1203,7 @@ async function handleCreateRampSession(developer: DeveloperProfile, side: 'buy' 
       token,
       fiat_amount: fiatAmount,
       token_amount: tokenAmount,
+      destination_address: destinationAddress,
       status: 'pending',
       redirect_url: redirectUrl,
       expires_in_seconds: 7200,
@@ -1196,7 +1215,8 @@ async function handleGetRampSession(developer: DeveloperProfile, sessionId: stri
   if (!sessionId) return { error: 'session_id required', status: 400 };
   const { data, error } = await supabase
     .from('developer_ramp_sessions')
-    .select('session_id, type, token, fiat_amount, token_amount, status, reference, redirect_url, external_user_id, external_user_email, naijalancers_user_id, completed_at, expires_at, created_at')
+    .select('session_id, type, token, fiat_amount, token_amount, status, reference, redirect_url, external_user_id, external_user_email, destination_address, naijalancers_user_id, completed_at, expires_at, created_at')
+
     .eq('developer_id', developer.user_id)
     .eq('session_id', sessionId)
     .maybeSingle();
