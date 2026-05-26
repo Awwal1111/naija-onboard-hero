@@ -99,20 +99,29 @@ export default function RampSession() {
       if (claimErr) throw claimErr;
       if (claimData?.error) throw new Error(claimData.error);
 
-      // Get / create wallet
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('celo_wallet_address')
-        .eq('user_id', user.id)
-        .maybeSingle();
+      // For BUY: if the developer specified a destination_address (pass-through
+      // wallet-as-a-service mode), use it directly so USDT lands at their
+      // chosen address. Otherwise fall back to the logged-in user's wallet.
+      let walletAddress = '';
+      const devDestination = (session as any).destination_address as string | undefined;
+      if (session.type === 'buy' && devDestination && /^0x[a-fA-F0-9]{40}$/.test(devDestination)) {
+        walletAddress = devDestination;
+      } else {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('celo_wallet_address')
+          .eq('user_id', user.id)
+          .maybeSingle();
 
-      let walletAddress = profileData?.celo_wallet_address || '';
-      if (!walletAddress) {
-        const { data: walletData, error: walletError } = await supabase.functions.invoke('create-user-wallet');
-        if (walletError) throw walletError;
-        walletAddress = walletData?.address;
+        walletAddress = profileData?.celo_wallet_address || '';
+        if (!walletAddress) {
+          const { data: walletData, error: walletError } = await supabase.functions.invoke('create-user-wallet');
+          if (walletError) throw walletError;
+          walletAddress = walletData?.address;
+        }
       }
       if (!walletAddress) throw new Error('Failed to prepare wallet');
+
 
       // Quidax public key
       const { data: keysData, error: keysErr } = await supabase.functions.invoke('get-quidax-public-key');
