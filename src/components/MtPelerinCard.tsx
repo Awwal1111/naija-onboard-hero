@@ -41,10 +41,10 @@ export const MtPelerinCard = ({ mode, defaultCrypto = 'USDT' }: MtPelerinCardPro
     tab: mode,
     tabs: ['buy', 'sell', 'swap'],
     addr: mode === 'buy' ? walletAddress || undefined : undefined,
-    [mode === 'buy' ? 'bdc' : 'bsc']: defaultCrypto,
+    ...(mode === 'buy'
+      ? { bdc: defaultCrypto, dnet: 'celo_mainnet' }
+      : { ssc: defaultCrypto, snet: 'celo_mainnet' }),
     crys: 'USDT,CUSD,CELO',
-    net: 'celo_mainnet',
-    nets: 'celo_mainnet',
   })
 
   const copyAddress = () => {

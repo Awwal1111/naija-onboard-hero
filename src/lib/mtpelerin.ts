@@ -20,19 +20,24 @@ interface MtPelerinUrlOptions {
   tabs?: MtPelerinTab[]
   /** Destination wallet address (on-ramp) or source (off-ramp) */
   addr?: string
-  /** Crypto to receive (on-ramp) e.g. 'USDT', 'CUSD', 'CELO' */
+  /** Buy tab destination crypto e.g. 'USDT', 'CUSD', 'CELO' */
   bdc?: string
-  /** Crypto to sell (off-ramp) */
+  /** Buy tab source fiat e.g. 'USD', 'EUR' */
   bsc?: string
+  /** Sell tab source crypto */
+  ssc?: string
+  /** Sell tab destination fiat */
+  sdc?: string
   /** Allowed cryptos, comma-separated */
   crys?: string
-  /** Network e.g. 'celo_mainnet' */
-  net?: string
-  /** Allowed networks, comma-separated */
-  nets?: string
-  /** Fiat currency e.g. 'USD', 'NGN', 'EUR' */
-  ccrys?: string
+  /** Allowed fiats, comma-separated */
+  curs?: string
+  /** Destination network (buy/swap) e.g. 'celo_mainnet' */
+  dnet?: string
+  /** Source network (sell) e.g. 'celo_mainnet' */
+  snet?: string
   lang?: string
+  mode?: 'dark'
 }
 
 export function buildMtPelerinUrl(opts: MtPelerinUrlOptions = {}): string {
@@ -45,9 +50,12 @@ export function buildMtPelerinUrl(opts: MtPelerinUrlOptions = {}): string {
   if (opts.addr) params.set('addr', opts.addr)
   if (opts.bdc) params.set('bdc', opts.bdc)
   if (opts.bsc) params.set('bsc', opts.bsc)
+  if (opts.ssc) params.set('ssc', opts.ssc)
+  if (opts.sdc) params.set('sdc', opts.sdc)
   if (opts.crys) params.set('crys', opts.crys)
-  if (opts.net) params.set('net', opts.net)
-  if (opts.nets) params.set('nets', opts.nets)
-  if (opts.ccrys) params.set('ccrys', opts.ccrys)
+  if (opts.curs) params.set('curs', opts.curs)
+  if (opts.dnet) params.set('dnet', opts.dnet)
+  if (opts.snet) params.set('snet', opts.snet)
+  if (opts.mode) params.set('mode', opts.mode)
   return `https://widget.mtpelerin.com/?${params.toString()}`
 }
