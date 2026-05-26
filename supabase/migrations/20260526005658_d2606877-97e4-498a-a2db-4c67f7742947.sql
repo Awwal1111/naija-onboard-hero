@@ -1,0 +1,1 @@
+ALTER TABLE public.developer_ramp_sessions ADD COLUMN IF NOT EXISTS destination_address text;
