@@ -1139,9 +1139,25 @@ async function handleCreateRampSession(developer: DeveloperProfile, side: 'buy' 
   const successUrl = body?.success_url ? String(body.success_url).slice(0, 500) : null;
   const cancelUrl = body?.cancel_url ? String(body.cancel_url).slice(0, 500) : null;
 
+  // Pass-through destination_address (Celo EVM address). When provided on a BUY,
+  // bought USDT settles directly at this address — true wallet-as-a-service.
+  // Ignored on SELL (sell flow debits the end-user's NaijaLancers wallet).
+  let destinationAddress: string | null = null;
+  if (side === 'buy' && body?.destination_address) {
+    const raw = String(body.destination_address).trim();
+    if (!/^0x[a-fA-F0-9]{40}$/.test(raw)) {
+      return { error: 'destination_address must be a valid 0x EVM address', status: 400 };
+    }
+    destinationAddress = raw.toLowerCase();
+  }
+
   if (side === 'buy' && (!fiatAmount || fiatAmount < 3000)) {
     return { error: 'fiat_amount required and must be >= 3000 NGN', status: 400 };
   }
+  if (side === 'sell' && (!tokenAmount || tokenAmount <= 0)) {
+    return { error: 'token_amount required and must be > 0', status: 400 };
+  }
+
   if (side === 'sell' && (!tokenAmount || tokenAmount <= 0)) {
     return { error: 'token_amount required and must be > 0', status: 400 };
   }
