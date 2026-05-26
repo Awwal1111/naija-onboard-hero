@@ -1174,6 +1174,7 @@ async function handleCreateRampSession(developer: DeveloperProfile, side: 'buy' 
     token_amount: tokenAmount,
     external_user_id: externalUserId,
     external_user_email: externalUserEmail,
+    destination_address: destinationAddress,
     metadata: { ...metadata, success_url: successUrl, cancel_url: cancelUrl },
     status: 'pending',
     redirect_url: redirectUrl,
@@ -1191,6 +1192,7 @@ async function handleCreateRampSession(developer: DeveloperProfile, side: 'buy' 
     fiat_amount: fiatAmount,
     token_amount: tokenAmount,
     external_user_id: externalUserId,
+    destination_address: destinationAddress,
     redirect_url: redirectUrl,
   });
 
@@ -1201,6 +1203,7 @@ async function handleCreateRampSession(developer: DeveloperProfile, side: 'buy' 
       token,
       fiat_amount: fiatAmount,
       token_amount: tokenAmount,
+      destination_address: destinationAddress,
       status: 'pending',
       redirect_url: redirectUrl,
       expires_in_seconds: 7200,
@@ -1212,7 +1215,8 @@ async function handleGetRampSession(developer: DeveloperProfile, sessionId: stri
   if (!sessionId) return { error: 'session_id required', status: 400 };
   const { data, error } = await supabase
     .from('developer_ramp_sessions')
-    .select('session_id, type, token, fiat_amount, token_amount, status, reference, redirect_url, external_user_id, external_user_email, naijalancers_user_id, completed_at, expires_at, created_at')
+    .select('session_id, type, token, fiat_amount, token_amount, status, reference, redirect_url, external_user_id, external_user_email, destination_address, naijalancers_user_id, completed_at, expires_at, created_at')
+
     .eq('developer_id', developer.user_id)
     .eq('session_id', sessionId)
     .maybeSingle();
