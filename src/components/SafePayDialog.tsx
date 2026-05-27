@@ -10,6 +10,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
 import { useUserSecrets } from '@/hooks/useUserSecrets'
 import { useWallet } from '@/hooks/useWallet'
+import RaiseDisputeDialog from './RaiseDisputeDialog'
 import { toast } from 'sonner'
 
 interface SafePayDialogProps {
