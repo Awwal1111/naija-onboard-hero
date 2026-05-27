@@ -43,6 +43,10 @@ const Chat = () => {
   const { messages, sendMessage, otherUser, loading } = useChat(userId!)
   const { isBlocked, isBlockedBy, canSendMessage, blockUser, unblockUser, loading: blockLoading } = useBlockUser(userId!)
   const { getOnlineStatus } = useUserPresence()
+  const { connections } = useConnections()
+  const { outgoing: outgoingIntro, incoming: incomingIntro, acceptIntro, declineIntro, loading: introLoading } = useChatIntro(userId)
+  const isConnected = !!connections.find(c => c.other_user?.id === userId)
+  const needsIntro = !!userId && !isConnected && messages.length === 0 && !incomingIntro
   const { toast } = useToast()
   const [newMessage, setNewMessage] = useState('')
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
