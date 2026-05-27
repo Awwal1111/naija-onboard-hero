@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import { useUserPresence } from '@/hooks/useUserPresence'
 import { useNavigate, useLocation } from 'react-router-dom'
+import IntroRequestsList from './IntroRequestsList'
 
 interface ChatPreview {
   id: string
@@ -207,6 +208,8 @@ const MessagesTab: React.FC = () => {
           PRO
         </div>
       </div>
+
+      <IntroRequestsList />
 
       <div className="relative">
         <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />

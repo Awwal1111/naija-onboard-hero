@@ -12,6 +12,9 @@ import { BrandInput } from '@/components/ui/brand-input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import SafePayDialog from '@/components/SafePayDialog'
+import ChatIntroComposer from '@/components/ChatIntroComposer'
+import { useChatIntro } from '@/hooks/useChatIntro'
+import { useConnections } from '@/hooks/useConnections'
 import { MarkProjectCompleteDialog } from '@/components/MarkProjectCompleteDialog'
 import ActiveCallInterface from '@/components/ActiveCallInterface'
 import CallHistory from '@/components/CallHistory'
@@ -40,6 +43,10 @@ const Chat = () => {
   const { messages, sendMessage, otherUser, loading } = useChat(userId!)
   const { isBlocked, isBlockedBy, canSendMessage, blockUser, unblockUser, loading: blockLoading } = useBlockUser(userId!)
   const { getOnlineStatus } = useUserPresence()
+  const { connections } = useConnections()
+  const { outgoing: outgoingIntro, incoming: incomingIntro, acceptIntro, declineIntro, loading: introLoading } = useChatIntro(userId)
+  const isConnected = !!connections.find(c => c.other_user?.id === userId)
+  const needsIntro = !!userId && !isConnected && messages.length === 0 && !incomingIntro
   const { toast } = useToast()
   const [newMessage, setNewMessage] = useState('')
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
@@ -772,7 +779,22 @@ const Chat = () => {
           </div>
         )}
 
-        {canSendMessage ? (
+        {incomingIntro ? (
+          <div className="p-3 m-2 border border-primary/30 rounded-lg bg-primary/5 space-y-2">
+            <p className="text-sm font-medium text-primary">{otherUser?.full_name || 'They'} sent an introduction</p>
+            <p className="text-sm">"{incomingIntro.message}"</p>
+            <div className="flex gap-2">
+              <BrandButton size="sm" disabled={introLoading} onClick={() => acceptIntro(incomingIntro.id)}>
+                <Check className="h-4 w-4 mr-1" /> Accept
+              </BrandButton>
+              <BrandButton size="sm" variant="outline" disabled={introLoading} onClick={() => declineIntro(incomingIntro.id)}>
+                <X className="h-4 w-4 mr-1" /> Decline
+              </BrandButton>
+            </div>
+          </div>
+        ) : needsIntro || outgoingIntro ? (
+          <ChatIntroComposer otherUserId={userId!} otherUserName={otherUser?.full_name} />
+        ) : canSendMessage ? (
           <form onSubmit={handleSendMessage} className="p-2 flex items-center gap-2">
             <input
               ref={fileInputRef}

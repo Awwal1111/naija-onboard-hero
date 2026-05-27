@@ -379,11 +379,14 @@ export const AdminDisputeManagement = () => {
             <CardContent className="pt-6">
               <div className="flex justify-between items-start">
                 <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
                     <Badge className={getStatusColor(dispute.status)}>
                       {getStatusIcon(dispute.status)}
                       <span className="ml-1">{dispute.status}</span>
                     </Badge>
+                    {dispute.dispute_type === 'safepay' && (
+                      <Badge variant="outline" className="border-amber-500 text-amber-600">SafePay</Badge>
+                    )}
                     <span className="text-xs text-muted-foreground">
                       {format(new Date(dispute.created_at), "PPp")}
                     </span>
@@ -478,36 +481,92 @@ export const AdminDisputeManagement = () => {
                     />
                   </div>
 
-                  <div className="flex gap-2">
-                    {selectedDispute.status === "pending" && (
+                  {selectedDispute.dispute_type === 'safepay' && selectedDispute.safepay_id ? (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">SafePay Ruling — moves funds and closes dispute</p>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={async () => {
+                            setIsSubmitting(true);
+                            const { error } = await supabase.rpc('admin_resolve_safepay_dispute', {
+                              p_dispute_id: selectedDispute.id,
+                              p_ruling: 'release_seller',
+                              p_response: adminResponse || null,
+                            });
+                            setIsSubmitting(false);
+                            if (error) { toast({ title: 'Error', description: error.message, variant: 'destructive' }); return; }
+                            toast({ title: 'Funds released to seller' });
+                            fetchDisputes(); setSelectedDispute(null); setAdminResponse('');
+                          }}
+                          disabled={isSubmitting}
+                          className="flex-1"
+                        >
+                          <ArrowUpRight className="h-4 w-4 mr-2" />
+                          Release to Seller
+                        </Button>
+                        <Button
+                          onClick={async () => {
+                            setIsSubmitting(true);
+                            const { error } = await supabase.rpc('admin_resolve_safepay_dispute', {
+                              p_dispute_id: selectedDispute.id,
+                              p_ruling: 'refund_buyer',
+                              p_response: adminResponse || null,
+                            });
+                            setIsSubmitting(false);
+                            if (error) { toast({ title: 'Error', description: error.message, variant: 'destructive' }); return; }
+                            toast({ title: 'Funds refunded to buyer' });
+                            fetchDisputes(); setSelectedDispute(null); setAdminResponse('');
+                          }}
+                          disabled={isSubmitting}
+                          variant="destructive"
+                          className="flex-1"
+                        >
+                          <ArrowDownLeft className="h-4 w-4 mr-2" />
+                          Refund Buyer
+                        </Button>
+                      </div>
                       <Button
-                        onClick={() => updateDisputeStatus(selectedDispute.id, "investigating", adminResponse || "Under investigation")}
-                        disabled={isSubmitting}
                         variant="outline"
-                        className="flex-1"
+                        size="sm"
+                        onClick={() => updateDisputeStatus(selectedDispute.id, 'investigating', adminResponse || 'Under investigation')}
+                        disabled={isSubmitting}
                       >
                         <MessageSquare className="h-4 w-4 mr-2" />
-                        Investigate
+                        Mark Investigating
                       </Button>
-                    )}
-                    <Button
-                      onClick={() => updateDisputeStatus(selectedDispute.id, "resolved", adminResponse)}
-                      disabled={isSubmitting || !adminResponse.trim()}
-                      className="flex-1"
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Resolve
-                    </Button>
-                    <Button
-                      onClick={() => updateDisputeStatus(selectedDispute.id, "rejected", adminResponse)}
-                      disabled={isSubmitting || !adminResponse.trim()}
-                      variant="destructive"
-                      className="flex-1"
-                    >
-                      <XCircle className="h-4 w-4 mr-2" />
-                      Reject
-                    </Button>
-                  </div>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      {selectedDispute.status === "pending" && (
+                        <Button
+                          onClick={() => updateDisputeStatus(selectedDispute.id, "investigating", adminResponse || "Under investigation")}
+                          disabled={isSubmitting}
+                          variant="outline"
+                          className="flex-1"
+                        >
+                          <MessageSquare className="h-4 w-4 mr-2" />
+                          Investigate
+                        </Button>
+                      )}
+                      <Button
+                        onClick={() => updateDisputeStatus(selectedDispute.id, "resolved", adminResponse)}
+                        disabled={isSubmitting || !adminResponse.trim()}
+                        className="flex-1"
+                      >
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Resolve
+                      </Button>
+                      <Button
+                        onClick={() => updateDisputeStatus(selectedDispute.id, "rejected", adminResponse)}
+                        disabled={isSubmitting || !adminResponse.trim()}
+                        variant="destructive"
+                        className="flex-1"
+                      >
+                        <XCircle className="h-4 w-4 mr-2" />
+                        Reject
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

@@ -702,6 +702,39 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_intro_requests: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          recipient_id: string
+          responded_at: string | null
+          sender_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          recipient_id: string
+          responded_at?: string | null
+          sender_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          recipient_id?: string
+          responded_at?: string | null
+          sender_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       chats: {
         Row: {
           created_at: string
@@ -6582,12 +6615,15 @@ export type Database = {
       transaction_disputes: {
         Row: {
           admin_response: string | null
+          counterparty_id: string | null
           created_at: string
           dispute_details: string | null
           dispute_reason: string
+          dispute_type: string
           id: string
           resolved_at: string | null
           resolved_by: string | null
+          safepay_id: string | null
           status: string
           transaction_id: string
           updated_at: string
@@ -6595,12 +6631,15 @@ export type Database = {
         }
         Insert: {
           admin_response?: string | null
+          counterparty_id?: string | null
           created_at?: string
           dispute_details?: string | null
           dispute_reason: string
+          dispute_type?: string
           id?: string
           resolved_at?: string | null
           resolved_by?: string | null
+          safepay_id?: string | null
           status?: string
           transaction_id: string
           updated_at?: string
@@ -6608,12 +6647,15 @@ export type Database = {
         }
         Update: {
           admin_response?: string | null
+          counterparty_id?: string | null
           created_at?: string
           dispute_details?: string | null
           dispute_reason?: string
+          dispute_type?: string
           id?: string
           resolved_at?: string | null
           resolved_by?: string | null
+          safepay_id?: string | null
           status?: string
           transaction_id?: string
           updated_at?: string
@@ -7874,6 +7916,7 @@ export type Database = {
     }
     Functions: {
       accept_admin_invitation: { Args: { p_token: string }; Returns: Json }
+      accept_chat_intro: { Args: { p_intro_id: string }; Returns: string }
       accept_safepay:
         | {
             Args: { p_acceptor: string; p_escrow_id: string }
@@ -7883,6 +7926,10 @@ export type Database = {
       admin_release_fundraising_funds: {
         Args: { p_admin_id: string; p_fundraising_id: string }
         Returns: Json
+      }
+      admin_resolve_safepay_dispute: {
+        Args: { p_dispute_id: string; p_response?: string; p_ruling: string }
+        Returns: undefined
       }
       auto_approve_user_task_submissions: { Args: never; Returns: undefined }
       auto_release_safepay: { Args: never; Returns: undefined }
@@ -7984,6 +8031,7 @@ export type Database = {
         }
         Returns: Json
       }
+      decline_chat_intro: { Args: { p_intro_id: string }; Returns: undefined }
       deduct_nc_balance: {
         Args: { p_amount: number; p_user_id: string }
         Returns: boolean
@@ -8439,6 +8487,10 @@ export type Database = {
       propose_safepay: {
         Args: { p_amount: number; p_buyer_id: string; p_seller_id: string }
         Returns: Json
+      }
+      raise_safepay_dispute: {
+        Args: { p_details?: string; p_reason: string; p_safepay_id: string }
+        Returns: string
       }
       refresh_admin_stats: { Args: never; Returns: undefined }
       refund_developer_escrow: {

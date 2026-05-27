@@ -10,6 +10,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
 import { useUserSecrets } from '@/hooks/useUserSecrets'
 import { useWallet } from '@/hooks/useWallet'
+import RaiseDisputeDialog from './RaiseDisputeDialog'
 import { toast } from 'sonner'
 
 interface SafePayDialogProps {
@@ -35,6 +36,7 @@ const SafePayDialog: React.FC<SafePayDialogProps> = ({ otherUserId, otherUserNam
   const [open, setOpen] = useState(false)
   const [showPinInput, setShowPinInput] = useState(false)
   const [pendingAction, setPendingAction] = useState<'propose' | 'accept' | 'release' | null>(null)
+  const [showDispute, setShowDispute] = useState(false)
 
   const handlePropose = () => {
     const amountNum = parseInt(amount)
@@ -231,6 +233,15 @@ const SafePayDialog: React.FC<SafePayDialogProps> = ({ otherUserId, otherUserNam
                 Waiting for seller to complete the work
               </p>
             )}
+
+            <BrandButton
+              variant="outline"
+              onClick={() => setShowDispute(true)}
+              className="w-full"
+            >
+              <AlertTriangle className="h-4 w-4 mr-2" />
+              Raise Dispute
+            </BrandButton>
           </div>
         )
 
@@ -260,6 +271,34 @@ const SafePayDialog: React.FC<SafePayDialogProps> = ({ otherUserId, otherUserNam
                 Waiting for buyer to release payment
               </p>
             )}
+
+            <BrandButton
+              variant="outline"
+              onClick={() => setShowDispute(true)}
+              className="w-full"
+            >
+              <AlertTriangle className="h-4 w-4 mr-2" />
+              Raise Dispute
+            </BrandButton>
+          </div>
+        )
+
+      case 'disputed':
+        return (
+          <div className="text-center space-y-2">
+            <AlertTriangle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold">Under Admin Review</h3>
+            <p className="text-text-secondary">
+              {activeTransaction.amount} NC locked in escrow
+            </p>
+            {activeTransaction.dispute_reason && (
+              <p className="text-sm text-muted-foreground">
+                Reason: {activeTransaction.dispute_reason}
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              An admin will rule within 24–48 hours. Both parties will be notified.
+            </p>
           </div>
         )
 
@@ -319,6 +358,13 @@ const SafePayDialog: React.FC<SafePayDialogProps> = ({ otherUserId, otherUserNam
         
         {renderTransactionStatus()}
       </DialogContent>
+      {activeTransaction && (
+        <RaiseDisputeDialog
+          open={showDispute}
+          onOpenChange={setShowDispute}
+          safepayId={activeTransaction.id}
+        />
+      )}
     </Dialog>
   )
 }
