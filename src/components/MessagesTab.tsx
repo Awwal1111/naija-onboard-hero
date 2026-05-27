@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import { useUserPresence } from '@/hooks/useUserPresence'
 import { useNavigate, useLocation } from 'react-router-dom'
+import IntroRequestsList from './IntroRequestsList'
 
 interface ChatPreview {
   id: string
