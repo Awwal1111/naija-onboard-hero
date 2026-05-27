@@ -36,6 +36,7 @@ const SafePayDialog: React.FC<SafePayDialogProps> = ({ otherUserId, otherUserNam
   const [open, setOpen] = useState(false)
   const [showPinInput, setShowPinInput] = useState(false)
   const [pendingAction, setPendingAction] = useState<'propose' | 'accept' | 'release' | null>(null)
+  const [showDispute, setShowDispute] = useState(false)
 
   const handlePropose = () => {
     const amountNum = parseInt(amount)
