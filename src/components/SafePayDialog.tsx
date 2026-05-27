@@ -358,6 +358,13 @@ const SafePayDialog: React.FC<SafePayDialogProps> = ({ otherUserId, otherUserNam
         
         {renderTransactionStatus()}
       </DialogContent>
+      {activeTransaction && (
+        <RaiseDisputeDialog
+          open={showDispute}
+          onOpenChange={setShowDispute}
+          safepayId={activeTransaction.id}
+        />
+      )}
     </Dialog>
   )
 }
