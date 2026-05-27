@@ -55,7 +55,7 @@ export const useSafePay = (otherUserId: string) => {
         .from('safepay_transactions')
         .select('*')
         .or(`and(buyer_id.eq.${user.id},seller_id.eq.${otherUserId}),and(buyer_id.eq.${otherUserId},seller_id.eq.${user.id})`)
-        .in('status', ['proposed', 'active', 'complete'])
+        .in('status', ['proposed', 'active', 'complete', 'disputed'])
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle()
