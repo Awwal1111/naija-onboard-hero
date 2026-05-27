@@ -379,11 +379,14 @@ export const AdminDisputeManagement = () => {
             <CardContent className="pt-6">
               <div className="flex justify-between items-start">
                 <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
                     <Badge className={getStatusColor(dispute.status)}>
                       {getStatusIcon(dispute.status)}
                       <span className="ml-1">{dispute.status}</span>
                     </Badge>
+                    {dispute.dispute_type === 'safepay' && (
+                      <Badge variant="outline" className="border-amber-500 text-amber-600">SafePay</Badge>
+                    )}
                     <span className="text-xs text-muted-foreground">
                       {format(new Date(dispute.created_at), "PPp")}
                     </span>
