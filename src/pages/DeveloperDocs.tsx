@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
-  Code, Wallet, Video, Bell, Zap, Shield, MessageSquare, 
+  Code, Wallet, Video, Bell, Shield, MessageSquare, 
   ArrowRight, CheckCircle, Globe, Webhook, BookOpen, Terminal,
   ChevronRight, ExternalLink, Copy, Github, Twitter, Play, Loader2, AlertCircle,
   Sparkles, Box, CreditCard, FileCode, Plus
