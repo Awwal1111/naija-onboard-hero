@@ -937,7 +937,15 @@ export default function DeveloperDocs() {
                 <ul className="space-y-3 text-sm">
                   <li className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-green-500" />
-                    Transfers - ₦5/tx
+                    Escrow create - ₦10/tx
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    Wallet transfers - ₦5/tx
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    NGN ↔ USDT ramp - ₦50/session
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-green-500" />
@@ -945,13 +953,14 @@ export default function DeveloperDocs() {
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-green-500" />
-                    VTU services - ₦2/tx
+                    Push notifications - ₦0.5
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-green-500" />
                     Unlimited webhooks
                   </li>
                 </ul>
+
                 <Link to="/signup" className="block mt-6">
                   <Button className="w-full">Start Building</Button>
                 </Link>
