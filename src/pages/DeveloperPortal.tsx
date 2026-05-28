@@ -630,18 +630,19 @@ export default function DeveloperPortal() {
           
           <h1 className="text-3xl font-bold">Developer Portal</h1>
           <p className="text-muted-foreground text-lg">
-            Access powerful APIs to integrate Web3 wallets, video conferencing, VTU services, 
-            AI chat, and more into your applications.
+            Wallet-as-a-Service, escrow, NGN ↔ USDT ramps, video, AI, and push —
+            everything you need to ship a fintech or marketplace product on Celo.
           </p>
           
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 my-8">
             {[
-              { icon: Wallet, label: 'Web3 Wallets', desc: 'Create Celo wallets' },
+              { icon: Shield, label: 'Escrow & Payments', desc: 'NC + on-chain escrow' },
+              { icon: Wallet, label: 'Web3 Wallets', desc: 'Managed Celo wallets' },
+              { icon: Banknote, label: 'NGN ↔ USDT Ramp', desc: 'Hosted Quidax checkout' },
               { icon: Video, label: 'Video Calls', desc: 'WebRTC conferencing' },
-              { icon: Zap, label: 'VTU Services', desc: 'Airtime & data' },
-              { icon: Bell, label: 'Notifications', desc: 'Email, SMS, Push' },
-              { icon: MessageSquare, label: 'AI Chat', desc: 'GPT integration' },
-              { icon: Shield, label: 'Escrow', desc: 'Safe payments' }
+              { icon: MessageSquare, label: 'AI Assistant', desc: 'GPT-powered chat' },
+              { icon: Bell, label: 'Push Notifications', desc: 'Reach your users' }
+
             ].map((item, i) => (
               <Card key={i} className="p-4 text-center">
                 <item.icon className="h-8 w-8 mx-auto mb-2 text-primary" />
