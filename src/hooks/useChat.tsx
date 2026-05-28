@@ -115,43 +115,38 @@ export const useChat = (otherUserId: string) => {
           setChat(existingChat)
           await fetchMessages(existingChat.id)
         } else {
-          // Free-tier: can only DM strangers if premium, connected, or has applied to their job
-          if (!isPremium) {
-            const { count: connCount } = await supabase
-              .from('connections')
-              .select('id', { count: 'exact', head: true })
-              .or(
-                `and(user1_id.eq.${user.id},user2_id.eq.${otherUserId}),and(user1_id.eq.${otherUserId},user2_id.eq.${user.id})`
-              )
-              .eq('status', 'accepted')
-            const isConnected = (connCount ?? 0) > 0
-            if (!isConnected) {
-              upsell(
-                'Free users can only message connections. Connect first or upgrade to Premium to message anyone.'
-              )
-              throw new Error('Direct message blocked for free users')
+          // Check if users are connected
+          const { count: connCount } = await supabase
+            .from('connections')
+            .select('id', { count: 'exact', head: true })
+            .or(
+              `and(user1_id.eq.${user.id},user2_id.eq.${otherUserId}),and(user1_id.eq.${otherUserId},user2_id.eq.${user.id})`
+            )
+            .eq('status', 'accepted')
+          const isConnectedNow = (connCount ?? 0) > 0
+
+          if (!isConnectedNow) {
+            // Not connected: use intro flow. Don't create chat yet.
+            console.log('No existing chat — intro flow will be used')
+            setChat(null)
+            setMessages([])
+          } else {
+            // Connected: create chat row so they can message directly
+            const { data: newChat, error } = await supabase
+              .from('chats')
+              .insert({ user1_id: user.id, user2_id: otherUserId })
+              .select()
+              .single()
+            if (error) {
+              console.error('Chat creation error:', error)
+              throw error
             }
+            setChat(newChat)
+            setMessages([])
           }
-          console.log('Creating new chat')
-          // Create new chat
-          const { data: newChat, error } = await supabase
-            .from('chats')
-            .insert({
-              user1_id: user.id,
-              user2_id: otherUserId
-            })
-            .select()
-            .single()
-
-          if (error) {
-            console.error('Chat creation error:', error)
-            throw error
-          }
-
-          console.log('New chat created:', newChat.id)
-          setChat(newChat)
-          setMessages([])
         }
+
+
       } catch (error) {
         console.error('Error initializing chat:', error)
         toast({
