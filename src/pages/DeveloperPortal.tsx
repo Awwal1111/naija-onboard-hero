@@ -102,67 +102,11 @@ const API_ENDPOINTS: ApiEndpoint[] = [
     ],
     response: '{ "join_url": "https://...", "webrtc_config": { "iceServers": [...] } }'
   },
-  // VTU APIs
-  {
-    method: 'POST',
-    path: '/vtu/airtime',
-    description: 'Purchase airtime for any Nigerian number',
-    category: 'VTU Services',
-    cost: 2,
-    rateLimit: 100,
-    params: [
-      { name: 'network', type: 'string', required: true, description: 'mtn, airtel, glo, 9mobile' },
-      { name: 'phone', type: 'string', required: true, description: 'Phone number (e.g., 08012345678)' },
-      { name: 'amount', type: 'number', required: true, description: 'Amount in Naira' }
-    ],
-    response: '{ "reference": "...", "status": "success", "message": "Airtime sent successfully" }'
-  },
-  {
-    method: 'POST',
-    path: '/vtu/data',
-    description: 'Purchase data bundle',
-    category: 'VTU Services',
-    cost: 2,
-    rateLimit: 100,
-    params: [
-      { name: 'network', type: 'string', required: true, description: 'mtn, airtel, glo, 9mobile' },
-      { name: 'phone', type: 'string', required: true, description: 'Phone number' },
-      { name: 'plan_id', type: 'string', required: true, description: 'Data plan ID' }
-    ],
-    response: '{ "reference": "...", "status": "success" }'
-  },
-  // Notification APIs
-  {
-    method: 'POST',
-    path: '/notifications/email',
-    description: 'Send an email notification',
-    category: 'Notifications',
-    cost: 5,
-    rateLimit: 200,
-    params: [
-      { name: 'to', type: 'string', required: true, description: 'Recipient email address' },
-      { name: 'subject', type: 'string', required: true, description: 'Email subject' },
-      { name: 'message', type: 'string', required: true, description: 'Email body (HTML supported)' }
-    ],
-    response: '{ "status": "sent", "message_id": "..." }'
-  },
-  {
-    method: 'POST',
-    path: '/notifications/sms',
-    description: 'Send an SMS message',
-    category: 'Notifications',
-    cost: 4,
-    rateLimit: 100,
-    params: [
-      { name: 'phone', type: 'string', required: true, description: 'Phone number with country code' },
-      { name: 'message', type: 'string', required: true, description: 'SMS message (max 160 chars)' }
-    ],
-    response: '{ "status": "sent", "message_id": "..." }'
-  },
+  // Push Notifications (the only notification channel we offer — email/SMS removed)
   {
     method: 'POST',
     path: '/notifications/push',
-    description: 'Send a push notification',
+    description: 'Send a push notification to a NaijaLancers user',
     category: 'Notifications',
     cost: 0.5,
     rateLimit: 500,
@@ -174,6 +118,7 @@ const API_ENDPOINTS: ApiEndpoint[] = [
     ],
     response: '{ "status": "sent" }'
   },
+
   // AI APIs
   {
     method: 'POST',
