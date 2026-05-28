@@ -10,7 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { 
   Code, Copy, Eye, EyeOff, RefreshCw, Loader2, ArrowLeft,
-  Wallet, Video, Bell, MessageSquare, Zap, Shield, BookOpen,
+  Wallet, Video, Bell, MessageSquare, Shield, BookOpen,
   Terminal, Play, ChevronRight, ExternalLink, TrendingUp, DollarSign,
   Power, BarChart3, Activity
 } from 'lucide-react';
@@ -102,67 +102,11 @@ const API_ENDPOINTS: ApiEndpoint[] = [
     ],
     response: '{ "join_url": "https://...", "webrtc_config": { "iceServers": [...] } }'
   },
-  // VTU APIs
-  {
-    method: 'POST',
-    path: '/vtu/airtime',
-    description: 'Purchase airtime for any Nigerian number',
-    category: 'VTU Services',
-    cost: 2,
-    rateLimit: 100,
-    params: [
-      { name: 'network', type: 'string', required: true, description: 'mtn, airtel, glo, 9mobile' },
-      { name: 'phone', type: 'string', required: true, description: 'Phone number (e.g., 08012345678)' },
-      { name: 'amount', type: 'number', required: true, description: 'Amount in Naira' }
-    ],
-    response: '{ "reference": "...", "status": "success", "message": "Airtime sent successfully" }'
-  },
-  {
-    method: 'POST',
-    path: '/vtu/data',
-    description: 'Purchase data bundle',
-    category: 'VTU Services',
-    cost: 2,
-    rateLimit: 100,
-    params: [
-      { name: 'network', type: 'string', required: true, description: 'mtn, airtel, glo, 9mobile' },
-      { name: 'phone', type: 'string', required: true, description: 'Phone number' },
-      { name: 'plan_id', type: 'string', required: true, description: 'Data plan ID' }
-    ],
-    response: '{ "reference": "...", "status": "success" }'
-  },
-  // Notification APIs
-  {
-    method: 'POST',
-    path: '/notifications/email',
-    description: 'Send an email notification',
-    category: 'Notifications',
-    cost: 5,
-    rateLimit: 200,
-    params: [
-      { name: 'to', type: 'string', required: true, description: 'Recipient email address' },
-      { name: 'subject', type: 'string', required: true, description: 'Email subject' },
-      { name: 'message', type: 'string', required: true, description: 'Email body (HTML supported)' }
-    ],
-    response: '{ "status": "sent", "message_id": "..." }'
-  },
-  {
-    method: 'POST',
-    path: '/notifications/sms',
-    description: 'Send an SMS message',
-    category: 'Notifications',
-    cost: 4,
-    rateLimit: 100,
-    params: [
-      { name: 'phone', type: 'string', required: true, description: 'Phone number with country code' },
-      { name: 'message', type: 'string', required: true, description: 'SMS message (max 160 chars)' }
-    ],
-    response: '{ "status": "sent", "message_id": "..." }'
-  },
+  // Push Notifications (the only notification channel we offer — email/SMS removed)
   {
     method: 'POST',
     path: '/notifications/push',
-    description: 'Send a push notification',
+    description: 'Send a push notification to a NaijaLancers user',
     category: 'Notifications',
     cost: 0.5,
     rateLimit: 500,
@@ -174,6 +118,7 @@ const API_ENDPOINTS: ApiEndpoint[] = [
     ],
     response: '{ "status": "sent" }'
   },
+
   // AI APIs
   {
     method: 'POST',
@@ -392,13 +337,13 @@ const API_ENDPOINTS: ApiEndpoint[] = [
 
 const CATEGORIES = [
   { id: 'all', label: 'All APIs', icon: Code },
+  { id: 'Payments', label: 'Payments & Escrow', icon: Shield },
   { id: 'Web3 Wallet', label: 'Web3 Wallet', icon: Wallet },
   { id: 'Video Conferencing', label: 'Video', icon: Video },
-  { id: 'VTU Services', label: 'VTU', icon: Zap },
-  { id: 'Notifications', label: 'Notifications', icon: Bell },
   { id: 'AI Services', label: 'AI', icon: MessageSquare },
-  { id: 'Payments', label: 'Payments', icon: Shield }
+  { id: 'Notifications', label: 'Push', icon: Bell }
 ];
+
 
 const getExampleBody = (endpoint: ApiEndpoint) => Object.fromEntries(
   (endpoint.params || [])
@@ -651,9 +596,17 @@ export default function DeveloperPortal() {
     }
   };
 
-  const filteredEndpoints = selectedCategory === 'all' 
-    ? API_ENDPOINTS 
-    : API_ENDPOINTS.filter(e => e.category === selectedCategory);
+  // Business-priority order: payments first, then wallet, video, AI, push
+  const CATEGORY_ORDER = ['Payments', 'Web3 Wallet', 'Video Conferencing', 'AI Services', 'Notifications'];
+  const sortedEndpoints = [...API_ENDPOINTS].sort((a, b) => {
+    const ai = CATEGORY_ORDER.indexOf(a.category);
+    const bi = CATEGORY_ORDER.indexOf(b.category);
+    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+  });
+  const filteredEndpoints = selectedCategory === 'all'
+    ? sortedEndpoints
+    : sortedEndpoints.filter(e => e.category === selectedCategory);
+
 
   const methodColors: Record<string, string> = {
     GET: 'bg-green-500',
@@ -685,18 +638,19 @@ export default function DeveloperPortal() {
           
           <h1 className="text-3xl font-bold">Developer Portal</h1>
           <p className="text-muted-foreground text-lg">
-            Access powerful APIs to integrate Web3 wallets, video conferencing, VTU services, 
-            AI chat, and more into your applications.
+            Wallet-as-a-Service, escrow, NGN ↔ USDT ramps, video, AI, and push —
+            everything you need to ship a fintech or marketplace product on Celo.
           </p>
           
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 my-8">
             {[
-              { icon: Wallet, label: 'Web3 Wallets', desc: 'Create Celo wallets' },
+              { icon: Shield, label: 'Escrow & Payments', desc: 'NC + on-chain escrow' },
+              { icon: Wallet, label: 'Web3 Wallets', desc: 'Managed Celo wallets' },
+              { icon: Banknote, label: 'NGN ↔ USDT Ramp', desc: 'Hosted Quidax checkout' },
               { icon: Video, label: 'Video Calls', desc: 'WebRTC conferencing' },
-              { icon: Zap, label: 'VTU Services', desc: 'Airtime & data' },
-              { icon: Bell, label: 'Notifications', desc: 'Email, SMS, Push' },
-              { icon: MessageSquare, label: 'AI Chat', desc: 'GPT integration' },
-              { icon: Shield, label: 'Escrow', desc: 'Safe payments' }
+              { icon: MessageSquare, label: 'AI Assistant', desc: 'GPT-powered chat' },
+              { icon: Bell, label: 'Push Notifications', desc: 'Reach your users' }
+
             ].map((item, i) => (
               <Card key={i} className="p-4 text-center">
                 <item.icon className="h-8 w-8 mx-auto mb-2 text-primary" />

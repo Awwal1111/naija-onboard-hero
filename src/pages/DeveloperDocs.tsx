@@ -12,68 +12,72 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
-  Code, Wallet, Video, Bell, Zap, Shield, MessageSquare, 
+  Code, Wallet, Video, Bell, Shield, MessageSquare, 
   ArrowRight, CheckCircle, Globe, Webhook, BookOpen, Terminal,
   ChevronRight, ExternalLink, Copy, Github, Twitter, Play, Loader2, AlertCircle,
   Sparkles, Box, CreditCard, FileCode, Plus
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-// API Endpoints for testing
+// API Endpoints for testing — ordered by business priority (payments first)
 const TEST_ENDPOINTS = [
+  { method: 'POST', path: '/payments/escrow/create', body: '{\n  "payer_external_id": "user_1",\n  "payee_external_id": "user_2",\n  "amount": 5000,\n  "description": "Freelance work"\n}' },
+  { method: 'POST', path: '/payments/escrow/release', body: '{\n  "escrow_id": "esc_..."\n}' },
+  { method: 'POST', path: '/payments/credit', body: '{\n  "external_user_id": "user_1",\n  "amount": 1000\n}' },
+  { method: 'POST', path: '/ramp/quote/buy', body: '{\n  "ngn_amount": 10000\n}' },
   { method: 'POST', path: '/wallet/create', body: '{\n  "external_user_id": "test_user_123"\n}' },
   { method: 'GET', path: '/wallet/balance', body: '{\n  "address": "0x...",\n  "currency": "cusd"\n}' },
   { method: 'POST', path: '/wallet/transfer', body: '{\n  "from_user_id": "user_1",\n  "to_address": "0x...",\n  "amount": 100,\n  "currency": "cusd"\n}' },
   { method: 'POST', path: '/video/create-room', body: '{\n  "room_name": "my-meeting",\n  "max_participants": 10\n}' },
   { method: 'POST', path: '/video/join-room', body: '{\n  "room_id": "room_123",\n  "user_id": "user_456",\n  "display_name": "John"\n}' },
-  { method: 'POST', path: '/vtu/airtime', body: '{\n  "phone_number": "08012345678",\n  "amount": 500,\n  "network": "mtn"\n}' },
-  { method: 'POST', path: '/payments/escrow/create', body: '{\n  "payer_id": "user_1",\n  "payee_id": "user_2",\n  "amount": 5000,\n  "description": "Freelance work"\n}' },
+  { method: 'POST', path: '/ai/chat', body: '{\n  "message": "Hello"\n}' },
+  { method: 'POST', path: '/notifications/push', body: '{\n  "user_id": "user_1",\n  "title": "Hi",\n  "message": "Hello there"\n}' },
   { method: 'GET', path: '/webhooks', body: '' },
   { method: 'POST', path: '/webhooks', body: '{\n  "webhook_url": "https://your-app.com/webhook",\n  "events": ["wallet.created", "escrow.released"]\n}' },
 ];
 
 const FEATURES = [
   {
+    icon: Shield,
+    title: 'Escrow & Payments',
+    description: 'Off-chain NC escrow with instant release, plus on-chain Solidity escrow contracts on Celo. Built for marketplaces, freelance platforms, and P2P trades.',
+    endpoints: ['POST /payments/escrow/create', 'POST /payments/escrow/release', 'POST /payments/credit'],
+    color: 'text-red-500'
+  },
+  {
     icon: Wallet,
-    title: 'Web3 Wallets',
-    description: 'Create and manage Celo blockchain wallets. Support for CELO, cUSD, and USDT tokens.',
+    title: 'Web3 Wallet-as-a-Service',
+    description: 'Provision managed Celo wallets for your users. Support for CELO, cUSD, and USDT — gasless transactions handled by us.',
     endpoints: ['POST /wallet/create', 'GET /wallet/balance', 'POST /wallet/transfer'],
     color: 'text-amber-500'
   },
   {
+    icon: CreditCard,
+    title: 'NGN ↔ USDT Ramp',
+    description: 'Hosted Quidax checkout for Nigerian Naira deposits and bank-account withdrawals. Get quotes and launch sessions in one call.',
+    endpoints: ['POST /ramp/quote/buy', 'POST /ramp/session/buy', 'POST /ramp/session/sell'],
+    color: 'text-green-500'
+  },
+  {
     icon: Video,
     title: 'Video Conferencing',
-    description: 'Embed real-time video calls powered by WebRTC. Screen sharing, chat, and recording.',
+    description: 'Embed real-time video calls powered by WebRTC. Screen sharing, chat, and recording included.',
     endpoints: ['POST /video/create-room', 'POST /video/join-room'],
     color: 'text-blue-500'
   },
   {
-    icon: Zap,
-    title: 'VTU Services',
-    description: 'Purchase airtime and data bundles for all Nigerian networks. Instant delivery.',
-    endpoints: ['POST /vtu/airtime', 'POST /vtu/data', 'POST /vtu/electricity'],
-    color: 'text-green-500'
+    icon: MessageSquare,
+    title: 'AI Assistant',
+    description: 'Integrate GPT-powered AI chat into your applications. Context-aware responses, billed per call.',
+    endpoints: ['POST /ai/chat'],
+    color: 'text-cyan-500'
   },
   {
     icon: Bell,
-    title: 'Notifications',
-    description: 'Send emails, SMS, and push notifications to your users across multiple channels.',
-    endpoints: ['POST /notifications/email', 'POST /notifications/sms', 'POST /notifications/push'],
+    title: 'Push Notifications',
+    description: 'Reach NaijaLancers users directly via push. Email and SMS are intentionally excluded — we focus on what we do best.',
+    endpoints: ['POST /notifications/push'],
     color: 'text-purple-500'
-  },
-  {
-    icon: Shield,
-    title: 'Escrow Payments',
-    description: 'Secure payment processing with escrow protection. Release funds on completion.',
-    endpoints: ['POST /payments/escrow/create', 'POST /payments/escrow/release'],
-    color: 'text-red-500'
-  },
-  {
-    icon: MessageSquare,
-    title: 'AI Assistant',
-    description: 'Integrate GPT-powered AI chat into your applications. Context-aware responses.',
-    endpoints: ['POST /ai/chat'],
-    color: 'text-cyan-500'
   }
 ];
 
@@ -85,11 +89,12 @@ const WEBHOOK_EVENTS = [
   { event: 'escrow.funded', description: 'An escrow was funded by the payer' },
   { event: 'escrow.released', description: 'Escrow funds were released to the payee' },
   { event: 'escrow.refunded', description: 'Escrow was cancelled and funds refunded' },
-  { event: 'vtu.airtime.success', description: 'Airtime purchase completed successfully' },
-  { event: 'vtu.data.success', description: 'Data bundle purchase completed' },
+  { event: 'ramp.deposit.success', description: 'NGN deposit via Quidax completed and NC credited' },
+  { event: 'ramp.withdrawal.success', description: 'NGN bank withdrawal completed' },
   { event: 'video.room.created', description: 'A new video room was created' },
   { event: 'video.room.ended', description: 'A video session ended' },
 ];
+
 
 const API_BASE_URL = `${import.meta.env.VITE_SUPABASE_URL ?? 'https://your-project-ref.supabase.co'}/functions/v1/developer-api`;
 
@@ -364,11 +369,12 @@ export default function DeveloperDocs() {
   return (
     <div className="min-h-screen bg-background">
       <Helmet>
-        <title>Developer API | NaijaLancers - Build with Web3, Video & VTU APIs</title>
-        <meta name="description" content="Integrate NaijaLancers' powerful APIs into your applications. Web3 wallets, video conferencing, VTU services, notifications, and more. Start building today." />
-        <meta name="keywords" content="NaijaLancers API, Web3 API, Celo wallet API, Video API, VTU API, Nigeria developer API, escrow API" />
+        <title>Developer API | NaijaLancers — Escrow, Web3 Wallets, NGN↔USDT Ramp</title>
+        <meta name="description" content="Ship fintech and marketplace products faster. Escrow, managed Celo wallets, NGN↔USDT ramps, video, AI, and push — one API, one balance, pay as you go." />
+        <meta name="keywords" content="NaijaLancers API, escrow API, Celo wallet API, USDT ramp API, NGN payments API, Nigeria fintech API, developer platform" />
         <meta property="og:title" content="NaijaLancers Developer API" />
-        <meta property="og:description" content="Build powerful applications with our Web3, Video, VTU, and Payment APIs" />
+        <meta property="og:description" content="Escrow, Web3 wallets, NGN↔USDT ramps, video, AI, and push notifications." />
+
         <meta property="og:type" content="website" />
         <link rel="canonical" href="https://naijalancers.name.ng/developers" />
       </Helmet>
@@ -435,8 +441,9 @@ export default function DeveloperDocs() {
           </h1>
           
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Integrate Web3 wallets, video conferencing, VTU services, escrow payments, 
-            and AI into your applications. Built for Nigeria, ready for the world.
+            Escrow, managed Celo wallets, NGN ↔ USDT ramps, video, AI, and push —
+            one API, one balance. Built for Nigeria, ready for the world.
+
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -479,7 +486,7 @@ export default function DeveloperDocs() {
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-4">Everything You Need to Build</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Six powerful API categories to supercharge your applications
+              Six focused API categories — payments-first, wallet-native, AI-ready.
             </p>
           </div>
           
@@ -930,7 +937,15 @@ export default function DeveloperDocs() {
                 <ul className="space-y-3 text-sm">
                   <li className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-green-500" />
-                    Transfers - ₦5/tx
+                    Escrow create - ₦10/tx
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    Wallet transfers - ₦5/tx
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    NGN ↔ USDT ramp - ₦50/session
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-green-500" />
@@ -938,13 +953,14 @@ export default function DeveloperDocs() {
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-green-500" />
-                    VTU services - ₦2/tx
+                    Push notifications - ₦0.5
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-green-500" />
                     Unlimited webhooks
                   </li>
                 </ul>
+
                 <Link to="/signup" className="block mt-6">
                   <Button className="w-full">Start Building</Button>
                 </Link>
