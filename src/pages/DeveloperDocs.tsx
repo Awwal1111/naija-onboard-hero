@@ -369,11 +369,12 @@ export default function DeveloperDocs() {
   return (
     <div className="min-h-screen bg-background">
       <Helmet>
-        <title>Developer API | NaijaLancers - Build with Web3, Video & VTU APIs</title>
-        <meta name="description" content="Integrate NaijaLancers' powerful APIs into your applications. Web3 wallets, video conferencing, VTU services, notifications, and more. Start building today." />
-        <meta name="keywords" content="NaijaLancers API, Web3 API, Celo wallet API, Video API, VTU API, Nigeria developer API, escrow API" />
+        <title>Developer API | NaijaLancers — Escrow, Web3 Wallets, NGN↔USDT Ramp</title>
+        <meta name="description" content="Ship fintech and marketplace products faster. Escrow, managed Celo wallets, NGN↔USDT ramps, video, AI, and push — one API, one balance, pay as you go." />
+        <meta name="keywords" content="NaijaLancers API, escrow API, Celo wallet API, USDT ramp API, NGN payments API, Nigeria fintech API, developer platform" />
         <meta property="og:title" content="NaijaLancers Developer API" />
-        <meta property="og:description" content="Build powerful applications with our Web3, Video, VTU, and Payment APIs" />
+        <meta property="og:description" content="Escrow, Web3 wallets, NGN↔USDT ramps, video, AI, and push notifications." />
+
         <meta property="og:type" content="website" />
         <link rel="canonical" href="https://naijalancers.name.ng/developers" />
       </Helmet>
