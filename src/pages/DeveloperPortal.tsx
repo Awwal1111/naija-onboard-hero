@@ -596,9 +596,17 @@ export default function DeveloperPortal() {
     }
   };
 
-  const filteredEndpoints = selectedCategory === 'all' 
-    ? API_ENDPOINTS 
-    : API_ENDPOINTS.filter(e => e.category === selectedCategory);
+  // Business-priority order: payments first, then wallet, video, AI, push
+  const CATEGORY_ORDER = ['Payments', 'Web3 Wallet', 'Video Conferencing', 'AI Services', 'Notifications'];
+  const sortedEndpoints = [...API_ENDPOINTS].sort((a, b) => {
+    const ai = CATEGORY_ORDER.indexOf(a.category);
+    const bi = CATEGORY_ORDER.indexOf(b.category);
+    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+  });
+  const filteredEndpoints = selectedCategory === 'all'
+    ? sortedEndpoints
+    : sortedEndpoints.filter(e => e.category === selectedCategory);
+
 
   const methodColors: Record<string, string> = {
     GET: 'bg-green-500',
