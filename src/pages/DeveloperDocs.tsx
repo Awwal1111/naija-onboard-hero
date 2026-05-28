@@ -486,7 +486,7 @@ export default function DeveloperDocs() {
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-4">Everything You Need to Build</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Six powerful API categories to supercharge your applications
+              Six focused API categories — payments-first, wallet-native, AI-ready.
             </p>
           </div>
           
