@@ -337,13 +337,13 @@ const API_ENDPOINTS: ApiEndpoint[] = [
 
 const CATEGORIES = [
   { id: 'all', label: 'All APIs', icon: Code },
+  { id: 'Payments', label: 'Payments & Escrow', icon: Shield },
   { id: 'Web3 Wallet', label: 'Web3 Wallet', icon: Wallet },
   { id: 'Video Conferencing', label: 'Video', icon: Video },
-  { id: 'VTU Services', label: 'VTU', icon: Zap },
-  { id: 'Notifications', label: 'Notifications', icon: Bell },
   { id: 'AI Services', label: 'AI', icon: MessageSquare },
-  { id: 'Payments', label: 'Payments', icon: Shield }
+  { id: 'Notifications', label: 'Push', icon: Bell }
 ];
+
 
 const getExampleBody = (endpoint: ApiEndpoint) => Object.fromEntries(
   (endpoint.params || [])
