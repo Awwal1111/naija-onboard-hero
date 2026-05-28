@@ -115,13 +115,37 @@ export const useChat = (otherUserId: string) => {
           setChat(existingChat)
           await fetchMessages(existingChat.id)
         } else {
-          // No existing chat: don't create one yet. Let Chat.tsx render the
-          // Introduction composer. A chat row will be created when the
-          // recipient accepts the intro (via accept_chat_intro RPC).
-          console.log('No existing chat — intro flow will be used')
-          setChat(null)
-          setMessages([])
+          // Check if users are connected
+          const { count: connCount } = await supabase
+            .from('connections')
+            .select('id', { count: 'exact', head: true })
+            .or(
+              `and(user1_id.eq.${user.id},user2_id.eq.${otherUserId}),and(user1_id.eq.${otherUserId},user2_id.eq.${user.id})`
+            )
+            .eq('status', 'accepted')
+          const isConnectedNow = (connCount ?? 0) > 0
+
+          if (!isConnectedNow) {
+            // Not connected: use intro flow. Don't create chat yet.
+            console.log('No existing chat — intro flow will be used')
+            setChat(null)
+            setMessages([])
+          } else {
+            // Connected: create chat row so they can message directly
+            const { data: newChat, error } = await supabase
+              .from('chats')
+              .insert({ user1_id: user.id, user2_id: otherUserId })
+              .select()
+              .single()
+            if (error) {
+              console.error('Chat creation error:', error)
+              throw error
+            }
+            setChat(newChat)
+            setMessages([])
+          }
         }
+
 
       } catch (error) {
         console.error('Error initializing chat:', error)
