@@ -10,7 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { 
   Code, Copy, Eye, EyeOff, RefreshCw, Loader2, ArrowLeft,
-  Wallet, Video, Bell, MessageSquare, Zap, Shield, BookOpen,
+  Wallet, Video, Bell, MessageSquare, Shield, BookOpen,
   Terminal, Play, ChevronRight, ExternalLink, TrendingUp, DollarSign,
   Power, BarChart3, Activity
 } from 'lucide-react';
