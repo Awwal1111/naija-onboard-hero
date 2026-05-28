@@ -441,7 +441,7 @@ export default function DeveloperDocs() {
           </h1>
           
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Integrate Web3 wallets, video conferencing, VTU services, escrow payments, 
+            Escrow, managed Celo wallets, NGN ↔ USDT ramps, video, AI, and push — 
             and AI into your applications. Built for Nigeria, ready for the world.
           </p>
           
