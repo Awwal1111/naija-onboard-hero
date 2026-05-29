@@ -321,7 +321,7 @@ const ClientDashboard = () => {
                   <p className="text-sm text-muted-foreground mb-4">
                     Post a job to find talented freelancers
                   </p>
-                  <Button onClick={() => navigate('/jobs')}>
+                  <Button onClick={() => navigate('/post-job')}>
                     <Plus className="h-4 w-4 mr-2" />
                     Post a Job
                   </Button>
