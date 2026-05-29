@@ -167,7 +167,7 @@ const ClientDashboard = () => {
               <p className="text-xs text-muted-foreground">Manage your hiring activity</p>
             </div>
           </div>
-          <Button onClick={() => navigate('/jobs')} className="gap-2">
+          <Button onClick={() => navigate('/post-job')} className="gap-2">
             <Plus className="h-4 w-4" />
             <span className="hidden sm:inline">Post Job</span>
           </Button>
@@ -321,7 +321,7 @@ const ClientDashboard = () => {
                   <p className="text-sm text-muted-foreground mb-4">
                     Post a job to find talented freelancers
                   </p>
-                  <Button onClick={() => navigate('/jobs')}>
+                  <Button onClick={() => navigate('/post-job')}>
                     <Plus className="h-4 w-4 mr-2" />
                     Post a Job
                   </Button>
@@ -332,7 +332,7 @@ const ClientDashboard = () => {
                 <Card 
                   key={job.id} 
                   className="cursor-pointer hover:shadow-md transition-shadow"
-                  onClick={() => navigate(`/job/${job.id}`)}
+                  onClick={() => navigate(`/jobs/${job.id}`)}
                 >
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between gap-3">

@@ -10,10 +10,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, MapPin, Calendar, Briefcase, DollarSign, Clock, Users, ExternalLink, Building2 } from "lucide-react";
-import { format } from "date-fns";
+import { ArrowLeft, MapPin, Calendar, Briefcase, DollarSign, Clock, Users, ExternalLink, Building2, FileText, Mail, MessageCircle, CheckCircle, XCircle } from "lucide-react";
+import { format, formatDistanceToNow } from "date-fns";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function JobDetail() {
   const { id } = useParams();
@@ -67,6 +68,54 @@ export default function JobDetail() {
     },
     enabled: !!user,
   });
+  const isOwner = !!user && !!job && job.user_id === user.id;
+
+  const { data: applications, refetch: refetchApplications } = useQuery({
+    queryKey: ["job-applications", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("job_post_applications")
+        .select("id, applicant_id, cover_letter, resume_url, expected_salary, availability_date, portfolio_urls, status, created_at")
+        .eq("job_post_id", id)
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      const ids = Array.from(new Set((data || []).map((a: any) => a.applicant_id)));
+      const profileMap: Record<string, any> = {};
+      if (ids.length) {
+        const { data: profs } = await supabase
+          .from("profiles")
+          .select("user_id, full_name, profile_picture_url, profession")
+          .in("user_id", ids);
+        (profs || []).forEach((p: any) => { profileMap[p.user_id] = p; });
+      }
+      return (data || []).map((a: any) => ({ ...a, applicant_profile: profileMap[a.applicant_id] }));
+    },
+    enabled: !!isOwner,
+  });
+
+  const updateAppStatus = useMutation({
+    mutationFn: async ({ appId, status, applicantId }: { appId: string; status: string; applicantId: string }) => {
+      const { error } = await supabase
+        .from("job_post_applications")
+        .update({ status })
+        .eq("id", appId);
+      if (error) throw error;
+      // Notify applicant
+      await supabase.from("notifications").insert({
+        user_id: applicantId,
+        type: "job_application_update",
+        title: status === "accepted" ? "Application accepted 🎉" : status === "rejected" ? "Application update" : "Application update",
+        message: `Your application for "${job?.title}" was ${status}.`,
+        metadata: { job_id: id, status },
+      });
+    },
+    onSuccess: () => {
+      toast({ title: "Updated" });
+      refetchApplications();
+    },
+    onError: (e: any) => toast({ title: "Failed", description: e.message, variant: "destructive" }),
+  });
 
   const applyMutation = useMutation({
     mutationFn: async () => {
@@ -76,7 +125,7 @@ export default function JobDetail() {
         throw new Error("Cover letter and resume are required");
       }
 
-      await supabase.from("job_post_applications").insert({
+      const { error } = await supabase.from("job_post_applications").insert({
         job_post_id: id,
         applicant_id: user.id,
         cover_letter: applicationData.cover_letter,
@@ -85,6 +134,18 @@ export default function JobDetail() {
         availability_date: applicationData.availability_date || null,
         portfolio_urls: applicationData.portfolio_urls.filter((url) => url.trim() !== ""),
       });
+      if (error) throw error;
+
+      // Notify job poster
+      if (job?.user_id) {
+        await supabase.from("notifications").insert({
+          user_id: job.user_id,
+          type: "job_application",
+          title: "New job application 📩",
+          message: `Someone applied to your job "${job.title}".`,
+          metadata: { job_id: id, action_url: `/jobs/${id}` },
+        });
+      }
     },
     onSuccess: () => {
       toast({
@@ -212,13 +273,94 @@ export default function JobDetail() {
                   <p className="whitespace-pre-wrap">{job.application_instructions}</p>
                 </Card>
               )}
+
+              {isOwner && (
+                <Card className="p-6 mb-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-semibold flex items-center gap-2">
+                      <Users className="w-5 h-5" />
+                      Applications ({applications?.length || 0})
+                    </h2>
+                  </div>
+                  {!applications || applications.length === 0 ? (
+                    <p className="text-sm text-muted-foreground py-6 text-center">
+                      No applications yet. Share your job link to attract candidates.
+                    </p>
+                  ) : (
+                    <div className="space-y-4">
+                      {applications.map((app: any) => (
+                        <div key={app.id} className="border rounded-lg p-4">
+                          <div className="flex items-start gap-3 mb-3">
+                            <Avatar className="h-10 w-10">
+                              <AvatarImage src={app.applicant_profile?.profile_picture_url} />
+                              <AvatarFallback>{app.applicant_profile?.full_name?.[0] || "?"}</AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-2 flex-wrap">
+                                <button
+                                  onClick={() => navigate(`/expert/${app.applicant_id}`)}
+                                  className="font-semibold hover:text-primary text-left"
+                                >
+                                  {app.applicant_profile?.full_name || "Applicant"}
+                                </button>
+                                <Badge variant={app.status === "accepted" ? "default" : app.status === "rejected" ? "destructive" : "secondary"}>
+                                  {app.status}
+                                </Badge>
+                              </div>
+                              {app.applicant_profile?.profession && (
+                                <p className="text-xs text-muted-foreground">{app.applicant_profile.profession}</p>
+                              )}
+                              <p className="text-xs text-muted-foreground">
+                                Applied {formatDistanceToNow(new Date(app.created_at), { addSuffix: true })}
+                              </p>
+                            </div>
+                          </div>
+                          {app.cover_letter && (
+                            <p className="text-sm mb-3 whitespace-pre-wrap line-clamp-4">{app.cover_letter}</p>
+                          )}
+                          <div className="flex flex-wrap gap-2 text-xs text-muted-foreground mb-3">
+                            {app.expected_salary && <span>Expected: ₦{Number(app.expected_salary).toLocaleString()}</span>}
+                            {app.availability_date && <span>Available: {format(new Date(app.availability_date), "PP")}</span>}
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {app.resume_url && (
+                              <Button size="sm" variant="outline" onClick={() => window.open(app.resume_url, "_blank")}>
+                                <FileText className="w-3 h-3 mr-1" /> Resume
+                              </Button>
+                            )}
+                            <Button size="sm" variant="outline" onClick={() => navigate(`/chat/${app.applicant_id}`)}>
+                              <MessageCircle className="w-3 h-3 mr-1" /> Message
+                            </Button>
+                            {app.status !== "accepted" && (
+                              <Button size="sm" onClick={() => updateAppStatus.mutate({ appId: app.id, status: "accepted", applicantId: app.applicant_id })}>
+                                <CheckCircle className="w-3 h-3 mr-1" /> Accept
+                              </Button>
+                            )}
+                            {app.status !== "rejected" && (
+                              <Button size="sm" variant="ghost" onClick={() => updateAppStatus.mutate({ appId: app.id, status: "rejected", applicantId: app.applicant_id })}>
+                                <XCircle className="w-3 h-3 mr-1" /> Reject
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </Card>
+              )}
             </div>
           </div>
+
 
           <div className="space-y-6">
             <Card className="p-6 sticky top-6">
               <div className="space-y-4">
-                {hasApplied ? (
+                {isOwner ? (
+                  <div className="text-center p-4 bg-primary/5 rounded-lg">
+                    <p className="font-semibold mb-1">Your Job Post</p>
+                    <p className="text-xs text-muted-foreground">{applications?.length || 0} application(s) received</p>
+                  </div>
+                ) : hasApplied ? (
                   <div className="text-center p-4 bg-muted rounded-lg">
                     <p className="font-semibold mb-2">Application Status</p>
                     <Badge variant={hasApplied.status === "accepted" ? "default" : "secondary"}>
