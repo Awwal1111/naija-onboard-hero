@@ -27,7 +27,8 @@ import {
   Search,
   Bot,
   UserCheck,
-  ChevronLeft
+  ChevronLeft,
+  FileText
 } from 'lucide-react'
 
 // Popular countries list
