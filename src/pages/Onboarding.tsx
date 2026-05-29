@@ -51,7 +51,7 @@ const COUNTRIES = [
 ]
 
 type AccountType = 'freelancer' | 'client'
-type UserGoal = 'freelancer' | 'exploring' | 'hire'
+type UserGoal = 'freelancer' | 'exploring' | 'hire' | 'post_job'
 
 const Onboarding = () => {
   const navigate = useNavigate()
