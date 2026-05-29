@@ -10,10 +10,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, MapPin, Calendar, Briefcase, DollarSign, Clock, Users, ExternalLink, Building2 } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, Briefcase, DollarSign, Clock, Users, ExternalLink, Building2, FileText, Mail, MessageCircle, CheckCircle, XCircle } from "lucide-react";
 import { format } from "date-fns";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function JobDetail() {
   const { id } = useParams();
