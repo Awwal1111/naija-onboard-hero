@@ -332,7 +332,7 @@ const ClientDashboard = () => {
                 <Card 
                   key={job.id} 
                   className="cursor-pointer hover:shadow-md transition-shadow"
-                  onClick={() => navigate(`/job/${job.id}`)}
+                  onClick={() => navigate(`/jobs/${job.id}`)}
                 >
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between gap-3">
