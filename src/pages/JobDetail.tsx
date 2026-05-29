@@ -273,8 +273,84 @@ export default function JobDetail() {
                   <p className="whitespace-pre-wrap">{job.application_instructions}</p>
                 </Card>
               )}
+
+              {isOwner && (
+                <Card className="p-6 mb-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-semibold flex items-center gap-2">
+                      <Users className="w-5 h-5" />
+                      Applications ({applications?.length || 0})
+                    </h2>
+                  </div>
+                  {!applications || applications.length === 0 ? (
+                    <p className="text-sm text-muted-foreground py-6 text-center">
+                      No applications yet. Share your job link to attract candidates.
+                    </p>
+                  ) : (
+                    <div className="space-y-4">
+                      {applications.map((app: any) => (
+                        <div key={app.id} className="border rounded-lg p-4">
+                          <div className="flex items-start gap-3 mb-3">
+                            <Avatar className="h-10 w-10">
+                              <AvatarImage src={app.applicant_profile?.profile_picture_url} />
+                              <AvatarFallback>{app.applicant_profile?.full_name?.[0] || "?"}</AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-2 flex-wrap">
+                                <button
+                                  onClick={() => navigate(`/expert/${app.applicant_id}`)}
+                                  className="font-semibold hover:text-primary text-left"
+                                >
+                                  {app.applicant_profile?.full_name || "Applicant"}
+                                </button>
+                                <Badge variant={app.status === "accepted" ? "default" : app.status === "rejected" ? "destructive" : "secondary"}>
+                                  {app.status}
+                                </Badge>
+                              </div>
+                              {app.applicant_profile?.profession && (
+                                <p className="text-xs text-muted-foreground">{app.applicant_profile.profession}</p>
+                              )}
+                              <p className="text-xs text-muted-foreground">
+                                Applied {formatDistanceToNow(new Date(app.created_at), { addSuffix: true })}
+                              </p>
+                            </div>
+                          </div>
+                          {app.cover_letter && (
+                            <p className="text-sm mb-3 whitespace-pre-wrap line-clamp-4">{app.cover_letter}</p>
+                          )}
+                          <div className="flex flex-wrap gap-2 text-xs text-muted-foreground mb-3">
+                            {app.expected_salary && <span>Expected: ₦{Number(app.expected_salary).toLocaleString()}</span>}
+                            {app.availability_date && <span>Available: {format(new Date(app.availability_date), "PP")}</span>}
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {app.resume_url && (
+                              <Button size="sm" variant="outline" onClick={() => window.open(app.resume_url, "_blank")}>
+                                <FileText className="w-3 h-3 mr-1" /> Resume
+                              </Button>
+                            )}
+                            <Button size="sm" variant="outline" onClick={() => navigate(`/chat/${app.applicant_id}`)}>
+                              <MessageCircle className="w-3 h-3 mr-1" /> Message
+                            </Button>
+                            {app.status !== "accepted" && (
+                              <Button size="sm" onClick={() => updateAppStatus.mutate({ appId: app.id, status: "accepted", applicantId: app.applicant_id })}>
+                                <CheckCircle className="w-3 h-3 mr-1" /> Accept
+                              </Button>
+                            )}
+                            {app.status !== "rejected" && (
+                              <Button size="sm" variant="ghost" onClick={() => updateAppStatus.mutate({ appId: app.id, status: "rejected", applicantId: app.applicant_id })}>
+                                <XCircle className="w-3 h-3 mr-1" /> Reject
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </Card>
+              )}
             </div>
           </div>
+
 
           <div className="space-y-6">
             <Card className="p-6 sticky top-6">
