@@ -564,11 +564,35 @@ const Onboarding = () => {
                       </div>
                       <div className="flex-1">
                         <p className="font-semibold text-foreground flex items-center gap-2">
-                          I Want to Hire
+                          Hire with AI
                           <Badge variant="outline" className="text-xs border-purple-300 text-purple-600">AI-Powered</Badge>
                         </p>
                         <p className="text-sm text-muted-foreground mt-1">
                           Let our AI match you with perfect freelancers
+                        </p>
+                      </div>
+                      <ArrowRight className="h-5 w-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity mt-2" />
+                    </div>
+                  </button>
+
+                  {/* Post a Job Option */}
+                  <button
+                    onClick={() => handleGoalSelect('post_job')}
+                    disabled={loading}
+                    className={`w-full p-4 rounded-xl border-2 transition-all text-left group ${
+                      formData.account_type === 'client'
+                        ? 'border-primary bg-primary/5 hover:bg-primary/10'
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center shrink-0">
+                        <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-foreground">Post a Job</p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Describe your project and receive applications
                         </p>
                       </div>
                       <ArrowRight className="h-5 w-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity mt-2" />
