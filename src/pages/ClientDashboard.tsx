@@ -167,7 +167,7 @@ const ClientDashboard = () => {
               <p className="text-xs text-muted-foreground">Manage your hiring activity</p>
             </div>
           </div>
-          <Button onClick={() => navigate('/jobs')} className="gap-2">
+          <Button onClick={() => navigate('/post-job')} className="gap-2">
             <Plus className="h-4 w-4" />
             <span className="hidden sm:inline">Post Job</span>
           </Button>
