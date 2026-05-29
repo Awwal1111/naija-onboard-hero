@@ -355,7 +355,12 @@ export default function JobDetail() {
           <div className="space-y-6">
             <Card className="p-6 sticky top-6">
               <div className="space-y-4">
-                {hasApplied ? (
+                {isOwner ? (
+                  <div className="text-center p-4 bg-primary/5 rounded-lg">
+                    <p className="font-semibold mb-1">Your Job Post</p>
+                    <p className="text-xs text-muted-foreground">{applications?.length || 0} application(s) received</p>
+                  </div>
+                ) : hasApplied ? (
                   <div className="text-center p-4 bg-muted rounded-lg">
                     <p className="font-semibold mb-2">Application Status</p>
                     <Badge variant={hasApplied.status === "accepted" ? "default" : "secondary"}>
