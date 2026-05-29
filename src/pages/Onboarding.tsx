@@ -170,8 +170,8 @@ const Onboarding = () => {
       return
     }
 
-    if (goal === 'hire') {
-      // Client flow - save and redirect to AI assistant
+    if (goal === 'hire' || goal === 'post_job') {
+      // Client flow - save profile, then route based on choice
       setLoading(true)
       try {
         await updateProfile({
@@ -186,12 +186,16 @@ const Onboarding = () => {
           user_mode: 'client'
         } as any)
 
-        toast({
-          title: "Let's find you the perfect freelancer! 🤖",
-          description: "Our AI will help match you with the right talent."
-        })
-
-        navigate('/ai-hire')
+        if (goal === 'post_job') {
+          toast({ title: 'Post your job 📝', description: 'Tell us what you need done.' })
+          navigate('/post-job')
+        } else {
+          toast({
+            title: "Let's find you the perfect freelancer! 🤖",
+            description: "Our AI will help match you with the right talent."
+          })
+          navigate('/ai-hire')
+        }
       } catch (error) {
         toast({ title: 'Error saving profile', variant: 'destructive' })
       } finally {
