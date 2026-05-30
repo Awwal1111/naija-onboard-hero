@@ -42,10 +42,22 @@ export const MtPelerinCard = ({ mode, defaultCrypto = 'USDT' }: MtPelerinCardPro
     tabs: ['buy', 'sell', 'swap'],
     addr: mode === 'buy' ? walletAddress || undefined : undefined,
     ...(mode === 'buy'
-      ? { bdc: defaultCrypto, dnet: 'celo_mainnet' }
-      : { ssc: defaultCrypto, snet: 'celo_mainnet' }),
+      ? { bdc: defaultCrypto, dnet: 'celo_mainnet', bsc: 'EUR', pm: 'card' }
+      : { ssc: defaultCrypto, snet: 'celo_mainnet', sdc: 'EUR' }),
     crys: 'USDT,CUSD,CELO',
   })
+
+  const externalUrl = buildMtPelerinUrl({
+    tab: mode,
+    tabs: ['buy', 'sell', 'swap'],
+    addr: mode === 'buy' ? walletAddress || undefined : undefined,
+    ...(mode === 'buy'
+      ? { bdc: defaultCrypto, dnet: 'celo_mainnet', bsc: 'EUR', pm: 'card' }
+      : { ssc: defaultCrypto, snet: 'celo_mainnet', sdc: 'EUR' }),
+    crys: 'USDT,CUSD,CELO',
+    directLink: true,
+  })
+
 
   const copyAddress = () => {
     if (!walletAddress) return
