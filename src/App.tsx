@@ -89,6 +89,7 @@ const Bookmarks = lazy(lazyWithRetry(() => import("./pages/Bookmarks")));
 // Jobs & Gigs
 const PostJob = lazy(lazyWithRetry(() => import("./pages/PostJob")));
 const PostGig = lazy(lazyWithRetry(() => import("./pages/PostGig")));
+const ScanCode = lazy(lazyWithRetry(() => import("./pages/ScanCode")));
 const Jobs = lazy(lazyWithRetry(() => import("./pages/Jobs")));
 const JobsEnhanced = lazy(lazyWithRetry(() => import("./pages/JobsEnhanced")));
 const JobDetail = lazy(lazyWithRetry(() => import("./pages/JobDetail")));
