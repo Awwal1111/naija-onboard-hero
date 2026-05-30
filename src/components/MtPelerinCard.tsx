@@ -107,7 +107,7 @@ export const MtPelerinCard = ({ mode, defaultCrypto = 'USDT' }: MtPelerinCardPro
               title="Mt Pelerin exchange widget"
               allow="usb; ethereum; clipboard-write; payment; microphone; camera"
               loading="lazy"
-              className="w-full h-[640px] block"
+              className="w-full h-[720px] block bg-background"
             />
           </div>
         ) : (
@@ -127,7 +127,7 @@ export const MtPelerinCard = ({ mode, defaultCrypto = 'USDT' }: MtPelerinCardPro
           onClick={() =>
             window.open(
               isMtPelerinAllowedHost()
-                ? widgetUrl
+                ? externalUrl
                 : `https://${MT_PELERIN_ALLOWED_HOST}${window.location.pathname}${window.location.search}`,
               '_blank',
               'noopener,noreferrer',
