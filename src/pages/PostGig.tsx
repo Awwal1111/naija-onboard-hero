@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast'
 import { AIWritingAssistant } from '@/components/AIWritingAssistant'
 import { usePremiumGate } from '@/hooks/usePremiumGate'
 
-const PostJob = () => {
+const PostGig = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { toast } = useToast()
@@ -511,4 +511,4 @@ const PostJob = () => {
   )
 }
 
-export default PostJob
+export default PostGig
