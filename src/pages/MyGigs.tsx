@@ -58,7 +58,7 @@ export default function MyGigs() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <h1 className="text-lg font-bold">My Gigs</h1>
-          <Button size="sm" onClick={() => navigate('/post-job')}>
+          <Button size="sm" onClick={() => navigate('/post-gig')}>
             <Plus className="h-4 w-4 mr-1" />
             Create
           </Button>
@@ -98,7 +98,7 @@ export default function MyGigs() {
             <p className="text-sm text-muted-foreground mb-4">
               Create your first gig to start selling your services
             </p>
-            <Button onClick={() => navigate('/post-job')}>
+            <Button onClick={() => navigate('/post-gig')}>
               <Plus className="h-4 w-4 mr-2" />
               Create Your First Gig
             </Button>

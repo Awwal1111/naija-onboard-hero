@@ -42,10 +42,22 @@ export const MtPelerinCard = ({ mode, defaultCrypto = 'USDT' }: MtPelerinCardPro
     tabs: ['buy', 'sell', 'swap'],
     addr: mode === 'buy' ? walletAddress || undefined : undefined,
     ...(mode === 'buy'
-      ? { bdc: defaultCrypto, dnet: 'celo_mainnet' }
-      : { ssc: defaultCrypto, snet: 'celo_mainnet' }),
+      ? { bdc: defaultCrypto, dnet: 'celo_mainnet', bsc: 'EUR', pm: 'card' }
+      : { ssc: defaultCrypto, snet: 'celo_mainnet', sdc: 'EUR' }),
     crys: 'USDT,CUSD,CELO',
   })
+
+  const externalUrl = buildMtPelerinUrl({
+    tab: mode,
+    tabs: ['buy', 'sell', 'swap'],
+    addr: mode === 'buy' ? walletAddress || undefined : undefined,
+    ...(mode === 'buy'
+      ? { bdc: defaultCrypto, dnet: 'celo_mainnet', bsc: 'EUR', pm: 'card' }
+      : { ssc: defaultCrypto, snet: 'celo_mainnet', sdc: 'EUR' }),
+    crys: 'USDT,CUSD,CELO',
+    directLink: true,
+  })
+
 
   const copyAddress = () => {
     if (!walletAddress) return
@@ -95,7 +107,7 @@ export const MtPelerinCard = ({ mode, defaultCrypto = 'USDT' }: MtPelerinCardPro
               title="Mt Pelerin exchange widget"
               allow="usb; ethereum; clipboard-write; payment; microphone; camera"
               loading="lazy"
-              className="w-full h-[640px] block"
+              className="w-full h-[720px] block bg-background"
             />
           </div>
         ) : (
@@ -115,7 +127,7 @@ export const MtPelerinCard = ({ mode, defaultCrypto = 'USDT' }: MtPelerinCardPro
           onClick={() =>
             window.open(
               isMtPelerinAllowedHost()
-                ? widgetUrl
+                ? externalUrl
                 : `https://${MT_PELERIN_ALLOWED_HOST}${window.location.pathname}${window.location.search}`,
               '_blank',
               'noopener,noreferrer',

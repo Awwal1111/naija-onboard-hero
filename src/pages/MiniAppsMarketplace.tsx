@@ -1,7 +1,7 @@
 import { useState, useEffect, lazy, Suspense, useMemo } from 'react'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
-import { ArrowLeft, Search, Plus, Sparkles, Receipt, Building2, Wallet, Shield, RefreshCw, Trophy, Heart, GraduationCap, Users, Gamepad2, Dices, Target, RotateCw, Gift, Banknote, AlertCircle, ShoppingBag, PiggyBank, Flame, FileText, Zap, BookOpen, Send } from 'lucide-react'
+import { ArrowLeft, Search, Plus, Sparkles, Receipt, Building2, Wallet, Shield, RefreshCw, Trophy, Heart, GraduationCap, Users, Gamepad2, Dices, Target, RotateCw, Gift, Banknote, AlertCircle, ShoppingBag, PiggyBank, Flame, FileText, Zap, BookOpen, Send, ScanLine, Crown } from 'lucide-react'
 import { useUserCountry } from '@/hooks/useUserCountry'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
@@ -69,6 +69,8 @@ const BUILT_IN_APPS: UnifiedApp[] = [
   { id: 'int-escrowhubs', name: 'EscrowHubs (On-chain)', description: 'Non-custodial cUSD escrow on Celo with AI arbitration', icon: Shield, category: 'finance', color: 'from-emerald-500/20 to-teal-500/20', isInternal: true, internalAction: 'escrowhubs' },
   { id: 'int-converter', name: 'NC Converter', description: 'Convert non-withdrawable to withdrawable NC', icon: RefreshCw, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, internalAction: 'nc_converter' },
   { id: 'int-send-money', name: 'Send Money', description: 'Send NC to any NaijaLancers user instantly', icon: Send, category: 'finance', color: 'from-emerald-500/20 to-green-500/20', isInternal: true, internalAction: 'send_money' },
+  { id: 'int-scan', name: 'Scan Code', description: 'Scan QR codes for pay links, gigs, and profiles', icon: ScanLine, path: '/scan', category: 'finance', color: 'from-sky-500/20 to-blue-500/20', isInternal: true },
+  { id: 'int-premium', name: 'Premium Upgrade', description: 'Unlock the Crown badge and pro perks', icon: Crown, path: '/premium', category: 'finance', color: 'from-amber-500/20 to-yellow-500/20', isInternal: true },
   // Learning
   { id: 'pa-courses', name: 'Courses', description: 'Buy or sell professional courses', icon: GraduationCap, path: '/courses', category: 'learning', color: 'from-blue-500/20 to-cyan-500/20', isInternal: true },
   // Earn

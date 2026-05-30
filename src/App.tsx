@@ -88,6 +88,8 @@ const Bookmarks = lazy(lazyWithRetry(() => import("./pages/Bookmarks")));
 
 // Jobs & Gigs
 const PostJob = lazy(lazyWithRetry(() => import("./pages/PostJob")));
+const PostGig = lazy(lazyWithRetry(() => import("./pages/PostGig")));
+const ScanCode = lazy(lazyWithRetry(() => import("./pages/ScanCode")));
 const Jobs = lazy(lazyWithRetry(() => import("./pages/Jobs")));
 const JobsEnhanced = lazy(lazyWithRetry(() => import("./pages/JobsEnhanced")));
 const JobDetail = lazy(lazyWithRetry(() => import("./pages/JobDetail")));
@@ -288,6 +290,8 @@ const App = () => (
                 <Route path="/mini-apps" element={<ProtectedRoute><MiniAppsMarketplace /></ProtectedRoute>} />
                 <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
                 <Route path="/post-job" element={<ProtectedRoute><PostJob /></ProtectedRoute>} />
+                <Route path="/post-gig" element={<ProtectedRoute><PostGig /></ProtectedRoute>} />
+                <Route path="/scan" element={<ProtectedRoute><ScanCode /></ProtectedRoute>} />
                 <Route path="/experts" element={<ProtectedRoute><Experts /></ProtectedRoute>} />
                 <Route path="/expert-verification" element={<ProtectedRoute><ExpertVerification /></ProtectedRoute>} />
                 <Route path="/expert-class" element={<ProtectedRoute><ExpertClass /></ProtectedRoute>} />
