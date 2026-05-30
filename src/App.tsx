@@ -289,6 +289,7 @@ const App = () => (
                 <Route path="/mini-apps" element={<ProtectedRoute><MiniAppsMarketplace /></ProtectedRoute>} />
                 <Route path="/search" element={<ProtectedRoute><Search /></ProtectedRoute>} />
                 <Route path="/post-job" element={<ProtectedRoute><PostJob /></ProtectedRoute>} />
+                <Route path="/post-gig" element={<ProtectedRoute><PostGig /></ProtectedRoute>} />
                 <Route path="/experts" element={<ProtectedRoute><Experts /></ProtectedRoute>} />
                 <Route path="/expert-verification" element={<ProtectedRoute><ExpertVerification /></ProtectedRoute>} />
                 <Route path="/expert-class" element={<ProtectedRoute><ExpertClass /></ProtectedRoute>} />
