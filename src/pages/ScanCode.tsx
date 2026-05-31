@@ -1,35 +1,38 @@
 import { useEffect, useRef, useState } from 'react'
 import { ArrowLeft, Camera, ClipboardPaste, Link as LinkIcon, AlertCircle } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { BrowserQRCodeReader } from '@zxing/browser'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { toast } from 'sonner'
 
 /**
- * QR / barcode scanner. Uses the browser BarcodeDetector when available,
- * falls back to manual paste of the code's URL/text.
- * Recognised links are routed inside the app (e.g. /pay/:id, /jobs/:id),
- * external URLs open in a new tab.
+ * QR / barcode scanner.
+ * Primary: native BarcodeDetector when available.
+ * Fallback: @zxing/browser (covers iOS Safari, older Android WebView, Firefox).
+ * Final fallback: manual paste of the link/code.
  */
 const ScanCode = () => {
   const navigate = useNavigate()
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const rafRef = useRef<number | null>(null)
-  const [supported, setSupported] = useState<boolean>(true)
+  const zxingControlsRef = useRef<{ stop: () => void } | null>(null)
   const [scanning, setScanning] = useState(false)
   const [manual, setManual] = useState('')
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    setSupported('BarcodeDetector' in window)
     return () => stopCamera()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const stopCamera = () => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current)
+    rafRef.current = null
+    try { zxingControlsRef.current?.stop() } catch { /* noop */ }
+    zxingControlsRef.current = null
     streamRef.current?.getTracks().forEach((t) => t.stop())
     streamRef.current = null
     setScanning(false)
@@ -47,7 +50,6 @@ const ScanCode = () => {
         window.open(raw, '_blank', 'noopener,noreferrer')
       }
     } catch {
-      // Not a URL — copy to clipboard and show
       navigator.clipboard?.writeText(raw).catch(() => {})
       toast.success('Copied scanned text to clipboard')
       setManual(raw)
@@ -56,36 +58,50 @@ const ScanCode = () => {
 
   const startCamera = async () => {
     setError(null)
-    if (!('BarcodeDetector' in window)) {
-      setError("Your browser doesn't support live scanning. Paste the code below.")
-      return
-    }
+    const hasBarcodeDetector = typeof window !== 'undefined' && 'BarcodeDetector' in window
+
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' } },
-      })
-      streamRef.current = stream
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream
-        await videoRef.current.play()
+      if (hasBarcodeDetector) {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'environment' } },
+        })
+        streamRef.current = stream
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream
+          await videoRef.current.play()
+        }
+        setScanning(true)
+        // @ts-ignore - BarcodeDetector is non-standard TS-wise
+        const detector = new window.BarcodeDetector({ formats: ['qr_code'] })
+        const tick = async () => {
+          if (!videoRef.current || !streamRef.current) return
+          try {
+            const codes = await detector.detect(videoRef.current)
+            if (codes && codes.length > 0) {
+              handleResult(codes[0].rawValue)
+              return
+            }
+          } catch { /* keep scanning */ }
+          rafRef.current = requestAnimationFrame(tick)
+        }
+        tick()
+        return
       }
+
+      // Fallback: @zxing/browser
       setScanning(true)
-      // @ts-ignore - BarcodeDetector is non-standard TS-wise
-      const detector = new window.BarcodeDetector({ formats: ['qr_code'] })
-      const tick = async () => {
-        if (!videoRef.current || !streamRef.current) return
-        try {
-          const codes = await detector.detect(videoRef.current)
-          if (codes && codes.length > 0) {
-            handleResult(codes[0].rawValue)
-            return
-          }
-        } catch {/* keep scanning */}
-        rafRef.current = requestAnimationFrame(tick)
-      }
-      tick()
+      const reader = new BrowserQRCodeReader()
+      const devices = await BrowserQRCodeReader.listVideoInputDevices()
+      if (!devices.length) throw new Error('No camera found on this device')
+      const rear = devices.find(d => /back|rear|environment/i.test(d.label)) || devices[devices.length - 1]
+      const controls = await reader.decodeFromVideoDevice(rear.deviceId, videoRef.current!, (result) => {
+        if (!result) return
+        handleResult(result.getText())
+      })
+      zxingControlsRef.current = controls as any
     } catch (e: any) {
-      setError(e?.message || 'Could not access camera')
+      setScanning(false)
+      setError(e?.message || 'Could not access camera. Check permissions and try again.')
     }
   }
 
@@ -109,14 +125,18 @@ const ScanCode = () => {
       </header>
 
       <div className="px-4 sm:px-6 py-6 max-w-xl mx-auto space-y-4">
-        <div className="aspect-square w-full overflow-hidden rounded-xl border border-border bg-muted flex items-center justify-center">
-          {scanning ? (
-            <video ref={videoRef} className="w-full h-full object-cover" muted playsInline />
-          ) : (
+        <div className="aspect-square w-full overflow-hidden rounded-xl border border-border bg-muted flex items-center justify-center relative">
+          <video
+            ref={videoRef}
+            className={`w-full h-full object-cover ${scanning ? '' : 'hidden'}`}
+            muted
+            playsInline
+          />
+          {!scanning && (
             <div className="text-center p-6">
               <Camera className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
               <p className="text-sm text-muted-foreground">
-                Point your camera at a NaijaLancers QR code (pay link, gig, job, profile).
+                Point your camera at any QR code (pay link, gig, job, profile, or external link).
               </p>
             </div>
           )}
@@ -137,16 +157,6 @@ const ScanCode = () => {
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription className="text-xs">{error}</AlertDescription>
-          </Alert>
-        )}
-
-        {!supported && (
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription className="text-xs">
-              Live scanning isn't supported on this browser. Paste the link from the
-              code below to continue.
-            </AlertDescription>
           </Alert>
         )}
 
