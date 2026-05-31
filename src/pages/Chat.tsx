@@ -15,6 +15,7 @@ import SafePayDialog from '@/components/SafePayDialog'
 import ChatIntroComposer from '@/components/ChatIntroComposer'
 import { useChatIntro } from '@/hooks/useChatIntro'
 import { useConnections } from '@/hooks/useConnections'
+import { usePremiumGate } from '@/hooks/usePremiumGate'
 import { MarkProjectCompleteDialog } from '@/components/MarkProjectCompleteDialog'
 import ActiveCallInterface from '@/components/ActiveCallInterface'
 import CallHistory from '@/components/CallHistory'
@@ -45,8 +46,10 @@ const Chat = () => {
   const { getOnlineStatus } = useUserPresence()
   const { connections } = useConnections()
   const { outgoing: outgoingIntro, incoming: incomingIntro, acceptIntro, declineIntro, loading: introLoading } = useChatIntro(userId)
+  const { isPremium } = usePremiumGate()
   const isConnected = !!connections.find(c => c.other_user?.id === userId)
-  const needsIntro = !!userId && !isConnected && messages.length === 0 && !incomingIntro
+  // Premium users can DM anyone directly — skip the intro gate.
+  const needsIntro = !!userId && !isConnected && !isPremium && messages.length === 0 && !incomingIntro
   const { toast } = useToast()
   const [newMessage, setNewMessage] = useState('')
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)

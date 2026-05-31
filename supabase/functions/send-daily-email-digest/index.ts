@@ -222,10 +222,18 @@ Deno.serve(async (req) => {
         }
 
         const { error: emailError } = await resend.emails.send({
-          from: 'NaijaLancers <notifications@naijalancers.name.ng>',
+          from: 'NaijaLancers Updates <notifications@naijalancers.name.ng>',
           to: [email],
           subject,
           html,
+          headers: {
+            'List-Unsubscribe': `<${baseUrl}/settings>, <mailto:unsubscribe@naijalancers.name.ng>`,
+            'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+          },
+          tags: [
+            { name: 'category', value: 'promotional' },
+            { name: 'stream', value: 'daily_digest' },
+          ],
         })
 
         if (emailError) {

@@ -47,8 +47,10 @@ const ChatIntroComposer: React.FC<Props> = ({ otherUserId, otherUserName }) => {
           Send an introduction
         </div>
         <p className="text-xs text-text-secondary">
-          You're not yet connected with {otherUserName || 'this user'}. Send a short intro — they'll see it
-          and can accept to start chatting.
+          You're not yet connected with {otherUserName || 'this user'}. There are 3 ways to start a chat:
+          <br />1. Be connected with them.
+          <br />2. Send a short introduction below (they accept → chat opens).
+          <br />3. Upgrade to <a href="/premium" className="underline font-medium text-primary">Premium</a> to DM anyone directly.
         </p>
         <Textarea
           value={text}

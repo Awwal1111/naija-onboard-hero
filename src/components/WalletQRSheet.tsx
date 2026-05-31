@@ -67,15 +67,27 @@ export const WalletQRSheet = ({ open, onOpenChange, receiveAddress, onScanned }:
           if (cancelled || !result) return
           const text = result.getText()
           const match = text.match(CELO_ADDRESS_RE)
-          if (!match) {
-            setScanError('No wallet address found in QR. Try again.')
+          if (match) {
+            const addr = match[1]
+            stopScan()
+            onScanned?.(addr)
+            toast.success(`Address scanned: ${addr.slice(0, 6)}…${addr.slice(-4)}`)
+            onOpenChange(false)
             return
           }
-          const addr = match[1]
-          stopScan()
-          onScanned?.(addr)
-          toast.success(`Address scanned: ${addr.slice(0, 6)}…${addr.slice(-4)}`)
-          onOpenChange(false)
+          // Not a wallet address — accept anything else gracefully
+          try {
+            const u = new URL(text)
+            stopScan()
+            toast.success('Link scanned — opening')
+            window.open(u.toString(), '_blank', 'noopener,noreferrer')
+            onOpenChange(false)
+          } catch {
+            stopScan()
+            navigator.clipboard?.writeText(text).catch(() => {})
+            toast.success('QR copied to clipboard (not a wallet address)')
+            onOpenChange(false)
+          }
         })
         controlsRef.current = controls as any
       } catch (e: any) {

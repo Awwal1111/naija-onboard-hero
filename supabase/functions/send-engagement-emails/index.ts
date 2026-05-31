@@ -79,10 +79,18 @@ Deno.serve(async (req) => {
         )
 
         const { error } = await resend.emails.send({
-          from: 'NaijaLancers <notifications@naijalancers.name.ng>',
+          from: 'NaijaLancers Updates <notifications@naijalancers.name.ng>',
           to: [email],
           subject: `👤 Your profile is ${user.profile_completion || 0}% complete - finish it to get more jobs!`,
           html,
+          headers: {
+            'List-Unsubscribe': `<${baseUrl}/settings>, <mailto:unsubscribe@naijalancers.name.ng>`,
+            'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+          },
+          tags: [
+            { name: 'category', value: 'promotional' },
+            { name: 'stream', value: 'engagement' },
+          ],
         })
 
         if (!error) sentCount++
@@ -114,10 +122,18 @@ Deno.serve(async (req) => {
         )
 
         const { error } = await resend.emails.send({
-          from: 'NaijaLancers <notifications@naijalancers.name.ng>',
+          from: 'NaijaLancers Updates <notifications@naijalancers.name.ng>',
           to: [email],
           subject: `👋 We miss you! New opportunities are waiting`,
           html,
+          headers: {
+            'List-Unsubscribe': `<${baseUrl}/settings>, <mailto:unsubscribe@naijalancers.name.ng>`,
+            'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+          },
+          tags: [
+            { name: 'category', value: 'promotional' },
+            { name: 'stream', value: 'engagement' },
+          ],
         })
 
         if (!error) sentCount++
@@ -150,10 +166,18 @@ Deno.serve(async (req) => {
         )
 
         const { error } = await resend.emails.send({
-          from: 'NaijaLancers <notifications@naijalancers.name.ng>',
+          from: 'NaijaLancers Updates <notifications@naijalancers.name.ng>',
           to: [email],
           subject: `⭐ Rate your experience with "${gigTitle}"`,
           html,
+          headers: {
+            'List-Unsubscribe': `<${baseUrl}/settings>, <mailto:unsubscribe@naijalancers.name.ng>`,
+            'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+          },
+          tags: [
+            { name: 'category', value: 'promotional' },
+            { name: 'stream', value: 'engagement' },
+          ],
         })
 
         if (!error) sentCount++

@@ -100,23 +100,27 @@ export const MtPelerinCard = ({ mode, defaultCrypto = 'USDT' }: MtPelerinCardPro
           </AlertDescription>
         </Alert>
 
-        {isMtPelerinAllowedHost() ? (
-          <div className="overflow-hidden rounded-lg border">
-            <iframe
-              src={widgetUrl}
-              title="Mt Pelerin exchange widget"
-              allow="usb; ethereum; clipboard-write; payment; microphone; camera"
-              loading="lazy"
-              className="w-full h-[720px] block bg-background"
-            />
-          </div>
-        ) : (
+        {/* Always render the iframe — even on non-registered hosts Mt Pelerin
+            will show its own "access denied" page, but on the registered
+            domain (including TWA / WebView) the full widget will load. */}
+        <div className="overflow-hidden rounded-lg border">
+          <iframe
+            src={widgetUrl}
+            title="Mt Pelerin exchange widget"
+            allow="usb; ethereum; clipboard-write; payment; microphone; camera"
+            loading="lazy"
+            referrerPolicy="origin"
+            className="w-full h-[720px] block bg-background"
+          />
+        </div>
+
+        {!isMtPelerinAllowedHost() && (
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription className="text-xs">
               The Mt Pelerin widget is locked to <strong>{MT_PELERIN_ALLOWED_HOST}</strong>.
-              On this preview/subdomain it will show "access denied". Tap the button
-              below to open it on the live site.
+              If the widget above shows "access denied", tap the button below
+              to open it on the live site.
             </AlertDescription>
           </Alert>
         )}
