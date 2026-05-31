@@ -10,7 +10,9 @@ export const MT_PELERIN_ALLOWED_HOST = 'naijalancers.name.ng'
 
 export function isMtPelerinAllowedHost(): boolean {
   if (typeof window === 'undefined') return true
-  return window.location.hostname === MT_PELERIN_ALLOWED_HOST
+  const host = window.location.hostname
+  // Match the registered host or any subdomain of it (covers www., TWA, etc.)
+  return host === MT_PELERIN_ALLOWED_HOST || host.endsWith(`.${MT_PELERIN_ALLOWED_HOST}`)
 }
 
 export type MtPelerinTab = 'buy' | 'sell' | 'swap'
