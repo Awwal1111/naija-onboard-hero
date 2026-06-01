@@ -181,7 +181,7 @@ export const useChat = (otherUserId: string) => {
 
     setLoading(true)
     initializeChat()
-  }, [user, otherUserId, toast, isPremium, refreshToken])
+  }, [user, otherUserId, toast, isPremium, refreshToken, ensureDirectChat])
 
   const fetchMessages = async (chatId: string) => {
     try {
