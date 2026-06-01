@@ -41,7 +41,7 @@ const Chat = () => {
   const { userId } = useParams<{ userId: string }>()
   const { user } = useAuth()
   const { requireAction } = useVerification()
-  const { messages, sendMessage, otherUser, loading } = useChat(userId!)
+  const { messages, sendMessage, otherUser, loading, refreshChat } = useChat(userId!)
   const { isBlocked, isBlockedBy, canSendMessage, blockUser, unblockUser, loading: blockLoading } = useBlockUser(userId!)
   const { getOnlineStatus } = useUserPresence()
   const { connections } = useConnections()
@@ -787,7 +787,10 @@ const Chat = () => {
             <p className="text-sm font-medium text-primary">{otherUser?.full_name || 'They'} sent an introduction</p>
             <p className="text-sm">"{incomingIntro.message}"</p>
             <div className="flex gap-2">
-              <BrandButton size="sm" disabled={introLoading} onClick={() => acceptIntro(incomingIntro.id)}>
+              <BrandButton size="sm" disabled={introLoading} onClick={async () => {
+                const ok = await acceptIntro(incomingIntro.id)
+                if (ok) refreshChat()
+              }}>
                 <Check className="h-4 w-4 mr-1" /> Accept
               </BrandButton>
               <BrandButton size="sm" variant="outline" disabled={introLoading} onClick={() => declineIntro(incomingIntro.id)}>
