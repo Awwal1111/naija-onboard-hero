@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/use-toast'
@@ -64,7 +64,7 @@ export const useChat = (otherUserId: string) => {
   const [loading, setLoading] = useState(true)
   const [refreshToken, setRefreshToken] = useState(0)
 
-  const ensureDirectChat = async () => {
+  const ensureDirectChat = useCallback(async () => {
     if (!user || !otherUserId) return null
 
     const { data: existingChat, error: existingChatError } = await supabase
@@ -85,7 +85,7 @@ export const useChat = (otherUserId: string) => {
 
     if (createChatError) throw createChatError
     return newChat
-  }
+  }, [user, otherUserId])
 
   useEffect(() => {
     if (!user || !otherUserId) return
