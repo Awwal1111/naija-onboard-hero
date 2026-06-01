@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/use-toast'
@@ -57,16 +57,40 @@ interface Profile {
 export const useChat = (otherUserId: string) => {
   const { user } = useAuth()
   const { toast } = useToast()
-  const { isPremium, enforce, upsell } = usePremiumGate()
+  const { isPremium, enforce } = usePremiumGate()
   const [messages, setMessages] = useState<Message[]>([])
   const [chat, setChat] = useState<Chat | null>(null)
   const [otherUser, setOtherUser] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
+  const [refreshToken, setRefreshToken] = useState(0)
+
+  const ensureDirectChat = useCallback(async () => {
+    if (!user || !otherUserId) return null
+
+    const { data: existingChat, error: existingChatError } = await supabase
+      .from('chats')
+      .select('id, user1_id, user2_id, created_at, updated_at')
+      .or(`and(user1_id.eq.${user.id},user2_id.eq.${otherUserId}),and(user1_id.eq.${otherUserId},user2_id.eq.${user.id})`)
+      .maybeSingle()
+
+    if (existingChatError) throw existingChatError
+    if (existingChat) return existingChat
+
+    const orderedUsers = [user.id, otherUserId].sort()
+    const { data: newChat, error: createChatError } = await supabase
+      .from('chats')
+      .insert({ user1_id: orderedUsers[0], user2_id: orderedUsers[1] })
+      .select('id, user1_id, user2_id, created_at, updated_at')
+      .single()
+
+    if (createChatError) throw createChatError
+    return newChat
+  }, [user, otherUserId])
 
   useEffect(() => {
     if (!user || !otherUserId) return
 
-  const initializeChat = async () => {
+    const initializeChat = async () => {
       try {
         console.log('Initializing chat for user:', user.id, 'with:', otherUserId)
         
@@ -98,7 +122,6 @@ export const useChat = (otherUserId: string) => {
           console.log('Other user profile loaded:', profile)
         }
 
-        // Find or create chat
         const { data: existingChat, error: chatError } = await supabase
           .from('chats')
           .select('id, user1_id, user2_id, created_at, updated_at')
@@ -114,37 +137,34 @@ export const useChat = (otherUserId: string) => {
           console.log('Found existing chat:', existingChat.id)
           setChat(existingChat)
           await fetchMessages(existingChat.id)
-        } else {
-          // Check if users are connected
-          const { count: connCount } = await supabase
-            .from('connections')
-            .select('id', { count: 'exact', head: true })
-            .or(
-              `and(user1_id.eq.${user.id},user2_id.eq.${otherUserId}),and(user1_id.eq.${otherUserId},user2_id.eq.${user.id})`
-            )
-            .eq('status', 'accepted')
-          const isConnectedNow = (connCount ?? 0) > 0
-
-          if (!isConnectedNow) {
-            // Not connected: use intro flow. Don't create chat yet.
-            console.log('No existing chat — intro flow will be used')
-            setChat(null)
-            setMessages([])
-          } else {
-            // Connected: create chat row so they can message directly
-            const { data: newChat, error } = await supabase
-              .from('chats')
-              .insert({ user1_id: user.id, user2_id: otherUserId })
-              .select()
-              .single()
-            if (error) {
-              console.error('Chat creation error:', error)
-              throw error
-            }
-            setChat(newChat)
-            setMessages([])
-          }
+          return
         }
+
+        const { count: connCount, error: connectionError } = await supabase
+          .from('connections')
+          .select('id', { count: 'exact', head: true })
+          .or(
+            `and(user1_id.eq.${user.id},user2_id.eq.${otherUserId}),and(user1_id.eq.${otherUserId},user2_id.eq.${user.id})`
+          )
+          .eq('status', 'connected')
+
+        if (connectionError) {
+          console.error('Connection fetch error:', connectionError)
+          throw connectionError
+        }
+
+        const canDirectMessage = (connCount ?? 0) > 0 || isPremium
+
+        if (!canDirectMessage) {
+          console.log('No existing chat — intro flow will be used')
+          setChat(null)
+          setMessages([])
+          return
+        }
+
+        const directChat = await ensureDirectChat()
+        setChat(directChat)
+        setMessages([])
 
 
       } catch (error) {
@@ -161,7 +181,7 @@ export const useChat = (otherUserId: string) => {
 
     setLoading(true)
     initializeChat()
-  }, [user, otherUserId, toast])
+  }, [user, otherUserId, toast, isPremium, refreshToken, ensureDirectChat])
 
   const fetchMessages = async (chatId: string) => {
     try {
@@ -380,6 +400,7 @@ export const useChat = (otherUserId: string) => {
     otherUser,
     loading,
     sendMessage,
-    markMessagesAsRead
+    markMessagesAsRead,
+    refreshChat: () => setRefreshToken(prev => prev + 1)
   }
 }
