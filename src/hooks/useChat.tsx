@@ -62,6 +62,7 @@ export const useChat = (otherUserId: string) => {
   const [chat, setChat] = useState<Chat | null>(null)
   const [otherUser, setOtherUser] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
+  const [refreshToken, setRefreshToken] = useState(0)
 
   const ensureDirectChat = async () => {
     if (!user || !otherUserId) return null
@@ -180,7 +181,7 @@ export const useChat = (otherUserId: string) => {
 
     setLoading(true)
     initializeChat()
-  }, [user, otherUserId, toast, isPremium])
+  }, [user, otherUserId, toast, isPremium, refreshToken])
 
   const fetchMessages = async (chatId: string) => {
     try {
@@ -399,6 +400,7 @@ export const useChat = (otherUserId: string) => {
     otherUser,
     loading,
     sendMessage,
-    markMessagesAsRead
+    markMessagesAsRead,
+    refreshChat: () => setRefreshToken(prev => prev + 1)
   }
 }
