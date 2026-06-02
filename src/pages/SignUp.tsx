@@ -286,6 +286,8 @@ const SignUp = () => {
                     id="email"
                     type="email"
                     name="email"
+                    autoComplete="username"
+                    inputMode="email"
                     value={formData.email}
                     onChange={handleInputChange}
                     placeholder="you@example.com"
@@ -293,6 +295,7 @@ const SignUp = () => {
                     required
                     disabled={!!inviteToken}
                   />
+
                 </div>
               </div>
 
@@ -315,12 +318,14 @@ const SignUp = () => {
                     id="password"
                     type={showPassword ? "text" : "password"}
                     name="password"
+                    autoComplete="new-password"
                     value={formData.password}
                     onChange={handleInputChange}
                     placeholder="Create a strong password"
                     className="w-full pl-10 pr-12 py-3 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                     required
                   />
+
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
