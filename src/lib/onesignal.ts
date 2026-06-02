@@ -22,11 +22,16 @@ export const initOneSignal = async () => {
   }
 
   try {
-    await OneSignal.init({
-      appId: ONESIGNAL_APP_ID,
-      allowLocalhostAsSecureOrigin: false,
-      serviceWorkerParam: { scope: '/' },
-    })
+    // Guard against the SDK hanging indefinitely (seen in some WebViews) —
+    // resolve after 8s so the UI never gets stuck on "Setting up...".
+    await Promise.race([
+      OneSignal.init({
+        appId: ONESIGNAL_APP_ID,
+        allowLocalhostAsSecureOrigin: false,
+        serviceWorkerParam: { scope: '/' },
+      }),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('OneSignal init timeout')), 8000)),
+    ])
     initialized = true
     console.log('[OneSignal] Initialized successfully')
   } catch (error) {
@@ -58,10 +63,33 @@ export const requestOneSignalPermission = async (): Promise<boolean> => {
   if (!initialized) {
     await initOneSignal()
   }
+
+  // Fast path: use the native Notification API directly. OneSignal's
+  // requestPermission() can hang silently in WebViews, leaving the UI stuck
+  // on "Setting up...". The browser prompt itself is what actually matters
+  // for the permission grant; OneSignal picks it up via its own listener.
   try {
-    const permission = await OneSignal.Notifications.requestPermission()
-    console.log('[OneSignal] Permission result:', permission)
-    return permission
+    if (typeof Notification === 'undefined') return false
+
+    let perm: NotificationPermission = Notification.permission
+    if (perm === 'default') {
+      perm = await Promise.race([
+        Notification.requestPermission(),
+        new Promise<NotificationPermission>((resolve) =>
+          setTimeout(() => resolve(Notification.permission), 15000),
+        ),
+      ])
+    }
+
+    // Best-effort: ask OneSignal to opt the user in so the subscription is
+    // registered server-side. Don't await — if it hangs we still return.
+    try {
+      if (initialized && perm === 'granted') {
+        OneSignal.User.PushSubscription.optIn().catch(() => {})
+      }
+    } catch {}
+
+    return perm === 'granted'
   } catch (error) {
     console.error('[OneSignal] Permission error:', error)
     return false
@@ -69,6 +97,9 @@ export const requestOneSignalPermission = async (): Promise<boolean> => {
 }
 
 export const isOneSignalPushEnabled = (): boolean => {
+  if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+    return true
+  }
   if (!initialized) return false
   try {
     return OneSignal.Notifications.permission
@@ -76,5 +107,6 @@ export const isOneSignalPushEnabled = (): boolean => {
     return false
   }
 }
+
 
 export { OneSignal }

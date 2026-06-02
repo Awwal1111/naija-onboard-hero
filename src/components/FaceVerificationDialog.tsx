@@ -124,30 +124,18 @@ export const FaceVerificationDialog: React.FC<FaceVerificationDialogProps> = ({
     setError(null);
 
     try {
-      // Upload selfie to secure storage
-      const photoData = capturedImage.replace(/^data:image\/\w+;base64,/, '');
-      const binaryData = Uint8Array.from(atob(photoData), c => c.charCodeAt(0));
-      const blob = new Blob([binaryData], { type: 'image/jpeg' });
-
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      const filePath = `${user.id}/face-selfie-${Date.now()}.jpg`;
-      const { error: uploadError } = await supabase.storage
-        .from('verification-photos')
-        .upload(filePath, blob, { contentType: 'image/jpeg', upsert: true });
-
-      if (uploadError) {
-        console.warn('Photo upload error (non-blocking):', uploadError);
-      }
-
-      // Update profile as face verified
+      // EGRESS OPTIMIZATION: no longer upload the selfie to Supabase Storage.
+      // Face check is performed client-side (skin-tone detection above) and we
+      // simply mark the profile as face-verified. This eliminates the storage
+      // egress cost while keeping the liveness gate in place.
       const { error: updateError } = await supabase
         .from('profiles')
         .update({
           face_verified: true,
           face_verified_at: new Date().toISOString(),
-          face_selfie_url: filePath,
           updated_at: new Date().toISOString(),
         })
         .eq('user_id', user.id);
@@ -167,6 +155,7 @@ export const FaceVerificationDialog: React.FC<FaceVerificationDialogProps> = ({
       setIsVerifying(false);
     }
   };
+
 
   const handleClose = () => {
     stopCamera();

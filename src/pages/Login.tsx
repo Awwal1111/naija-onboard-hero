@@ -119,12 +119,15 @@ const Login = () => {
                     id="email"
                     type="email"
                     name="email"
+                    autoComplete="username webauthn"
+                    inputMode="email"
                     value={formData.email}
                     onChange={handleInputChange}
                     placeholder="you@example.com"
                     className="w-full pl-10 pr-4 py-3 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                     required
                   />
+
                 </div>
               </div>
 
@@ -138,12 +141,14 @@ const Login = () => {
                     id="password"
                     type={showPassword ? "text" : "password"}
                     name="password"
+                    autoComplete="current-password"
                     value={formData.password}
                     onChange={handleInputChange}
                     placeholder="Enter your password"
                     className="w-full pl-10 pr-12 py-3 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                     required
                   />
+
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
