@@ -19,19 +19,23 @@ export const NotificationPermissionDialog = () => {
   const [hasShown, setHasShown] = useState(false)
 
   useEffect(() => {
-    // Only show once per session, after user logs in, and if not already enabled
-    const shown = sessionStorage.getItem('notification-prompt-shown')
-    
-    if (user && !pushEnabled && !shown && !hasShown) {
-      // Wait 2 seconds after login to show the prompt
-      const timer = setTimeout(() => {
-        setOpen(true)
-        setHasShown(true)
-        sessionStorage.setItem('notification-prompt-shown', 'true')
-      }, 2000)
+    // Re-prompt every 3 days if still not enabled (was once-per-session — too easy to miss).
+    // Skip on browsers without Notification API (e.g. some WebViews) so the dialog
+    // doesn't ask for a permission the browser can't grant.
+    if (!user || pushEnabled || hasShown) return
+    if (typeof window === 'undefined' || !('Notification' in window) || !('PushManager' in window)) return
+    if (Notification.permission === 'denied') return
 
-      return () => clearTimeout(timer)
-    }
+    const COOLDOWN_MS = 3 * 24 * 60 * 60 * 1000
+    const lastShown = Number(localStorage.getItem('notification-prompt-last') || 0)
+    if (Date.now() - lastShown < COOLDOWN_MS) return
+
+    const timer = setTimeout(() => {
+      setOpen(true)
+      setHasShown(true)
+      localStorage.setItem('notification-prompt-last', String(Date.now()))
+    }, 2000)
+    return () => clearTimeout(timer)
   }, [user, pushEnabled, hasShown])
 
   const handleEnable = async () => {
