@@ -26,6 +26,7 @@ import { GigFAQSection } from '@/components/GigFAQSection';
 import { useGigOrders } from '@/hooks/useGigOrders';
 import { ShareButtons } from '@/components/ShareButtons';
 import { initiateContextualChat } from '@/lib/chatContext';
+import { EscrowProtectionCard } from '@/components/EscrowProtectionCard';
 
 export default function PublicGig() {
   const { gigId } = useParams<{ gigId: string }>();
@@ -744,7 +745,10 @@ export default function PublicGig() {
                 rows={4}
               />
             </div>
+
+            <EscrowProtectionCard />
           </div>
+
 
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setShowOrderDialog(false)}>

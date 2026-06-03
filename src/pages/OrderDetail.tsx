@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MilestonesSection } from '@/components/MilestonesSection';
+import { EscrowProtectionCard } from '@/components/EscrowProtectionCard';
 import { 
   Dialog,
   DialogContent,
@@ -248,6 +249,9 @@ const OrderDetail = () => {
       </div>
 
       <div className="p-4 space-y-4">
+        {/* Escrow trust banner */}
+        <EscrowProtectionCard />
+
         {/* Order Summary */}
         <Card>
           <CardHeader className="pb-2">
