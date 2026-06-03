@@ -704,7 +704,10 @@ export default function PublicGig() {
               {isOwner ? 'View Messages' : 'Contact'}
             </Button>
           </div>
+          </div>
         </div>
+
+
 
         {/* Floating Chat Button */}
         {!isOwner && user && (
