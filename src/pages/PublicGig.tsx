@@ -668,7 +668,11 @@ export default function PublicGig() {
         </div>
 
         {/* Fixed Bottom CTA */}
-        <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4 safe-bottom">
+        <div className="fixed bottom-0 left-0 right-0 bg-background border-t safe-bottom">
+          <div className="max-w-4xl mx-auto px-4 pt-2">
+            <EscrowProtectionCard variant="compact" className="mb-2" />
+          </div>
+          <div className="px-4 pb-4">
           <div className="max-w-4xl mx-auto flex items-center gap-3">
             <div className="flex-1">
               <div className="text-xs text-muted-foreground">Starting at</div>
