@@ -96,6 +96,31 @@
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
+  <!-- Blog -->
+  <url>
+    <loc>https://naijalancers.name.ng/blog</loc>
+    <lastmod>2026-06-03</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://naijalancers.name.ng/blog/complete-guide-secure-payments-naijalancers</loc>
+    <lastmod>2026-06-03</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://naijalancers.name.ng/blog/how-escrow-protects-freelancers-and-clients</loc>
+    <lastmod>2026-06-03</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://naijalancers.name.ng/blog/how-to-hire-trusted-freelancers-in-nigeria</loc>
+    <lastmod>2026-06-03</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
   <!-- Expert Profiles -->
   <url>
     <loc>https://naijalancers.name.ng/p/expert/bbd23893-7698-4d9f-856e-904e8c9d218b</loc>

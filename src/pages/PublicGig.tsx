@@ -26,6 +26,7 @@ import { GigFAQSection } from '@/components/GigFAQSection';
 import { useGigOrders } from '@/hooks/useGigOrders';
 import { ShareButtons } from '@/components/ShareButtons';
 import { initiateContextualChat } from '@/lib/chatContext';
+import { EscrowProtectionCard } from '@/components/EscrowProtectionCard';
 
 export default function PublicGig() {
   const { gigId } = useParams<{ gigId: string }>();
@@ -667,7 +668,11 @@ export default function PublicGig() {
         </div>
 
         {/* Fixed Bottom CTA */}
-        <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4 safe-bottom">
+        <div className="fixed bottom-0 left-0 right-0 bg-background border-t safe-bottom">
+          <div className="max-w-4xl mx-auto px-4 pt-2">
+            <EscrowProtectionCard variant="compact" className="mb-2" />
+          </div>
+          <div className="px-4 pb-4">
           <div className="max-w-4xl mx-auto flex items-center gap-3">
             <div className="flex-1">
               <div className="text-xs text-muted-foreground">Starting at</div>
@@ -699,7 +704,10 @@ export default function PublicGig() {
               {isOwner ? 'View Messages' : 'Contact'}
             </Button>
           </div>
+          </div>
         </div>
+
+
 
         {/* Floating Chat Button */}
         {!isOwner && user && (
@@ -744,7 +752,10 @@ export default function PublicGig() {
                 rows={4}
               />
             </div>
+
+            <EscrowProtectionCard />
           </div>
+
 
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setShowOrderDialog(false)}>

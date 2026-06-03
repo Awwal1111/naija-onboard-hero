@@ -732,8 +732,8 @@ const Profile = () => {
               </>
             )}
 
-            {/* Contact Information - Only visible to owner or connections */}
-            {(isOwnProfile || isConnected) && (profile?.phone_number || userEmail) && (
+            {/* Contact Information - Owner sees their own; viewers must be premium AND connected to see another user's contact details */}
+            {(isOwnProfile || (isConnected && !!currentUserProfile?.is_premium)) && (profile?.phone_number || userEmail) && (
               <Card className="mb-4">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -766,6 +766,22 @@ const Profile = () => {
                       </div>
                     </div>
                   )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Non-premium viewers: show locked teaser for contact info */}
+            {!isOwnProfile && !currentUserProfile?.is_premium && (profile?.phone_number || profile?.email) && (
+              <Card className="mb-4 border-dashed">
+                <CardContent className="p-4 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Phone className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-text-primary">Contact details hidden</p>
+                    <p className="text-xs text-text-secondary">Upgrade to Premium to view phone and email of other users.</p>
+                  </div>
+                  <Button size="sm" onClick={() => navigate('/premium')}>Upgrade</Button>
                 </CardContent>
               </Card>
             )}
