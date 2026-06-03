@@ -85,6 +85,8 @@ const ClientDashboard = lazy(lazyWithRetry(() => import("./pages/ClientDashboard
 const Analytics = lazy(lazyWithRetry(() => import("./pages/Analytics")));
 const Notifications = lazy(lazyWithRetry(() => import("./pages/Notifications")));
 const Bookmarks = lazy(lazyWithRetry(() => import("./pages/Bookmarks")));
+const BlogIndex = lazy(lazyWithRetry(() => import("./pages/BlogIndex")));
+const BlogPost = lazy(lazyWithRetry(() => import("./pages/BlogPost")));
 
 // Jobs & Gigs
 const PostJob = lazy(lazyWithRetry(() => import("./pages/PostJob")));
@@ -234,6 +236,8 @@ const App = () => (
                 <Route path="/p/gigs" element={<PublicGigs />} />
                 <Route path="/p/experts" element={<PublicExperts />} />
                 <Route path="/p/jobs" element={<PublicJobs />} />
+                <Route path="/blog" element={<BlogIndex />} />
+                <Route path="/blog/:slug" element={<BlogPost />} />
                 
                 {/* Short URL aliases */}
                 <Route path="/gig/:gigId" element={<PublicGig />} />
