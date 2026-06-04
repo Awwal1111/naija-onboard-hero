@@ -67,48 +67,43 @@ export const useGigOrders = () => {
     }
 
     try {
+      const ORDER_COLS = 'id,gig_id,buyer_id,seller_id,title,description,amount,platform_fee,status,delivery_deadline,delivered_at,completed_at,cancelled_at,cancellation_reason,buyer_notes,seller_notes,delivery_files,revision_count,max_revisions,created_at,updated_at';
       const { data, error } = await supabase
         .from('gig_orders')
-        .select('*')
+        .select(ORDER_COLS)
         .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(100);
 
       if (error) throw error;
 
-      // Fetch related data for each order
-      const ordersWithDetails = await Promise.all(
-        (data || []).map(async (order: any) => {
-          // Fetch gig details
-          const { data: gig } = await supabase
-            .from('jobs_services')
-            .select('title, photo_urls, category')
-            .eq('id', order.gig_id)
-            .single();
+      const rows = (data || []) as any[];
+      if (rows.length === 0) {
+        setOrders([]);
+        return;
+      }
 
-          // Fetch buyer profile
-          const { data: buyer } = await supabase
-            .from('profiles')
-            .select('full_name, profile_picture_url')
-            .eq('user_id', order.buyer_id)
-            .single();
+      const gigIds = Array.from(new Set(rows.map(r => r.gig_id).filter(Boolean)));
+      const userIds = Array.from(new Set(rows.flatMap(r => [r.buyer_id, r.seller_id]).filter(Boolean)));
 
-          // Fetch seller profile
-          const { data: seller } = await supabase
-            .from('profiles')
-            .select('full_name, profile_picture_url')
-            .eq('user_id', order.seller_id)
-            .single();
+      const [gigsRes, profilesRes] = await Promise.all([
+        gigIds.length
+          ? supabase.from('jobs_services').select('id,title,photo_urls,category').in('id', gigIds)
+          : Promise.resolve({ data: [] as any[] }),
+        userIds.length
+          ? supabase.from('profiles').select('user_id,full_name,profile_picture_url').in('user_id', userIds)
+          : Promise.resolve({ data: [] as any[] }),
+      ]);
 
-          return {
-            ...order,
-            gig,
-            buyer,
-            seller
-          };
-        })
-      );
+      const gigMap = new Map((gigsRes.data || []).map((g: any) => [g.id, g]));
+      const profMap = new Map((profilesRes.data || []).map((p: any) => [p.user_id, p]));
 
-      setOrders(ordersWithDetails);
+      setOrders(rows.map((o: any) => ({
+        ...o,
+        gig: gigMap.get(o.gig_id),
+        buyer: profMap.get(o.buyer_id),
+        seller: profMap.get(o.seller_id),
+      })));
     } catch (error) {
       console.error('Error fetching orders:', error);
     } finally {
