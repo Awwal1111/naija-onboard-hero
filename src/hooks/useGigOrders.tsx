@@ -274,26 +274,21 @@ export const useGigOrders = () => {
     try {
       const { data, error } = await supabase
         .from('gig_order_messages')
-        .select('*')
+        .select('id,order_id,sender_id,message,attachments,created_at')
         .eq('order_id', orderId)
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: true })
+        .limit(200);
 
       if (error) throw error;
 
-      // Fetch sender profiles
-      const messagesWithSenders = await Promise.all(
-        (data || []).map(async (msg: any) => {
-          const { data: sender } = await supabase
-            .from('profiles')
-            .select('full_name, profile_picture_url')
-            .eq('user_id', msg.sender_id)
-            .single();
+      const rows = (data || []) as any[];
+      const senderIds = Array.from(new Set(rows.map(m => m.sender_id).filter(Boolean)));
+      const { data: profs } = senderIds.length
+        ? await supabase.from('profiles').select('user_id,full_name,profile_picture_url').in('user_id', senderIds)
+        : { data: [] as any[] };
+      const profMap = new Map((profs || []).map((p: any) => [p.user_id, p]));
 
-          return { ...msg, sender };
-        })
-      );
-
-      return messagesWithSenders;
+      return rows.map((msg: any) => ({ ...msg, sender: profMap.get(msg.sender_id) }));
     } catch (error) {
       console.error('Error fetching messages:', error);
       return [];
