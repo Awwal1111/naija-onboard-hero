@@ -234,38 +234,75 @@ export default function PublicGig() {
   const deliveryDays = gig.delivery_days || 7;
   const responseTime = gig.response_time || 'Within 1 hour';
 
+  const sellerName = seller?.full_name || 'NaijaLancers Freelancer';
+  const sellerProfession = seller?.profession || 'Freelancer';
+  const sellerUrl = `https://naijalancers.name.ng/p/expert/${gig.user_id}`;
+  const canonicalUrl = `https://naijalancers.name.ng/p/gig/${gig.id}`;
+  const metaTitle = `${gig.title} by ${sellerName} (${sellerProfession}) — ₦${gig.price?.toLocaleString()} | NaijaLancers`;
+  const metaDesc = `${gig.description?.slice(0, 150) || gig.title} — Hire ${sellerName}, ${sellerProfession} on NaijaLancers. ${stats.count > 0 ? `Rated ${rating.toFixed(1)}★ from ${stats.count} reviews.` : ''}`;
+
   const structuredData = {
-    "@context": "https://schema.org",
-    "@type": "Service",
-    "name": gig.title,
-    "description": gig.description,
-    "category": gig.category,
-    "offers": {
-      "@type": "Offer",
-      "price": gig.price,
-      "priceCurrency": "NGN"
+    '@context': 'https://schema.org',
+    '@type': 'Service',
+    name: gig.title,
+    description: gig.description,
+    category: gig.category,
+    url: canonicalUrl,
+    provider: {
+      '@type': 'Person',
+      name: sellerName,
+      jobTitle: sellerProfession,
+      image: seller?.profile_picture_url,
+      url: sellerUrl,
+      address: seller?.state_name
+        ? { '@type': 'PostalAddress', addressRegion: seller.state_name, addressCountry: 'NG' }
+        : undefined,
     },
-    "aggregateRating": stats.count > 0 ? {
-      "@type": "AggregateRating",
-      "ratingValue": rating,
-      "reviewCount": stats.count
-    } : undefined
+    offers: {
+      '@type': 'Offer',
+      price: gig.price,
+      priceCurrency: 'NGN',
+      availability: 'https://schema.org/InStock',
+      url: canonicalUrl,
+    },
+    aggregateRating:
+      stats.count > 0
+        ? {
+            '@type': 'AggregateRating',
+            ratingValue: rating,
+            reviewCount: stats.count,
+            bestRating: 5,
+          }
+        : undefined,
+  };
+
+  const breadcrumbLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Gigs', item: 'https://naijalancers.name.ng/p/gigs' },
+      { '@type': 'ListItem', position: 2, name: gig.title, item: canonicalUrl },
+    ],
   };
 
   return (
     <>
       <Helmet>
-        <title>{gig.title} - ₦{gig.price?.toLocaleString()} | NaijaLancers</title>
-        <meta name="description" content={gig.description || `${gig.title} service on NaijaLancers`} />
-        <meta property="og:title" content={gig.title} />
-        <meta property="og:description" content={gig.description || gig.title} />
+        <title>{metaTitle}</title>
+        <meta name="description" content={metaDesc} />
+        <link rel="canonical" href={canonicalUrl} />
+        <meta name="author" content={sellerName} />
+        <meta property="og:title" content={`${gig.title} by ${sellerName}`} />
+        <meta property="og:description" content={metaDesc} />
         {images[0] && <meta property="og:image" content={images[0]} />}
         <meta property="og:type" content="product" />
+        <meta property="og:url" content={canonicalUrl} />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={gig.title} />
-        <meta name="twitter:description" content={gig.description || gig.title} />
+        <meta name="twitter:title" content={`${gig.title} by ${sellerName}`} />
+        <meta name="twitter:description" content={metaDesc} />
         {images[0] && <meta name="twitter:image" content={images[0]} />}
         <script type="application/ld+json">{JSON.stringify(structuredData)}</script>
+        <script type="application/ld+json">{JSON.stringify(breadcrumbLd)}</script>
       </Helmet>
 
       <div className="min-h-screen bg-background pb-28">
