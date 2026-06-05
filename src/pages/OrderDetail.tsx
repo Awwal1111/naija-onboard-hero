@@ -483,6 +483,13 @@ const OrderDetail = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Escrow Dispute Dialog */}
+      <EscrowDisputeDialog
+        open={showDisputeDialog}
+        onOpenChange={setShowDisputeDialog}
+        orderId={order.id}
+      />
     </div>
   );
 };
