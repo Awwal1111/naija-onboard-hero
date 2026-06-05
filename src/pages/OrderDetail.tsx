@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MilestonesSection } from '@/components/MilestonesSection';
 import { EscrowProtectionCard } from '@/components/EscrowProtectionCard';
+import EscrowDisputeDialog from '@/components/EscrowDisputeDialog';
 import { 
   Dialog,
   DialogContent,
@@ -51,6 +52,7 @@ const OrderDetail = () => {
   const [cancelReason, setCancelReason] = useState('');
   const [showDeliverDialog, setShowDeliverDialog] = useState(false);
   const [deliveryNotes, setDeliveryNotes] = useState('');
+  const [showDisputeDialog, setShowDisputeDialog] = useState(false);
 
   const order = orders.find(o => o.id === orderId);
   const isSeller = order?.seller_id === user?.id;
@@ -225,6 +227,24 @@ const OrderDetail = () => {
           </Button>
         );
       }
+    }
+
+    // Dispute button — available to both parties on active escrow states
+    if (
+      (isBuyer || isSeller) &&
+      ['accepted', 'in_progress', 'delivered', 'revision_requested', 'disputed'].includes(order.status)
+    ) {
+      actions.push(
+        <Button
+          key="dispute"
+          variant="outline"
+          className="border-destructive/40 text-destructive hover:bg-destructive/10"
+          onClick={() => setShowDisputeDialog(true)}
+        >
+          <AlertTriangle className="h-4 w-4 mr-2" />
+          Raise Escrow Dispute
+        </Button>
+      );
     }
 
     return actions.length > 0 ? (
@@ -463,6 +483,13 @@ const OrderDetail = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Escrow Dispute Dialog */}
+      <EscrowDisputeDialog
+        open={showDisputeDialog}
+        onOpenChange={setShowDisputeDialog}
+        orderId={order.id}
+      />
     </div>
   );
 };
