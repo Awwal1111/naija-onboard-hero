@@ -66,10 +66,19 @@ export default function PublicExpert() {
     "jobTitle": expert.profession,
     "description": expert.bio,
     "image": expert.profile_picture_url,
+    "url": `https://naijalancers.name.ng/p/expert/${userId}`,
+    "address": expert.state_name ? {
+      "@type": "PostalAddress",
+      "addressRegion": expert.state_name,
+      "addressLocality": expert.lga_name || expert.area || undefined,
+      "addressCountry": "NG"
+    } : undefined,
+    "knowsAbout": expert.profession,
     "aggregateRating": expert.average_rating ? {
       "@type": "AggregateRating",
       "ratingValue": expert.average_rating,
-      "bestRating": "5"
+      "bestRating": "5",
+      "ratingCount": 1
     } : undefined
   };
 
