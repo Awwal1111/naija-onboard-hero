@@ -46,6 +46,10 @@ interface Freelancer {
   country: string
   hourly_rate: number
   is_expert: boolean
+  completed_jobs: number
+  response_minutes: number | null
+  match_score: number
+  match_reasons: string[]
 }
 
 interface Gig {
@@ -58,33 +62,68 @@ interface Gig {
   seller_picture: string | null
   average_rating: number
   photo_url: string | null
+  match_score: number
+  match_reasons: string[]
 }
 
 interface HiringContext {
   service_needed?: string
   budget?: string
+  budget_min?: number
+  budget_max?: number
   urgency?: string
-  location_preference?: string
+  urgency_days?: number
+  complexity?: string
+  preference?: string
 }
 
 const HIRING_QUESTIONS = [
   {
     id: 'service',
     question: "What type of work do you need done?",
-    placeholder: "e.g., Logo design, Website, Writing, Video editing...",
-    options: ['Logo & Branding', 'Website/App', 'Writing & Content', 'Video & Animation', 'Marketing', 'Virtual Assistant', 'Other']
+    placeholder: "e.g. Logo design, React website, blog article, video editing...",
+    options: ['Logo & Branding', 'Website/App', 'Writing & Content', 'Video & Animation', 'Marketing & SEO', 'Virtual Assistant', 'AI / Automation', 'Other'],
   },
   {
     id: 'budget',
     question: "What's your approximate budget?",
-    options: ['Under $50 (~NC 80,000)', '$50 - $100 (~NC 160,000)', '$100 - $300 (~NC 480,000)', 'Over $300', 'Flexible']
+    options: ['Under NC 30,000', 'NC 30,000 – 100,000', 'NC 100,000 – 300,000', 'NC 300,000 – 800,000', 'Over NC 800,000', 'Flexible'],
   },
   {
     id: 'urgency',
     question: "When do you need this completed?",
-    options: ['Within 3 days', 'Within a week', 'Within 2 weeks', 'Flexible timeline']
-  }
+    options: ['Within 3 days', 'Within a week', 'Within 2 weeks', 'Within a month', 'Flexible timeline'],
+  },
+  {
+    id: 'complexity',
+    question: "How complex is the project?",
+    options: ['Simple (single deliverable)', 'Standard (multi-step)', 'Complex (multi-phase)', "I'm not sure"],
+  },
+  {
+    id: 'preference',
+    question: "Any preferences for the freelancer?",
+    options: ['Verified expert only', 'Top-rated (4.5★+)', 'Fast responder', 'Best value for money', 'No preference'],
+  },
 ]
+
+// Parse the budget option into a numeric range (NC).
+const parseBudget = (label: string): { min: number; max: number } => {
+  if (label.includes('Under NC 30')) return { min: 0, max: 30000 }
+  if (label.includes('30,000 – 100')) return { min: 30000, max: 100000 }
+  if (label.includes('100,000 – 300')) return { min: 100000, max: 300000 }
+  if (label.includes('300,000 – 800')) return { min: 300000, max: 800000 }
+  if (label.includes('Over NC 800')) return { min: 800000, max: 10_000_000 }
+  return { min: 0, max: 10_000_000 } // Flexible
+}
+
+const parseUrgencyDays = (label: string): number => {
+  if (label.includes('3 days')) return 3
+  if (label.includes('a week')) return 7
+  if (label.includes('2 weeks')) return 14
+  if (label.includes('a month')) return 30
+  return 60
+}
+
 
 export default function AIHire() {
   const navigate = useNavigate()
