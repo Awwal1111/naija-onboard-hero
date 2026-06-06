@@ -1300,6 +1300,355 @@ export const BLOG_POSTS: BlogPost[] = [
       </>
     ),
   },
+
+  // =============================================================
+  // BATCH 3 — Editorial picks (5)
+  // =============================================================
+  {
+    slug: 'building-a-personal-brand-as-a-nigerian-freelancer',
+    title: 'Building a Personal Brand as a Nigerian Freelancer in 2026',
+    description: 'A practical playbook for Nigerian freelancers who want to stand out, command premium rates, and attract inbound clients on NaijaLancers and beyond.',
+    keywords: 'personal brand freelancer nigeria, freelance branding, naijalancers brand, nigerian freelance marketing',
+    datePublished: '2026-06-06', dateModified: '2026-06-06', readTime: '8 min read',
+    author: 'NaijaLancers Team', category: 'Skills & Career',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">A personal brand is the reason a client picks you when ten other freelancers can do the same job. In Nigeria, where talent supply is huge, brand is the multiplier between earning ₦50,000 a month and earning ₦500,000.</p>
+      <Section title="The 4-layer brand stack">
+        <List items={[
+          'Layer 1 — Profile: a sharp profession line, professional photo, and a bio that names your niche, your wins, and your offer.',
+          'Layer 2 — Portfolio: 3–6 case studies with before/after, the problem, your approach, the result.',
+          'Layer 3 — Social proof: client testimonials, expert verification badge, completed-orders count, response time.',
+          'Layer 4 — Distribution: 2 posts a week on the NaijaLancers feed plus LinkedIn cross-posting.',
+        ]} />
+      </Section>
+      <Section title="Niche down before you scale up">
+        <p>"Graphic designer" loses to "Logo designer for fintech startups". Pick one buyer + one outcome, lead with it for 90 days, then expand. Specialists charge 3–5x generalist rates.</p>
+      </Section>
+      <Section title="The weekly brand routine (90 minutes total)">
+        <List items={['Mon — one feed post showing a project insight', 'Wed — reply to 5 NaijaLancers posts in your niche', 'Fri — update one portfolio item with new work', 'Sun — message 3 past clients with a quick value drop']} />
+      </Section>
+    </>),
+  },
+  {
+    slug: 'remote-work-mindset-shift-nigeria',
+    title: 'The Remote Work Mindset Shift Every Nigerian Freelancer Must Make',
+    description: 'Working remotely is not just a location change — it is a behavior change. Six identity shifts that separate freelancers who survive from those who scale.',
+    keywords: 'remote work nigeria, freelance mindset, work from home nigeria, naijalancers remote',
+    datePublished: '2026-06-06', dateModified: '2026-06-06', readTime: '7 min read',
+    author: 'NaijaLancers Team', category: 'Skills & Career',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">Most freelancers fail not because of skill but because of identity. They still think like employees. Here is what to swap.</p>
+      <Section title="Six identity shifts">
+        <List items={[
+          'From "boss tells me what to do" → "I scope my own work".',
+          'From "I get paid at month end" → "I get paid per deliverable, often weekly".',
+          'From "I work 9–5" → "I work in 90-minute focus blocks until the result ships".',
+          'From "HR pays my pension" → "I auto-route 20% of every payout into NC Savings + USDT staking".',
+          'From "company tools" → "I own my stack — Notion, Loom, Figma, NaijaLancers".',
+          'From "1 employer" → "Portfolio of 3–5 clients, no single one above 40% of revenue".',
+        ]} />
+      </Section>
+      <Section title="Build the daily operating system">
+        <p>Block 90 minutes at 6am for deep work, 60 minutes at noon for client comms, 60 minutes at 6pm for outreach. Three blocks, every weekday, no exceptions. This single habit produces more income than any new skill.</p>
+      </Section>
+    </>),
+  },
+  {
+    slug: 'pricing-psychology-for-freelancers',
+    title: 'Pricing Psychology: How to Stop Underselling on Every Project',
+    description: 'Anchoring, decoy pricing, and value framing — the negotiation science that lets Nigerian freelancers double their rates without losing clients.',
+    keywords: 'freelance pricing nigeria, how to price freelance, naijalancers pricing, freelance rates',
+    datePublished: '2026-06-06', dateModified: '2026-06-06', readTime: '9 min read',
+    author: 'NaijaLancers Team', category: 'Payments & Money',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">If every client says "yes" to your first quote, you are too cheap. Here is how to use three pricing levers to charge what your work is actually worth.</p>
+      <Section title="1. Anchor high, drop strategically"><p>Open with your premium package first. The "Basic" tier then looks affordable instead of expensive. NaijaLancers gigs let you publish 3 tiers — always have them.</p></Section>
+      <Section title="2. The decoy tier"><p>Make your middle tier the obvious value. Basic ₦20k / Standard ₦60k / Premium ₦70k — most buyers pick Premium because Standard is "too close".</p></Section>
+      <Section title="3. Price the outcome, not the hour"><p>"I will build your website in 7 days" is worth more than "I charge ₦5,000/hour". Tie the price to a measurable result the client cares about.</p></Section>
+      <Section title="4. Raise rates every 90 days"><p>Increase 10–15% every quarter until 3 out of 10 leads decline. That is the right price.</p></Section>
+    </>),
+  },
+  {
+    slug: 'protecting-your-mental-health-as-a-freelancer',
+    title: "Protecting Your Mental Health as a Nigerian Freelancer",
+    description: 'Freelance burnout is real. A practical mental health framework for solo workers in Nigeria — boundaries, payment safety, and community.',
+    keywords: 'freelance burnout, mental health freelancer nigeria, work-life balance freelance',
+    datePublished: '2026-06-06', dateModified: '2026-06-06', readTime: '6 min read',
+    author: 'NaijaLancers Team', category: 'Wellbeing',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">There is no HR department in freelance. Your mental health is part of your business plan, not separate from it.</p>
+      <Section title="Three boundaries to defend ruthlessly"><List items={['No new client calls on weekends.', 'No "revisions" outside the scope you priced.', 'No replies to messages between 9pm and 7am — set the auto-reply.']} /></Section>
+      <Section title="The financial safety net that buys peace of mind"><p>Keep 3 months of expenses in NC Savings (5% APY) or a Nigerian fixed-deposit. Once you have it, late-paying clients stop being existential threats. Use NaijaLancers escrow on every job so you are never owed.</p></Section>
+      <Section title="Community is non-optional"><p>Join 2 NaijaLancers groups in your niche. Talk to other freelancers weekly. Isolation kills more freelance careers than bad clients.</p></Section>
+    </>),
+  },
+  {
+    slug: 'ai-collaboration-skills-freelancer-edge',
+    title: 'AI Collaboration Skills: The New Edge for Nigerian Freelancers',
+    description: 'Learn to wield ChatGPT, Claude, NaijaLancers AI Copilot, and Gemini as force multipliers — not replacements — for your freelance work.',
+    keywords: 'ai for freelancers, chatgpt freelance nigeria, ai copilot, ai tools freelance',
+    datePublished: '2026-06-06', dateModified: '2026-06-06', readTime: '8 min read',
+    author: 'NaijaLancers Team', category: 'AI & Future of Work',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">The freelancers losing work to AI are the ones who refused to use it. Those who pair with AI ship 3–5x more in the same time.</p>
+      <Section title="The AI stack for every Nigerian freelancer"><List items={['ChatGPT / Claude — drafts, research, summaries.', 'NaijaLancers AI Writing Assistant — every text field already supports 22 modes.', 'NaijaLancers AI Copilot — strategy, planning, idea generation.', 'Midjourney / Gemini Image — moodboards, references.', 'Whisper — transcribe client calls in seconds.']} /></Section>
+      <Section title="The 70/30 rule"><p>Let AI do 70% — drafts, structure, first-pass research. Your 30% — taste, client context, the bit that requires you to be human — is where you charge premium rates.</p></Section>
+      <Section title="Prompt one project right now"><p>Open NaijaLancers AI Copilot and ask: "Help me pitch a logo project to a client in fintech for ₦150,000". Use the output as a starting frame, not the final reply.</p></Section>
+    </>),
+  },
+
+  // =============================================================
+  // BATCH 4 — Google search demand (5)
+  // =============================================================
+  {
+    slug: 'best-freelance-skills-to-learn-in-nigeria-2026',
+    title: 'Best Freelance Skills to Learn in Nigeria in 2026 (Ranked by Demand & Pay)',
+    description: 'The 12 highest-paying freelance skills in Nigeria for 2026, ranked by NaijaLancers job-post demand, average rates and learning curve.',
+    keywords: 'best freelance skills nigeria, high paying skills 2026, freelance jobs nigeria, in demand skills nigeria',
+    datePublished: '2026-06-06', dateModified: '2026-06-06', readTime: '10 min read',
+    author: 'NaijaLancers Team', category: 'Skills & Career',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">We pulled demand signals from NaijaLancers job posts, gig orders and search queries for the last 90 days. Here are the skills paying the most right now.</p>
+      <Section title="Top 12 in demand">
+        <List items={[
+          '1. Full-stack web development (React/Next.js) — ₦200k–₦1.5m per project',
+          '2. AI prompt engineering & integration — ₦150k–₦800k per build',
+          '3. Mobile app development (React Native, Flutter) — ₦300k–₦2m',
+          '4. UI/UX design (Figma, design systems) — ₦80k–₦500k per project',
+          '5. Video editing (short-form, YouTube) — ₦40k–₦300k per month retainer',
+          '6. Copywriting (sales pages, email) — ₦50k–₦400k per project',
+          '7. SEO & content marketing — ₦100k–₦500k per month',
+          '8. Brand & logo design — ₦40k–₦300k per project',
+          '9. Social media management — ₦60k–₦250k per month',
+          '10. Data analytics (SQL, Power BI) — ₦100k–₦600k',
+          '11. Virtual assistance (admin, sales ops) — ₦40k–₦200k per month',
+          '12. Voiceover & podcast production — ₦30k–₦250k per project',
+        ]} />
+      </Section>
+      <Section title="How to pick yours"><p>Pick the one with the smallest gap between your current skill and the rate range. Spend 90 days going deep. Post your first 3 gigs on NaijaLancers and learn what real buyers want.</p></Section>
+    </>),
+  },
+  {
+    slug: 'how-to-make-money-online-in-nigeria-legitimately',
+    title: 'How to Make Money Online in Nigeria Legitimately (2026 Edition)',
+    description: 'A no-BS guide to making real money online from Nigeria — freelance, gigs, courses, digital products, surveys and more. No "investment platforms".',
+    keywords: 'make money online nigeria, online jobs nigeria, work from home nigeria, legit online income',
+    datePublished: '2026-06-06', dateModified: '2026-06-06', readTime: '11 min read',
+    author: 'NaijaLancers Team', category: 'Earning Online',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">If a "platform" promises 50% returns in 30 days, it is a Ponzi. Real online income in Nigeria comes from value you create. Here are the ten paths that actually work.</p>
+      <Section title="The 10 legitimate paths"><List items={[
+        'Freelance services on NaijaLancers (gigs, jobs, AI Hire)',
+        'Selling digital products (templates, ebooks, presets)',
+        'Teaching what you know (NaijaLancers Courses)',
+        'Affiliate marketing (high-ticket B2B SaaS)',
+        'Content creation (YouTube, TikTok, X)',
+        'Virtual assistance for global founders',
+        'Drop-servicing (resell a service you outsource)',
+        'Stock trading with regulated brokers',
+        'Paid online surveys (CPX, BitLabs — modest, but real)',
+        'Crypto staking on regulated chains (USDT, cUSD)',
+      ]} /></Section>
+      <Section title="The fastest first ₦100,000"><p>Pick one skill from our top-12 list, post your first gig on NaijaLancers tonight, promote it on WhatsApp Status and a LinkedIn post, and reply to every message within an hour. Most people land their first paid job inside 14 days.</p></Section>
+      <Section title="What to avoid"><p>HYIPs, "forex experts" with no licence, "crypto doublers", anyone asking for money to "register" you.</p></Section>
+    </>),
+  },
+  {
+    slug: 'how-to-receive-international-payments-in-nigeria',
+    title: 'How to Receive International Payments in Nigeria as a Freelancer (2026)',
+    description: 'Every legal way to get paid from abroad in Nigeria — domiciliary accounts, USDT, Wise, Payoneer, Geegpay, NaijaLancers wallet. Fees, speed and limits compared.',
+    keywords: 'receive international payments nigeria, freelance get paid abroad, payoneer nigeria, usdt nigeria, naijalancers payments',
+    datePublished: '2026-06-06', dateModified: '2026-06-06', readTime: '10 min read',
+    author: 'NaijaLancers Team', category: 'Payments & Money',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">Getting USD paid into Nigeria used to be the biggest blocker. In 2026 you have 6 working options. Here is the trade-off table.</p>
+      <Section title="The six options"><List items={[
+        'Domiciliary account — slowest, cheapest, banks take 1–3 days. Best for amounts above $1,000.',
+        'Payoneer — fast onboarding, 3% withdraw fee, supports Upwork/Fiverr-style platforms.',
+        'Wise — best FX rate, harder to receive USD in Nigeria directly.',
+        'Geegpay / Grey — virtual USD accounts, convert to NGN at black-market rate.',
+        'USDT (TRC20/Celo) — instant, near-zero fee, off-ramp via Pretium or P2P.',
+        'NaijaLancers wallet — clients pay in NC, withdraw to Naira (Quidax) or USDT instantly.',
+      ]} /></Section>
+      <Section title="The combo most pros use"><p>Receive USDT to your NaijaLancers wallet → save 30% as USDT (stake at 8% APY) → off-ramp the rest to Naira via Quidax in seconds.</p></Section>
+    </>),
+  },
+  {
+    slug: 'how-to-write-a-freelance-proposal-that-wins',
+    title: 'How to Write a Freelance Proposal That Wins in 2026 (with Template)',
+    description: 'The 6-paragraph proposal structure that wins jobs on NaijaLancers, Upwork and direct outreach — plus a copy-paste template you can ship today.',
+    keywords: 'freelance proposal template, how to write proposal, win freelance jobs, naijalancers application',
+    datePublished: '2026-06-06', dateModified: '2026-06-06', readTime: '9 min read',
+    author: 'NaijaLancers Team', category: 'Winning Work',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">Clients read the first 2 sentences. If they don't see themselves there, you are out. This template is built around that fact.</p>
+      <Section title="The 6-paragraph structure"><List items={[
+        '1. Mirror — restate their problem in their words.',
+        '2. Credibility — one sentence proving you have solved this exact problem before.',
+        '3. Approach — 3 bullets of how you would tackle it.',
+        '4. Timeline — concrete days, not vague "soon".',
+        '5. Price — clear number, anchored to outcome.',
+        '6. CTA — propose a 10-minute call at a specific time.',
+      ]} /></Section>
+      <Section title="The template"><p className="font-mono text-xs bg-muted p-4 rounded-lg whitespace-pre-wrap">{`Hi {name},\n\nYou need {restated problem}. I help {their type of business} solve exactly this — I recently {one specific win}.\n\nHere is how I would tackle yours:\n• {step 1}\n• {step 2}\n• {step 3}\n\nTimeline: {n} days. Price: NC {amount} (held in escrow via NaijaLancers).\n\nIf this fits, reply with a 10-minute slot tomorrow between 10am–4pm.\n\n— {your name}`}</p></Section>
+      <Section title="Why it wins on NaijaLancers"><p>NaijaLancers shows response time on profiles. Replying within 30 minutes with this structure is the single biggest conversion lever.</p></Section>
+    </>),
+  },
+  {
+    slug: 'top-freelance-platforms-in-nigeria-compared',
+    title: 'Top Freelance Platforms in Nigeria Compared (2026)',
+    description: 'NaijaLancers, Fiverr, Upwork, Toptal, Asuqu, Terawork — fees, payout speed, dispute support and Nigerian-friendliness compared head-to-head.',
+    keywords: 'best freelance platform nigeria, naijalancers vs fiverr, freelance sites nigeria, upwork nigeria',
+    datePublished: '2026-06-06', dateModified: '2026-06-06', readTime: '8 min read',
+    author: 'NaijaLancers Team', category: 'Platforms',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">You don't have to pick one. Most successful Nigerian freelancers run 2–3 channels. Here is what each is actually best at.</p>
+      <Section title="Quick comparison"><List items={[
+        'NaijaLancers — 5% fee, instant NGN payout, free escrow, AI Hire matching, Nigerian-first.',
+        'Fiverr — 20% fee, slow Nigerian payouts, huge global demand.',
+        'Upwork — 10% fee + connects, strong for long-term retainers.',
+        'Toptal — 0% to freelancer, top 3% only, monthly retainers $5k+.',
+        'Asuqu / Terawork — Nigerian, smaller demand pool than NaijaLancers.',
+      ]} /></Section>
+      <Section title="The recommended split"><p>NaijaLancers as your main store (low fee, instant payout, dispute support). Fiverr for SEO discovery. Upwork for $1k+ retainers. Cross-link them in your portfolio.</p></Section>
+    </>),
+  },
+
+  // =============================================================
+  // BATCH 5 — NaijaLancers product guides (5)
+  // =============================================================
+  {
+    slug: 'how-to-sign-up-on-naijalancers',
+    title: 'How to Sign Up on NaijaLancers (Step-by-Step Guide)',
+    description: 'A complete walkthrough of creating your NaijaLancers account, completing your profile and unlocking your NC wallet — from a fresh phone in under 5 minutes.',
+    keywords: 'naijalancers signup, register naijalancers, create naijalancers account, how to join naijalancers',
+    datePublished: '2026-06-06', dateModified: '2026-06-06', readTime: '5 min read',
+    author: 'NaijaLancers Team', category: 'NaijaLancers Guides',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">Welcome to NaijaLancers. This guide gets you from "never heard of it" to "ready to send my first gig" in under 5 minutes.</p>
+      <Section title="Step 1 — Open the app"><p>Install from naijalancers.name.ng (web), the Play Store, or use MiniPay's discover tab. Tap <strong>Sign Up</strong>.</p></Section>
+      <Section title="Step 2 — Email and password"><p>Use a real email — we send order updates, payment receipts and password reset links. Pick an 8+ character password. You can enable biometric login later from Settings → Security.</p></Section>
+      <Section title="Step 3 — Choose your mode"><p>You can switch later, but pick the mode that matches what you want to do first: <strong>Freelancer</strong>, <strong>Client</strong>, or <strong>Both</strong>.</p></Section>
+      <Section title="Step 4 — Complete your profile"><p>Full name, profession (e.g. "Logo designer for fintech"), state and LGA, and a profile photo. A complete profile gets 7× more views in the suggestions feed.</p></Section>
+      <Section title="Step 5 — Set your transaction PIN"><p>This 4-digit PIN protects every NC spend, withdrawal or transfer. We hash it in the user-secrets table — even we cannot read it.</p></Section>
+      <Section title="Step 6 — Top up NC (optional)"><p>Fund your wallet with Naira (Quidax), USDT (Pretium), or card. You are now ready to order gigs, post jobs, or fund escrow.</p></Section>
+    </>),
+  },
+  {
+    slug: 'how-to-get-your-first-client-on-naijalancers',
+    title: 'How to Get Your First Freelance Client on NaijaLancers',
+    description: 'A 7-day action plan to land your first paying client on NaijaLancers — gig setup, promotion, AI Hire visibility and reply discipline.',
+    keywords: 'first freelance client, naijalancers first job, get hired freelance nigeria, freelance start',
+    datePublished: '2026-06-06', dateModified: '2026-06-06', readTime: '7 min read',
+    author: 'NaijaLancers Team', category: 'NaijaLancers Guides',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">Most new freelancers wait. Don't. Here is the 7-day plan that has landed thousands of NaijaLancers users their first paid order.</p>
+      <Section title="Day 1 — Sharpen your profile"><p>Profession line in the format "[Outcome] for [Buyer]". Photo. 2-line bio with one credibility marker. Three portfolio items.</p></Section>
+      <Section title="Day 2 — Post your first gig"><p>3 pricing tiers (Basic / Standard / Premium). Clear delivery days. Three real photos. SEO-friendly title.</p></Section>
+      <Section title="Day 3 — Apply to 10 open jobs"><p>Open the Jobs tab, sort by Newest. Use our proposal template. Always lead with the client's exact problem.</p></Section>
+      <Section title="Day 4 — Get into AI Hire"><p>Clients tap the bot to hire. Make sure your profession contains the exact keywords they will type ("logo", "website", "video", "writer").</p></Section>
+      <Section title="Day 5 — Promote on 3 external channels"><p>Share your gig URL on WhatsApp Status, LinkedIn, and one Telegram community.</p></Section>
+      <Section title="Day 6 — Reply discipline"><p>Set notifications on. Reply within 30 minutes during business hours. Response time is a ranking signal in suggestions.</p></Section>
+      <Section title="Day 7 — Review and iterate"><p>Open Analytics. Which gig got views but no orders? Tweak the title or price. Which got 0 views? Re-do the keywords.</p></Section>
+    </>),
+  },
+  {
+    slug: 'what-is-the-nc-wallet-and-how-it-works',
+    title: 'What is the NC Wallet on NaijaLancers and How Does It Work?',
+    description: 'Everything about NaijaCoins (NC) — the platform wallet powering escrow, gigs, savings, withdrawals, and instant peer-to-peer transfers across NaijaLancers.',
+    keywords: 'nc wallet, naijacoins, naijalancers wallet, how nc works, naijalancers withdraw',
+    datePublished: '2026-06-06', dateModified: '2026-06-06', readTime: '7 min read',
+    author: 'NaijaLancers Team', category: 'NaijaLancers Guides',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">Every NaijaLancers account is also a fintech wallet. Here is the full picture.</p>
+      <Section title="What NC is"><p>NC stands for NaijaCoins. 1 NC ≈ ₦1. Your wallet displays a live fiat equivalent in 10 currencies for international users.</p></Section>
+      <Section title="How to fund it"><List items={['Naira via Quidax (instant)', 'USDT via Pretium (TRC20 / Celo)', 'Card payment (Stripe/Paddle)', 'Receiving NC from another user', 'Earning from completed gigs, courses, tasks, surveys']} /></Section>
+      <Section title="What you can do with NC"><List items={['Order gigs (auto-held in escrow)', 'Fund Safe Pay chats', 'Send to another user instantly (with PIN)', 'Withdraw to bank (Quidax NGN ramp)', 'Withdraw to USDT (Pretium)', 'Save in NC Savings at 5% APY', 'Stake USDT for 8% APY', 'Buy airtime, data, cable, electricity']} /></Section>
+      <Section title="Security model"><p>Every spend requires your 4-digit PIN. PINs are hashed in user-secrets — we cannot read them, recover them, or change them without you. Biometric unlocks the app but never bypasses the PIN.</p></Section>
+    </>),
+  },
+  {
+    slug: 'how-the-naijalancers-ai-hire-assistant-works',
+    title: 'How the NaijaLancers AI Hire Assistant Works (Client Guide)',
+    description: 'The smart interview that matches your project to the right freelancer or service package on NaijaLancers — explained end to end.',
+    keywords: 'ai hire naijalancers, ai hiring assistant, how to hire freelance ai, naijalancers ai match',
+    datePublished: '2026-06-06', dateModified: '2026-06-06', readTime: '6 min read',
+    author: 'NaijaLancers Team', category: 'NaijaLancers Guides',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">Skip the search bar. AI Hire interviews you for 60 seconds and ranks the best human + the best ready-made gig package for your job.</p>
+      <Section title="The interview"><List items={['What type of work do you need? (e.g. logo, website, video, writing)', 'What is your budget range?', 'When do you need it?', 'What is the project complexity? (simple, standard, complex)', 'Any preferences? (verified expert, location, etc.)']} /></Section>
+      <Section title="The matching algorithm"><p>We rank candidates by a weighted score across 9 signals: skills match, expert verification, rating, completed-jobs count, response time, budget compatibility, recency of activity, premium boost, and location preference. The top 5 humans and top 5 gig packages are returned.</p></Section>
+      <Section title="What happens after a match"><p>Tap a gig to order directly (NC moves into escrow). Tap a freelancer to view their profile, chat, or request a quote. Every transaction is protected by escrow.</p></Section>
+    </>),
+  },
+  {
+    slug: 'complete-guide-naijalancers-expert-gig-job-fundraising-courses',
+    title: 'The Complete NaijaLancers Power-User Guide: Expert Verification, Gigs, Jobs, Fundraising & Courses',
+    description: 'One mega-guide covering how to become a verified expert, post a gig, post a job, apply for fundraising, and access courses on NaijaLancers.',
+    keywords: 'naijalancers expert verification, post gig naijalancers, post job naijalancers, fundraising naijalancers, courses naijalancers',
+    datePublished: '2026-06-06', dateModified: '2026-06-06', readTime: '14 min read',
+    author: 'NaijaLancers Team', category: 'NaijaLancers Guides',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">Everything most users ask in support, in one place. Bookmark this page.</p>
+      <Section title="1. How to become a verified expert">
+        <p>Verified experts get a blue check, a 3× boost in search and AI Hire, and access to premium client briefs.</p>
+        <List items={[
+          'Open Settings → Verify → Expert Application.',
+          'Submit ID (BVN / NIN / Passport / Driver\'s licence), a clear selfie, and your professional bio.',
+          'Upload 3 portfolio items showing real client work.',
+          'Pay the one-time application fee in NC.',
+          'Admin review takes 24–72 hours. You will be notified in-app and on Telegram.',
+        ]} />
+      </Section>
+      <Section title="2. How to apply as an expert in a specific category">
+        <p>After base verification, open the Expert Categories panel and select your specialism (AI builder, fintech designer, etc.). Each category may have an extra portfolio requirement. Approval adds the category badge to your profile and prioritises you in that vertical.</p>
+      </Section>
+      <Section title="3. How to post a gig">
+        <List items={[
+          'Tap the + button → Post a Gig.',
+          'Title using the formula "[Outcome] for [Buyer type]".',
+          'Three pricing tiers (Basic / Standard / Premium) with clear deliverables.',
+          'Delivery days per tier.',
+          'Upload at least 3 photos and (optional) a 30-second intro video.',
+          'Add 5–8 keyword tags so AI Hire can find you.',
+          'Publish. NaijaLancers auto-shares it to your followers in the feed.',
+        ]} />
+      </Section>
+      <Section title="4. How to post a job (client)">
+        <List items={[
+          'Tap + → Post a Job.',
+          'Title, description, budget range, required skills, deadline.',
+          'Choose remote or location-specific.',
+          'Publish — freelancers see it instantly and can apply with proposals.',
+          'You receive applications in your inbox; shortlist, chat, and hire from there.',
+          'Hiring funds NC into escrow automatically.',
+        ]} />
+      </Section>
+      <Section title="5. How to apply for fundraising">
+        <p>NaijaLancers Fundraising helps Nigerians raise NC for medical, education, business and community causes — all transparent.</p>
+        <List items={[
+          'Open the Fundraising tab → Start Campaign.',
+          'Add title, story, goal amount in NC, optional images/video.',
+          'Upload supporting documents (medical bill, business plan, etc.).',
+          'Admin reviews in 24–48 hours for fraud prevention.',
+          'Once approved, share your campaign URL. Contributors send NC straight to your wallet.',
+        ]} />
+      </Section>
+      <Section title="6. How to access courses and other features">
+        <p>Open the Apps / Learn tab to see Courses, Tasks, Surveys, Mini Apps, Games, Daily Sign-in, Referrals and more.</p>
+        <List items={[
+          'Courses — paid or free, certificates issued on completion. Filter by category.',
+          'Tasks & Surveys — earn NC for short jobs (CPX, BitLabs, internal tasks).',
+          'Mini Apps — utilities like VTU airtime/data, loan, donations.',
+          'Daily Sign-in — earn NC every day you open the app.',
+          'Referrals — share your code, earn NC when friends transact.',
+        ]} />
+      </Section>
+      <Section title="Where to get help">
+        <p>Help Center is one tap from your profile menu. Live chat, FAQ, and a built-in AI bug reporter for any issue.</p>
+      </Section>
+    </>),
+  },
 ];
 
 export function getPostBySlug(slug: string): BlogPost | undefined {

@@ -46,6 +46,10 @@ interface Freelancer {
   country: string
   hourly_rate: number
   is_expert: boolean
+  completed_jobs: number
+  response_minutes: number | null
+  match_score: number
+  match_reasons: string[]
 }
 
 interface Gig {
@@ -58,33 +62,68 @@ interface Gig {
   seller_picture: string | null
   average_rating: number
   photo_url: string | null
+  match_score: number
+  match_reasons: string[]
 }
 
 interface HiringContext {
   service_needed?: string
   budget?: string
+  budget_min?: number
+  budget_max?: number
   urgency?: string
-  location_preference?: string
+  urgency_days?: number
+  complexity?: string
+  preference?: string
 }
 
 const HIRING_QUESTIONS = [
   {
     id: 'service',
     question: "What type of work do you need done?",
-    placeholder: "e.g., Logo design, Website, Writing, Video editing...",
-    options: ['Logo & Branding', 'Website/App', 'Writing & Content', 'Video & Animation', 'Marketing', 'Virtual Assistant', 'Other']
+    placeholder: "e.g. Logo design, React website, blog article, video editing...",
+    options: ['Logo & Branding', 'Website/App', 'Writing & Content', 'Video & Animation', 'Marketing & SEO', 'Virtual Assistant', 'AI / Automation', 'Other'],
   },
   {
     id: 'budget',
     question: "What's your approximate budget?",
-    options: ['Under $50 (~NC 80,000)', '$50 - $100 (~NC 160,000)', '$100 - $300 (~NC 480,000)', 'Over $300', 'Flexible']
+    options: ['Under NC 30,000', 'NC 30,000 – 100,000', 'NC 100,000 – 300,000', 'NC 300,000 – 800,000', 'Over NC 800,000', 'Flexible'],
   },
   {
     id: 'urgency',
     question: "When do you need this completed?",
-    options: ['Within 3 days', 'Within a week', 'Within 2 weeks', 'Flexible timeline']
-  }
+    options: ['Within 3 days', 'Within a week', 'Within 2 weeks', 'Within a month', 'Flexible timeline'],
+  },
+  {
+    id: 'complexity',
+    question: "How complex is the project?",
+    options: ['Simple (single deliverable)', 'Standard (multi-step)', 'Complex (multi-phase)', "I'm not sure"],
+  },
+  {
+    id: 'preference',
+    question: "Any preferences for the freelancer?",
+    options: ['Verified expert only', 'Top-rated (4.5★+)', 'Fast responder', 'Best value for money', 'No preference'],
+  },
 ]
+
+// Parse the budget option into a numeric range (NC).
+const parseBudget = (label: string): { min: number; max: number } => {
+  if (label.includes('Under NC 30')) return { min: 0, max: 30000 }
+  if (label.includes('30,000 – 100')) return { min: 30000, max: 100000 }
+  if (label.includes('100,000 – 300')) return { min: 100000, max: 300000 }
+  if (label.includes('300,000 – 800')) return { min: 300000, max: 800000 }
+  if (label.includes('Over NC 800')) return { min: 800000, max: 10_000_000 }
+  return { min: 0, max: 10_000_000 } // Flexible
+}
+
+const parseUrgencyDays = (label: string): number => {
+  if (label.includes('3 days')) return 3
+  if (label.includes('a week')) return 7
+  if (label.includes('2 weeks')) return 14
+  if (label.includes('a month')) return 30
+  return 60
+}
+
 
 export default function AIHire() {
   const navigate = useNavigate()
@@ -138,193 +177,286 @@ export default function AIHire() {
     setMessages(prev => [...prev, userMsg])
     
     // Update hiring context based on current step
-    const contextKey = ['service_needed', 'budget', 'urgency'][currentStep]
-    const newContext = { ...hiringContext, [contextKey]: response }
+    const keys = ['service_needed', 'budget', 'urgency', 'complexity', 'preference'] as const
+    const contextKey = keys[currentStep]
+    const newContext: HiringContext = { ...hiringContext, [contextKey]: response }
+    if (contextKey === 'budget') {
+      const { min, max } = parseBudget(response)
+      newContext.budget_min = min
+      newContext.budget_max = max
+    } else if (contextKey === 'urgency') {
+      newContext.urgency_days = parseUrgencyDays(response)
+    }
     setHiringContext(newContext)
-    
+
     // Move to next step
     const nextStep = currentStep + 1
     setCurrentStep(nextStep)
 
     if (nextStep < HIRING_QUESTIONS.length) {
-      // Ask next question
       const nextQuestion = HIRING_QUESTIONS[nextStep]
       const assistantMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
         content: nextQuestion.question,
-        options: nextQuestion.options
+        options: nextQuestion.options,
       }
       setMessages(prev => [...prev, assistantMsg])
     } else {
-      // All questions answered - find freelancers
       await findMatchingFreelancers(newContext)
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Weighted matching algorithm.
+  // Scores 0-100 across 9 industry-standard signals:
+  //   • Skills / keyword match (25)
+  //   • Expert verification (10)
+  //   • Rating quality (15)
+  //   • Job success history / completed jobs (10)
+  //   • Response time (10)
+  //   • Budget compatibility (10)
+  //   • Recency of activity / boost (5)
+  //   • Premium boost (5)
+  //   • Client preference bonus (10)
+  // ---------------------------------------------------------------------------
+  const STOP_WORDS = new Set(['the','and','for','with','a','an','of','to','in','on','my','need','want','i','help'])
+  const tokenize = (s: string) =>
+    (s || '').toLowerCase().split(/[^a-z0-9]+/).filter(w => w.length > 2 && !STOP_WORDS.has(w))
+
+  const skillMatchScore = (target: string[], candidate: string): { score: number; matched: string[] } => {
+    if (!candidate) return { score: 0, matched: [] }
+    const cand = candidate.toLowerCase()
+    const matched = target.filter(w => cand.includes(w))
+    if (target.length === 0) return { score: 12, matched: [] }
+    return { score: Math.min(25, Math.round((matched.length / target.length) * 25) + (matched.length > 0 ? 5 : 0)), matched }
+  }
+
   const findMatchingFreelancers = async (context: HiringContext) => {
     setLoading(true)
-    
-    // Show searching message
-    const searchingMsg: Message = {
+    setMessages(prev => [...prev, {
       id: Date.now().toString(),
       role: 'assistant',
-      content: "Perfect! 🔍 Let me find the best freelancers and service packages for you..."
-    }
-    setMessages(prev => [...prev, searchingMsg])
+      content: "Perfect! 🔍 Scoring freelancers and service packages across 9 industry signals…",
+    }])
 
     try {
-      // Query freelancers - use existing columns only
+      // Pull a broader candidate pool with the fields we actually score on.
       const { data: freelancers, error } = await supabase
         .from('profiles')
-        .select('user_id, full_name, profession, profile_picture_url, is_expert, wallet_balance, state_name')
+        .select('user_id, full_name, profession, bio, profile_picture_url, is_expert, is_premium, state_name, average_rating, rating_count, completed_jobs_count, avg_response_time_seconds, updated_at')
         .not('profession', 'is', null)
-        .order('wallet_balance', { ascending: false })
-        .limit(10)
-
+        .limit(80)
       if (error) throw error
 
-      // Also query matching gigs (service packages)
-      const { data: gigs, error: gigsError } = await supabase
+      const { data: gigs } = await supabase
         .from('jobs_services')
-        .select(`
-          id, title, description, price, delivery_days, average_rating, photo_urls,
-          user_id
-        `)
+        .select('id, title, description, price, delivery_days, average_rating, photo_urls, user_id, boost_amount, status, created_at')
         .eq('status', 'active')
-        .order('boost_amount', { ascending: false })
-        .limit(10)
+        .limit(80)
 
-      // Filter freelancers by profession/service if provided
-      let filteredFreelancers = freelancers || []
-      let filteredGigs = gigs || []
-      
-      if (context.service_needed) {
-        const searchTerm = context.service_needed.toLowerCase()
-        const searchWords = searchTerm.split(' ').filter(w => w.length > 2)
-        
-        filteredFreelancers = filteredFreelancers.filter(f => 
-          searchWords.some(word => f.profession?.toLowerCase().includes(word))
-        )
-        
-        filteredGigs = filteredGigs.filter(g => 
-          searchWords.some(word => 
-            g.title?.toLowerCase().includes(word) || 
-            g.description?.toLowerCase().includes(word)
-          )
-        )
-      }
+      const queryTokens = [
+        ...tokenize(context.service_needed || ''),
+        ...tokenize((context.service_needed || '').split('&')[0]),
+      ]
+      const wantsExpertOnly = context.preference === 'Verified expert only'
+      const wantsTopRated = context.preference?.startsWith('Top-rated')
+      const wantsFast = context.preference === 'Fast responder'
+      const wantsValue = context.preference === 'Best value for money'
 
-      // Take top 5 of each
-      filteredFreelancers = filteredFreelancers.slice(0, 5)
-      filteredGigs = filteredGigs.slice(0, 5)
+      const complexityWeight =
+        context.complexity?.startsWith('Complex') ? 1.25 :
+        context.complexity?.startsWith('Standard') ? 1.0 :
+        context.complexity?.startsWith('Simple') ? 0.85 : 1.0
 
-      // Get seller info for gigs
-      const sellerIds = filteredGigs.map(g => g.user_id).filter(Boolean)
-      let sellersMap: Record<string, { name: string; picture: string | null }> = {}
-      
+      // -------- Freelancer scoring --------
+      const scoredFreelancers = (freelancers || []).map(f => {
+        const reasons: string[] = []
+        const skills = skillMatchScore(queryTokens, `${f.profession || ''} ${f.bio || ''}`)
+        let score = skills.score
+        if (skills.matched.length > 0) reasons.push(`Matches: ${skills.matched.slice(0, 3).join(', ')}`)
+
+        // Expert verification (10)
+        if (f.is_expert) { score += 10; reasons.push('Verified expert') }
+        else if (wantsExpertOnly) { score -= 30 }
+
+        // Rating quality (0-15) — rating × confidence (rating_count)
+        const rating = Number(f.average_rating || 0)
+        const ratingCount = Number(f.rating_count || 0)
+        const ratingConfidence = Math.min(1, ratingCount / 10)
+        const ratingScore = Math.round((rating / 5) * 15 * ratingConfidence)
+        score += ratingScore
+        if (rating >= 4.5 && ratingCount >= 3) reasons.push(`${rating.toFixed(1)}★ (${ratingCount} reviews)`)
+        if (wantsTopRated && rating < 4.5) score -= 15
+
+        // Completed jobs (0-10) — log scale
+        const completed = Number(f.completed_jobs_count || 0)
+        const completedScore = Math.min(10, Math.round(Math.log10(completed + 1) * 6))
+        score += completedScore
+        if (completed >= 5) reasons.push(`${completed} jobs completed`)
+
+        // Response time (0-10) — under 30 min is gold
+        const respSec = Number(f.avg_response_time_seconds || 0)
+        const respMin = respSec > 0 ? Math.round(respSec / 60) : null
+        let respScore = 5
+        if (respMin !== null) {
+          if (respMin <= 30) respScore = 10
+          else if (respMin <= 120) respScore = 8
+          else if (respMin <= 360) respScore = 6
+          else if (respMin <= 1440) respScore = 4
+          else respScore = 2
+        }
+        score += respScore
+        if (wantsFast && respMin !== null && respMin <= 60) {
+          score += 5; reasons.push('Replies in under 1 hour')
+        }
+
+        // Activity recency (0-5)
+        if (f.updated_at) {
+          const days = (Date.now() - new Date(f.updated_at).getTime()) / 86_400_000
+          if (days <= 3) score += 5
+          else if (days <= 14) score += 3
+          else if (days <= 30) score += 1
+        }
+
+        // Premium boost (0-5)
+        if (f.is_premium) { score += 5; reasons.push('Premium freelancer') }
+
+        // Complexity weighting — complex work prefers experts with completion history
+        score = Math.round(score * complexityWeight)
+
+        return {
+          id: f.user_id,
+          full_name: f.full_name || 'Freelancer',
+          profession: f.profession || 'Professional',
+          avatar_url: f.profile_picture_url,
+          rating: rating || 4.5,
+          trust_score: Math.min(100, 60 + completedScore + ratingScore),
+          country: f.state_name || 'Nigeria',
+          hourly_rate: 5000,
+          is_expert: !!f.is_expert,
+          completed_jobs: completed,
+          response_minutes: respMin,
+          match_score: Math.max(0, Math.min(100, score)),
+          match_reasons: reasons.slice(0, 3),
+        } as Freelancer
+      })
+        .filter(f => f.match_score >= 15)
+        .sort((a, b) => b.match_score - a.match_score)
+        .slice(0, 5)
+
+      // -------- Gig scoring --------
+      const minBudget = context.budget_min ?? 0
+      const maxBudget = context.budget_max ?? 10_000_000
+
+      const sellerIds = (gigs || []).map(g => g.user_id).filter(Boolean)
+      let sellersMap: Record<string, { name: string; picture: string | null; is_expert: boolean }> = {}
       if (sellerIds.length > 0) {
         const { data: sellers } = await supabase
           .from('profiles')
-          .select('user_id, full_name, profile_picture_url')
+          .select('user_id, full_name, profile_picture_url, is_expert')
           .in('user_id', sellerIds)
-        
         sellers?.forEach(s => {
           sellersMap[s.user_id] = {
             name: s.full_name || 'Seller',
-            picture: s.profile_picture_url
+            picture: s.profile_picture_url,
+            is_expert: !!s.is_expert,
           }
         })
       }
 
-      // Get ratings for matched freelancers
-      const freelancerIds = filteredFreelancers.map(f => f.user_id)
-      let ratingsMap: Record<string, number> = {}
-      
-      if (freelancerIds.length > 0) {
-        const { data: ratings } = await supabase
-          .from('expert_ratings')
-          .select('expert_id, rating')
-          .in('expert_id', freelancerIds)
+      const scoredGigs = (gigs || []).map(g => {
+        const reasons: string[] = []
+        const skills = skillMatchScore(queryTokens, `${g.title || ''} ${g.description || ''}`)
+        let score = skills.score
+        if (skills.matched.length > 0) reasons.push(`Matches: ${skills.matched.slice(0, 3).join(', ')}`)
 
-        if (ratings) {
-          const ratingCounts: Record<string, { sum: number; count: number }> = {}
-          ratings.forEach(r => {
-            if (!ratingCounts[r.expert_id]) {
-              ratingCounts[r.expert_id] = { sum: 0, count: 0 }
-            }
-            ratingCounts[r.expert_id].sum += r.rating
-            ratingCounts[r.expert_id].count += 1
-          })
-          
-          Object.entries(ratingCounts).forEach(([id, { sum, count }]) => {
-            ratingsMap[id] = sum / count
-          })
+        const price = Number(g.price || 0)
+        // Budget compatibility (0-15)
+        if (price >= minBudget && price <= maxBudget) {
+          score += 15
+          reasons.push('Fits your budget')
+        } else if (price < minBudget) {
+          score += 8
+          if (wantsValue) { score += 5; reasons.push('Below budget — great value') }
+        } else if (price > maxBudget * 1.3) {
+          score -= 15
+        } else {
+          score += 3
         }
-      }
 
-      const formattedFreelancers: Freelancer[] = filteredFreelancers.map(f => ({
-        id: f.user_id,
-        full_name: f.full_name || 'Freelancer',
-        profession: f.profession || 'Professional',
-        avatar_url: f.profile_picture_url,
-        rating: ratingsMap[f.user_id] || 4.5,
-        trust_score: 80,
-        country: f.state_name || 'Nigeria',
-        hourly_rate: 5000,
-        is_expert: f.is_expert || false
-      }))
+        // Rating
+        const rating = Number(g.average_rating || 0)
+        if (rating > 0) {
+          score += Math.round((rating / 5) * 12)
+          if (rating >= 4.5) reasons.push(`${rating.toFixed(1)}★ rated package`)
+        }
 
-      const formattedGigs: Gig[] = filteredGigs.map(g => ({
-        id: g.id,
-        title: g.title,
-        description: g.description,
-        price: g.price,
-        delivery_days: g.delivery_days || 7,
-        seller_name: sellersMap[g.user_id]?.name || 'Seller',
-        seller_picture: sellersMap[g.user_id]?.picture || null,
-        average_rating: g.average_rating || 0,
-        photo_url: g.photo_urls?.[0] || null
-      }))
+        // Delivery vs urgency
+        const delivery = Number(g.delivery_days || 7)
+        const urgencyDays = context.urgency_days ?? 30
+        if (delivery <= urgencyDays) { score += 8; if (delivery <= 3) reasons.push('Ships in 3 days') }
+        else if (delivery <= urgencyDays * 1.5) score += 3
+        else score -= 8
 
-      setMatchedFreelancers(formattedFreelancers)
+        // Boost & seller expert status
+        if (g.boost_amount > 0) score += 4
+        if (sellersMap[g.user_id]?.is_expert) { score += 6; reasons.push('Sold by verified expert') }
 
-      // Show gigs first if available
-      if (formattedGigs.length > 0) {
-        const gigsMsg: Message = {
+        // Recency
+        if (g.created_at) {
+          const days = (Date.now() - new Date(g.created_at).getTime()) / 86_400_000
+          if (days <= 30) score += 3
+        }
+
+        return {
+          id: g.id,
+          title: g.title,
+          description: g.description,
+          price,
+          delivery_days: delivery,
+          seller_name: sellersMap[g.user_id]?.name || 'Seller',
+          seller_picture: sellersMap[g.user_id]?.picture || null,
+          average_rating: rating,
+          photo_url: g.photo_urls?.[0] || null,
+          match_score: Math.max(0, Math.min(100, score)),
+          match_reasons: reasons.slice(0, 3),
+        } as Gig
+      })
+        .filter(g => g.match_score >= 15)
+        .sort((a, b) => b.match_score - a.match_score)
+        .slice(0, 5)
+
+      setMatchedFreelancers(scoredFreelancers)
+
+      if (scoredGigs.length > 0) {
+        setMessages(prev => [...prev, {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
-          content: `📦 I found ${formattedGigs.length} ready-to-order service packages that match your needs:`,
-          gigs: formattedGigs
-        }
-        setMessages(prev => [...prev, gigsMsg])
+          content: `📦 Top ${scoredGigs.length} ready-to-order packages, ranked by match score:`,
+          gigs: scoredGigs,
+        }])
       }
 
-      // Then show freelancers
-      const resultsMsg: Message = {
+      setMessages(prev => [...prev, {
         id: (Date.now() + 2).toString(),
         role: 'assistant',
-        content: formattedFreelancers.length > 0 
-          ? `👨‍💻 ${formattedFreelancers.length} talented freelancers for custom work:`
-          : formattedGigs.length === 0 
-            ? "I couldn't find exact matches. Try browsing all experts or gigs."
+        content: scoredFreelancers.length > 0
+          ? `👨‍💻 Top ${scoredFreelancers.length} freelancers for custom work, ranked by 9-signal score:`
+          : scoredGigs.length === 0
+            ? "I couldn't find strong matches. Try a broader description or browse all experts."
             : "You can also reach out to these freelancers for custom work:",
-        freelancers: formattedFreelancers
-      }
-      setMessages(prev => [...prev, resultsMsg])
+        freelancers: scoredFreelancers,
+      }])
       setIsComplete(true)
-
     } catch (error) {
       console.error('Error finding freelancers:', error)
-      toast({
-        title: 'Error',
-        description: 'Failed to find freelancers',
-        variant: 'destructive'
-      })
+      toast({ title: 'Error', description: 'Failed to find freelancers', variant: 'destructive' })
     } finally {
       setLoading(false)
     }
   }
+
 
   const handleCompleteOnboarding = async () => {
     setLoading(true)

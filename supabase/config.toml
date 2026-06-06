@@ -270,6 +270,10 @@ verify_jwt = false
 [functions.pretium-webhook]
 verify_jwt = false
 
+[functions.pretium-admin-refund]
+verify_jwt = false
+
+
 [functions.reloadly-service]
 verify_jwt = false
 
