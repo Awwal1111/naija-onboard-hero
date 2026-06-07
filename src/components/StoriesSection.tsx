@@ -8,7 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { supabase } from '@/integrations/supabase/client'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '@/hooks/use-toast'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQueryClient, useQuery } from '@tanstack/react-query'
 
 interface StoryViewer {
   user_id: string
@@ -41,7 +41,25 @@ const StoriesSection: React.FC<StoriesSectionProps> = ({
   const [storyViewers, setStoryViewers] = useState<StoryViewer[]>([])
   const [showViewers, setShowViewers] = useState(false)
   const [loadingViewers, setLoadingViewers] = useState(false)
-  const [userConnections, setUserConnections] = useState<Set<string>>(new Set())
+  // Fetch user connections for story ranking (cached 15min to avoid repeat egress)
+  const { data: userConnections = new Set<string>() } = useQuery({
+    queryKey: ['user-connections-set', currentUserId],
+    queryFn: async () => {
+      if (!currentUserId) return new Set<string>()
+      const { data } = await supabase
+        .from('connections')
+        .select('user1_id, user2_id')
+        .or(`user1_id.eq.${currentUserId},user2_id.eq.${currentUserId}`)
+        .limit(200)
+      return new Set(
+        (data || []).map(c => c.user1_id === currentUserId ? c.user2_id : c.user1_id)
+      )
+    },
+    enabled: !!currentUserId,
+    staleTime: 15 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+  })
+
 
   // Handle Hire Me - Navigate to chat with story context
   const handleHireMe = async (story: Story) => {
@@ -111,27 +129,8 @@ const StoriesSection: React.FC<StoriesSectionProps> = ({
     }
   }
 
-  // Fetch user connections for story ranking
-  useEffect(() => {
-    const fetchConnections = async () => {
-      if (!currentUserId) return
-      
-      const { data } = await supabase
-        .from('connections')
-        .select('user1_id, user2_id')
-        .or(`user1_id.eq.${currentUserId},user2_id.eq.${currentUserId}`)
-        .limit(200)
-      
-      if (data) {
-        const connectionIds = new Set(
-          data.map(c => c.user1_id === currentUserId ? c.user2_id : c.user1_id)
-        )
-        setUserConnections(connectionIds)
-      }
-    }
-    
-    fetchConnections()
-  }, [currentUserId])
+  // (connections now fetched via useQuery above)
+
 
   // Sort stories with algorithm: connections first, unviewed, then recency
   const sortedStories = React.useMemo(() => {
@@ -176,7 +175,7 @@ const StoriesSection: React.FC<StoriesSectionProps> = ({
         `)
         .eq('story_id', storyId)
         .order('viewed_at', { ascending: false })
-        .limit(100)
+        .limit(50)
 
       if (!error && data) {
         // Transform data to match interface
