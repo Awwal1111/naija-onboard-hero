@@ -181,7 +181,7 @@ export const LeaderboardSection: React.FC = () => {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabKey)}>
           <TabsList className="grid grid-cols-4 mb-6">
             <TabsTrigger value="earnings" className="flex items-center gap-1">
               <DollarSign className="h-4 w-4" />
