@@ -89,6 +89,7 @@ serve(async (req) => {
     console.log('[INCOMPLETE-PROFILES] Found', profiles?.length || 0, 'profiles to check');
 
     const userIds = (profiles || []).map((profile) => profile.user_id);
+    const targetUserIds = new Set(userIds);
     const authUsersById = new Map<string, string | null>();
     if (userIds.length > 0) {
       for (let offset = 0; offset < userIds.length; offset += 100) {
@@ -100,11 +101,12 @@ serve(async (req) => {
         if (authPageError) throw authPageError;
 
         for (const authUser of authPage.users || []) {
-          if (userIds.includes(authUser.id)) {
+          if (targetUserIds.has(authUser.id)) {
             authUsersById.set(authUser.id, authUser.email ?? null);
           }
         }
 
+        if (authUsersById.size >= targetUserIds.size) break;
         if ((authPage.users || []).length < 100) break;
       }
     }
