@@ -1256,10 +1256,23 @@ if (evt.event === 'charge.completed') {
                       />
                     </div>
 
+                    <div className="flex items-center justify-between p-2 rounded-md border bg-muted/40 mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${useSandbox ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400' : 'bg-amber-500/15 text-amber-700 dark:text-amber-400'}`}>
+                          {useSandbox ? 'TEST MODE' : 'LIVE MODE'}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {useSandbox ? 'Mocked response · no NC charged' : 'Real funds will move · NC will be deducted'}
+                        </span>
+                      </div>
+                      <Switch checked={useSandbox} onCheckedChange={setUseSandbox} />
+                    </div>
+
                     <Button onClick={testEndpoint} disabled={testing} className="w-full gap-2">
                       {testing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-                      Send Request
+                      Send Request {useSandbox ? '(Test)' : '(Live)'}
                     </Button>
+
                   </CardContent>
                 </Card>
 
