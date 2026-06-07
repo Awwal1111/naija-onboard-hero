@@ -8079,6 +8079,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_landing_stats: { Args: never; Returns: Json }
       get_personalized_connections: {
         Args: { p_limit?: number; p_offset?: number; p_user_id: string }
         Returns: {
