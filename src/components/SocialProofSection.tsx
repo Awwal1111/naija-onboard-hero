@@ -37,7 +37,7 @@ export const SocialProofSection: React.FC = () => {
 
       let ratings: PlatformRating[] = []
       if (ratingsData && ratingsData.length > 0) {
-        const userIds = Array.from(new Set(ratingsData.map((r: any) => r.user_id)))
+        const userIds = Array.from(new Set(ratingsData.map((r: any) => r.user_id as string))) as string[]
         const { data: profilesData } = await supabase
           .from('profiles')
           .select('user_id, full_name, profession, profile_picture_url')
