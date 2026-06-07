@@ -8572,6 +8572,8 @@ export type Database = {
         }
         Returns: Json
       }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
       subscribe_premium: {
         Args: { p_months?: number; p_user_id: string }
         Returns: Json
