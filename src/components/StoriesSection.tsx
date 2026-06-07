@@ -120,6 +120,7 @@ const StoriesSection: React.FC<StoriesSectionProps> = ({
         .from('connections')
         .select('user1_id, user2_id')
         .or(`user1_id.eq.${currentUserId},user2_id.eq.${currentUserId}`)
+        .limit(200)
       
       if (data) {
         const connectionIds = new Set(
@@ -175,6 +176,7 @@ const StoriesSection: React.FC<StoriesSectionProps> = ({
         `)
         .eq('story_id', storyId)
         .order('viewed_at', { ascending: false })
+        .limit(100)
 
       if (!error && data) {
         // Transform data to match interface
