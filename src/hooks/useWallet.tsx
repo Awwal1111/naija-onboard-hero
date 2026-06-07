@@ -49,7 +49,7 @@ export interface EscrowPayment {
 }
 
 // ---- Module-level shared wallet cache to eliminate duplicate egress ----
-const WALLET_TTL_MS = 60 * 1000
+const WALLET_TTL_MS = 5 * 60 * 1000
 const EMPTY_BALANCE: WalletBalance = { withdrawable: 0, non_withdrawable: 0, total: 0, escrow_hold: 0 }
 const walletCache = new Map<string, { balance: WalletBalance; ts: number }>()
 const walletInflight = new Map<string, Promise<WalletBalance>>()
