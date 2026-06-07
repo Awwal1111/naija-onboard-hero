@@ -159,7 +159,8 @@ export const LeaderboardSection: React.FC = () => {
     )
   }
 
-  const hasData = Object.values(leaderboards).some(arr => arr.length > 0)
+  // Only check the active tab — others are lazily fetched on tab switch
+  const hasData = (leaderboards[activeTab]?.length ?? 0) > 0 || current.isFetched === false
 
   if (!hasData) {
     return (
