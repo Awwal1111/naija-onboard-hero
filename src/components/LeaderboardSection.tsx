@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react'
-import { Trophy, Medal, Crown, TrendingUp, Users, DollarSign, Briefcase, Star } from 'lucide-react'
+import React, { useState } from 'react'
+import { Trophy, Medal, Crown, Users, DollarSign, Briefcase, Star } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { supabase } from '@/integrations/supabase/client'
 import { useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 
 interface LeaderboardUser {
   user_id: string
@@ -17,6 +18,15 @@ interface LeaderboardUser {
   connections_count: number
   completed_jobs_count: number
   average_rating: number
+}
+
+type TabKey = 'earnings' | 'connections' | 'jobs' | 'rating'
+
+const TAB_CONFIG: Record<TabKey, { column: string }> = {
+  earnings: { column: 'total_earnings' },
+  connections: { column: 'connections_count' },
+  jobs: { column: 'completed_jobs_count' },
+  rating: { column: 'average_rating' },
 }
 
 const getRankIcon = (rank: number) => {
@@ -45,72 +55,52 @@ const getRankBadgeColor = (rank: number) => {
   }
 }
 
+function useLeaderboardTab(tab: TabKey, enabled: boolean) {
+  const column = TAB_CONFIG[tab].column
+  return useQuery<LeaderboardUser[]>({
+    queryKey: ['leaderboard', tab],
+    enabled,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, profession, profile_picture_url, is_expert, total_earnings, connections_count, completed_jobs_count, average_rating')
+        .gt(column, 0)
+        .order(column, { ascending: false })
+        .limit(10)
+      return (data || []) as unknown as LeaderboardUser[]
+    },
+  })
+}
+
 export const LeaderboardSection: React.FC = () => {
   const navigate = useNavigate()
-  const [activeTab, setActiveTab] = useState('earnings')
-  const [leaderboards, setLeaderboards] = useState<{
-    earnings: LeaderboardUser[]
-    connections: LeaderboardUser[]
-    jobs: LeaderboardUser[]
-    rating: LeaderboardUser[]
-  }>({
-    earnings: [],
-    connections: [],
-    jobs: [],
-    rating: []
-  })
-  const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState<TabKey>('earnings')
 
-  useEffect(() => {
-    fetchLeaderboards()
-  }, [])
+  // Only fetch the active tab — saves 75% of profile queries
+  const earnings = useLeaderboardTab('earnings', activeTab === 'earnings')
+  const connections = useLeaderboardTab('connections', activeTab === 'connections')
+  const jobs = useLeaderboardTab('jobs', activeTab === 'jobs')
+  const rating = useLeaderboardTab('rating', activeTab === 'rating')
 
-  const fetchLeaderboards = async () => {
-    try {
-      // Fetch top earners (cast to any for new columns)
-      const { data: earners } = await supabase
-        .from('profiles')
-        .select('user_id, full_name, profession, profile_picture_url, is_expert, total_earnings, connections_count, completed_jobs_count, average_rating')
-        .gt('total_earnings', 0)
-        .order('total_earnings', { ascending: false })
-        .limit(10) as any
-
-      // Fetch top connected
-      const { data: connected } = await supabase
-        .from('profiles')
-        .select('user_id, full_name, profession, profile_picture_url, is_expert, total_earnings, connections_count, completed_jobs_count, average_rating')
-        .gt('connections_count', 0)
-        .order('connections_count', { ascending: false })
-        .limit(10) as any
-
-      // Fetch top job completers
-      const { data: jobbers } = await supabase
-        .from('profiles')
-        .select('user_id, full_name, profession, profile_picture_url, is_expert, total_earnings, connections_count, completed_jobs_count, average_rating')
-        .gt('completed_jobs_count', 0)
-        .order('completed_jobs_count', { ascending: false })
-        .limit(10) as any
-
-      // Fetch top rated
-      const { data: rated } = await supabase
-        .from('profiles')
-        .select('user_id, full_name, profession, profile_picture_url, is_expert, total_earnings, connections_count, completed_jobs_count, average_rating')
-        .gt('average_rating', 0)
-        .order('average_rating', { ascending: false })
-        .limit(10) as any
-
-      setLeaderboards({
-        earnings: (earners || []) as LeaderboardUser[],
-        connections: (connected || []) as LeaderboardUser[],
-        jobs: (jobbers || []) as LeaderboardUser[],
-        rating: (rated || []) as LeaderboardUser[]
-      })
-    } catch (error) {
-      console.error('Error fetching leaderboards:', error)
-    } finally {
-      setLoading(false)
-    }
+  const queries: Record<TabKey, ReturnType<typeof useLeaderboardTab>> = {
+    earnings,
+    connections,
+    jobs,
+    rating,
   }
+  const current = queries[activeTab]
+  const loading = current.isLoading
+  const leaderboards = {
+    earnings: earnings.data ?? [],
+    connections: connections.data ?? [],
+    jobs: jobs.data ?? [],
+    rating: rating.data ?? [],
+  }
+
 
   const renderLeaderboardItem = (user: LeaderboardUser, rank: number, metric: string, value: string | number) => (
     <div
