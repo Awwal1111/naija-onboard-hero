@@ -1893,7 +1893,9 @@ serve(async (req) => {
         ...corsHeaders,
         'Content-Type': 'application/json',
         'X-RateLimit-Remaining': rateLimit.remaining.toString(),
+        'X-Sandbox': 'false',
       },
+
     }
   );
 });
