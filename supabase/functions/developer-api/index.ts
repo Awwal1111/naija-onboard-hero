@@ -96,35 +96,44 @@ interface DeveloperProfile {
   account_type: string;
   api_key: string;
   wallet_balance: number;
+  mode: 'live' | 'sandbox';
 }
 
 // Validate API key and get developer profile
-// FIXED: API keys are stored in user_secrets table, NOT profiles
+// Live keys are stored in user_secrets.api_key, sandbox keys in user_secrets.sandbox_api_key
 async function validateApiKey(apiKey: string): Promise<DeveloperProfile | null> {
   if (!apiKey) {
     console.log('[API] No API key provided');
     return null;
   }
-  
-  console.log('[API] Validating API key:', apiKey.substring(0, 10) + '...');
-  
-  // Step 1: Find the API key in user_secrets
+
+  const isSandboxKey = apiKey.startsWith('nl_test_');
+  console.log(`[API] Validating ${isSandboxKey ? 'SANDBOX' : 'LIVE'} key:`, apiKey.substring(0, 12) + '...');
+
+  // Step 1: Find the API key in user_secrets (live or sandbox column)
+  const column = isSandboxKey ? 'sandbox_api_key' : 'api_key';
   const { data: secretData, error: secretError } = await supabase
     .from('user_secrets')
-    .select('user_id, api_key')
-    .eq('api_key', apiKey)
+    .select('user_id, api_key, sandbox_api_key, api_key_enabled')
+    .eq(column, apiKey)
     .maybeSingle();
-  
+
   if (secretError) {
     console.log('[API] Database error looking up API key:', secretError.message);
     return null;
   }
-  
+
   if (!secretData) {
-    console.log('[API] No matching API key found in user_secrets');
+    console.log('[API] No matching API key found');
     return null;
   }
-  
+
+  // Honor the disable toggle (live keys only — sandbox is always usable)
+  if (!isSandboxKey && secretData.api_key_enabled === false) {
+    console.log('[API] Live API key is disabled by the developer');
+    return null;
+  }
+
   // Step 2: Verify the user has a developer account type in profiles
   const { data: profileData, error: profileError } = await supabase
     .from('profiles')
@@ -132,25 +141,26 @@ async function validateApiKey(apiKey: string): Promise<DeveloperProfile | null> 
     .eq('user_id', secretData.user_id)
     .eq('account_type', 'developer')
     .maybeSingle();
-  
+
   if (profileError) {
     console.log('[API] Database error checking profile:', profileError.message);
     return null;
   }
-  
+
   if (!profileData) {
     console.log('[API] User found but account_type is not developer');
     return null;
   }
-  
-  console.log('[API] API key validated for user:', profileData.user_id);
+
   return {
     user_id: profileData.user_id,
     account_type: profileData.account_type,
-    api_key: secretData.api_key,
-    wallet_balance: profileData.wallet_balance
+    api_key: apiKey,
+    wallet_balance: profileData.wallet_balance,
+    mode: isSandboxKey ? 'sandbox' : 'live',
   } as DeveloperProfile;
 }
+
 
 // Check and update rate limits
 async function checkRateLimit(userId: string, endpoint: string): Promise<{ allowed: boolean; remaining: number }> {
@@ -172,15 +182,183 @@ async function checkRateLimit(userId: string, endpoint: string): Promise<{ allow
 }
 
 // Log API usage
-async function logApiUsage(userId: string, endpoint: string, method: string, statusCode: number, cost: number) {
+async function logApiUsage(
+  userId: string,
+  endpoint: string,
+  method: string,
+  statusCode: number,
+  cost: number,
+  isSandbox: boolean,
+) {
   await supabase.from('api_usage').insert({
     user_id: userId,
     endpoint,
     method,
     status_code: statusCode,
     cost_nc: cost,
-    created_at: new Date().toISOString()
+    is_sandbox: isSandbox,
+    created_at: new Date().toISOString(),
   });
+}
+
+// ============= SANDBOX RESPONSES =============
+// Deterministic-ish mock responses for the sandbox. No DB writes, no real money,
+// no external API calls. Mirrors the live response shape so SDKs work identically.
+function rid(prefix: string): string {
+  return `${prefix}_test_${crypto.randomUUID().replace(/-/g, '').slice(0, 16)}`;
+}
+
+function sandboxAddress(): string {
+  // Deterministic-looking but obviously fake Celo address
+  return '0x' + crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '').slice(0, 8);
+}
+
+function sandboxTxHash(): string {
+  return '0x' + crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '');
+}
+
+function handleSandbox(
+  endpoint: string,
+  method: string,
+  body: any,
+  params: URLSearchParams,
+): { data?: any; error?: string; status?: number } {
+  const now = new Date().toISOString();
+  const meta = { mode: 'sandbox' as const, simulated: true, note: 'No real funds were moved. This is a test response.' };
+
+  // wallet
+  if (endpoint === 'wallet/create') {
+    if (!body?.external_user_id) return { error: 'external_user_id is required', status: 400 };
+    return { data: {
+      wallet_id: rid('wlt'),
+      external_user_id: body.external_user_id,
+      address: sandboxAddress(),
+      chain: 'CELO',
+      created_at: now,
+      ...meta,
+    } };
+  }
+  if (endpoint === 'wallet/balance') {
+    return { data: {
+      external_user_id: params.get('external_user_id') ?? 'sandbox-user',
+      balances: { CELO: '1.5', cUSD: '500.00', USDT: '500.00', NC: '10000' },
+      ...meta,
+    } };
+  }
+  if (endpoint === 'wallet/transfer') {
+    const amount = Number(body?.amount) || 0;
+    if (!body?.from || !body?.to || !amount) return { error: 'from, to, amount required', status: 400 };
+    return { data: {
+      reference: rid('tx'),
+      from: body.from, to: body.to, amount, currency: body.currency || 'NC',
+      status: 'completed', tx_hash: sandboxTxHash(), created_at: now, ...meta,
+    } };
+  }
+
+  // VTU
+  if (endpoint === 'vtu/airtime' || endpoint === 'vtu/data') {
+    if (!body?.phone || !body?.amount) return { error: 'phone and amount required', status: 400 };
+    return { data: {
+      reference: rid('vtu'), provider: body.provider || 'MTN', phone: body.phone,
+      amount: Number(body.amount), status: 'success', created_at: now, ...meta,
+    } };
+  }
+
+  // Notifications
+  if (endpoint === 'notifications/email' || endpoint === 'notifications/send') {
+    return { data: { message_id: rid('msg'), to: body?.to, status: 'queued', ...meta } };
+  }
+  if (endpoint === 'notifications/sms') {
+    return { data: { message_id: rid('sms'), to: body?.to, status: 'queued', ...meta } };
+  }
+  if (endpoint === 'notifications/push') {
+    return { data: { notification_id: rid('push'), delivered_to: 1, ...meta } };
+  }
+
+  // Video
+  if (endpoint === 'video/create-room') {
+    return { data: {
+      room_id: rid('room'), room_name: body?.room_name || 'sandbox-room',
+      join_url: `https://naijalancers.name.ng/video/sandbox/${rid('room')}`,
+      max_participants: body?.max_participants || 8, expires_at: new Date(Date.now() + 3600_000).toISOString(), ...meta,
+    } };
+  }
+  if (endpoint === 'video/join-room') {
+    return { data: { token: rid('jwt'), room_id: body?.room_id, expires_in: 3600, ...meta } };
+  }
+
+  // AI
+  if (endpoint === 'ai/chat') {
+    return { data: {
+      id: rid('ai'),
+      message: 'This is a sandbox AI response. Live mode will call the real LLM.',
+      tokens_used: 24, model: 'sandbox-mock-v1', ...meta,
+    } };
+  }
+
+  // Ramp
+  if (endpoint === 'ramp/quote/buy' || endpoint === 'ramp/quote/sell') {
+    const fiat = Number(params.get('fiat_amount') || body?.fiat_amount || 10000);
+    const rate = 1550; // mocked NGN/USDT
+    return { data: {
+      type: endpoint.endsWith('buy') ? 'buy' : 'sell',
+      fiat_currency: 'NGN', fiat_amount: fiat,
+      asset: 'USDT', asset_amount: +(fiat / rate).toFixed(6),
+      rate, fees: { platform: 0, network: 0 }, ...meta,
+    } };
+  }
+  if (endpoint === 'ramp/session/buy' || endpoint === 'ramp/session/sell') {
+    const sid = rid('ramp');
+    return { data: {
+      session_id: sid, type: endpoint.endsWith('buy') ? 'buy' : 'sell',
+      hosted_url: `https://naijalancers.name.ng/ramp/sandbox/${sid}`,
+      status: 'pending', expires_at: new Date(Date.now() + 7200_000).toISOString(), ...meta,
+    } };
+  }
+  if (endpoint.startsWith('ramp/session/')) {
+    return { data: { session_id: endpoint.split('/')[2], status: 'completed', completed_at: now, ...meta } };
+  }
+
+  // Payments / escrow
+  if (endpoint === 'payments/escrow/create') {
+    return { data: {
+      escrow_id: rid('esc'), amount: Number(body?.amount) || 0, currency: body?.currency || 'NC',
+      payer_external_id: body?.payer_external_id, payee_external_id: body?.payee_external_id,
+      status: 'created', created_at: now, ...meta,
+    } };
+  }
+  if (endpoint.startsWith('payments/escrow/') && endpoint.endsWith('/fund')) {
+    return { data: { escrow_id: endpoint.split('/')[2], status: 'funded', funded_at: now, ...meta } };
+  }
+  if (endpoint.startsWith('payments/escrow/') && endpoint.endsWith('/release')) {
+    return { data: { escrow_id: endpoint.split('/')[2], status: 'released', released_at: now, ...meta } };
+  }
+  if (endpoint.startsWith('payments/escrow/') && endpoint.endsWith('/refund')) {
+    return { data: { escrow_id: endpoint.split('/')[2], status: 'refunded', refunded_at: now, ...meta } };
+  }
+  if (endpoint === 'payments/payout' || endpoint === 'payments/credit') {
+    return { data: {
+      reference: rid('pay'), amount: Number(body?.amount) || 0, currency: 'NC',
+      status: 'completed', recipient_external_id: body?.recipient_external_id, ...meta,
+    } };
+  }
+
+  // Smart contracts / on-chain escrow
+  if (endpoint === 'contracts/deploy' || endpoint === 'escrow/onchain/deploy') {
+    return { data: {
+      contract_address: sandboxAddress(), tx_hash: sandboxTxHash(),
+      chain: 'CELO-Alfajores', block: 12345678, gas_used: '210000', ...meta,
+    } };
+  }
+  if (endpoint === 'contracts/call') {
+    return { data: { tx_hash: sandboxTxHash(), chain: 'CELO-Alfajores', status: 'success', ...meta } };
+  }
+  if (endpoint === 'contracts/read') {
+    return { data: { result: '0', chain: 'CELO-Alfajores', ...meta } };
+  }
+
+  // Webhooks: allow real CRUD even in sandbox so devs can wire test endpoints
+  return { error: `Endpoint not implemented in sandbox: ${endpoint}`, status: 404 };
 }
 
 // Deduct NC balance for paid endpoints
@@ -194,6 +372,7 @@ async function deductBalance(userId: string, amount: number): Promise<boolean> {
   
   return !error && data === true;
 }
+
 
 // Trigger webhooks for developer events
 async function triggerWebhook(developerId: string, eventType: string, payload: any) {
@@ -1353,11 +1532,12 @@ serve(async (req) => {
     );
   }
   
-  // Check balance for paid endpoints (uses developer's NC wallet_balance)
+  // Check balance for paid endpoints (live mode only — sandbox is always free)
   const cost = API_PRICING[endpoint] || API_PRICING['default'];
-  if (cost > 0 && (developer.wallet_balance || 0) < cost) {
+  const isSandbox = developer.mode === 'sandbox';
+  if (!isSandbox && cost > 0 && (developer.wallet_balance || 0) < cost) {
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         error: 'Insufficient NC balance',
         required: cost,
         current_balance: developer.wallet_balance || 0,
@@ -1366,6 +1546,7 @@ serve(async (req) => {
       { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
+
   
   let result: { data?: any; error?: string; status?: number };
   let body: any = {};
@@ -1417,9 +1598,29 @@ serve(async (req) => {
     }
   }
 
+  // Sandbox short-circuit: never touch live tables / external APIs / chain.
+  // Webhook CRUD endpoints still run live so devs can manage test endpoints.
+  const isWebhookCrud = endpoint === 'webhooks' || endpoint.startsWith('webhooks/');
+  if (isSandbox && !isWebhookCrud) {
+    const sandboxResult = handleSandbox(endpoint, method, body, params);
+    const sStatus = sandboxResult.status || (sandboxResult.error ? 400 : 200);
+    const sBody = sandboxResult.error ? { error: sandboxResult.error, mode: 'sandbox' } : (sandboxResult.data ?? {});
+    await logApiUsage(developer.user_id, endpoint, method, sStatus, 0, true);
+    return new Response(JSON.stringify(sBody), {
+      status: sStatus,
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'application/json',
+        'X-RateLimit-Remaining': rateLimit.remaining.toString(),
+        'X-Sandbox': 'true',
+      },
+    });
+  }
+
   // Route to handlers
   try {
     switch (endpoint) {
+
       // Wallet APIs
       case 'wallet/create':
         result = await handleWalletCreate(developer, body);
@@ -1664,11 +1865,12 @@ serve(async (req) => {
   const statusCode = result.status || (result.error ? 400 : 200);
   const responseBody = result.error ? { error: result.error } : (result.data ?? {});
 
-  // Deduct balance and log usage
-  if (statusCode < 400 && cost > 0) {
+  // Deduct balance and log usage (sandbox webhooks land here too — never charged)
+  if (statusCode < 400 && cost > 0 && !isSandbox) {
     await deductBalance(developer.user_id, cost);
   }
-  await logApiUsage(developer.user_id, endpoint, method, statusCode, statusCode < 400 ? cost : 0);
+  await logApiUsage(developer.user_id, endpoint, method, statusCode, statusCode < 400 && !isSandbox ? cost : 0, isSandbox);
+
 
   // Persist idempotent response (only successful 2xx — failed mutations can be retried freely)
   if (MUTATING && idempotencyKey && statusCode >= 200 && statusCode < 300) {
@@ -1691,7 +1893,9 @@ serve(async (req) => {
         ...corsHeaders,
         'Content-Type': 'application/json',
         'X-RateLimit-Remaining': rateLimit.remaining.toString(),
+        'X-Sandbox': 'false',
       },
+
     }
   );
 });

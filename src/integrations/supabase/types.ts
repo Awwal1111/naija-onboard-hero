@@ -489,6 +489,7 @@ export type Database = {
           endpoint: string
           external_service: string | null
           id: string
+          is_sandbox: boolean
           markup_nc: number | null
           method: string
           response_time_ms: number | null
@@ -502,6 +503,7 @@ export type Database = {
           endpoint: string
           external_service?: string | null
           id?: string
+          is_sandbox?: boolean
           markup_nc?: number | null
           method: string
           response_time_ms?: number | null
@@ -515,6 +517,7 @@ export type Database = {
           endpoint?: string
           external_service?: string | null
           id?: string
+          is_sandbox?: boolean
           markup_nc?: number | null
           method?: string
           response_time_ms?: number | null
@@ -7061,6 +7064,7 @@ export type Database = {
           created_at: string
           encrypted_wallet: string | null
           id: string
+          sandbox_api_key: string | null
           totp_secret: string | null
           transaction_pin: string | null
           updated_at: string
@@ -7073,6 +7077,7 @@ export type Database = {
           created_at?: string
           encrypted_wallet?: string | null
           id?: string
+          sandbox_api_key?: string | null
           totp_secret?: string | null
           transaction_pin?: string | null
           updated_at?: string
@@ -7085,6 +7090,7 @@ export type Database = {
           created_at?: string
           encrypted_wallet?: string | null
           id?: string
+          sandbox_api_key?: string | null
           totp_secret?: string | null
           transaction_pin?: string | null
           updated_at?: string
@@ -8058,6 +8064,7 @@ export type Database = {
       generate_api_key: { Args: never; Returns: string }
       generate_certificate_id: { Args: never; Returns: string }
       generate_referral_code: { Args: never; Returns: string }
+      generate_sandbox_api_key: { Args: never; Returns: string }
       generate_verification_token: { Args: never; Returns: string }
       generate_webhook_secret: { Args: never; Returns: string }
       get_connected_profile_info: {

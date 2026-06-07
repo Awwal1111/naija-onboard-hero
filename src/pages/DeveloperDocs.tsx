@@ -548,6 +548,35 @@ export default function DeveloperDocs() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Sandbox / Test Mode Notice */}
+          <Card className="mb-6 border-emerald-500/40 bg-emerald-500/5">
+            <CardContent className="pt-6">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-emerald-500/15 rounded-lg shrink-0">
+                  <Terminal className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold mb-1 flex items-center gap-2">
+                    Sandbox / Test Mode
+                    <span className="inline-flex items-center rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 text-xs font-medium">FREE</span>
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Every developer account ships with a separate <strong>test key</strong> prefixed <code className="bg-muted px-1 rounded">nl_test_</code>. Use it for development, CI, and demos — every endpoint returns a realistic mocked response, no NC is deducted, no real funds move, and nothing touches the blockchain.
+                  </p>
+                  <ul className="text-sm text-muted-foreground list-disc pl-5 space-y-1">
+                    <li>Live keys look like <code className="bg-muted px-1 rounded">nl_live_…</code> — they bill real NC and move real money.</li>
+                    <li>Test keys look like <code className="bg-muted px-1 rounded">nl_test_…</code> — always free, always safe.</li>
+                    <li>Sandbox responses include <code className="bg-muted px-1 rounded">"mode": "sandbox"</code> and the header <code className="bg-muted px-1 rounded">X-Sandbox: true</code>.</li>
+                    <li>Webhook CRUD still runs live so you can wire real test endpoints; webhook deliveries from sandbox events are not sent.</li>
+                  </ul>
+                  <p className="text-sm text-muted-foreground mt-2">Grab both keys from the <a href="/developer" className="text-primary underline">Developer Portal</a>.</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+
           
           <Card className="overflow-hidden">
             <div className="border-b bg-muted/50 px-4 py-3 flex items-center justify-between">

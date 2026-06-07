@@ -358,9 +358,13 @@ export default function DeveloperPortal() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [apiKey, setApiKey] = useState<string | null>(null);
+  const [sandboxKey, setSandboxKey] = useState<string | null>(null);
   const [showApiKey, setShowApiKey] = useState(false);
+  const [showSandboxKey, setShowSandboxKey] = useState(false);
+  const [useSandbox, setUseSandbox] = useState(true);
   const [loading, setLoading] = useState(true);
   const [regenerating, setRegenerating] = useState(false);
+  const [regeneratingSandbox, setRegeneratingSandbox] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedEndpoint, setSelectedEndpoint] = useState<ApiEndpoint | null>(API_ENDPOINTS[0] ?? null);
   const [testInput, setTestInput] = useState(() => JSON.stringify(getExampleBody(API_ENDPOINTS[0]), null, 2));
@@ -375,6 +379,7 @@ export default function DeveloperPortal() {
   const [endpointBreakdown, setEndpointBreakdown] = useState<Array<{ endpoint: string; count: number; cost: number }>>([]);
   const [quidaxStats, setQuidaxStats] = useState({ calls: 0, earned: 0 });
 
+
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
@@ -388,15 +393,17 @@ export default function DeveloperPortal() {
     try {
       const [{ data: profile }, { data: secrets }] = await Promise.all([
         supabase.from('profiles').select('account_type, wallet_balance').eq('user_id', user?.id).single(),
-        supabase.from('user_secrets').select('api_key, api_key_enabled').eq('user_id', user?.id).single()
+        supabase.from('user_secrets').select('api_key, sandbox_api_key, api_key_enabled').eq('user_id', user?.id).single()
       ]);
       
       if (profile) {
-        setApiKey(secrets?.api_key || null);
+        setApiKey((secrets as any)?.api_key || null);
+        setSandboxKey((secrets as any)?.sandbox_api_key || null);
         setApiKeyEnabled((secrets as any)?.api_key_enabled !== false);
         setAccountType((profile as any).account_type || 'personal');
         setNcBalance((profile as any).wallet_balance || 0);
       }
+
 
       // Get usage stats
       const startOfMonth = new Date();
@@ -484,9 +491,15 @@ export default function DeveloperPortal() {
       
       
       
+      const { data: sandboxData } = await supabase.rpc('generate_sandbox_api_key');
+
       const [{ error: updateError }, { error: secretError }] = await Promise.all([
         supabase.from('profiles').update({ account_type: 'developer' } as any).eq('user_id', user?.id),
-        supabase.from('user_secrets').upsert({ user_id: user?.id, api_key: keyData }, { onConflict: 'user_id' })
+        supabase.from('user_secrets').upsert({
+          user_id: user?.id,
+          api_key: keyData,
+          sandbox_api_key: sandboxData,
+        } as any, { onConflict: 'user_id' })
       ]);
       if (secretError) throw secretError;
       
@@ -496,8 +509,10 @@ export default function DeveloperPortal() {
       }
       
       setApiKey(keyData);
+      setSandboxKey(sandboxData || null);
       setAccountType('developer');
-      toast.success('Welcome to the Developer Portal! Your API key is ready.');
+      toast.success('Welcome! Your live and test API keys are ready.');
+
     } catch (error: any) {
       console.error('Upgrade error:', error);
       toast.error(error.message || 'Failed to upgrade account');
@@ -548,35 +563,69 @@ export default function DeveloperPortal() {
     }
   };
 
+  const regenerateSandboxKey = async () => {
+    if (!confirm('Regenerate your sandbox (test) API key?\n\nYour current test key will stop working immediately. Live key is not affected.')) {
+      return;
+    }
+    try {
+      setRegeneratingSandbox(true);
+      const { data: keyData, error: keyError } = await supabase.rpc('generate_sandbox_api_key');
+      if (keyError || !keyData) throw new Error('Failed to generate new sandbox key');
+      const { error: updateError } = await supabase
+        .from('user_secrets')
+        .upsert({ user_id: user?.id, sandbox_api_key: keyData } as any, { onConflict: 'user_id' });
+      if (updateError) throw updateError;
+      setSandboxKey(keyData);
+      toast.success('Sandbox key regenerated.');
+    } catch (error: any) {
+      console.error('Regenerate sandbox error:', error);
+      toast.error(error.message || 'Failed to regenerate sandbox key');
+    } finally {
+      setRegeneratingSandbox(false);
+    }
+  };
+
   const copyApiKey = () => {
     if (apiKey) {
       navigator.clipboard.writeText(apiKey);
       toast.success('API key copied!');
     }
+
+  };
+
+  const copySandboxKey = () => {
+    if (sandboxKey) {
+      navigator.clipboard.writeText(sandboxKey);
+      toast.success('Sandbox key copied!');
+    }
   };
 
   const testEndpoint = async () => {
-    if (!selectedEndpoint || !apiKey) {
-      toast.error('API key is required to test endpoints');
+    const activeKey = useSandbox ? sandboxKey : apiKey;
+    if (!selectedEndpoint || !activeKey) {
+      toast.error(useSandbox ? 'Sandbox key not available yet' : 'API key is required to test endpoints');
       return;
     }
-    
+    if (!useSandbox && !confirm('You are about to run this against LIVE mode.\n\nReal NC will be deducted and real funds may move. Continue?')) {
+      return;
+    }
+
     setTesting(true);
     setTestResult(null);
-    
+
     try {
       const body = JSON.parse(testInput);
-      // Use the correct Supabase URL
       const url = `${import.meta.env.VITE_SUPABASE_URL ?? 'https://your-project-ref.supabase.co'}/functions/v1/developer-api${selectedEndpoint.path}`;
-      
+
       const response = await fetch(url, {
         method: selectedEndpoint.method,
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': apiKey
+          'x-api-key': activeKey,
         },
         body: selectedEndpoint.method !== 'GET' ? JSON.stringify(body) : undefined
       });
+
       
       const data = await response.json();
       
@@ -708,58 +757,99 @@ export default function DeveloperPortal() {
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
               <Shield className="h-5 w-5" />
-              {user ? 'Your API Key' : 'Developer access'}
+              {user ? 'Your API Keys' : 'Developer access'}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {user ? (
-              <>
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <div className="relative flex-1">
-                    <Input
-                      type={showApiKey ? 'text' : 'password'}
-                      value={apiKey || ''}
-                      readOnly
-                      className="pr-10 font-mono text-sm"
-                    />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
-                      onClick={() => setShowApiKey(!showApiKey)}
-                    >
-                      {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </Button>
+              <div className="grid gap-4 md:grid-cols-2">
+                {/* SANDBOX (TEST) KEY */}
+                <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 text-xs font-medium">TEST MODE</span>
+                      <span className="text-xs text-muted-foreground">Free • Mocked • No real funds</span>
+                    </div>
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="outline" onClick={copyApiKey}>
-                      <Copy className="h-4 w-4 mr-2" /> Copy
+                    <div className="relative flex-1">
+                      <Input
+                        type={showSandboxKey ? 'text' : 'password'}
+                        value={sandboxKey || ''}
+                        placeholder="nl_test_…"
+                        readOnly
+                        className="pr-10 font-mono text-sm"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                        onClick={() => setShowSandboxKey(!showSandboxKey)}
+                      >
+                        {showSandboxKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={copySandboxKey}>
+                      <Copy className="h-4 w-4" />
                     </Button>
-                    <Button variant="outline" onClick={regenerateApiKey} disabled={regenerating}>
+                    <Button variant="outline" size="sm" onClick={regenerateSandboxKey} disabled={regeneratingSandbox}>
+                      {regeneratingSandbox ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Use this key in development &amp; CI. Every endpoint returns a realistic mock response. Never charged.
+                  </p>
+                </div>
+
+                {/* LIVE KEY */}
+                <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 px-2 py-0.5 text-xs font-medium">LIVE MODE</span>
+                      <span className="text-xs text-muted-foreground">Real funds • NC will be deducted</span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Input
+                        type={showApiKey ? 'text' : 'password'}
+                        value={apiKey || ''}
+                        readOnly
+                        className="pr-10 font-mono text-sm"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                        onClick={() => setShowApiKey(!showApiKey)}
+                      >
+                        {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={copyApiKey}>
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={regenerateApiKey} disabled={regenerating}>
                       {regenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                     </Button>
                   </div>
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Include in requests: <code className="bg-muted px-1 rounded">x-api-key: YOUR_API_KEY</code>
-                </p>
-                <div className="mt-4 flex items-center justify-between p-3 rounded-lg border bg-muted/30">
-                  <div className="flex items-center gap-2">
-                    <Power className={`h-4 w-4 ${apiKeyEnabled ? 'text-emerald-500' : 'text-destructive'}`} />
-                    <div>
-                      <p className="text-sm font-medium">{apiKeyEnabled ? 'Key is active' : 'Key is disabled'}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {apiKeyEnabled ? 'Accepting API requests' : 'All requests will return 403'}
-                      </p>
+                  <div className="mt-3 flex items-center justify-between p-2 rounded border bg-background/60">
+                    <div className="flex items-center gap-2">
+                      <Power className={`h-4 w-4 ${apiKeyEnabled ? 'text-emerald-500' : 'text-destructive'}`} />
+                      <p className="text-xs">{apiKeyEnabled ? 'Live key active' : 'Live key disabled'}</p>
                     </div>
+                    <Switch checked={apiKeyEnabled} onCheckedChange={toggleApiKey} disabled={togglingKey} />
                   </div>
-                  <Switch checked={apiKeyEnabled} onCheckedChange={toggleApiKey} disabled={togglingKey} />
                 </div>
-              </>
+
+                <p className="md:col-span-2 text-xs text-muted-foreground">
+                  Send your chosen key in the <code className="bg-muted px-1 rounded">x-api-key</code> header. Keys prefixed with <code className="bg-muted px-1 rounded">nl_test_</code> always run in sandbox mode.
+                </p>
+              </div>
             ) : (
               <div className="space-y-3">
                 <p className="text-sm text-muted-foreground">
-                  Browse the full API reference and code examples in read-only mode. Sign in to generate an API key, test endpoints, and use the money or escrow tools.
+                  Browse the full API reference and code examples in read-only mode. Sign in to generate live + test API keys, run sandbox calls, and use the money or escrow tools.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <Button onClick={() => navigate('/login')}>Sign in</Button>
@@ -769,6 +859,7 @@ export default function DeveloperPortal() {
             )}
           </CardContent>
         </Card>
+
 
         {/* Usage Stats */}
         {usage && (
@@ -1165,10 +1256,23 @@ if (evt.event === 'charge.completed') {
                       />
                     </div>
 
+                    <div className="flex items-center justify-between p-2 rounded-md border bg-muted/40 mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${useSandbox ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400' : 'bg-amber-500/15 text-amber-700 dark:text-amber-400'}`}>
+                          {useSandbox ? 'TEST MODE' : 'LIVE MODE'}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {useSandbox ? 'Mocked response · no NC charged' : 'Real funds will move · NC will be deducted'}
+                        </span>
+                      </div>
+                      <Switch checked={useSandbox} onCheckedChange={setUseSandbox} />
+                    </div>
+
                     <Button onClick={testEndpoint} disabled={testing} className="w-full gap-2">
                       {testing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-                      Send Request
+                      Send Request {useSandbox ? '(Test)' : '(Live)'}
                     </Button>
+
                   </CardContent>
                 </Card>
 
