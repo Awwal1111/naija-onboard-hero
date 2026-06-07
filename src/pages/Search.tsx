@@ -533,6 +533,10 @@ const Search = () => {
               <Briefcase className="h-4 w-4 mr-2" />
               Jobs ({searchResults?.jobs.length || 0})
             </TabsTrigger>
+            <TabsTrigger value="gigs">
+              <ShoppingBag className="h-4 w-4 mr-2" />
+              Gigs ({searchResults?.gigs.length || 0})
+            </TabsTrigger>
             <TabsTrigger value="products">
               <Package className="h-4 w-4 mr-2" />
               Products ({searchResults?.products.length || 0})
