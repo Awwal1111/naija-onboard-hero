@@ -1865,11 +1865,12 @@ serve(async (req) => {
   const statusCode = result.status || (result.error ? 400 : 200);
   const responseBody = result.error ? { error: result.error } : (result.data ?? {});
 
-  // Deduct balance and log usage
-  if (statusCode < 400 && cost > 0) {
+  // Deduct balance and log usage (sandbox webhooks land here too — never charged)
+  if (statusCode < 400 && cost > 0 && !isSandbox) {
     await deductBalance(developer.user_id, cost);
   }
-  await logApiUsage(developer.user_id, endpoint, method, statusCode, statusCode < 400 ? cost : 0);
+  await logApiUsage(developer.user_id, endpoint, method, statusCode, statusCode < 400 && !isSandbox ? cost : 0, isSandbox);
+
 
   // Persist idempotent response (only successful 2xx — failed mutations can be retried freely)
   if (MUTATING && idempotencyKey && statusCode >= 200 && statusCode < 300) {
