@@ -92,8 +92,8 @@ serve(async (req) => {
     const targetUserIds = new Set(userIds);
     const authUsersById = new Map<string, string | null>();
     if (userIds.length > 0) {
-      for (let offset = 0; offset < userIds.length; offset += 100) {
-        const page = Math.floor(offset / 100) + 1;
+      let page = 1;
+      while (true) {
         const { data: authPage, error: authPageError } = await supabase.auth.admin.listUsers({
           page,
           perPage: 100,
@@ -108,6 +108,7 @@ serve(async (req) => {
 
         if (authUsersById.size >= targetUserIds.size) break;
         if ((authPage.users || []).length < 100) break;
+        page += 1;
       }
     }
 
