@@ -374,21 +374,27 @@ export const useUnifiedSearch = () => {
         });
       }
 
-      // Sort results: premium users first, then by type order
-      return allResults.sort((a, b) => {
-        // Premium first
-        if (a.is_premium && !b.is_premium) return -1;
-        if (!a.is_premium && b.is_premium) return 1;
-        return 0;
-      });
+      // Sort: premium boost + title-match relevance. (`_score` defaults to 1 for items
+      // without a title-driven score, so they fall below any actual match.)
+      return allResults
+        .map(r => ({ ...r, _score: r._score ?? score(r.title) }))
+        .sort((a, b) => {
+          const ap = a.is_premium ? 1 : 0;
+          const bp = b.is_premium ? 1 : 0;
+          if (ap !== bp) return bp - ap;
+          return (b._score ?? 0) - (a._score ?? 0);
+        });
     },
-    enabled: searchQuery.length >= 2
+    enabled: debouncedQuery.length >= 2,
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
   });
 
   return {
     searchQuery,
     setSearchQuery,
     results: results || [],
-    isLoading
+    isLoading,
   };
 };
