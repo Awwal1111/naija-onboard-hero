@@ -46,86 +46,111 @@ function generateSignature(payload: string, secret: string): string {
   return `t=${timestamp},v1=${signature}`;
 }
 
-// Send webhook to developer's endpoint
+const MAX_ATTEMPTS = 3;
+const BACKOFF_MS = [0, 1000, 3000]; // 0s, 1s, 3s between attempts
+
+const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+
+// Send webhook to developer's endpoint, retrying transient failures.
+// Considered retryable: network errors, HTTP 408/425/429, any 5xx.
+// Non-retryable: 2xx (success) and other 4xx (client error in their endpoint).
 async function sendWebhook(
   webhook: { id: string; webhook_url: string; webhook_secret: string },
   eventType: string,
   payload: any
-): Promise<{ success: boolean; status?: number; error?: string; duration?: number }> {
-  const startTime = Date.now();
-  
+): Promise<{ success: boolean; status?: number; error?: string; duration?: number; attempts?: number }> {
   const webhookPayload = {
     id: crypto.randomUUID(),
     event: eventType,
     created_at: new Date().toISOString(),
     data: payload
   };
-  
   const payloadString = JSON.stringify(webhookPayload);
   const signature = generateSignature(payloadString, webhook.webhook_secret);
-  
-  try {
-    const response = await fetch(webhook.webhook_url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-NaijaLancers-Signature': signature,
-        'X-Webhook-ID': webhookPayload.id,
-        'User-Agent': 'NaijaLancers-Webhook/1.0'
-      },
-      body: payloadString
-    });
-    
-    const duration = Date.now() - startTime;
-    const responseBody = await response.text().catch(() => '');
-    
-    // Log the webhook delivery
-    await supabase.from('webhook_logs').insert({
-      webhook_id: webhook.id,
-      event_type: eventType,
-      payload: webhookPayload,
-      response_status: response.status,
-      response_body: responseBody.substring(0, 1000),
-      delivered_at: new Date().toISOString(),
-      delivery_duration_ms: duration,
-      success: response.ok,
-      error_message: response.ok ? null : `HTTP ${response.status}`
-    });
-    
-    // Update webhook stats
-    if (response.ok) {
-      await supabase
-        .from('developer_webhooks')
-        .update({ 
-          last_triggered_at: new Date().toISOString(),
-          failure_count: 0,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', webhook.id);
-    } else {
-      await supabase.rpc('increment_webhook_failure', { webhook_id: webhook.id });
+
+  let lastStatus: number | undefined;
+  let lastError: string | undefined;
+  let lastDuration = 0;
+  let success = false;
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    if (BACKOFF_MS[attempt - 1] > 0) await sleep(BACKOFF_MS[attempt - 1]);
+
+    const startTime = Date.now();
+    try {
+      const response = await fetch(webhook.webhook_url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-NaijaLancers-Signature': signature,
+          'X-Webhook-ID': webhookPayload.id,
+          'X-Webhook-Attempt': String(attempt),
+          'User-Agent': 'NaijaLancers-Webhook/1.0'
+        },
+        body: payloadString,
+        signal: AbortSignal.timeout(10_000),
+      });
+
+      lastDuration = Date.now() - startTime;
+      lastStatus = response.status;
+      const responseBody = await response.text().catch(() => '');
+      lastError = response.ok ? undefined : `HTTP ${response.status}`;
+
+      const retryable = response.status === 408 || response.status === 425 || response.status === 429 || response.status >= 500;
+
+      // Only log to webhook_logs on final outcome (success or last attempt) to avoid noise.
+      const isFinal = response.ok || !retryable || attempt === MAX_ATTEMPTS;
+      if (isFinal) {
+        await supabase.from('webhook_logs').insert({
+          webhook_id: webhook.id,
+          event_type: eventType,
+          payload: webhookPayload,
+          response_status: response.status,
+          response_body: responseBody.substring(0, 1000),
+          delivered_at: new Date().toISOString(),
+          delivery_duration_ms: lastDuration,
+          success: response.ok,
+          error_message: response.ok ? null : `HTTP ${response.status} after ${attempt} attempt(s)`,
+          retry_count: attempt - 1,
+        });
+      }
+
+      if (response.ok) {
+        success = true;
+        await supabase
+          .from('developer_webhooks')
+          .update({
+            last_triggered_at: new Date().toISOString(),
+            failure_count: 0,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', webhook.id);
+        return { success: true, status: response.status, duration: lastDuration, attempts: attempt };
+      }
+
+      if (!retryable) break; // permanent 4xx — stop retrying
+    } catch (error: any) {
+      lastDuration = Date.now() - startTime;
+      lastError = error?.message || 'network error';
+      if (attempt === MAX_ATTEMPTS) {
+        await supabase.from('webhook_logs').insert({
+          webhook_id: webhook.id,
+          event_type: eventType,
+          payload: webhookPayload,
+          delivered_at: new Date().toISOString(),
+          delivery_duration_ms: lastDuration,
+          success: false,
+          error_message: `${lastError} after ${attempt} attempt(s)`,
+          retry_count: attempt - 1,
+        });
+      }
     }
-    
-    return { success: response.ok, status: response.status, duration };
-  } catch (error: any) {
-    const duration = Date.now() - startTime;
-    
-    // Log failed delivery
-    await supabase.from('webhook_logs').insert({
-      webhook_id: webhook.id,
-      event_type: eventType,
-      payload: webhookPayload,
-      delivered_at: new Date().toISOString(),
-      delivery_duration_ms: duration,
-      success: false,
-      error_message: error.message
-    });
-    
-    // Increment failure count
-    await supabase.rpc('increment_webhook_failure', { webhook_id: webhook.id });
-    
-    return { success: false, error: error.message, duration };
   }
+
+  if (!success) {
+    await supabase.rpc('increment_webhook_failure', { webhook_id: webhook.id });
+  }
+  return { success, status: lastStatus, error: lastError, duration: lastDuration, attempts: MAX_ATTEMPTS };
 }
 
 // Trigger webhooks for a specific developer and event
