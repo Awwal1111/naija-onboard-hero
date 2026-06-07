@@ -96,7 +96,7 @@ const WEBHOOK_EVENTS = [
 ];
 
 
-const API_BASE_URL = `${import.meta.env.VITE_SUPABASE_URL ?? 'https://your-project-ref.supabase.co'}/functions/v1/developer-api`;
+const API_BASE_URL = `${import.meta.env.VITE_SUPABASE_URL ?? 'https://jxybqmquymxkvxxpiuhv.supabase.co'}/functions/v1/developer-api`;
 
 const MINIAPP_SDK_EXAMPLE = `<!-- Include in your Mini App's HTML -->
 <script>
