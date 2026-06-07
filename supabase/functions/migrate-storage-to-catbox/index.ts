@@ -83,15 +83,28 @@ serve(async (req) => {
 
     const lim = Math.min(Math.max(Number(limit) || 25, 1), 100)
 
-    const { data: rows, error: fetchErr } = await supabase
+    let fetchQuery = supabase
       .from(table)
       .select(`id, ${cfg.col}`)
-      .ilike(cfg.col, `%${SUPABASE_HOST_FRAGMENT}%`)
       .limit(lim)
+
+    if (!cfg.isArray) {
+      fetchQuery = fetchQuery.ilike(cfg.col, `%${SUPABASE_HOST_FRAGMENT}%`)
+    }
+
+    const { data: rows, error: fetchErr } = await fetchQuery
     if (fetchErr) throw fetchErr
 
+    const filteredRows = (rows || []).filter((row: any) => {
+      const value = row[cfg.col]
+      if (cfg.isArray) {
+        return Array.isArray(value) && value.some((url) => typeof url === 'string' && url.includes(SUPABASE_HOST_FRAGMENT))
+      }
+      return typeof value === 'string' && value.includes(SUPABASE_HOST_FRAGMENT)
+    })
+
     const results: Array<{ id: string; ok: boolean; provider?: string; newUrl?: string; error?: string }> = []
-    for (const row of (rows || []) as any[]) {
+    for (const row of filteredRows as any[]) {
       const currentValue = row[cfg.col]
       const urls = cfg.isArray ? ((currentValue as string[] | null) || []).filter(Boolean) : [currentValue as string]
       if (urls.length === 0) {
