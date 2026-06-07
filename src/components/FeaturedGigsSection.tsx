@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -19,29 +19,13 @@ interface Gig {
 }
 
 export const FeaturedGigsSection = () => {
-  const [gigs, setGigs] = useState<Gig[]>([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    let cancelled = false
-    const controller = new AbortController()
-    
-    const load = async () => {
-      try {
-        await fetchFeaturedGigs()
-      } catch {
-        // Already handled in fetchFeaturedGigs
-      }
-    }
-    
-    if (!cancelled) load()
-    
-    return () => { cancelled = true; controller.abort() }
-  }, [])
-
-  const fetchFeaturedGigs = async () => {
-    try {
-      // Fetch recent open gigs
+  const { data: gigs = [], isLoading } = useQuery<Gig[]>({
+    queryKey: ['featured-gigs'],
+    staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    queryFn: async () => {
       const { data: gigsData, error } = await supabase
         .from('jobs_services')
         .select('id, title, description, price, category, photo_urls, user_id')
@@ -50,34 +34,27 @@ export const FeaturedGigsSection = () => {
         .limit(6)
 
       if (error) throw error
+      if (!gigsData || gigsData.length === 0) return []
 
-      if (gigsData && gigsData.length > 0) {
-        // Fetch seller profiles
-        const userIds = gigsData.map(g => g.user_id)
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('user_id, full_name, profile_picture_url')
-          .in('user_id', userIds)
+      const userIds = Array.from(new Set(gigsData.map(g => g.user_id)))
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, profile_picture_url')
+        .in('user_id', userIds)
+        .limit(userIds.length)
 
-        const gigsWithSellers = gigsData.map(gig => {
-          const profile = profiles?.find(p => p.user_id === gig.user_id)
-          return {
-            ...gig,
-            seller_name: profile?.full_name || 'Seller',
-            seller_avatar: profile?.profile_picture_url
-          }
-        })
+      return gigsData.map(gig => {
+        const profile = profiles?.find(p => p.user_id === gig.user_id)
+        return {
+          ...gig,
+          seller_name: profile?.full_name || 'Seller',
+          seller_avatar: profile?.profile_picture_url,
+        } as Gig
+      })
+    },
+  })
 
-        setGigs(gigsWithSellers)
-      }
-    } catch (error) {
-      console.error('Error fetching featured gigs:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  if (loading) {
+  if (isLoading) {
     return (
       <section className="py-16 bg-muted/30">
         <div className="container mx-auto px-6">
@@ -89,10 +66,7 @@ export const FeaturedGigsSection = () => {
     )
   }
 
-  // Don't show section if no gigs
-  if (gigs.length === 0) {
-    return null
-  }
+  if (gigs.length === 0) return null
 
   return (
     <section className="py-16 bg-muted/30">
@@ -119,12 +93,13 @@ export const FeaturedGigsSection = () => {
             {gigs.map((gig) => (
               <Link key={gig.id} to={`/p/gig/${gig.id}`}>
                 <Card className="h-full hover:shadow-lg transition-all hover:-translate-y-1 overflow-hidden group">
-                  {/* Gig Image */}
                   <div className="aspect-video bg-muted relative overflow-hidden">
                     {gig.photo_urls && gig.photo_urls.length > 0 ? (
-                      <img 
-                        src={gig.photo_urls[0]} 
+                      <img
+                        src={gig.photo_urls[0]}
                         alt={gig.title}
+                        loading="lazy"
+                        decoding="async"
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                     ) : (
@@ -138,11 +113,10 @@ export const FeaturedGigsSection = () => {
                   </div>
 
                   <CardContent className="p-4">
-                    {/* Seller Info */}
                     <div className="flex items-center gap-2 mb-3">
                       <div className="w-8 h-8 rounded-full bg-primary/10 overflow-hidden">
                         {gig.seller_avatar ? (
-                          <img src={gig.seller_avatar} alt="" className="w-full h-full object-cover" />
+                          <img src={gig.seller_avatar} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-xs font-medium text-primary">
                             {gig.seller_name?.charAt(0) || 'S'}
@@ -152,18 +126,15 @@ export const FeaturedGigsSection = () => {
                       <span className="text-sm text-muted-foreground truncate">{gig.seller_name}</span>
                     </div>
 
-                    {/* Title */}
                     <h3 className="font-semibold line-clamp-2 mb-2 group-hover:text-primary transition-colors">
                       {gig.title}
                     </h3>
 
-                    {/* Rating placeholder */}
                     <div className="flex items-center gap-1 mb-3">
                       <Star className="w-4 h-4 fill-primary text-primary" />
                       <span className="text-sm font-medium">New</span>
                     </div>
 
-                    {/* Price */}
                     <div className="flex items-center justify-between pt-3 border-t">
                       <span className="text-xs text-muted-foreground">Starting at</span>
                       <span className="font-bold text-primary">
@@ -176,7 +147,6 @@ export const FeaturedGigsSection = () => {
             ))}
           </div>
 
-          {/* Mobile View All Button */}
           <div className="mt-8 text-center sm:hidden">
             <BrandButton variant="outline" asChild>
               <Link to="/p/gigs">
