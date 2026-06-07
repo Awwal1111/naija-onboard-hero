@@ -422,6 +422,42 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Latest from the Blog */}
+      <section className="py-16 bg-background border-t border-border">
+        <div className="container mx-auto px-6">
+          <div className="max-w-6xl mx-auto">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h2 className="text-2xl md:text-3xl font-bold text-foreground">Latest from the Blog</h2>
+                <p className="text-muted-foreground mt-1">Guides, playbooks and freelance tips from the team.</p>
+              </div>
+              <Link to="/blog" className="text-sm font-medium text-primary hover:underline flex items-center gap-1">
+                View all <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+            <div className="grid md:grid-cols-3 gap-6">
+              {BLOG_POSTS.slice(0, 3).map((post) => (
+                <Link key={post.slug} to={`/blog/${post.slug}`} className="group">
+                  <Card className="h-full transition-all hover:shadow-md hover:border-primary/40">
+                    <CardContent className="p-5 space-y-3">
+                      <Badge variant="secondary">{post.category}</Badge>
+                      <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-2">
+                        {post.title}
+                      </h3>
+                      <p className="text-sm text-muted-foreground line-clamp-3">{post.description}</p>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
+                        <Clock className="w-3 h-3" />
+                        {post.readTime}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="py-20 bg-primary text-primary-foreground">
         <div className="container mx-auto px-6 text-center">
@@ -496,6 +532,7 @@ const Index = () => {
               <div>
                 <h4 className="font-semibold mb-4">Company</h4>
                 <ul className="space-y-2 text-sm text-muted-foreground">
+                  <li><Link to="/blog" className="hover:text-primary">Blog</Link></li>
                   <li><Link to="/terms-conditions" className="hover:text-primary">Terms & Conditions</Link></li>
                   <li><Link to="/privacy-policy" className="hover:text-primary">Privacy Policy</Link></li>
                   <li><Link to="/faq" className="hover:text-primary">FAQ</Link></li>
