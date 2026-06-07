@@ -10,7 +10,7 @@ interface IncompleteUser {
   user_id: string;
   full_name: string | null;
   phone_number: string | null;
-  email?: string;
+  email?: string | null;
   profession: string | null;
   bio: string | null;
   state_name: string | null;
@@ -67,7 +67,8 @@ serve(async (req) => {
         area,
         user_mode,
         created_at,
-        sms_job_alerts
+        sms_job_alerts,
+        telegram_username
       `);
 
     if (targetUserId) {
@@ -86,6 +87,30 @@ serve(async (req) => {
     }
 
     console.log('[INCOMPLETE-PROFILES] Found', profiles?.length || 0, 'profiles to check');
+
+    const userIds = (profiles || []).map((profile) => profile.user_id);
+    const targetUserIds = new Set(userIds);
+    const authUsersById = new Map<string, string | null>();
+    if (userIds.length > 0) {
+      let page = 1;
+      while (true) {
+        const { data: authPage, error: authPageError } = await supabase.auth.admin.listUsers({
+          page,
+          perPage: 100,
+        });
+        if (authPageError) throw authPageError;
+
+        for (const authUser of authPage.users || []) {
+          if (targetUserIds.has(authUser.id)) {
+            authUsersById.set(authUser.id, authUser.email ?? null);
+          }
+        }
+
+        if (authUsersById.size >= targetUserIds.size) break;
+        if ((authPage.users || []).length < 100) break;
+        page += 1;
+      }
+    }
 
     // Identify users with incomplete profiles
     const incompleteUsers: IncompleteUser[] = [];
@@ -110,14 +135,11 @@ serve(async (req) => {
         const filledFields = requiredFields.length - missingFields.length;
         const completionPercentage = Math.round((filledFields / requiredFields.length) * 100);
 
-        // Get email
-        const { data: authUser } = await supabase.auth.admin.getUserById(profile.user_id);
-
         incompleteUsers.push({
           user_id: profile.user_id,
           full_name: profile.full_name,
           phone_number: profile.phone_number,
-          email: authUser?.user?.email,
+          email: authUsersById.get(profile.user_id) ?? null,
           profession: profile.profession,
           bio: profile.bio,
           state_name: profile.state_name,
@@ -169,7 +191,7 @@ serve(async (req) => {
         .eq('type', 'profile_incomplete')
         .gte('created_at', sevenDaysAgo)
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (recentNotif) {
         console.log('[INCOMPLETE-PROFILES] Already notified', user.full_name || user.user_id, 'recently, skipping');

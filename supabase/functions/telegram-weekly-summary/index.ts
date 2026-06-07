@@ -61,8 +61,8 @@ serve(async (req) => {
         // 3. Profile views this week
         const { count: weekViews } = await supabase
           .from("profile_views")
-          .select("*", { count: "exact", head: true })
-          .eq("viewed_user_id", user.user_id)
+          .select("id", { count: "exact", head: true })
+          .eq("profile_user_id", user.user_id)
           .gte("viewed_at", weekAgoStr);
 
         // 4. Posts made this week

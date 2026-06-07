@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { useEnhancedFeed, Comment } from '@/hooks/useEnhancedFeed'
+import type { Comment } from '@/hooks/useEnhancedFeed'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
@@ -22,7 +22,6 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
   onClose
 }) => {
   const { user } = useAuth()
-  const { getPostComments, addComment } = useEnhancedFeed()
   const { toast } = useToast()
   const [comments, setComments] = useState<Comment[]>([])
   const [loading, setLoading] = useState(false)
@@ -36,9 +35,41 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
     if (!isOpen) return
     
     setLoading(true)
-    const fetchedComments = await getPostComments(postId)
-    setComments(fetchedComments)
-    setLoading(false)
+    try {
+      const { data, error } = await supabase
+        .from('post_comments')
+        .select('id,post_id,user_id,content,highlighted,parent_comment_id,created_at')
+        .eq('post_id', postId)
+        .order('created_at', { ascending: true })
+        .limit(200)
+
+      if (error) throw error
+
+      const rows = (data || []) as Comment[]
+      const userIds = Array.from(new Set(rows.map(comment => comment.user_id).filter(Boolean)))
+      const { data: profiles } = userIds.length
+        ? await supabase.from('profiles').select('user_id, full_name, profile_picture_url').in('user_id', userIds)
+        : { data: [] as any[] }
+
+      const profileMap = new Map((profiles || []).map((profile: any) => [profile.user_id, profile]))
+      const mapped = rows.map(comment => ({
+        ...comment,
+        profiles: profileMap.get(comment.user_id),
+      }))
+
+      const topLevel = mapped.filter(comment => !comment.parent_comment_id)
+      const nested = topLevel.map(comment => ({
+        ...comment,
+        replies: mapped.filter(reply => reply.parent_comment_id === comment.id),
+      }))
+
+      setComments(nested)
+    } catch (error) {
+      console.error('Error loading comments:', error)
+      setComments([])
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => {
@@ -50,11 +81,21 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
     if (!newComment.trim() || !user) return
 
     setSubmitting(true)
-    const result = await addComment(postId, newComment.trim())
+    const { error } = await supabase.from('post_comments').insert({
+      post_id: postId,
+      user_id: user.id,
+      content: newComment.trim()
+    })
     
-    if (result.success) {
+    if (!error) {
       setNewComment('')
       await loadComments()
+    } else {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to add comment',
+        variant: 'destructive'
+      })
     }
     setSubmitting(false)
   }
@@ -64,12 +105,23 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
     if (!replyText.trim() || !user) return
 
     setSubmitting(true)
-    const result = await addComment(postId, replyText.trim(), parentId)
+    const { error } = await supabase.from('post_comments').insert({
+      post_id: postId,
+      user_id: user.id,
+      content: replyText.trim(),
+      parent_comment_id: parentId,
+    })
     
-    if (result.success) {
+    if (!error) {
       setReplyText('')
       setReplyingTo(null)
       await loadComments()
+    } else {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to reply',
+        variant: 'destructive'
+      })
     }
     setSubmitting(false)
   }
@@ -157,7 +209,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
                   className="h-8 w-8 cursor-pointer hover:opacity-80 transition-opacity"
                   onClick={() => setProfilePreview({ isOpen: true, userId: comment.user_id })}
                 >
-                  <AvatarImage src={comment.profiles?.profile_picture_url} />
+                  <AvatarImage src={comment.profiles?.profile_picture_url} loading="lazy" />
                   <AvatarFallback className="text-sm">
                     {comment.profiles?.full_name?.charAt(0) || 'U'}
                   </AvatarFallback>
@@ -265,7 +317,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
                   {comment.replies.map((reply) => (
                     <div key={reply.id} className="flex gap-3">
                       <Avatar className="h-6 w-6">
-                        <AvatarImage src={reply.profiles?.profile_picture_url} />
+                        <AvatarImage src={reply.profiles?.profile_picture_url} loading="lazy" />
                         <AvatarFallback className="text-xs">
                           {reply.profiles?.full_name?.charAt(0) || 'U'}
                         </AvatarFallback>

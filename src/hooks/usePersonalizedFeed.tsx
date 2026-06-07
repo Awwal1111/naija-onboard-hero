@@ -4,6 +4,10 @@ import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/use-toast'
 
+const POSTS_SELECT = 'id, user_id, title, content, content_type, media_urls, metadata, status, likes_count, comments_count, shares_count, views_count, visibility, created_at, updated_at'
+const PROFILE_BADGE_SELECT = 'user_id, full_name, profession, profile_picture_url, is_expert, average_rating, rating_count, email_verified, phone_verified, face_verified, avg_response_time_seconds'
+const STORY_SELECT = 'id, user_id, media_url, media_type, content, created_at, expires_at, views_count, background_color, privacy_setting'
+
 export interface Post {
   id: string
   user_id: string
@@ -75,10 +79,10 @@ export const usePersonalizedFeed = () => {
 
       const { data: storiesData, error } = await supabase
         .from('stories')
-        .select('id, user_id, media_url, media_type, content, created_at, expires_at, views_count, background_color, privacy_setting')
+        .select(STORY_SELECT)
         .gt('expires_at', new Date().toISOString())
         .order('created_at', { ascending: false })
-        .limit(20)
+        .limit(12)
 
       if (error) throw error
       if (!storiesData) return []
@@ -141,7 +145,7 @@ export const usePersonalizedFeed = () => {
         // Fallback to regular posts if function fails
         const { data: fallbackPosts } = await supabase
           .from('posts')
-          .select('id, user_id, content, media_url, media_type, likes_count, comments_count, views_count, status, created_at, boost_amount, is_pinned, post_type, shared_post_id')
+          .select(POSTS_SELECT)
           .eq('status', 'active')
           .order('created_at', { ascending: false })
           .range(offset, offset + POSTS_PER_PAGE - 1)
@@ -156,7 +160,7 @@ export const usePersonalizedFeed = () => {
         const fallbackUserIds = [...new Set(fallbackPosts.map((post: any) => post.user_id))]
         const { data: fallbackProfiles } = await supabase
           .from('profiles')
-          .select('user_id, full_name, profession, profile_picture_url, is_expert, average_rating, rating_count, email_verified, phone_verified, face_verified, avg_response_time_seconds')
+          .select(PROFILE_BADGE_SELECT)
           .in('user_id', fallbackUserIds)
 
         const fallbackProfilesMap = new Map(fallbackProfiles?.map(p => [p.user_id, p]) || [])
@@ -194,15 +198,13 @@ export const usePersonalizedFeed = () => {
       // Fetch profiles with all badge fields
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('user_id, full_name, profession, profile_picture_url, is_expert, average_rating, rating_count, email_verified, phone_verified, face_verified, avg_response_time_seconds')
+        .select(PROFILE_BADGE_SELECT)
         .in('user_id', userIds)
 
       if (profilesError) {
         console.error('[Feed] Profiles fetch error:', profilesError)
       }
       
-      console.log('[Feed] Profiles fetched:', profiles?.length || 0, profiles?.map(p => ({ user_id: p.user_id, name: p.full_name })))
-
       const profilesMap = new Map(profiles?.map(p => [p.user_id, p]) || [])
 
       // Check which posts the user has liked
@@ -235,12 +237,6 @@ export const usePersonalizedFeed = () => {
         }
       })
       
-      console.log('[Feed] Enriched posts:', enrichedPosts.length, enrichedPosts.map(p => ({
-        id: p.id,
-        name: p.profiles?.full_name,
-        score: p.relevance_score
-      })))
-
       return {
         posts: enrichedPosts,
         nextPage: enrichedPosts.length === POSTS_PER_PAGE ? pageParam + 1 : null

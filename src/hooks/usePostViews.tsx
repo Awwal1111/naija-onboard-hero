@@ -2,26 +2,29 @@ import { useState, useCallback } from 'react'
 import { useAuth } from './useAuth'
 import { supabase } from '@/integrations/supabase/client'
 
+const viewedPostIds = new Set<string>()
+
 export const usePostViews = () => {
   const { user } = useAuth()
   const [loading, setLoading] = useState(false)
 
   const trackPostView = useCallback(async (postId: string) => {
     if (!user?.id) return
+    const cacheKey = `${user.id}:${postId}`
+    if (viewedPostIds.has(cacheKey)) return
     
     try {
-      // Insert view record - UNIQUE constraint prevents duplicates
+      viewedPostIds.add(cacheKey)
       await supabase
         .from('post_views')
         .insert({
           post_id: postId,
           user_id: user.id
         })
-        .select()
-        .single()
     } catch (error: any) {
       // Silently ignore duplicate key violations (user already viewed this post)
       if (!error?.message?.includes('duplicate key')) {
+        viewedPostIds.delete(cacheKey)
         console.error('Error tracking post view:', error)
       }
     }
@@ -38,7 +41,7 @@ export const usePostViews = () => {
     try {
       const { count, error } = await supabase
         .from('post_views')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('post_id', postId)
 
       if (error) throw error

@@ -304,7 +304,7 @@ const LinkedInPostCard: React.FC<LinkedInPostCardProps> = ({
             onClick={() => onProfileClick?.(post.user_id)}
           >
             <Avatar className="h-11 w-11 ring-2 ring-border">
-              <AvatarImage src={post.profiles?.profile_picture_url} />
+              <AvatarImage src={post.profiles?.profile_picture_url} loading="lazy" />
               <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
                 {post.profiles?.full_name?.charAt(0) || 'U'}
               </AvatarFallback>
