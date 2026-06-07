@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search as SearchIcon, User, Briefcase, Package, BookOpen, FileText, Filter, X, Save, Star, Trash2 } from "lucide-react";
+import { Search as SearchIcon, User, Briefcase, Package, BookOpen, FileText, Filter, X, Save, Star, Trash2, ShoppingBag } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -48,12 +48,13 @@ const Search = () => {
   const { data: searchResults, isLoading } = useQuery({
     queryKey: ["search", query, activeTab, minPrice, maxPrice, selectedSkills, selectedState, selectedLGA, minRating],
     queryFn: async () => {
-      if (!query.trim()) return { users: [], posts: [], jobs: [], products: [], courses: [] };
+      if (!query.trim()) return { users: [], posts: [], jobs: [], gigs: [], products: [], courses: [] };
 
       const results = {
         users: [] as any[],
         posts: [] as any[],
         jobs: [] as any[],
+        gigs: [] as any[],
         products: [] as any[],
         courses: [] as any[],
       };
@@ -129,6 +130,28 @@ const Search = () => {
           return 0;
         });
       }
+      // Search Gigs (jobs_services)
+      if (activeTab === "all" || activeTab === "gigs") {
+        let gigQuery = supabase
+          .from("jobs_services")
+          .select("id, title, description, category, price, photo_urls, profiles:user_id(is_premium, premium_expires_at)")
+          .eq('status', 'active')
+          .or(`title.ilike.%${query}%,description.ilike.%${query}%,category.ilike.%${query}%`)
+          .limit(20);
+
+        if (minPrice > 0) gigQuery = gigQuery.gte('price', minPrice);
+        if (maxPrice < 1000000) gigQuery = gigQuery.lte('price', maxPrice);
+
+        const { data } = await gigQuery;
+        results.gigs = (data || []).sort((a: any, b: any) => {
+          const aPremium = isPremiumActive(a.profiles);
+          const bPremium = isPremiumActive(b.profiles);
+          if (aPremium && !bPremium) return -1;
+          if (!aPremium && bPremium) return 1;
+          return 0;
+        });
+      }
+
 
       // Search Products
       if (activeTab === "all" || activeTab === "products") {
