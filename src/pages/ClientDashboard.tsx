@@ -67,22 +67,34 @@ const ClientDashboard = () => {
     setLoading(true);
 
     try {
-      // Fetch gig orders where user is the buyer
-      const { data: orders } = await supabase
-        .from('gig_orders')
-        .select(`
-          id,
-          seller_id,
-          gig_id,
-          status,
-          amount,
-          created_at,
-          delivered_at,
-          jobs_services!inner(title),
-          profiles!gig_orders_seller_id_fkey(full_name, profile_picture_url, profession)
-        `)
-        .eq('buyer_id', user.id)
-        .order('created_at', { ascending: false });
+      // Fetch gig orders where user is the buyer (parallel with jobs, capped 50)
+      const [ordersRes, jobsRes] = await Promise.all([
+        supabase
+          .from('gig_orders')
+          .select(`
+            id,
+            seller_id,
+            gig_id,
+            status,
+            amount,
+            created_at,
+            delivered_at,
+            jobs_services!inner(title),
+            profiles!gig_orders_seller_id_fkey(full_name, profile_picture_url, profession)
+          `)
+          .eq('buyer_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(50),
+        supabase
+          .from('job_posts')
+          .select('id, title, status, budget_min, budget_max, applications_count, views_count, created_at')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(50)
+      ]);
+
+      const orders = ordersRes.data;
+      const jobs = jobsRes.data;
 
       const formattedOrders: HiredFreelancer[] = (orders || []).map((order: any) => ({
         id: order.id,
@@ -99,14 +111,6 @@ const ClientDashboard = () => {
       }));
 
       setHiredFreelancers(formattedOrders);
-
-      // Fetch posted jobs
-      const { data: jobs } = await supabase
-        .from('job_posts')
-        .select('id, title, status, budget_min, budget_max, applications_count, views_count, created_at')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
       setPostedJobs(jobs || []);
 
       // Calculate stats

@@ -53,16 +53,17 @@ const Notifications = () => {
   }, [user])
 
   const fetchNotifications = async () => {
+    if (!user?.id) return
     setLoading(true)
     const { data, error } = await supabase
       .from('notifications')
-      .select('*')
-      .eq('user_id', user?.id)
+      .select('id,type,title,message,read_at,created_at,metadata')
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false })
-      .limit(100)
+      .limit(50)
 
     if (!error && data) {
-      setNotifications(data)
+      setNotifications(data as Notification[])
     }
     setLoading(false)
   }
