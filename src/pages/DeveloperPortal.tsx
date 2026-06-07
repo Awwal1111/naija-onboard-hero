@@ -563,11 +563,34 @@ export default function DeveloperPortal() {
     }
   };
 
+  const regenerateSandboxKey = async () => {
+    if (!confirm('Regenerate your sandbox (test) API key?\n\nYour current test key will stop working immediately. Live key is not affected.')) {
+      return;
+    }
+    try {
+      setRegeneratingSandbox(true);
+      const { data: keyData, error: keyError } = await supabase.rpc('generate_sandbox_api_key');
+      if (keyError || !keyData) throw new Error('Failed to generate new sandbox key');
+      const { error: updateError } = await supabase
+        .from('user_secrets')
+        .upsert({ user_id: user?.id, sandbox_api_key: keyData } as any, { onConflict: 'user_id' });
+      if (updateError) throw updateError;
+      setSandboxKey(keyData);
+      toast.success('Sandbox key regenerated.');
+    } catch (error: any) {
+      console.error('Regenerate sandbox error:', error);
+      toast.error(error.message || 'Failed to regenerate sandbox key');
+    } finally {
+      setRegeneratingSandbox(false);
+    }
+  };
+
   const copyApiKey = () => {
     if (apiKey) {
       navigator.clipboard.writeText(apiKey);
       toast.success('API key copied!');
     }
+
   };
 
   const testEndpoint = async () => {
