@@ -97,8 +97,8 @@ interface DeveloperProfile {
   mode: 'live' | 'sandbox';
 }
 
-// Validate API key and get developer profile
-// Live keys are stored in user_secrets.api_key, sandbox keys in user_secrets.sandbox_api_key
+// Validate API key via the secure SQL function. The edge function NEVER reads
+// user_secrets directly anymore — raw keys are no longer stored in the table.
 async function validateApiKey(apiKey: string): Promise<DeveloperProfile | null> {
   if (!apiKey) {
     console.log('[API] No API key provided');
@@ -106,47 +106,35 @@ async function validateApiKey(apiKey: string): Promise<DeveloperProfile | null> 
   }
 
   const isSandboxKey = apiKey.startsWith('nl_test_');
-  console.log(`[API] Validating ${isSandboxKey ? 'SANDBOX' : 'LIVE'} key:`, apiKey.substring(0, 12) + '...');
+  console.log(`[API] Validating ${isSandboxKey ? 'SANDBOX' : 'LIVE'} key (last4=${apiKey.slice(-4)})`);
 
-  // Step 1: Find the API key in user_secrets (live or sandbox column)
-  const column = isSandboxKey ? 'sandbox_api_key' : 'api_key';
-  const { data: secretData, error: secretError } = await supabase
-    .from('user_secrets')
-    .select('user_id, api_key, sandbox_api_key, api_key_enabled')
-    .eq(column, apiKey)
-    .maybeSingle();
+  const { data: rows, error: rpcError } = await supabase
+    .rpc('validate_developer_api_key', { p_key: apiKey });
 
-  if (secretError) {
-    console.log('[API] Database error looking up API key:', secretError.message);
+  if (rpcError) {
+    console.log('[API] validate_developer_api_key error:', rpcError.message);
+    return null;
+  }
+  const match = Array.isArray(rows) ? rows[0] : null;
+  if (!match) {
+    console.log('[API] No matching API key');
+    return null;
+  }
+  if (!isSandboxKey && match.enabled === false) {
+    console.log('[API] Live API key disabled by the developer');
     return null;
   }
 
-  if (!secretData) {
-    console.log('[API] No matching API key found');
-    return null;
-  }
-
-  // Honor the disable toggle (live keys only — sandbox is always usable)
-  if (!isSandboxKey && secretData.api_key_enabled === false) {
-    console.log('[API] Live API key is disabled by the developer');
-    return null;
-  }
-
-  // Step 2: Verify the user has a developer account type in profiles
+  // Confirm developer account + load wallet balance
   const { data: profileData, error: profileError } = await supabase
     .from('profiles')
     .select('user_id, account_type, wallet_balance')
-    .eq('user_id', secretData.user_id)
+    .eq('user_id', match.user_id)
     .eq('account_type', 'developer')
     .maybeSingle();
 
-  if (profileError) {
-    console.log('[API] Database error checking profile:', profileError.message);
-    return null;
-  }
-
-  if (!profileData) {
-    console.log('[API] User found but account_type is not developer');
+  if (profileError || !profileData) {
+    console.log('[API] Not a developer account');
     return null;
   }
 
@@ -160,23 +148,21 @@ async function validateApiKey(apiKey: string): Promise<DeveloperProfile | null> 
 }
 
 
-// Check and update rate limits
+// Atomic rate-limit check (eliminates TOCTOU: a single SQL statement
+// increments + reports the bucket count in one shot).
 async function checkRateLimit(userId: string, endpoint: string): Promise<{ allowed: boolean; remaining: number }> {
   const limit = RATE_LIMITS[endpoint] || RATE_LIMITS['default'];
-  const hourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-  
-  // Count requests in the last hour
-  const { count } = await supabase
-    .from('api_usage')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .eq('endpoint', endpoint)
-    .gte('created_at', hourAgo);
-  
-  const used = count || 0;
-  const remaining = Math.max(0, limit - used);
-  
-  return { allowed: used < limit, remaining };
+  const { data, error } = await supabase.rpc('check_and_increment_rate_limit', {
+    p_user_id: userId,
+    p_endpoint: endpoint,
+    p_limit: limit,
+  });
+  if (error) {
+    console.error('[API] rate limit RPC failed, failing open:', error.message);
+    return { allowed: true, remaining: limit };
+  }
+  const row = Array.isArray(data) ? data[0] : data;
+  return { allowed: !!row?.allowed, remaining: Number(row?.remaining ?? 0) };
 }
 
 // Log API usage
