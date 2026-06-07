@@ -41,7 +41,25 @@ const StoriesSection: React.FC<StoriesSectionProps> = ({
   const [storyViewers, setStoryViewers] = useState<StoryViewer[]>([])
   const [showViewers, setShowViewers] = useState(false)
   const [loadingViewers, setLoadingViewers] = useState(false)
-  const [userConnections, setUserConnections] = useState<Set<string>>(new Set())
+  // Fetch user connections for story ranking (cached 15min to avoid repeat egress)
+  const { data: userConnections = new Set<string>() } = useQuery({
+    queryKey: ['user-connections-set', currentUserId],
+    queryFn: async () => {
+      if (!currentUserId) return new Set<string>()
+      const { data } = await supabase
+        .from('connections')
+        .select('user1_id, user2_id')
+        .or(`user1_id.eq.${currentUserId},user2_id.eq.${currentUserId}`)
+        .limit(200)
+      return new Set(
+        (data || []).map(c => c.user1_id === currentUserId ? c.user2_id : c.user1_id)
+      )
+    },
+    enabled: !!currentUserId,
+    staleTime: 15 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+  })
+
 
   // Handle Hire Me - Navigate to chat with story context
   const handleHireMe = async (story: Story) => {
