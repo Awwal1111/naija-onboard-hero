@@ -96,7 +96,7 @@ const WEBHOOK_EVENTS = [
 ];
 
 
-const API_BASE_URL = `${import.meta.env.VITE_SUPABASE_URL ?? 'https://your-project-ref.supabase.co'}/functions/v1/developer-api`;
+const API_BASE_URL = `${import.meta.env.VITE_SUPABASE_URL ?? 'https://jxybqmquymxkvxxpiuhv.supabase.co'}/functions/v1/developer-api`;
 
 const MINIAPP_SDK_EXAMPLE = `<!-- Include in your Mini App's HTML -->
 <script>
@@ -395,7 +395,7 @@ export default function DeveloperDocs() {
             <a href="#webhooks" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Webhooks</a>
             <a href="#docs" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Documentation</a>
             <a href="#pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Pricing</a>
-            <a href="https://github.com/Awwal1111/naija-onboard-hero/blob/main/docs/DEVELOPER_API_GUIDE.md" target="_blank" className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+            <a href="#docs" className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
               <BookOpen className="h-4 w-4" />
               Full Guide
             </a>
@@ -421,7 +421,7 @@ export default function DeveloperDocs() {
           <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0" />
           <div className="text-sm text-blue-900">
             <strong>New:</strong> Read the{' '}
-            <a href="https://github.com/Awwal1111/naija-onboard-hero/blob/main/docs/DEVELOPER_API_GUIDE.md" target="_blank" className="font-semibold underline hover:no-underline">
+            <a href="#docs" className="font-semibold underline hover:no-underline">
               Complete Developer API Guide
             </a>
             {' '}for authentication, error codes, webhooks, and production-ready examples.

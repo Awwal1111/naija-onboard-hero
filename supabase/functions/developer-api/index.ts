@@ -37,7 +37,6 @@ const RATE_LIMITS: Record<string, number> = {
   'vtu/airtime': 100,
   'vtu/data': 100,
   'vtu/electricity': 50,
-  'vtu/cable': 50,
   'payments/escrow/create': 50,
   'payments/escrow/release': 50,
   'payments/payout': 50,
@@ -68,7 +67,6 @@ const API_PRICING: Record<string, number> = {
   'vtu/airtime': 2, // 2 NC per transaction
   'vtu/data': 2,
   'vtu/electricity': 3,
-  'vtu/cable': 3,
   'payments/escrow/create': 10,
   'payments/escrow/release': 0,
   'payments/payout': 5,
