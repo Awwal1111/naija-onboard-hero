@@ -62,132 +62,128 @@ const Search = () => {
       const isPremiumActive = (profile: any) => 
         profile?.is_premium && profile?.premium_expires_at && new Date(profile.premium_expires_at) > new Date();
 
-      // Search Users - include premium fields and sort by premium
+      // Search Users — explicit columns only
       if (activeTab === "all" || activeTab === "users") {
         let userQuery = supabase
           .from("profiles")
-          .select("*, is_premium, premium_expires_at")
+          .select("user_id, full_name, profession, bio, profile_picture_url, average_rating, rating_count, is_premium, premium_expires_at")
           .or(`full_name.ilike.%${query}%,bio.ilike.%${query}%,profession.ilike.%${query}%`)
-          .limit(30);
-        
+          .limit(20);
+
         if (selectedState) userQuery = userQuery.ilike('location', `%${selectedState}%`);
         if (minRating > 0) userQuery = userQuery.gte('average_rating', minRating);
-        
+
         const { data } = await userQuery;
-        // Sort premium users first
         results.users = (data || []).sort((a, b) => {
           const aPremium = isPremiumActive(a);
           const bPremium = isPremiumActive(b);
           if (aPremium && !bPremium) return -1;
           if (!aPremium && bPremium) return 1;
           return 0;
-        }).slice(0, 20);
+        });
       }
 
-      // Search Posts - include profile premium status
+      // Search Posts
       if (activeTab === "all" || activeTab === "posts") {
         const { data } = await supabase
           .from("posts")
-          .select("*, profiles(*, is_premium, premium_expires_at)")
+          .select("id, content, created_at, profiles:user_id(full_name, profile_picture_url, is_premium, premium_expires_at)")
           .eq("status", "published")
           .or(`content.ilike.%${query}%`)
-          .limit(30);
-        // Sort premium authors first
+          .limit(20);
         results.posts = (data || []).sort((a: any, b: any) => {
           const aPremium = isPremiumActive(a.profiles);
           const bPremium = isPremiumActive(b.profiles);
           if (aPremium && !bPremium) return -1;
           if (!aPremium && bPremium) return 1;
           return 0;
-        }).slice(0, 20);
+        });
       }
 
-      // Search Jobs - include poster's premium status
+      // Search Jobs
       if (activeTab === "all" || activeTab === "jobs") {
         let jobQuery = supabase
           .from("jobs")
-          .select("*, profiles(*, is_premium, premium_expires_at)")
+          .select("id, title, description, budget_min, budget_max, required_skills, location, created_at, profiles:user_id(is_premium, premium_expires_at)")
           .or(`title.ilike.%${query}%,description.ilike.%${query}%`)
-          .limit(30);
-        
+          .limit(20);
+
         if (minPrice > 0) jobQuery = jobQuery.gte('budget_min', minPrice);
         if (maxPrice < 1000000) jobQuery = jobQuery.lte('budget_max', maxPrice);
         if (selectedState) jobQuery = jobQuery.ilike('location', `%${selectedState}%`);
-        
+
         const { data } = await jobQuery;
-        
-        // Filter by skills if selected
         let filteredJobs = data || [];
         if (selectedSkills.length > 0) {
-          filteredJobs = filteredJobs.filter(job => 
-            selectedSkills.some(skill => 
+          filteredJobs = filteredJobs.filter(job =>
+            selectedSkills.some(skill =>
               job.required_skills?.some((s: string) => s.toLowerCase().includes(skill.toLowerCase()))
             )
           );
         }
-        
-        // Sort premium job posters first
         results.jobs = filteredJobs.sort((a: any, b: any) => {
           const aPremium = isPremiumActive(a.profiles);
           const bPremium = isPremiumActive(b.profiles);
           if (aPremium && !bPremium) return -1;
           if (!aPremium && bPremium) return 1;
           return 0;
-        }).slice(0, 20);
+        });
       }
 
-      // Search Products - include seller's premium status
+      // Search Products
       if (activeTab === "all" || activeTab === "products") {
         let productQuery = supabase
           .from("digital_products")
-          .select("*, profiles:user_id(is_premium, premium_expires_at)")
+          .select("id, title, description, price, preview_url, average_rating, profiles:user_id(is_premium, premium_expires_at)")
           .or(`title.ilike.%${query}%,description.ilike.%${query}%`)
           .eq('status', 'active')
-          .limit(30);
-        
+          .limit(20);
+
         if (minPrice > 0) productQuery = productQuery.gte('price', minPrice);
         if (maxPrice < 1000000) productQuery = productQuery.lte('price', maxPrice);
         if (minRating > 0) productQuery = productQuery.gte('average_rating', minRating);
-        
+
         const { data } = await productQuery;
-        // Sort premium sellers first
         results.products = (data || []).sort((a: any, b: any) => {
           const aPremium = isPremiumActive(a.profiles);
           const bPremium = isPremiumActive(b.profiles);
           if (aPremium && !bPremium) return -1;
           if (!aPremium && bPremium) return 1;
           return 0;
-        }).slice(0, 20);
+        });
       }
 
-      // Search Courses - include instructor's premium status
+      // Search Courses
       if (activeTab === "all" || activeTab === "courses") {
         let courseQuery = supabase
           .from("courses")
-          .select("*, profiles:user_id(is_premium, premium_expires_at)")
+          .select("id, title, description, price, thumbnail_url, average_rating, profiles:user_id(is_premium, premium_expires_at)")
           .or(`title.ilike.%${query}%,description.ilike.%${query}%`)
           .eq('status', 'active')
-          .limit(30);
-        
+          .limit(20);
+
         if (minPrice > 0) courseQuery = courseQuery.gte('price', minPrice);
         if (maxPrice < 1000000) courseQuery = courseQuery.lte('price', maxPrice);
         if (minRating > 0) courseQuery = courseQuery.gte('average_rating', minRating);
-        
+
         const { data } = await courseQuery;
-        // Sort premium instructors first
         results.courses = (data || []).sort((a: any, b: any) => {
           const aPremium = isPremiumActive(a.profiles);
           const bPremium = isPremiumActive(b.profiles);
           if (aPremium && !bPremium) return -1;
           if (!aPremium && bPremium) return 1;
           return 0;
-        }).slice(0, 20);
+        });
       }
 
       return results;
     },
     enabled: query.length > 2,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
+
 
   const totalResults = searchResults
     ? Object.values(searchResults).reduce((sum, arr) => sum + arr.length, 0)
