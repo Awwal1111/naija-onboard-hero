@@ -374,18 +374,6 @@ async function deductBalance(userId: string, amount: number): Promise<boolean> {
 }
 
 
-// Deduct NC balance for paid endpoints
-async function deductBalance(userId: string, amount: number): Promise<boolean> {
-  if (amount <= 0) return true;
-  
-  const { data, error } = await supabase.rpc('deduct_nc_balance', {
-    p_user_id: userId,
-    p_amount: amount
-  });
-  
-  return !error && data === true;
-}
-
 // Trigger webhooks for developer events
 async function triggerWebhook(developerId: string, eventType: string, payload: any) {
   try {
