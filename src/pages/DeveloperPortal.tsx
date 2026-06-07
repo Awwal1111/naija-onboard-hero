@@ -358,9 +358,13 @@ export default function DeveloperPortal() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [apiKey, setApiKey] = useState<string | null>(null);
+  const [sandboxKey, setSandboxKey] = useState<string | null>(null);
   const [showApiKey, setShowApiKey] = useState(false);
+  const [showSandboxKey, setShowSandboxKey] = useState(false);
+  const [useSandbox, setUseSandbox] = useState(true);
   const [loading, setLoading] = useState(true);
   const [regenerating, setRegenerating] = useState(false);
+  const [regeneratingSandbox, setRegeneratingSandbox] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedEndpoint, setSelectedEndpoint] = useState<ApiEndpoint | null>(API_ENDPOINTS[0] ?? null);
   const [testInput, setTestInput] = useState(() => JSON.stringify(getExampleBody(API_ENDPOINTS[0]), null, 2));
@@ -374,6 +378,7 @@ export default function DeveloperPortal() {
   const [recentCalls, setRecentCalls] = useState<Array<{ endpoint: string; status_code: number; cost_nc: number; created_at: string; external_service: string | null }>>([]);
   const [endpointBreakdown, setEndpointBreakdown] = useState<Array<{ endpoint: string; count: number; cost: number }>>([]);
   const [quidaxStats, setQuidaxStats] = useState({ calls: 0, earned: 0 });
+
 
   useEffect(() => {
     if (authLoading) return;
