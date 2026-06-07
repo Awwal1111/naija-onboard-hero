@@ -148,7 +148,7 @@ export const LeaderboardSection: React.FC = () => {
     </div>
   )
 
-  if (loading) {
+  if (loading && !current.isFetched) {
     return (
       <Card>
         <CardContent className="py-12 text-center">
@@ -159,19 +159,6 @@ export const LeaderboardSection: React.FC = () => {
     )
   }
 
-  // Only check the active tab — others are lazily fetched on tab switch
-  const hasData = (leaderboards[activeTab]?.length ?? 0) > 0 || current.isFetched === false
-
-  if (!hasData) {
-    return (
-      <Card>
-        <CardContent className="py-12 text-center">
-          <Trophy className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <p className="text-muted-foreground">Leaderboard will appear as users complete transactions</p>
-        </CardContent>
-      </Card>
-    )
-  }
 
   return (
     <Card>
