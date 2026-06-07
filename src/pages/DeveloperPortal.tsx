@@ -491,9 +491,15 @@ export default function DeveloperPortal() {
       
       
       
+      const { data: sandboxData } = await supabase.rpc('generate_sandbox_api_key');
+
       const [{ error: updateError }, { error: secretError }] = await Promise.all([
         supabase.from('profiles').update({ account_type: 'developer' } as any).eq('user_id', user?.id),
-        supabase.from('user_secrets').upsert({ user_id: user?.id, api_key: keyData }, { onConflict: 'user_id' })
+        supabase.from('user_secrets').upsert({
+          user_id: user?.id,
+          api_key: keyData,
+          sandbox_api_key: sandboxData,
+        } as any, { onConflict: 'user_id' })
       ]);
       if (secretError) throw secretError;
       
@@ -503,8 +509,10 @@ export default function DeveloperPortal() {
       }
       
       setApiKey(keyData);
+      setSandboxKey(sandboxData || null);
       setAccountType('developer');
-      toast.success('Welcome to the Developer Portal! Your API key is ready.');
+      toast.success('Welcome! Your live and test API keys are ready.');
+
     } catch (error: any) {
       console.error('Upgrade error:', error);
       toast.error(error.message || 'Failed to upgrade account');
