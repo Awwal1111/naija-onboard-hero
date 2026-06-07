@@ -100,19 +100,21 @@ const Profile = () => {
     fetchUserEmail()
   }, [isOwnProfile, user])
 
-  // Fetch posts count
+  // Fetch posts count (head-only, cheap)
   useEffect(() => {
+    if (!profile?.user_id) return
+    let cancelled = false
     const fetchPostsCount = async () => {
-      if (profile?.user_id) {
-        const { count } = await supabase
-          .from('posts')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', profile.user_id)
-        setPostsCount(count || 0)
-      }
+      const { count } = await supabase
+        .from('posts')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', profile.user_id)
+      if (!cancelled) setPostsCount(count || 0)
     }
     fetchPostsCount()
+    return () => { cancelled = true }
   }, [profile?.user_id])
+
 
   // Fetch other user's profile if viewing someone else
   useEffect(() => {
@@ -164,41 +166,61 @@ const Profile = () => {
     }
   }, [searchParams, profile])
 
-  // Refetch profile data when connections change
+  // Realtime: only react to connections involving THIS user, debounced
   useEffect(() => {
-    if (user?.id) {
-      // Set up realtime listener for connections
-      const channel = supabase
-        .channel('profile-connections')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'connections'
-          },
-          async (payload) => {
-            // Refetch the current profile to get updated count
-            if (isOwnProfile) {
-              const { data } = await supabase
-                .from('profiles')
-                .select('user_id, full_name, profile_picture_url, connections_count')
-                .eq('user_id', user.id)
-                .single()
-              
-              if (data) {
-                setViewedUserProfile(prev => prev ? Object.assign({}, prev, data) : data as any)
-              }
-            }
-          }
-        )
-        .subscribe()
+    if (!user?.id || !isOwnProfile) return
 
-      return () => {
-        supabase.removeChannel(channel)
-      }
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null
+    const channel = supabase
+      .channel(`profile-connections-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'connections',
+          filter: `user1_id=eq.${user.id}`,
+        },
+        () => {
+          if (debounceTimer) clearTimeout(debounceTimer)
+          debounceTimer = setTimeout(async () => {
+            const { data } = await supabase
+              .from('profiles')
+              .select('user_id, full_name, profile_picture_url, connections_count')
+              .eq('user_id', user.id)
+              .maybeSingle()
+            if (data) setViewedUserProfile(prev => prev ? Object.assign({}, prev, data) : data as any)
+          }, 1500)
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'connections',
+          filter: `user2_id=eq.${user.id}`,
+        },
+        () => {
+          if (debounceTimer) clearTimeout(debounceTimer)
+          debounceTimer = setTimeout(async () => {
+            const { data } = await supabase
+              .from('profiles')
+              .select('user_id, full_name, profile_picture_url, connections_count')
+              .eq('user_id', user.id)
+              .maybeSingle()
+            if (data) setViewedUserProfile(prev => prev ? Object.assign({}, prev, data) : data as any)
+          }, 1500)
+        }
+      )
+      .subscribe()
+
+    return () => {
+      if (debounceTimer) clearTimeout(debounceTimer)
+      supabase.removeChannel(channel)
     }
   }, [user?.id, isOwnProfile])
+
 
   const handleConnectUser = async () => {
     if (userId) {
