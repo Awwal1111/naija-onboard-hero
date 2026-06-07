@@ -357,8 +357,10 @@ const getExampleBody = (endpoint: ApiEndpoint) => Object.fromEntries(
 export default function DeveloperPortal() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [apiKey, setApiKey] = useState<string | null>(null);
-  const [sandboxKey, setSandboxKey] = useState<string | null>(null);
+  const [apiKey, setApiKey] = useState<string | null>(null); // only set when freshly generated this session
+  const [sandboxKey, setSandboxKey] = useState<string | null>(null); // only set when freshly generated this session
+  const [apiKeyLast4, setApiKeyLast4] = useState<string | null>(null);
+  const [sandboxKeyLast4, setSandboxKeyLast4] = useState<string | null>(null);
   const [showApiKey, setShowApiKey] = useState(false);
   const [showSandboxKey, setShowSandboxKey] = useState(false);
   const [useSandbox, setUseSandbox] = useState(true);
@@ -393,12 +395,13 @@ export default function DeveloperPortal() {
     try {
       const [{ data: profile }, { data: secrets }] = await Promise.all([
         supabase.from('profiles').select('account_type, wallet_balance').eq('user_id', user?.id).single(),
-        supabase.from('user_secrets').select('api_key, sandbox_api_key, api_key_enabled').eq('user_id', user?.id).single()
+        supabase.from('user_secrets').select('api_key_last4, sandbox_api_key_last4, api_key_enabled, api_key_hash, sandbox_api_key_hash').eq('user_id', user?.id).single()
       ]);
-      
+
       if (profile) {
-        setApiKey((secrets as any)?.api_key || null);
-        setSandboxKey((secrets as any)?.sandbox_api_key || null);
+        // Raw keys are NEVER read back from the DB — only last4 is shown for identification.
+        setApiKeyLast4((secrets as any)?.api_key_last4 || null);
+        setSandboxKeyLast4((secrets as any)?.sandbox_api_key_last4 || null);
         setApiKeyEnabled((secrets as any)?.api_key_enabled !== false);
         setAccountType((profile as any).account_type || 'personal');
         setNcBalance((profile as any).wallet_balance || 0);
