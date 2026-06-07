@@ -111,8 +111,9 @@ export const usePersonalizedFeed = () => {
       }))
     },
     enabled: isUserReady,
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 20 * 60 * 1000,
+    refetchOnWindowFocus: false,
   })
 
   // Personalized infinite query for posts - works for both MiniPay and regular users
