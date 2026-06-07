@@ -42,12 +42,13 @@ const ChatList = () => {
     if (!user) return
 
     try {
-      // Fetch all chats for the current user
+      // Fetch the user's most recent 50 chats
       const { data: chatsData, error: chatsError } = await supabase
         .from('chats')
         .select('id, user1_id, user2_id, created_at, updated_at')
         .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
         .order('updated_at', { ascending: false })
+        .limit(50)
 
       if (chatsError) throw chatsError
 
@@ -57,56 +58,67 @@ const ChatList = () => {
         return
       }
 
-      // Get all user IDs to fetch profiles
-      const userIds = chatsData.map(chat => 
+      const chatIds = chatsData.map(c => c.id)
+      const userIds = chatsData.map(chat =>
         chat.user1_id === user.id ? chat.user2_id : chat.user1_id
       )
 
-      // Fetch profiles for other users
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('user_id, full_name, profession, profile_picture_url')
-        .in('user_id', userIds)
+      // Parallel: profiles + last messages + unread (single grouped query)
+      const [profilesRes, lastMessagesRes, unreadRes] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('user_id, full_name, profession, profile_picture_url')
+          .in('user_id', userIds)
+          .limit(50),
+        // Fetch a bounded slice of recent messages and dedupe per chat client-side
+        supabase
+          .from('messages')
+          .select('chat_id, content, created_at, sender_id')
+          .in('chat_id', chatIds)
+          .order('created_at', { ascending: false })
+          .limit(200),
+        // Single query for unread messages (group client-side)
+        supabase
+          .from('messages')
+          .select('chat_id, sender_id')
+          .in('chat_id', chatIds)
+          .neq('sender_id', user.id)
+          .is('read_at', null)
+          .limit(500),
+      ])
 
-      if (profilesError) throw profilesError
+      const profiles = profilesRes.data || []
+      const allMessages = lastMessagesRes.data || []
+      const unreadRows = unreadRes.data || []
 
-      // Get last messages for each chat
-      const { data: lastMessages, error: messagesError } = await supabase
-        .from('messages')
-        .select('chat_id, content, created_at, sender_id')
-        .in('chat_id', chatsData.map(chat => chat.id))
-        .order('created_at', { ascending: false })
+      // First occurrence per chat is the latest (ordered desc)
+      const lastMessageMap = new Map<string, { content: string; created_at: string; sender_id: string }>()
+      for (const m of allMessages) {
+        if (!lastMessageMap.has(m.chat_id)) {
+          lastMessageMap.set(m.chat_id, { content: m.content, created_at: m.created_at, sender_id: m.sender_id })
+        }
+      }
 
-      if (messagesError) throw messagesError
+      const unreadCountMap = new Map<string, number>()
+      for (const m of unreadRows) {
+        unreadCountMap.set(m.chat_id, (unreadCountMap.get(m.chat_id) || 0) + 1)
+      }
 
-      // Combine data with unread counts
-      const chatsWithProfiles: ChatWithProfile[] = await Promise.all(
-        chatsData.map(async (chat) => {
-          const otherUserId = chat.user1_id === user.id ? chat.user2_id : chat.user1_id
-          const otherUser = profiles?.find(p => p.user_id === otherUserId)
-          const lastMessage = lastMessages?.find(m => m.chat_id === chat.id)
-
-          // Get unread count - messages from other user that we haven't read
-          const { count: unreadCount } = await supabase
-            .from('messages')
-            .select('*', { count: 'exact', head: true })
-            .eq('chat_id', chat.id)
-            .eq('sender_id', otherUserId)
-            .is('read_at', null)
-
-          return {
-            ...chat,
-            otherUser: otherUser || {
-              user_id: otherUserId,
-              full_name: 'Unknown User',
-              profession: '',
-              profile_picture_url: ''
-            },
-            lastMessage,
-            unread_count: unreadCount || 0
-          }
-        })
-      )
+      const chatsWithProfiles: ChatWithProfile[] = chatsData.map((chat) => {
+        const otherUserId = chat.user1_id === user.id ? chat.user2_id : chat.user1_id
+        const otherUser = profiles.find(p => p.user_id === otherUserId)
+        return {
+          ...chat,
+          otherUser: otherUser || {
+            user_id: otherUserId,
+            full_name: 'Unknown User',
+            profession: '',
+            profile_picture_url: ''
+          },
+          lastMessage: lastMessageMap.get(chat.id),
+          unread_count: unreadCountMap.get(chat.id) || 0,
+        }
+      })
 
       setChats(chatsWithProfiles)
     } catch (error) {
@@ -128,63 +140,49 @@ const ChatList = () => {
     }
   }, [user, fetchChats])
 
-  // Refresh when navigating back to this page
-  useEffect(() => {
-    if (user && location.pathname === '/chat') {
-      fetchChats()
-    }
-  }, [location.pathname, user, fetchChats])
-
-  // Refresh on visibility change (when user switches back to tab)
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && user) {
-        fetchChats()
-      }
-    }
-
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
-  }, [user, fetchChats])
-
-  // Real-time subscription for message updates (both INSERT and UPDATE for read status)
+  // Realtime: debounced refetch, scoped to the user's own chats only
   useEffect(() => {
     if (!user) return
+
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null
+    const scheduleRefetch = () => {
+      if (debounceTimer) clearTimeout(debounceTimer)
+      debounceTimer = setTimeout(() => {
+        fetchChats()
+      }, 1500)
+    }
+
+    const knownChatIds = new Set(chats.map(c => c.id))
 
     const channel = supabase
       .channel('chatlist-messages-updates')
       .on(
         'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages'
-        },
-        () => {
-          // New message - refetch chats
-          fetchChats()
+        { event: 'INSERT', schema: 'public', table: 'messages' },
+        (payload) => {
+          const chatId = (payload.new as any)?.chat_id
+          if (chatId && knownChatIds.has(chatId)) scheduleRefetch()
+          else if (!knownChatIds.size) scheduleRefetch() // first-ever message
         }
       )
       .on(
         'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'messages'
-        },
+        { event: 'UPDATE', schema: 'public', table: 'messages' },
         (payload) => {
-          // Message updated (likely read_at changed) - refetch to update unread counts
-          if (payload.new && (payload.new as any).read_at) {
-            fetchChats()
+          const chatId = (payload.new as any)?.chat_id
+          if (chatId && knownChatIds.has(chatId) && (payload.new as any).read_at) {
+            scheduleRefetch()
           }
         }
       )
       .subscribe()
 
     return () => {
+      if (debounceTimer) clearTimeout(debounceTimer)
       supabase.removeChannel(channel)
     }
-  }, [user, fetchChats])
+  }, [user, fetchChats, chats])
+
 
   const filteredChats = chats.filter(chat =>
     chat.otherUser.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
