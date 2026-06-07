@@ -1,7 +1,7 @@
 // One-shot migrator: rewrites Supabase Storage URLs in selected tables to
 // Catbox (with Cloudinary fallback). Admin-only. Process in small batches.
 //
-// POST body: { table: 'profiles'|'stories'|'portfolio_items', limit?: number, dryRun?: boolean }
+// POST body: { table: 'profiles'|'stories'|'portfolio_items'|'jobs_services'|'posts', limit?: number, dryRun?: boolean }
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
@@ -10,10 +10,12 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const TABLE_MAP: Record<string, { col: string; folder: string }> = {
+const TABLE_MAP: Record<string, { col: string; folder: string; isArray?: boolean }> = {
   profiles: { col: 'profile_picture_url', folder: 'profiles' },
   stories: { col: 'media_url', folder: 'stories' },
   portfolio_items: { col: 'media_url', folder: 'portfolio' },
+  jobs_services: { col: 'photo_urls', folder: 'gigs', isArray: true },
+  posts: { col: 'media_urls', folder: 'posts', isArray: true },
 }
 
 const SUPABASE_HOST_FRAGMENT = 'supabase.co/storage'
@@ -90,35 +92,48 @@ serve(async (req) => {
 
     const results: Array<{ id: string; ok: boolean; provider?: string; newUrl?: string; error?: string }> = []
     for (const row of (rows || []) as any[]) {
-      const oldUrl = row[cfg.col] as string
+      const currentValue = row[cfg.col]
+      const urls = cfg.isArray ? ((currentValue as string[] | null) || []).filter(Boolean) : [currentValue as string]
+      if (urls.length === 0) {
+        results.push({ id: row.id, ok: false, error: 'No URLs to migrate' })
+        continue
+      }
       try {
-        // Download from Supabase Storage (anonymous public URL)
-        const dl = await fetch(oldUrl, { signal: AbortSignal.timeout(20_000) })
-        if (!dl.ok) throw new Error(`Download HTTP ${dl.status}`)
-        const blob = await dl.blob()
-        if (blob.size === 0) throw new Error('Empty blob')
-        // Skip files >10MB (Cloudinary free limit). Null the URL so it won't be retried forever.
-        if (blob.size > 10 * 1024 * 1024) {
-          if (!dryRun) await supabase.from(table).update({ [cfg.col]: null }).eq('id', row.id)
-          results.push({ id: row.id, ok: false, error: `Skipped oversize ${blob.size}B (nulled)` })
-          continue
-        }
-        const filename = oldUrl.split('/').pop() || `file_${Date.now()}.jpg`
+        const nextUrls: string[] = []
+        for (const oldUrl of urls) {
+          if (!oldUrl?.includes(SUPABASE_HOST_FRAGMENT)) {
+            nextUrls.push(oldUrl)
+            continue
+          }
 
-        let newUrl = ''
-        let provider = 'catbox'
-        try {
-          newUrl = await uploadToCatbox(blob, filename)
-        } catch (catErr) {
-          console.warn('catbox failed, fallback cloudinary:', catErr)
-          newUrl = await uploadToCloudinary(blob, cfg.folder)
-          provider = 'cloudinary'
+          const dl = await fetch(oldUrl, { signal: AbortSignal.timeout(20_000) })
+          if (!dl.ok) throw new Error(`Download HTTP ${dl.status}`)
+          const blob = await dl.blob()
+          if (blob.size === 0) throw new Error('Empty blob')
+          if (blob.size > 10 * 1024 * 1024) {
+            nextUrls.push(oldUrl)
+            continue
+          }
+          const filename = oldUrl.split('/').pop() || `file_${Date.now()}.jpg`
+
+          let newUrl = ''
+          try {
+            newUrl = await uploadToCatbox(blob, filename)
+          } catch (catErr) {
+            console.warn('catbox failed, fallback cloudinary:', catErr)
+            newUrl = await uploadToCloudinary(blob, cfg.folder)
+          }
+
+          nextUrls.push(newUrl)
         }
 
         if (!dryRun) {
-          await supabase.from(table).update({ [cfg.col]: newUrl }).eq('id', row.id)
+          await supabase
+            .from(table)
+            .update({ [cfg.col]: cfg.isArray ? nextUrls : nextUrls[0] ?? null })
+            .eq('id', row.id)
         }
-        results.push({ id: row.id, ok: true, provider, newUrl })
+        results.push({ id: row.id, ok: true, provider: 'catbox', newUrl: cfg.isArray ? `${nextUrls.length} files migrated` : nextUrls[0] })
       } catch (e: any) {
         results.push({ id: row.id, ok: false, error: e?.message || String(e) })
       }
