@@ -100,19 +100,21 @@ const Profile = () => {
     fetchUserEmail()
   }, [isOwnProfile, user])
 
-  // Fetch posts count
+  // Fetch posts count (head-only, cheap)
   useEffect(() => {
+    if (!profile?.user_id) return
+    let cancelled = false
     const fetchPostsCount = async () => {
-      if (profile?.user_id) {
-        const { count } = await supabase
-          .from('posts')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', profile.user_id)
-        setPostsCount(count || 0)
-      }
+      const { count } = await supabase
+        .from('posts')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', profile.user_id)
+      if (!cancelled) setPostsCount(count || 0)
     }
     fetchPostsCount()
+    return () => { cancelled = true }
   }, [profile?.user_id])
+
 
   // Fetch other user's profile if viewing someone else
   useEffect(() => {
