@@ -1820,10 +1820,11 @@ export const BLOG_POSTS: BlogPost[] = [
           'Working off-platform on a "WhatsApp deal" — you lose escrow protection and almost always the money too.',
           'Taking on work outside your declared skill to chase the cash — it tanks your rating fast.',
           'Pricing for the lowest bidder forever — you will burn out before you reach a sustainable rate.',
-          'Skipping reviews — they are 80% of a future buyer's decision.',
+          "Skipping reviews — they are 80% of a future buyer's decision.",
         ]} />
       </Section>
-      <Section title="What "successful" looks like at month 6">
+      <Section title="What success looks like at month 6">
+
         <p>20–40 completed orders, NC 200,000–800,000 monthly income, verified expert badge, repeat clients, and a clear sense of which niche pays best for you. From there the only question is whether to scale (hire help, productise) or specialise (go premium, charge 10× more for the same skill).</p>
       </Section>
     </>),
