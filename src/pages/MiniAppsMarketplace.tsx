@@ -1,7 +1,8 @@
 import { useState, useEffect, lazy, Suspense, useMemo } from 'react'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
-import { ArrowLeft, Search, Plus, Sparkles, Receipt, Building2, Wallet, Shield, RefreshCw, Trophy, Heart, GraduationCap, Users, Gamepad2, Dices, Target, RotateCw, Gift, Banknote, AlertCircle, ShoppingBag, PiggyBank, Flame, FileText, Zap, BookOpen, Send, ScanLine, Crown } from 'lucide-react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { ArrowLeft, Search, Plus, Sparkles, Receipt, Building2, Wallet, Shield, RefreshCw, Trophy, Heart, GraduationCap, Users, Gamepad2, Dices, Target, RotateCw, Gift, Banknote, AlertCircle, ShoppingBag, PiggyBank, Flame, FileText, Zap, BookOpen, Send, ScanLine, Crown, Briefcase, Hammer, FolderKanban, ClipboardList, NotebookPen, Image as ImageIcon, Presentation } from 'lucide-react'
 import { useUserCountry } from '@/hooks/useUserCountry'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
@@ -52,6 +53,16 @@ interface UnifiedApp {
 // All built-in apps (platform features + internal mini apps)
 const BUILT_IN_APPS: UnifiedApp[] = [
   // Work
+  { id: 'pa-jobs', name: 'Find Jobs', description: 'Browse open jobs and apply', icon: Briefcase, path: '/jobs', category: 'work', color: 'from-blue-500/20 to-indigo-500/20', isInternal: true },
+  { id: 'pa-post-job', name: 'Post a Job', description: 'Hire freelancers for your project', icon: ClipboardList, path: '/post-job', category: 'work', color: 'from-indigo-500/20 to-violet-500/20', isInternal: true },
+  { id: 'pa-gigs', name: 'Find Gigs', description: 'Discover freelance services', icon: Hammer, path: '/p/gigs', category: 'work', color: 'from-cyan-500/20 to-blue-500/20', isInternal: true },
+  { id: 'pa-my-gigs', name: 'My Gigs', description: 'Manage your gig listings', icon: FolderKanban, path: '/my-gigs', category: 'work', color: 'from-teal-500/20 to-cyan-500/20', isInternal: true },
+  { id: 'pa-post-gig', name: 'Post a Gig', description: 'Sell your services as a freelancer', icon: NotebookPen, path: '/post-gig', category: 'work', color: 'from-emerald-500/20 to-teal-500/20', isInternal: true },
+  { id: 'pa-orders', name: 'Orders', description: 'Track gig orders and deliveries', icon: ShoppingBag, path: '/orders', category: 'work', color: 'from-violet-500/20 to-purple-500/20', isInternal: true },
+  { id: 'pa-workrooms', name: 'Workrooms', description: 'Collaborate with clients in rooms', icon: Presentation, path: '/workrooms', category: 'work', color: 'from-purple-500/20 to-fuchsia-500/20', isInternal: true },
+  { id: 'pa-diary', name: 'Work Diary', description: 'Log your weekly work activity', icon: NotebookPen, path: '/work-diary', category: 'work', color: 'from-sky-500/20 to-blue-500/20', isInternal: true },
+  { id: 'pa-expert-class', name: 'Expert Classes', description: 'Host or join live expert classes', icon: GraduationCap, path: '/expert-class', category: 'work', color: 'from-amber-500/20 to-orange-500/20', isInternal: true },
+  { id: 'pa-portfolio', name: 'Portfolio', description: 'Showcase your work on your profile', icon: ImageIcon, path: '/profile', category: 'work', color: 'from-rose-500/20 to-pink-500/20', isInternal: true },
   { id: 'pa-contests', name: 'Contests', description: 'Compete for prizes or run design contests', icon: Trophy, path: '/contests', category: 'work', color: 'from-amber-500/20 to-yellow-500/20', isInternal: true },
   { id: 'pa-products', name: 'Sell Products', description: 'Sell digital products and templates', icon: ShoppingBag, path: '/digital-products', category: 'work', color: 'from-green-500/20 to-emerald-500/20', isInternal: true },
   // Finance
@@ -92,8 +103,7 @@ const BUILT_IN_APPS: UnifiedApp[] = [
 const CATEGORY_FILTERS = ['all', 'work', 'finance', 'games', 'learning', 'earn'] as const
 
 const MiniAppsMarketplace = () => {
-  const [externalApps, setExternalApps] = useState<MiniApp[]>([])
-  const [myApps, setMyApps] = useState<MiniApp[]>([])
+  const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
   const [selectedApp, setSelectedApp] = useState<MiniApp | null>(null)
   const [showSubmit, setShowSubmit] = useState(false)
@@ -110,37 +120,49 @@ const MiniAppsMarketplace = () => {
   const { isNigerian } = useUserCountry()
   const navigate = useNavigate()
 
-  const fetchApps = async () => {
-    const { data } = await supabase
-      .from('mini_apps')
-      .select('*')
-      .eq('status', 'approved')
-      .order('is_featured', { ascending: false })
-      .order('install_count', { ascending: false })
+  const MINI_APP_COLS = 'id, app_name, app_description, app_icon_url, app_url, category, install_count, rating, review_count, sdk_app_id, developer_id, status'
 
-    // Filter out internal:// apps (handled as built-in) and known internal sdk_app_ids
-    const internalIds = new Set(['bills', 'bank_deposit', 'bank_withdrawal', 'deposit_naira', 'crypto_deposit', 'metamask_deposit', 'ivorypay_deposit', 'escrow', 'nc_converter'])
-    const dbApps = (data || []).filter((a: any) => 
-      !internalIds.has(a.sdk_app_id) && !a.app_url?.startsWith('internal://')
-    ) as MiniApp[]
-    setExternalApps(dbApps)
-  }
+  // Approved external apps — cached aggressively (rarely changes)
+  const { data: externalAppsData } = useQuery({
+    queryKey: ['mini-apps', 'approved'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('mini_apps')
+        .select(MINI_APP_COLS)
+        .eq('status', 'approved')
+        .order('is_featured', { ascending: false })
+        .order('install_count', { ascending: false })
+        .limit(100)
+      const internalIds = new Set(['bills', 'bank_deposit', 'bank_withdrawal', 'deposit_naira', 'crypto_deposit', 'metamask_deposit', 'ivorypay_deposit', 'escrow', 'nc_converter'])
+      return (data || []).filter((a: any) =>
+        !internalIds.has(a.sdk_app_id) && !a.app_url?.startsWith('internal://')
+      ) as MiniApp[]
+    },
+    staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  })
+  const externalApps = externalAppsData || []
 
-  const fetchMyApps = async () => {
-    if (!user) return
-    const { data } = await supabase
-      .from('mini_apps')
-      .select('*')
-      .eq('developer_id', user.id)
-      .order('created_at', { ascending: false })
+  const { data: myAppsData } = useQuery({
+    queryKey: ['mini-apps', 'mine', user?.id],
+    queryFn: async () => {
+      if (!user) return [] as MiniApp[]
+      const { data } = await supabase
+        .from('mini_apps')
+        .select(MINI_APP_COLS)
+        .eq('developer_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(50)
+      return (data || []) as MiniApp[]
+    },
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  })
+  const myApps = myAppsData || []
 
-    if (data) setMyApps(data as MiniApp[])
-  }
-
-  useEffect(() => {
-    fetchApps()
-    fetchMyApps()
-  }, [user])
 
   // Determine "App of the Week" - most installed external app, fallback to featured built-in
   const topApp: UnifiedApp | null = (() => {
@@ -268,7 +290,7 @@ const MiniAppsMarketplace = () => {
                   Share your app details for review and publication in the marketplace.
                 </DialogDescription>
               </DialogHeader>
-              <SubmitMiniAppForm onSuccess={() => { setShowSubmit(false); fetchMyApps() }} />
+              <SubmitMiniAppForm onSuccess={() => { setShowSubmit(false); queryClient.invalidateQueries({ queryKey: ['mini-apps'] }) }} />
             </DialogContent>
           </Dialog>
         </div>
