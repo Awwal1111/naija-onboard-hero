@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -12,18 +12,39 @@ export interface SearchResult {
   url: string;
   metadata?: any;
   is_premium?: boolean;
+  /** Internal relevance score used for sorting (higher = better). Not rendered. */
+  _score?: number;
 }
 
 export const useUnifiedSearch = () => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+
+  // Debounce keystrokes by 300ms so a 12-query fan-out doesn't fire on every character
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(searchQuery.trim()), 300);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
 
   const { data: results, isLoading } = useQuery({
-    queryKey: ['unified-search', searchQuery],
+    queryKey: ['unified-search', debouncedQuery],
     queryFn: async () => {
-      if (!searchQuery || searchQuery.length < 2) return [];
+      if (!debouncedQuery || debouncedQuery.length < 2) return [];
 
-      const searchTerm = searchQuery.trim();
+      const searchTerm = debouncedQuery;
+      const qLower = searchTerm.toLowerCase();
       const allResults: SearchResult[] = [];
+
+      // Tiny relevance scorer used to outrank weak hits without an extra DB round-trip.
+      // Exact title match > prefix > contains. Premium gets a flat boost handled below.
+      const score = (title?: string | null) => {
+        if (!title) return 1;
+        const t = title.toLowerCase();
+        if (t === qLower) return 100;
+        if (t.startsWith(qLower)) return 60;
+        if (t.includes(qLower)) return 30;
+        return 10;
+      };
 
       // 1. Search Users (profiles) - include premium status
       const { data: users } = await supabase
@@ -353,21 +374,27 @@ export const useUnifiedSearch = () => {
         });
       }
 
-      // Sort results: premium users first, then by type order
-      return allResults.sort((a, b) => {
-        // Premium first
-        if (a.is_premium && !b.is_premium) return -1;
-        if (!a.is_premium && b.is_premium) return 1;
-        return 0;
-      });
+      // Sort: premium boost + title-match relevance. (`_score` defaults to 1 for items
+      // without a title-driven score, so they fall below any actual match.)
+      return allResults
+        .map(r => ({ ...r, _score: r._score ?? score(r.title) }))
+        .sort((a, b) => {
+          const ap = a.is_premium ? 1 : 0;
+          const bp = b.is_premium ? 1 : 0;
+          if (ap !== bp) return bp - ap;
+          return (b._score ?? 0) - (a._score ?? 0);
+        });
     },
-    enabled: searchQuery.length >= 2
+    enabled: debouncedQuery.length >= 2,
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
   });
 
   return {
     searchQuery,
     setSearchQuery,
     results: results || [],
-    isLoading
+    isLoading,
   };
 };
