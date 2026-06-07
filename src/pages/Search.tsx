@@ -551,7 +551,7 @@ const Search = () => {
                 <CardContent className="p-4">
                   <div className="flex items-start gap-4">
                     <Avatar className="h-10 w-10">
-                      <AvatarImage src={post.profiles?.profile_picture} />
+                      <AvatarImage src={post.profiles?.profile_picture_url} />
                       <AvatarFallback>{post.profiles?.full_name?.[0]}</AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
