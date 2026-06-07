@@ -736,9 +736,9 @@ export default function DeveloperPortal() {
                   <div className="flex gap-2">
                     <div className="relative flex-1">
                       <Input
-                        type={showSandboxKey ? 'text' : 'password'}
-                        value={sandboxKey || ''}
-                        placeholder="nl_test_…"
+                        type={showSandboxKey && sandboxKey ? 'text' : 'password'}
+                        value={sandboxKey || (sandboxKeyLast4 ? `nl_test_••••••••••••••${sandboxKeyLast4}` : '')}
+                        placeholder="No sandbox key yet — click regenerate"
                         readOnly
                         className="pr-10 font-mono text-sm"
                       />
@@ -747,11 +747,13 @@ export default function DeveloperPortal() {
                         size="icon"
                         className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
                         onClick={() => setShowSandboxKey(!showSandboxKey)}
+                        disabled={!sandboxKey}
+                        title={sandboxKey ? 'Toggle visibility' : 'Full key only shown right after generation'}
                       >
                         {showSandboxKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </Button>
                     </div>
-                    <Button variant="outline" size="sm" onClick={copySandboxKey}>
+                    <Button variant="outline" size="sm" onClick={copySandboxKey} disabled={!sandboxKey}>
                       <Copy className="h-4 w-4" />
                     </Button>
                     <Button variant="outline" size="sm" onClick={regenerateSandboxKey} disabled={regeneratingSandbox}>
@@ -759,7 +761,9 @@ export default function DeveloperPortal() {
                     </Button>
                   </div>
                   <p className="text-xs text-muted-foreground mt-2">
-                    Use this key in development &amp; CI. Every endpoint returns a realistic mock response. Never charged.
+                    {sandboxKey
+                      ? 'Copy this key now — for security it will be hidden on next page load.'
+                      : 'Use this key in development & CI. Every endpoint returns a realistic mock response. Never charged.'}
                   </p>
                 </div>
 
@@ -774,8 +778,9 @@ export default function DeveloperPortal() {
                   <div className="flex gap-2">
                     <div className="relative flex-1">
                       <Input
-                        type={showApiKey ? 'text' : 'password'}
-                        value={apiKey || ''}
+                        type={showApiKey && apiKey ? 'text' : 'password'}
+                        value={apiKey || (apiKeyLast4 ? `nl_live_••••••••••••••${apiKeyLast4}` : '')}
+                        placeholder="No live key yet — click regenerate"
                         readOnly
                         className="pr-10 font-mono text-sm"
                       />
@@ -784,17 +789,24 @@ export default function DeveloperPortal() {
                         size="icon"
                         className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
                         onClick={() => setShowApiKey(!showApiKey)}
+                        disabled={!apiKey}
+                        title={apiKey ? 'Toggle visibility' : 'Full key only shown right after generation'}
                       >
                         {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </Button>
                     </div>
-                    <Button variant="outline" size="sm" onClick={copyApiKey}>
+                    <Button variant="outline" size="sm" onClick={copyApiKey} disabled={!apiKey}>
                       <Copy className="h-4 w-4" />
                     </Button>
                     <Button variant="outline" size="sm" onClick={regenerateApiKey} disabled={regenerating}>
                       {regenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                     </Button>
                   </div>
+                  {apiKey && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
+                      ⚠ Copy this key now — it is hashed at rest and will not be shown again.
+                    </p>
+                  )}
                   <div className="mt-3 flex items-center justify-between p-2 rounded border bg-background/60">
                     <div className="flex items-center gap-2">
                       <Power className={`h-4 w-4 ${apiKeyEnabled ? 'text-emerald-500' : 'text-destructive'}`} />
