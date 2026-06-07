@@ -290,7 +290,7 @@ const MiniAppsMarketplace = () => {
                   Share your app details for review and publication in the marketplace.
                 </DialogDescription>
               </DialogHeader>
-              <SubmitMiniAppForm onSuccess={() => { setShowSubmit(false); fetchMyApps() }} />
+              <SubmitMiniAppForm onSuccess={() => { setShowSubmit(false); queryClient.invalidateQueries({ queryKey: ['mini-apps'] }) }} />
             </DialogContent>
           </Dialog>
         </div>
