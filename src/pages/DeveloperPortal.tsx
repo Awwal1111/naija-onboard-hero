@@ -593,28 +593,39 @@ export default function DeveloperPortal() {
 
   };
 
+  const copySandboxKey = () => {
+    if (sandboxKey) {
+      navigator.clipboard.writeText(sandboxKey);
+      toast.success('Sandbox key copied!');
+    }
+  };
+
   const testEndpoint = async () => {
-    if (!selectedEndpoint || !apiKey) {
-      toast.error('API key is required to test endpoints');
+    const activeKey = useSandbox ? sandboxKey : apiKey;
+    if (!selectedEndpoint || !activeKey) {
+      toast.error(useSandbox ? 'Sandbox key not available yet' : 'API key is required to test endpoints');
       return;
     }
-    
+    if (!useSandbox && !confirm('You are about to run this against LIVE mode.\n\nReal NC will be deducted and real funds may move. Continue?')) {
+      return;
+    }
+
     setTesting(true);
     setTestResult(null);
-    
+
     try {
       const body = JSON.parse(testInput);
-      // Use the correct Supabase URL
       const url = `${import.meta.env.VITE_SUPABASE_URL ?? 'https://your-project-ref.supabase.co'}/functions/v1/developer-api${selectedEndpoint.path}`;
-      
+
       const response = await fetch(url, {
         method: selectedEndpoint.method,
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': apiKey
+          'x-api-key': activeKey,
         },
         body: selectedEndpoint.method !== 'GET' ? JSON.stringify(body) : undefined
       });
+
       
       const data = await response.json();
       
