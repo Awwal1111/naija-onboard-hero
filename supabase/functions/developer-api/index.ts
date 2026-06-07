@@ -1598,9 +1598,29 @@ serve(async (req) => {
     }
   }
 
+  // Sandbox short-circuit: never touch live tables / external APIs / chain.
+  // Webhook CRUD endpoints still run live so devs can manage test endpoints.
+  const isWebhookCrud = endpoint === 'webhooks' || endpoint.startsWith('webhooks/');
+  if (isSandbox && !isWebhookCrud) {
+    const sandboxResult = handleSandbox(endpoint, method, body, params);
+    const sStatus = sandboxResult.status || (sandboxResult.error ? 400 : 200);
+    const sBody = sandboxResult.error ? { error: sandboxResult.error, mode: 'sandbox' } : (sandboxResult.data ?? {});
+    await logApiUsage(developer.user_id, endpoint, method, sStatus, 0, true);
+    return new Response(JSON.stringify(sBody), {
+      status: sStatus,
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'application/json',
+        'X-RateLimit-Remaining': rateLimit.remaining.toString(),
+        'X-Sandbox': 'true',
+      },
+    });
+  }
+
   // Route to handlers
   try {
     switch (endpoint) {
+
       // Wallet APIs
       case 'wallet/create':
         result = await handleWalletCreate(developer, body);
