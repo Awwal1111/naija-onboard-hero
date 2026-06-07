@@ -67,6 +67,7 @@ export const MoreMenuDrawer = ({ open, onOpenChange }: MoreMenuDrawerProps) => {
 
   // Removed: Fundraising, Referrals, Leaderboard, Donations, Loan, Emergency, Sell Products (moved to Apps)
   const otherItems = [
+    { icon: BookOpen, label: "Blog", path: "/blog", color: "text-primary", forRoles: ['freelancer', 'client', 'both'] },
     { icon: HelpCircle, label: "Help Center", path: "/help", color: "text-blue-500", forRoles: ['freelancer', 'client', 'both'] },
     { icon: Settings, label: "Settings", path: "/settings", color: "text-muted-foreground", forRoles: ['freelancer', 'client', 'both'] },
   ];
