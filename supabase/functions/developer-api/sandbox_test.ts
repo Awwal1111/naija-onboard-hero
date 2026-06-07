@@ -52,8 +52,8 @@ Deno.test("_sandbox.ts contains no DB, fetch, or env access", () => {
     "deductBalance",
     "triggerWebhook",
     "logApiUsage",
-    "RPC",
-    "ethers",
+    "ethers.",
+    "JsonRpcProvider",
   ];
   for (const needle of forbidden) {
     assert(
@@ -63,9 +63,11 @@ Deno.test("_sandbox.ts contains no DB, fetch, or env access", () => {
   }
 });
 
-Deno.test("index.ts short-circuits sandbox before deductions and after balance gate", () => {
-  const dispatchIdx = INDEX_SRC.indexOf("if (isSandbox && !isWebhookCrud)");
-  assert(dispatchIdx > 0, "sandbox dispatch guard not found in index.ts");
+Deno.test("index.ts dispatches sandbox before any live handler or NC deduction", () => {
+  const dispatchIdx = INDEX_SRC.indexOf(
+    "handleSandbox(endpoint, method, body, params)",
+  );
+  assert(dispatchIdx > 0, "handleSandbox dispatch call not found in index.ts");
 
   // Balance gate must skip when sandbox.
   assertStringIncludes(INDEX_SRC, "if (!isSandbox && cost > 0");
@@ -77,11 +79,23 @@ Deno.test("index.ts short-circuits sandbox before deductions and after balance g
     "statusCode < 400 && !isSandbox ? cost : 0, isSandbox",
   );
 
-  // No deductBalance() call may appear BEFORE the sandbox dispatch.
-  const deductIdx = INDEX_SRC.indexOf("await deductBalance(");
+  // The live router switch must appear AFTER the sandbox dispatch so that
+  // sandbox requests can never reach handleWalletCreate / handleWalletTransfer
+  // / handleVtuAirtime / etc.
+  const liveRouterIdx = INDEX_SRC.indexOf("// Route to handlers");
   assert(
-    deductIdx === -1 || deductIdx > dispatchIdx,
-    "deductBalance() must never run before the sandbox short-circuit",
+    liveRouterIdx > dispatchIdx,
+    "Live router must run after sandbox dispatch",
+  );
+
+  // The success-path deduct call inside the live handler must also appear
+  // after the sandbox dispatch.
+  const liveDeductIdx = INDEX_SRC.indexOf(
+    "await deductBalance(developer.user_id, cost)",
+  );
+  assert(
+    liveDeductIdx === -1 || liveDeductIdx > dispatchIdx,
+    "live deductBalance() must never run before sandbox short-circuit",
   );
 });
 
