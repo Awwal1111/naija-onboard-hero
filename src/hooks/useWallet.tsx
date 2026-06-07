@@ -327,45 +327,9 @@ export const useWallet = () => {
     return `NC ${amount.toLocaleString()}`
   }
 
-  const initiateDeposit = async (amount: number) => {
-    if (!user || amount <= 0) {
-      toast({
-        title: "Invalid Amount",
-        description: "Please enter a valid amount",
-        variant: "destructive"
-      })
-      return { success: false }
-    }
+  // NOTE: Paystack deposit/escrow flows removed — use IvoryPay/Pretium/Quidax instead
 
-    try {
-      const { data, error } = await supabase.functions.invoke('create-transaction', {
-        body: {
-          type: 'deposit',
-          amount: amount * 100, // Convert to kobo for Paystack
-          currency: 'NGN',
-          metadata: { purpose: 'wallet_topup' }
-        }
-      })
 
-      if (error) throw error
-
-      // Redirect to Paystack checkout
-      if (data.checkout_url) {
-        window.open(data.checkout_url, '_blank')
-        return { success: true, reference: data.reference }
-      }
-
-      return { success: false, error: 'No checkout URL received' }
-    } catch (error: any) {
-      console.error('Error initiating deposit:', error)
-      toast({
-        title: "Deposit Failed",
-        description: error.message || "Failed to initiate deposit",
-        variant: "destructive"
-      })
-      return { success: false, error: error.message }
-    }
-  }
 
   const initiateWithdrawal = async (amount: number, bankDetails: any) => {
     if (!user || amount <= 0) {
@@ -414,37 +378,6 @@ export const useWallet = () => {
     }
   }
 
-  const createEscrowPayment = async (expertId: string, jobId: string, amount: number) => {
-    if (!user || amount <= 0) return { success: false }
-
-    try {
-      const { data, error } = await supabase.functions.invoke('create-escrow', {
-        body: {
-          expert_id: expertId,
-          job_id: jobId,
-          amount: amount * 100, // Convert to kobo
-          currency: 'NGN'
-        }
-      })
-
-      if (error) throw error
-
-      if (data.checkout_url) {
-        window.open(data.checkout_url, '_blank')
-        return { success: true, reference: data.reference }
-      }
-
-      return { success: false, error: 'No checkout URL received' }
-    } catch (error: any) {
-      console.error('Error creating escrow payment:', error)
-      toast({
-        title: "Payment Failed",
-        description: error.message || "Failed to create escrow payment",
-        variant: "destructive"
-      })
-      return { success: false, error: error.message }
-    }
-  }
 
   const releaseEscrow = async (escrowId: string) => {
     try {
@@ -501,9 +434,7 @@ export const useWallet = () => {
     loading,
     transactions,
     escrowPayments,
-    initiateDeposit,
     initiateWithdrawal,
-    createEscrowPayment,
     releaseEscrow,
     refundEscrow,
     playSpinWheel,
