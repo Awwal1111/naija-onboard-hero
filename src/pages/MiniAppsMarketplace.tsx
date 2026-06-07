@@ -103,8 +103,6 @@ const BUILT_IN_APPS: UnifiedApp[] = [
 const CATEGORY_FILTERS = ['all', 'work', 'finance', 'games', 'learning', 'earn'] as const
 
 const MiniAppsMarketplace = () => {
-  const [externalApps, setExternalApps] = useState<MiniApp[]>([])
-  const [myApps, setMyApps] = useState<MiniApp[]>([])
   const [search, setSearch] = useState('')
   const [selectedApp, setSelectedApp] = useState<MiniApp | null>(null)
   const [showSubmit, setShowSubmit] = useState(false)
