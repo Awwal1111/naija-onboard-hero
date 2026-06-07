@@ -31,47 +31,50 @@ interface ProfileActivityFeedProps {
 export const ProfileActivityFeed = ({ userId, fullName, profilePicture, profession }: ProfileActivityFeedProps) => {
   const navigate = useNavigate()
   const [posts, setPosts] = useState<ActivityPost[]>([])
-  const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(0)
   const [hasMore, setHasMore] = useState(true)
   const PAGE_SIZE = 5
 
-  const fetchPosts = async (pageNum: number) => {
-    try {
+  // Cached first-page fetch (5 min stale time prevents repeat egress)
+  const { data: firstPage, isLoading: loading } = useQuery({
+    queryKey: ['profile-activity', userId, 0],
+    queryFn: async () => {
       const { data, error } = await supabase
         .from('posts')
         .select('id, content, content_type, media_urls, likes_count, comments_count, views_count, created_at')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
-        .range(pageNum * PAGE_SIZE, (pageNum + 1) * PAGE_SIZE - 1)
-
+        .range(0, PAGE_SIZE - 1)
       if (error) throw error
-      if (data) {
-        if (pageNum === 0) {
-          setPosts(data)
-        } else {
-          setPosts(prev => [...prev, ...data])
-        }
-        setHasMore(data.length === PAGE_SIZE)
-      }
-    } catch (error) {
-      console.error('Error fetching activity:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+      return data || []
+    },
+    enabled: !!userId,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  })
 
+  // Sync first page into local state; reset paging on userId change
   useEffect(() => {
     setPage(0)
-    setLoading(true)
-    fetchPosts(0)
-  }, [userId])
+    setPosts(firstPage || [])
+    setHasMore((firstPage?.length || 0) === PAGE_SIZE)
+  }, [userId, firstPage])
 
-  const loadMore = () => {
+  const loadMore = async () => {
     const nextPage = page + 1
+    const { data, error } = await supabase
+      .from('posts')
+      .select('id, content, content_type, media_urls, likes_count, comments_count, views_count, created_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .range(nextPage * PAGE_SIZE, (nextPage + 1) * PAGE_SIZE - 1)
+    if (error) return
     setPage(nextPage)
-    fetchPosts(nextPage)
+    setPosts(prev => [...prev, ...(data || [])])
+    setHasMore((data?.length || 0) === PAGE_SIZE)
   }
+
 
   const getContentTypeBadge = (type: string) => {
     switch (type) {
