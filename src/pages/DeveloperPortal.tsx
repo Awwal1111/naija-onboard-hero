@@ -393,15 +393,17 @@ export default function DeveloperPortal() {
     try {
       const [{ data: profile }, { data: secrets }] = await Promise.all([
         supabase.from('profiles').select('account_type, wallet_balance').eq('user_id', user?.id).single(),
-        supabase.from('user_secrets').select('api_key, api_key_enabled').eq('user_id', user?.id).single()
+        supabase.from('user_secrets').select('api_key, sandbox_api_key, api_key_enabled').eq('user_id', user?.id).single()
       ]);
       
       if (profile) {
-        setApiKey(secrets?.api_key || null);
+        setApiKey((secrets as any)?.api_key || null);
+        setSandboxKey((secrets as any)?.sandbox_api_key || null);
         setApiKeyEnabled((secrets as any)?.api_key_enabled !== false);
         setAccountType((profile as any).account_type || 'personal');
         setNcBalance((profile as any).wallet_balance || 0);
       }
+
 
       // Get usage stats
       const startOfMonth = new Date();
