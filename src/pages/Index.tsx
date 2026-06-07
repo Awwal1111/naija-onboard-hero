@@ -81,6 +81,10 @@ const Index = () => {
               <Award className="w-3.5 h-3.5" />
               Free Courses
             </Link>
+            <Link to="/blog" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium bg-muted hover:bg-accent transition-colors">
+              <BookOpen className="w-3.5 h-3.5" />
+              Blog
+            </Link>
           </div>
         </div>
       </nav>
