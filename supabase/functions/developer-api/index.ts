@@ -1532,11 +1532,12 @@ serve(async (req) => {
     );
   }
   
-  // Check balance for paid endpoints (uses developer's NC wallet_balance)
+  // Check balance for paid endpoints (live mode only — sandbox is always free)
   const cost = API_PRICING[endpoint] || API_PRICING['default'];
-  if (cost > 0 && (developer.wallet_balance || 0) < cost) {
+  const isSandbox = developer.mode === 'sandbox';
+  if (!isSandbox && cost > 0 && (developer.wallet_balance || 0) < cost) {
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         error: 'Insufficient NC balance',
         required: cost,
         current_balance: developer.wallet_balance || 0,
@@ -1545,6 +1546,7 @@ serve(async (req) => {
       { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
+
   
   let result: { data?: any; error?: string; status?: number };
   let body: any = {};
