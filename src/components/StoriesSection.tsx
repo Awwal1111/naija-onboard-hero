@@ -129,27 +129,8 @@ const StoriesSection: React.FC<StoriesSectionProps> = ({
     }
   }
 
-  // Fetch user connections for story ranking
-  useEffect(() => {
-    const fetchConnections = async () => {
-      if (!currentUserId) return
-      
-      const { data } = await supabase
-        .from('connections')
-        .select('user1_id, user2_id')
-        .or(`user1_id.eq.${currentUserId},user2_id.eq.${currentUserId}`)
-        .limit(200)
-      
-      if (data) {
-        const connectionIds = new Set(
-          data.map(c => c.user1_id === currentUserId ? c.user2_id : c.user1_id)
-        )
-        setUserConnections(connectionIds)
-      }
-    }
-    
-    fetchConnections()
-  }, [currentUserId])
+  // (connections now fetched via useQuery above)
+
 
   // Sort stories with algorithm: connections first, unviewed, then recency
   const sortedStories = React.useMemo(() => {
