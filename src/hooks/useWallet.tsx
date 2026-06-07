@@ -48,81 +48,117 @@ export interface EscrowPayment {
   refunded_at?: string
 }
 
+// ---- Module-level shared wallet cache to eliminate duplicate egress ----
+const WALLET_TTL_MS = 60 * 1000
+const EMPTY_BALANCE: WalletBalance = { withdrawable: 0, non_withdrawable: 0, total: 0, escrow_hold: 0 }
+const walletCache = new Map<string, { balance: WalletBalance; ts: number }>()
+const walletInflight = new Map<string, Promise<WalletBalance>>()
+const walletSubscribers = new Map<string, Set<(b: WalletBalance) => void>>()
+const walletChannels = new Map<string, ReturnType<typeof supabase.channel>>()
+const txCache = new Map<string, { data: WalletTransaction[]; ts: number }>()
+const txInflight = new Map<string, Promise<WalletTransaction[]>>()
+
+async function loadWalletBalance(userId: string, force = false): Promise<WalletBalance> {
+  const cached = walletCache.get(userId)
+  if (!force && cached && Date.now() - cached.ts < WALLET_TTL_MS) return cached.balance
+  const existing = walletInflight.get(userId)
+  if (existing) return existing
+  const promise = (async () => {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('wallet_balance, balance_withdrawable, balance_non_withdrawable')
+      .eq('user_id', userId)
+      .maybeSingle()
+    const { data: walletData } = await supabase
+      .from('user_wallets')
+      .select('escrow_hold')
+      .eq('user_id', userId)
+      .maybeSingle()
+    const balance: WalletBalance = {
+      withdrawable: Number(profile?.balance_withdrawable || 0),
+      non_withdrawable: Number(profile?.balance_non_withdrawable || 0),
+      total: Number(profile?.wallet_balance || 0),
+      escrow_hold: Number(walletData?.escrow_hold || 0),
+    }
+    walletCache.set(userId, { balance, ts: Date.now() })
+    walletSubscribers.get(userId)?.forEach((cb) => cb(balance))
+    return balance
+  })()
+  walletInflight.set(userId, promise)
+  try { return await promise } finally { walletInflight.delete(userId) }
+}
+
+function ensureWalletChannel(userId: string) {
+  if (walletChannels.has(userId)) return
+  const channel = supabase
+    .channel(`wallet-${userId}`)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles', filter: `user_id=eq.${userId}` }, () => {
+      loadWalletBalance(userId, true)
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'wallet_transactions', filter: `user_id=eq.${userId}` }, () => {
+      txCache.delete(userId)
+      loadWalletBalance(userId, true)
+    })
+    .subscribe()
+  walletChannels.set(userId, channel)
+}
+
 export const useWallet = () => {
   const { user } = useAuth()
   const { toast } = useToast()
-  const [balance, setBalance] = useState<WalletBalance>({
-    withdrawable: 0,
-    non_withdrawable: 0,
-    total: 0,
-    escrow_hold: 0
-  })
-  const [loading, setLoading] = useState(true)
-  const [transactions, setTransactions] = useState<WalletTransaction[]>([])
+  const [balance, setBalance] = useState<WalletBalance>(() =>
+    user ? (walletCache.get(user.id)?.balance ?? EMPTY_BALANCE) : EMPTY_BALANCE
+  )
+  const [loading, setLoading] = useState(() => (user ? !walletCache.get(user.id) : true))
+  const [transactions, setTransactions] = useState<WalletTransaction[]>(() =>
+    user ? (txCache.get(user.id)?.data ?? []) : []
+  )
   const [escrowPayments, setEscrowPayments] = useState<EscrowPayment[]>([])
 
   useEffect(() => {
-    if (user) {
-      initializeWallet()
-      fetchTransactions()
-      fetchEscrowPayments()
-      setupRealtimeSubscription()
+    if (!user) { setLoading(false); return }
+    let subs = walletSubscribers.get(user.id)
+    if (!subs) { subs = new Set(); walletSubscribers.set(user.id, subs) }
+    const cb = (b: WalletBalance) => setBalance(b)
+    subs.add(cb)
+
+    const cached = walletCache.get(user.id)
+    if (cached && Date.now() - cached.ts < WALLET_TTL_MS) {
+      setBalance(cached.balance); setLoading(false)
+    } else {
+      loadWalletBalance(user.id).then((b) => { setBalance(b); setLoading(false) }).catch(() => setLoading(false))
     }
-  }, [user])
+    ensureWalletChannel(user.id)
+    fetchTransactions()
+
+    return () => { subs?.delete(cb) }
+  }, [user?.id])
 
   const initializeWallet = async () => {
     if (!user) return
-
-    try {
-      // Get balance from profiles table (correct structure)
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('wallet_balance, balance_withdrawable, balance_non_withdrawable')
-        .eq('user_id', user.id)
-        .single()
-
-      if (error) throw error
-
-      // Get escrow hold from user_wallets table
-      const { data: walletData } = await supabase
-        .from('user_wallets')
-        .select('escrow_hold')
-        .eq('user_id', user.id)
-        .maybeSingle()
-
-      const walletBalance = {
-        withdrawable: Number(profile?.balance_withdrawable || 0),
-        non_withdrawable: Number(profile?.balance_non_withdrawable || 0),
-        total: Number(profile?.wallet_balance || 0), // Use wallet_balance as total
-        escrow_hold: Number(walletData?.escrow_hold || 0)
-      }
-
-      setBalance(walletBalance)
-    } catch (error) {
-      console.error('Error initializing wallet:', error)
-    } finally {
-      setLoading(false)
-    }
+    const b = await loadWalletBalance(user.id, true)
+    setBalance(b); setLoading(false)
   }
 
   const fetchTransactions = async () => {
     if (!user) return
+    const cached = txCache.get(user.id)
+    if (cached && Date.now() - cached.ts < WALLET_TTL_MS) {
+      setTransactions(cached.data)
+      return
+    }
+    const existing = txInflight.get(user.id)
+    if (existing) { setTransactions(await existing); return }
 
-    try {
-      // Fetch from wallet transactions table
-      const { data: walletData, error: walletError } = await supabase
+    const promise = (async () => {
+      const { data: walletData } = await supabase
         .from('wallet_transactions')
         .select('id, user_id, amount, kind, reference, status, created_at, currency, metadata')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(50)
 
-      if (walletError) throw walletError
-
-      // Also fetch crypto transactions (direct on-chain only — exclude IvoryPay-checkout
-      // entries because those are already represented in wallet_transactions and would
-      // otherwise appear as a duplicate "+NC" line in the history list).
-      const { data: cryptoData, error: cryptoError } = await supabase
+      const { data: cryptoData } = await supabase
         .from('crypto_transactions')
         .select('id, user_id, nc_amount, crypto_amount, crypto_currency, transaction_type, status, created_at, tx_hash, wallet_address, exchange_rate')
         .eq('user_id', user.id)
@@ -130,13 +166,12 @@ export const useWallet = () => {
         .order('created_at', { ascending: false })
         .limit(50)
 
-      // Merge and convert crypto transactions to wallet transaction format
       const cryptoAsWallet: WalletTransaction[] = (cryptoData || []).map((ct: any) => ({
         id: ct.id,
         user_id: ct.user_id,
         amount: ct.transaction_type === 'deposit' ? ct.nc_amount : -ct.nc_amount,
         kind: ct.transaction_type === 'deposit' ? 'crypto_deposit' : 'crypto_withdrawal',
-        reference: ct.transaction_type === 'deposit' 
+        reference: ct.transaction_type === 'deposit'
           ? `Crypto deposit: ${ct.crypto_amount} ${ct.crypto_currency}`
           : `Crypto withdrawal: ${ct.crypto_amount} ${ct.crypto_currency} to ${ct.wallet_address?.substring(0, 10)}...`,
         status: ct.status,
@@ -147,73 +182,33 @@ export const useWallet = () => {
           crypto_amount: ct.crypto_amount,
           crypto_currency: ct.crypto_currency,
           wallet_address: ct.wallet_address,
-          exchange_rate: ct.exchange_rate
-        }
+          exchange_rate: ct.exchange_rate,
+        },
       }))
 
-      // Merge, deduplicate by reference, and sort
-      const allTransactions = [...(walletData || []), ...cryptoAsWallet]
-      const uniqueTransactions = allTransactions.filter((tx, index, self) =>
-        index === self.findIndex(t => t.reference === tx.reference || t.id === tx.id)
+      const all = [...(walletData || []), ...cryptoAsWallet]
+      const unique = all.filter((tx, i, self) =>
+        i === self.findIndex((t) => t.reference === tx.reference || t.id === tx.id)
       )
-      
-      // Sort by created_at descending
-      uniqueTransactions.sort((a, b) => 
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      )
-
-      setTransactions(uniqueTransactions.slice(0, 50))
-    } catch (error) {
-      console.error('Error fetching transactions:', error)
+      unique.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      const result = unique.slice(0, 50)
+      txCache.set(user.id, { data: result, ts: Date.now() })
+      return result
+    })()
+    txInflight.set(user.id, promise)
+    try {
+      const result = await promise
+      setTransactions(result)
+    } catch (e) {
+      console.error('Error fetching transactions:', e)
+    } finally {
+      txInflight.delete(user.id)
     }
   }
 
   const fetchEscrowPayments = async () => {
     if (!user) return
-
-    try {
-      // For now, we'll use a simplified query until the table is properly set up
-      setEscrowPayments([])
-    } catch (error) {
-      console.error('Error fetching escrow payments:', error)
-    }
-  }
-
-  const setupRealtimeSubscription = () => {
-    if (!user) return
-
-    const channel = supabase
-      .channel('wallet-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'profiles',
-          filter: `user_id=eq.${user.id}`
-        },
-        () => {
-          initializeWallet()
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'wallet_transactions',
-          filter: `user_id=eq.${user.id}`
-        },
-        () => {
-          fetchTransactions()
-          initializeWallet() // Also refresh balance when transactions change
-        }
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
+    setEscrowPayments([])
   }
 
   // Play spin wheel
