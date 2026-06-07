@@ -1,19 +1,16 @@
 // Sandbox safety test suite for the Developer API.
 //
 // Guarantees verified here:
-//   1. handleSandbox() is a pure function — it never imports/uses the
-//      Supabase client, fetch, or any external network primitive.
-//   2. Every supported sandbox endpoint returns simulated payloads and
-//      NEVER real identifiers, real tx hashes, or real balances.
-//   3. The source code wires sandbox requests so they short-circuit
-//      BEFORE any DB write, external API call, or NC deduction.
-//   4. Optional live-against-deployed integration test (skipped unless
-//      SANDBOX_API_KEY env is set) confirms the deployed function:
-//        - returns X-Sandbox: true
-//        - logs api_usage with is_sandbox=true and cost=0
-//        - does not change the developer's wallet_balance
+//   1. _sandbox.ts is a pure module — it imports nothing that could touch
+//      production tables or external services.
+//   2. handleSandbox() returns simulated payloads with obviously fake
+//      identifiers for every supported endpoint.
+//   3. The dispatcher in index.ts short-circuits sandbox requests BEFORE
+//      any DB write, external API call, or NC deduction.
+//   4. Optional live integration test (skipped unless SANDBOX_API_KEY is
+//      set) confirms the deployed function returns X-Sandbox:true.
 //
-// Run: invoked automatically by supabase--test_edge_functions.
+// Run via supabase--test_edge_functions.
 
 import "https://deno.land/std@0.224.0/dotenv/load.ts";
 import {
@@ -23,62 +20,72 @@ import {
   assertStringIncludes,
 } from "https://deno.land/std@0.224.0/assert/mod.ts";
 
-import { handleSandbox } from "./index.ts";
+import { handleSandbox } from "./_sandbox.ts";
 
-const SOURCE = await Deno.readTextFile(new URL("./index.ts", import.meta.url));
+const SANDBOX_SRC = await Deno.readTextFile(
+  new URL("./_sandbox.ts", import.meta.url),
+);
+const INDEX_SRC = await Deno.readTextFile(
+  new URL("./index.ts", import.meta.url),
+);
 
-// ---------- 1. Static analysis: sandbox handler is pure ----------
+// ---------- 1. Static analysis: _sandbox.ts is pure ----------
 
-Deno.test("handleSandbox source body contains no supabase/fetch/network calls", () => {
-  const start = SOURCE.indexOf("export function handleSandbox(");
-  assert(start > 0, "handleSandbox not found");
-  // Function body ends at the closing brace before deductBalance helper.
-  const end = SOURCE.indexOf("// Deduct NC balance for paid endpoints", start);
-  assert(end > start, "could not locate end of handleSandbox");
-  const body = SOURCE.slice(start, end);
+Deno.test("_sandbox.ts imports nothing that touches production", () => {
+  const importLines = SANDBOX_SRC
+    .split("\n")
+    .filter((l) => /^\s*import\s/.test(l));
+  // The pure sandbox module should not import ANY external module.
+  assertEquals(
+    importLines.length,
+    0,
+    `_sandbox.ts must have zero imports, found:\n${importLines.join("\n")}`,
+  );
+});
 
+Deno.test("_sandbox.ts contains no DB, fetch, or env access", () => {
   const forbidden = [
-    "supabase.from(",
-    "supabase.rpc(",
-    "supabase.functions.invoke(",
-    "supabase.auth.",
+    "supabase",
+    "createClient",
     "fetch(",
-    "deductBalance(",
-    "triggerWebhook(",
-    "Deno.env.get(",
+    "Deno.env",
+    "deductBalance",
+    "triggerWebhook",
+    "logApiUsage",
+    "RPC",
+    "ethers",
   ];
   for (const needle of forbidden) {
     assert(
-      !body.includes(needle),
-      `handleSandbox must not contain "${needle}" — sandbox would touch production`,
+      !SANDBOX_SRC.includes(needle),
+      `_sandbox.ts must not reference "${needle}"`,
     );
   }
 });
 
-Deno.test("sandbox branch short-circuits before any DB write or NC deduction", () => {
-  // The dispatch wrapper must enter the sandbox branch BEFORE deductBalance
-  // is invoked and BEFORE any handleX() that touches the DB.
-  const dispatchIdx = SOURCE.indexOf("if (isSandbox && !isWebhookCrud)");
-  assert(dispatchIdx > 0, "sandbox dispatch guard not found");
+Deno.test("index.ts short-circuits sandbox before deductions and after balance gate", () => {
+  const dispatchIdx = INDEX_SRC.indexOf("if (isSandbox && !isWebhookCrud)");
+  assert(dispatchIdx > 0, "sandbox dispatch guard not found in index.ts");
 
-  const deductIdx = SOURCE.indexOf("await deductBalance(", dispatchIdx);
-  const balanceCheckIdx = SOURCE.indexOf(
-    "if (!isSandbox && cost > 0",
-    0,
+  // Balance gate must skip when sandbox.
+  assertStringIncludes(INDEX_SRC, "if (!isSandbox && cost > 0");
+  // Final wallet debit must skip when sandbox.
+  assertStringIncludes(INDEX_SRC, "cost > 0 && !isSandbox");
+  // Usage log records the sandbox flag and zero cost on sandbox success.
+  assertStringIncludes(
+    INDEX_SRC,
+    "statusCode < 400 && !isSandbox ? cost : 0, isSandbox",
   );
-  assert(balanceCheckIdx > 0, "balance gate must be guarded by !isSandbox");
+
+  // No deductBalance() call may appear BEFORE the sandbox dispatch.
+  const deductIdx = INDEX_SRC.indexOf("await deductBalance(");
   assert(
     deductIdx === -1 || deductIdx > dispatchIdx,
     "deductBalance() must never run before the sandbox short-circuit",
   );
-
-  // Final wallet debit on success must also be sandbox-guarded.
-  assertStringIncludes(SOURCE, "cost > 0 && !isSandbox");
-  // Usage logging must record the sandbox flag and zero cost.
-  assertStringIncludes(SOURCE, "statusCode < 400 && !isSandbox ? cost : 0, isSandbox");
 });
 
-// ---------- 2. Pure-function behavior of every sandbox endpoint ----------
+// ---------- 2. Behavioral tests of handleSandbox ----------
 
 const params = (q = "") => new URLSearchParams(q);
 
@@ -89,7 +96,18 @@ function assertSimulated(res: { data?: any; error?: string }) {
   assertStringIncludes(res.data.note, "No real funds");
 }
 
-Deno.test("wallet/create returns simulated wallet, never a real address", () => {
+function assertFakeAddress(addr: string) {
+  assertStringIncludes(addr, "0xSANDBOX");
+  // Must not match a real 40-hex Celo address shape.
+  assert(!/^0x[0-9a-f]{40}$/i.test(addr));
+}
+
+function assertFakeTxHash(hash: string) {
+  assertStringIncludes(hash, "0xSANDBOX");
+  assert(!/^0x[0-9a-f]{64}$/i.test(hash));
+}
+
+Deno.test("wallet/create returns simulated wallet with fake address", () => {
   const res = handleSandbox(
     "wallet/create",
     "POST",
@@ -98,11 +116,11 @@ Deno.test("wallet/create returns simulated wallet, never a real address", () => 
   );
   assertSimulated(res);
   assertEquals(res.data.external_user_id, "u_test_1");
-  assertStringIncludes(res.data.address, "0xSANDBOX");
-  assertStringIncludes(res.data.wallet_id, "wlt_");
+  assertFakeAddress(res.data.address);
+  assertStringIncludes(res.data.wallet_id, "wlt_test_");
 });
 
-Deno.test("wallet/create rejects missing external_user_id without DB lookup", () => {
+Deno.test("wallet/create rejects missing external_user_id", () => {
   const res = handleSandbox("wallet/create", "POST", {}, params());
   assertEquals(res.status, 400);
   assertEquals(res.data, undefined);
@@ -129,12 +147,20 @@ Deno.test("wallet/transfer never produces a real on-chain tx_hash", () => {
   );
   assertSimulated(res);
   assertEquals(res.data.status, "completed");
-  assertStringIncludes(res.data.tx_hash, "0xSANDBOX");
-  // Must be obviously fake — no 64-hex real hash shape.
-  assert(!/^0x[0-9a-f]{64}$/i.test(res.data.tx_hash));
+  assertFakeTxHash(res.data.tx_hash);
 });
 
-Deno.test("vtu airtime + data return success without provider call", () => {
+Deno.test("wallet/transfer rejects incomplete bodies", () => {
+  const res = handleSandbox(
+    "wallet/transfer",
+    "POST",
+    { from: "u1" },
+    params(),
+  );
+  assertEquals(res.status, 400);
+});
+
+Deno.test("vtu airtime + data succeed without provider call", () => {
   for (const endpoint of ["vtu/airtime", "vtu/data"]) {
     const res = handleSandbox(
       endpoint,
@@ -144,11 +170,11 @@ Deno.test("vtu airtime + data return success without provider call", () => {
     );
     assertSimulated(res);
     assertEquals(res.data.status, "success");
-    assertStringIncludes(res.data.reference, "vtu_");
+    assertStringIncludes(res.data.reference, "vtu_test_");
   }
 });
 
-Deno.test("notification endpoints return queued message ids", () => {
+Deno.test("notification endpoints return queued ids", () => {
   for (const endpoint of [
     "notifications/email",
     "notifications/send",
@@ -176,7 +202,7 @@ Deno.test("video room creation returns sandbox URL, never a real Daily/LiveKit u
   assertStringIncludes(res.data.join_url, "/video/sandbox/");
 });
 
-Deno.test("ai/chat returns mock LLM response, never tokens from a real model", () => {
+Deno.test("ai/chat returns mock LLM response, never a real model", () => {
   const res = handleSandbox("ai/chat", "POST", { prompt: "hi" }, params());
   assertSimulated(res);
   assertEquals(res.data.model, "sandbox-mock-v1");
@@ -224,23 +250,35 @@ Deno.test("escrow create/fund/release/refund are all simulated", () => {
   }
 });
 
-Deno.test("smart contract endpoints return Alfajores testnet markers only", () => {
-  const deploy = handleSandbox("contracts/deploy", "POST", {}, params());
-  assertSimulated(deploy);
-  assertEquals(deploy.data.chain, "CELO-Alfajores");
-
-  const call = handleSandbox("contracts/call", "POST", {}, params());
-  assertSimulated(call);
-  assertEquals(call.data.chain, "CELO-Alfajores");
-});
-
-Deno.test("unknown endpoints fall through without touching production", () => {
+Deno.test("payments/payout returns simulated NC credit", () => {
   const res = handleSandbox(
-    "fictional/endpoint",
+    "payments/payout",
     "POST",
-    {},
+    { recipient_external_id: "r1", amount: 500 },
     params(),
   );
+  assertSimulated(res);
+  assertEquals(res.data.status, "completed");
+  assertEquals(res.data.currency, "NC");
+});
+
+Deno.test("smart contract endpoints stay on Alfajores testnet markers only", () => {
+  for (
+    const endpoint of [
+      "contracts/deploy",
+      "escrow/onchain/deploy",
+      "contracts/call",
+      "contracts/read",
+    ]
+  ) {
+    const res = handleSandbox(endpoint, "POST", {}, params());
+    assertSimulated(res);
+    assertEquals(res.data.chain, "CELO-Alfajores");
+  }
+});
+
+Deno.test("unknown endpoints fall through with 404 and no data", () => {
+  const res = handleSandbox("fictional/endpoint", "POST", {}, params());
   assertEquals(res.status, 404);
   assertEquals(res.data, undefined);
   assertStringIncludes(res.error ?? "", "not implemented in sandbox");
@@ -253,10 +291,12 @@ const SUPABASE_URL = Deno.env.get("VITE_SUPABASE_URL");
 const SUPABASE_ANON = Deno.env.get("VITE_SUPABASE_PUBLISHABLE_KEY");
 
 Deno.test({
-  name: "deployed sandbox call returns X-Sandbox:true and 200 (skipped unless SANDBOX_API_KEY set)",
+  name:
+    "deployed sandbox call returns X-Sandbox:true (skipped unless SANDBOX_API_KEY set)",
   ignore: !SANDBOX_KEY || !SUPABASE_URL || !SUPABASE_ANON,
   fn: async () => {
-    const url = `${SUPABASE_URL}/functions/v1/developer-api/wallet/balance?external_user_id=u_int_test`;
+    const url =
+      `${SUPABASE_URL}/functions/v1/developer-api/wallet/balance?external_user_id=u_int_test`;
     const res = await fetch(url, {
       method: "GET",
       headers: {
@@ -267,6 +307,7 @@ Deno.test({
     const json = await res.json();
     assertEquals(res.status, 200);
     assertEquals(res.headers.get("X-Sandbox"), "true");
-    assertEquals(json?.data?.mode ?? json?.mode, "sandbox");
+    const mode = json?.data?.mode ?? json?.mode;
+    assertEquals(mode, "sandbox");
   },
 });
