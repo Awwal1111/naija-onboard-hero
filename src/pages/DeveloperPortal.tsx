@@ -565,7 +565,9 @@ export default function DeveloperPortal() {
   const testEndpoint = async () => {
     const activeKey = useSandbox ? sandboxKey : apiKey;
     if (!selectedEndpoint || !activeKey) {
-      toast.error(useSandbox ? 'Sandbox key not available yet' : 'API key is required to test endpoints');
+      toast.error(useSandbox
+        ? 'Sandbox key not available in this session. Click regenerate to get a fresh one.'
+        : 'Live key not available in this session (keys are shown only once at generation). Regenerate to test, or paste your saved key into your own client.');
       return;
     }
     if (!useSandbox && !confirm('You are about to run this against LIVE mode.\n\nReal NC will be deducted and real funds may move. Continue?')) {
