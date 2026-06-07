@@ -175,7 +175,7 @@ const StoriesSection: React.FC<StoriesSectionProps> = ({
         `)
         .eq('story_id', storyId)
         .order('viewed_at', { ascending: false })
-        .limit(100)
+        .limit(50)
 
       if (!error && data) {
         // Transform data to match interface
