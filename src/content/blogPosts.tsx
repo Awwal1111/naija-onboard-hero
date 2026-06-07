@@ -1649,6 +1649,229 @@ export const BLOG_POSTS: BlogPost[] = [
       </Section>
     </>),
   },
+  {
+    slug: 'how-to-earn-in-usdt-from-nigeria-2026',
+    title: 'How to Earn in USDT From Nigeria as a Freelancer (2026 Guide)',
+    description: 'Step-by-step guide to earning, receiving and withdrawing USDT from freelance work in Nigeria using NaijaLancers escrow, NC wallet and on-chain payouts.',
+    keywords: 'earn usdt in nigeria, usdt freelance nigeria, how to receive usdt nigeria, freelance crypto payment nigeria, naijalancers usdt withdrawal, dollar income nigeria',
+    datePublished: '2026-06-07', dateModified: '2026-06-07', readTime: '8 min read',
+    author: 'NaijaLancers Team', category: 'Payments & Crypto',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">USDT has quietly become the default freelance currency for Nigerians. It holds its value, settles in minutes, and skips every Naira bottleneck. Here's exactly how to set up a clean USDT income stream on NaijaLancers in 2026 — without leaving the platform's escrow protection.</p>
+      <Section title="Why USDT instead of Naira for freelance income">
+        <List items={[
+          'The Naira lost over 60% of its dollar value in the last 24 months — billing in USDT preserves your earnings.',
+          'On-chain settlement clears in under 10 minutes on Celo and TRC-20.',
+          'No bank holds, no PND, no "limit exceeded" — your money is on you, not your bank.',
+          'International clients prefer paying in stablecoins; you remove a friction point and win the gig.',
+        ]} />
+      </Section>
+      <Section title="Step 1 — Price your gigs in NC, advertise the USDT equivalent">
+        <p>Every NaijaLancers gig is priced in NC (1 NC ≈ ₦1). The platform shows the live USDT equivalent automatically, so a client paying in USDT sees a fair price and you still benefit from local escrow rules. Mention "USDT payout available" in your gig description — it converts.</p>
+      </Section>
+      <Section title="Step 2 — Set up your USDT withdrawal address">
+        <p>Open Settings → Wallet → Withdraw → USDT. Paste a TRC-20 address (Binance, Bybit, Bitget, Trust Wallet) or a Celo cUSD/USDT address (Valora, MiniPay). Save it once; future withdrawals are one tap. The address sits in <code>user_secrets</code> with full RLS — never logged, never exposed.</p>
+      </Section>
+      <Section title="Step 3 — Deliver, get approved, withdraw">
+        <p>The flow is identical to a Naira withdrawal: client approves the order → NC lands in your withdrawable balance → you choose USDT → confirm with your transaction PIN → on-chain in under 10 minutes. No KYC re-checks, no bank validation, no business day delays.</p>
+      </Section>
+      <Section title="Step 4 — Stack with NC Savings">
+        <p>If you do not need to off-ramp immediately, park the NC in NC Savings (fixed 5% APY) and withdraw to USDT later. You earn yield in Naira terms while keeping the option to convert at any time.</p>
+      </Section>
+      <Section title="Common questions">
+        <List items={[
+          'Do I need a CBN-licensed exchange? No — peer-to-peer USDT is legal personal use; the platform never converts to fiat on your behalf.',
+          'What about gas fees? Celo gas is fractions of a cent. TRC-20 USDT withdrawals carry a small network fee shown before you confirm.',
+          'Can I withdraw to MiniPay? Yes — Celo USDT and cUSD land directly in MiniPay; we auto-detect MiniPay users.',
+          'Is there a minimum? Yes, NC 5,000 (~$3) to keep on-chain costs sensible.',
+        ]} />
+      </Section>
+      <Section title="The bottom line">
+        <p>If you freelance in Nigeria and you are not yet collecting in USDT, you are losing real money to inflation every month. NaijaLancers gives you escrow on the way in and on-chain payout on the way out — the cleanest dollar income stack any Nigerian freelancer can build in 2026.</p>
+      </Section>
+    </>),
+  },
+  {
+    slug: 'best-ai-side-hustles-nigeria-2026',
+    title: 'Best AI Side Hustles in Nigeria 2026 (Real Earnings, Real Tools)',
+    description: 'The seven highest-paying AI side hustles a Nigerian freelancer can start in 2026 — with the exact tools, gig templates and pricing that work on NaijaLancers.',
+    keywords: 'ai side hustle nigeria, ai freelance nigeria 2026, make money with ai nigeria, chatgpt side hustle nigeria, ai jobs nigeria, naijalancers ai gigs',
+    datePublished: '2026-06-07', dateModified: '2026-06-07', readTime: '9 min read',
+    author: 'NaijaLancers Team', category: 'AI & Side Hustles',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">AI did not kill freelance work in Nigeria — it created an entirely new layer of it. Clients still want the outcome, but now they pay for the operator who knows which AI to use, how to prompt it, and how to ship a polished result. Here are the seven AI side hustles paying the most on NaijaLancers right now.</p>
+      <Section title="1. AI-assisted copywriting & landing pages">
+        <p>Tools: ChatGPT, Claude, Jasper, Framer AI. Average gig price: NC 25,000–120,000. Sell outcomes ("3 landing page variants, ready to ship") not hours.</p>
+      </Section>
+      <Section title="2. Custom GPT and chatbot building">
+        <p>Tools: OpenAI Custom GPTs, Lovable, Voiceflow, Make. Average gig price: NC 80,000–400,000. SMEs in Lagos, Abuja and Port Harcourt want WhatsApp/Telegram bots that answer FAQs and capture leads.</p>
+      </Section>
+      <Section title="3. AI video editing and short-form repurposing">
+        <p>Tools: Opus Clip, Descript, CapCut, Runway. Average gig price: NC 15,000 per 10 short clips. Creators outsource this in bulk — recurring revenue if you deliver on time.</p>
+      </Section>
+      <Section title="4. AI image and brand visuals">
+        <p>Tools: Midjourney, Nano Banana, Ideogram, Photoshop Generative Fill. Average gig price: NC 20,000–90,000 per brand kit. The premium tier is owning the brand voice across 30+ assets.</p>
+      </Section>
+      <Section title="5. AI voiceover and dubbing (Nigerian accents)">
+        <p>Tools: ElevenLabs, Resemble, HeyGen. Average gig price: NC 8,000–40,000 per minute. Strong demand from edtech, audiobooks, and explainer-video studios.</p>
+      </Section>
+      <Section title="6. AI-driven SEO and content production">
+        <p>Tools: Surfer SEO, Ahrefs, ChatGPT, Claude, NaijaLancers Writing Assistant. Average gig price: NC 60,000–250,000 per content sprint. The deliverable is published articles that rank — not raw drafts.</p>
+      </Section>
+      <Section title="7. AI no-code app and automation builds">
+        <p>Tools: Lovable, Bolt, n8n, Zapier, Supabase. Average gig price: NC 150,000–800,000 per build. This is the highest ceiling of the seven — small SaaS MVPs ship in under two weeks.</p>
+      </Section>
+      <Section title="How to start this weekend">
+        <List items={[
+          'Pick one of the seven (the one whose tools you already enjoy).',
+          'Post a gig with three tiers using the [Outcome] for [Buyer type] formula.',
+          'Drop one before/after sample in your portfolio — that is your unfair advantage.',
+          'Turn on AI Hire matching so clients searching for AI services see you first.',
+          'Take orders, deliver in escrow, get rated, raise prices every 5 orders.',
+        ]} />
+      </Section>
+      <Section title="A word on durability">
+        <p>The AI side hustles that pay best in 2026 share one trait: they bundle the model output into a finished deliverable. Anyone can prompt ChatGPT. Few can ship a polished landing page, brand kit, or WhatsApp bot the same day. Build that wrapper and you stay ahead of the next model upgrade.</p>
+      </Section>
+    </>),
+  },
+  {
+    slug: 'remote-jobs-from-home-nigeria-2026',
+    title: 'How to Find Remote Jobs From Home in Nigeria (2026 Edition)',
+    description: 'A practical 2026 playbook for landing remote jobs from home in Nigeria — where to look, what skills win, how to apply, and how NaijaLancers shortcuts the process.',
+    keywords: 'remote jobs nigeria, work from home nigeria, remote jobs from home nigeria 2026, online jobs nigeria, naijalancers remote work, remote work nigeria',
+    datePublished: '2026-06-07', dateModified: '2026-06-07', readTime: '8 min read',
+    author: 'NaijaLancers Team', category: 'Remote Work',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">"Remote jobs from home in Nigeria" is one of the most searched phrases on Nigerian Google — and one of the most scam-infested. This guide separates the real opportunities from the noise, and shows the fastest legitimate paths in 2026.</p>
+      <Section title="Three categories of remote work that actually pay">
+        <List items={[
+          'Full-time remote roles with international companies (Toptal, Andela, Deel-paid roles).',
+          'Project-based freelance work (NaijaLancers, Upwork, Contra).',
+          'Productised services you sell repeatedly (gigs, courses, digital products).',
+        ]} />
+        <p>Most Nigerians who succeed pick one for now and add the other two within 12 months.</p>
+      </Section>
+      <Section title="Skills that win remote jobs in 2026">
+        <List items={[
+          'Software engineering (TypeScript, React, Python, Go).',
+          'Product design (Figma, motion, brand systems).',
+          'AI automation and no-code (Lovable, n8n, Make).',
+          'Technical writing and SEO content.',
+          'Customer success and ops for SaaS companies.',
+          'Video editing and short-form for creators.',
+        ]} />
+      </Section>
+      <Section title="Where to look (and what to ignore)">
+        <p>Stick to platforms with verified payment rails. Ignore Telegram groups promising "$2,000 weekly typing jobs" — they are crypto-recovery scams or pig-butchering funnels. Trusted starting points: NaijaLancers (escrow on every order), Wellfound, Remote OK, Working Nomads, We Work Remotely, plus company career pages directly.</p>
+      </Section>
+      <Section title="The NaijaLancers shortcut">
+        <p>Instead of competing globally on day one, build a track record locally first. Post a gig on NaijaLancers in your strongest skill, take 5–10 escrowed orders, collect reviews, then port the portfolio and testimonials to international platforms. The local reps build the global resume.</p>
+      </Section>
+      <Section title="Application checklist that converts">
+        <List items={[
+          'Profile photo: clean headshot, neutral background.',
+          'Headline: one outcome and one tech, e.g. "Ship Tailwind + React landing pages in 5 days".',
+          'Portfolio: 3 real samples with links and a one-line result each.',
+          'Loom video: 60-second intro on every serious application.',
+          'Response time: under 2 hours during your declared working window.',
+        ]} />
+      </Section>
+      <Section title="Getting paid safely from anywhere in the world">
+        <p>If a client wires USD to your Nigerian bank, you can lose days to validation. Faster paths: pay-via-NaijaLancers (escrow + Quidax to Naira or USDT on-chain), Wise, Payoneer, Deel, or Mercury. Use NaijaLancers for project-based work; use Deel/Payoneer for salaried remote roles.</p>
+      </Section>
+      <Section title="Mindset, briefly">
+        <p>Remote work is not "easier" than office work — it rewards async writing, time-zone discipline, and visible output. Treat your day like a knowledge worker shipping deliverables on a clock, and the remote job will find you within months.</p>
+      </Section>
+    </>),
+  },
+  {
+    slug: 'start-freelancing-no-experience-nigeria',
+    title: 'How to Start Freelancing in Nigeria With No Experience (2026)',
+    description: 'A no-fluff 2026 starter guide for Nigerians who want to begin freelancing with zero experience — pick a skill, build a tiny portfolio, land the first paid order on NaijaLancers.',
+    keywords: 'how to start freelancing in nigeria, freelancing for beginners nigeria, no experience freelance, naijalancers beginner guide, first freelance client nigeria',
+    datePublished: '2026-06-07', dateModified: '2026-06-07', readTime: '7 min read',
+    author: 'NaijaLancers Team', category: 'Beginner Guides',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">You do not need a CV, a laptop bag, or a fancy degree to start freelancing in Nigeria in 2026. You need one skill, a phone, and the patience to ship five free or low-priced jobs before you raise prices. Here is the entire path.</p>
+      <Section title="Week 1 — Pick one skill and stop scrolling">
+        <p>Choose from the high-demand starter set: short-form video editing, social media management, basic graphic design (Canva), virtual assistance, transcription, captioning, basic web design (Framer/Webflow), or AI-assisted copywriting. Pick the one you can practise daily without burning out.</p>
+      </Section>
+      <Section title="Week 2 — Build a 3-piece portfolio (without a client)">
+        <p>Re-do a popular brand's landing page. Edit three viral TikToks for a fictional restaurant. Write three sample LinkedIn posts for a real Nigerian founder you admire. Real-looking work for fake briefs is enough to start.</p>
+      </Section>
+      <Section title="Week 3 — Set up NaijaLancers properly">
+        <List items={[
+          'Verify your identity (basic KYC). Trust scores reward this immediately.',
+          'Write a profile bio that names the outcome and the buyer.',
+          'Post your first gig in 3 tiers (NC 5,000 / 15,000 / 35,000 is a fair starter ladder).',
+          'Set up your NC wallet and a transaction PIN.',
+          'Add a withdrawal method (Quidax for Naira, or USDT address).',
+        ]} />
+      </Section>
+      <Section title="Week 4 — Land the first 3 orders">
+        <p>Tell your network you are open. Post your gig link in 2 WhatsApp groups, 1 Telegram channel, your Instagram story, and your X/Twitter bio. Reply to any inbound message within an hour. Under-promise on timeline, over-deliver on output. Ask for a public review the moment the work is approved.</p>
+      </Section>
+      <Section title="Month 2 — Raise prices, repeat">
+        <p>Every 5 completed orders, raise your prices by 20–30%. Add an FAQ to your gig. Record a 30-second intro video. Apply for verified expert status once you hit 10 orders and 4.7-average rating.</p>
+      </Section>
+      <Section title="Mistakes that kill beginners">
+        <List items={[
+          'Working off-platform on a "WhatsApp deal" — you lose escrow protection and almost always the money too.',
+          'Taking on work outside your declared skill to chase the cash — it tanks your rating fast.',
+          'Pricing for the lowest bidder forever — you will burn out before you reach a sustainable rate.',
+          "Skipping reviews — they are 80% of a future buyer's decision.",
+        ]} />
+      </Section>
+      <Section title="What success looks like at month 6">
+
+        <p>20–40 completed orders, NC 200,000–800,000 monthly income, verified expert badge, repeat clients, and a clear sense of which niche pays best for you. From there the only question is whether to scale (hire help, productise) or specialise (go premium, charge 10× more for the same skill).</p>
+      </Section>
+    </>),
+  },
+  {
+    slug: 'earn-dollars-from-nigeria-naira-hedge',
+    title: 'How to Earn in Dollars From Nigeria (and Hedge Against the Naira)',
+    description: 'A 2026 playbook for Nigerians who want to earn in dollars or USDT, hold value against Naira inflation, and still spend locally without losing to FX spreads.',
+    keywords: 'earn dollars nigeria, naira hedge, usdt income nigeria, dollar freelance nigeria, naijalancers dollar earnings, beat naira inflation',
+    datePublished: '2026-06-07', dateModified: '2026-06-07', readTime: '8 min read',
+    author: 'NaijaLancers Team', category: 'Income & Inflation',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">If you earn only in Naira in 2026, you are running on a treadmill that speeds up every quarter. Earning even partially in dollars or USDT is the single biggest financial upgrade most Nigerians can make this year — and freelancing is the easiest legal route in.</p>
+      <Section title="Why dollar income matters now">
+        <p>Inflation has eaten through Naira savings rates for five straight years. Imported goods, school fees, SaaS subscriptions, and international travel are all dollar-priced. Earning in dollars is no longer a luxury — for many freelancers it is a survival strategy.</p>
+      </Section>
+      <Section title="Four legitimate dollar income streams a Nigerian can stack">
+        <List items={[
+          'Freelance gigs paid in USD/USDT (NaijaLancers, Upwork, Contra).',
+          'Remote contractor roles via Deel, Remote.com or Payoneer.',
+          'Digital products (courses, templates, Notion guides) sold on Gumroad / NaijaLancers.',
+          'Affiliate revenue from international SaaS programmes.',
+        ]} />
+        <p>Pick one to start. Layer the others within 6–12 months.</p>
+      </Section>
+      <Section title="The NaijaLancers stack for dollar income">
+        <p>NaijaLancers gives Nigerian freelancers a uniquely clean dollar pipeline: take the gig in NC, the platform shows the USDT equivalent, the buyer pays into escrow, you withdraw to a USDT address. You never touch a foreign bank, never face a chargeback, and you keep the option to off-ramp to Naira via Quidax whenever the FX rate is favourable.</p>
+      </Section>
+      <Section title="Where to hold your dollars">
+        <List items={[
+          'USDT (TRC-20 or Celo) in a self-custody wallet — fully under your control.',
+          'A Geegpay / Grey / Eversend USD account — useful for receiving from Stripe/Wise.',
+          'A small position in BTC or a tokenised T-bill product for longer-term storage (do your own research).',
+          'A licensed offshore broker (Interactive Brokers via Wise) if your monthly income is consistently $1k+.',
+        ]} />
+      </Section>
+      <Section title="Spending locally without losing to FX">
+        <p>Convert only what you need this month to Naira — every Friday is a sensible cadence. NaijaLancers's Quidax integration gives near-market rates, beating most parallel-market spreads. The rest of your dollars stay in USDT, untouched by Naira moves.</p>
+      </Section>
+      <Section title="Tax, briefly">
+        <p>Income earned abroad and remitted to Nigeria is, in most cases, assessable under Nigerian personal income tax. Speak to an accountant once you cross ₦25M annually — under that, keep clean records, file annually, and you are fine. Our <em>freelance-tax-nigeria-guide</em> post covers the specifics.</p>
+      </Section>
+      <Section title="The mindset shift">
+        <p>You are not abandoning Nigeria by earning in dollars — you are protecting your family's purchasing power so you can keep living, building, and reinvesting here. NaijaLancers exists specifically to make that protection one tap away.</p>
+      </Section>
+    </>),
+  },
 ];
 
 export function getPostBySlug(slug: string): BlogPost | undefined {
