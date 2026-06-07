@@ -1,7 +1,7 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Briefcase, FileText, Bell, BarChart3, Settings, Video, Wallet, Bookmark, Search, Package, Users, FolderKanban, Timer, Award, Bot, PlusCircle, Target, Bug, HelpCircle, ShieldAlert, Crown } from "lucide-react";
+import { User, Briefcase, FileText, Bell, BarChart3, Settings, Video, Wallet, Bookmark, Search, Package, Users, FolderKanban, Timer, Award, Bot, PlusCircle, Target, Bug, HelpCircle, ShieldAlert, Crown, BookOpen } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useRoleFeatures } from "@/hooks/useRoleFeatures";
 import { Badge } from "@/components/ui/badge";
@@ -67,6 +67,7 @@ export const MoreMenuDrawer = ({ open, onOpenChange }: MoreMenuDrawerProps) => {
 
   // Removed: Fundraising, Referrals, Leaderboard, Donations, Loan, Emergency, Sell Products (moved to Apps)
   const otherItems = [
+    { icon: BookOpen, label: "Blog", path: "/blog", color: "text-primary", forRoles: ['freelancer', 'client', 'both'] },
     { icon: HelpCircle, label: "Help Center", path: "/help", color: "text-blue-500", forRoles: ['freelancer', 'client', 'both'] },
     { icon: Settings, label: "Settings", path: "/settings", color: "text-muted-foreground", forRoles: ['freelancer', 'client', 'both'] },
   ];
