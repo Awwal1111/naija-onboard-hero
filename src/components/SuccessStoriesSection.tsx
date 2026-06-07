@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Star, Quote, TrendingUp, Briefcase, Award, CheckCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 interface SuccessStory {
   id: string;
@@ -30,23 +30,14 @@ interface RealTestimonial {
 }
 
 export const SuccessStoriesSection = () => {
-  const [topEarners, setTopEarners] = useState<SuccessStory[]>([]);
-  const [testimonials, setTestimonials] = useState<RealTestimonial[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
-    totalUsers: 0,
-    completedJobs: 0,
-    totalPaidOut: 0,
-    avgRating: 0
-  });
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
-    try {
-      // Fetch top earners
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ["success-stories-landing"],
+    staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    queryFn: async () => {
+      // Top earners (bounded)
       const { data: earners } = await supabase
         .from("profiles")
         .select("user_id, full_name, profession, profile_picture_url, total_earnings, completed_jobs_count, average_rating, rating_count, is_expert")
@@ -55,74 +46,64 @@ export const SuccessStoriesSection = () => {
         .order("total_earnings", { ascending: false })
         .limit(6);
 
-      if (earners) {
-        setTopEarners(earners.map(e => ({ ...e, id: e.user_id })) as unknown as SuccessStory[]);
-      }
+      const topEarners: SuccessStory[] = (earners || []).map((e: any) => ({
+        ...e,
+        id: e.user_id,
+      })) as SuccessStory[];
 
-      // Fetch real testimonials from platform_ratings
+      // Featured testimonials (bounded)
       const { data: ratingsData } = await supabase
-        .from('platform_ratings' as any)
-        .select('id, rating, review, created_at, user_id')
-        .eq('is_featured', true)
-        .not('review', 'is', null)
-        .order('created_at', { ascending: false })
+        .from("platform_ratings" as any)
+        .select("id, rating, review, created_at, user_id")
+        .eq("is_featured", true)
+        .not("review", "is", null)
+        .order("created_at", { ascending: false })
         .limit(6) as any;
 
+      let testimonials: RealTestimonial[] = [];
       if (ratingsData && ratingsData.length > 0) {
-        const userIds = ratingsData.map((r: any) => r.user_id);
+        const userIds = Array.from(new Set(ratingsData.map((r: any) => r.user_id as string))) as string[];
         const { data: profilesData } = await supabase
-          .from('profiles')
-          .select('user_id, full_name, profession, profile_picture_url')
-          .in('user_id', userIds);
+          .from("profiles")
+          .select("user_id, full_name, profession, profile_picture_url")
+          .in("user_id", userIds)
+          .limit(userIds.length);
 
-        const testimonialsWithProfiles = ratingsData.map((rating: any) => {
+        testimonials = ratingsData.map((rating: any) => {
           const profile = profilesData?.find((p: any) => p.user_id === rating.user_id);
           return {
             id: rating.id,
             rating: rating.rating,
             review: rating.review,
             created_at: rating.created_at,
-            user: profile ? {
-              full_name: profile.full_name,
-              profession: profile.profession,
-              profile_picture_url: profile.profile_picture_url
-            } : null
+            user: profile
+              ? {
+                  full_name: profile.full_name,
+                  profession: profile.profession,
+                  profile_picture_url: profile.profile_picture_url,
+                }
+              : null,
           };
         });
-
-        setTestimonials(testimonialsWithProfiles);
       }
 
-      // Fetch platform stats
-      const { count: userCount } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true });
+      // Aggregate platform stats via RPC (replaces unbounded scan of profiles)
+      const { data: statsData } = await supabase.rpc("get_landing_stats");
+      const s: any = statsData || {};
+      const stats = {
+        totalUsers: Number(s.total_users) || 0,
+        completedJobs: Number(s.completed_jobs) || 0,
+        totalPaidOut: Number(s.total_paid_out) || 0,
+        avgRating: Number(s.avg_user_rating) || 4.8,
+      };
 
-      const { data: jobStats } = await supabase
-        .from('profiles')
-        .select('completed_jobs_count, total_earnings, average_rating')
-        .gt('completed_jobs_count', 0);
+      return { topEarners, testimonials, stats };
+    },
+  });
 
-      if (jobStats) {
-        const completedJobs = jobStats.reduce((sum, p) => sum + (p.completed_jobs_count || 0), 0);
-        const totalPaid = jobStats.reduce((sum, p) => sum + (p.total_earnings || 0), 0);
-        const avgRating = jobStats.length > 0 
-          ? jobStats.reduce((sum, p) => sum + (p.average_rating || 0), 0) / jobStats.filter(p => p.average_rating > 0).length
-          : 4.8;
-
-        setStats({
-          totalUsers: userCount || 0,
-          completedJobs,
-          totalPaidOut: totalPaid,
-          avgRating: Math.round(avgRating * 10) / 10 || 4.8
-        });
-      }
-    } catch (err) {
-      console.error("Error fetching success stories:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const topEarners = data?.topEarners ?? [];
+  const testimonials = data?.testimonials ?? [];
+  const stats = data?.stats ?? { totalUsers: 0, completedJobs: 0, totalPaidOut: 0, avgRating: 4.8 };
 
   const formatEarnings = (amount: number) => {
     if (amount >= 1000000) return `₦${(amount / 1000000).toFixed(1)}M+`;
@@ -135,6 +116,8 @@ export const SuccessStoriesSection = () => {
     if (amount >= 1000) return `₦${Math.round(amount / 1000)}K+`;
     return `₦${amount}+`;
   };
+
+
 
   // Don't render section if no real data
   if (loading) {

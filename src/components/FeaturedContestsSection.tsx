@@ -21,6 +21,10 @@ export function FeaturedContestsSection() {
       if (error) throw error
       return data || []
     },
+    staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   })
 
   if (isLoading || !contests?.length) return null

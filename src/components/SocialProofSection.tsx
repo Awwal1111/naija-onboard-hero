@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { Star, Quote, CheckCircle, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { supabase } from '@/integrations/supabase/client'
+import { useQuery } from '@tanstack/react-query'
 
 interface PlatformRating {
   id: string
@@ -16,17 +17,56 @@ interface PlatformRating {
 }
 
 export const SocialProofSection: React.FC = () => {
-  const [ratings, setRatings] = useState<PlatformRating[]>([])
-  const [loading, setLoading] = useState(true)
-  const [stats, setStats] = useState({ average: 0, count: 0 })
   const [currentIndex, setCurrentIndex] = useState(0)
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    fetchFeaturedRatings()
-  }, [])
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ['social-proof-landing'],
+    staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    queryFn: async () => {
+      const { data: ratingsData } = await supabase
+        .from('platform_ratings' as any)
+        .select('id, rating, review, created_at, user_id')
+        .eq('is_featured', true)
+        .not('review', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(10) as any
 
-  // Auto-scroll testimonials
+      let ratings: PlatformRating[] = []
+      if (ratingsData && ratingsData.length > 0) {
+        const userIds = Array.from(new Set(ratingsData.map((r: any) => r.user_id as string))) as string[]
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('user_id, full_name, profession, profile_picture_url')
+          .in('user_id', userIds)
+          .limit(userIds.length)
+
+        ratings = ratingsData.map((rating: any) => {
+          const profile = profilesData?.find((p: any) => p.user_id === rating.user_id)
+          return {
+            ...rating,
+            profiles: profile || { full_name: null, profession: null, profile_picture_url: null },
+          }
+        }) as PlatformRating[]
+      }
+
+      // Aggregate via RPC instead of fetching all ratings
+      const { data: statsData } = await supabase.rpc('get_landing_stats')
+      const stats = {
+        average: (statsData as any)?.platform_rating_avg ?? 0,
+        count: (statsData as any)?.platform_rating_count ?? 0,
+      }
+
+      return { ratings, stats }
+    },
+  })
+
+  const ratings = data?.ratings ?? []
+  const stats = data?.stats ?? { average: 0, count: 0 }
+
   useEffect(() => {
     if (ratings.length <= 1) return
     const interval = setInterval(() => {
@@ -35,55 +75,6 @@ export const SocialProofSection: React.FC = () => {
     return () => clearInterval(interval)
   }, [ratings.length])
 
-  const fetchFeaturedRatings = async () => {
-    try {
-      const { data: ratingsData, error } = await supabase
-        .from('platform_ratings' as any)
-        .select('id, rating, review, created_at, user_id')
-        .eq('is_featured', true)
-        .not('review', 'is', null)
-        .order('created_at', { ascending: false })
-        .limit(10) as any
-
-      if (error) throw error
-
-      if (!ratingsData || ratingsData.length === 0) {
-        setRatings([])
-        return
-      }
-
-      const userIds = ratingsData.map((r: any) => r.user_id)
-      const { data: profilesData } = await supabase
-        .from('profiles')
-        .select('user_id, full_name, profession, profile_picture_url')
-        .in('user_id', userIds)
-
-      const ratingsWithProfiles = ratingsData.map((rating: any) => {
-        const profile = profilesData?.find((p: any) => p.user_id === rating.user_id)
-        return {
-          ...rating,
-          profiles: profile || { full_name: null, profession: null, profile_picture_url: null }
-        }
-      })
-
-      setRatings(ratingsWithProfiles as PlatformRating[])
-      
-      // Calculate stats from all ratings
-      const { data: allRatings } = await supabase
-        .from('platform_ratings' as any)
-        .select('rating') as any
-      
-      if (allRatings && allRatings.length > 0) {
-        const avg = allRatings.reduce((sum: number, r: any) => sum + r.rating, 0) / allRatings.length
-        setStats({ average: Math.round(avg * 10) / 10, count: allRatings.length })
-      }
-    } catch (error) {
-      console.error('Error fetching ratings:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const handlePrev = () => {
     setCurrentIndex((prev) => (prev - 1 + ratings.length) % ratings.length)
   }
@@ -91,6 +82,7 @@ export const SocialProofSection: React.FC = () => {
   const handleNext = () => {
     setCurrentIndex((prev) => (prev + 1) % ratings.length)
   }
+
 
   if (loading || ratings.length === 0) {
     return null
