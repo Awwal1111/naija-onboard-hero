@@ -121,37 +121,49 @@ const MiniAppsMarketplace = () => {
   const { isNigerian } = useUserCountry()
   const navigate = useNavigate()
 
-  const fetchApps = async () => {
-    const { data } = await supabase
-      .from('mini_apps')
-      .select('*')
-      .eq('status', 'approved')
-      .order('is_featured', { ascending: false })
-      .order('install_count', { ascending: false })
+  const MINI_APP_COLS = 'id, app_name, app_description, app_icon_url, app_url, category, install_count, rating, review_count, sdk_app_id, developer_id, status'
 
-    // Filter out internal:// apps (handled as built-in) and known internal sdk_app_ids
-    const internalIds = new Set(['bills', 'bank_deposit', 'bank_withdrawal', 'deposit_naira', 'crypto_deposit', 'metamask_deposit', 'ivorypay_deposit', 'escrow', 'nc_converter'])
-    const dbApps = (data || []).filter((a: any) => 
-      !internalIds.has(a.sdk_app_id) && !a.app_url?.startsWith('internal://')
-    ) as MiniApp[]
-    setExternalApps(dbApps)
-  }
+  // Approved external apps — cached aggressively (rarely changes)
+  const { data: externalAppsData } = useQuery({
+    queryKey: ['mini-apps', 'approved'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('mini_apps')
+        .select(MINI_APP_COLS)
+        .eq('status', 'approved')
+        .order('is_featured', { ascending: false })
+        .order('install_count', { ascending: false })
+        .limit(100)
+      const internalIds = new Set(['bills', 'bank_deposit', 'bank_withdrawal', 'deposit_naira', 'crypto_deposit', 'metamask_deposit', 'ivorypay_deposit', 'escrow', 'nc_converter'])
+      return (data || []).filter((a: any) =>
+        !internalIds.has(a.sdk_app_id) && !a.app_url?.startsWith('internal://')
+      ) as MiniApp[]
+    },
+    staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  })
+  const externalApps = externalAppsData || []
 
-  const fetchMyApps = async () => {
-    if (!user) return
-    const { data } = await supabase
-      .from('mini_apps')
-      .select('*')
-      .eq('developer_id', user.id)
-      .order('created_at', { ascending: false })
+  const { data: myAppsData } = useQuery({
+    queryKey: ['mini-apps', 'mine', user?.id],
+    queryFn: async () => {
+      if (!user) return [] as MiniApp[]
+      const { data } = await supabase
+        .from('mini_apps')
+        .select(MINI_APP_COLS)
+        .eq('developer_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(50)
+      return (data || []) as MiniApp[]
+    },
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  })
+  const myApps = myAppsData || []
 
-    if (data) setMyApps(data as MiniApp[])
-  }
-
-  useEffect(() => {
-    fetchApps()
-    fetchMyApps()
-  }, [user])
 
   // Determine "App of the Week" - most installed external app, fallback to featured built-in
   const topApp: UnifiedApp | null = (() => {
