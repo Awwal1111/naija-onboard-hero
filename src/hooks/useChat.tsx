@@ -185,19 +185,22 @@ export const useChat = (otherUserId: string) => {
 
   const fetchMessages = async (chatId: string) => {
     try {
+      // Load most recent 100 messages, then display oldest-first
       const { data, error } = await supabase
         .from('messages')
         .select('id, chat_id, sender_id, content, media_url, media_type, created_at, read_at, reply_to_id, reply_to_content, reply_to_sender')
         .eq('chat_id', chatId)
-        .order('created_at', { ascending: true })
+        .order('created_at', { ascending: false })
+        .limit(100)
 
       if (error) throw error
 
-      setMessages(data || [])
+      setMessages((data || []).reverse())
     } catch (error) {
       console.error('Error fetching messages:', error)
     }
   }
+
 
   useEffect(() => {
     if (!chat) return
