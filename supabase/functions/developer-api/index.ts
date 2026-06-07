@@ -96,35 +96,44 @@ interface DeveloperProfile {
   account_type: string;
   api_key: string;
   wallet_balance: number;
+  mode: 'live' | 'sandbox';
 }
 
 // Validate API key and get developer profile
-// FIXED: API keys are stored in user_secrets table, NOT profiles
+// Live keys are stored in user_secrets.api_key, sandbox keys in user_secrets.sandbox_api_key
 async function validateApiKey(apiKey: string): Promise<DeveloperProfile | null> {
   if (!apiKey) {
     console.log('[API] No API key provided');
     return null;
   }
-  
-  console.log('[API] Validating API key:', apiKey.substring(0, 10) + '...');
-  
-  // Step 1: Find the API key in user_secrets
+
+  const isSandboxKey = apiKey.startsWith('nl_test_');
+  console.log(`[API] Validating ${isSandboxKey ? 'SANDBOX' : 'LIVE'} key:`, apiKey.substring(0, 12) + '...');
+
+  // Step 1: Find the API key in user_secrets (live or sandbox column)
+  const column = isSandboxKey ? 'sandbox_api_key' : 'api_key';
   const { data: secretData, error: secretError } = await supabase
     .from('user_secrets')
-    .select('user_id, api_key')
-    .eq('api_key', apiKey)
+    .select('user_id, api_key, sandbox_api_key, api_key_enabled')
+    .eq(column, apiKey)
     .maybeSingle();
-  
+
   if (secretError) {
     console.log('[API] Database error looking up API key:', secretError.message);
     return null;
   }
-  
+
   if (!secretData) {
-    console.log('[API] No matching API key found in user_secrets');
+    console.log('[API] No matching API key found');
     return null;
   }
-  
+
+  // Honor the disable toggle (live keys only — sandbox is always usable)
+  if (!isSandboxKey && secretData.api_key_enabled === false) {
+    console.log('[API] Live API key is disabled by the developer');
+    return null;
+  }
+
   // Step 2: Verify the user has a developer account type in profiles
   const { data: profileData, error: profileError } = await supabase
     .from('profiles')
@@ -132,25 +141,26 @@ async function validateApiKey(apiKey: string): Promise<DeveloperProfile | null> 
     .eq('user_id', secretData.user_id)
     .eq('account_type', 'developer')
     .maybeSingle();
-  
+
   if (profileError) {
     console.log('[API] Database error checking profile:', profileError.message);
     return null;
   }
-  
+
   if (!profileData) {
     console.log('[API] User found but account_type is not developer');
     return null;
   }
-  
-  console.log('[API] API key validated for user:', profileData.user_id);
+
   return {
     user_id: profileData.user_id,
     account_type: profileData.account_type,
-    api_key: secretData.api_key,
-    wallet_balance: profileData.wallet_balance
+    api_key: apiKey,
+    wallet_balance: profileData.wallet_balance,
+    mode: isSandboxKey ? 'sandbox' : 'live',
   } as DeveloperProfile;
 }
+
 
 // Check and update rate limits
 async function checkRateLimit(userId: string, endpoint: string): Promise<{ allowed: boolean; remaining: number }> {
