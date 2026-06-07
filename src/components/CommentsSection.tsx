@@ -209,7 +209,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
                   className="h-8 w-8 cursor-pointer hover:opacity-80 transition-opacity"
                   onClick={() => setProfilePreview({ isOpen: true, userId: comment.user_id })}
                 >
-                  <AvatarImage src={comment.profiles?.profile_picture_url} />
+                  <AvatarImage src={comment.profiles?.profile_picture_url} loading="lazy" />
                   <AvatarFallback className="text-sm">
                     {comment.profiles?.full_name?.charAt(0) || 'U'}
                   </AvatarFallback>
@@ -317,7 +317,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
                   {comment.replies.map((reply) => (
                     <div key={reply.id} className="flex gap-3">
                       <Avatar className="h-6 w-6">
-                        <AvatarImage src={reply.profiles?.profile_picture_url} />
+                        <AvatarImage src={reply.profiles?.profile_picture_url} loading="lazy" />
                         <AvatarFallback className="text-xs">
                           {reply.profiles?.full_name?.charAt(0) || 'U'}
                         </AvatarFallback>
