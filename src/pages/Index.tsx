@@ -4,7 +4,7 @@ import { Logo } from '@/components/ui/logo'
 import { BrandButton } from '@/components/ui/brand-button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Facebook, Youtube, Linkedin, MessageSquare, Phone, Users, Shield, ArrowRight, Briefcase, DollarSign, Clock, Award, Wallet, UserCheck, CheckCircle2, Building2, Download, Play, Code2 } from 'lucide-react'
+import { Facebook, Youtube, Linkedin, MessageSquare, Phone, Users, Shield, ArrowRight, Briefcase, DollarSign, Clock, Award, Wallet, UserCheck, CheckCircle2, Building2, Download, Play, Code2, BookOpen } from 'lucide-react'
 import heroImage from '@/assets/hero-image.jpg'
 import explainerVideo from '@/assets/naijalancers-explainer.mp4'
 
@@ -14,6 +14,7 @@ import { SocialProofSection } from '@/components/SocialProofSection'
 import { FeaturedContestsSection } from '@/components/FeaturedContestsSection'
 import { FeaturedGigsSection } from '@/components/FeaturedGigsSection'
 import { WhatsAppShareCTA } from '@/components/WhatsAppShareCTA'
+import { BLOG_POSTS } from '@/content/blogPosts'
 
 import { detectMiniPaySync } from '@/lib/minipay'
 
