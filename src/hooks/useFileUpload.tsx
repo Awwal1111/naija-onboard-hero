@@ -93,7 +93,8 @@ export const useFileUpload = () => {
         .from(bucket)
         .upload(filePath, file, {
           upsert: options?.upsert || false,
-          contentType: file.type
+          contentType: file.type,
+          cacheControl: '31536000', // 1 year — egress savings on repeat fetches
         })
 
       if (error) {

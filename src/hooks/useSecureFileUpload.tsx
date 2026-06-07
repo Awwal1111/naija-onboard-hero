@@ -103,7 +103,7 @@ export const useSecureFileUpload = () => {
       const { data, error } = await supabase.storage
         .from(bucket)
         .upload(filePath, fileToUpload, {
-          cacheControl: '3600',
+          cacheControl: '31536000',
           upsert: false,
           metadata: {
             uploadedBy: currentUser.id,
