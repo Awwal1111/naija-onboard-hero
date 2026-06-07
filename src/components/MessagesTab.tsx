@@ -139,21 +139,36 @@ const MessagesTab: React.FC = () => {
   useEffect(() => {
     if (!user) return
 
+    let pending = false
+    let lastRun = 0
+    const throttledFetch = () => {
+      const now = Date.now()
+      if (now - lastRun < 3000) {
+        if (!pending) {
+          pending = true
+          setTimeout(() => {
+            pending = false
+            lastRun = Date.now()
+            fetchChats()
+          }, 3000 - (now - lastRun))
+        }
+        return
+      }
+      lastRun = now
+      fetchChats()
+    }
+
     const channel = supabase
-      .channel('messages-new-only')
+      .channel(`messages-mine-${user.id}`)
       .on(
         'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages'
-        },
+        { event: 'INSERT', schema: 'public', table: 'messages' },
         (payload) => {
-          // Only refetch when a new message is inserted (not read receipt updates)
-          const newMsg = payload.new as any
-          if (newMsg) {
-            fetchChats()
-          }
+          // Client-side filter: only react to messages in this user's chats
+          const msg = payload.new as any
+          if (!msg) return
+          // Best-effort: refetch only if chat exists in current list
+          if (chats.some((c) => c.id === msg.chat_id)) throttledFetch()
         }
       )
       .subscribe()
@@ -161,7 +176,7 @@ const MessagesTab: React.FC = () => {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [user, fetchChats])
+  }, [user, fetchChats, chats])
 
   const filteredChats = chats.filter(chat => 
     chat.other_user.full_name.toLowerCase().includes(searchQuery.toLowerCase())
