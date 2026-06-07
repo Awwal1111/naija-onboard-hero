@@ -479,43 +479,28 @@ export default function DeveloperPortal() {
   const upgradeToDevloper = async () => {
     try {
       setLoading(true);
-      
-      
+
+      // Mark account as developer first (RPC requires authenticated session anyway)
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ account_type: 'developer' } as any)
+        .eq('user_id', user?.id);
+      if (updateError) throw updateError;
+
+      // Generate both keys — the SQL functions store hashes + last4 and return the raw key once.
       const { data: keyData, error: keyError } = await supabase.rpc('generate_api_key');
-      
-      if (keyError) {
-        console.error('Error generating API key:', keyError);
-        throw new Error('Failed to generate API key');
-      }
-      
-      if (!keyData) {
-        throw new Error('API key generation returned empty result');
-      }
-      
-      
-      
+      if (keyError || !keyData) throw new Error('Failed to generate API key');
+
       const { data: sandboxData } = await supabase.rpc('generate_sandbox_api_key');
 
-      const [{ error: updateError }, { error: secretError }] = await Promise.all([
-        supabase.from('profiles').update({ account_type: 'developer' } as any).eq('user_id', user?.id),
-        supabase.from('user_secrets').upsert({
-          user_id: user?.id,
-          api_key: keyData,
-          sandbox_api_key: sandboxData,
-        } as any, { onConflict: 'user_id' })
-      ]);
-      if (secretError) throw secretError;
-      
-      if (updateError) {
-        console.error('Error updating profile:', updateError);
-        throw updateError;
-      }
-      
       setApiKey(keyData);
-      setSandboxKey(sandboxData || null);
+      setApiKeyLast4(String(keyData).slice(-4));
+      if (sandboxData) {
+        setSandboxKey(sandboxData);
+        setSandboxKeyLast4(String(sandboxData).slice(-4));
+      }
       setAccountType('developer');
-      toast.success('Welcome! Your live and test API keys are ready.');
-
+      toast.success('Welcome! Copy your keys now — they will not be shown again.');
     } catch (error: any) {
       console.error('Upgrade error:', error);
       toast.error(error.message || 'Failed to upgrade account');
@@ -525,39 +510,16 @@ export default function DeveloperPortal() {
   };
 
   const regenerateApiKey = async () => {
-    // Confirm before regenerating
-    if (!confirm('Are you sure you want to regenerate your API key?\n\nYour current key will stop working immediately. Any applications using it will need to be updated.')) {
+    if (!confirm('Regenerate your LIVE API key?\n\nYour current key will stop working immediately, and the new key will be shown only once. Make sure you can copy it now.')) {
       return;
     }
-    
     try {
       setRegenerating(true);
-      
-      
       const { data: keyData, error: keyError } = await supabase.rpc('generate_api_key');
-      
-      if (keyError) {
-        console.error('Error generating API key:', keyError);
-        throw new Error('Failed to generate new API key');
-      }
-      
-      if (!keyData) {
-        throw new Error('API key generation returned empty result');
-      }
-      
-      
-      
-      const { error: updateError } = await supabase
-        .from('user_secrets')
-        .upsert({ user_id: user?.id, api_key: keyData }, { onConflict: 'user_id' });
-      
-      if (updateError) {
-        console.error('Error updating profile:', updateError);
-        throw updateError;
-      }
-      
+      if (keyError || !keyData) throw new Error('Failed to generate new API key');
       setApiKey(keyData);
-      toast.success('API key regenerated! Your old key is now invalid.');
+      setApiKeyLast4(String(keyData).slice(-4));
+      toast.success('Live key regenerated — copy it now, you will not see it again.');
     } catch (error: any) {
       console.error('Regenerate error:', error);
       toast.error(error.message || 'Failed to regenerate API key');
@@ -574,12 +536,9 @@ export default function DeveloperPortal() {
       setRegeneratingSandbox(true);
       const { data: keyData, error: keyError } = await supabase.rpc('generate_sandbox_api_key');
       if (keyError || !keyData) throw new Error('Failed to generate new sandbox key');
-      const { error: updateError } = await supabase
-        .from('user_secrets')
-        .upsert({ user_id: user?.id, sandbox_api_key: keyData } as any, { onConflict: 'user_id' });
-      if (updateError) throw updateError;
       setSandboxKey(keyData);
-      toast.success('Sandbox key regenerated.');
+      setSandboxKeyLast4(String(keyData).slice(-4));
+      toast.success('Sandbox key regenerated — copy it now, you will not see it again.');
     } catch (error: any) {
       console.error('Regenerate sandbox error:', error);
       toast.error(error.message || 'Failed to regenerate sandbox key');
