@@ -217,7 +217,7 @@ function sandboxTxHash(): string {
   return '0x' + crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '');
 }
 
-function handleSandbox(
+export function handleSandbox(
   endpoint: string,
   method: string,
   body: any,
