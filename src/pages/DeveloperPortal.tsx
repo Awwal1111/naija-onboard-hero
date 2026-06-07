@@ -757,58 +757,99 @@ export default function DeveloperPortal() {
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
               <Shield className="h-5 w-5" />
-              {user ? 'Your API Key' : 'Developer access'}
+              {user ? 'Your API Keys' : 'Developer access'}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {user ? (
-              <>
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <div className="relative flex-1">
-                    <Input
-                      type={showApiKey ? 'text' : 'password'}
-                      value={apiKey || ''}
-                      readOnly
-                      className="pr-10 font-mono text-sm"
-                    />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
-                      onClick={() => setShowApiKey(!showApiKey)}
-                    >
-                      {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </Button>
+              <div className="grid gap-4 md:grid-cols-2">
+                {/* SANDBOX (TEST) KEY */}
+                <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 text-xs font-medium">TEST MODE</span>
+                      <span className="text-xs text-muted-foreground">Free • Mocked • No real funds</span>
+                    </div>
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="outline" onClick={copyApiKey}>
-                      <Copy className="h-4 w-4 mr-2" /> Copy
+                    <div className="relative flex-1">
+                      <Input
+                        type={showSandboxKey ? 'text' : 'password'}
+                        value={sandboxKey || ''}
+                        placeholder="nl_test_…"
+                        readOnly
+                        className="pr-10 font-mono text-sm"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                        onClick={() => setShowSandboxKey(!showSandboxKey)}
+                      >
+                        {showSandboxKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={copySandboxKey}>
+                      <Copy className="h-4 w-4" />
                     </Button>
-                    <Button variant="outline" onClick={regenerateApiKey} disabled={regenerating}>
+                    <Button variant="outline" size="sm" onClick={regenerateSandboxKey} disabled={regeneratingSandbox}>
+                      {regeneratingSandbox ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Use this key in development &amp; CI. Every endpoint returns a realistic mock response. Never charged.
+                  </p>
+                </div>
+
+                {/* LIVE KEY */}
+                <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 px-2 py-0.5 text-xs font-medium">LIVE MODE</span>
+                      <span className="text-xs text-muted-foreground">Real funds • NC will be deducted</span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Input
+                        type={showApiKey ? 'text' : 'password'}
+                        value={apiKey || ''}
+                        readOnly
+                        className="pr-10 font-mono text-sm"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                        onClick={() => setShowApiKey(!showApiKey)}
+                      >
+                        {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={copyApiKey}>
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={regenerateApiKey} disabled={regenerating}>
                       {regenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                     </Button>
                   </div>
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Include in requests: <code className="bg-muted px-1 rounded">x-api-key: YOUR_API_KEY</code>
-                </p>
-                <div className="mt-4 flex items-center justify-between p-3 rounded-lg border bg-muted/30">
-                  <div className="flex items-center gap-2">
-                    <Power className={`h-4 w-4 ${apiKeyEnabled ? 'text-emerald-500' : 'text-destructive'}`} />
-                    <div>
-                      <p className="text-sm font-medium">{apiKeyEnabled ? 'Key is active' : 'Key is disabled'}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {apiKeyEnabled ? 'Accepting API requests' : 'All requests will return 403'}
-                      </p>
+                  <div className="mt-3 flex items-center justify-between p-2 rounded border bg-background/60">
+                    <div className="flex items-center gap-2">
+                      <Power className={`h-4 w-4 ${apiKeyEnabled ? 'text-emerald-500' : 'text-destructive'}`} />
+                      <p className="text-xs">{apiKeyEnabled ? 'Live key active' : 'Live key disabled'}</p>
                     </div>
+                    <Switch checked={apiKeyEnabled} onCheckedChange={toggleApiKey} disabled={togglingKey} />
                   </div>
-                  <Switch checked={apiKeyEnabled} onCheckedChange={toggleApiKey} disabled={togglingKey} />
                 </div>
-              </>
+
+                <p className="md:col-span-2 text-xs text-muted-foreground">
+                  Send your chosen key in the <code className="bg-muted px-1 rounded">x-api-key</code> header. Keys prefixed with <code className="bg-muted px-1 rounded">nl_test_</code> always run in sandbox mode.
+                </p>
+              </div>
             ) : (
               <div className="space-y-3">
                 <p className="text-sm text-muted-foreground">
-                  Browse the full API reference and code examples in read-only mode. Sign in to generate an API key, test endpoints, and use the money or escrow tools.
+                  Browse the full API reference and code examples in read-only mode. Sign in to generate live + test API keys, run sandbox calls, and use the money or escrow tools.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <Button onClick={() => navigate('/login')}>Sign in</Button>
@@ -818,6 +859,7 @@ export default function DeveloperPortal() {
             )}
           </CardContent>
         </Card>
+
 
         {/* Usage Stats */}
         {usage && (
