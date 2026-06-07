@@ -39,23 +39,13 @@ verify_jwt = false
 [functions.send-expert-notification]
 verify_jwt = true
 
-[functions.paystack-webhook]
-verify_jwt = false
-
-[functions.paystack-callback]
-verify_jwt = false
-
-[functions.create-transaction]
-verify_jwt = true
-
 [functions.developer-api]
 verify_jwt = false
 
 [functions.create-payout]
 verify_jwt = true
 
-[functions.create-escrow]
-verify_jwt = true
+
 
 [functions.release-escrow]
 verify_jwt = true
