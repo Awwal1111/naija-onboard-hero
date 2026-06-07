@@ -1,8 +1,8 @@
 // Sandbox response handler for the Developer API.
 //
 // Hard rules enforced by tests in sandbox_test.ts:
-//   - This module MUST NOT import the Supabase client, ethers, fetch wrappers,
-//     or anything that touches production tables or external services.
+//   - This module MUST NOT import the Supabase client, web3 libraries,
+//     fetch wrappers, or anything that touches production data.
 //   - Every response object MUST include { mode: 'sandbox', simulated: true }.
 //   - Identifiers MUST be obviously fake (contain "_test_" or "SANDBOX").
 
