@@ -235,55 +235,6 @@ const Index = () => {
       {/* Social Proof Testimonials - right after hero for trust */}
       <SocialProofSection />
 
-      {/* Video Explainer Section */}
-      <section className="py-16 sm:py-24 bg-muted/30 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent" />
-        
-        <div className="container mx-auto px-4 sm:px-6 relative">
-          <div className="max-w-5xl mx-auto text-center">
-            <Badge variant="secondary" className="mb-4">
-              <Play className="w-3 h-3 mr-1" />
-              Platform Overview
-            </Badge>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">See How It Works</h2>
-            <p className="text-lg text-muted-foreground mb-10 max-w-2xl mx-auto">
-              Watch our quick explainer to understand how NaijaLancers connects talent with opportunity
-            </p>
-            
-            <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-border/50 group">
-              <div className="absolute inset-0 bg-gradient-to-t from-background/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10" />
-              <video 
-                src={explainerVideo}
-                controls
-                className="w-full aspect-video"
-                poster={heroImage}
-                preload="metadata"
-              >
-                Your browser does not support the video tag.
-              </video>
-            </div>
-            
-            {/* How it works steps */}
-            <div className="grid sm:grid-cols-4 gap-6 mt-12">
-              {[
-                { step: "1", title: "Sign Up Free", desc: "Create your account in under 2 minutes" },
-                { step: "2", title: "Post or Apply", desc: "Post a job or browse available gigs" },
-                { step: "3", title: "Work Securely", desc: "SafePay escrow protects every payment" },
-                { step: "4", title: "Get Paid", desc: "Withdraw earnings to your bank instantly" },
-              ].map((item) => (
-                <div key={item.step} className="text-center">
-                  <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground font-bold text-lg flex items-center justify-center mx-auto mb-3">
-                    {item.step}
-                  </div>
-                  <h3 className="font-semibold mb-1">{item.title}</h3>
-                  <p className="text-sm text-muted-foreground">{item.desc}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Featured Gigs Section */}
       <FeaturedGigsSection />
 
@@ -404,20 +355,8 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Success Stories with Real Data */}
-      <SuccessStoriesSection />
-
       {/* WhatsApp Share CTA */}
       <WhatsAppShareCTA />
-
-      {/* Leaderboard Section */}
-      <section className="py-16">
-        <div className="container mx-auto px-6">
-          <div className="max-w-4xl mx-auto">
-            <LeaderboardSection />
-          </div>
-        </div>
-      </section>
 
       {/* Latest from the Blog */}
       <section className="py-16 bg-background border-t border-border">
