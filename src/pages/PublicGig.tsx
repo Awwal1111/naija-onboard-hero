@@ -49,7 +49,7 @@ export default function PublicGig() {
       // First get the gig
       const { data: gigData, error: gigError } = await supabase
         .from('jobs_services')
-        .select('*')
+        .select('id, user_id, title, description, price, category, status, photo_urls, delivery_days, response_time, order_queue, boost_amount, created_at')
         .eq('id', gigId)
         .eq('status', 'active')
         .maybeSingle();
@@ -85,6 +85,7 @@ export default function PublicGig() {
         profiles: profileData
       };
     },
+    staleTime: 1000 * 60 * 10,
   });
 
   const { reviews, stats, addReview, loading: reviewsLoading } = useGigReviews(gigId);
@@ -336,6 +337,9 @@ export default function PublicGig() {
                   src={images[activeImageIndex]}
                   alt={gig.title}
                   className="w-full h-full object-cover"
+                  loading="eager"
+                  fetchPriority="high"
+                  decoding="async"
                 />
                 {(gig.boost_amount || 0) > 0 && (
                   <Badge className="absolute top-3 right-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-0">
@@ -355,7 +359,7 @@ export default function PublicGig() {
                         idx === activeImageIndex ? 'border-primary' : 'border-transparent'
                       }`}
                     >
-                      <img src={url} alt={`${gig.title} ${idx + 1}`} className="w-full h-full object-cover" />
+                      <img src={url} alt={`${gig.title} ${idx + 1}`} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                     </button>
                   ))}
                 </div>
@@ -523,6 +527,8 @@ export default function PublicGig() {
                                 src={item.media_url} 
                                 alt={item.title}
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                                loading="lazy"
+                                decoding="async"
                               />
                             </div>
                           ) : (
