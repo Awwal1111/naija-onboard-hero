@@ -52,6 +52,16 @@ interface UnifiedApp {
 // All built-in apps (platform features + internal mini apps)
 const BUILT_IN_APPS: UnifiedApp[] = [
   // Work
+  { id: 'pa-jobs', name: 'Find Jobs', description: 'Browse open jobs and apply', icon: Briefcase, path: '/jobs', category: 'work', color: 'from-blue-500/20 to-indigo-500/20', isInternal: true },
+  { id: 'pa-post-job', name: 'Post a Job', description: 'Hire freelancers for your project', icon: ClipboardList, path: '/post-job', category: 'work', color: 'from-indigo-500/20 to-violet-500/20', isInternal: true },
+  { id: 'pa-gigs', name: 'Find Gigs', description: 'Discover freelance services', icon: Hammer, path: '/p/gigs', category: 'work', color: 'from-cyan-500/20 to-blue-500/20', isInternal: true },
+  { id: 'pa-my-gigs', name: 'My Gigs', description: 'Manage your gig listings', icon: FolderKanban, path: '/my-gigs', category: 'work', color: 'from-teal-500/20 to-cyan-500/20', isInternal: true },
+  { id: 'pa-post-gig', name: 'Post a Gig', description: 'Sell your services as a freelancer', icon: NotebookPen, path: '/post-gig', category: 'work', color: 'from-emerald-500/20 to-teal-500/20', isInternal: true },
+  { id: 'pa-orders', name: 'Orders', description: 'Track gig orders and deliveries', icon: ShoppingBag, path: '/orders', category: 'work', color: 'from-violet-500/20 to-purple-500/20', isInternal: true },
+  { id: 'pa-workrooms', name: 'Workrooms', description: 'Collaborate with clients in rooms', icon: Presentation, path: '/workrooms', category: 'work', color: 'from-purple-500/20 to-fuchsia-500/20', isInternal: true },
+  { id: 'pa-diary', name: 'Work Diary', description: 'Log your weekly work activity', icon: NotebookPen, path: '/work-diary', category: 'work', color: 'from-sky-500/20 to-blue-500/20', isInternal: true },
+  { id: 'pa-expert-class', name: 'Expert Classes', description: 'Host or join live expert classes', icon: GraduationCap, path: '/expert-class', category: 'work', color: 'from-amber-500/20 to-orange-500/20', isInternal: true },
+  { id: 'pa-portfolio', name: 'Portfolio', description: 'Showcase your work on your profile', icon: ImageIcon, path: '/profile', category: 'work', color: 'from-rose-500/20 to-pink-500/20', isInternal: true },
   { id: 'pa-contests', name: 'Contests', description: 'Compete for prizes or run design contests', icon: Trophy, path: '/contests', category: 'work', color: 'from-amber-500/20 to-yellow-500/20', isInternal: true },
   { id: 'pa-products', name: 'Sell Products', description: 'Sell digital products and templates', icon: ShoppingBag, path: '/digital-products', category: 'work', color: 'from-green-500/20 to-emerald-500/20', isInternal: true },
   // Finance
