@@ -357,8 +357,10 @@ const getExampleBody = (endpoint: ApiEndpoint) => Object.fromEntries(
 export default function DeveloperPortal() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [apiKey, setApiKey] = useState<string | null>(null);
-  const [sandboxKey, setSandboxKey] = useState<string | null>(null);
+  const [apiKey, setApiKey] = useState<string | null>(null); // only set when freshly generated this session
+  const [sandboxKey, setSandboxKey] = useState<string | null>(null); // only set when freshly generated this session
+  const [apiKeyLast4, setApiKeyLast4] = useState<string | null>(null);
+  const [sandboxKeyLast4, setSandboxKeyLast4] = useState<string | null>(null);
   const [showApiKey, setShowApiKey] = useState(false);
   const [showSandboxKey, setShowSandboxKey] = useState(false);
   const [useSandbox, setUseSandbox] = useState(true);
@@ -393,12 +395,13 @@ export default function DeveloperPortal() {
     try {
       const [{ data: profile }, { data: secrets }] = await Promise.all([
         supabase.from('profiles').select('account_type, wallet_balance').eq('user_id', user?.id).single(),
-        supabase.from('user_secrets').select('api_key, sandbox_api_key, api_key_enabled').eq('user_id', user?.id).single()
+        supabase.from('user_secrets').select('api_key_last4, sandbox_api_key_last4, api_key_enabled, api_key_hash, sandbox_api_key_hash').eq('user_id', user?.id).single()
       ]);
-      
+
       if (profile) {
-        setApiKey((secrets as any)?.api_key || null);
-        setSandboxKey((secrets as any)?.sandbox_api_key || null);
+        // Raw keys are NEVER read back from the DB — only last4 is shown for identification.
+        setApiKeyLast4((secrets as any)?.api_key_last4 || null);
+        setSandboxKeyLast4((secrets as any)?.sandbox_api_key_last4 || null);
         setApiKeyEnabled((secrets as any)?.api_key_enabled !== false);
         setAccountType((profile as any).account_type || 'personal');
         setNcBalance((profile as any).wallet_balance || 0);
@@ -476,43 +479,28 @@ export default function DeveloperPortal() {
   const upgradeToDevloper = async () => {
     try {
       setLoading(true);
-      
-      
+
+      // Mark account as developer first (RPC requires authenticated session anyway)
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ account_type: 'developer' } as any)
+        .eq('user_id', user?.id);
+      if (updateError) throw updateError;
+
+      // Generate both keys — the SQL functions store hashes + last4 and return the raw key once.
       const { data: keyData, error: keyError } = await supabase.rpc('generate_api_key');
-      
-      if (keyError) {
-        console.error('Error generating API key:', keyError);
-        throw new Error('Failed to generate API key');
-      }
-      
-      if (!keyData) {
-        throw new Error('API key generation returned empty result');
-      }
-      
-      
-      
+      if (keyError || !keyData) throw new Error('Failed to generate API key');
+
       const { data: sandboxData } = await supabase.rpc('generate_sandbox_api_key');
 
-      const [{ error: updateError }, { error: secretError }] = await Promise.all([
-        supabase.from('profiles').update({ account_type: 'developer' } as any).eq('user_id', user?.id),
-        supabase.from('user_secrets').upsert({
-          user_id: user?.id,
-          api_key: keyData,
-          sandbox_api_key: sandboxData,
-        } as any, { onConflict: 'user_id' })
-      ]);
-      if (secretError) throw secretError;
-      
-      if (updateError) {
-        console.error('Error updating profile:', updateError);
-        throw updateError;
-      }
-      
       setApiKey(keyData);
-      setSandboxKey(sandboxData || null);
+      setApiKeyLast4(String(keyData).slice(-4));
+      if (sandboxData) {
+        setSandboxKey(sandboxData);
+        setSandboxKeyLast4(String(sandboxData).slice(-4));
+      }
       setAccountType('developer');
-      toast.success('Welcome! Your live and test API keys are ready.');
-
+      toast.success('Welcome! Copy your keys now — they will not be shown again.');
     } catch (error: any) {
       console.error('Upgrade error:', error);
       toast.error(error.message || 'Failed to upgrade account');
@@ -522,39 +510,16 @@ export default function DeveloperPortal() {
   };
 
   const regenerateApiKey = async () => {
-    // Confirm before regenerating
-    if (!confirm('Are you sure you want to regenerate your API key?\n\nYour current key will stop working immediately. Any applications using it will need to be updated.')) {
+    if (!confirm('Regenerate your LIVE API key?\n\nYour current key will stop working immediately, and the new key will be shown only once. Make sure you can copy it now.')) {
       return;
     }
-    
     try {
       setRegenerating(true);
-      
-      
       const { data: keyData, error: keyError } = await supabase.rpc('generate_api_key');
-      
-      if (keyError) {
-        console.error('Error generating API key:', keyError);
-        throw new Error('Failed to generate new API key');
-      }
-      
-      if (!keyData) {
-        throw new Error('API key generation returned empty result');
-      }
-      
-      
-      
-      const { error: updateError } = await supabase
-        .from('user_secrets')
-        .upsert({ user_id: user?.id, api_key: keyData }, { onConflict: 'user_id' });
-      
-      if (updateError) {
-        console.error('Error updating profile:', updateError);
-        throw updateError;
-      }
-      
+      if (keyError || !keyData) throw new Error('Failed to generate new API key');
       setApiKey(keyData);
-      toast.success('API key regenerated! Your old key is now invalid.');
+      setApiKeyLast4(String(keyData).slice(-4));
+      toast.success('Live key regenerated — copy it now, you will not see it again.');
     } catch (error: any) {
       console.error('Regenerate error:', error);
       toast.error(error.message || 'Failed to regenerate API key');
@@ -571,12 +536,9 @@ export default function DeveloperPortal() {
       setRegeneratingSandbox(true);
       const { data: keyData, error: keyError } = await supabase.rpc('generate_sandbox_api_key');
       if (keyError || !keyData) throw new Error('Failed to generate new sandbox key');
-      const { error: updateError } = await supabase
-        .from('user_secrets')
-        .upsert({ user_id: user?.id, sandbox_api_key: keyData } as any, { onConflict: 'user_id' });
-      if (updateError) throw updateError;
       setSandboxKey(keyData);
-      toast.success('Sandbox key regenerated.');
+      setSandboxKeyLast4(String(keyData).slice(-4));
+      toast.success('Sandbox key regenerated — copy it now, you will not see it again.');
     } catch (error: any) {
       console.error('Regenerate sandbox error:', error);
       toast.error(error.message || 'Failed to regenerate sandbox key');
@@ -603,7 +565,9 @@ export default function DeveloperPortal() {
   const testEndpoint = async () => {
     const activeKey = useSandbox ? sandboxKey : apiKey;
     if (!selectedEndpoint || !activeKey) {
-      toast.error(useSandbox ? 'Sandbox key not available yet' : 'API key is required to test endpoints');
+      toast.error(useSandbox
+        ? 'Sandbox key not available in this session. Click regenerate to get a fresh one.'
+        : 'Live key not available in this session (keys are shown only once at generation). Regenerate to test, or paste your saved key into your own client.');
       return;
     }
     if (!useSandbox && !confirm('You are about to run this against LIVE mode.\n\nReal NC will be deducted and real funds may move. Continue?')) {
@@ -774,9 +738,9 @@ export default function DeveloperPortal() {
                   <div className="flex gap-2">
                     <div className="relative flex-1">
                       <Input
-                        type={showSandboxKey ? 'text' : 'password'}
-                        value={sandboxKey || ''}
-                        placeholder="nl_test_…"
+                        type={showSandboxKey && sandboxKey ? 'text' : 'password'}
+                        value={sandboxKey || (sandboxKeyLast4 ? `nl_test_••••••••••••••${sandboxKeyLast4}` : '')}
+                        placeholder="No sandbox key yet — click regenerate"
                         readOnly
                         className="pr-10 font-mono text-sm"
                       />
@@ -785,11 +749,13 @@ export default function DeveloperPortal() {
                         size="icon"
                         className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
                         onClick={() => setShowSandboxKey(!showSandboxKey)}
+                        disabled={!sandboxKey}
+                        title={sandboxKey ? 'Toggle visibility' : 'Full key only shown right after generation'}
                       >
                         {showSandboxKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </Button>
                     </div>
-                    <Button variant="outline" size="sm" onClick={copySandboxKey}>
+                    <Button variant="outline" size="sm" onClick={copySandboxKey} disabled={!sandboxKey}>
                       <Copy className="h-4 w-4" />
                     </Button>
                     <Button variant="outline" size="sm" onClick={regenerateSandboxKey} disabled={regeneratingSandbox}>
@@ -797,7 +763,9 @@ export default function DeveloperPortal() {
                     </Button>
                   </div>
                   <p className="text-xs text-muted-foreground mt-2">
-                    Use this key in development &amp; CI. Every endpoint returns a realistic mock response. Never charged.
+                    {sandboxKey
+                      ? 'Copy this key now — for security it will be hidden on next page load.'
+                      : 'Use this key in development & CI. Every endpoint returns a realistic mock response. Never charged.'}
                   </p>
                 </div>
 
@@ -812,8 +780,9 @@ export default function DeveloperPortal() {
                   <div className="flex gap-2">
                     <div className="relative flex-1">
                       <Input
-                        type={showApiKey ? 'text' : 'password'}
-                        value={apiKey || ''}
+                        type={showApiKey && apiKey ? 'text' : 'password'}
+                        value={apiKey || (apiKeyLast4 ? `nl_live_••••••••••••••${apiKeyLast4}` : '')}
+                        placeholder="No live key yet — click regenerate"
                         readOnly
                         className="pr-10 font-mono text-sm"
                       />
@@ -822,17 +791,24 @@ export default function DeveloperPortal() {
                         size="icon"
                         className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
                         onClick={() => setShowApiKey(!showApiKey)}
+                        disabled={!apiKey}
+                        title={apiKey ? 'Toggle visibility' : 'Full key only shown right after generation'}
                       >
                         {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </Button>
                     </div>
-                    <Button variant="outline" size="sm" onClick={copyApiKey}>
+                    <Button variant="outline" size="sm" onClick={copyApiKey} disabled={!apiKey}>
                       <Copy className="h-4 w-4" />
                     </Button>
                     <Button variant="outline" size="sm" onClick={regenerateApiKey} disabled={regenerating}>
                       {regenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                     </Button>
                   </div>
+                  {apiKey && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
+                      ⚠ Copy this key now — it is hashed at rest and will not be shown again.
+                    </p>
+                  )}
                   <div className="mt-3 flex items-center justify-between p-2 rounded border bg-background/60">
                     <div className="flex items-center gap-2">
                       <Power className={`h-4 w-4 ${apiKeyEnabled ? 'text-emerald-500' : 'text-destructive'}`} />

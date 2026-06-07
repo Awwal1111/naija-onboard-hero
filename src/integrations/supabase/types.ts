@@ -409,6 +409,27 @@ export type Database = {
         }
         Relationships: []
       }
+      api_rate_buckets: {
+        Row: {
+          endpoint: string
+          request_count: number
+          user_id: string
+          window_start: string
+        }
+        Insert: {
+          endpoint: string
+          request_count?: number
+          user_id: string
+          window_start: string
+        }
+        Update: {
+          endpoint?: string
+          request_count?: number
+          user_id?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       api_rate_limits: {
         Row: {
           created_at: string
@@ -7060,11 +7081,15 @@ export type Database = {
         Row: {
           api_key: string | null
           api_key_enabled: boolean
+          api_key_hash: string | null
+          api_key_last4: string | null
           backup_codes: string[] | null
           created_at: string
           encrypted_wallet: string | null
           id: string
           sandbox_api_key: string | null
+          sandbox_api_key_hash: string | null
+          sandbox_api_key_last4: string | null
           totp_secret: string | null
           transaction_pin: string | null
           updated_at: string
@@ -7073,11 +7098,15 @@ export type Database = {
         Insert: {
           api_key?: string | null
           api_key_enabled?: boolean
+          api_key_hash?: string | null
+          api_key_last4?: string | null
           backup_codes?: string[] | null
           created_at?: string
           encrypted_wallet?: string | null
           id?: string
           sandbox_api_key?: string | null
+          sandbox_api_key_hash?: string | null
+          sandbox_api_key_last4?: string | null
           totp_secret?: string | null
           transaction_pin?: string | null
           updated_at?: string
@@ -7086,11 +7115,15 @@ export type Database = {
         Update: {
           api_key?: string | null
           api_key_enabled?: boolean
+          api_key_hash?: string | null
+          api_key_last4?: string | null
           backup_codes?: string[] | null
           created_at?: string
           encrypted_wallet?: string | null
           id?: string
           sandbox_api_key?: string | null
+          sandbox_api_key_hash?: string | null
+          sandbox_api_key_last4?: string | null
           totp_secret?: string | null
           transaction_pin?: string | null
           updated_at?: string
@@ -7972,6 +8005,13 @@ export type Database = {
         Args: { p_action: string; p_user_id: string }
         Returns: Json
       }
+      check_and_increment_rate_limit: {
+        Args: { p_endpoint: string; p_limit: number; p_user_id: string }
+        Returns: {
+          allowed: boolean
+          remaining: number
+        }[]
+      }
       check_ip_signup_limit: { Args: { check_ip: string }; Returns: Json }
       check_is_admin: {
         Args: never
@@ -8550,6 +8590,14 @@ export type Database = {
       users_are_connected: {
         Args: { user1: string; user2: string }
         Returns: boolean
+      }
+      validate_developer_api_key: {
+        Args: { p_key: string }
+        Returns: {
+          enabled: boolean
+          mode: string
+          user_id: string
+        }[]
       }
     }
     Enums: {
