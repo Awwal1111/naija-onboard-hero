@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/integrations/supabase/client'
+import { loadProfilesBasic } from '@/lib/profileLoader'
 import { useAuth } from './useAuth'
 import { useToast } from './use-toast'
 
