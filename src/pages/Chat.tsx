@@ -152,7 +152,7 @@ const Chat = () => {
           const fileName = `${user?.id}/${Date.now()}.${fileExt}`
           const { error: uploadError } = await supabase.storage
             .from('chat-media')
-            .upload(fileName, selectedFile)
+            .upload(fileName, selectedFile, { cacheControl: '31536000' })
           if (uploadError) throw uploadError
           mediaUrl = fileName
           mediaType = selectedFile.type
