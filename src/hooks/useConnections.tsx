@@ -63,29 +63,16 @@ export const useConnections = () => {
         request => request.requester_id !== request.requested_id
       )
       
-      // Fetch profile data separately for each request
-      const requestsWithProfiles = await Promise.all(
-        validRequests.map(async (request) => {
-          const [requesterProfile, requestedProfile] = await Promise.all([
-            supabase
-              .from('profiles')
-              .select('full_name, profile_picture_url, profession')
-              .eq('user_id', request.requester_id)
-              .single(),
-            supabase
-              .from('profiles')
-              .select('full_name, profile_picture_url, profession')
-              .eq('user_id', request.requested_id)
-              .single()
-          ])
-
-          return {
-            ...request,
-            requester_profile: requesterProfile.data || undefined,
-            requested_profile: requestedProfile.data || undefined
-          }
-        })
+      // Batch-load all involved profiles in a single deduped query (egress fix)
+      const ids = Array.from(
+        new Set(validRequests.flatMap(r => [r.requester_id, r.requested_id]))
       )
+      const profileMap = await loadProfilesBasic(ids)
+      const requestsWithProfiles = validRequests.map(request => ({
+        ...request,
+        requester_profile: profileMap.get(request.requester_id) || undefined,
+        requested_profile: profileMap.get(request.requested_id) || undefined,
+      }))
       
       setConnectionRequests(requestsWithProfiles)
     } catch (error) {
@@ -112,29 +99,33 @@ export const useConnections = () => {
         connection => connection.user1_id !== connection.user2_id
       )
       
-      // Fetch profile data for other users
-      const connectionsWithProfiles = await Promise.all(
-        validConnections.map(async (conn) => {
-          const otherUserId = conn.user1_id === user.id ? conn.user2_id : conn.user1_id
-          const { data: otherUserProfile } = await supabase
+      // Batch other-user profile lookups into a single .in() query
+      const otherIds = Array.from(new Set(
+        validConnections.map(c => c.user1_id === user.id ? c.user2_id : c.user1_id)
+      ))
+      const { data: otherProfiles } = otherIds.length
+        ? await supabase
             .from('profiles')
             .select('user_id, full_name, profile_picture_url, profession, average_rating, rating_count')
-            .eq('user_id', otherUserId)
-            .single()
-
-          return {
-            ...conn,
-            other_user: otherUserProfile ? {
-              id: otherUserProfile.user_id,
-              full_name: otherUserProfile.full_name,
-              profile_picture_url: otherUserProfile.profile_picture_url,
-              profession: otherUserProfile.profession,
-              average_rating: otherUserProfile.average_rating,
-              rating_count: otherUserProfile.rating_count
-            } : undefined
-          }
-        })
-      )
+            .in('user_id', otherIds)
+            .limit(otherIds.length)
+        : { data: [] as any[] }
+      const otherMap = new Map((otherProfiles || []).map((p: any) => [p.user_id, p]))
+      const connectionsWithProfiles = validConnections.map(conn => {
+        const otherUserId = conn.user1_id === user.id ? conn.user2_id : conn.user1_id
+        const p: any = otherMap.get(otherUserId)
+        return {
+          ...conn,
+          other_user: p ? {
+            id: p.user_id,
+            full_name: p.full_name,
+            profile_picture_url: p.profile_picture_url,
+            profession: p.profession,
+            average_rating: p.average_rating,
+            rating_count: p.rating_count,
+          } : undefined
+        }
+      })
       
       setConnections(connectionsWithProfiles)
     } catch (error) {

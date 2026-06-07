@@ -265,21 +265,13 @@ export const useEnhancedFeed = () => {
         return []
       }
 
-      // Fetch profiles for each comment
-      const commentsWithProfiles = await Promise.all(
-        (data || []).map(async (comment) => {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('full_name, profile_picture_url')
-            .eq('user_id', comment.user_id)
-            .maybeSingle()
-
-          return {
-            ...comment,
-            profiles: profile || { full_name: 'Anonymous' }
-          }
-        })
-      )
+      // Batch-load all comment authors in one deduped query (egress fix)
+      const authorIds = Array.from(new Set((data || []).map(c => c.user_id)))
+      const profileMap = await loadProfilesBasic(authorIds)
+      const commentsWithProfiles = (data || []).map(comment => ({
+        ...comment,
+        profiles: profileMap.get(comment.user_id) || { full_name: 'Anonymous' }
+      }))
 
       // Organize comments into threads
       const comments = commentsWithProfiles
