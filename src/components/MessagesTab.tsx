@@ -37,58 +37,70 @@ const MessagesTab: React.FC = () => {
     if (!user) return
 
     try {
-      const { data, error } = await supabase
+      const { data: chatRows, error } = await supabase
         .from('chats')
-        .select(`
-          id,
-          user1_id,
-          user2_id,
-          updated_at
-        `)
+        .select('id, user1_id, user2_id, updated_at')
         .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
         .order('updated_at', { ascending: false })
+        .limit(100)
 
       if (error) throw error
+      if (!chatRows || chatRows.length === 0) {
+        setChats([])
+        return
+      }
 
-      // Fetch profiles for other users
-      const chatsWithProfiles = await Promise.all(
-        (data || []).map(async (chat) => {
-          const otherUserId = chat.user1_id === user.id ? chat.user2_id : chat.user1_id
-          
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('user_id, full_name, profile_picture_url')
-            .eq('user_id', otherUserId)
-            .single()
+      const chatIds = chatRows.map((c) => c.id)
+      const otherUserIds = Array.from(new Set(
+        chatRows.map((c) => (c.user1_id === user.id ? c.user2_id : c.user1_id))
+      ))
 
-          // Get last message
-          const { data: lastMessage } = await supabase
-            .from('messages')
-            .select('content')
-            .eq('chat_id', chat.id)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .single()
+      // Batch: profiles, recent messages, unread messages — 3 queries instead of 3*N
+      const [profilesRes, messagesRes, unreadRes] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('user_id, full_name, profile_picture_url')
+          .in('user_id', otherUserIds),
+        supabase
+          .from('messages')
+          .select('chat_id, content, created_at')
+          .in('chat_id', chatIds)
+          .order('created_at', { ascending: false })
+          .limit(chatIds.length * 4),
+        supabase
+          .from('messages')
+          .select('chat_id, sender_id')
+          .in('chat_id', chatIds)
+          .neq('sender_id', user.id)
+          .is('read_at', null)
+          .limit(500),
+      ])
 
-          // Get unread count - messages from other user that we haven't read
-          const { count: unreadCount } = await supabase
-            .from('messages')
-            .select('*', { count: 'exact', head: true })
-            .eq('chat_id', chat.id)
-            .eq('sender_id', otherUserId)
-            .is('read_at', null)
+      const profileMap = new Map<string, any>()
+      ;(profilesRes.data || []).forEach((p: any) => profileMap.set(p.user_id, p))
 
-          return {
-            ...chat,
-            other_user: profile || { user_id: otherUserId, full_name: 'Unknown User' },
-            last_message: lastMessage?.content,
-            unread_count: unreadCount || 0
-          }
-        })
-      )
+      const lastMessageMap = new Map<string, string>()
+      ;(messagesRes.data || []).forEach((m: any) => {
+        if (!lastMessageMap.has(m.chat_id)) lastMessageMap.set(m.chat_id, m.content)
+      })
 
-      // Filter out empty chats (opened but no message ever sent)
-      const nonEmptyChats = chatsWithProfiles.filter(chat => chat.last_message)
+      const unreadMap = new Map<string, number>()
+      ;(unreadRes.data || []).forEach((m: any) => {
+        unreadMap.set(m.chat_id, (unreadMap.get(m.chat_id) || 0) + 1)
+      })
+
+      const chatsWithProfiles: ChatPreview[] = chatRows.map((chat) => {
+        const otherUserId = chat.user1_id === user.id ? chat.user2_id : chat.user1_id
+        const profile = profileMap.get(otherUserId)
+        return {
+          ...chat,
+          other_user: profile || { user_id: otherUserId, full_name: 'Unknown User' },
+          last_message: lastMessageMap.get(chat.id),
+          unread_count: unreadMap.get(chat.id) || 0,
+        }
+      })
+
+      const nonEmptyChats = chatsWithProfiles.filter((chat) => chat.last_message)
       setChats(nonEmptyChats)
     } catch (error) {
       console.error('Error fetching chats:', error)
