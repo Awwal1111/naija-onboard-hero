@@ -1112,35 +1112,35 @@ const EnhancedAdminDashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      // Fetch users
-      const { data: usersData } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(100)
+      // Parallel fetch with explicit columns and tight limits to reduce egress
+      const [usersRes, postsRes, jobPostsRes, applicationsRes] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('user_id, full_name, profile_picture_url, profession, is_expert, expert_verified_at, open_to_work, created_at, wallet_balance')
+          .order('created_at', { ascending: false })
+          .limit(50),
+        supabase
+          .from('posts')
+          .select('id, content, created_at, user_id, profiles!posts_user_id_fkey(full_name, profile_picture_url)')
+          .order('created_at', { ascending: false })
+          .limit(25),
+        supabase
+          .from('job_posts')
+          .select('id, title, budget_min, budget_max, status, created_at, user_id')
+          .order('created_at', { ascending: false })
+          .limit(20),
+        supabase
+          .from('expert_applications')
+          .select('id, status, submitted_at, user_id, full_name')
+          .order('submitted_at', { ascending: false })
+          .limit(50),
+      ])
 
-      // Fetch posts
-      const { data: postsData } = await supabase
-        .from('posts')
-        .select(`
-          *,
-          profiles!posts_user_id_fkey(full_name, profile_picture_url)
-        `)
-        .order('created_at', { ascending: false })
-        .limit(50)
+      const usersData = usersRes.data
+      const postsData = postsRes.data
+      const jobPostsData = jobPostsRes.data
+      const applicationsData = applicationsRes.data
 
-      // Fetch job posts
-      const { data: jobPostsData } = await supabase
-        .from('job_posts')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(20)
-
-      // Fetch expert applications
-      const { data: applicationsData } = await supabase
-        .from('expert_applications')
-        .select('*')
-        .order('submitted_at', { ascending: false })
 
       // Calculate real stats
       const stats = {
