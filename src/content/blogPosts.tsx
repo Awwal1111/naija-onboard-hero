@@ -2081,7 +2081,7 @@ export const BLOG_POSTS: BlogPost[] = [
       <Section title="The niche formula"><p><strong>(Skill) for (Specific audience) who want (Specific outcome)</strong>. Example: <em>Email marketing for Nigerian DTC fashion brands who want to increase repeat orders.</em></p></Section>
       <Section title="Why niching works in Nigeria"><List items={['Buyer trust skyrockets — "she gets my business" feeling', 'You can charge 2–4x because there is no apples-to-apples competitor', 'Marketing becomes 10x easier — you know exactly where the audience hangs out', 'Referrals compound — one happy DTC fashion client tells 3 others']} /></Section>
       <Section title="How to pick your niche this week"><List items={['Write down 3 industries you genuinely understand or care about.', 'Find 20 Nigerian businesses in each — which list excites you?', 'Pick the industry with the most paying ad spend on Meta — that signals budget.', 'Rewrite your NaijaLancers gig title using the formula above.']} /></Section>
-      <Section title="The fear of "missing out" on other work"><p>You won't miss out — you will earn 3x as much from half the clients and have time for the others as overflow. Niching is the highest-leverage move a Nigerian freelancer can make this quarter.</p></Section>
+      <Section title={`The fear of "missing out" on other work`}><p>You won't miss out — you will earn 3x as much from half the clients and have time for the others as overflow. Niching is the highest-leverage move a Nigerian freelancer can make this quarter.</p></Section>
     </>),
   },
 ];
