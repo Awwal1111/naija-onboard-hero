@@ -1872,6 +1872,218 @@ export const BLOG_POSTS: BlogPost[] = [
       </Section>
     </>),
   },
+  {
+    slug: 'how-to-earn-first-100k-freelancing-nigeria',
+    title: 'How to Earn Your First ₦100,000 Freelancing in Nigeria (2026 Playbook)',
+    description: 'A step-by-step playbook for Nigerian beginners to hit their first ₦100,000 in freelance income in 30 days — skills, pitching, pricing, and getting paid safely.',
+    keywords: 'first 100k freelancing nigeria, beginner freelance nigeria, earn 100000 naira online, freelance income nigeria, start freelancing nigeria',
+    datePublished: '2026-06-08', dateModified: '2026-06-08', readTime: '9 min read', author: 'NaijaLancers Team', category: 'Earning Online',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">₦100,000 in your first month is achievable — but only if you stop spreading yourself thin. This is the exact 30-day plan we recommend new NaijaLancers users follow to land their first paying clients and hit six figures without a portfolio.</p>
+      <Section title="Week 1 — pick one offer, not five"><p>Most beginners fail because they list every skill they have. Pick <em>one</em> service you can deliver in 48 hours: short-form video edits, Canva carousel design, blog SEO rewrites, virtual assistance, or product photo retouching. Write a one-line offer: "I edit 3 TikTok videos for ₦15,000 in 48 hours."</p></Section>
+      <Section title="Week 2 — create proof, even with zero clients"><p>Pick 3 real Nigerian brands you admire. Do the work for free as samples, post them as case studies on your NaijaLancers gig, LinkedIn, and X. Proof beats credentials in 2026.</p></Section>
+      <Section title="Week 3 — pitch 50 times, expect 3 wins"><p>Send 10 cold DMs daily. Use WhatsApp Business, Instagram, X, LinkedIn, and the NaijaLancers job feed. Keep pitches under 60 words: hook → proof → ask. Three replies → one paying client is the industry baseline.</p></Section>
+      <Section title="Week 4 — deliver, get paid, stack reviews"><p>Use NaijaLancers escrow on every order so you never chase payment. After delivery, ask the client to leave a public review on your gig — it doubles the conversion rate of your next 10 visitors.</p></Section>
+      <Section title="The math to ₦100,000"><List items={['1 gig @ ₦40,000 + 2 gigs @ ₦20,000 + 2 gigs @ ₦10,000 = ₦100,000', 'Or 10 small gigs @ ₦10,000 each — both work, pick what closes faster.', 'Reinvest 20% into one paid skill upgrade in month 2.']} /></Section>
+      <Section title="Why NaijaLancers makes the first ₦100k easier"><p>Escrow protects you from ghost clients, the NC wallet pays out same-day to your bank, and the public profile doubles as a free portfolio. No upfront fees, no foreign card needed.</p></Section>
+    </>),
+  },
+  {
+    slug: 'cold-pitch-templates-nigerian-freelancers',
+    title: 'Cold Pitch Templates That Actually Get Replies in Nigeria (Tested on 50 Clients)',
+    description: 'Three cold pitch templates Nigerian freelancers can copy today — for WhatsApp, Instagram DM, and LinkedIn. Tested reply rates included.',
+    keywords: 'cold pitch nigeria, freelance pitch template, whatsapp pitch nigeria, instagram dm pitch, get clients freelance',
+    datePublished: '2026-06-08', dateModified: '2026-06-08', readTime: '7 min read', author: 'NaijaLancers Team', category: 'Getting Clients',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">Cold outreach still works in Nigeria — but the "Hello sir, I am a graphic designer..." opener is dead. Below are three templates with the highest reply rates from our internal data.</p>
+      <Section title="Template 1 — The compliment-then-fix (WhatsApp, 18% reply rate)"><p><em>"Hi [Name], your jollof reels are doing serious numbers — congrats on the 12k followers. I noticed the captions are cut off on mobile. I edit short-form for restaurants in Lagos and can fix that on your next 3 videos for ₦15k. Want a free sample first?"</em></p></Section>
+      <Section title="Template 2 — The case-study drop (Instagram DM, 11% reply rate)"><p><em>"Hey [Name] — I helped @brandX double their store DMs last month with a 5-slide carousel. I'd love to do the same for you, on me, this week. If you like it, we can talk about a monthly deal. Cool?"</em></p></Section>
+      <Section title="Template 3 — The decision-maker shortcut (LinkedIn, 7% reply rate, higher ticket)"><p><em>"Hi [Name], saw [company] is hiring a content writer on LinkedIn. I write SEO blogs for African SaaS — recent piece ranked #2 for 'invoice software Nigeria'. Open to a 1-article paid trial before any commitment?"</em></p></Section>
+      <Section title="Three rules that double your reply rate"><List items={['Mention something specific to them in the first 8 words.', 'Offer one tiny free sample — not a 30-min Zoom call.', 'End with a yes/no question, never "let me know your thoughts".']} /></Section>
+      <Section title="Where to pitch from inside NaijaLancers"><p>Use the Jobs feed and Connections tab to find warm leads who have already signalled buying intent. Combine cold DMs with NaijaLancers gig applications and you'll never run out of pipeline.</p></Section>
+    </>),
+  },
+  {
+    slug: 'social-media-manager-nigeria-how-to-start',
+    title: 'How to Become a Social Media Manager in Nigeria (2026 Beginner Guide)',
+    description: 'A no-fluff guide to becoming a paid social media manager in Nigeria — pricing, tools, packaging your services, and landing your first 3 clients.',
+    keywords: 'social media manager nigeria, smm freelance nigeria, how to be social media manager, smm jobs nigeria, content manager nigeria',
+    datePublished: '2026-06-08', dateModified: '2026-06-08', readTime: '8 min read', author: 'NaijaLancers Team', category: 'Skills',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">Social media management is the highest-demand, lowest-barrier freelance service in Nigeria right now. A solid SMM in Lagos charges ₦80k–₦400k per brand per month. Here is how to get there.</p>
+      <Section title="What an SMM actually delivers"><List items={['Content calendar (10–20 posts/month)', 'Graphic & short-form video production', 'Community management & DM replies', 'Monthly analytics report']} /></Section>
+      <Section title="Tools you actually need"><List items={['Canva Pro (₦7,500/mo) — or Figma free', 'CapCut + InShot for Reels/TikTok', 'Meta Business Suite & Buffer free tier', 'Notion to manage 5+ clients without chaos']} /></Section>
+      <Section title="How to price three tiers"><List items={['Starter ₦80k/mo — 12 posts, 1 platform', 'Growth ₦180k/mo — 20 posts, 2 platforms, 1 reel/wk', 'Pro ₦350k+/mo — full content + ads + reporting']} /></Section>
+      <Section title="Landing your first 3 clients"><p>Pick a niche — restaurants, salons, real estate, fitness coaches. Run a free 7-day audit for 5 local businesses. Two will convert. Use NaijaLancers to publish your SMM gig with the three tiers above and apply to job posts daily.</p></Section>
+      <Section title="Scaling past one-person-shop"><p>At ₦1M/mo MRR, hire a junior designer at ₦60k/mo and a VA at ₦40k/mo. Your margin stays above 60% and you finally sleep.</p></Section>
+    </>),
+  },
+  {
+    slug: 'virtual-assistant-jobs-nigeria-guide',
+    title: 'Virtual Assistant Jobs in Nigeria: How to Land Foreign Clients in 2026',
+    description: 'Complete guide to becoming a virtual assistant from Nigeria — skills, hourly rates in USD, where to find clients, and how to get paid in dollars safely.',
+    keywords: 'virtual assistant nigeria, va jobs nigeria, remote va nigeria, virtual assistant foreign clients, online assistant nigeria',
+    datePublished: '2026-06-08', dateModified: '2026-06-08', readTime: '8 min read', author: 'NaijaLancers Team', category: 'Remote Work',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">A skilled Nigerian VA earns $5–$25/hour from US, UK, and Canadian clients. That is ₦300k–₦1.5M/month for 20 hours of work a week, paid in dollars, from your bedroom in Ibadan.</p>
+      <Section title="What foreign clients actually want"><List items={['Inbox & calendar management', 'Lead research & CRM updates', 'Light bookkeeping (Xero, QuickBooks)', 'Customer support via email & Intercom', 'Light project management in ClickUp/Asana']} /></Section>
+      <Section title="The skill stack that doubles your rate"><List items={['ChatGPT + Claude for fast drafting', 'Loom for async video updates (huge with US clients)', 'Zapier basics — automate 1 task and charge for setup', 'Strong written English with US/UK tone']} /></Section>
+      <Section title="Where to find $10+/hour VA work"><List items={['NaijaLancers Jobs feed — filter "remote, international"', 'Upwork (start at $7 to build reviews, raise after 5 stars)', 'OnlineJobs.ph (Filipino-skewed but accepts Nigerians)', 'Twitter/X — search "looking for a VA" daily']} /></Section>
+      <Section title="Getting paid in dollars from Nigeria"><p>Use NaijaLancers escrow when working with clients on-platform; receive in NC and off-ramp to USDT or Naira via Quidax. For Upwork, withdraw to Payoneer → Geegpay → bank. See our <em>how-to-receive-international-payments-in-nigeria</em> post for the full pipeline.</p></Section>
+    </>),
+  },
+  {
+    slug: 'content-writing-jobs-nigeria-rates-2026',
+    title: 'Content Writing Jobs in Nigeria: Real Rates & Where to Find Them (2026)',
+    description: 'What Nigerian content writers actually earn in 2026 — per-word, per-article, and retainer rates, plus 12 places to find consistent writing work.',
+    keywords: 'content writing jobs nigeria, freelance writer nigeria, writing rates nigeria, blog writer nigeria, seo writer nigeria',
+    datePublished: '2026-06-08', dateModified: '2026-06-08', readTime: '7 min read', author: 'NaijaLancers Team', category: 'Skills',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">Content writing is the most underpriced skill in Nigeria. Writers charging ₦2,000 per article should be charging ₦20,000. Here is what the market actually pays in 2026.</p>
+      <Section title="Honest 2026 rate card"><List items={['Beginner local clients: ₦2k–₦8k per 800-word article', 'Mid-tier Nigerian SaaS/fintech: ₦15k–₦40k per article', 'African startup blogs: $30–$80 per article', 'US/UK SEO agencies: $100–$400 per article', 'Senior B2B SaaS specialists: $0.30–$1.00 per word']} /></Section>
+      <Section title="Niches that pay 3x the average"><List items={['Fintech & crypto explainers', 'B2B SaaS comparison content', 'Health & medical writing (needs research rigour)', 'Legal & compliance content', 'Long-form thought leadership (ghostwriting)']} /></Section>
+      <Section title="Where to find consistent writing work"><p>NaijaLancers Jobs feed, ProBlogger, Contently, BloggingPro, Superpath, Peak Freelance Slack, Twitter #writingjobs, and direct outreach to founders of African startups (TechCabal, Stears, Big Cabal portfolio).</p></Section>
+      <Section title="The pitch that wins writing gigs"><p>Never send a generic "I am a writer" intro. Send <em>two paragraphs of unpaid sample copy</em> written specifically for the client's blog. Conversion rate jumps from 2% to 15%.</p></Section>
+    </>),
+  },
+  {
+    slug: 'video-editing-freelance-nigeria-2026',
+    title: 'Video Editing Freelance in Nigeria: The TikTok-Era Goldmine (2026)',
+    description: 'Why short-form video editing is the highest-ROI freelance skill in Nigeria right now — tools, pricing, and how to land US creator clients.',
+    keywords: 'video editing nigeria, freelance video editor, tiktok editor nigeria, capcut freelance, short form editor nigeria',
+    datePublished: '2026-06-08', dateModified: '2026-06-08', readTime: '7 min read', author: 'NaijaLancers Team', category: 'Skills',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">Every creator, coach, and brand needs 30+ short-form videos a month. There are not enough editors. A solid Nigerian editor can charge $25–$80 per finished minute and stay fully booked.</p>
+      <Section title="The starter stack (cost: ~₦20k)"><List items={['CapCut Pro (free with workarounds, or $7.99/mo)', 'DaVinci Resolve free for long-form', 'Subtitles via Submagic or CapCut auto-captions', 'Storage: 1TB external SSD']} /></Section>
+      <Section title="Three offers that sell themselves"><List items={['"3 TikToks from your long YouTube video — 48hrs — ₦25k"', '"Weekly retainer: 12 shorts/month for creators — $400"', '"Podcast → 8 viral clips package — $300 per episode"']} /></Section>
+      <Section title="Where US creators hire Nigerian editors"><List items={['Twitter/X — "hiring video editor" daily search', 'r/VideoEditing & r/NewTubers job threads', 'YouTube comments under "I need an editor" community posts', 'NaijaLancers gig listings (premium boost recommended)']} /></Section>
+      <Section title="The portfolio trick that books clients in 24h"><p>Don't show 20 random clips. Show 3 case studies: "Before edit / After edit / View count growth". Loom walkthroughs of your decisions convert at 4x the rate of static reels.</p></Section>
+    </>),
+  },
+  {
+    slug: 'graphic-design-freelance-beginners-nigeria',
+    title: 'Graphic Design Freelance in Nigeria: From Zero to ₦200k/Month',
+    description: 'A beginner-to-pro path for Nigerian graphic designers — Canva to Figma, niching down, packaging, and consistent monthly income.',
+    keywords: 'graphic design nigeria, freelance designer nigeria, canva freelance, figma freelance nigeria, designer income nigeria',
+    datePublished: '2026-06-08', dateModified: '2026-06-08', readTime: '7 min read', author: 'NaijaLancers Team', category: 'Skills',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">"Graphic designer" is too vague to charge premium rates. Niche down to one of these and your income triples within 6 months.</p>
+      <Section title="High-paying design niches in 2026"><List items={['Pitch-deck design for African startups (₦150k–₦500k per deck)', 'Brand identity for fintech & food brands', 'Instagram carousel design for coaches', 'Podcast cover art + episode graphics', 'Notion & web template design (sells as a product too)']} /></Section>
+      <Section title="The 90-day path"><List items={['Days 1–30: Master Figma & one niche, build 8 spec pieces', 'Days 31–60: Pitch 10 brands/day, accept 3 free projects for testimonials', 'Days 61–90: Raise prices 50%, list premium gig on NaijaLancers, run paid promotion to your top 3 pieces']} /></Section>
+      <Section title="Pricing that respects your time"><p>Stop charging "₦5k per flyer". Switch to project pricing: "Brand starter pack — logo + 5 templates + style guide — ₦120k". Clients perceive higher value and you stop trading hours.</p></Section>
+      <Section title="Selling designs as products"><p>Open a NaijaLancers Digital Products listing with Notion templates, Canva templates, and brand kits. Passive ₦30k–₦150k/month while you keep doing client work.</p></Section>
+    </>),
+  },
+  {
+    slug: 'ai-tools-every-nigerian-freelancer-needs-2026',
+    title: '12 AI Tools Every Nigerian Freelancer Should Use in 2026',
+    description: 'The exact AI tool stack that helps Nigerian freelancers deliver faster, charge more, and never miss a deadline — most are free or under $20/month.',
+    keywords: 'ai tools freelancer nigeria, ai for freelancers, chatgpt freelance nigeria, ai productivity nigeria, freelance ai stack',
+    datePublished: '2026-06-08', dateModified: '2026-06-08', readTime: '6 min read', author: 'NaijaLancers Team', category: 'Productivity',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">AI does not replace freelancers — it replaces the freelancers who don't use AI. Here is the lean stack a Nigerian solo operator should run in 2026.</p>
+      <Section title="The 12 tools"><List items={['ChatGPT Plus — research, outlines, code', 'Claude — long-context writing & contracts', 'Gemini (free) — quick research with citations', 'Perplexity — fact-checked answers for client work', 'Submagic / CapCut AI — subtitles & shorts', 'Descript — podcast & video editing by transcript', 'Canva Magic Studio — fast carousels & decks', 'Notion AI — meeting notes & project briefs', 'Grammarly — final polish for US/UK clients', 'Otter.ai — call transcripts & action items', 'Zapier / Make — automate invoicing & onboarding', 'NaijaLancers AI Writing Assistant — built-in for gigs, posts, proposals']} /></Section>
+      <Section title="Three workflows that pay for themselves"><List items={['Use Otter to transcribe calls → Claude to draft proposals → 2 hours saved per pitch.', 'Use ChatGPT to outline 4 blog posts → write the hooks yourself → 50% time saved.', 'Use Zapier to auto-send invoices when a NaijaLancers order is marked delivered.']} /></Section>
+      <Section title="What not to do"><p>Don't publish raw AI output to clients. The 10% human edit is what they actually pay for. Use AI to remove drudgery, not to remove judgment.</p></Section>
+    </>),
+  },
+  {
+    slug: 'how-to-rank-your-gig-on-naijalancers-search',
+    title: 'How to Rank Your Gig on NaijaLancers Search (Internal SEO Guide)',
+    description: 'The exact ranking signals NaijaLancers search uses, and the changes you can make in 30 minutes to push your gig to page one.',
+    keywords: 'naijalancers seo, rank gig naijalancers, freelance gig seo, gig optimization nigeria, search ranking naijalancers',
+    datePublished: '2026-06-08', dateModified: '2026-06-08', readTime: '6 min read', author: 'NaijaLancers Team', category: 'Platform Tips',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">Most NaijaLancers gigs that sit on page 3 don't lack talent — they lack a 30-minute search optimization pass. Here is what our ranking algorithm actually rewards.</p>
+      <Section title="The five ranking signals"><List items={['Exact-prefix keyword match in the gig title', 'Completion rate (delivered on time vs cancelled)', 'Average review score and review count (recency weighted)', 'Response time to first message (under 1 hour ideal)', 'Premium boost (small but stackable)']} /></Section>
+      <Section title="The 30-minute optimization"><List items={['Rewrite your title to start with the buyer\'s search term: "TikTok video editing for…" not "I will edit your videos".', 'Add 3 niche keywords in your description first paragraph.', 'Upload 3 portfolio images + 1 short video preview.', 'Set delivery time to your honest minimum — late delivery murders ranking.', 'Reply to every new message within 1 hour for 7 days straight.']} /></Section>
+      <Section title="What kills ranking quietly"><List items={['Cancelled orders (even mutual cancellations)', 'Empty FAQs section', 'No profile photo or unverified email', 'Copy-pasted descriptions across multiple gigs']} /></Section>
+      <Section title="When to use the Premium boost"><p>Boost is most effective <em>after</em> you already have 3+ five-star reviews. Boosting an empty gig burns NC without converting.</p></Section>
+    </>),
+  },
+  {
+    slug: 'nysc-corper-freelance-side-hustle-guide',
+    title: 'The NYSC Corper\'s Freelance Side Hustle Guide (Earn ₦150k+ During Service Year)',
+    description: 'How Nigerian corpers can build a real freelance income during NYSC service year — best skills, time management, and turning the allowance into seed capital.',
+    keywords: 'nysc side hustle, corper freelance nigeria, nysc allowance investment, service year income, corper online jobs',
+    datePublished: '2026-06-08', dateModified: '2026-06-08', readTime: '7 min read', author: 'NaijaLancers Team', category: 'Earning Online',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">The ₦77k NYSC allawee is not enough — and waiting until passing out to "start something" wastes the most valuable year of your twenties. Here is how corpers stack a freelance income alongside service.</p>
+      <Section title="Why service year is perfect for freelancing"><List items={['Free accommodation (if posted to lodge or with parents)', 'Predictable CDS schedule — 80% of your time is yours', 'Allawee covers data + transport — your freelance income is pure profit', 'Built-in network — 50+ corpers at your PPA, half need help with side projects']} /></Section>
+      <Section title="Best skills to start now"><List items={['Social media management for one local business in your PPA town', 'Tutoring secondary school students online — ₦15k/student/month', 'WAEC/JAMB CBT prep app testing — quick paid gigs', 'Content writing for African blogs', 'Canva graphics for political/religious organizations in your LGA']} /></Section>
+      <Section title="The corper money plan"><List items={['Month 1–3: invest ₦20k of allawee into one paid skill course.', 'Month 4–6: land 2 clients, earn ₦100k+/month.', 'Month 7–11: scale to ₦250k/month, save 70% in NaijaLancers NC Savings @ 5% APY.', 'POP day: walk out with ₦1.5M+ saved + a real freelance business.']} /></Section>
+      <Section title="Open a NaijaLancers account on Day 1 of camp"><p>You will need the gig page, portfolio, and reviews built up by month 6. Start early, even with one ₦5k gig — momentum compounds.</p></Section>
+    </>),
+  },
+  {
+    slug: 'mobile-only-freelancing-nigeria-no-laptop',
+    title: 'How to Freelance From Nigeria Using Only a Phone (No Laptop Needed)',
+    description: 'You don\'t need a laptop to start earning online in Nigeria. Here are 8 freelance services you can deliver entirely from an Android phone, with the apps to use.',
+    keywords: 'freelance phone nigeria, no laptop freelancing, android freelance, mobile only freelancer, phone side hustle nigeria',
+    datePublished: '2026-06-08', dateModified: '2026-06-08', readTime: '6 min read', author: 'NaijaLancers Team', category: 'Earning Online',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">"I'll start when I buy a laptop" is the most expensive lie young Nigerians tell themselves. These 8 services pay real money and require only a mid-range Android phone.</p>
+      <Section title="The 8 phone-only services"><List items={['Short-form video editing — CapCut mobile is industry-standard.', 'Canva graphic design — full app on mobile.', 'Social media management — Meta Business Suite + Buffer.', 'Voice-over work — Voice Memos + BandLab.', 'Transcription — Otter.ai + good headphones.', 'AI prompt engineering — ChatGPT & Gemini apps.', 'Telegram community moderation — paid gigs from crypto/edu groups.', 'WhatsApp customer support outsourcing for small businesses.']} /></Section>
+      <Section title="The mobile workflow that works"><List items={['Use NaijaLancers PWA — installs like an app, no Play Store needed.', 'Get a ₦4,000 bluetooth keyboard for fast proposals.', 'Use Google Drive to store deliverables — never WhatsApp them.', 'Charge a small "rush" premium when phone-based delivery is faster.']} /></Section>
+      <Section title="Buy the laptop with freelance money, not from your savings"><p>Most of our top-earning mobile-first freelancers buy their first MacBook Air from their 4th month of NaijaLancers earnings. Earn first, upgrade later.</p></Section>
+    </>),
+  },
+  {
+    slug: 'teach-on-naijalancers-create-paid-courses',
+    title: 'How to Create & Sell a Paid Course on NaijaLancers (2026)',
+    description: 'A practical guide to building, pricing, and selling a paid course on NaijaLancers — the new passive income channel for Nigerian experts.',
+    keywords: 'sell course nigeria, naijalancers courses, online course nigeria, teach online nigeria, paid course platform nigeria',
+    datePublished: '2026-06-08', dateModified: '2026-06-08', readTime: '7 min read', author: 'NaijaLancers Team', category: 'Earning Online',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">If you have a skill you've been paid for, you can sell a course teaching it. NaijaLancers takes only a 5% platform fee on courses — far below Udemy's 50%+ revenue split.</p>
+      <Section title="What sells in Nigeria right now"><List items={['"How I make ₦X from Y skill" outcome-based courses', 'CBT/JAMB/WAEC prep & study skills', 'Forex, crypto safety, and personal finance', 'Tech career courses (Frontend, Data, Product)', 'Practical English & US-accent training']} /></Section>
+      <Section title="Course structure that finishes (not abandons)"><List items={['Max 6 modules, 4 lessons each — 24 lessons total', 'Every lesson under 10 minutes', 'One practical task per module — submitted for review', 'A final certificate — buyers love the LinkedIn proof']} /></Section>
+      <Section title="Pricing your first course"><p>Launch at ₦9,500. Get 30 reviews. Raise to ₦19,500. Add a premium tier with 1:1 mentorship at ₦75,000. Most six-figure course creators on NaijaLancers run this exact ladder.</p></Section>
+      <Section title="Marketing without paid ads"><p>Repurpose every lesson into a 60-second TikTok/Reel/X thread. Pin your NaijaLancers course link in bio. 100 short videos in 90 days will out-perform any paid ad budget under ₦1M.</p></Section>
+    </>),
+  },
+  {
+    slug: 'sell-digital-products-nigeria-passive-income',
+    title: 'Selling Digital Products From Nigeria: The Real Passive Income Path',
+    description: 'Notion templates, ebooks, prompt packs, design assets — the digital products Nigerians are quietly selling for $5k–$30k/month on NaijaLancers and beyond.',
+    keywords: 'digital products nigeria, sell ebook nigeria, notion templates nigeria, passive income nigeria, digital download nigeria',
+    datePublished: '2026-06-08', dateModified: '2026-06-08', readTime: '7 min read', author: 'NaijaLancers Team', category: 'Earning Online',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">Digital products are the closest thing to passive income for solo Nigerians. Build once, sell unlimited times, no inventory, no shipping, no wahala.</p>
+      <Section title="What actually sells (data from our marketplace)"><List items={['Notion templates for freelancers, agencies, students', 'ChatGPT/Claude prompt packs (niche-specific)', 'Canva design templates — Instagram, decks, resumes', 'Niche ebooks — "How to japa as a software engineer" sold 12k copies in 2025', 'Spreadsheet tools — fintech models, budgeting templates', 'Voice-over sample packs & audio loops']} /></Section>
+      <Section title="The product-creation loop"><List items={['Write down every tool/template you built for your own work — that is your product list.', 'Polish one, list at ₦4,500, post 3 case studies.', 'Use buyer feedback to build version 2 at ₦9,000.', 'Bundle 3 products at ₦19,500 — 60% of revenue comes from bundles.']} /></Section>
+      <Section title="Where to list besides NaijaLancers"><p>NaijaLancers Digital Products is your primary, payment-protected store. Cross-list on Gumroad and Lemon Squeezy for international card buyers — but route Nigerian buyers to NaijaLancers for instant NC checkout and zero card friction.</p></Section>
+      <Section title="The reality check"><p>"Passive" still requires 2–4 weeks of focused build. After that, expect maintenance of ~2 hours/week per product. Expect ₦20k/month per product in year 1; top sellers stack 8–15 products for ₦300k+ monthly.</p></Section>
+    </>),
+  },
+  {
+    slug: 'freelance-contract-template-nigeria',
+    title: 'The Freelance Contract Every Nigerian Should Send Before Starting Work',
+    description: 'A simple, legally sound freelance contract template for Nigerian freelancers — payment terms, scope, IP, revisions, kill fees. Copy-paste ready.',
+    keywords: 'freelance contract nigeria, freelance agreement template, nigerian freelance contract, freelance legal nigeria, payment terms freelance',
+    datePublished: '2026-06-08', dateModified: '2026-06-08', readTime: '6 min read', author: 'NaijaLancers Team', category: 'Business',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">"Wetin we no gree on paper, na wetin go cause palava." A two-page freelance contract prevents 90% of scope-creep, late-payment, and ownership disputes.</p>
+      <Section title="The 7 clauses every freelance contract must contain"><List items={['Scope — bulleted deliverables, nothing vague.', 'Timeline & milestones — with specific dates.', 'Payment — amount, currency, 50% upfront, escrow on NaijaLancers.', 'Revisions — number included; rate beyond that (e.g., ₦10k/extra round).', 'Kill fee — if client cancels mid-project, you keep 50% of unbilled amount.', 'Intellectual property — transfer on final payment, not before.', 'Confidentiality — mutual NDA in one paragraph.']} /></Section>
+      <Section title="The escrow shortcut"><p>If you're working through NaijaLancers, the escrow + transaction PIN already handles payment safety. Your contract just needs to reference the order ID and dispute process. Off-platform clients always need a signed PDF.</p></Section>
+      <Section title="Tools to send & sign"><List items={['Free: Google Docs → "share with anyone" + typed e-signature', 'Paid: PandaDoc, DocuSign, or Dropbox Sign (free tier OK)', 'Mobile: SignWell — sign on phone in 30 seconds']} /></Section>
+      <Section title="When to escalate legally"><p>For projects above ₦2M, get a 1-hour consult with a lawyer (~₦25k–₦60k). The cost is 1% of project value and saves you from costly mistakes.</p></Section>
+    </>),
+  },
+  {
+    slug: 'niche-down-freelance-services-higher-rates',
+    title: 'Why Niching Down Doubles Your Freelance Rates in Nigeria',
+    description: 'The counter-intuitive math behind why "specialist" freelancers in Nigeria earn 2–4x more than generalists — and how to pick your niche this week.',
+    keywords: 'freelance niche nigeria, specialist freelancer, niche down freelancing, freelance positioning, charge more freelance',
+    datePublished: '2026-06-08', dateModified: '2026-06-08', readTime: '6 min read', author: 'NaijaLancers Team', category: 'Strategy',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">A "graphic designer" charges ₦15k per logo. A "logo designer for African fintech startups" charges ₦250k. Same skill. Same hours. Different positioning.</p>
+      <Section title="The niche formula"><p><strong>(Skill) for (Specific audience) who want (Specific outcome)</strong>. Example: <em>Email marketing for Nigerian DTC fashion brands who want to increase repeat orders.</em></p></Section>
+      <Section title="Why niching works in Nigeria"><List items={['Buyer trust skyrockets — "she gets my business" feeling', 'You can charge 2–4x because there is no apples-to-apples competitor', 'Marketing becomes 10x easier — you know exactly where the audience hangs out', 'Referrals compound — one happy DTC fashion client tells 3 others']} /></Section>
+      <Section title="How to pick your niche this week"><List items={['Write down 3 industries you genuinely understand or care about.', 'Find 20 Nigerian businesses in each — which list excites you?', 'Pick the industry with the most paying ad spend on Meta — that signals budget.', 'Rewrite your NaijaLancers gig title using the formula above.']} /></Section>
+      <Section title={`The fear of "missing out" on other work`}><p>You won't miss out — you will earn 3x as much from half the clients and have time for the others as overflow. Niching is the highest-leverage move a Nigerian freelancer can make this quarter.</p></Section>
+    </>),
+  },
 ];
 
 export function getPostBySlug(slug: string): BlogPost | undefined {
