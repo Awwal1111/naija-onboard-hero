@@ -113,6 +113,7 @@ serve(async (req) => {
       }
       try {
         const nextUrls: string[] = []
+        const toDelete: Array<{ bucket: string; path: string }> = []
         for (const oldUrl of urls) {
           if (!oldUrl?.includes(SUPABASE_HOST_FRAGMENT)) {
             nextUrls.push(oldUrl)
@@ -138,15 +139,36 @@ serve(async (req) => {
           }
 
           nextUrls.push(newUrl)
+
+          // Parse bucket/path from old Supabase URL for deletion after DB update
+          const m = oldUrl.match(/\/storage\/v1\/object\/(?:public|sign)\/([^/]+)\/(.+?)(?:\?|$)/)
+          if (m) toDelete.push({ bucket: m[1], path: decodeURIComponent(m[2]) })
         }
 
+        let deletedCount = 0
         if (!dryRun) {
           await supabase
             .from(table)
             .update({ [cfg.col]: cfg.isArray ? nextUrls : nextUrls[0] ?? null })
             .eq('id', row.id)
+
+          // Delete originals from Supabase Storage (best-effort, frees quota)
+          const grouped = new Map<string, string[]>()
+          for (const d of toDelete) {
+            if (!grouped.has(d.bucket)) grouped.set(d.bucket, [])
+            grouped.get(d.bucket)!.push(d.path)
+          }
+          for (const [bucket, paths] of grouped) {
+            try {
+              const { error: rmErr } = await supabase.storage.from(bucket).remove(paths)
+              if (!rmErr) deletedCount += paths.length
+              else console.warn(`[migrator] delete failed bucket=${bucket}:`, rmErr.message)
+            } catch (delErr) {
+              console.warn(`[migrator] delete threw bucket=${bucket}:`, delErr)
+            }
+          }
         }
-        results.push({ id: row.id, ok: true, provider: 'catbox', newUrl: cfg.isArray ? `${nextUrls.length} files migrated` : nextUrls[0] })
+        results.push({ id: row.id, ok: true, provider: 'catbox', deleted: deletedCount, newUrl: cfg.isArray ? `${nextUrls.length} files migrated` : nextUrls[0] })
       } catch (e: any) {
         results.push({ id: row.id, ok: false, error: e?.message || String(e) })
       }
