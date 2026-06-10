@@ -2084,6 +2084,332 @@ export const BLOG_POSTS: BlogPost[] = [
       <Section title={`The fear of "missing out" on other work`}><p>You won't miss out — you will earn 3x as much from half the clients and have time for the others as overflow. Niching is the highest-leverage move a Nigerian freelancer can make this quarter.</p></Section>
     </>),
   },
+  {
+    slug: 'best-freelancing-platform-in-nigeria',
+    title: 'The Best Freelancing Platform in Nigeria (2026 Honest Comparison)',
+    description: 'A no-fluff comparison of the best freelancing platforms in Nigeria — Upwork, Fiverr, Toptal, Freelancer.com vs NaijaLancers. Fees, payout speed, dispute fairness, and who wins for Nigerians.',
+    keywords: 'best freelancing platform in nigeria, freelancing websites in nigeria, nigerian freelance marketplace, hire freelancers in nigeria, top freelance platform nigeria',
+    datePublished: '2026-06-10', dateModified: '2026-06-10', readTime: '9 min read', author: 'NaijaLancers Team', category: 'Platform Comparison',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">If you are searching for the <strong>best freelancing platform in Nigeria</strong>, the answer is not the platform with the biggest brand — it is the one where Nigerians actually get paid on time, in their own currency, without an account freeze. Here is the honest 2026 breakdown.</p>
+      <Section title="The platforms we compared"><List items={['Upwork — global giant, USD payments, strict account reviews on Nigerian IPs','Fiverr — gig-based, ₦ withdrawals via Payoneer only, 20% commission','Freelancer.com — bid-based, low pay, very high competition','Toptal — top 3% only, hard to enter, USD pay','PeoplePerHour — UK-focused, decent for writers','NaijaLancers — built in Nigeria, for Nigerians, with NC wallet + escrow on every transaction']} /></Section>
+      <Section title="Why NaijaLancers wins for Nigerian freelancers"><List items={['No account freezes for "suspicious Nigerian IP" — we are Nigeria','5% platform fee vs Fiverr 20% and Upwork up to 20%','Instant NC wallet withdrawals to Nigerian banks, USDT, Celo, or MiniPay','Escrow protection on every gig and job — both sides win','Built-in AI Hire Assistant matches you to clients automatically','Direct chat, video, and contract tools — no need for 3 other apps']} /></Section>
+      <Section title="Why NaijaLancers wins for Nigerian clients hiring freelancers"><List items={['Vetted Nigerian talent with KYC verification badges','Escrow holds funds — release only when you are satisfied','Pay in Naira (NC), USDT, or directly from MiniPay','24-hour dispute resolution — not 21 days like Upwork','Local time zone, local language, local context']} /></Section>
+      <Section title="When other platforms still make sense"><p>If you have an existing $50k+/year Upwork client, do not move them. If you are starting fresh, building reviews, or want to <strong>hire freelancers in Nigeria</strong> for local-context work, NaijaLancers is faster, cheaper, and safer.</p></Section>
+      <Section title="How to start in under 10 minutes"><List items={['Create a free account at naijalancers.name.ng','Add 3 portfolio pieces and complete KYC for a verified badge','Post your first gig or browse the Nigerian freelance marketplace','Get paid into your NC wallet — withdraw to your bank, USDT, or MiniPay']} /></Section>
+    </>),
+  },
+  {
+    slug: 'myths-about-freelancing-nigeria',
+    title: 'The Biggest Myths About Freelancing in Nigeria (And the Truth)',
+    description: 'Freelancing is not "open a shop and clients will come." Here are the 7 dangerous myths killing Nigerian freelance careers and the real playbook to land paying clients fast.',
+    keywords: 'freelancing myths, freelancing in nigeria, how to get freelance clients, become a freelancer nigeria, naijalancers expert',
+    datePublished: '2026-06-10', dateModified: '2026-06-10', readTime: '8 min read', author: 'NaijaLancers Team', category: 'Strategy',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">Most Nigerians who fail at freelancing fail for the same reason: they treat it like opening a kiosk on Allen Avenue — "set up the gig and customers will walk in." That is a myth. Here is what really works.</p>
+      <Section title="Myth 1 — 'If I create a gig, clients will find me'"><p>Reality: clients find <em>active</em> freelancers. Create your gig on NaijaLancers, then push it through your channels every single day for the first 30 days.</p></Section>
+      <Section title="Myth 2 — 'I need a perfect portfolio first'"><p>Reality: a 3-piece portfolio with 1 mock project and 2 paid jobs out-converts 20 random pieces. Apply on NaijaLancers Expert track the moment you have anything to show.</p></Section>
+      <Section title="Myth 3 — 'Marketing is for businesses, not freelancers'"><p>You ARE the business. Run ₦5k–₦20k Meta and TikTok ads pointing to your NaijaLancers gig. Even a ₦500/day budget for 10 days will out-perform waiting.</p></Section>
+      <Section title="Myth 4 — 'Social media is a distraction'"><p>Reality: 70% of NaijaLancers top earners get clients from a single platform — usually X (Twitter), LinkedIn, or TikTok. Pick one. Post 5x/week. Pin your gig link.</p></Section>
+      <Section title="Myth 5 — 'I must lower my price to compete'"><p>Lower price = lower-trust clients = more drama. Charge fairly, justify it with deliverables, and use escrow so both sides are protected.</p></Section>
+      <Section title="Myth 6 — 'Becoming an Expert is for the elite'"><p>Becoming a NaijaLancers Expert just requires KYC, a portfolio, and consistent delivery. Apply once you have 3 happy clients — verified Experts earn 3x more on average.</p></Section>
+      <Section title="The real playbook"><List items={['Create your NaijaLancers gig today','Post about it on 1 social channel 5x/week','Run small targeted ads to your gig link','Apply for Expert status after 3 reviews','Stack reviews → raise prices → repeat']} /></Section>
+    </>),
+  },
+  {
+    slug: 'why-cryptocurrency-considered-scam-naijalancers-celo',
+    title: 'Why Cryptocurrency Feels Like a Scam (And How NaijaLancers Hides the Hard Parts)',
+    description: 'Mainnet, testnet, gas, ramps, private keys — the jargon makes crypto look like a scam. Here is what every term means, why NaijaLancers chose Celo, and why you never need to learn any of it.',
+    keywords: 'cryptocurrency scam, celo blockchain, mainnet testnet explained, ramp on off crypto, quidax pretium ivorypay mt pelerin, naijalancers crypto',
+    datePublished: '2026-06-10', dateModified: '2026-06-10', readTime: '10 min read', author: 'NaijaLancers Team', category: 'Crypto & Payments',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">Crypto looks scammy because the people building it talk in code. "Send 0.05 ETH to my MetaMask on Polygon zkEVM mainnet, not testnet, gas is 12 gwei." No normal person wants that. NaijaLancers fixed this by hiding every confusing term behind a Naira balance.</p>
+      <Section title="The crypto terms decoded in plain English"><List items={['Mainnet — the real, live network where real money moves','Testnet — a sandbox copy used by developers; the coins are worthless','Gas fee — the small payment to miners/validators for processing your transaction','Wallet address — like your account number, but for crypto (long string of letters and numbers)','Private key / seed phrase — the master password; anyone with it owns your money','Blockchain — the public ledger where every transaction is permanently recorded','Stablecoin (USDT, cUSD) — crypto pegged 1:1 to the US Dollar — no volatility','On-ramp — the bridge to convert Naira into crypto','Off-ramp — the bridge to convert crypto back into Naira']} /></Section>
+      <Section title="Why we chose the Celo blockchain"><List items={['Gas fees under ₦5 per transaction — Ethereum can cost ₦5,000+','Mobile-first — Celo was built for African phones, not desktop wallets','Native stablecoins (cUSD, cNGN) — no Naira-to-USDT volatility risk','Carbon-negative network — environmentally responsible','MiniPay integration — 50M+ Africans already have a Celo wallet in their browser']} /></Section>
+      <Section title="Why you never see any of this on NaijaLancers"><p>Your wallet shows a Naira balance. You deposit Naira, you withdraw Naira. In the background, Celo + USDT move the money instantly and cheaply — but you never see "mainnet", never sign a transaction, never copy a wallet address unless you choose to.</p></Section>
+      <Section title="What ramps actually do"><p>An on-ramp turns ₦100,000 into $66 USDT inside the platform in seconds. An off-ramp does the reverse. NaijaLancers offers four ramps so you always get the best rate:</p>
+      <List items={['Quidax — Naira ↔ USDT, best for large Nigerian-bank deposits','Pretium Finance — Naira ↔ cUSD, mobile-money friendly across Africa','Mt Pelerin — EUR/USD ↔ crypto, ideal for European clients','IvoryPay — pan-African card and bank rails']} /></Section>
+      <Section title="Why your money is safer than in a Nigerian bank"><List items={['Every payment is recorded permanently on Celo — fully traceable','Escrow holds funds in a smart contract, not a person\'s account','No bank can freeze your wallet because of "suspicious activity"','You can prove every transaction with one URL — auditor-friendly']} /></Section>
+      <Section title="The bottom line"><p>Crypto is not the scam — bad UX is the scam. NaijaLancers gives you the speed and security of blockchain with the simplicity of a regular Naira app. You will never see the word "mainnet" unless you go looking for it.</p></Section>
+    </>),
+  },
+  {
+    slug: 'complete-guide-to-freelancing-from-zero',
+    title: 'The Complete Guide to Freelancing in Nigeria (From Day 1, Even Without Skills)',
+    description: 'No skill, no laptop, no money? Here is the step-by-step guide to start freelancing from absolute zero in Nigeria — including free skill resources and your first NaijaLancers gig.',
+    keywords: 'guide to freelancing, start freelancing nigeria, freelancing for beginners, learn freelance skill nigeria, naijalancers school',
+    datePublished: '2026-06-10', dateModified: '2026-06-10', readTime: '10 min read', author: 'NaijaLancers Team', category: 'Beginner Guide',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">This is the full beginner-to-paid roadmap, written for the Nigerian who has zero skill, zero portfolio, and zero clients today. Follow it weekly and you will be earning within 90 days.</p>
+      <Section title="Week 1 — Pick one skill (not five)"><p>Choose ONE: graphic design, video editing, copywriting, social media management, virtual assistance, or web development. Resist the urge to learn "everything".</p></Section>
+      <Section title="Week 2–4 — Learn it free"><List items={['NaijaLancers School — free Nigerian-context courses for the most in-demand skills','YouTube — search "[skill] full course 2025"','Google Digital Garage — free certified marketing courses','freeCodeCamp — for any tech skill','Coursera audit mode — free access to top-university content','HubSpot Academy — sales, content, CRM']} /></Section>
+      <Section title="Week 5 — Build 3 portfolio pieces"><p>Make them up. Design a logo for a fake bakery. Edit a 60-second reel for a fake gym. Write a homepage for a fake fintech. Real work beats no work.</p></Section>
+      <Section title="Week 6 — Set up your NaijaLancers profile"><List items={['Create a sharp gig title using "(skill) for (audience) who want (outcome)"','Upload all 3 portfolio pieces','Complete KYC for a verified badge','Set fair starting prices (₦8k–₦25k for first gigs)']} /></Section>
+      <Section title="Week 7–9 — Land the first 3 clients"><List items={['Apply to 5 NaijaLancers jobs per day','Send 10 cold pitches per week on X/LinkedIn','Run ₦500/day ads to your gig for 7 days','Offer the first client a 30% discount in exchange for a 5-star review']} /></Section>
+      <Section title="Week 10–12 — Scale to ₦200k/month"><List items={['Raise prices 20% after every 3 five-star reviews','Apply for NaijaLancers Expert verification','Create a second related gig (upsell path)','Save 50% of every payment into NC Savings @ 5% APY']} /></Section>
+      <Section title="Stay accountable"><p>Print this guide. Tick a week every Sunday. The Nigerians earning $2k/month freelancing started exactly here.</p></Section>
+    </>),
+  },
+  {
+    slug: 'valora-minipay-naijalancers-celo-guide',
+    title: 'Valora, MiniPay, Celo & NaijaLancers — What They Have in Common (And Why NaijaLancers Wins for Freelancers)',
+    description: 'Valora, MiniPay, MetaMask and NaijaLancers all run on Celo. Here is what each does, what they share, and why NaijaLancers is the only one built specifically for freelancers.',
+    keywords: 'valora minipay celo, minipay freelancer, celo wallet nigeria, naijalancers vs valora, crypto wallet for freelancers',
+    datePublished: '2026-06-10', dateModified: '2026-06-10', readTime: '8 min read', author: 'NaijaLancers Team', category: 'Crypto & Payments',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">Valora, MiniPay, MetaMask, and NaijaLancers all touch the same Celo blockchain — but they do very different jobs. Here is the clearest comparison you will read.</p>
+      <Section title="What they have in common"><List items={['All settle payments on the Celo blockchain (fast, cheap, mobile-first)','All support cUSD and USDT stablecoins','All let you send money internationally in seconds with under ₦5 in fees','All work in Africa without a US bank account']} /></Section>
+      <Section title="What each one is best for"><List items={['Valora — beautiful consumer wallet for sending money to friends','MiniPay — built into Opera Mini browser, 50M+ African users, zero-friction payments','MetaMask — power-user multi-chain wallet, complex but flexible','NaijaLancers — the only one that combines wallet + escrow + freelance marketplace + dispute resolution']} /></Section>
+      <Section title="Why NaijaLancers is the right place for freelancers"><List items={['Built-in escrow — the others have no buyer/seller protection','Verified freelance profiles, gigs, jobs, and reviews','Direct chat, contracts, milestones, and dispute panel','NC wallet auto-converts between Naira, USDT, and cUSD','One-click withdrawal to bank, MiniPay, Valora, or any Celo wallet']} /></Section>
+      <Section title="Use them together (the pro setup)"><List items={['Earn on NaijaLancers — escrow-protected','Withdraw to MiniPay for spending on African merchants','Withdraw to Valora for sending to friends/family','Withdraw to MetaMask if you DeFi or hold long-term','Use NC Savings @ 5% APY for the cash you do not need yet']} /></Section>
+      <Section title="The verdict"><p>If you only want a wallet, pick MiniPay (browser) or Valora (app). If you want to <em>earn</em> as a freelancer, NaijaLancers is the only platform that handles the work, the client, the payment, and the dispute — all in one place.</p></Section>
+    </>),
+  },
+  {
+    slug: 'why-traditional-banks-not-needed-international-freelancing-2026',
+    title: 'Why You Don\'t Need a Traditional Bank for International Freelancing in 2026',
+    description: 'Domiciliary accounts, Payoneer delays, $50 SWIFT fees — traditional banks are the bottleneck. Here is how Nigerian freelancers get paid internationally in seconds without one.',
+    keywords: 'international freelance payments nigeria, no bank freelance, get paid from abroad nigeria, payoneer alternative nigeria, usdt freelance nigeria',
+    datePublished: '2026-06-10', dateModified: '2026-06-10', readTime: '7 min read', author: 'NaijaLancers Team', category: 'Payments & Security',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">Nigerian freelancers used to need a domiciliary account, a Payoneer card, and 7 working days to receive $200 from a US client. In 2026 you need none of that.</p>
+      <Section title="What banks still charge in 2026"><List items={['$25–$50 SWIFT receiving fees','3–7 day clearing delays','CBN FX restrictions on dollar withdrawals','Account freezes when "suspicious" foreign transfers arrive','Forced conversion at the official rate (sometimes 30% below market)']} /></Section>
+      <Section title="What NaijaLancers + Celo gives you instead"><List items={['Client pays in USD/USDT — lands in your NC wallet in under 60 seconds','Total fee under ₦200 (vs ₦15,000+ via bank)','Convert to Naira at the best live rate via Quidax, Pretium, Mt Pelerin or IvoryPay','Withdraw to ANY Nigerian bank in 5 minutes','Hold balances in USDT to hedge against Naira devaluation']} /></Section>
+      <Section title="The new freelance payment stack"><List items={['Earn — invoice the client through NaijaLancers escrow','Hold — keep funds in USDT inside NC wallet','Spend — pay African vendors via MiniPay','Convert — off-ramp to Naira only when you need cash','Save — park idle USDT in NC Savings @ 5% APY']} /></Section>
+      <Section title="When you still want a bank"><p>For physical card payments at restaurants and rent. For everything else — international invoices, savings, conversions — banks have been quietly replaced.</p></Section>
+    </>),
+  },
+  {
+    slug: 'common-mistakes-loss-of-funds-crypto',
+    title: '12 Common Mistakes That Cause Loss of Funds in Crypto (And How NaijaLancers Protects You)',
+    description: 'Lost private keys, wrong network sends, phishing attacks, fake support — the most common ways Nigerians lose crypto and the exact NaijaLancers protections that prevent each one.',
+    keywords: 'lose crypto mistakes, crypto security nigeria, private key safety, crypto scam protection, naijalancers crypto security',
+    datePublished: '2026-06-10', dateModified: '2026-06-10', readTime: '9 min read', author: 'NaijaLancers Team', category: 'Crypto & Payments',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">Nigerians lose more crypto to their own mistakes than to hackers. Here are the 12 most common — with the exact NaijaLancers safeguard for each.</p>
+      <Section title="1. Losing your private key / seed phrase"><p>Without it, your wallet is gone forever. <strong>NaijaLancers protection:</strong> your NC wallet uses custodial recovery — sign in with email + transaction PIN, never juggle a 12-word phrase.</p></Section>
+      <Section title="2. Sharing your recovery phrase"><p>Never type it on a website. Never send via chat. <strong>NaijaLancers protection:</strong> we never ask for a seed phrase — full stop.</p></Section>
+      <Section title="3. Sending funds to the wrong network"><p>USDT on Ethereum cannot land in a Tron wallet — funds vanish. <strong>NaijaLancers protection:</strong> network is auto-selected based on the destination address.</p></Section>
+      <Section title="4. Sending to incorrect wallet addresses"><p>One wrong character = permanent loss. <strong>NaijaLancers protection:</strong> address validation + confirmation modal + first-time recipient warning.</p></Section>
+      <Section title="5. Falling for phishing attacks"><p>Fake "NaijaLancers" sites in Google ads. <strong>NaijaLancers protection:</strong> bookmark naijalancers.name.ng — we publish no email links that ask for your PIN.</p></Section>
+      <Section title="6. Fake investment schemes"><p>"Send 1 ETH, receive 2 ETH" — never real. <strong>NaijaLancers protection:</strong> all in-platform investments are escrow-protected; no off-platform DM offers.</p></Section>
+      <Section title="7. Fake customer support scams"><p>"Hi I am NaijaLancers support, send your PIN to verify." <strong>NaijaLancers protection:</strong> support never DMs first and never asks for PINs.</p></Section>
+      <Section title="8. Weak passwords / no 2FA"><p><strong>NaijaLancers protection:</strong> biometric login + mandatory transaction PIN + suspicious-login alerts.</p></Section>
+      <Section title="9. Storing seed phrases in screenshots / cloud notes"><p>Hackers scan for these. <strong>NaijaLancers protection:</strong> no seed phrase to leak.</p></Section>
+      <Section title="10. Trusting random Telegram admins"><p>Most are scammers. <strong>NaijaLancers protection:</strong> verified support staff carry a platform badge.</p></Section>
+      <Section title="11. Approving malicious smart contracts"><p>One click drains a wallet. <strong>NaijaLancers protection:</strong> we never ask you to sign external contracts.</p></Section>
+      <Section title="12. Sending to a freelancer/client without escrow"><p>The single biggest loss vector for freelancers. <strong>NaijaLancers protection:</strong> escrow is enabled by default on every gig and job — release only when satisfied.</p></Section>
+      <Section title="The single rule that prevents 90% of losses"><p>If you have to leave NaijaLancers, slow down. Every loss above started with "let us move this off-platform".</p></Section>
+    </>),
+  },
+  {
+    slug: 'limitations-cryptocurrency-payment-method',
+    title: 'The Real Limitations of Using Cryptocurrency as a Payment Method (And How NaijaLancers Solves Them)',
+    description: 'Volatility, gas fees, network congestion, regulatory uncertainty — every real limitation of crypto payments, and how NaijaLancers and modern stablecoins quietly fix them.',
+    keywords: 'limitations of cryptocurrency, crypto payment problems, stablecoin payment, crypto regulation nigeria, naijalancers payment solution',
+    datePublished: '2026-06-10', dateModified: '2026-06-10', readTime: '9 min read', author: 'NaijaLancers Team', category: 'Crypto & Payments',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">Crypto-as-payment has real limitations. Pretending otherwise is dishonest. Here is the full list — and the exact NaijaLancers fix for each.</p>
+      <Section title="1. Volatility"><p>BTC swings 10% in an afternoon. <strong>Fix:</strong> NaijaLancers uses stablecoins (USDT, cUSD) and cNGN — value never moves.</p></Section>
+      <Section title="2. User-education barrier"><p>Most users cannot define "gas" or "mainnet". <strong>Fix:</strong> our UI shows only Naira balances — every crypto term is hidden.</p></Section>
+      <Section title="3. Regulatory uncertainty"><p>Rules change. <strong>Fix:</strong> NaijaLancers is registered and KYC-compliant, partnered with regulated ramps (Quidax, Pretium, IvoryPay, Mt Pelerin).</p></Section>
+      <Section title="4. Network congestion"><p>Ethereum slows during peak hours. <strong>Fix:</strong> we run on Celo — sub-5-second blocks, never congested.</p></Section>
+      <Section title="5. High transaction fees"><p>Ethereum gas can hit $30. <strong>Fix:</strong> Celo gas is under ₦5 per transaction.</p></Section>
+      <Section title="6. Recovery difficulty after mistakes"><p>Send to the wrong address = gone. <strong>Fix:</strong> address validation, network auto-detection, confirmation step, and 24-hour dispute panel for in-platform mistakes.</p></Section>
+      <Section title="7. Merchant adoption"><p>Most Nigerian stores still take only Naira. <strong>Fix:</strong> instant off-ramp to bank or MiniPay — your crypto becomes spendable Naira in 5 minutes.</p></Section>
+      <Section title="8. Security concerns"><p>Wallets get drained. <strong>Fix:</strong> custodial NC wallet + biometric + transaction PIN + suspicious-login alerts.</p></Section>
+      <Section title="9. Refunds & chargebacks"><p>Blockchain is irreversible. <strong>Fix:</strong> NaijaLancers escrow holds funds until release — disputes go to a moderation panel, not the blockchain.</p></Section>
+      <Section title="10. Tax & accounting confusion"><p><strong>Fix:</strong> built-in transaction export — every payment, with date and Naira value, ready for your accountant.</p></Section>
+      <Section title="The honest summary"><p>Crypto-as-payment had 10 real problems. Stablecoins + Celo + smart escrow + good UX solved 9 of them. The 10th (tax reporting) just needs a CSV — which we already export.</p></Section>
+    </>),
+  },
+  {
+    slug: 'case-study-hiring-freelancers-naijalancers',
+    title: 'Case Study: How 5 Nigerian Businesses Hired Freelancers on NaijaLancers (Real Numbers)',
+    description: '5 real client case studies — a Lagos DTC brand, an Abuja law firm, a Port Harcourt restaurant, a fintech startup and a YouTuber — and exactly what they paid, hired, and got back.',
+    keywords: 'hire freelancers case study, naijalancers client stories, freelance hiring nigeria, expert hire case study, business hire freelancer nigeria',
+    datePublished: '2026-06-10', dateModified: '2026-06-10', readTime: '9 min read', author: 'NaijaLancers Team', category: 'Case Studies',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">Real Nigerian businesses, real budgets, real outcomes. Names changed for privacy — numbers are exact.</p>
+      <Sub title="Case 1 — Lagos DTC fashion brand"><p>Hired a social media manager at ₦180k/month + a video editor per-project. 4 months in: Instagram followers 8k → 47k, monthly revenue +320%. Total paid via escrow: ₦950k. Zero disputes.</p></Sub>
+      <Sub title="Case 2 — Abuja law firm"><p>Hired a web developer to rebuild their site (₦450k, milestone-based escrow), and an SEO writer for 2 articles/month (₦60k/article). Inbound client inquiries went from 4/month to 31/month within 5 months.</p></Sub>
+      <Sub title="Case 3 — Port Harcourt restaurant"><p>Hired a TikTok creator at ₦25k/video, 8 videos/month. One video hit 2.1M views. Weekend reservations doubled within 6 weeks.</p></Sub>
+      <Sub title="Case 4 — Lagos fintech startup"><p>Used AI Hire Assistant to find a senior React developer in 4 hours. Contract: ₦1.8M/month, milestone escrow. Shipped MVP in 6 weeks vs in-house 4-month estimate.</p></Sub>
+      <Sub title="Case 5 — Solo YouTuber"><p>Hired a thumbnail designer (₦8k/thumbnail), a script editor (₦12k/video), and a Shorts editor (₦15k/short). Channel grew 12k → 180k subs in 7 months. Total freelance spend: ₦740k. Ad revenue earned: ₦4.2M.</p></Sub>
+      <Section title="What the 5 winners did right"><List items={['Wrote crystal-clear briefs — outcome, deadline, examples','Funded escrow upfront — freelancers worked confidently','Released milestone payments fast — built loyalty','Left detailed 5-star reviews — earned freelancer goodwill','Re-hired the same 2–3 freelancers instead of restarting every time']} /></Section>
+      <Section title="Want similar results?"><p>Post your first job, fund the escrow, and let the AI Hire Assistant shortlist three Nigerian experts in minutes.</p></Section>
+    </>),
+  },
+  {
+    slug: 'why-freelancers-fail-to-get-clients-with-right-skills',
+    title: 'Why Skilled Nigerian Freelancers Still Fail to Get Clients (8 Root Causes)',
+    description: 'Skill alone is not enough. Here are the 8 silent reasons talented Nigerian freelancers stay broke — and what to fix this week.',
+    keywords: 'freelancer no clients, why freelancers fail, get freelance clients nigeria, freelance marketing nigeria, freelance career stuck',
+    datePublished: '2026-06-10', dateModified: '2026-06-10', readTime: '7 min read', author: 'NaijaLancers Team', category: 'Strategy',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">"I have the skill, but clients are not coming." We hear this weekly. The skill is almost never the problem — these 8 things are.</p>
+      <Section title="1. Invisible positioning"><p>"I am a designer" does not sell. "I design logos for African coffee brands" sells. Niche or starve.</p></Section>
+      <Section title="2. No proof of work"><p>Even 3 mock projects beat zero. Build, publish, link them in your NaijaLancers gig.</p></Section>
+      <Section title="3. Generic proposals"><p>Copy-paste pitches lose. Write 4-line custom messages referencing the buyer\'s exact ask.</p></Section>
+      <Section title="4. No social presence"><p>Clients Google you before paying. One active LinkedIn or X account makes the difference.</p></Section>
+      <Section title="5. Slow response time"><p>Replying after 6 hours kills 80% of leads. Aim for under 1 hour for the first 90 days.</p></Section>
+      <Section title="6. Pricing that screams "amateur""><p>₦3k logos signal low quality. Charge fairly, justify with deliverables, use escrow.</p></Section>
+      <Section title="7. Refusing escrow / wanting "direct payment""><p>Asking clients to bypass NaijaLancers escrow loses 70% of professional buyers — they read it as a scam signal.</p></Section>
+      <Section title="8. No follow-up system"><p>50% of clients hire after the 3rd touch. Keep a simple spreadsheet of every lead and check in weekly.</p></Section>
+      <Section title="Fix any 3 this week"><p>You will see results inside 30 days. Most freelancers do none — that is why the same 10% earn 90% of the money.</p></Section>
+    </>),
+  },
+  {
+    slug: 'freelancing-sites-in-nigeria',
+    title: 'The Top Freelancing Sites in Nigeria (2026 Edition)',
+    description: 'A current ranked list of the top freelancing sites in Nigeria — global and local — with pros, cons, and the best fit for each freelance niche.',
+    keywords: 'freelancing sites in nigeria, freelance websites nigeria, online freelance platforms nigeria, top freelancing sites, nigerian freelance sites',
+    datePublished: '2026-06-10', dateModified: '2026-06-10', readTime: '8 min read', author: 'NaijaLancers Team', category: 'Platform Comparison',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">There are dozens of <strong>freelancing sites in Nigeria</strong> — most are recycled lists. Here is the one updated for 2026, with real strengths and weaknesses.</p>
+      <Section title="Global platforms"><List items={['Upwork — biggest USD pool, but Nigerian accounts are frequently flagged','Fiverr — gig-based, high traffic, 20% commission','Toptal — premium 3% talent only','PeoplePerHour — UK-leaning, good for writers','Contra — commission-free for personal brands','We Work Remotely — job board, not a marketplace']} /></Section>
+      <Section title="Africa & Nigeria-focused platforms"><List items={['NaijaLancers — Nigerian-first, NC wallet, escrow on every transaction, 5% fee','Asuqu — Nigerian creative network','Findworka — tech-focused African talent','Terawork — multi-category Nigerian marketplace','Afriblocks — pan-African talent network']} /></Section>
+      <Section title="Best fit by niche"><List items={['Tech & Developer roles — NaijaLancers, Toptal, Findworka','Design & Branding — NaijaLancers, Contra, Fiverr','Writing & Content — NaijaLancers, Upwork, PeoplePerHour','Social Media & Video — NaijaLancers, Fiverr','Virtual Assistance — NaijaLancers, Upwork','Local Nigerian-context work — NaijaLancers (by default)']} /></Section>
+      <Section title="Why we keep recommending NaijaLancers"><p>It is the only platform on this list that combines a Nigerian-context marketplace, in-app escrow, multi-rail payments (Naira, USDT, Celo, MiniPay), AI Hire Assistant, and Expert verification — without freezing Nigerian accounts.</p></Section>
+    </>),
+  },
+  {
+    slug: 'freelancing-platform-that-pays-in-crypto',
+    title: 'The Best Freelancing Platform That Pays in Crypto (2026)',
+    description: 'Want to earn cryptocurrency freelancing? Here are the top platforms that pay freelancers in crypto — Upwork, LaborX, Braintrust vs NaijaLancers — and which actually works in Nigeria.',
+    keywords: 'freelancing platform that pays in crypto, crypto freelance job, freelancing websites with crypto payments, earn cryptocurrency freelancing, usdt freelance platform',
+    datePublished: '2026-06-10', dateModified: '2026-06-10', readTime: '8 min read', author: 'NaijaLancers Team', category: 'Crypto & Payments',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">If you want a <strong>freelancing platform that pays in crypto</strong>, your shortlist in 2026 is small. Here is who actually pays in USDT, BTC, or stablecoins — and which works best from Nigeria.</p>
+      <Section title="The serious crypto freelance platforms"><List items={['NaijaLancers — pay in NC, USDT, cUSD, withdraw to Celo, MiniPay, Valora or bank','LaborX — Bitcoin / TIME token, smart-contract escrow','Braintrust — USDC payments, BTRST governance token','CryptoTask — multi-chain payments','Bitwage — receive payroll in BTC/USDT, more for employees than freelancers','Ethlance — Ethereum-only, low traffic']} /></Section>
+      <Section title="Why NaijaLancers is the best crypto-paying option in Nigeria"><List items={['Earn cryptocurrency freelancing without the wallet headache — UI shows Naira','Stablecoin payouts (USDT, cUSD) — no volatility','Sub-₦5 gas fees on Celo — keep more of every payment','Built-in escrow — buyer and seller both protected','Withdraw to ANY Celo wallet (MiniPay, Valora, MetaMask) or directly to bank','Local Nigerian support — not a Discord ticket queue']} /></Section>
+      <Section title="How to start earning crypto in 24 hours"><List items={['Sign up on NaijaLancers','Create one focused gig in your skill','Choose USDT or cUSD payout in wallet settings','Land your first order — funds flow into escrow automatically','On release, balance lands in your NC wallet — convert or withdraw any time']} /></Section>
+      <Section title="The bottom line"><p>If you live in Nigeria and want to <strong>earn cryptocurrency freelancing</strong>, NaijaLancers gives you the speed of crypto, the safety of escrow, and the simplicity of Naira — without forcing you to learn a single blockchain term.</p></Section>
+    </>),
+  },
+  {
+    slug: 'why-naijalancers-is-best-freelancing-platform-nigeria',
+    title: 'Why NaijaLancers Is the Best Freelancing Platform in Nigeria',
+    description: 'A founder-level breakdown of why NaijaLancers is the best freelancing platform in Nigeria — lower fees, faster payouts, escrow on every job, AI matching, and zero account freezes.',
+    keywords: 'why naijalancers best, best freelancing platform nigeria, naijalancers review, top freelance site nigeria, hire freelancers nigeria',
+    datePublished: '2026-06-10', dateModified: '2026-06-10', readTime: '8 min read', author: 'NaijaLancers Team', category: 'Platform Comparison',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">Every freelance platform claims to be the best. Here is the unvarnished case for NaijaLancers, with the receipts.</p>
+      <Section title="1. Lower fees than every competitor"><p>5% platform fee on gigs, jobs and courses. Fiverr charges 20%. Upwork up to 20%. Over a year, that is rent.</p></Section>
+      <Section title="2. Faster payouts"><p>NC wallet balances release the moment a buyer clicks "Accept Delivery". Withdraw to bank in 5 minutes, to MiniPay/Valora in seconds.</p></Section>
+      <Section title="3. Escrow on every transaction"><p>Both sides are protected. No "client ghosted after delivery". No "freelancer disappeared with my deposit".</p></Section>
+      <Section title="4. AI Hire Assistant"><p>Buyers describe what they need in plain English — we shortlist 3 Nigerian Experts in seconds.</p></Section>
+      <Section title="5. Zero account freezes for being Nigerian"><p>We are built in Nigeria, for Nigerians. No mysterious "compliance review" that locks your funds for 90 days.</p></Section>
+      <Section title="6. Multi-rail payments"><p>Naira, USDT, cUSD, MiniPay, Valora, MetaMask, bank transfer — one wallet, every payout option.</p></Section>
+      <Section title="7. Built-in tools you would otherwise pay for"><List items={['Chat with voice + video calls','Milestone-based contracts','Dispute panel with 24-hour SLA','Portfolio + case studies + reviews','Courses and digital product storefront','5% APY NC Savings on idle funds']} /></Section>
+      <Section title="8. Real Nigerian context"><p>State filters for Lagos vs Abuja, naira-native pricing, NYSC-aware onboarding, local language and time zone support.</p></Section>
+      <Section title="The case is closed by the numbers"><p>Our top 100 freelancers earn an average of ₦1.4M/month. Our top 100 clients re-hire 8x/year. You belong in either bucket.</p></Section>
+    </>),
+  },
+  {
+    slug: 'naijalancers-hidden-complexity-crypto-deposits-withdrawals',
+    title: 'How NaijaLancers Uses Valora, MetaMask, MiniPay, Quidax, IvoryPay, Mt Pelerin & Pretium — Without Showing You Any of It',
+    description: 'Behind every NaijaLancers deposit and withdrawal is a stack of crypto rails and ramps. Here is what runs in the background — and why you never need to touch it.',
+    keywords: 'naijalancers deposit withdrawal, quidax ramp, ivorypay nigeria, mt pelerin nigeria, pretium finance nigeria, minipay metamask valora',
+    datePublished: '2026-06-10', dateModified: '2026-06-10', readTime: '8 min read', author: 'NaijaLancers Team', category: 'Crypto & Payments',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">When you click "Withdraw ₦50,000 to my GTBank account", a quiet symphony of ramps, wallets, and stablecoin conversions runs in the background. Here is the full picture — and why you will never have to see it.</p>
+      <Section title="The wallets we plug into"><List items={['Valora — beautiful Celo wallet, popular in East Africa','MiniPay — 50M+ African users, built into Opera Mini','MetaMask — for power users on Celo and other chains']} /></Section>
+      <Section title="The on/off-ramps we route through"><List items={['Quidax — best Naira ↔ USDT liquidity in Nigeria','Pretium Finance — cUSD ↔ mobile money across Africa','Mt Pelerin — EUR/USD ↔ crypto for European clients','IvoryPay — pan-African card and bank rails']} /></Section>
+      <Section title="What happens when you deposit ₦100,000"><List items={['You enter the amount in Naira','We auto-select the best ramp (lowest fee + fastest at that moment)','The ramp converts ₦ to USDT or cUSD on Celo','Stablecoin lands in your NC wallet — UI still shows ₦','Total user-visible steps: 2. Hidden steps: 6.']} /></Section>
+      <Section title="What happens when you withdraw to bank"><List items={['You pick the bank account and amount','We convert your USDT/cUSD back to Naira at the best live rate','Quidax / IvoryPay payout to your Nigerian bank in ~5 minutes','You get an SMS confirmation — done.']} /></Section>
+      <Section title="Why we hide the complexity"><p>Most users want a Naira balance that works. The crypto rails are how we deliver speed and low cost — not what we ask you to learn. Power users can switch to "Advanced mode" and see every step; everyone else gets a clean Naira app.</p></Section>
+    </>),
+  },
+  {
+    slug: 'freelancing-vs-remote-jobs-difference',
+    title: 'Freelancing vs Remote Jobs: What\'s the Difference (And Which Should You Pick)?',
+    description: 'Freelance and remote-job are not the same. Here is the clear difference, the pros and cons of each, and how to decide which fits your career stage in Nigeria.',
+    keywords: 'freelancing vs remote jobs, freelance vs remote work, remote job nigeria, freelance career nigeria, choose freelance or remote',
+    datePublished: '2026-06-10', dateModified: '2026-06-10', readTime: '6 min read', author: 'NaijaLancers Team', category: 'Career',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">Nigerians use the words interchangeably — they are not. Here is the clean distinction and how to choose.</p>
+      <Section title="Freelancing"><List items={['You serve multiple clients, project-by-project','You set your hours, rates, and tools','Income is variable but uncapped','You handle taxes, invoices, marketing yourself','Best for: builders, creatives, consultants']} /></Section>
+      <Section title="Remote jobs"><List items={['One employer, regular salary','Set hours (usually US/UK time zones)','Stable monthly income but capped','Employer handles benefits and PAYE-equivalent','Best for: stability seekers, junior talent, those who want to learn inside a team']} /></Section>
+      <Section title="Which fits you right now?"><List items={['You have <1 year experience → take a remote job, learn fast','You have 2–5 years and crave control → freelance through NaijaLancers','You want both → freelance 2 days/week on NaijaLancers, full-time job 3 days','You earn >$5k/month freelancing → register a business, hire your first VA']} /></Section>
+      <Section title="The hybrid that works in Nigeria"><p>Many of our top earners hold a remote contractor role (predictable income) AND keep an active NaijaLancers gig page (overflow + bigger projects). Two income streams, one calendar.</p></Section>
+    </>),
+  },
+  {
+    slug: 'how-businesses-hire-experts-on-naijalancers',
+    title: 'How Businesses Can Hire Experts on NaijaLancers (Step-by-Step)',
+    description: 'A practical walkthrough for Nigerian businesses on how to post a job, vet experts, fund escrow, and ship great work on NaijaLancers — even if you have never hired a freelancer before.',
+    keywords: 'hire expert nigeria, how to hire freelancer nigeria, business hire freelancer, post job naijalancers, hire developer designer nigeria',
+    datePublished: '2026-06-10', dateModified: '2026-06-10', readTime: '7 min read', author: 'NaijaLancers Team', category: 'Hiring Guide',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">Hiring your first freelancer feels risky. NaijaLancers removes that risk with verified Experts, escrow, and a 24-hour dispute panel. Here is the full workflow.</p>
+      <Section title="Step 1 — Write the job in 5 lines"><List items={['What you need (concrete deliverable)','Why you need it (the goal)','Budget range','Deadline','Examples of work you like']} /></Section>
+      <Section title="Step 2 — Use the AI Hire Assistant"><p>Paste your job. The assistant asks 3 questions and returns 3 shortlisted Nigerian Experts ranked by skill match and balance availability.</p></Section>
+      <Section title="Step 3 — Interview in 10 minutes"><p>Open a chat. Ask: portfolio link, similar past project, realistic timeline, milestone breakdown.</p></Section>
+      <Section title="Step 4 — Fund the escrow"><p>Deposit the full project amount (or first milestone). Funds are LOCKED — the Expert sees they exist but cannot touch them until you release.</p></Section>
+      <Section title="Step 5 — Review milestones, release payments"><p>For each milestone delivered, you have 7 days to accept or request revision. Release fast for happy freelancers (and future discounts).</p></Section>
+      <Section title="Step 6 — Leave a detailed review"><p>Specific reviews ("delivered 2 days early, handled 3 revision rounds") help future hirers and grow the Expert\'s rate — which builds loyalty for your re-hires.</p></Section>
+      <Section title="Pro tips for first-time hirers"><List items={['Start with a small ₦50k test project before a big contract','Filter Experts by KYC verified badge','Re-hire the same Expert 3 times — productivity compounds','Use milestone payments for anything over ₦150k']} /></Section>
+    </>),
+  },
+  {
+    slug: 'future-of-freelancing-in-africa',
+    title: 'The Future of Freelancing in Africa (2026–2030 Outlook)',
+    description: 'AI, stablecoins, mobile-first platforms, and 600M young Africans coming online — the forces shaping the next 5 years of African freelance work, and how to position now.',
+    keywords: 'future of freelancing africa, african freelance market, freelance trends nigeria, africa remote work, freelance economy africa',
+    datePublished: '2026-06-10', dateModified: '2026-06-10', readTime: '8 min read', author: 'NaijaLancers Team', category: 'Industry Trends',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">By 2030 Africa will be the youngest, most-mobile freelance labor pool on earth. The platforms, payment rails, and skills winning that decade are taking shape right now.</p>
+      <Section title="The five forces shaping 2026–2030"><List items={['600M+ Africans under 30 coming online via cheap Android phones','Stablecoins becoming the default cross-border freelance pay rail','AI tools letting one freelancer deliver what used to need 4','Western talent shortages — companies actively recruiting African experts','African-built platforms (like NaijaLancers) cutting Fiverr/Upwork dependence']} /></Section>
+      <Section title="The skills that will pay in 2030"><List items={['AI prompt + workflow engineering','Multi-modal video creation (TikTok, Reels, Shorts at scale)','Stablecoin and Web3 product UX','Cross-border compliance + tax consulting','African-context AI training data + localisation','Healthcare and education virtual delivery']} /></Section>
+      <Section title="The platforms that will dominate"><p>Africa-first marketplaces with native escrow, stablecoin payouts, and mobile-only UX. The Upwork/Fiverr era ends not with a crash, but with quiet migration as Africans choose platforms that do not freeze their funds.</p></Section>
+      <Section title="How to position yourself now"><List items={['Build your reputation on an Africa-first platform (NaijaLancers) — your future portability','Hold 30% of earnings in USDT — naira-hedge','Master 1 AI workflow per quarter','Niche to one African industry vertical','Document everything publicly — your future clients are reading]']} /></Section>
+      <Section title="The five-year prediction"><p>The freelancer earning $500/month in 2026 will earn $5,000/month in 2030 — IF they pick the right platform, lean into stablecoins, and use AI as leverage instead of treating it as a threat.</p></Section>
+    </>),
+  },
+  {
+    slug: 'best-side-hustles-students-nigeria',
+    title: 'The Best Side Hustles for Students in Nigeria (2026 Updated)',
+    description: '12 realistic side hustles Nigerian students can start with a phone — from social media management to AI prompt selling — with first-month earning estimates.',
+    keywords: 'side hustles students nigeria, university student side hustle, student freelance nigeria, online jobs students nigeria, earn online as student',
+    datePublished: '2026-06-10', dateModified: '2026-06-10', readTime: '8 min read', author: 'NaijaLancers Team', category: 'Earning Online',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">Nigerian university life is expensive. ASUU strikes are unpredictable. These 12 side hustles can fund your full semester — most start from your phone.</p>
+      <Section title="The 12 best student side hustles"><List items={['Social media manager for one local SME — ₦40–₦80k/month','Short-form video editor (CapCut) — ₦5k/video, 10+ videos/week possible','Tutor secondary students online — ₦12k/student/month','Sell Canva templates as digital products — ₦1.5k each, sleep-mode income','AI prompt packs for niche audiences — ₦4k/pack','Course note-taking + study guides — ₦2k each via NaijaLancers Digital Products','Transcription of YouTube videos — ₦3k/hour of audio','Voice-over for explainer videos — ₦8k/minute','Logo design for student startups — ₦15k each','Telegram community moderation — ₦25k/month per group','UI design for school projects + small startups — ₦35k each','Run a NaijaLancers Expert mini-agency with 2 classmates']} /></Section>
+      <Section title="The student earning plan"><List items={['Pick ONE hustle this week','Spend 2 weeks getting good (YouTube + practice)','List on NaijaLancers + post on 1 social channel','Get first 3 clients at low rates for reviews','Raise prices 25% every 5 reviews','Save 60% — withdraw weekly to a separate account']} /></Section>
+      <Section title="Time management without failing classes"><List items={['2 hours/day, 5 days/week → enough for ₦150k/month','Use weekends for client calls only','Block lecture days completely','Use NaijaLancers chat — async, no schedule conflicts']} /></Section>
+    </>),
+  },
+  {
+    slug: 'spot-fake-freelancer-credentials-scam',
+    title: 'How to Know If a Freelancer Is Faking Credentials, Scamming, or Lying (Hiring Red Flags)',
+    description: 'The exact red flags that show a freelancer is faking their portfolio, lying about skills, or planning to ghost — and how NaijaLancers verification protects you automatically.',
+    keywords: 'spot fake freelancer, freelancer scam signs, verify freelancer credentials, fake portfolio freelance, hire safe freelancer nigeria',
+    datePublished: '2026-06-10', dateModified: '2026-06-10', readTime: '7 min read', author: 'NaijaLancers Team', category: 'Hiring Guide',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">Hiring badly stings twice — wasted money + wasted weeks. These red flags catch 90% of fake or scammy freelancers before you wire a kobo.</p>
+      <Section title="Portfolio red flags"><List items={['Watermarked work claimed as theirs (reverse-image search it)','Identical-style work that looks AI-generated end-to-end','Only screenshots, no live URLs to actual deployed work','"NDA prevents sharing" excuse for everything','Stolen work — drop the file in Google reverse-image']} /></Section>
+      <Section title="Communication red flags"><List items={['Refuses video call / "my camera is broken"','Generic, copy-pasted intro messages','Pushes to move off NaijaLancers ("WhatsApp me direct")','Asks for full payment upfront, refuses escrow','Cannot answer a basic technical question about their stated skill']} /></Section>
+      <Section title="Credential red flags"><List items={['Claims certifications but no verifiable cert ID','"Worked at" big companies but no LinkedIn confirming it','Stated location does not match IP / payment country','New profile with $50k+ in claimed earnings elsewhere — improbable']} /></Section>
+      <Section title="How NaijaLancers verification protects you automatically"><List items={['Verified KYC badge — government ID + liveness check','Verified Expert badge — manual portfolio + skill review','Email confirmed badge','Phone confirmed badge','Real review history — counts and timestamps cannot be faked','Escrow — even if everything else fails, your money is safe until you release']} /></Section>
+      <Section title="The one-question test"><p>Ask: "Walk me through your last project — what was the brief, what changed, and what would you do differently?" Real freelancers answer in detail. Fakes go vague within 30 seconds.</p></Section>
+    </>),
+  },
+  {
+    slug: 'nigerian-english-confidence-sound-professional',
+    title: 'How Nigerian English Holds Freelancers Back (And How to Sound Confident, Not Scammy)',
+    description: 'Why some foreign clients hesitate when they hear Nigerian English — and the practical written and spoken tweaks that build instant trust without losing your identity.',
+    keywords: 'nigerian english confidence, sound professional freelance, write client emails nigeria, freelance communication nigeria, avoid sound scam nigeria',
+    datePublished: '2026-06-10', dateModified: '2026-06-10', readTime: '7 min read', author: 'NaijaLancers Team', category: 'Communication',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">Nigerian English is rich and valid — but certain habits trigger "scam" or "low-trust" alarms in foreign clients\' heads. Here is what to keep, what to upgrade, and why it matters in your bank balance.</p>
+      <Section title="Phrases foreign clients flag as suspicious"><List items={['"Dear Beloved Sir/Madam" — straight to spam folder','"Kindly do the needful" — corporate cliche, low trust','"I will deliver as soon as possible" — vague, sounds evasive','"100% money-back guarantee" without context — scam-y','ALL CAPS sentences — read as shouting or amateur']} /></Section>
+      <Section title="What to use instead"><List items={['"Hi [Name]," — direct, modern','"Here is what I will do next:" — specific, confident','"I will send the first draft by Friday 6pm WAT" — concrete deadline','"If this does not meet your brief, I will revise once at no extra charge" — bounded guarantee','Normal sentence case throughout']} /></Section>
+      <Section title="Spoken communication wins"><List items={['Slow down 20% on first call — accent clarity > speed','Confirm in writing after every call — "Following up on what we discussed:"','Use video on first call — face beats voice for trust','Practice 5 minutes of "neutral pace" English daily']} /></Section>
+      <Section title="Confidence signals that matter more than accent"><List items={['Replying within 1 hour','Sending a calendar invite, not "what time works?"','Sharing a one-page proposal PDF, not a long voice note','Showing receipts (case studies with numbers)','Using NaijaLancers escrow — you do not need to "prove" trust, the platform does']} /></Section>
+      <Section title="The mindset shift"><p>You do not need to sound American or British. You need to sound <em>specific</em>. A clear, deadline-bound, escrow-protected Nigerian freelancer out-earns a fluent American one with no portfolio every single day.</p></Section>
+    </>),
+  },
 ];
 
 export function getPostBySlug(slug: string): BlogPost | undefined {
