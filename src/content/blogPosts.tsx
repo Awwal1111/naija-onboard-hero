@@ -2253,8 +2253,8 @@ export const BLOG_POSTS: BlogPost[] = [
       <Section title="3. Generic proposals"><p>Copy-paste pitches lose. Write 4-line custom messages referencing the buyer\'s exact ask.</p></Section>
       <Section title="4. No social presence"><p>Clients Google you before paying. One active LinkedIn or X account makes the difference.</p></Section>
       <Section title="5. Slow response time"><p>Replying after 6 hours kills 80% of leads. Aim for under 1 hour for the first 90 days.</p></Section>
-      <Section title="6. Pricing that screams "amateur""><p>₦3k logos signal low quality. Charge fairly, justify with deliverables, use escrow.</p></Section>
-      <Section title="7. Refusing escrow / wanting "direct payment""><p>Asking clients to bypass NaijaLancers escrow loses 70% of professional buyers — they read it as a scam signal.</p></Section>
+      <Section title={`6. Pricing that screams "amateur"`}><p>₦3k logos signal low quality. Charge fairly, justify with deliverables, use escrow.</p></Section>
+      <Section title={`7. Refusing escrow / wanting "direct payment"`}><p>Asking clients to bypass NaijaLancers escrow loses 70% of professional buyers — they read it as a scam signal.</p></Section>
       <Section title="8. No follow-up system"><p>50% of clients hire after the 3rd touch. Keep a simple spreadsheet of every lead and check in weekly.</p></Section>
       <Section title="Fix any 3 this week"><p>You will see results inside 30 days. Most freelancers do none — that is why the same 10% earn 90% of the money.</p></Section>
     </>),
