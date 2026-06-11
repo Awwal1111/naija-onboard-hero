@@ -18,16 +18,23 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) throw new Error('No authorization header');
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-    if (userError || !user) throw new Error('Unauthorized');
+    // Allow cron/internal calls via shared secret header (bypass admin check)
+    const cronSecret = Deno.env.get("CRON_SECRET");
+    const providedCron = req.headers.get('x-cron-secret');
+    const isCron = cronSecret && providedCron && cronSecret === providedCron;
 
-    const { data: roles } = await supabase
-      .from('user_roles').select('role').eq('user_id', user.id)
-      .in('role', ['admin', 'super_admin', 'moderator']);
-    if (!roles || roles.length === 0) throw new Error('Admin access required');
+    if (!isCron) {
+      const authHeader = req.headers.get('Authorization');
+      if (!authHeader) throw new Error('No authorization header');
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+      if (userError || !user) throw new Error('Unauthorized');
+
+      const { data: roles } = await supabase
+        .from('user_roles').select('role').eq('user_id', user.id)
+        .in('role', ['admin', 'super_admin', 'moderator']);
+      if (!roles || roles.length === 0) throw new Error('Admin access required');
+    }
 
     console.log('[MIGRATION] Starting wallet migration...');
 
