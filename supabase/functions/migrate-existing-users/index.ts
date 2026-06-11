@@ -25,8 +25,9 @@ serve(async (req) => {
     if (userError || !user) throw new Error('Unauthorized');
 
     const { data: roles } = await supabase
-      .from('user_roles').select('role').eq('user_id', user.id).eq('role', 'admin').maybeSingle();
-    if (!roles) throw new Error('Admin access required');
+      .from('user_roles').select('role').eq('user_id', user.id)
+      .in('role', ['admin', 'super_admin', 'moderator']);
+    if (!roles || roles.length === 0) throw new Error('Admin access required');
 
     console.log('[MIGRATION] Starting wallet migration...');
 
