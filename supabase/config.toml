@@ -10,7 +10,7 @@ verify_jwt = false
 verify_jwt = true
 
 [functions.migrate-existing-users]
-verify_jwt = true
+verify_jwt = false
 
 [functions.telegram-bot]
 verify_jwt = false

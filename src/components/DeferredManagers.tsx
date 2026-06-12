@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { initPostHog } from '@/lib/posthog'
+import WalletInitializer from '@/components/WalletInitializer'
 
-const WalletInitializer = lazy(() => import('@/components/WalletInitializer'))
 const GlobalCallManager = lazy(() => import('@/components/GlobalCallManager'))
 const GlobalPresenceManager = lazy(() => import('@/components/GlobalPresenceManager'))
 const QuidaxRampManager = lazy(() => import('@/components/QuidaxRampManager').then(m => ({ default: m.QuidaxRampManager })))

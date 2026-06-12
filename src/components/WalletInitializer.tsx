@@ -33,25 +33,33 @@ const WalletInitializerInternal: React.FC = () => {
 
     const initializeWallet = async () => {
       try {
-        // Check if wallet already exists
-        const { data: existingWallet } = await supabase
-          .from('user_wallets')
-          .select('user_id')
-          .eq('user_id', user.id)
-          .single()
+        const [{ data: profile }, { data: existingWallet }] = await Promise.all([
+          supabase
+            .from('profiles')
+            .select('celo_wallet_address')
+            .eq('user_id', user.id)
+            .maybeSingle(),
+          supabase
+            .from('user_wallets')
+            .select('user_id')
+            .eq('user_id', user.id)
+            .maybeSingle(),
+        ])
 
         if (!existingWallet) {
-          // Create wallet if it doesn't exist
           await supabase
             .from('user_wallets')
-            .insert({
+            .upsert({
               user_id: user.id,
               balance: 0,
-              escrow_hold: 0
-            })
+              escrow_hold: 0,
+            }, { onConflict: 'user_id' })
+        }
+
+        if (!profile?.celo_wallet_address) {
+          await supabase.functions.invoke('create-user-wallet')
         }
       } catch (error) {
-        // Ignore duplicate key errors and other RLS errors
         console.log('Wallet initialization:', error)
       }
     }

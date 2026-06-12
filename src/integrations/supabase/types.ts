@@ -8092,6 +8092,7 @@ export type Database = {
         }
         Returns: Json
       }
+      ensure_user_wallet_row: { Args: { _user_id: string }; Returns: undefined }
       expire_expert_boosts: { Args: never; Returns: undefined }
       file_dispute_safepay: {
         Args: { p_reason: string; p_safepay_id: string }

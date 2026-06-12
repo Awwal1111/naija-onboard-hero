@@ -15,7 +15,7 @@ export const AdminWalletMigration = () => {
     try {
       const { count, error } = await supabase
         .from('profiles')
-        .select('*', { count: 'exact', head: true })
+        .select('user_id', { count: 'exact', head: true })
         .is('celo_wallet_address', null);
 
       if (error) throw error;
