@@ -237,6 +237,7 @@ const App = () => (
                 <Route path="/p/gigs" element={<PublicGigs />} />
                 <Route path="/p/experts" element={<PublicExperts />} />
                 <Route path="/p/jobs" element={<PublicJobs />} />
+                <Route path="/u/:username" element={<PublicUser />} />
                 <Route path="/blog" element={<BlogIndex />} />
                 <Route path="/blog/:slug" element={<BlogPost />} />
                 
