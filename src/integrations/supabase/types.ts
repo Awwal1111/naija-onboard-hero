@@ -5088,6 +5088,7 @@ export type Database = {
           updated_at: string
           user_id: string
           user_mode: string | null
+          username: string | null
           verification_country: string | null
           verification_description: string | null
           verification_level: string | null
@@ -5175,6 +5176,7 @@ export type Database = {
           updated_at?: string
           user_id: string
           user_mode?: string | null
+          username?: string | null
           verification_country?: string | null
           verification_description?: string | null
           verification_level?: string | null
@@ -5262,6 +5264,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
           user_mode?: string | null
+          username?: string | null
           verification_country?: string | null
           verification_description?: string | null
           verification_level?: string | null
@@ -8104,6 +8107,10 @@ export type Database = {
       }
       generate_api_key: { Args: never; Returns: string }
       generate_certificate_id: { Args: never; Returns: string }
+      generate_profile_username: {
+        Args: { _full_name: string; _user_id: string }
+        Returns: string
+      }
       generate_referral_code: { Args: never; Returns: string }
       generate_sandbox_api_key: { Args: never; Returns: string }
       generate_verification_token: { Args: never; Returns: string }
