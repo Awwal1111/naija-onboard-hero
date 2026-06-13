@@ -176,6 +176,7 @@ const PublicCourse = lazy(lazyWithRetry(() => import("./pages/PublicCourse")));
 const PublicCampaign = lazy(lazyWithRetry(() => import("./pages/PublicCampaign")));
 const PublicGigs = lazy(lazyWithRetry(() => import("./pages/PublicGigs")));
 const PublicExperts = lazy(lazyWithRetry(() => import("./pages/PublicExperts")));
+const PublicUser = lazy(lazyWithRetry(() => import("./pages/PublicUser")));
 const PublicJobs = lazy(lazyWithRetry(() => import("./pages/PublicJobs")));
 const Sitemap = lazy(lazyWithRetry(() => import("./pages/Sitemap")));
 const RampSession = lazy(lazyWithRetry(() => import("./pages/RampSession")));
