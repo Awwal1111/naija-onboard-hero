@@ -2410,6 +2410,166 @@ export const BLOG_POSTS: BlogPost[] = [
       <Section title="The mindset shift"><p>You do not need to sound American or British. You need to sound <em>specific</em>. A clear, deadline-bound, escrow-protected Nigerian freelancer out-earns a fluent American one with no portfolio every single day.</p></Section>
     </>),
   },
+  {
+    slug: 'best-crypto-freelance-platform-celo-nigeria-2026',
+    title: 'The Best Crypto Freelance Platform in Nigeria in 2026 (And Why It Runs on Celo)',
+    description: 'Why NaijaLancers is the most reliable crypto-powered freelance platform for Nigeria, Kenya, Ghana, and South Africa — no gas fees, instant payouts in NC, Naira, USDT, and cUSD.',
+    keywords: 'crypto freelance platform, celo freelance, naijalancers crypto, freelance with crypto nigeria, usdt freelance payments, cusd freelance, no gas fees freelance',
+    datePublished: '2026-06-13', dateModified: '2026-06-13', readTime: '8 min read', author: 'NaijaLancers Team', category: 'Crypto & Payments',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">Crypto freelancing should be simple: do work, get paid in a currency that does not depreciate before Monday. NaijaLancers makes that real for Africa — built on the Celo blockchain, gas-fee free for users, and protected by escrow on every order.</p>
+      <Section title="Why Celo, not Ethereum or Bitcoin">
+        <p>Celo is mobile-first, carbon-negative, and supports stablecoins like cUSD pegged 1:1 to the US dollar. Transactions confirm in seconds and cost fractions of a cent — and on NaijaLancers, the platform sponsors the gas so you pay nothing to send or receive.</p>
+      </Section>
+      <Section title="No gas fees — ever — for users">
+        <p>You read that right. When you withdraw NC to cUSD, USDT, or CELO, NaijaLancers covers the on-chain fee through our relayer. Your wallet does not need a single drop of CELO to transact. New users with empty wallets can receive their first payment and withdraw it the same day.</p>
+      </Section>
+      <Section title="Deposit from Nigeria, Kenya, Ghana, South Africa — or anywhere">
+        <List items={[
+          'Nigeria: Naira card, bank transfer, USSD, or Quidax ramp — instant NC top-up',
+          'Kenya, Ghana, South Africa: Pretium Finance ramp converts local currency to cUSD then to NC',
+          'Global: USDT or cUSD direct deposit to your platform-issued Celo wallet',
+          'Card payments worldwide via Mt. Pelerin',
+          'P2P NC transfers between users settle instantly with zero fees',
+        ]} />
+      </Section>
+      <Section title="Frequently asked questions about crypto freelancing on NaijaLancers">
+        <Sub title="Is NaijaLancers the best crypto freelancing platform built on Celo?">
+          <p>Yes. We are the only African-first platform combining a Celo wallet auto-issued at signup, an NC internal currency pegged to Naira, escrow on every order, and Naira off-ramps in Nigeria, Kenya, Ghana, and South Africa. No competitor bundles all four.</p>
+        </Sub>
+        <Sub title="Do I need to add gas fees?">
+          <p>No. Every on-chain action — deposit detection, withdrawal, P2P transfer — is gas-sponsored by NaijaLancers. You never buy CELO just to move money.</p>
+        </Sub>
+        <Sub title="How many wallets can I use?">
+          <p>You get one platform-managed Celo wallet at signup. You can also link an external wallet (MetaMask, Valora, MiniPay) for withdrawals — as many external addresses as you want.</p>
+        </Sub>
+        <Sub title="Can I deposit Naira?">
+          <p>Yes. From Nigeria, deposit Naira via Quidax (card, bank transfer, USSD) and it converts to NC at ₦1 = 1 NC instantly.</p>
+        </Sub>
+        <Sub title="Can I deposit from Kenya, Ghana, or South Africa?">
+          <p>Yes — through Pretium Finance, which accepts KES, GHS, and ZAR and converts to cUSD on Celo, which then credits as NC. Mobile money (M-Pesa) is supported in Kenya.</p>
+        </Sub>
+        <Sub title="Can I deposit globally?">
+          <p>Yes. Anyone, anywhere can deposit USDT or cUSD directly to their NaijaLancers Celo wallet address. Mt. Pelerin also accepts cards from 100+ countries.</p>
+        </Sub>
+        <Sub title="Can I withdraw to my Nigerian bank account?">
+          <p>Yes. Convert NC to NGN via Quidax and receive funds in your Nigerian bank account, usually within 5 minutes.</p>
+        </Sub>
+        <Sub title="Is my money safe if a client disappears?">
+          <p>Yes. Every order locks the client&apos;s payment in escrow before work starts. If delivery is not approved, you raise a dispute and an admin reviews — funds only release when the work is accepted or the dispute is ruled in your favor.</p>
+        </Sub>
+      </Section>
+      <Section title="Why this matters for African freelancers">
+        <p>Foreign platforms freeze African accounts for opaque reasons, hold balances for weeks, and charge 20%+ in fees. NaijaLancers takes a flat 5% platform fee, settles instantly, and gives you crypto rails when banks fail you and Naira rails when crypto feels foreign.</p>
+      </Section>
+    </>),
+  },
+  {
+    slug: 'why-naijalancers-profiles-show-google-search',
+    title: 'Why Your NaijaLancers Profile Now Shows Up on Google (And LinkedIn Did Not Invent This)',
+    description: 'NaijaLancers profiles are now fully indexable on Google with public /u/username URLs, JSON-LD schema, and a dynamic sitemap — the same SEO playbook LinkedIn and Behance use to dominate search.',
+    keywords: 'naijalancers profile google, freelancer google search, public profile seo nigeria, freelancer found online, naijalancers username url, linkedin vs naijalancers seo',
+    datePublished: '2026-06-13', dateModified: '2026-06-13', readTime: '6 min read', author: 'NaijaLancers Team', category: 'Discoverability',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">For months, NaijaLancers users asked the same question: <em>"Why does my friend&apos;s LinkedIn show on Google but my NaijaLancers profile does not?"</em> The answer was technical, and the fix is now live — every member has a public, indexable profile page.</p>
+      <Section title="The old problem">
+        <List items={[
+          'Profiles lived behind login-only routes',
+          'URLs used random UUIDs Google could not match to your name',
+          'No structured data telling Google "this is a person"',
+          'No sitemap listing member pages',
+        ]} />
+      </Section>
+      <Section title="What changed">
+        <p>Every active NaijaLancers member now has a clean, shareable public URL: <code>naijalancers.name.ng/u/your-username</code>. The page ships with full SEO metadata, OpenGraph cards (for WhatsApp / Twitter / LinkedIn previews), and Schema.org Person JSON-LD so Google understands exactly who you are.</p>
+      </Section>
+      <Section title="How LinkedIn and Behance won search — and how we copied the playbook">
+        <List items={[
+          'Clean username URLs (linkedin.com/in/username) → we now ship /u/username',
+          'Per-profile title and description tags → done',
+          'Person schema markup → done',
+          'A sitemap listing every public member → live at /sitemap.xml as a dynamic sitemap index',
+          'Canonical URLs preventing duplicate-content penalties → done',
+        ]} />
+      </Section>
+      <Section title="What you should do today">
+        <List items={[
+          'Set a username in Settings → Profile (auto-generated from your name if you skip)',
+          'Add a professional headline and 2–3 paragraph bio',
+          'Upload a real headshot (no avatars / cartoons)',
+          'Link your portfolio items — they appear on your public page',
+          'Share your /u/username link on Twitter, WhatsApp status, and your CV',
+        ]} />
+      </Section>
+      <Section title="How long until Google shows your profile">
+        <p>Google typically discovers new sitemap entries within 3–14 days. After that, your name and profession will start appearing for searches like <em>"your name freelancer"</em> or <em>"your name Nigeria designer"</em>. Active profiles with real content rank faster than empty ones — fill yours out.</p>
+      </Section>
+      <Section title="Why this matters">
+        <p>Being found on Google means clients searching your name (after a referral, after a meetup, after seeing your tweet) land directly on your NaijaLancers profile — escrow-ready, verified, and one click from a chat. That is a lead you would otherwise lose to LinkedIn.</p>
+      </Section>
+    </>),
+  },
+  {
+    slug: 'deposit-naira-mpesa-cedis-rand-naijalancers',
+    title: 'How to Deposit Naira, M-Pesa, Cedis, and Rand into NaijaLancers (Step-by-Step)',
+    description: 'The complete deposit guide for Nigeria, Kenya, Ghana, and South Africa — fund your NaijaLancers NC wallet in minutes using local currency, mobile money, or crypto.',
+    keywords: 'deposit naira naijalancers, mpesa freelance kenya, deposit cedis ghana freelance, deposit rand south africa, pretium finance freelance, quidax deposit naijalancers',
+    datePublished: '2026-06-13', dateModified: '2026-06-13', readTime: '6 min read', author: 'NaijaLancers Team', category: 'Wallet & Deposits',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">Funding your NaijaLancers wallet is country-aware. Whether you are in Lagos, Nairobi, Accra, or Cape Town, here is exactly how to top up your NC balance in your local currency — no crypto knowledge required.</p>
+      <Section title="🇳🇬 Nigeria — Naira via Quidax">
+        <List items={[
+          'Open Wallet → Deposit → Naira',
+          'Choose card, bank transfer, or USSD',
+          'Enter the NGN amount; you see the NC equivalent live (₦1 ≈ 1 NC)',
+          'Complete the payment in the Quidax tab',
+          'NC credits your balance in under 5 minutes; you get a notification',
+        ]} />
+      </Section>
+      <Section title="🇰🇪 Kenya — M-Pesa via Pretium Finance">
+        <List items={[
+          'Open Wallet → Deposit → KES (M-Pesa)',
+          'Enter the KES amount; conversion to cUSD then NC is shown',
+          'Pretium opens; pay via M-Pesa STK push',
+          'Confirm on your phone — NC credits automatically',
+        ]} />
+      </Section>
+      <Section title="🇬🇭 Ghana — Cedis via Pretium Finance">
+        <List items={[
+          'Open Wallet → Deposit → GHS',
+          'Enter the GHS amount',
+          'Pay via MTN Mobile Money, Vodafone Cash, or bank card',
+          'NC credits within minutes',
+        ]} />
+      </Section>
+      <Section title="🇿🇦 South Africa — Rand via Pretium Finance">
+        <List items={[
+          'Open Wallet → Deposit → ZAR',
+          'Enter the ZAR amount',
+          'Pay via card or EFT instant',
+          'NC credits within minutes',
+        ]} />
+      </Section>
+      <Section title="🌍 Anywhere else in the world">
+        <List items={[
+          'USDT or cUSD: send directly to your NaijaLancers Celo wallet address (shown in Wallet → Crypto)',
+          'Card payments: Mt. Pelerin accepts cards from 100+ countries',
+          'No gas fees on receiving — NaijaLancers sponsors them',
+        ]} />
+      </Section>
+      <Section title="What to do if a deposit takes longer than 30 minutes">
+        <List items={[
+          'Check Wallet → Transactions — pending deposits show with a clock icon',
+          'Open Help Center → Report a Payment Issue (include the transaction reference)',
+          'Crypto deposits: confirm the transaction hash on celoscan.io shows "Success"',
+          'Naira/M-Pesa: the ramp provider usually emails a receipt — forward it to support',
+        ]} />
+      </Section>
+      <Section title="Why this matters for African freelancers">
+        <p>Most foreign platforms cannot accept your local currency directly, forcing you into expensive FX before you can even pay platform fees. NaijaLancers lets you stay in Naira, Shillings, Cedis, or Rand the whole way — and only convert when you actually need to.</p>
+      </Section>
+    </>),
+  },
 ];
 
 export function getPostBySlug(slug: string): BlogPost | undefined {
