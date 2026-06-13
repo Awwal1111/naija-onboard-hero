@@ -113,6 +113,18 @@ Deno.serve(async (req) => {
   </url>`);
   }
 
+  // Public member profiles (/u/:username) — non-expert members
+  for (const u of usersRes.data || []) {
+    if (!u.username) continue;
+    const lastmod = u.updated_at?.split("T")[0] || today;
+    urls.push(`  <url>
+    <loc>${baseUrl}/u/${encodeURIComponent(u.username)}</loc>
+    <lastmod>${lastmod}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>`);
+  }
+
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${urls.join("\n")}
