@@ -281,12 +281,14 @@ export const useNotifications = () => {
     if (!user) return
 
     try {
+      // Egress optimization: drop heavy `metadata` column from list query
+      // (fetch on demand when a notification is opened) and cap to 20 rows.
       const { data, error } = await supabase
         .from('notifications')
-        .select('id,user_id,type,title,message,metadata,read_at,created_at')
+        .select('id,user_id,type,title,message,read_at,created_at')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
-        .limit(50)
+        .limit(20)
 
       if (error) throw error
 
