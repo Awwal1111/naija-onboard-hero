@@ -19,12 +19,13 @@ Deno.serve(async (req) => {
   const today = new Date().toISOString().split("T")[0];
 
   // Fetch all public content in parallel
-  const [expertsRes, gigsRes, jobsRes, coursesRes, campaignsRes] = await Promise.all([
+  const [expertsRes, gigsRes, jobsRes, coursesRes, campaignsRes, usersRes] = await Promise.all([
     supabase.from("profiles").select("user_id, updated_at").eq("is_expert", true).limit(2000),
     supabase.from("jobs_services").select("id, updated_at").eq("status", "active").limit(2000),
     supabase.from("job_posts").select("id, updated_at").eq("status", "active").limit(2000),
     supabase.from("courses").select("id, updated_at").eq("status", "active").limit(2000),
     supabase.from("fundraisings").select("id, updated_at").limit(2000),
+    supabase.from("profiles").select("username, updated_at").not("username", "is", null).eq("is_expert", false).limit(5000),
   ]);
 
   const urls: string[] = [];
