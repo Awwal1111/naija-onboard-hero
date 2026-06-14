@@ -21,7 +21,7 @@ import { TestNotifications } from '@/components/TestNotifications'
 import { TwoFactorSetup } from '@/components/TwoFactorSetup'
 import { EmailVerificationStatus } from '@/components/EmailVerificationBanner'
 import { UserBadges } from '@/components/UserBadges'
-import { FaceVerificationDialog } from '@/components/FaceVerificationDialog'
+
 import { PhoneVerificationDialog } from '@/components/PhoneVerificationDialog'
 import { IdentityVerificationDialog } from '@/components/IdentityVerificationDialog'
 import { LoginHistoryCard } from '@/components/LoginHistoryCard'
