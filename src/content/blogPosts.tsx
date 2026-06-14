@@ -2687,7 +2687,7 @@ export const BLOG_POSTS: BlogPost[] = [
     </>),
   },
   {
-    slug: 'best-freelance-niches-nigeria-2026',
+    slug: 'top-paying-freelance-niches-nigeria-2026',
     title: '10 Best-Paying Freelance Niches in Nigeria for 2026',
     description: 'Data-backed list of the highest-paying freelance skills on NaijaLancers in 2026 — from AI prompt engineering to Celo smart-contract development.',
     keywords: 'best freelance skills nigeria, high paying remote jobs nigeria, freelance niches 2026, naijalancers categories',
