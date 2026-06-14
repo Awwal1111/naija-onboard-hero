@@ -2570,6 +2570,156 @@ export const BLOG_POSTS: BlogPost[] = [
       </Section>
     </>),
   },
+  {
+    slug: 'how-to-get-first-client-naijalancers',
+    title: 'How to Land Your First Client on NaijaLancers in 7 Days',
+    description: 'A practical, day-by-day playbook for new Nigerian freelancers to win their first paying client on NaijaLancers — profile, gigs, proposals, and pricing tips that actually convert.',
+    keywords: 'first freelance client nigeria, naijalancers tips, how to get clients online, freelance proposals nigeria, win gigs naijalancers',
+    datePublished: '2026-06-14',
+    dateModified: '2026-06-14',
+    readTime: '8 min read',
+    author: 'NaijaLancers Team',
+    category: 'Freelancer Growth',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">Getting your first paying client is the hardest milestone in freelancing. Once you cross it, repeat clients and referrals start flowing. This 7-day plan is built around how NaijaLancers actually ranks and surfaces new freelancers.</p>
+      <Section title="Day 1 — Build a profile Google can find">
+        <p>Your NaijaLancers profile now lives at <code>naijalancers.name.ng/u/your-username</code> and is indexed by Google. Use a real photo, a one-line headline with your craft + city (e.g. "Logo Designer in Lagos"), and a bio that names the problems you solve.</p>
+      </Section>
+      <Section title="Day 2 — Post 3 sharp gigs, not 1 vague one">
+        <List items={[
+          'Each gig should solve ONE problem (e.g. "I will design a minimalist logo in 24 hours")',
+          'Price the starter package at NC 5,000–15,000 to win first reviews',
+          'Add a 30-second intro video — gigs with video convert 3x more',
+        ]} />
+      </Section>
+      <Section title="Day 3 — Send 10 thoughtful proposals">
+        <p>Open Jobs, filter by your skill, and write proposals that reference the client's exact wording. Keep it under 120 words, propose a deliverable + timeline, and end with one specific question.</p>
+      </Section>
+      <Section title="Day 4 — Use the AI Hire Assistant to your advantage">
+        <p>Clients use the AI Hire Assistant which matches based on skill and price. Make sure your skills list is complete and your minimum rate is realistic so you appear in matches.</p>
+      </Section>
+      <Section title="Day 5 — Share your /u/ link everywhere">
+        <p>Post your public profile URL on WhatsApp status, X, LinkedIn, Telegram groups. Every click is an SEO signal that pushes you higher in search.</p>
+      </Section>
+      <Section title="Day 6 — Over-deliver on the first chat">
+        <p>When someone messages, reply within an hour. NaijaLancers ranks responsive freelancers higher in discovery. Offer a free 5-minute scope call.</p>
+      </Section>
+      <Section title="Day 7 — Close with escrow, never off-platform">
+        <p>Always accept the first job through escrow. It protects you, gives you a verifiable review, and unlocks your "Worked With" badge — the single biggest trust signal for client #2.</p>
+      </Section>
+    </>),
+  },
+  {
+    slug: 'celo-vs-ethereum-freelance-payments',
+    title: 'Celo vs Ethereum for Freelance Payments — Why Africa Picked Celo',
+    description: 'Gas fees, speed, mobile-first design, and stablecoin support compared. Here is why NaijaLancers settles every freelance payment on Celo instead of Ethereum mainnet.',
+    keywords: 'celo vs ethereum, celo freelance, cusd usdt celo, low gas fees crypto, mobile crypto africa',
+    datePublished: '2026-06-14',
+    dateModified: '2026-06-14',
+    readTime: '7 min read',
+    author: 'NaijaLancers Team',
+    category: 'Crypto & Blockchain',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">When we designed NaijaLancers' payment rails we evaluated every major L1 and L2. Celo won on four dimensions that matter to African freelancers: fees, finality, phone-number wallets, and native stablecoins.</p>
+      <Section title="Gas fees: cents vs dollars">
+        <p>A USDT transfer on Ethereum mainnet often costs $3–$15 in gas. The same transfer on Celo settles for less than $0.01 — and on NaijaLancers, the platform sponsors that gas so you pay zero.</p>
+      </Section>
+      <Section title="Speed and finality">
+        <p>Celo confirms in roughly 5 seconds with single-block finality. Ethereum L1 takes 12+ seconds per block with multi-block finality. For chat-driven freelance deals, that difference matters.</p>
+      </Section>
+      <Section title="Mobile-first by design">
+        <p>Celo was built so a phone number can hold a wallet. That's why MiniPay (the Opera-built wallet on Celo) works seamlessly inside NaijaLancers — no seed phrase, no MetaMask onboarding.</p>
+      </Section>
+      <Section title="Stablecoins that match local currencies">
+        <p>Celo ships native cUSD, cEUR, cREAL and supports USDT. We let users hold and withdraw in the stablecoin closest to their fiat — minimising FX loss.</p>
+      </Section>
+      <Section title="What this means for you">
+        <List items={[
+          'Zero gas fees on every NaijaLancers payment',
+          'Instant on-chain settlement after escrow release',
+          'Withdraw to MiniPay, MetaMask, Valora, or any Celo address',
+          'Convert to Naira, KES, GHS or ZAR via Quidax / Pretium',
+        ]} />
+      </Section>
+    </>),
+  },
+  {
+    slug: 'avoid-freelance-scams-nigeria',
+    title: 'How to Spot and Avoid Freelance Scams in Nigeria (2026 Edition)',
+    description: 'Fake job offers, advance-fee scams, and off-platform payment traps are everywhere. Here is exactly how to detect them and stay safe — written for Nigerian freelancers.',
+    keywords: 'freelance scams nigeria, avoid online scams, fake jobs nigeria, freelance safety, naijalancers protection',
+    datePublished: '2026-06-14',
+    dateModified: '2026-06-14',
+    readTime: '6 min read',
+    author: 'NaijaLancers Trust & Safety',
+    category: 'Trust & Safety',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">Nigerian freelancers lose millions of Naira every year to predictable scams. The patterns repeat — once you recognise them, you'll never fall for one.</p>
+      <Section title="The 5 most common freelance scams">
+        <Sub title="1. The 'pay a fee to get hired' scam">
+          <p>Real clients never ask you to pay an "activation fee" or "training fee" to start work. NaijaLancers will never charge you to receive a job.</p>
+        </Sub>
+        <Sub title="2. Overpayment + refund scam">
+          <p>Client "accidentally" sends you NC 100,000 for a NC 20,000 gig and asks you to refund the difference. The original payment is fraudulent and gets reversed — you lose the refund.</p>
+        </Sub>
+        <Sub title="3. Off-platform redirect">
+          <p>"Let's continue on WhatsApp and you send your bank details." Once off NaijaLancers there is no escrow, no dispute, no recourse. Keep the deal in chat until escrow is funded.</p>
+        </Sub>
+        <Sub title="4. Fake screenshot of payment">
+          <p>"I've paid, check your account." Always confirm in Wallet → Transactions yourself. Screenshots can be faked in seconds.</p>
+        </Sub>
+        <Sub title="5. Phishing links">
+          <p>Anyone DMing you "claim your reward" or "verify your wallet" with a non-naijalancers.name.ng link is phishing. Report and block.</p>
+        </Sub>
+      </Section>
+      <Section title="Built-in protections on NaijaLancers">
+        <List items={[
+          'Mandatory escrow on every gig and hire',
+          'Transaction PIN required for every NC spend',
+          'KYC verification badge on serious clients',
+          '24-hour auto-approve via chat for task-based work',
+          'In-app dispute resolution with admin review',
+        ]} />
+      </Section>
+      <Section title="What to do if you suspect a scam">
+        <p>Open the chat → tap the ⋯ menu → Report User. Our Trust & Safety team reviews every report and can freeze escrow within minutes. You can also email <strong>support@naijalancers.name.ng</strong> with screenshots.</p>
+      </Section>
+    </>),
+  },
+  {
+    slug: 'best-freelance-niches-nigeria-2026',
+    title: '10 Best-Paying Freelance Niches in Nigeria for 2026',
+    description: 'Data-backed list of the highest-paying freelance skills on NaijaLancers in 2026 — from AI prompt engineering to Celo smart-contract development.',
+    keywords: 'best freelance skills nigeria, high paying remote jobs nigeria, freelance niches 2026, naijalancers categories',
+    datePublished: '2026-06-14',
+    dateModified: '2026-06-14',
+    readTime: '7 min read',
+    author: 'NaijaLancers Insights',
+    category: 'Career & Skills',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">Based on completed orders and average order values on NaijaLancers over the past 90 days, these are the niches where Nigerian freelancers are earning the most.</p>
+      <Section title="The top 10 niches">
+        <List items={[
+          'AI Prompt Engineering & GPT Workflow Automation — NC 50,000+ per project',
+          'Celo / Solidity Smart Contract Development — NC 250,000+ per contract',
+          'Short-form Video Editing (TikTok, Reels, Shorts) — NC 15,000 per video, high repeat rate',
+          'Brand & Logo Design with full identity systems — NC 80,000+',
+          'Technical SEO and AI-search optimisation — NC 100,000+ retainers',
+          'Full-stack React / Next.js development — NC 200,000+ per build',
+          'Voiceover in Nigerian English, Pidgin, Yoruba, Igbo, Hausa — NC 10,000+ per minute',
+          'UI/UX design for fintech and mobile apps — NC 150,000+',
+          'Copywriting for African SaaS and Web3 — NC 40,000 per long-form piece',
+          'Virtual Assistant for international founders — NC 200,000+ monthly retainers',
+        ]} />
+      </Section>
+      <Section title="How to break into a high-paying niche">
+        <p>Pick ONE niche, build 3 sample projects, post them as gigs, and join the matching Group on NaijaLancers. Specialists out-earn generalists by 3–4x.</p>
+      </Section>
+      <Section title="Free learning paths">
+        <p>Open the Learn tab — all curated courses for these niches are free for verified NaijaLancers members. Complete a course to unlock a verified skill badge that appears on your public <code>/u/</code> profile.</p>
+      </Section>
+    </>),
+  },
 ];
 
 export function getPostBySlug(slug: string): BlogPost | undefined {
