@@ -21,7 +21,7 @@ import { TestNotifications } from '@/components/TestNotifications'
 import { TwoFactorSetup } from '@/components/TwoFactorSetup'
 import { EmailVerificationStatus } from '@/components/EmailVerificationBanner'
 import { UserBadges } from '@/components/UserBadges'
-import { FaceVerificationDialog } from '@/components/FaceVerificationDialog'
+
 import { PhoneVerificationDialog } from '@/components/PhoneVerificationDialog'
 import { IdentityVerificationDialog } from '@/components/IdentityVerificationDialog'
 import { LoginHistoryCard } from '@/components/LoginHistoryCard'
@@ -385,7 +385,6 @@ const Settings = () => {
                       isExpert: profile?.is_expert,
                       emailVerified: (profile as any)?.email_verified,
                       phoneVerified: (profile as any)?.phone_verified,
-                      faceVerified: (profile as any)?.face_verified,
                       averageRating: profile?.average_rating,
                       ratingCount: profile?.rating_count,
                       avgResponseTimeSeconds: (profile as any)?.avg_response_time_seconds
@@ -450,26 +449,7 @@ const Settings = () => {
 
                 <Separator />
 
-                {/* Face Verification */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-full ${(profile as any)?.face_verified ? 'bg-green-100 dark:bg-green-900/30' : 'bg-muted'}`}>
-                      <Camera className={`h-4 w-4 ${(profile as any)?.face_verified ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`} />
-                    </div>
-                    <div>
-                      <h4 className="font-medium">Face Selfie</h4>
-                      <p className="text-xs text-muted-foreground">Open-source face verification</p>
-                    </div>
-                  </div>
-                  <FaceVerificationDialog 
-                    isVerified={(profile as any)?.face_verified}
-                    onVerified={() => {
-                      toast({ title: "Face Verified", description: "Your selfie has been verified successfully!" })
-                    }}
-                  />
-                </div>
 
-                <Separator />
 
                 {/* NIN/BVN Identity Verification */}
                 <div className="flex items-center justify-between">
