@@ -2644,7 +2644,7 @@ export const BLOG_POSTS: BlogPost[] = [
     </>),
   },
   {
-    slug: 'avoid-freelance-scams-nigeria',
+    slug: 'spot-avoid-freelance-scams-nigeria-2026',
     title: 'How to Spot and Avoid Freelance Scams in Nigeria (2026 Edition)',
     description: 'Fake job offers, advance-fee scams, and off-platform payment traps are everywhere. Here is exactly how to detect them and stay safe — written for Nigerian freelancers.',
     keywords: 'freelance scams nigeria, avoid online scams, fake jobs nigeria, freelance safety, naijalancers protection',
