@@ -385,7 +385,6 @@ const Settings = () => {
                       isExpert: profile?.is_expert,
                       emailVerified: (profile as any)?.email_verified,
                       phoneVerified: (profile as any)?.phone_verified,
-                      faceVerified: (profile as any)?.face_verified,
                       averageRating: profile?.average_rating,
                       ratingCount: profile?.rating_count,
                       avgResponseTimeSeconds: (profile as any)?.avg_response_time_seconds
