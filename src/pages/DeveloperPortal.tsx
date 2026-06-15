@@ -413,12 +413,14 @@ export default function DeveloperPortal() {
       startOfMonth.setDate(1);
       startOfMonth.setHours(0, 0, 0, 0);
 
+      // Egress control: was .limit(500) — reduced to 100 (last 100 calls is plenty for
+      // the breakdown + recent-activity feed, and cuts payload ~5x).
       const { data: usageData } = await supabase
         .from('api_usage')
         .select('endpoint, status_code, cost_nc, created_at, external_service')
         .eq('user_id', user?.id)
         .order('created_at', { ascending: false })
-        .limit(500);
+        .limit(100);
 
       if (usageData) {
         const total_calls = usageData.length;
