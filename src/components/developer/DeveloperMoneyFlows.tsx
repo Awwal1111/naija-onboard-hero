@@ -106,6 +106,20 @@ export default function DeveloperMoneyFlows({ apiKey }: Props) {
     } catch (e: any) { toast.error(e.message); } finally { setBusy(null); }
   }
 
+  async function createChargeSession() {
+    if (!apiKey) return toast.error('API key required');
+    setBusy('charge');
+    try {
+      const r = await callApi(apiKey, 'payments/charge/session', 'POST', {
+        amount: Number(chargeAmount),
+        description: chargeDesc || undefined,
+        external_user_id: extId || undefined,
+      });
+      setChargeUrl(r.redirect_url || '');
+      toast.success('Charge link created — share with the user to approve');
+    } catch (e: any) { toast.error(e.message); } finally { setBusy(null); }
+  }
+
   function copy(t: string) { navigator.clipboard.writeText(t); toast.success('Copied'); }
 
   return (
