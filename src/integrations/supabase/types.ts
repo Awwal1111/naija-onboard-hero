@@ -1567,6 +1567,66 @@ export type Database = {
         }
         Relationships: []
       }
+      developer_charge_sessions: {
+        Row: {
+          amount: number
+          completed_at: string | null
+          created_at: string
+          currency: string
+          description: string | null
+          developer_id: string
+          expires_at: string
+          external_user_email: string | null
+          external_user_id: string | null
+          id: string
+          metadata: Json
+          payer_user_id: string | null
+          redirect_url: string | null
+          reference: string | null
+          session_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          completed_at?: string | null
+          created_at?: string
+          currency?: string
+          description?: string | null
+          developer_id: string
+          expires_at?: string
+          external_user_email?: string | null
+          external_user_id?: string | null
+          id?: string
+          metadata?: Json
+          payer_user_id?: string | null
+          redirect_url?: string | null
+          reference?: string | null
+          session_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          completed_at?: string | null
+          created_at?: string
+          currency?: string
+          description?: string | null
+          developer_id?: string
+          expires_at?: string
+          external_user_email?: string | null
+          external_user_id?: string | null
+          id?: string
+          metadata?: Json
+          payer_user_id?: string | null
+          redirect_url?: string | null
+          reference?: string | null
+          session_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       developer_escrows: {
         Row: {
           amount: number
@@ -8084,6 +8144,10 @@ export type Database = {
       deduct_nc_balance: {
         Args: { p_amount: number; p_user_id: string }
         Returns: boolean
+      }
+      developer_charge_consume_atomic: {
+        Args: { p_payer_user_id: string; p_session_id: string }
+        Returns: Json
       }
       developer_payout_atomic: {
         Args: {

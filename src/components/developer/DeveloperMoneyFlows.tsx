@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowDownToLine, ArrowUpFromLine, Loader2, Wallet, QrCode, Copy, ExternalLink, Banknote, Coins } from 'lucide-react';
+import { ArrowDownToLine, ArrowUpFromLine, Loader2, Wallet, QrCode, Copy, ExternalLink, Banknote, Coins, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 
 const FN_URL = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/developer-api`;
@@ -46,6 +46,11 @@ export default function DeveloperMoneyFlows({ apiKey }: Props) {
   // payout (NC credit/debit by dev)
   const [payoutAmount, setPayoutAmount] = useState('100');
   const [payoutNote, setPayoutNote] = useState('');
+
+  // charge (request payment from any NaijaLancers user)
+  const [chargeAmount, setChargeAmount] = useState('500');
+  const [chargeDesc, setChargeDesc] = useState('');
+  const [chargeUrl, setChargeUrl] = useState('');
 
   async function ensureWallet() {
     if (!apiKey || !extId) return toast.error('API key + user id required');
@@ -101,6 +106,20 @@ export default function DeveloperMoneyFlows({ apiKey }: Props) {
     } catch (e: any) { toast.error(e.message); } finally { setBusy(null); }
   }
 
+  async function createChargeSession() {
+    if (!apiKey) return toast.error('API key required');
+    setBusy('charge');
+    try {
+      const r = await callApi(apiKey, 'payments/charge/session', 'POST', {
+        amount: Number(chargeAmount),
+        description: chargeDesc || undefined,
+        external_user_id: extId || undefined,
+      });
+      setChargeUrl(r.redirect_url || '');
+      toast.success('Charge link created — share with the user to approve');
+    } catch (e: any) { toast.error(e.message); } finally { setBusy(null); }
+  }
+
   function copy(t: string) { navigator.clipboard.writeText(t); toast.success('Copied'); }
 
   return (
@@ -137,9 +156,10 @@ export default function DeveloperMoneyFlows({ apiKey }: Props) {
       </Card>
 
       <Tabs defaultValue="deposit">
-        <TabsList className="grid grid-cols-4 w-full">
+        <TabsList className="grid grid-cols-5 w-full">
           <TabsTrigger value="deposit"><ArrowDownToLine className="h-3.5 w-3.5 mr-1" /> Deposit</TabsTrigger>
           <TabsTrigger value="withdraw"><ArrowUpFromLine className="h-3.5 w-3.5 mr-1" /> Withdraw</TabsTrigger>
+          <TabsTrigger value="charge"><CreditCard className="h-3.5 w-3.5 mr-1" /> Charge</TabsTrigger>
           <TabsTrigger value="crypto"><Coins className="h-3.5 w-3.5 mr-1" /> Crypto</TabsTrigger>
           <TabsTrigger value="payout"><Banknote className="h-3.5 w-3.5 mr-1" /> Payout</TabsTrigger>
         </TabsList>
@@ -275,6 +295,47 @@ export default function DeveloperMoneyFlows({ apiKey }: Props) {
             <pre className="text-[10px] mt-3 bg-muted p-2 rounded overflow-x-auto">{`POST /payments/credit | /payments/payout
 { "external_user_id": "${extId || 'user-id'}", "amount": ${payoutAmount} }
 → { "ok": true, "new_balance": ... }`}</pre>
+          </Card>
+        </TabsContent>
+
+        {/* CHARGE — request NC payment from any NaijaLancers user via hosted PIN page */}
+        <TabsContent value="charge" className="space-y-3">
+          <Card className="p-4">
+            <h4 className="font-medium text-sm mb-1">Charge a NaijaLancers user (NC)</h4>
+            <p className="text-xs text-muted-foreground mb-3">
+              Creates a hosted payment link. Send your user to it — they sign in, see the amount, and approve with their PIN.
+              NC moves from their wallet to yours instantly. No card, no bank.
+            </p>
+            <div className="grid grid-cols-2 gap-2 mb-3">
+              <div>
+                <Label className="text-xs">Amount (NC)</Label>
+                <Input type="number" value={chargeAmount} onChange={(e) => setChargeAmount(e.target.value)} />
+              </div>
+              <div>
+                <Label className="text-xs">Description</Label>
+                <Input value={chargeDesc} onChange={(e) => setChargeDesc(e.target.value)} placeholder="Pro plan – 1 month" />
+              </div>
+            </div>
+            <Button onClick={createChargeSession} disabled={busy === 'charge' || !apiKey} className="w-full">
+              {busy === 'charge' ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CreditCard className="h-4 w-4 mr-2" />}
+              Create charge link
+            </Button>
+            {chargeUrl && (
+              <div className="mt-3 space-y-2">
+                <a href={chargeUrl} target="_blank" rel="noreferrer" className="flex items-center justify-between p-2 rounded bg-muted text-xs hover:bg-muted/70">
+                  <span className="truncate">{chargeUrl}</span>
+                  <ExternalLink className="h-3 w-3 shrink-0 ml-2" />
+                </a>
+                <Button variant="outline" size="sm" onClick={() => copy(chargeUrl)} className="w-full">
+                  <Copy className="h-3 w-3 mr-2" /> Copy link
+                </Button>
+              </div>
+            )}
+            <pre className="text-[10px] mt-3 bg-muted p-2 rounded overflow-x-auto">{`POST /payments/charge/session
+{ "amount": ${chargeAmount}, "description": "${chargeDesc || 'Pro plan'}",
+  "success_url": "https://yourapp.com/paid",
+  "cancel_url": "https://yourapp.com/cancelled" }
+→ { "session_id": "cs_...", "redirect_url": "https://naijalancers.name.ng/charge/cs_..." }`}</pre>
           </Card>
         </TabsContent>
       </Tabs>

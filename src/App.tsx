@@ -181,6 +181,7 @@ const PublicUser = lazy(lazyWithRetry(() => import("./pages/PublicUser")));
 const PublicJobs = lazy(lazyWithRetry(() => import("./pages/PublicJobs")));
 const Sitemap = lazy(lazyWithRetry(() => import("./pages/Sitemap")));
 const RampSession = lazy(lazyWithRetry(() => import("./pages/RampSession")));
+const ChargeSession = lazy(lazyWithRetry(() => import("./pages/ChargeSession")));
 const PayLink = lazy(lazyWithRetry(() => import("./pages/PayLink")));
 const InstallApp = lazy(lazyWithRetry(() => import("./pages/InstallApp")));
 
@@ -253,6 +254,7 @@ const App = () => (
                 <Route path="/sitemap" element={<Sitemap />} />
                 <Route path="/debug" element={<DebugPage />} />
                 <Route path="/ramp/:sessionId" element={<RampSession />} />
+                <Route path="/charge/:sessionId" element={<ChargeSession />} />
                 
                 {/* Public pages */}
                 <Route path="/" element={<Index />} />
