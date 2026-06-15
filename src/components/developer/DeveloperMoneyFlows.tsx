@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowDownToLine, ArrowUpFromLine, Loader2, Wallet, QrCode, Copy, ExternalLink, Banknote, Coins } from 'lucide-react';
+import { ArrowDownToLine, ArrowUpFromLine, Loader2, Wallet, QrCode, Copy, ExternalLink, Banknote, Coins, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 
 const FN_URL = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/developer-api`;
