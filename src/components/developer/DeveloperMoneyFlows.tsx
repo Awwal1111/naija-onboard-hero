@@ -156,9 +156,10 @@ export default function DeveloperMoneyFlows({ apiKey }: Props) {
       </Card>
 
       <Tabs defaultValue="deposit">
-        <TabsList className="grid grid-cols-4 w-full">
+        <TabsList className="grid grid-cols-5 w-full">
           <TabsTrigger value="deposit"><ArrowDownToLine className="h-3.5 w-3.5 mr-1" /> Deposit</TabsTrigger>
           <TabsTrigger value="withdraw"><ArrowUpFromLine className="h-3.5 w-3.5 mr-1" /> Withdraw</TabsTrigger>
+          <TabsTrigger value="charge"><CreditCard className="h-3.5 w-3.5 mr-1" /> Charge</TabsTrigger>
           <TabsTrigger value="crypto"><Coins className="h-3.5 w-3.5 mr-1" /> Crypto</TabsTrigger>
           <TabsTrigger value="payout"><Banknote className="h-3.5 w-3.5 mr-1" /> Payout</TabsTrigger>
         </TabsList>
