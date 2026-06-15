@@ -254,6 +254,7 @@ const App = () => (
                 <Route path="/sitemap" element={<Sitemap />} />
                 <Route path="/debug" element={<DebugPage />} />
                 <Route path="/ramp/:sessionId" element={<RampSession />} />
+                <Route path="/charge/:sessionId" element={<ChargeSession />} />
                 
                 {/* Public pages */}
                 <Route path="/" element={<Index />} />
