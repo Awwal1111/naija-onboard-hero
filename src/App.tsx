@@ -181,6 +181,7 @@ const PublicUser = lazy(lazyWithRetry(() => import("./pages/PublicUser")));
 const PublicJobs = lazy(lazyWithRetry(() => import("./pages/PublicJobs")));
 const Sitemap = lazy(lazyWithRetry(() => import("./pages/Sitemap")));
 const RampSession = lazy(lazyWithRetry(() => import("./pages/RampSession")));
+const ChargeSession = lazy(lazyWithRetry(() => import("./pages/ChargeSession")));
 const PayLink = lazy(lazyWithRetry(() => import("./pages/PayLink")));
 const InstallApp = lazy(lazyWithRetry(() => import("./pages/InstallApp")));
 
