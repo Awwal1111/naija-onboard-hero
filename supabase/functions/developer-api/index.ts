@@ -1304,6 +1304,65 @@ async function handlePayoutCredit(developer: DeveloperProfile, body: any) {
   };
 }
 
+
+async function handleCreateChargeSession(developer: DeveloperProfile, body: any) {
+  const amount = Number(body?.amount);
+  if (!amount || amount <= 0 || amount > 1_000_000) {
+    return { error: 'amount required (NC, 0 < x <= 1,000,000)', status: 400 };
+  }
+  const description = body?.description ? String(body.description).slice(0, 280) : null;
+  const externalUserId = body?.external_user_id ? String(body.external_user_id).slice(0, 128) : null;
+  const externalUserEmail = body?.external_user_email ? String(body.external_user_email).slice(0, 256) : null;
+  const successUrl = body?.success_url ? String(body.success_url).slice(0, 500) : null;
+  const cancelUrl = body?.cancel_url ? String(body.cancel_url).slice(0, 500) : null;
+  const metadata = (body?.metadata && typeof body.metadata === 'object') ? body.metadata : {};
+
+  const sessionId = `cs_${developer.user_id.slice(0, 8)}_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
+  const redirectUrl = `${APP_BASE_URL}/charge/${sessionId}`;
+
+  const { error } = await supabase.from('developer_charge_sessions').insert({
+    developer_id: developer.user_id,
+    session_id: sessionId,
+    amount,
+    currency: 'NC',
+    description,
+    external_user_id: externalUserId,
+    external_user_email: externalUserEmail,
+    metadata: { ...metadata, success_url: successUrl, cancel_url: cancelUrl },
+    status: 'pending',
+    redirect_url: redirectUrl,
+  });
+  if (error) {
+    console.error('[API] charge session create error:', error);
+    return { error: 'Failed to create charge session', status: 500 };
+  }
+
+  triggerWebhook(developer.user_id, 'payments.charge.session.created', {
+    session_id: sessionId, amount, currency: 'NC',
+    external_user_id: externalUserId, redirect_url: redirectUrl,
+  });
+
+  return {
+    data: {
+      session_id: sessionId, amount, currency: 'NC',
+      status: 'pending', redirect_url: redirectUrl,
+      expires_in_seconds: 7200,
+    },
+  };
+}
+
+async function handleGetChargeSession(developer: DeveloperProfile, sessionId: string) {
+  if (!sessionId) return { error: 'session_id required', status: 400 };
+  const { data, error } = await supabase
+    .from('developer_charge_sessions')
+    .select('session_id, amount, currency, description, status, reference, redirect_url, external_user_id, external_user_email, payer_user_id, completed_at, expires_at, created_at')
+    .eq('developer_id', developer.user_id)
+    .eq('session_id', sessionId)
+    .maybeSingle();
+  if (error || !data) return { error: 'Session not found', status: 404 };
+  return { data };
+}
+
 // ============= MAIN ROUTER =============
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
