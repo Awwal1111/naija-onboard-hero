@@ -47,6 +47,11 @@ export default function DeveloperMoneyFlows({ apiKey }: Props) {
   const [payoutAmount, setPayoutAmount] = useState('100');
   const [payoutNote, setPayoutNote] = useState('');
 
+  // charge (request payment from any NaijaLancers user)
+  const [chargeAmount, setChargeAmount] = useState('500');
+  const [chargeDesc, setChargeDesc] = useState('');
+  const [chargeUrl, setChargeUrl] = useState('');
+
   async function ensureWallet() {
     if (!apiKey || !extId) return toast.error('API key + user id required');
     setBusy('wallet');
