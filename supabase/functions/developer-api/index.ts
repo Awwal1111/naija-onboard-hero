@@ -72,6 +72,7 @@ const API_PRICING: Record<string, number> = {
   'payments/escrow/release': 0,
   'payments/payout': 5,
   'payments/credit': 5,
+  'payments/charge/session': 2,
   'notifications/send': 5, // Email
   'notifications/push': 0.5,
   'notifications/sms': 4,
