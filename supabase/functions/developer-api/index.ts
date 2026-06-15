@@ -41,6 +41,7 @@ const RATE_LIMITS: Record<string, number> = {
   'payments/escrow/release': 50,
   'payments/payout': 50,
   'payments/credit': 50,
+  'payments/charge/session': 100,
   'notifications/send': 200,
   'notifications/push': 500,
   'notifications/sms': 100,
