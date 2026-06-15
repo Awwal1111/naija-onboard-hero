@@ -1618,6 +1618,18 @@ serve(async (req) => {
         result = await handlePayoutCredit(developer, body);
         break;
 
+      // Hosted Charge Sessions (developer creates; end-user approves with PIN on naijalancers.name.ng)
+      case 'payments/charge/session':
+        if (method === 'POST') {
+          result = await handleCreateChargeSession(developer, body);
+        } else if (method === 'GET') {
+          const sid = params.session_id || params.id;
+          result = await handleGetChargeSession(developer, String(sid || ''));
+        } else {
+          result = { error: 'Method not allowed', status: 405 };
+        }
+        break;
+
       // Quidax Ramp Quotes (read-only, NGN<>USDT live pricing)
       case 'ramp/quote/buy':
         result = await handleRampQuoteBuy(body);
