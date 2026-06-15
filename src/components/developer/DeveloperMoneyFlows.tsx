@@ -297,6 +297,47 @@ export default function DeveloperMoneyFlows({ apiKey }: Props) {
 → { "ok": true, "new_balance": ... }`}</pre>
           </Card>
         </TabsContent>
+
+        {/* CHARGE — request NC payment from any NaijaLancers user via hosted PIN page */}
+        <TabsContent value="charge" className="space-y-3">
+          <Card className="p-4">
+            <h4 className="font-medium text-sm mb-1">Charge a NaijaLancers user (NC)</h4>
+            <p className="text-xs text-muted-foreground mb-3">
+              Creates a hosted payment link. Send your user to it — they sign in, see the amount, and approve with their PIN.
+              NC moves from their wallet to yours instantly. No card, no bank.
+            </p>
+            <div className="grid grid-cols-2 gap-2 mb-3">
+              <div>
+                <Label className="text-xs">Amount (NC)</Label>
+                <Input type="number" value={chargeAmount} onChange={(e) => setChargeAmount(e.target.value)} />
+              </div>
+              <div>
+                <Label className="text-xs">Description</Label>
+                <Input value={chargeDesc} onChange={(e) => setChargeDesc(e.target.value)} placeholder="Pro plan – 1 month" />
+              </div>
+            </div>
+            <Button onClick={createChargeSession} disabled={busy === 'charge' || !apiKey} className="w-full">
+              {busy === 'charge' ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CreditCard className="h-4 w-4 mr-2" />}
+              Create charge link
+            </Button>
+            {chargeUrl && (
+              <div className="mt-3 space-y-2">
+                <a href={chargeUrl} target="_blank" rel="noreferrer" className="flex items-center justify-between p-2 rounded bg-muted text-xs hover:bg-muted/70">
+                  <span className="truncate">{chargeUrl}</span>
+                  <ExternalLink className="h-3 w-3 shrink-0 ml-2" />
+                </a>
+                <Button variant="outline" size="sm" onClick={() => copy(chargeUrl)} className="w-full">
+                  <Copy className="h-3 w-3 mr-2" /> Copy link
+                </Button>
+              </div>
+            )}
+            <pre className="text-[10px] mt-3 bg-muted p-2 rounded overflow-x-auto">{`POST /payments/charge/session
+{ "amount": ${chargeAmount}, "description": "${chargeDesc || 'Pro plan'}",
+  "success_url": "https://yourapp.com/paid",
+  "cancel_url": "https://yourapp.com/cancelled" }
+→ { "session_id": "cs_...", "redirect_url": "https://naijalancers.name.ng/charge/cs_..." }`}</pre>
+          </Card>
+        </TabsContent>
       </Tabs>
     </div>
   );
