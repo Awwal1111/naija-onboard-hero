@@ -2720,6 +2720,155 @@ export const BLOG_POSTS: BlogPost[] = [
       </Section>
     </>),
   },
+  {
+    slug: 'freelancing-for-beginners-nigeria-2026',
+    title: 'Freelancing for Complete Beginners in Nigeria — Start From Zero in 2026',
+    description: 'No skills, no laptop, no clients? This is the absolute beginner roadmap to your first paid freelance gig in Nigeria using only your phone and NaijaLancers.',
+    keywords: 'freelancing for beginners nigeria, start freelancing no experience, first freelance gig, naijalancers beginner',
+    datePublished: '2026-06-17', dateModified: '2026-06-17', readTime: '8 min read',
+    author: 'NaijaLancers Team', category: 'Beginner Guide',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">You don't need a laptop, a degree, or capital to start freelancing in Nigeria. You need a phone, internet, and a skill you can deliver in under a week. This guide gets you from zero to your first NC payout.</p>
+      <Section title="Step 1 — Pick ONE skill you already have"><p>Writing, graphic design with Canva, voice-over, social-media management, data entry, translation (Hausa, Yoruba, Igbo, Pidgin), tutoring, transcription. The mistake is trying to offer five things at once. Pick the one you can deliver fastest.</p></Section>
+      <Section title="Step 2 — Build your NaijaLancers profile in 20 minutes"><List items={['Clear headshot (no sunglasses, no group photos)','Headline that names your service: "Logo designer for Nigerian small businesses"','Three portfolio samples — mark spec work clearly','Verify phone and email — verification badges double your reply rate']} /></Section>
+      <Section title="Step 3 — Post your first gig"><p>Title format: <em>I will [deliver X] for [target customer] in [time]</em>. Example: "I will design a clean logo for your Nigerian business in 24 hours". Price low at first (NC 5,000–10,000) to win your first 3 reviews.</p></Section>
+      <Section title="Step 4 — Hustle for review #1, not money #1"><p>Your first three orders matter more than the money. A 5-star review with a real client name unlocks the algorithm. Over-deliver on the first gig.</p></Section>
+      <Section title="Step 5 — Withdraw and reinvest"><p>Once NC lands in your wallet, withdraw to Naira via Quidax same-day. Reinvest a portion into NaijaLancers Premium (₦2,000/mo) — it doubles your gig visibility.</p></Section>
+    </>),
+  },
+  {
+    slug: 'stablecoins-explained-cusd-usdt-naira',
+    title: 'Stablecoins Explained — cUSD, USDT, and Why They Matter for Nigerian Freelancers',
+    description: 'A plain-English guide to stablecoins for Nigerians. What cUSD and USDT are, why they hold value against the Naira, and how to receive them safely on NaijaLancers.',
+    keywords: 'stablecoins nigeria, cusd explained, usdt nigeria, what is stablecoin, crypto naira',
+    datePublished: '2026-06-17', dateModified: '2026-06-17', readTime: '7 min read',
+    author: 'NaijaLancers Crypto Desk', category: 'Crypto & Blockchain',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">Crypto can feel scary because of price swings. Stablecoins fix that — they're digital dollars pegged 1:1 to the US dollar, designed for payments, not speculation. For a Nigerian freelancer, they're often the cheapest, fastest way to get paid by an international client.</p>
+      <Section title="What is a stablecoin?"><p>A stablecoin is a crypto token whose value is held at $1 by reserves of cash, T-bills, or other stablecoins. The two you'll meet on NaijaLancers are <strong>cUSD</strong> (Celo Dollar, native to the Celo blockchain) and <strong>USDT</strong> (Tether, the most-traded stablecoin in the world).</p></Section>
+      <Section title="Why this matters for you"><List items={['Your earnings keep value even if the Naira weakens overnight','Settlement is under 10 seconds, not 3 banking days','Gas fees on Celo are under ₦5 per transfer','No bank can freeze the wallet','Convertible to Naira instantly via Quidax inside NaijaLancers']} /></Section>
+      <Section title="How to receive stablecoins on NaijaLancers"><p>In Wallet → Receive → choose USDT or cUSD. You get a Celo address. Share it with your client. The moment they send, your balance updates. Convert to Naira with one tap, or hold as a USD hedge.</p></Section>
+      <Section title="Common misconceptions"><List items={['Stablecoins are NOT Bitcoin — they do not swing 20% in a day','You do not need to "buy" stablecoins to earn them — clients send them to you','You don\'t pay tax on holding, only on conversion to Naira']} /></Section>
+    </>),
+  },
+  {
+    slug: 'pricing-your-freelance-services-nigeria',
+    title: 'How to Price Your Freelance Services in Nigeria — Without Underselling',
+    description: 'A practical pricing framework for Nigerian freelancers. How to calculate hourly rates, project rates, and value-based pricing for local and international clients.',
+    keywords: 'freelance pricing nigeria, how much to charge freelancer, hourly rate nigeria, freelance pricing guide',
+    datePublished: '2026-06-17', dateModified: '2026-06-17', readTime: '8 min read',
+    author: 'NaijaLancers Team', category: 'Career & Skills',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">The biggest mistake new Nigerian freelancers make is pricing in Naira when they should price in dollars — and pricing per hour when they should price per outcome.</p>
+      <Section title="Method 1 — The cost-plus floor"><p>Calculate your monthly survival cost (rent, data, food, transport). Divide by hours you can realistically bill (90/month is realistic, not 160). That's your absolute floor. If your floor is ₦2,500/hr, never accept ₦1,500/hr "for exposure".</p></Section>
+      <Section title="Method 2 — Market rates by tier"><List items={['Junior (0–1 yr): NC 3,000–8,000/hr or NC 15k–40k per small project','Mid (1–3 yr): NC 8,000–20,000/hr or NC 50k–150k per project','Senior (3+ yr): NC 20,000–50,000/hr or NC 200k+ per project','International clients: charge 2–3x your Nigerian rate in USD equivalent']} /></Section>
+      <Section title="Method 3 — Value-based pricing"><p>If your logo helps a brand close a NC 5M deal, charge a percentage of impact, not hours. "I'll redesign your checkout page for NC 300,000 and conservatively add NC 2M to your monthly revenue" wins bigger budgets than hourly bids ever will.</p></Section>
+      <Section title="Three rules that compound"><List items={['Raise prices 10–20% every quarter on new clients','Always give 2 options (basic + recommended) — most clients pick recommended','Quote in NC for Nigerian clients, USD equivalent for international']} /></Section>
+    </>),
+  },
+  {
+    slug: 'crypto-wallet-security-101-nigeria',
+    title: 'Crypto Wallet Security 101 — Protect Your USDT and cUSD',
+    description: 'Seed phrases, 2FA, phishing, SIM swaps — everything a Nigerian freelancer needs to know to keep their crypto wallet safe in 2026.',
+    keywords: 'crypto wallet security, seed phrase safety, protect usdt, crypto security nigeria, naijalancers wallet',
+    datePublished: '2026-06-17', dateModified: '2026-06-17', readTime: '7 min read',
+    author: 'NaijaLancers Trust & Safety', category: 'Crypto & Blockchain',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">Losing your wallet is permanent — no bank can call, no admin can reset. These are the eight rules that keep every NaijaLancers user safe with their crypto.</p>
+      <Section title="The 8 rules"><List items={['Your 12-word seed phrase IS the wallet. Anyone with it owns the money.','Write the seed phrase on paper. Never screenshot. Never type into WhatsApp.','Enable 2FA on email, Telegram, and NaijaLancers — use an authenticator app, not SMS','Lock your SIM with a PIN to block SIM-swap attacks','Bookmark naijalancers.name.ng — never click wallet links from search ads','Set a Transaction PIN inside NaijaLancers — every spend requires it','Never approve "unlimited" token allowance on a sketchy dApp — wallet drained','Verify withdrawal addresses character-by-character. Malware can swap them in your clipboard.']} /></Section>
+      <Section title="If you suspect compromise — act in 5 minutes"><p>1) Move funds to a fresh wallet immediately. 2) Reset NaijaLancers password and Transaction PIN. 3) Sign out all sessions in Settings → Security. 4) Email support@naijalancers.name.ng with the wallet address.</p></Section>
+    </>),
+  },
+  {
+    slug: 'minipay-guide-for-nigerian-freelancers',
+    title: 'MiniPay Guide — The Phone-Number Wallet That Changes Everything',
+    description: 'MiniPay turns any phone number into a crypto wallet. Here is how Nigerian freelancers use it on NaijaLancers to receive cUSD and USDT in seconds — no seed phrase required.',
+    keywords: 'minipay nigeria, phone number wallet, opera minipay, celo minipay, naijalancers minipay',
+    datePublished: '2026-06-17', dateModified: '2026-06-17', readTime: '6 min read',
+    author: 'NaijaLancers Crypto Desk', category: 'Crypto & Blockchain',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">MiniPay is Opera's mobile wallet built on Celo. It uses your phone number as the wallet address — no seed phrase to lose, no MetaMask to install. NaijaLancers connects to it natively.</p>
+      <Section title="Why MiniPay matters in Nigeria"><List items={['Sign up in 30 seconds with your number','Zero gas fees — Celo + NaijaLancers sponsor every transaction','Send cUSD or USDT to any phone number on Celo','Cash out to Naira inside MiniPay directly','Works on any Android phone with 1GB RAM']} /></Section>
+      <Section title="How to connect MiniPay to NaijaLancers"><p>Open NaijaLancers inside the MiniPay browser. The app auto-detects MiniPay and connects your wallet — no popups, no confirmations. Then in Wallet → Withdraw → MiniPay you'll see your phone-number address pre-filled. Withdraw any amount and it lands in MiniPay in under 10 seconds.</p></Section>
+      <Section title="Limits and tips"><List items={['MiniPay supports cUSD, USDT, and CELO','Daily limits depend on your KYC tier in MiniPay','For amounts above $500, split or use a self-custody Celo wallet like Valora']} /></Section>
+    </>),
+  },
+  {
+    slug: 'building-portfolio-no-experience-nigeria',
+    title: 'How to Build a Freelance Portfolio With Zero Client Experience',
+    description: 'No clients yet? No problem. The portfolio-building playbook for Nigerian freelancers who need to show work before anyone will hire them.',
+    keywords: 'freelance portfolio no experience, build portfolio nigeria, first freelance samples, naijalancers portfolio',
+    datePublished: '2026-06-17', dateModified: '2026-06-17', readTime: '6 min read',
+    author: 'NaijaLancers Team', category: 'Career & Skills',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">"Need experience to get hired, need to get hired to get experience" — every beginner hits this wall. Here's how to break it in two weeks.</p>
+      <Section title="The 3-sample portfolio strategy"><List items={['Sample 1 — Redesign something famous: pick a popular Nigerian brand and redesign their logo/landing/ad. Label it as a spec project.','Sample 2 — Solve a friend\'s real problem free: a small-business owner near you needs a menu, a flyer, a website. Do it free, get a testimonial.','Sample 3 — Personal project: build the thing you wish existed. A Telegram bot, a Notion template, a Hausa-language podcast intro.']} /></Section>
+      <Section title="Where to host it"><p>Upload the three samples directly to your NaijaLancers profile portfolio section. Add a 1-sentence brief, the problem, your solution, and the outcome. Profiles with 3+ portfolio items get 4x more inquiries.</p></Section>
+      <Section title="Convert portfolio into your first paid gig"><p>Take Sample 2 (the free one for a friend), ask for a written testimonial, screenshot it, and add it to your gig page. Social proof from one real person beats five spec projects.</p></Section>
+    </>),
+  },
+  {
+    slug: 'tax-and-legal-freelancers-nigeria-2026',
+    title: 'Tax and Legal Basics for Nigerian Freelancers in 2026',
+    description: 'CAC, FIRS, VAT, personal income tax — the no-nonsense legal and tax guide every Nigerian freelancer earning above ₦300k/month should read.',
+    keywords: 'freelance tax nigeria, firs freelancer, cac registration freelancer, freelance legal nigeria',
+    datePublished: '2026-06-17', dateModified: '2026-06-17', readTime: '8 min read',
+    author: 'NaijaLancers Team', category: 'Career & Skills',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">This is general information, not legal advice — talk to a chartered accountant for your specific case. But here are the basics every serious Nigerian freelancer should understand.</p>
+      <Section title="Do you need to register a business?"><p>Below roughly ₦25M/year in revenue you can operate as a sole practitioner. Above that, CAC registration as a Business Name (₦10k) or LLC (₦50k+) becomes worth it for credibility, business bank accounts, and easier client invoicing.</p></Section>
+      <Section title="Personal Income Tax (PIT)"><p>Freelance income is taxable. The 2024 reform set a tax-free threshold around ₦800k/year. Above that, progressive rates apply. File annually with your state's Internal Revenue Service (e.g. Lagos LIRS, FCT-IRS).</p></Section>
+      <Section title="VAT"><p>You must register for VAT once your annual turnover exceeds ₦25M. Most freelancers are below this — but if you cross it, you charge 7.5% VAT on invoices and remit monthly to FIRS.</p></Section>
+      <Section title="Crypto and tax"><p>Crypto-to-Naira conversions are reportable. Holding USDT or cUSD is not a taxable event; converting it to Naira is. Keep a simple spreadsheet of every Quidax/Pretium conversion.</p></Section>
+      <Section title="Contracts"><p>Use the NaijaLancers chat + escrow as your contract for small jobs — the message log is admissible. For anything above NC 500,000, exchange a 1-page scope document.</p></Section>
+    </>),
+  },
+  {
+    slug: 'getting-paid-internationally-from-nigeria-2026',
+    title: 'Getting Paid From Abroad as a Nigerian Freelancer — All 7 Methods Ranked',
+    description: 'PayPal, Payoneer, Wise, USDT, cUSD, MiniPay, NaijaLancers escrow — the seven ways to receive international freelance payments in Nigeria, ranked by fees and speed.',
+    keywords: 'receive international payment nigeria, freelance payment methods nigeria, paypal alternative nigeria, usdt payments',
+    datePublished: '2026-06-17', dateModified: '2026-06-17', readTime: '7 min read',
+    author: 'NaijaLancers Crypto Desk', category: 'Payments & Security',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">Here are the seven realistic ways to get paid from outside Nigeria in 2026, ranked from worst to best for the typical freelancer.</p>
+      <Section title="The ranking"><List items={['7. Bank wire — 3–5 days, ₦8,000+ fees, frequent rejections','6. PayPal — limited in Nigeria, can\'t receive freely, account freezes','5. Payoneer — works but 2% fee + FX spread + 2-day clearing','4. Wise — clean rates but requires UK/EU receiving account','3. USDT TRC-20 — under $1 fee, 1 minute, swap to Naira via Quidax','2. cUSD on Celo — under ₦5 fee, 5 seconds, settles inside NaijaLancers escrow','1. NaijaLancers Escrow + Wallet — zero fee for client, instant in-app, 5% platform fee only on completion']} /></Section>
+      <Section title="When to use which"><p>For one-off small clients, point them to your NaijaLancers gig and let escrow handle it. For repeat international clients, send your Celo address and accept cUSD. Keep Payoneer as backup for clients who refuse anything else.</p></Section>
+    </>),
+  },
+  {
+    slug: 'common-crypto-mistakes-new-users-nigeria',
+    title: '7 Crypto Mistakes Every New Nigerian User Makes (And How to Avoid Them)',
+    description: 'From sending USDT on the wrong network to falling for Telegram pump scams, here are the seven crypto mistakes that cost Nigerians the most money — and how to dodge each one.',
+    keywords: 'crypto mistakes nigeria, lose crypto wrong network, crypto scams telegram, beginner crypto errors',
+    datePublished: '2026-06-17', dateModified: '2026-06-17', readTime: '6 min read',
+    author: 'NaijaLancers Trust & Safety', category: 'Crypto & Blockchain',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">Every Nigerian who's used crypto for more than 6 months has lost money to at least one of these. Read once, save thousands.</p>
+      <Section title="The 7 mistakes"><List items={['Sending USDT on ERC-20 to a TRC-20 address (or vice versa) — funds gone forever','Approving "unlimited" token allowance on a sketchy dApp — wallet drained overnight','Storing seed phrase in WhatsApp "Saved Messages" — one phone hack and it\'s over','Joining Telegram "signal" groups promising 10x — they front-run your trades','Using SMS 2FA on Binance/Bybit — SIM swaps are common in Nigeria','Buying random meme coins on P2P with no liquidity — can\'t sell back','Trusting "support" DMs — official support never DMs first']} /></Section>
+      <Section title="The safe baseline"><p>Stick to USDT and cUSD. Use Celo (low fees, low confusion). Keep large balances in a hardware wallet. Use NaijaLancers for every freelance payment so escrow protects you.</p></Section>
+    </>),
+  },
+  {
+    slug: 'using-ai-tools-as-freelancer-2026',
+    title: 'How to Use AI Tools to 10x Your Freelance Output in 2026',
+    description: 'A practical guide for Nigerian freelancers on using ChatGPT, Claude, Gemini, and NaijaLancers AI Assistant to deliver faster, charge more, and never miss a deadline.',
+    keywords: 'ai for freelancers, chatgpt freelance, ai writing assistant, naijalancers ai, ai workflow nigeria',
+    datePublished: '2026-06-17', dateModified: '2026-06-17', readTime: '8 min read',
+    author: 'NaijaLancers Team', category: 'Career & Skills',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">AI doesn't replace freelancers — it makes the freelancers who use it well unbeatable. Here are the workflows that move you from 3 hours per gig to 30 minutes.</p>
+      <Section title="The 5 core AI workflows">
+        <Sub title="1. Brief expansion"><p>Paste a 2-line client brief into Claude or the NaijaLancers Writing Assistant → ask for 10 follow-up questions and a draft scope. Send the draft scope to the client. You look 10x more professional and avoid scope creep.</p></Sub>
+        <Sub title="2. First-draft generation"><p>Whether it's copy, code, or a pitch deck outline, AI nails the first 60%. Your 40% on top is what the client actually pays for — voice, judgment, polish.</p></Sub>
+        <Sub title="3. Translation"><p>Translate gigs and pitches into Hausa, Yoruba, Igbo, Pidgin for local clients — or French/Portuguese for the rest of Africa. Triples your addressable market.</p></Sub>
+        <Sub title="4. SEO and titles"><p>Generate 20 gig title variants → pick the highest click-through one. Update your gig title monthly.</p></Sub>
+        <Sub title="5. Client communication"><p>The NaijaLancers in-chat writing assistant has 22 modes — Professional, Friendly, Apology, Shorter, Longer. Reply in 10 seconds instead of 10 minutes.</p></Sub>
+      </Section>
+      <Section title="What AI cannot do for you"><p>It can't build your reputation, it can't show up on time, and it can't replace the trust that completed orders and reviews create on NaijaLancers. The freelancers winning in 2026 use AI as a multiplier on real skill — not as a substitute for it.</p></Section>
+    </>),
+  },
+
 ];
 
 export function getPostBySlug(slug: string): BlogPost | undefined {
