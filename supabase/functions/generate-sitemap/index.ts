@@ -50,6 +50,15 @@ Deno.serve(async (req) => {
     { loc: "/refund-policy", priority: "0.4", freq: "monthly" },
   ];
 
+  // Blog posts (hardcoded slugs — keep in sync with src/content/blogPosts.tsx)
+  const blogSlugs = [
+    'complete-guide-secure-payments-naijalancers','how-escrow-protects-freelancers-and-clients','how-to-hire-trusted-freelancers-in-nigeria','how-to-create-gig-that-sells-naijalancers','how-to-withdraw-earnings-naijalancers','naijalancers-vs-fiverr-upwork-nigeria','most-important-skills-ai-era-2026','freelancing-platform-that-pays-in-crypto','why-cryptocurrency-considered-scam-naijalancers-celo','common-mistakes-loss-of-funds-crypto','why-traditional-banks-not-needed-international-freelancing-2026','celo-vs-ethereum-freelance-payments','spot-avoid-freelance-scams-nigeria-2026','top-paying-freelance-niches-nigeria-2026','freelancing-for-beginners-nigeria-2026','stablecoins-explained-cusd-usdt-naira','pricing-your-freelance-services-nigeria','crypto-wallet-security-101-nigeria','minipay-guide-for-nigerian-freelancers','building-portfolio-no-experience-nigeria','tax-and-legal-freelancers-nigeria-2026','getting-paid-internationally-from-nigeria-2026','common-crypto-mistakes-new-users-nigeria','using-ai-tools-as-freelancer-2026',
+  ];
+  for (const slug of blogSlugs) {
+    staticPages.push({ loc: `/blog/${slug}`, priority: "0.7", freq: "weekly" });
+  }
+
+
   for (const page of staticPages) {
     urls.push(`  <url>
     <loc>${baseUrl}${page.loc}</loc>
