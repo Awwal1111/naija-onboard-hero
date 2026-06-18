@@ -72,7 +72,7 @@ const PublicExperts = () => {
         "@type": "Person",
         "name": expert.full_name,
         "jobTitle": expert.profession,
-        "url": `https://naijalancers.name.ng/p/expert/${expert.user_id}`
+        "url": `https://naijalancers.name.ng/p/expert/${expert.username || expert.user_id}`
       }
     }))
   };
