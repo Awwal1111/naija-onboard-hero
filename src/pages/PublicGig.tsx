@@ -383,7 +383,7 @@ export default function PublicGig() {
             {/* Seller Info Card */}
             <Card className="p-4">
               <div className="flex items-start gap-3">
-                <Avatar className="h-14 w-14 ring-2 ring-border cursor-pointer" onClick={() => navigate(`/p/expert/${gig.user_id}`)}>
+                <Avatar className="h-14 w-14 ring-2 ring-border cursor-pointer" onClick={() => navigate(`/p/expert/${sellerSlug}`)}>
                   <AvatarImage src={seller?.profile_picture_url} alt={seller?.full_name} />
                   <AvatarFallback className="bg-primary/10 text-primary font-medium text-lg">
                     {seller?.full_name?.charAt(0)?.toUpperCase() || 'S'}
@@ -424,7 +424,7 @@ export default function PublicGig() {
                   variant="outline" 
                   size="sm" 
                   className="shrink-0"
-                  onClick={() => navigate(`/p/expert/${gig.user_id}`)}
+                  onClick={() => navigate(`/p/expert/${sellerSlug}`)}
                 >
                   View Profile
                 </Button>
