@@ -72,7 +72,7 @@ Deno.serve(async (req) => {
   for (const expert of expertsRes.data || []) {
     const lastmod = expert.updated_at?.split("T")[0] || today;
     urls.push(`  <url>
-    <loc>${baseUrl}/p/expert/${expert.user_id}</loc>
+    <loc>${baseUrl}/p/expert/${encodeURIComponent(expert.username || expert.user_id)}</loc>
     <lastmod>${lastmod}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
