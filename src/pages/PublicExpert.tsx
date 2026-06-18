@@ -64,6 +64,9 @@ export default function PublicExpert() {
     );
   }
 
+  const profileSlug = expert.username || expert.user_id;
+  const canonicalUrl = `https://naijalancers.name.ng/p/expert/${profileSlug}`;
+
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "Person",
@@ -71,7 +74,7 @@ export default function PublicExpert() {
     "jobTitle": expert.profession,
     "description": expert.bio,
     "image": expert.profile_picture_url,
-    "url": `https://naijalancers.name.ng/p/expert/${userId}`,
+    "url": canonicalUrl,
     "address": expert.state_name ? {
       "@type": "PostalAddress",
       "addressRegion": expert.state_name,
@@ -89,7 +92,6 @@ export default function PublicExpert() {
 
   const location = [expert.area, expert.lga_name, expert.state_name].filter(Boolean).join(', ');
 
-  const canonicalUrl = `https://naijalancers.name.ng/p/expert/${userId}`;
 
   return (
     <>
