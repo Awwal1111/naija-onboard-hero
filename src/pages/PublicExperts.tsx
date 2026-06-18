@@ -14,6 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface Expert {
   user_id: string;
+  username: string | null;
   full_name: string;
   profession: string | null;
   bio: string | null;
