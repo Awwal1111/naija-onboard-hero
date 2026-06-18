@@ -14,6 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface Expert {
   user_id: string;
+  username: string | null;
   full_name: string;
   profession: string | null;
   bio: string | null;
@@ -30,7 +31,7 @@ const PublicExperts = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('user_id, full_name, profession, bio, profile_picture_url, state_name, average_rating')
+        .select('user_id, username, full_name, profession, bio, profile_picture_url, state_name, average_rating')
         .eq('is_expert', true)
         .order('created_at', { ascending: false })
         .limit(50);
@@ -71,7 +72,7 @@ const PublicExperts = () => {
         "@type": "Person",
         "name": expert.full_name,
         "jobTitle": expert.profession,
-        "url": `https://naijalancers.name.ng/p/expert/${expert.user_id}`
+        "url": `https://naijalancers.name.ng/p/expert/${expert.username || expert.user_id}`
       }
     }))
   };
@@ -150,7 +151,7 @@ const PublicExperts = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredExperts.map((expert) => (
-              <Link key={expert.user_id} to={`/p/expert/${expert.user_id}`}>
+              <Link key={expert.user_id} to={`/p/expert/${expert.username || expert.user_id}`}>
                 <Card className="overflow-hidden hover:shadow-lg transition-shadow h-full">
                   <CardContent className="p-4">
                     <div className="flex items-start gap-4">

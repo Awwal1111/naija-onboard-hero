@@ -62,6 +62,7 @@ export default function PublicGig() {
         .from('profiles')
         .select(`
           user_id,
+          username,
           full_name, 
           profile_picture_url, 
           is_expert, 
@@ -237,7 +238,8 @@ export default function PublicGig() {
 
   const sellerName = seller?.full_name || 'NaijaLancers Freelancer';
   const sellerProfession = seller?.profession || 'Freelancer';
-  const sellerUrl = `https://naijalancers.name.ng/p/expert/${gig.user_id}`;
+  const sellerSlug = seller?.username || gig.user_id;
+  const sellerUrl = `https://naijalancers.name.ng/p/expert/${sellerSlug}`;
   const canonicalUrl = `https://naijalancers.name.ng/p/gig/${gig.id}`;
   const metaTitle = `${gig.title} by ${sellerName} (${sellerProfession}) — ₦${gig.price?.toLocaleString()} | NaijaLancers`;
   const metaDesc = `${gig.description?.slice(0, 150) || gig.title} — Hire ${sellerName}, ${sellerProfession} on NaijaLancers. ${stats.count > 0 ? `Rated ${rating.toFixed(1)}★ from ${stats.count} reviews.` : ''}`;
@@ -381,7 +383,7 @@ export default function PublicGig() {
             {/* Seller Info Card */}
             <Card className="p-4">
               <div className="flex items-start gap-3">
-                <Avatar className="h-14 w-14 ring-2 ring-border cursor-pointer" onClick={() => navigate(`/p/expert/${gig.user_id}`)}>
+                <Avatar className="h-14 w-14 ring-2 ring-border cursor-pointer" onClick={() => navigate(`/p/expert/${sellerSlug}`)}>
                   <AvatarImage src={seller?.profile_picture_url} alt={seller?.full_name} />
                   <AvatarFallback className="bg-primary/10 text-primary font-medium text-lg">
                     {seller?.full_name?.charAt(0)?.toUpperCase() || 'S'}
@@ -422,7 +424,7 @@ export default function PublicGig() {
                   variant="outline" 
                   size="sm" 
                   className="shrink-0"
-                  onClick={() => navigate(`/p/expert/${gig.user_id}`)}
+                  onClick={() => navigate(`/p/expert/${sellerSlug}`)}
                 >
                   View Profile
                 </Button>
