@@ -238,7 +238,8 @@ export default function PublicGig() {
 
   const sellerName = seller?.full_name || 'NaijaLancers Freelancer';
   const sellerProfession = seller?.profession || 'Freelancer';
-  const sellerUrl = `https://naijalancers.name.ng/p/expert/${gig.user_id}`;
+  const sellerSlug = seller?.username || gig.user_id;
+  const sellerUrl = `https://naijalancers.name.ng/p/expert/${sellerSlug}`;
   const canonicalUrl = `https://naijalancers.name.ng/p/gig/${gig.id}`;
   const metaTitle = `${gig.title} by ${sellerName} (${sellerProfession}) — ₦${gig.price?.toLocaleString()} | NaijaLancers`;
   const metaDesc = `${gig.description?.slice(0, 150) || gig.title} — Hire ${sellerName}, ${sellerProfession} on NaijaLancers. ${stats.count > 0 ? `Rated ${rating.toFixed(1)}★ from ${stats.count} reviews.` : ''}`;
