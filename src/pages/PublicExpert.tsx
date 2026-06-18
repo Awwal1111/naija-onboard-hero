@@ -176,7 +176,7 @@ export default function PublicExpert() {
               )}
 
               <div className="flex gap-3 mt-4">
-                <Button onClick={() => navigate(`/profile/${userId}`)} size="lg">
+                <Button onClick={() => navigate(`/signup`)} size="lg">
                   View Full Profile
                 </Button>
                 <Button onClick={() => navigate('/signup')} variant="outline" size="lg">
