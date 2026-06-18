@@ -151,7 +151,7 @@ const PublicExperts = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredExperts.map((expert) => (
-              <Link key={expert.user_id} to={`/p/expert/${expert.user_id}`}>
+              <Link key={expert.user_id} to={`/p/expert/${expert.username || expert.user_id}`}>
                 <Card className="overflow-hidden hover:shadow-lg transition-shadow h-full">
                   <CardContent className="p-4">
                     <div className="flex items-start gap-4">
