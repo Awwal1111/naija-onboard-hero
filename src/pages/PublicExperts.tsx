@@ -31,7 +31,7 @@ const PublicExperts = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('user_id, full_name, profession, bio, profile_picture_url, state_name, average_rating')
+        .select('user_id, username, full_name, profession, bio, profile_picture_url, state_name, average_rating')
         .eq('is_expert', true)
         .order('created_at', { ascending: false })
         .limit(50);
