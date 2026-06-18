@@ -62,6 +62,7 @@ export default function PublicGig() {
         .from('profiles')
         .select(`
           user_id,
+          username,
           full_name, 
           profile_picture_url, 
           is_expert, 
