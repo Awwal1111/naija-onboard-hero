@@ -9,20 +9,25 @@ import { Badge } from '@/components/ui/badge';
 import { Star, MapPin, Briefcase, ArrowLeft } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export default function PublicExpert() {
-  const { userId } = useParams<{ userId: string }>();
+  const { userId: slug } = useParams<{ userId: string }>();
   const navigate = useNavigate();
 
   const { data: expert, isLoading } = useQuery({
-    queryKey: ['public-expert', userId],
+    queryKey: ['public-expert', slug],
     queryFn: async () => {
-      const { data, error } = await supabase
+      if (!slug) return null;
+      const isUuid = UUID_RE.test(slug);
+      const base = supabase
         .from('profiles')
-        .select('user_id, full_name, profession, bio, profile_picture_url, average_rating, state_name, area, lga_name')
-        .eq('user_id', userId)
+        .select('user_id, username, full_name, profession, bio, profile_picture_url, average_rating, state_name, area, lga_name, skills')
         .eq('is_expert', true)
-        .single();
-
+        .limit(1);
+      const { data, error } = isUuid
+        ? await base.eq('user_id', slug).maybeSingle()
+        : await base.eq('username', slug).maybeSingle();
       if (error) throw error;
       return data as any;
     },
