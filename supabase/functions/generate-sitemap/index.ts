@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
 
   // Fetch all public content in parallel
   const [expertsRes, gigsRes, jobsRes, coursesRes, campaignsRes, usersRes] = await Promise.all([
-    supabase.from("profiles").select("user_id, updated_at").eq("is_expert", true).limit(2000),
+    supabase.from("profiles").select("user_id, username, updated_at").eq("is_expert", true).limit(2000),
     supabase.from("jobs_services").select("id, updated_at").eq("status", "active").limit(2000),
     supabase.from("job_posts").select("id, updated_at").eq("status", "active").limit(2000),
     supabase.from("courses").select("id, updated_at").eq("status", "active").limit(2000),
