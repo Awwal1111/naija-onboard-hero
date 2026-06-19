@@ -8,6 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Briefcase, MapPin, DollarSign, Share2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ShareButtons } from '@/components/ShareButtons';
+import { useAuth } from '@/hooks/useAuth';
+import { useState } from 'react';
+import JobApplicationDialog from '@/components/JobApplicationDialog';
 
 export default function PublicJob() {
   const { jobId } = useParams<{ jobId: string }>();
