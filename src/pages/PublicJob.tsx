@@ -177,11 +177,23 @@ export default function PublicJob() {
             />
           </div>
 
-          <Button size="lg" onClick={() => navigate('/login')}>
+          <Button size="lg" onClick={() => {
+            if (!user) {
+              navigate('/login', { state: { from: `/p/job/${jobId}` } });
+            } else {
+              setApplyOpen(true);
+            }
+          }}>
             Apply Now
           </Button>
         </Card>
       </div>
+
+      <JobApplicationDialog
+        isOpen={applyOpen}
+        onClose={() => setApplyOpen(false)}
+        jobPost={job as any}
+      />
     </>
   );
 }
