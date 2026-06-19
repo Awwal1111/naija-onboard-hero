@@ -314,6 +314,7 @@ const App = () => (
                 <Route path="/games/guess-number" element={<ProtectedRoute><GuessNumberGame /></ProtectedRoute>} />
                 <Route path="/referrals" element={<ProtectedRoute><Referrals /></ProtectedRoute>} />
                 <Route path="/earn" element={<ProtectedRoute><EnhancedEarn /></ProtectedRoute>} />
+                <Route path="/wallet" element={<ProtectedRoute><EnhancedEarn /></ProtectedRoute>} />
                 <Route path="/earn/social-tasks" element={<ProtectedRoute><SocialMediaTasks /></ProtectedRoute>} />
                 <Route path="/earn/referral-tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
                 <Route path="/referral-tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />

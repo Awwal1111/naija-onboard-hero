@@ -36,9 +36,10 @@ const EnhancedEarn = () => {
   const [showElectricityDialog, setShowElectricityDialog] = useState(false)
   const [showCableTVDialog, setShowCableTVDialog] = useState(false)
 
+  const walletOnly = location.pathname === '/wallet'
   const searchParams = new URLSearchParams(location.search)
   const requestedTab = searchParams.get('tab')
-  const initialTab = requestedTab === 'wallet' || requestedTab === 'bills' ? requestedTab : 'earn'
+  const initialTab = walletOnly ? 'wallet' : (requestedTab === 'wallet' || requestedTab === 'bills' ? requestedTab : 'earn')
   const [activeTab, setActiveTab] = useState(initialTab)
 
   const earningMethods = [
@@ -151,21 +152,25 @@ const EnhancedEarn = () => {
     <div className="min-h-screen bg-background pb-20">
       <div className="container mx-auto max-w-4xl p-4">
         <div className="text-center py-4 mb-2">
-          <h1 className="text-2xl font-bold text-foreground">Earn Hub</h1>
-          <p className="text-sm text-muted-foreground">Tasks, surveys, savings and daily rewards in one place</p>
+          <h1 className="text-2xl font-bold text-foreground">{walletOnly ? 'My Wallet' : 'Earn Hub'}</h1>
+          <p className="text-sm text-muted-foreground">
+            {walletOnly ? 'Your balances, withdrawals and recent transactions' : 'Tasks, surveys, savings and daily rewards in one place'}
+          </p>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-6">
-            <TabsTrigger value="earn" className="flex items-center gap-2">
-              <Coins className="h-4 w-4" />
-              <span>Earn</span>
-            </TabsTrigger>
-            <TabsTrigger value="wallet" className="flex items-center gap-2">
-              <Wallet className="h-4 w-4" />
-              <span>Wallet</span>
-            </TabsTrigger>
-          </TabsList>
+          {!walletOnly && (
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="earn" className="flex items-center gap-2">
+                <Coins className="h-4 w-4" />
+                <span>Earn</span>
+              </TabsTrigger>
+              <TabsTrigger value="wallet" className="flex items-center gap-2">
+                <Wallet className="h-4 w-4" />
+                <span>Wallet</span>
+              </TabsTrigger>
+            </TabsList>
+          )}
 
           <TabsContent value="earn" className="space-y-6 mt-0">
             <DailySigninCard />

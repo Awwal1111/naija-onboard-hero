@@ -210,7 +210,7 @@ export const QUICK_ACTION_FEATURES: FeatureItem[] = [
   { 
     id: 'wallet', 
     label: 'Wallet', 
-    path: '/earn', 
+    path: '/wallet', 
     icon: Wallet, 
     roles: ['freelancer', 'client', 'both'],
     description: 'Manage your funds'

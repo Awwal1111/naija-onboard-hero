@@ -8,10 +8,15 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Briefcase, MapPin, DollarSign, Share2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ShareButtons } from '@/components/ShareButtons';
+import { useAuth } from '@/hooks/useAuth';
+import { useState } from 'react';
+import JobApplicationDialog from '@/components/JobApplicationDialog';
 
 export default function PublicJob() {
   const { jobId } = useParams<{ jobId: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [applyOpen, setApplyOpen] = useState(false);
 
   const { data: job, isLoading } = useQuery({
     queryKey: ['public-job', jobId],
@@ -172,11 +177,23 @@ export default function PublicJob() {
             />
           </div>
 
-          <Button size="lg" onClick={() => navigate('/login')}>
+          <Button size="lg" onClick={() => {
+            if (!user) {
+              navigate('/login', { state: { from: `/p/job/${jobId}` } });
+            } else {
+              setApplyOpen(true);
+            }
+          }}>
             Apply Now
           </Button>
         </Card>
       </div>
+
+      <JobApplicationDialog
+        isOpen={applyOpen}
+        onClose={() => setApplyOpen(false)}
+        jobPost={job as any}
+      />
     </>
   );
 }
