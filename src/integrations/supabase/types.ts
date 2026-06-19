@@ -8406,6 +8406,21 @@ export type Database = {
           title: string
         }[]
       }
+      get_public_expert: {
+        Args: { _slug: string }
+        Returns: {
+          area: string
+          average_rating: number
+          bio: string
+          full_name: string
+          lga_name: string
+          profession: string
+          profile_picture_url: string
+          state_name: string
+          user_id: string
+          username: string
+        }[]
+      }
       get_public_profile_info: {
         Args: { target_user_id: string }
         Returns: {
