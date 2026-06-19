@@ -172,6 +172,50 @@ export default function JobDetail() {
     },
   });
 
+  const downloadApplicationPDF = (app: any) => {
+    const doc = new jsPDF();
+    const margin = 14;
+    let y = 20;
+    const wrap = (text: string, maxWidth = 180) => doc.splitTextToSize(text || '', maxWidth);
+    doc.setFontSize(16);
+    doc.text(`Job Application: ${job?.title || ''}`, margin, y); y += 8;
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`Company: ${job?.company_name || '—'}`, margin, y); y += 6;
+    doc.text(`Downloaded: ${format(new Date(), 'PPpp')}`, margin, y); y += 10;
+    doc.setTextColor(0);
+    doc.setFontSize(13);
+    doc.text('Applicant', margin, y); y += 6;
+    doc.setFontSize(11);
+    doc.text(`Name: ${app.applicant_profile?.full_name || 'Applicant'}`, margin, y); y += 6;
+    if (app.applicant_profile?.profession) { doc.text(`Profession: ${app.applicant_profile.profession}`, margin, y); y += 6; }
+    doc.text(`Applied: ${format(new Date(app.created_at), 'PPp')}`, margin, y); y += 6;
+    doc.text(`Status: ${app.status}`, margin, y); y += 8;
+
+    doc.setFontSize(13); doc.text('Cover Letter', margin, y); y += 6;
+    doc.setFontSize(11);
+    const cl = wrap(app.cover_letter || '—');
+    cl.forEach((line: string) => {
+      if (y > 280) { doc.addPage(); y = 20; }
+      doc.text(line, margin, y); y += 6;
+    });
+    y += 4;
+    doc.setFontSize(13); doc.text('Details', margin, y); y += 6;
+    doc.setFontSize(11);
+    if (app.expected_salary) { doc.text(`Expected Salary: NGN ${Number(app.expected_salary).toLocaleString()}`, margin, y); y += 6; }
+    if (app.availability_date) { doc.text(`Available From: ${format(new Date(app.availability_date), 'PP')}`, margin, y); y += 6; }
+    if (app.resume_url) { doc.text(`Resume: ${app.resume_url}`, margin, y); y += 6; }
+    if (app.portfolio_urls?.length) {
+      doc.text('Portfolio:', margin, y); y += 6;
+      app.portfolio_urls.forEach((u: string) => {
+        if (y > 280) { doc.addPage(); y = 20; }
+        doc.text(`• ${u}`, margin + 4, y); y += 6;
+      });
+    }
+    const safeName = (app.applicant_profile?.full_name || 'applicant').replace(/[^a-z0-9]+/gi, '_');
+    doc.save(`application_${safeName}.pdf`);
+  };
+
   if (isLoading) return <div className="container mx-auto px-4 py-8">Loading...</div>;
   if (!job) return <div className="container mx-auto px-4 py-8">Job not found</div>;
 
