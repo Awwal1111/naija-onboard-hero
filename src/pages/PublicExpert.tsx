@@ -19,19 +19,13 @@ export default function PublicExpert() {
     queryKey: ['public-expert', slug],
     queryFn: async () => {
       if (!slug) return null;
-      const isUuid = UUID_RE.test(slug);
-      const base = supabase
-        .from('profiles')
-        .select('user_id, username, full_name, profession, bio, profile_picture_url, average_rating, state_name, area, lga_name, skills')
-        .eq('is_expert', true)
-        .limit(1);
-      const { data, error } = isUuid
-        ? await base.eq('user_id', slug).maybeSingle()
-        : await base.eq('username', slug).maybeSingle();
+      const { data, error } = await supabase.rpc('get_public_expert', { _slug: slug });
       if (error) throw error;
-      return data as any;
+      const row = Array.isArray(data) ? data[0] : data;
+      return row as any;
     },
   });
+
 
   if (isLoading) {
     return (
@@ -169,18 +163,8 @@ export default function PublicExpert() {
                 <p className="text-muted-foreground mb-4">{expert.bio}</p>
               )}
 
-              {expert.skills && expert.skills.length > 0 && (
-                <div className="mb-4">
-                  <h3 className="font-semibold mb-2">Skills</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {expert.skills.map((skill, index) => (
-                      <Badge key={index} variant="secondary">
-                        {skill}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
+              {/* Skills are loaded from a separate table; omitted on the public preview */}
+
 
               <div className="flex gap-3 mt-4">
                 <Button onClick={() => navigate(`/signup`)} size="lg">

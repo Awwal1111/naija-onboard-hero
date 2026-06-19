@@ -25,12 +25,13 @@ export default function PublicJob() {
         .from('job_posts')
         .select('*')
         .eq('id', jobId)
-        .eq('status', 'active')
-        .single();
+        .eq('status', 'open')
+        .maybeSingle();
 
       if (error) throw error;
       return data;
     },
+
   });
 
   if (isLoading) {
