@@ -373,6 +373,9 @@ export default function JobDetail() {
                                 <FileText className="w-3 h-3 mr-1" /> Resume
                               </Button>
                             )}
+                            <Button size="sm" variant="outline" onClick={() => downloadApplicationPDF(app)}>
+                              <Download className="w-3 h-3 mr-1" /> Download PDF
+                            </Button>
                             <Button size="sm" variant="outline" onClick={() => navigate(`/chat/${app.applicant_id}`)}>
                               <MessageCircle className="w-3 h-3 mr-1" /> Message
                             </Button>
