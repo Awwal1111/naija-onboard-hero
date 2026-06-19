@@ -15,6 +15,8 @@ import JobApplicationDialog from '@/components/JobApplicationDialog';
 export default function PublicJob() {
   const { jobId } = useParams<{ jobId: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [applyOpen, setApplyOpen] = useState(false);
 
   const { data: job, isLoading } = useQuery({
     queryKey: ['public-job', jobId],
