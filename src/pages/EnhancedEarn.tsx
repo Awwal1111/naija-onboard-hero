@@ -36,9 +36,10 @@ const EnhancedEarn = () => {
   const [showElectricityDialog, setShowElectricityDialog] = useState(false)
   const [showCableTVDialog, setShowCableTVDialog] = useState(false)
 
+  const walletOnly = location.pathname === '/wallet'
   const searchParams = new URLSearchParams(location.search)
   const requestedTab = searchParams.get('tab')
-  const initialTab = requestedTab === 'wallet' || requestedTab === 'bills' ? requestedTab : 'earn'
+  const initialTab = walletOnly ? 'wallet' : (requestedTab === 'wallet' || requestedTab === 'bills' ? requestedTab : 'earn')
   const [activeTab, setActiveTab] = useState(initialTab)
 
   const earningMethods = [
