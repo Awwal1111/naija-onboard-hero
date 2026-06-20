@@ -312,23 +312,29 @@ export const ExpertCard: React.FC<ExpertCardProps> = ({ expert, viewMode, onProf
               </div>
 
               {/* Actions */}
-              <div className="flex gap-2">
-                <Button 
-                  size="sm" 
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  size="sm"
                   onClick={() => navigate(`/chat/${expert.user_id}`)}
                 >
                   <MessageCircle className="h-3.5 w-3.5 mr-1" />
                   Chat
                 </Button>
-                <Button 
+                <Button
                   size="sm"
                   variant="outline"
                   onClick={() => setShowHireDialog(true)}
                 >
                   <Briefcase className="h-3.5 w-3.5 mr-1" />
-                  Hire Now
+                  My Gigs
                 </Button>
-                <Button 
+                <Button
+                  size="sm"
+                  onClick={() => setShowContractDialog(true)}
+                >
+                  Hire
+                </Button>
+                <Button
                   size="sm"
                   variant="ghost"
                   onClick={() => navigate(`/expert/${expert.user_id}`)}
@@ -341,10 +347,16 @@ export const ExpertCard: React.FC<ExpertCardProps> = ({ expert, viewMode, onProf
           </div>
         </CardContent>
       </Card>
-      
+
       <HireExpertDialog
         open={showHireDialog}
         onOpenChange={setShowHireDialog}
+        expertId={expert.user_id}
+        expertName={name}
+      />
+      <HireContractDialog
+        open={showContractDialog}
+        onOpenChange={setShowContractDialog}
         expertId={expert.user_id}
         expertName={name}
       />
