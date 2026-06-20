@@ -121,7 +121,15 @@ export const useGigOrders = () => {
     }
   };
 
-  const createOrder = async (gigId: string, sellerId: string, title: string, description: string, amount: number, deliveryDays: number) => {
+  const createOrder = async (
+    gigId: string,
+    sellerId: string,
+    title: string,
+    description: string,
+    amount: number,
+    deliveryDays: number,
+    options?: { tier?: string; milestones?: { title: string; description?: string; amount: number; due_date?: string }[] }
+  ) => {
     if (!user) return { error: 'Not authenticated' };
 
     try {
@@ -131,7 +139,9 @@ export const useGigOrders = () => {
         p_title: title,
         p_description: description,
         p_amount: amount,
-        p_delivery_days: deliveryDays
+        p_delivery_days: deliveryDays,
+        p_tier: options?.tier ?? null,
+        p_milestones: (options?.milestones && options.milestones.length > 0) ? (options.milestones as any) : null,
       });
 
       if (error) throw error;
