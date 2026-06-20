@@ -815,6 +815,57 @@ export default function PublicGig() {
               />
             </div>
 
+            <div className="space-y-2 p-3 rounded-lg border bg-muted/30">
+              <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={useMilestones}
+                  onChange={(e) => setUseMilestones(e.target.checked)}
+                  className="rounded"
+                />
+                Split payment into milestones
+              </label>
+              {useMilestones && (
+                <div className="space-y-2 mt-2">
+                  {milestones.map((m, i) => (
+                    <div key={i} className="flex gap-2 items-center">
+                      <input
+                        className="flex-1 px-2 py-1 text-sm rounded border bg-background"
+                        placeholder={`Milestone ${i + 1}`}
+                        value={m.title}
+                        onChange={(e) => {
+                          const next = [...milestones]; next[i] = { ...next[i], title: e.target.value }; setMilestones(next);
+                        }}
+                      />
+                      <input
+                        type="number"
+                        className="w-24 px-2 py-1 text-sm rounded border bg-background"
+                        placeholder="₦"
+                        value={m.amount || ''}
+                        onChange={(e) => {
+                          const next = [...milestones]; next[i] = { ...next[i], amount: Number(e.target.value) }; setMilestones(next);
+                        }}
+                      />
+                      {milestones.length > 2 && (
+                        <Button variant="ghost" size="icon" onClick={() => setMilestones(milestones.filter((_, j) => j !== i))}>×</Button>
+                      )}
+                    </div>
+                  ))}
+                  <div className="flex items-center justify-between text-xs">
+                    <Button variant="outline" size="sm" onClick={() => setMilestones([...milestones, { title: `Milestone ${milestones.length + 1}`, amount: 0 }])}>
+                      + Add milestone
+                    </Button>
+                    <span className="text-muted-foreground">
+                      Total: ₦{milestones.reduce((s, m) => s + Number(m.amount || 0), 0).toLocaleString()} / ₦{gig.price?.toLocaleString()}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Funds are still escrowed in full upfront. Each milestone releases its share when you approve it.
+                  </p>
+                </div>
+              )}
+            </div>
+
             <EscrowProtectionCard />
           </div>
 
