@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react'
-import { ArrowLeft, MessageCircle, Star, MapPin, Phone, Mail, Calendar, Award } from 'lucide-react'
+import { ArrowLeft, MessageCircle, Star, MapPin, Phone, Mail, Calendar, Award, Briefcase } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Logo } from '@/components/ui/logo'
 import { BrandButton } from '@/components/ui/brand-button'
+import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { StarRating } from '@/components/ui/star-rating'
 import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
+import { ExpertLevelBadge } from '@/components/profile/ExpertLevelBadge'
+import { HireContractDialog } from '@/components/hire/HireContractDialog'
+import { useAuth } from '@/hooks/useAuth'
 
 interface ExpertData {
   id: string
