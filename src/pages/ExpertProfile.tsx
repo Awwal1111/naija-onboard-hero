@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react'
-import { ArrowLeft, MessageCircle, Star, MapPin, Phone, Mail, Calendar, Award } from 'lucide-react'
+import { ArrowLeft, MessageCircle, Star, MapPin, Phone, Mail, Calendar, Award, Briefcase } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Logo } from '@/components/ui/logo'
 import { BrandButton } from '@/components/ui/brand-button'
+import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { StarRating } from '@/components/ui/star-rating'
 import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
+import { ExpertLevelBadge } from '@/components/profile/ExpertLevelBadge'
+import { HireContractDialog } from '@/components/hire/HireContractDialog'
+import { useAuth } from '@/hooks/useAuth'
 
 interface ExpertData {
   id: string
@@ -37,8 +41,11 @@ const ExpertProfile = () => {
   const navigate = useNavigate()
   const { userId } = useParams()
   const { toast } = useToast()
+  const { user } = useAuth()
   const [expert, setExpert] = useState<ExpertData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [showHire, setShowHire] = useState(false)
+  const [expertLevel, setExpertLevel] = useState<string | null>(null)
 
   useEffect(() => {
     if (userId) {
@@ -63,10 +70,10 @@ const ExpertProfile = () => {
         throw appError
       }
 
-      // Fetch profile data
+      // Fetch profile data (incl. expert_level)
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('full_name, bio, profession, profile_picture_url, average_rating, rating_count')
+        .select('full_name, bio, profession, profile_picture_url, average_rating, rating_count, expert_level')
         .eq('user_id', userId)
         .single()
 
@@ -74,12 +81,14 @@ const ExpertProfile = () => {
         console.warn('Profile error:', profileError)
       }
 
+      setExpertLevel((profile as any)?.expert_level || 'new')
+
       const expertData = {
         ...expertApp,
         profiles: profile
       }
 
-      
+
       setExpert(expertData)
     } catch (error) {
       console.error('Error fetching expert:', error)
@@ -155,13 +164,14 @@ const ExpertProfile = () => {
                   {expert.profiles?.full_name || expert.full_name}
                 </h1>
                 
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-2 mb-2 flex-wrap">
                   <Badge variant="outline" className="bg-primary/10 text-primary">
                     {expert.skill_category}
                   </Badge>
                   <Badge variant="outline">
                     {expert.years_experience} years experience
                   </Badge>
+                  <ExpertLevelBadge level={expertLevel} size="sm" />
                 </div>
 
                 {/* Rating */}
@@ -187,11 +197,19 @@ const ExpertProfile = () => {
                   </span>
                 </div>
 
-                {/* Chat Button */}
-                <BrandButton onClick={handleStartChat} className="w-full sm:w-auto">
-                  <MessageCircle className="h-4 w-4 mr-2" />
-                  Start Chat
-                </BrandButton>
+                {/* Action buttons */}
+                <div className="flex gap-2 flex-wrap">
+                  <BrandButton onClick={handleStartChat} className="flex-1 sm:flex-none">
+                    <MessageCircle className="h-4 w-4 mr-2" />
+                    Start Chat
+                  </BrandButton>
+                  {user && user.id !== userId && (
+                    <Button onClick={() => setShowHire(true)} className="flex-1 sm:flex-none">
+                      <Briefcase className="h-4 w-4 mr-2" />
+                      Hire
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           </CardContent>
@@ -278,6 +296,13 @@ const ExpertProfile = () => {
           </CardContent>
         </Card>
       </div>
+
+      <HireContractDialog
+        open={showHire}
+        onOpenChange={setShowHire}
+        expertId={userId || ''}
+        expertName={expert.profiles?.full_name || expert.full_name}
+      />
     </div>
   )
 }

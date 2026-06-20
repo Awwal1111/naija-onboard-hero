@@ -41,6 +41,11 @@ export default function PublicGig() {
   const [reviewRating, setReviewRating] = useState(5);
   const [submittingReview, setSubmittingReview] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [useMilestones, setUseMilestones] = useState(false);
+  const [milestones, setMilestones] = useState<{ title: string; amount: number }[]>([
+    { title: 'Milestone 1', amount: 0 },
+    { title: 'Milestone 2', amount: 0 },
+  ]);
 
   // Fetch gig without requiring profile join (separate query for profile)
   const { data: gig, isLoading, refetch: refetchGig } = useQuery({
@@ -153,13 +158,25 @@ export default function PublicGig() {
     
     setPlacingOrder(true);
     try {
+      let opts: any = undefined;
+      if (useMilestones) {
+        const ms = milestones.filter(m => m.title.trim() && Number(m.amount) > 0);
+        const sum = ms.reduce((a, b) => a + Number(b.amount || 0), 0);
+        if (ms.length < 2) { toast.error('Add at least 2 milestones'); setPlacingOrder(false); return; }
+        if (Math.round(sum) !== Math.round(gig.price)) {
+          toast.error(`Milestones must total ₦${gig.price.toLocaleString()} (currently ₦${sum.toLocaleString()})`);
+          setPlacingOrder(false); return;
+        }
+        opts = { milestones: ms.map(m => ({ title: m.title, amount: Number(m.amount) })) };
+      }
       const result = await createOrder(
         gig.id,
         gig.user_id,
         gig.title,
         orderNotes || gig.description || '',
         gig.price,
-        gig.delivery_days || 7
+        gig.delivery_days || 7,
+        opts
       );
 
       if (result && 'order' in result && result.order) {
@@ -796,6 +813,57 @@ export default function PublicGig() {
                 onChange={(e) => setOrderNotes(e.target.value)}
                 rows={4}
               />
+            </div>
+
+            <div className="space-y-2 p-3 rounded-lg border bg-muted/30">
+              <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={useMilestones}
+                  onChange={(e) => setUseMilestones(e.target.checked)}
+                  className="rounded"
+                />
+                Split payment into milestones
+              </label>
+              {useMilestones && (
+                <div className="space-y-2 mt-2">
+                  {milestones.map((m, i) => (
+                    <div key={i} className="flex gap-2 items-center">
+                      <input
+                        className="flex-1 px-2 py-1 text-sm rounded border bg-background"
+                        placeholder={`Milestone ${i + 1}`}
+                        value={m.title}
+                        onChange={(e) => {
+                          const next = [...milestones]; next[i] = { ...next[i], title: e.target.value }; setMilestones(next);
+                        }}
+                      />
+                      <input
+                        type="number"
+                        className="w-24 px-2 py-1 text-sm rounded border bg-background"
+                        placeholder="₦"
+                        value={m.amount || ''}
+                        onChange={(e) => {
+                          const next = [...milestones]; next[i] = { ...next[i], amount: Number(e.target.value) }; setMilestones(next);
+                        }}
+                      />
+                      {milestones.length > 2 && (
+                        <Button variant="ghost" size="icon" onClick={() => setMilestones(milestones.filter((_, j) => j !== i))}>×</Button>
+                      )}
+                    </div>
+                  ))}
+                  <div className="flex items-center justify-between text-xs">
+                    <Button variant="outline" size="sm" onClick={() => setMilestones([...milestones, { title: `Milestone ${milestones.length + 1}`, amount: 0 }])}>
+                      + Add milestone
+                    </Button>
+                    <span className="text-muted-foreground">
+                      Total: ₦{milestones.reduce((s, m) => s + Number(m.amount || 0), 0).toLocaleString()} / ₦{gig.price?.toLocaleString()}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Funds are still escrowed in full upfront. Each milestone releases its share when you approve it.
+                  </p>
+                </div>
+              )}
             </div>
 
             <EscrowProtectionCard />

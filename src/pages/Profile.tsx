@@ -28,6 +28,7 @@ import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 import PortfolioSection from '@/components/PortfolioSection'
 import SkillsSection from '@/components/SkillsSection'
+import { CertificatesEditor } from '@/components/profile/CertificatesEditor'
 import { SavedPostsSection } from '@/components/SavedPostsSection'
 import { StarRating } from '@/components/ui/star-rating'
 import { RatingDialog } from '@/components/ui/rating-dialog'
@@ -816,8 +817,9 @@ const Profile = () => {
             </TabsContent>
           )}
 
-          <TabsContent value="skills" className="mt-6">
+          <TabsContent value="skills" className="mt-6 space-y-4">
             <SkillsSection userId={profile?.user_id} isOwnProfile={isOwnProfile} />
+            <CertificatesEditor userId={profile?.user_id} isOwnProfile={isOwnProfile} />
           </TabsContent>
 
           <TabsContent value="portfolio" className="mt-6">

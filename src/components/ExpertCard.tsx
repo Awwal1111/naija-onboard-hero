@@ -7,6 +7,8 @@ import { Star, MapPin, MessageCircle, Shield, CheckCircle, TrendingUp, Clock, Br
 import { useNavigate } from 'react-router-dom';
 import { BookmarkButton } from '@/components/BookmarkButton';
 import { HireExpertDialog } from '@/components/HireExpertDialog';
+import { HireContractDialog } from '@/components/hire/HireContractDialog';
+import { ExpertLevelBadge } from '@/components/profile/ExpertLevelBadge';
 import { TrustScoreBadge } from '@/components/TrustScoreDisplay';
 import { calculateTrustScore } from '@/hooks/useTrustScore';
 interface ExpertCardProps {
@@ -47,6 +49,7 @@ interface ExpertCardProps {
 export const ExpertCard: React.FC<ExpertCardProps> = ({ expert, viewMode, onProfileClick }) => {
   const navigate = useNavigate();
   const [showHireDialog, setShowHireDialog] = useState(false);
+  const [showContractDialog, setShowContractDialog] = useState(false);
   
   const name = expert.profiles?.full_name || expert.full_name;
   const profilePic = expert.profiles?.profile_picture_url || '';
@@ -182,21 +185,29 @@ export const ExpertCard: React.FC<ExpertCardProps> = ({ expert, viewMode, onProf
 
               {/* Actions */}
               <div className="flex gap-2 pt-2">
-                <Button 
-                  size="sm" 
+                <Button
+                  size="sm"
                   className="flex-1 h-8"
                   onClick={() => navigate(`/chat/${expert.user_id}`)}
                 >
                   <MessageCircle className="h-3.5 w-3.5 mr-1" />
                   Chat
                 </Button>
-                <Button 
+                <Button
                   size="sm"
                   variant="outline"
                   className="flex-1 h-8"
                   onClick={() => setShowHireDialog(true)}
                 >
                   <Briefcase className="h-3.5 w-3.5 mr-1" />
+                  My Gigs
+                </Button>
+                <Button
+                  size="sm"
+                  variant="default"
+                  className="flex-1 h-8"
+                  onClick={() => setShowContractDialog(true)}
+                >
                   Hire
                 </Button>
               </div>
@@ -210,6 +221,12 @@ export const ExpertCard: React.FC<ExpertCardProps> = ({ expert, viewMode, onProf
         <HireExpertDialog
           open={showHireDialog}
           onOpenChange={setShowHireDialog}
+          expertId={expert.user_id}
+          expertName={name}
+        />
+        <HireContractDialog
+          open={showContractDialog}
+          onOpenChange={setShowContractDialog}
           expertId={expert.user_id}
           expertName={name}
         />
@@ -295,23 +312,29 @@ export const ExpertCard: React.FC<ExpertCardProps> = ({ expert, viewMode, onProf
               </div>
 
               {/* Actions */}
-              <div className="flex gap-2">
-                <Button 
-                  size="sm" 
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  size="sm"
                   onClick={() => navigate(`/chat/${expert.user_id}`)}
                 >
                   <MessageCircle className="h-3.5 w-3.5 mr-1" />
                   Chat
                 </Button>
-                <Button 
+                <Button
                   size="sm"
                   variant="outline"
                   onClick={() => setShowHireDialog(true)}
                 >
                   <Briefcase className="h-3.5 w-3.5 mr-1" />
-                  Hire Now
+                  My Gigs
                 </Button>
-                <Button 
+                <Button
+                  size="sm"
+                  onClick={() => setShowContractDialog(true)}
+                >
+                  Hire
+                </Button>
+                <Button
                   size="sm"
                   variant="ghost"
                   onClick={() => navigate(`/expert/${expert.user_id}`)}
@@ -324,10 +347,16 @@ export const ExpertCard: React.FC<ExpertCardProps> = ({ expert, viewMode, onProf
           </div>
         </CardContent>
       </Card>
-      
+
       <HireExpertDialog
         open={showHireDialog}
         onOpenChange={setShowHireDialog}
+        expertId={expert.user_id}
+        expertName={name}
+      />
+      <HireContractDialog
+        open={showContractDialog}
+        onOpenChange={setShowContractDialog}
         expertId={expert.user_id}
         expertName={name}
       />
