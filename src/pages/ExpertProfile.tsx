@@ -70,10 +70,10 @@ const ExpertProfile = () => {
         throw appError
       }
 
-      // Fetch profile data
+      // Fetch profile data (incl. expert_level)
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('full_name, bio, profession, profile_picture_url, average_rating, rating_count')
+        .select('full_name, bio, profession, profile_picture_url, average_rating, rating_count, expert_level')
         .eq('user_id', userId)
         .single()
 
@@ -81,12 +81,14 @@ const ExpertProfile = () => {
         console.warn('Profile error:', profileError)
       }
 
+      setExpertLevel((profile as any)?.expert_level || 'new')
+
       const expertData = {
         ...expertApp,
         profiles: profile
       }
 
-      
+
       setExpert(expertData)
     } catch (error) {
       console.error('Error fetching expert:', error)
