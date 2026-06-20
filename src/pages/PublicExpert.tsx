@@ -3,17 +3,23 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Helmet } from 'react-helmet-async';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Star, MapPin, Briefcase, ArrowLeft } from 'lucide-react';
+import { Star, MapPin, Briefcase, ArrowLeft, ExternalLink, Award } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ExpertLevelBadge } from '@/components/profile/ExpertLevelBadge';
+import { useState } from 'react';
+import { HireContractDialog } from '@/components/hire/HireContractDialog';
+import { useAuth } from '@/hooks/useAuth';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export default function PublicExpert() {
   const { userId: slug } = useParams<{ userId: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [showHire, setShowHire] = useState(false);
 
   const { data: expert, isLoading } = useQuery({
     queryKey: ['public-expert', slug],
@@ -25,6 +31,21 @@ export default function PublicExpert() {
       return row as any;
     },
   });
+
+  const { data: certificates = [] } = useQuery({
+    queryKey: ['public-expert-certs', expert?.user_id],
+    enabled: !!expert?.user_id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('user_certificates')
+        .select('id,title,issuer,credential_url')
+        .eq('user_id', expert.user_id)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      return data || [];
+    },
+  });
+
 
 
   if (isLoading) {
