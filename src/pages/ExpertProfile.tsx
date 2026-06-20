@@ -296,6 +296,13 @@ const ExpertProfile = () => {
           </CardContent>
         </Card>
       </div>
+
+      <HireContractDialog
+        open={showHire}
+        onOpenChange={setShowHire}
+        expertId={userId || ''}
+        expertName={expert.profiles?.full_name || expert.full_name}
+      />
     </div>
   )
 }
