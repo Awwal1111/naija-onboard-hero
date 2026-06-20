@@ -72,8 +72,8 @@ export default function HireContractDetail() {
             client_signature: fresh.client_signature, expert_signature: fresh.expert_signature,
             client_signed_at: fresh.client_signed_at, expert_signed_at: fresh.expert_signed_at });
           const file = new File([blob], `contract-${c.id}.pdf`, { type: 'application/pdf' });
-          const url = await uploadToCatbox(file);
-          if (url) { await updatePdf(c.id, url); }
+          const up = await uploadToCatbox(file);
+          if (up?.url) { await updatePdf(c.id, up.url); }
           await notifyExpert(c.id, 'signed');
         } catch (e) { console.warn('pdf/notify error', e); }
       }
