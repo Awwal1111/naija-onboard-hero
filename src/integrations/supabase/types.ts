@@ -3335,6 +3335,122 @@ export type Database = {
         }
         Relationships: []
       }
+      hire_contract_events: {
+        Row: {
+          actor_id: string | null
+          contract_id: string
+          created_at: string
+          event_type: string
+          id: string
+          payload: Json | null
+        }
+        Insert: {
+          actor_id?: string | null
+          contract_id: string
+          created_at?: string
+          event_type: string
+          id?: string
+          payload?: Json | null
+        }
+        Update: {
+          actor_id?: string | null
+          contract_id?: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          payload?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hire_contract_events_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "hire_contracts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hire_contracts: {
+        Row: {
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          client_id: string
+          client_signature: string | null
+          client_signed_at: string | null
+          completed_at: string | null
+          contract_type: string
+          created_at: string
+          deadline: string | null
+          deposit_amount: number
+          escrow_held: number
+          expert_id: string
+          expert_signature: string | null
+          expert_signed_at: string | null
+          hourly_rate: number | null
+          id: string
+          pdf_url: string | null
+          platform_fee: number
+          scope: string
+          status: string
+          title: string
+          total_amount: number
+          updated_at: string
+          weekly_cap_hours: number | null
+        }
+        Insert: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          client_id: string
+          client_signature?: string | null
+          client_signed_at?: string | null
+          completed_at?: string | null
+          contract_type: string
+          created_at?: string
+          deadline?: string | null
+          deposit_amount?: number
+          escrow_held?: number
+          expert_id: string
+          expert_signature?: string | null
+          expert_signed_at?: string | null
+          hourly_rate?: number | null
+          id?: string
+          pdf_url?: string | null
+          platform_fee?: number
+          scope: string
+          status?: string
+          title: string
+          total_amount?: number
+          updated_at?: string
+          weekly_cap_hours?: number | null
+        }
+        Update: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          client_id?: string
+          client_signature?: string | null
+          client_signed_at?: string | null
+          completed_at?: string | null
+          contract_type?: string
+          created_at?: string
+          deadline?: string | null
+          deposit_amount?: number
+          escrow_held?: number
+          expert_id?: string
+          expert_signature?: string | null
+          expert_signed_at?: string | null
+          hourly_rate?: number | null
+          id?: string
+          pdf_url?: string | null
+          platform_fee?: number
+          scope?: string
+          status?: string
+          title?: string
+          total_amount?: number
+          updated_at?: string
+          weekly_cap_hours?: number | null
+        }
+        Relationships: []
+      }
       identity_verifications: {
         Row: {
           ai_risk_factors: Json | null
@@ -5097,6 +5213,7 @@ export type Database = {
           email_notifications: boolean | null
           email_verification_sent_at: string | null
           email_verified: boolean | null
+          expert_level: string
           expert_verified_at: string | null
           face_selfie_url: string | null
           face_verified: boolean | null
@@ -5185,6 +5302,7 @@ export type Database = {
           email_notifications?: boolean | null
           email_verification_sent_at?: string | null
           email_verified?: boolean | null
+          expert_level?: string
           expert_verified_at?: string | null
           face_selfie_url?: string | null
           face_verified?: boolean | null
@@ -5273,6 +5391,7 @@ export type Database = {
           email_notifications?: boolean | null
           email_verification_sent_at?: string | null
           email_verified?: boolean | null
+          expert_level?: string
           expert_verified_at?: string | null
           face_selfie_url?: string | null
           face_verified?: boolean | null
@@ -6959,6 +7078,45 @@ export type Database = {
         }
         Relationships: []
       }
+      user_certificates: {
+        Row: {
+          created_at: string
+          credential_id: string | null
+          credential_url: string | null
+          expiry_date: string | null
+          id: string
+          issue_date: string | null
+          issuer: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          credential_id?: string | null
+          credential_url?: string | null
+          expiry_date?: string | null
+          id?: string
+          issue_date?: string | null
+          issuer?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          credential_id?: string | null
+          credential_url?: string | null
+          expiry_date?: string | null
+          id?: string
+          issue_date?: string | null
+          issuer?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_exam_attempts: {
         Row: {
           answers: Json | null
@@ -8060,6 +8218,10 @@ export type Database = {
         Args: { p_order_id: string; p_reason: string }
         Returns: Json
       }
+      cancel_hire_contract: {
+        Args: { p_contract_id: string; p_reason: string }
+        Returns: Json
+      }
       cancel_safepay_proposal: {
         Args: { p_safepay_id: string }
         Returns: undefined
@@ -8098,6 +8260,8 @@ export type Database = {
       cleanup_expired_telegram_codes: { Args: never; Returns: undefined }
       cleanup_old_telegram_conversations: { Args: never; Returns: undefined }
       complete_gig_order: { Args: { p_order_id: string }; Returns: Json }
+      complete_hire_contract: { Args: { p_contract_id: string }; Returns: Json }
+      compute_expert_level: { Args: { _user_id: string }; Returns: string }
       confirm_project_completion: {
         Args: { p_completion_id: string }
         Returns: {
@@ -8412,8 +8576,10 @@ export type Database = {
           area: string
           average_rating: number
           bio: string
+          expert_level: string
           full_name: string
           lga_name: string
+          portfolio_link: string
           profession: string
           profile_picture_url: string
           state_name: string
@@ -8583,7 +8749,9 @@ export type Database = {
           p_delivery_days: number
           p_description: string
           p_gig_id: string
+          p_milestones?: Json
           p_seller_id: string
+          p_tier?: string
           p_title: string
         }
         Returns: Json
@@ -8640,6 +8808,7 @@ export type Database = {
         Args: { p_developer_id: string; p_escrow_id: string }
         Returns: Json
       }
+      release_gig_milestone: { Args: { p_milestone_id: string }; Returns: Json }
       release_safepay: {
         Args: { p_escrow_id: string; p_releaser: string }
         Returns: undefined
@@ -8661,6 +8830,10 @@ export type Database = {
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      sign_hire_contract: {
+        Args: { p_contract_id: string; p_signature: string }
+        Returns: Json
+      }
       subscribe_premium: {
         Args: { p_months?: number; p_user_id: string }
         Returns: Json
