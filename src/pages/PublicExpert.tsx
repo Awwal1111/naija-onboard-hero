@@ -155,8 +155,11 @@ export default function PublicExpert() {
             </Avatar>
 
             <div className="flex-1">
-              <h1 className="text-3xl font-bold mb-2">{expert.full_name}</h1>
-              
+              <div className="flex items-center gap-2 flex-wrap mb-2">
+                <h1 className="text-3xl font-bold">{expert.full_name}</h1>
+                <ExpertLevelBadge level={expert.expert_level} size="md" />
+              </div>
+
               <div className="flex flex-wrap items-center gap-4 mb-4 text-muted-foreground">
                 {expert.profession && (
                   <div className="flex items-center gap-2">
@@ -164,14 +167,12 @@ export default function PublicExpert() {
                     <span>{expert.profession}</span>
                   </div>
                 )}
-                
                 {location && (
                   <div className="flex items-center gap-2">
                     <MapPin className="h-4 w-4" />
                     <span>{location}</span>
                   </div>
                 )}
-                
                 {expert.average_rating && (
                   <div className="flex items-center gap-2">
                     <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
@@ -184,21 +185,74 @@ export default function PublicExpert() {
                 <p className="text-muted-foreground mb-4">{expert.bio}</p>
               )}
 
-              {/* Skills are loaded from a separate table; omitted on the public preview */}
+              {expert.portfolio_link && (
+                <a
+                  href={expert.portfolio_link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-primary hover:underline mb-4 text-sm"
+                >
+                  Portfolio <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+              )}
 
-
-              <div className="flex gap-3 mt-4">
-                <Button onClick={() => navigate(`/signup`)} size="lg">
-                  View Full Profile
-                </Button>
-                <Button onClick={() => navigate('/signup')} variant="outline" size="lg">
-                  Join NaijaLancers
-                </Button>
+              <div className="flex gap-3 mt-4 flex-wrap">
+                {user && user.id !== expert.user_id ? (
+                  <>
+                    <Button onClick={() => setShowHire(true)} size="lg">
+                      Hire {expert.full_name?.split(' ')[0] || 'Expert'}
+                    </Button>
+                    <Button onClick={() => navigate(`/chat/${expert.user_id}`)} variant="outline" size="lg">
+                      Message
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button onClick={() => navigate(`/signup`)} size="lg">
+                      View Full Profile
+                    </Button>
+                    <Button onClick={() => navigate('/signup')} variant="outline" size="lg">
+                      Join NaijaLancers
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           </div>
         </Card>
+
+        {certificates.length > 0 && (
+          <Card className="mt-6">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2"><Award className="h-4 w-4" />Certificates</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-2">
+                {certificates.map((c: any) => (
+                  <li key={c.id} className="flex items-start justify-between gap-2 p-2 rounded-md border">
+                    <div className="min-w-0">
+                      <div className="font-medium text-sm">{c.title}</div>
+                      {c.issuer && <div className="text-xs text-muted-foreground">{c.issuer}</div>}
+                    </div>
+                    {c.credential_url && (
+                      <a href={c.credential_url} target="_blank" rel="noopener noreferrer" className="text-primary text-xs hover:underline inline-flex items-center gap-0.5">
+                        View <ExternalLink className="h-3 w-3" />
+                      </a>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        )}
       </div>
+
+      <HireContractDialog
+        open={showHire}
+        onOpenChange={setShowHire}
+        expertId={expert.user_id}
+        expertName={expert.full_name || 'Expert'}
+      />
     </>
   );
 }
