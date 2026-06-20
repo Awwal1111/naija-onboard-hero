@@ -41,8 +41,11 @@ const ExpertProfile = () => {
   const navigate = useNavigate()
   const { userId } = useParams()
   const { toast } = useToast()
+  const { user } = useAuth()
   const [expert, setExpert] = useState<ExpertData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [showHire, setShowHire] = useState(false)
+  const [expertLevel, setExpertLevel] = useState<string | null>(null)
 
   useEffect(() => {
     if (userId) {
