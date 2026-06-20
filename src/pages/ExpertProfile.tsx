@@ -164,13 +164,14 @@ const ExpertProfile = () => {
                   {expert.profiles?.full_name || expert.full_name}
                 </h1>
                 
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-2 mb-2 flex-wrap">
                   <Badge variant="outline" className="bg-primary/10 text-primary">
                     {expert.skill_category}
                   </Badge>
                   <Badge variant="outline">
                     {expert.years_experience} years experience
                   </Badge>
+                  <ExpertLevelBadge level={expertLevel} size="sm" />
                 </div>
 
                 {/* Rating */}
@@ -196,11 +197,19 @@ const ExpertProfile = () => {
                   </span>
                 </div>
 
-                {/* Chat Button */}
-                <BrandButton onClick={handleStartChat} className="w-full sm:w-auto">
-                  <MessageCircle className="h-4 w-4 mr-2" />
-                  Start Chat
-                </BrandButton>
+                {/* Action buttons */}
+                <div className="flex gap-2 flex-wrap">
+                  <BrandButton onClick={handleStartChat} className="flex-1 sm:flex-none">
+                    <MessageCircle className="h-4 w-4 mr-2" />
+                    Start Chat
+                  </BrandButton>
+                  {user && user.id !== userId && (
+                    <Button onClick={() => setShowHire(true)} className="flex-1 sm:flex-none">
+                      <Briefcase className="h-4 w-4 mr-2" />
+                      Hire
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           </CardContent>
