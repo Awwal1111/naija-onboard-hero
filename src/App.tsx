@@ -183,6 +183,7 @@ const Sitemap = lazy(lazyWithRetry(() => import("./pages/Sitemap")));
 const RampSession = lazy(lazyWithRetry(() => import("./pages/RampSession")));
 const ChargeSession = lazy(lazyWithRetry(() => import("./pages/ChargeSession")));
 const PayLink = lazy(lazyWithRetry(() => import("./pages/PayLink")));
+const HireContractDetail = lazy(lazyWithRetry(() => import("./pages/HireContractDetail")));
 const InstallApp = lazy(lazyWithRetry(() => import("./pages/InstallApp")));
 
 // Static pages
@@ -315,6 +316,7 @@ const App = () => (
                 <Route path="/referrals" element={<ProtectedRoute><Referrals /></ProtectedRoute>} />
                 <Route path="/earn" element={<ProtectedRoute><EnhancedEarn /></ProtectedRoute>} />
                 <Route path="/wallet" element={<ProtectedRoute><EnhancedEarn /></ProtectedRoute>} />
+                <Route path="/contracts/:id" element={<ProtectedRoute><HireContractDetail /></ProtectedRoute>} />
                 <Route path="/earn/social-tasks" element={<ProtectedRoute><SocialMediaTasks /></ProtectedRoute>} />
                 <Route path="/earn/referral-tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
                 <Route path="/referral-tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
