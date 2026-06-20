@@ -41,6 +41,11 @@ export default function PublicGig() {
   const [reviewRating, setReviewRating] = useState(5);
   const [submittingReview, setSubmittingReview] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [useMilestones, setUseMilestones] = useState(false);
+  const [milestones, setMilestones] = useState<{ title: string; amount: number }[]>([
+    { title: 'Milestone 1', amount: 0 },
+    { title: 'Milestone 2', amount: 0 },
+  ]);
 
   // Fetch gig without requiring profile join (separate query for profile)
   const { data: gig, isLoading, refetch: refetchGig } = useQuery({
@@ -153,13 +158,25 @@ export default function PublicGig() {
     
     setPlacingOrder(true);
     try {
+      let opts: any = undefined;
+      if (useMilestones) {
+        const ms = milestones.filter(m => m.title.trim() && Number(m.amount) > 0);
+        const sum = ms.reduce((a, b) => a + Number(b.amount || 0), 0);
+        if (ms.length < 2) { toast.error('Add at least 2 milestones'); setPlacingOrder(false); return; }
+        if (Math.round(sum) !== Math.round(gig.price)) {
+          toast.error(`Milestones must total ₦${gig.price.toLocaleString()} (currently ₦${sum.toLocaleString()})`);
+          setPlacingOrder(false); return;
+        }
+        opts = { milestones: ms.map(m => ({ title: m.title, amount: Number(m.amount) })) };
+      }
       const result = await createOrder(
         gig.id,
         gig.user_id,
         gig.title,
         orderNotes || gig.description || '',
         gig.price,
-        gig.delivery_days || 7
+        gig.delivery_days || 7,
+        opts
       );
 
       if (result && 'order' in result && result.order) {
