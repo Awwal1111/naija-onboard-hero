@@ -43,9 +43,11 @@ const SmartJobRecommendations: React.FC<SmartJobRecommendationsProps> = ({
     setCurrentIndex(0);
   }, [mode]);
 
-  // Combine and sort by relevance score
-  const items = activeTab === 'jobs' ? jobPosts : gigs;
+  // Combine and sort by relevance score (strip freelancer self-promo posts)
+  const filteredJobPosts = (jobPosts || []).filter((j: any) => !looksLikeGigOffer(j));
+  const items = activeTab === 'jobs' ? filteredJobPosts : gigs;
   const loading = activeTab === 'jobs' ? jobsLoading : gigsLoading;
+
 
   const handlePrev = () => {
     setCurrentIndex(prev => Math.max(0, prev - 1));
