@@ -445,7 +445,7 @@ const Jobs = () => {
               </Card>
             ) : (
               filteredJobs.map((job: any) => (
-                <Card key={job.id} className="hover:shadow-md transition-shadow">
+                <Card key={job.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate(`/jobs/${job.id}`)}>
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
@@ -458,7 +458,7 @@ const Jobs = () => {
                           <span className="text-xs text-muted-foreground">{job.poster_name}</span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                         <BookmarkButton type="job" itemId={job.id} />
                         {user?.id !== job.user_id && (
                           <Button size="sm" variant="outline" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); navigate(`/chat/${job.user_id}`); }}>
@@ -484,6 +484,16 @@ const Jobs = () => {
                         {new Date(job.created_at).toLocaleDateString()}
                       </span>
                     </div>
+                    {user?.id !== job.user_id && (
+                      <Button
+                        size="sm"
+                        className="w-full mt-3 h-8 text-xs"
+                        onClick={(e) => { e.stopPropagation(); navigate(`/jobs/${job.id}`); }}
+                      >
+                        <Briefcase className="h-3 w-3 mr-1" />
+                        View & Apply
+                      </Button>
+                    )}
                   </CardContent>
                 </Card>
               ))
