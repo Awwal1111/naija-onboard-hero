@@ -23,6 +23,8 @@ import { AIGigCarousel } from '@/components/gigs/AIGigCarousel'
 import { GigSortFilterBar, SortOption } from '@/components/gigs/GigSortFilterBar'
 import { GigCardCompact } from '@/components/gigs/GigCardCompact'
 import { getCategoryPlaceholder, normalizeCategory } from '@/lib/gigCategories'
+import { looksLikeGigOffer } from '@/lib/jobFilters'
+
 
 const Jobs = () => {
   const navigate = useNavigate()
