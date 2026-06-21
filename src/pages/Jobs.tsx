@@ -140,7 +140,20 @@ const Jobs = () => {
     }
   }, [searchQuery, categoryFilter, addSearch])
 
+  // Heuristic: hide posts that are clearly freelancer self-promo (gigs posted as jobs)
+  const looksLikeGigOffer = (job: any) => {
+    const text = `${job.title || ''} ${job.description || ''}`.toLowerCase().trim()
+    if (!text) return false
+    const offerPhrases = [
+      'i can ', 'i will ', "i'll ", 'i make ', 'i build ', 'i design ',
+      'i develop ', 'i create ', 'i offer ', 'i am a ', "i'm a ",
+      'hire me', 'contact me', 'dm me', 'message me for',
+    ]
+    return offerPhrases.some(p => text.includes(p))
+  }
+
   const filteredJobs = jobPosts.filter((job: any) => {
+    if (looksLikeGigOffer(job)) return false
     const matchesSearch = job.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          job.description?.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesState = !stateFilter || stateFilter === 'all' || job.location?.includes(stateFilter)
