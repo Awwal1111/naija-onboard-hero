@@ -26,6 +26,7 @@ const EditGig = () => {
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [existingUrls, setExistingUrls] = useState<string[]>([]);
+  const [packages, setPackages] = useState<GigPackages>({});
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -34,6 +35,7 @@ const EditGig = () => {
     delivery_days: '7',
     response_time: 'Within 1 hour'
   });
+
 
   const { data: gig, isLoading: gigLoading } = useQuery({
     queryKey: ['edit-gig', gigId],
