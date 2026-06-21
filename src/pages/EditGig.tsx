@@ -11,6 +11,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { GigPackageEditor, GigPackages } from '@/components/gigs/GigPackageEditor';
+
 
 const EditGig = () => {
   const navigate = useNavigate();
@@ -24,6 +26,7 @@ const EditGig = () => {
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [existingUrls, setExistingUrls] = useState<string[]>([]);
+  const [packages, setPackages] = useState<GigPackages>({});
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -32,6 +35,7 @@ const EditGig = () => {
     delivery_days: '7',
     response_time: 'Within 1 hour'
   });
+
 
   const { data: gig, isLoading: gigLoading } = useQuery({
     queryKey: ['edit-gig', gigId],
@@ -60,8 +64,11 @@ const EditGig = () => {
         response_time: gig.response_time || 'Within 1 hour'
       });
       setExistingUrls(gig.photo_urls || []);
+      const pkgs = (gig as any).packages;
+      if (pkgs && typeof pkgs === 'object') setPackages(pkgs as GigPackages);
     }
   }, [gig]);
+
 
   const jobCategories = [
     'Web Development', 'Mobile App Development', 'UI/UX Design', 'Graphic Design',
@@ -155,12 +162,14 @@ const EditGig = () => {
           category: formData.category,
           photo_urls: allPhotoUrls,
           delivery_days: parseInt(formData.delivery_days) || 7,
-          response_time: formData.response_time
+          response_time: formData.response_time,
+          packages: Object.keys(packages).length ? (packages as any) : null,
         })
         .eq('id', gigId)
         .eq('user_id', user.id);
 
       if (error) throw error;
+
 
       toast({ title: 'Gig Updated!', description: 'Your changes have been saved.' });
       navigate('/my-gigs');
@@ -328,6 +337,15 @@ const EditGig = () => {
               required
             />
           </div>
+
+          {/* Packages */}
+          <GigPackageEditor
+            value={packages}
+            onChange={setPackages}
+            basePrice={Number(formData.price) || undefined}
+          />
+
+
 
           <BrandButton type="submit" className="w-full" size="lg" disabled={loading || uploadingImages}>
             {loading || uploadingImages ? (
