@@ -64,8 +64,11 @@ const EditGig = () => {
         response_time: gig.response_time || 'Within 1 hour'
       });
       setExistingUrls(gig.photo_urls || []);
+      const pkgs = (gig as any).packages;
+      if (pkgs && typeof pkgs === 'object') setPackages(pkgs as GigPackages);
     }
   }, [gig]);
+
 
   const jobCategories = [
     'Web Development', 'Mobile App Development', 'UI/UX Design', 'Graphic Design',
