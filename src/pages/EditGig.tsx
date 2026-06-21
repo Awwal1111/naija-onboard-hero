@@ -11,6 +11,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { GigPackageEditor, GigPackages } from '@/components/gigs/GigPackageEditor';
+
 
 const EditGig = () => {
   const navigate = useNavigate();
