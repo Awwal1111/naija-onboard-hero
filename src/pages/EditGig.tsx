@@ -162,12 +162,14 @@ const EditGig = () => {
           category: formData.category,
           photo_urls: allPhotoUrls,
           delivery_days: parseInt(formData.delivery_days) || 7,
-          response_time: formData.response_time
+          response_time: formData.response_time,
+          packages: Object.keys(packages).length ? (packages as any) : null,
         })
         .eq('id', gigId)
         .eq('user_id', user.id);
 
       if (error) throw error;
+
 
       toast({ title: 'Gig Updated!', description: 'Your changes have been saved.' });
       navigate('/my-gigs');
