@@ -338,6 +338,15 @@ const EditGig = () => {
             />
           </div>
 
+          {/* Packages */}
+          <GigPackageEditor
+            value={packages}
+            onChange={setPackages}
+            basePrice={Number(formData.price) || undefined}
+          />
+
+
+
           <BrandButton type="submit" className="w-full" size="lg" disabled={loading || uploadingImages}>
             {loading || uploadingImages ? (
               <>
