@@ -30,30 +30,41 @@ export default function JobDetail() {
     expected_salary: "",
     availability_date: "",
     portfolio_urls: [] as string[],
+    proposed_contract_type: "fixed" as "fixed" | "hourly" | "milestone",
+    proposed_rate: "",
+    proposed_duration_days: "",
   });
+
 
   const { data: job, isLoading } = useQuery({
     queryKey: ["job", id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("job_posts")
-        .select(`
-          *,
-          profiles:user_id (full_name, profile_picture_url, company_name)
-        `)
+        .select("*")
         .eq("id", id)
-        .single();
+        .maybeSingle();
       if (error) throw error;
+      if (!data) return null;
 
-      // Increment views
-      await supabase
+      // Fetch poster profile separately (no FK to public.profiles)
+      const { data: poster } = await supabase
+        .from("profiles")
+        .select("full_name, profile_picture_url, company_name")
+        .eq("user_id", data.user_id)
+        .maybeSingle();
+
+      // Fire-and-forget view increment
+      supabase
         .from("job_posts")
         .update({ views_count: (data.views_count || 0) + 1 })
-        .eq("id", id);
+        .eq("id", id)
+        .then(() => {}, () => {});
 
-      return data;
+      return { ...data, profiles: poster || null };
     },
   });
+
 
   const { data: hasApplied } = useQuery({
     queryKey: ["has-applied", id],
@@ -76,7 +87,7 @@ export default function JobDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("job_post_applications")
-        .select("id, applicant_id, cover_letter, resume_url, expected_salary, availability_date, portfolio_urls, status, created_at")
+        .select("id, applicant_id, cover_letter, resume_url, expected_salary, availability_date, portfolio_urls, status, created_at, proposed_contract_type, proposed_rate, proposed_duration_days")
         .eq("job_post_id", id)
         .order("created_at", { ascending: false })
         .limit(100);
@@ -134,8 +145,12 @@ export default function JobDetail() {
         expected_salary: applicationData.expected_salary ? parseFloat(applicationData.expected_salary) : null,
         availability_date: applicationData.availability_date || null,
         portfolio_urls: applicationData.portfolio_urls.filter((url) => url.trim() !== ""),
-      });
+        proposed_contract_type: applicationData.proposed_contract_type,
+        proposed_rate: applicationData.proposed_rate ? parseFloat(applicationData.proposed_rate) : null,
+        proposed_duration_days: applicationData.proposed_duration_days ? parseInt(applicationData.proposed_duration_days) : null,
+      } as any);
       if (error) throw error;
+
 
       // Notify job poster
       if (job?.user_id) {
@@ -161,7 +176,11 @@ export default function JobDetail() {
         expected_salary: "",
         availability_date: "",
         portfolio_urls: [],
+        proposed_contract_type: "fixed",
+        proposed_rate: "",
+        proposed_duration_days: "",
       });
+
     },
     onError: (error: any) => {
       toast({
@@ -364,9 +383,17 @@ export default function JobDetail() {
                             <p className="text-sm mb-3 whitespace-pre-wrap line-clamp-4">{app.cover_letter}</p>
                           )}
                           <div className="flex flex-wrap gap-2 text-xs text-muted-foreground mb-3">
+                            {app.proposed_contract_type && (
+                              <Badge variant="outline" className="capitalize text-[10px]">
+                                {app.proposed_contract_type}
+                                {app.proposed_rate ? ` · ₦${Number(app.proposed_rate).toLocaleString()}${app.proposed_contract_type === 'hourly' ? '/hr' : ''}` : ''}
+                                {app.proposed_duration_days ? ` · ${app.proposed_duration_days}d` : ''}
+                              </Badge>
+                            )}
                             {app.expected_salary && <span>Expected: ₦{Number(app.expected_salary).toLocaleString()}</span>}
                             {app.availability_date && <span>Available: {format(new Date(app.availability_date), "PP")}</span>}
                           </div>
+
                           <div className="flex flex-wrap gap-2">
                             {app.resume_url && (
                               <Button size="sm" variant="outline" onClick={() => window.open(app.resume_url, "_blank")}>
@@ -467,8 +494,47 @@ export default function JobDetail() {
             <DialogTitle>Apply for {job.title}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            <div className="grid grid-cols-3 gap-2">
+              {(["fixed", "hourly", "milestone"] as const).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setApplicationData({ ...applicationData, proposed_contract_type: t })}
+                  className={`text-xs rounded-md border px-2 py-2 capitalize transition ${
+                    applicationData.proposed_contract_type === t
+                      ? "border-primary bg-primary/10 font-semibold"
+                      : "border-border hover:bg-muted"
+                  }`}
+                >
+                  {t === "fixed" ? "Fixed price" : t === "hourly" ? "Hourly rate" : "Milestones"}
+                </button>
+              ))}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>
+                  Proposed {applicationData.proposed_contract_type === "hourly" ? "hourly rate (₦NC/hr)" : "rate (₦NC)"}
+                </Label>
+                <Input
+                  type="number"
+                  value={applicationData.proposed_rate}
+                  onChange={(e) => setApplicationData({ ...applicationData, proposed_rate: e.target.value })}
+                  placeholder={applicationData.proposed_contract_type === "hourly" ? "e.g. 5000" : "e.g. 250000"}
+                />
+              </div>
+              <div>
+                <Label>Duration (days)</Label>
+                <Input
+                  type="number"
+                  value={applicationData.proposed_duration_days}
+                  onChange={(e) => setApplicationData({ ...applicationData, proposed_duration_days: e.target.value })}
+                  placeholder="e.g. 14"
+                />
+              </div>
+            </div>
             <div>
               <Label>Cover Letter *</Label>
+
               <Textarea
                 value={applicationData.cover_letter}
                 onChange={(e) => setApplicationData({ ...applicationData, cover_letter: e.target.value })}
