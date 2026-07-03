@@ -383,9 +383,17 @@ export default function JobDetail() {
                             <p className="text-sm mb-3 whitespace-pre-wrap line-clamp-4">{app.cover_letter}</p>
                           )}
                           <div className="flex flex-wrap gap-2 text-xs text-muted-foreground mb-3">
+                            {app.proposed_contract_type && (
+                              <Badge variant="outline" className="capitalize text-[10px]">
+                                {app.proposed_contract_type}
+                                {app.proposed_rate ? ` · ₦${Number(app.proposed_rate).toLocaleString()}${app.proposed_contract_type === 'hourly' ? '/hr' : ''}` : ''}
+                                {app.proposed_duration_days ? ` · ${app.proposed_duration_days}d` : ''}
+                              </Badge>
+                            )}
                             {app.expected_salary && <span>Expected: ₦{Number(app.expected_salary).toLocaleString()}</span>}
                             {app.availability_date && <span>Available: {format(new Date(app.availability_date), "PP")}</span>}
                           </div>
+
                           <div className="flex flex-wrap gap-2">
                             {app.resume_url && (
                               <Button size="sm" variant="outline" onClick={() => window.open(app.resume_url, "_blank")}>
