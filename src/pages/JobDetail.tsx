@@ -87,7 +87,7 @@ export default function JobDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("job_post_applications")
-        .select("id, applicant_id, cover_letter, resume_url, expected_salary, availability_date, portfolio_urls, status, created_at")
+        .select("id, applicant_id, cover_letter, resume_url, expected_salary, availability_date, portfolio_urls, status, created_at, proposed_contract_type, proposed_rate, proposed_duration_days")
         .eq("job_post_id", id)
         .order("created_at", { ascending: false })
         .limit(100);
