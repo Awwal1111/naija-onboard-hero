@@ -30,30 +30,41 @@ export default function JobDetail() {
     expected_salary: "",
     availability_date: "",
     portfolio_urls: [] as string[],
+    proposed_contract_type: "fixed" as "fixed" | "hourly" | "milestone",
+    proposed_rate: "",
+    proposed_duration_days: "",
   });
+
 
   const { data: job, isLoading } = useQuery({
     queryKey: ["job", id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("job_posts")
-        .select(`
-          *,
-          profiles:user_id (full_name, profile_picture_url, company_name)
-        `)
+        .select("*")
         .eq("id", id)
-        .single();
+        .maybeSingle();
       if (error) throw error;
+      if (!data) return null;
 
-      // Increment views
-      await supabase
+      // Fetch poster profile separately (no FK to public.profiles)
+      const { data: poster } = await supabase
+        .from("profiles")
+        .select("full_name, profile_picture_url, company_name")
+        .eq("user_id", data.user_id)
+        .maybeSingle();
+
+      // Fire-and-forget view increment
+      supabase
         .from("job_posts")
         .update({ views_count: (data.views_count || 0) + 1 })
-        .eq("id", id);
+        .eq("id", id)
+        .then(() => {}, () => {});
 
-      return data;
+      return { ...data, profiles: poster || null };
     },
   });
+
 
   const { data: hasApplied } = useQuery({
     queryKey: ["has-applied", id],
