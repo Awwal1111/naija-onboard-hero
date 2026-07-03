@@ -486,8 +486,47 @@ export default function JobDetail() {
             <DialogTitle>Apply for {job.title}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            <div className="grid grid-cols-3 gap-2">
+              {(["fixed", "hourly", "milestone"] as const).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setApplicationData({ ...applicationData, proposed_contract_type: t })}
+                  className={`text-xs rounded-md border px-2 py-2 capitalize transition ${
+                    applicationData.proposed_contract_type === t
+                      ? "border-primary bg-primary/10 font-semibold"
+                      : "border-border hover:bg-muted"
+                  }`}
+                >
+                  {t === "fixed" ? "Fixed price" : t === "hourly" ? "Hourly rate" : "Milestones"}
+                </button>
+              ))}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>
+                  Proposed {applicationData.proposed_contract_type === "hourly" ? "hourly rate (₦NC/hr)" : "rate (₦NC)"}
+                </Label>
+                <Input
+                  type="number"
+                  value={applicationData.proposed_rate}
+                  onChange={(e) => setApplicationData({ ...applicationData, proposed_rate: e.target.value })}
+                  placeholder={applicationData.proposed_contract_type === "hourly" ? "e.g. 5000" : "e.g. 250000"}
+                />
+              </div>
+              <div>
+                <Label>Duration (days)</Label>
+                <Input
+                  type="number"
+                  value={applicationData.proposed_duration_days}
+                  onChange={(e) => setApplicationData({ ...applicationData, proposed_duration_days: e.target.value })}
+                  placeholder="e.g. 14"
+                />
+              </div>
+            </div>
             <div>
               <Label>Cover Letter *</Label>
+
               <Textarea
                 value={applicationData.cover_letter}
                 onChange={(e) => setApplicationData({ ...applicationData, cover_letter: e.target.value })}
