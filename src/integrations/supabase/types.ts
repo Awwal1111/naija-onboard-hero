@@ -3635,6 +3635,9 @@ export type Database = {
           job_post_id: string
           notifications_enabled: boolean | null
           portfolio_urls: string[] | null
+          proposed_contract_type: string | null
+          proposed_duration_days: number | null
+          proposed_rate: number | null
           resume_url: string | null
           status: string | null
         }
@@ -3648,6 +3651,9 @@ export type Database = {
           job_post_id: string
           notifications_enabled?: boolean | null
           portfolio_urls?: string[] | null
+          proposed_contract_type?: string | null
+          proposed_duration_days?: number | null
+          proposed_rate?: number | null
           resume_url?: string | null
           status?: string | null
         }
@@ -3661,6 +3667,9 @@ export type Database = {
           job_post_id?: string
           notifications_enabled?: boolean | null
           portfolio_urls?: string[] | null
+          proposed_contract_type?: string | null
+          proposed_duration_days?: number | null
+          proposed_rate?: number | null
           resume_url?: string | null
           status?: string | null
         }
