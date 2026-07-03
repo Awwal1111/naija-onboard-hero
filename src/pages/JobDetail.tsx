@@ -145,8 +145,12 @@ export default function JobDetail() {
         expected_salary: applicationData.expected_salary ? parseFloat(applicationData.expected_salary) : null,
         availability_date: applicationData.availability_date || null,
         portfolio_urls: applicationData.portfolio_urls.filter((url) => url.trim() !== ""),
-      });
+        proposed_contract_type: applicationData.proposed_contract_type,
+        proposed_rate: applicationData.proposed_rate ? parseFloat(applicationData.proposed_rate) : null,
+        proposed_duration_days: applicationData.proposed_duration_days ? parseInt(applicationData.proposed_duration_days) : null,
+      } as any);
       if (error) throw error;
+
 
       // Notify job poster
       if (job?.user_id) {
@@ -172,7 +176,11 @@ export default function JobDetail() {
         expected_salary: "",
         availability_date: "",
         portfolio_urls: [],
+        proposed_contract_type: "fixed",
+        proposed_rate: "",
+        proposed_duration_days: "",
       });
+
     },
     onError: (error: any) => {
       toast({
