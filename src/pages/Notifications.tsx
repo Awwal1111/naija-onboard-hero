@@ -137,9 +137,15 @@ const Notifications = () => {
       case 'connection':
         navigate('/connections')
         break
+      case 'job':
       case 'job_application':
-        if (meta.job_id) navigate(`/jobs/${meta.job_id}`)
+      case 'job_application_update': {
+        const jobId = meta.job_post_id || meta.job_id
+        if (jobId) navigate(`/jobs/${jobId}`)
+        else navigate('/jobs')
         break
+      }
+
       case 'transaction':
       case 'wallet':
         navigate('/profile')
