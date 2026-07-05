@@ -139,7 +139,11 @@ const NotificationBell = () => {
       
       case 'job':
       case 'job_application':
-        return metadata?.job_id ? `/jobs` : '/jobs'
+      case 'job_application_update': {
+        const jobId = metadata?.job_post_id || metadata?.job_id
+        return jobId ? `/jobs/${jobId}` : '/jobs'
+      }
+
       
       case 'post_reaction':
       case 'post_like':
