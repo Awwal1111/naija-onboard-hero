@@ -1906,7 +1906,10 @@ const EnhancedAdminDashboard = () => {
 
           {/* Wallet Management Tab */}
           <TabsContent value="wallet" className="space-y-6">
+            <AdminStorageMigration />
+
             <AdminWalletMigration />
+            
             
             <AdminMasterWalletInfo />
             
