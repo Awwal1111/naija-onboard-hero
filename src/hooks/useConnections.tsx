@@ -89,9 +89,10 @@ export const useConnections = () => {
     try {
       const { data, error } = await supabase
         .from('connections')
-        .select('*')
+        .select('id, user1_id, user2_id, created_at')
         .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
         .order('created_at', { ascending: false })
+        .limit(500)
 
       if (error) throw error
       
