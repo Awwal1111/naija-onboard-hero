@@ -27,7 +27,7 @@ export const useAds = (placement?: 'banner' | 'feed' | 'sidebar' | 'popup') => {
     queryFn: async () => {
       let query = supabase
         .from('ads')
-        .select('*')
+        .select('id, title, description, image_url, link_url, placement, is_active, priority, click_count, impression_count, start_date, end_date, target_pages, created_at')
         .eq('is_active', true)
         .order('priority', { ascending: false });
 
@@ -74,7 +74,7 @@ export const useAdminAds = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('ads')
-        .select('*')
+        .select('id, title, description, image_url, link_url, placement, is_active, priority, click_count, impression_count, start_date, end_date, target_pages, created_at')
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data as Ad[];
