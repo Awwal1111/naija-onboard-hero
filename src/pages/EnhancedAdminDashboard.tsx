@@ -20,6 +20,7 @@ import { AdminArticlesSection } from '@/components/AdminArticlesSection'
 import { AdminWalletManagement } from '@/components/AdminWalletManagement'
 import { AdminMasterWalletInfo } from '@/components/AdminMasterWalletInfo'
 import { AdminWalletMigration } from '@/components/AdminWalletMigration'
+import { AdminStorageMigration } from '@/components/AdminStorageMigration'
 import { AdminSettingsTab } from '@/components/AdminSettingsTab'
 import { StorageMigrationCard } from '@/components/admin/StorageMigrationCard'
 import { StorageOrphanScannerCard } from '@/components/admin/StorageOrphanScannerCard'
@@ -1905,7 +1906,10 @@ const EnhancedAdminDashboard = () => {
 
           {/* Wallet Management Tab */}
           <TabsContent value="wallet" className="space-y-6">
+            <AdminStorageMigration />
+
             <AdminWalletMigration />
+            
             
             <AdminMasterWalletInfo />
             

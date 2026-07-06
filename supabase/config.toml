@@ -1,5 +1,8 @@
 project_id = "your-project-id"
 
+[functions.migrate-storage-to-catbox]
+verify_jwt = true
+
 [functions.initialize-master-wallet]
 verify_jwt = true
 

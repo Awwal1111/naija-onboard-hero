@@ -48,7 +48,7 @@ export const useJobs = () => {
     try {
       const { data, error } = await supabase
         .from('jobs')
-        .select('*')
+        .select('id, user_id, title, description, budget_min, budget_max, required_skills, status, location, job_type, created_at, updated_at')
         .eq('status', 'open')
         .order('created_at', { ascending: false })
 
@@ -87,7 +87,7 @@ export const useJobs = () => {
     try {
       const { data, error } = await supabase
         .from('jobs')
-        .select('*')
+        .select('id, user_id, title, description, budget_min, budget_max, required_skills, status, location, job_type, created_at, updated_at')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
 
@@ -184,7 +184,7 @@ export const useJobs = () => {
     try {
       const { data, error } = await supabase
         .from('job_applications')
-        .select('*')
+        .select('id, job_id, applicant_id, cover_letter, status, created_at')
         .eq('job_id', jobId)
         .order('created_at', { ascending: false })
 
