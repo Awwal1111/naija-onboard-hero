@@ -43,7 +43,7 @@ export const useMyGigs = () => {
     try {
       const { data, error } = await supabase
         .from('jobs_services')
-        .select('id, user_id, title, description, category, price, delivery_days, photo_urls, tags, status, views_count, orders_count, created_at, updated_at')
+        .select('id, user_id, title, description, category, price, delivery_days, photo_urls, status, views_count, orders_count, created_at, updated_at')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(200);
