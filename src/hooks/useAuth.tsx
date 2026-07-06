@@ -30,7 +30,7 @@ export const useAuth = () => {
       
       const { data: profile } = await supabase
         .from('profiles')
-        .select('*')
+        .select('full_name, state_name, lga_name')
         .eq('user_id', authUser.id)
         .maybeSingle()
 
