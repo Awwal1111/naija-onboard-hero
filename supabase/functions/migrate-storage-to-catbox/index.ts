@@ -1,188 +1,174 @@
-// One-shot migrator: rewrites Supabase Storage URLs in selected tables to
-// Catbox (with Cloudinary fallback). Admin-only. Process in small batches.
+// Migrates legacy public Supabase Storage objects to Catbox and rewrites all
+// DB references, then deletes the Supabase object to stop egress bleeding.
 //
-// POST body: { table: 'profiles'|'stories'|'portfolio_items'|'jobs_services'|'posts', limit?: number, dryRun?: boolean }
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+// Admin-only. Processes ONE bucket per invocation, up to `limit` files.
+// Returns progress so the admin UI can loop until done.
+
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const TABLE_MAP: Record<string, { col: string; folder: string; isArray?: boolean }> = {
-  profiles: { col: 'profile_picture_url', folder: 'profiles' },
-  stories: { col: 'media_url', folder: 'stories' },
-  portfolio_items: { col: 'media_url', folder: 'portfolio' },
-  jobs_services: { col: 'photo_urls', folder: 'gigs', isArray: true },
-  posts: { col: 'media_urls', folder: 'posts', isArray: true },
+interface BucketMap {
+  // columns of type text
+  textColumns?: { table: string; column: string }[]
+  // columns of type text[]
+  arrayColumns?: { table: string; column: string }[]
 }
 
-const SUPABASE_HOST_FRAGMENT = 'supabase.co/storage'
+// Which DB columns may contain URLs for each bucket. Kept broad and safe —
+// each rewrite is a `like` scan bounded by the exact old public URL.
+const BUCKET_TARGETS: Record<string, BucketMap> = {
+  profiles: {
+    textColumns: [
+      { table: 'profiles', column: 'profile_picture_url' },
+      { table: 'profiles', column: 'intro_video_url' },
+    ],
+  },
+  Feed: {
+    arrayColumns: [{ table: 'posts', column: 'media_urls' }],
+    textColumns: [
+      { table: 'messages', column: 'media_url' },
+      { table: 'group_messages', column: 'media_url' },
+    ],
+  },
+  'gig-images': {
+    arrayColumns: [{ table: 'jobs_services', column: 'photo_urls' }],
+  },
+  portfolio: {
+    textColumns: [{ table: 'portfolio_items', column: 'media_url' }],
+  },
+  stories: {
+    textColumns: [{ table: 'stories', column: 'media_url' }],
+  },
+}
 
-async function uploadToCatbox(blob: Blob, filename: string): Promise<string> {
-  const fd = new FormData()
-  fd.append('reqtype', 'fileupload')
-  fd.append('fileToUpload', new File([blob], filename, { type: blob.type || 'image/jpeg' }))
+async function uploadToCatbox(bytes: Uint8Array, filename: string, mime: string): Promise<string> {
+  const form = new FormData()
+  form.append('reqtype', 'fileupload')
+  form.append('fileToUpload', new Blob([bytes], { type: mime }), filename)
   const ctrl = new AbortController()
-  const t = setTimeout(() => ctrl.abort(), 25_000)
+  const t = setTimeout(() => ctrl.abort(), 30_000)
   try {
-    const r = await fetch('https://catbox.moe/user/api.php', { method: 'POST', body: fd, signal: ctrl.signal, headers: { 'User-Agent': 'Mozilla/5.0 (compatible; NaijaLancersMigrator/1.0)' } })
-    if (!r.ok) throw new Error(`Catbox HTTP ${r.status}`)
-    const url = (await r.text()).trim()
-    if (!url.startsWith('https://files.catbox.moe/')) throw new Error('Bad Catbox response')
+    const res = await fetch('https://catbox.moe/user/api.php', { method: 'POST', body: form, signal: ctrl.signal })
+    if (!res.ok) throw new Error(`catbox HTTP ${res.status}`)
+    const url = (await res.text()).trim()
+    if (!url.startsWith('https://files.catbox.moe/')) throw new Error(`bad catbox response: ${url.slice(0, 80)}`)
     return url
   } finally {
     clearTimeout(t)
   }
 }
 
-async function uploadToCloudinary(blob: Blob, folder: string): Promise<string> {
-  const CLOUD = Deno.env.get('CLOUDINARY_CLOUD_NAME')!
-  const KEY = Deno.env.get('CLOUDINARY_API_KEY')!
-  const SECRET = Deno.env.get('CLOUDINARY_API_SECRET')!
-  const timestamp = Math.floor(Date.now() / 1000)
-  const publicId = `mig_${timestamp}_${Math.random().toString(36).slice(2, 9)}`
-  const folderPath = `naijalancers/${folder}/migrated`
-  const eager = 'f_auto,q_auto'
-  const paramsToSign = `eager=${eager}&folder=${folderPath}&public_id=${publicId}&timestamp=${timestamp}`
-  const hash = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(paramsToSign + SECRET))
-  const sig = Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('')
-
-  const fd = new FormData()
-  fd.append('file', new File([blob], `${publicId}.jpg`, { type: blob.type || 'image/jpeg' }))
-  fd.append('api_key', KEY)
-  fd.append('timestamp', String(timestamp))
-  fd.append('signature', sig)
-  fd.append('folder', folderPath)
-  fd.append('public_id', publicId)
-  fd.append('eager', eager)
-
-  const r = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD}/image/upload`, { method: 'POST', body: fd })
-  const j = await r.json()
-  if (!r.ok || !j.secure_url) throw new Error(j?.error?.message || 'Cloudinary failed')
-  return j.secure_url as string
-}
-
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
-    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!)
-    const auth = req.headers.get("authorization")
-    if (!auth) throw new Error("No authorization")
-    const { data: { user }, error: authErr } = await supabase.auth.getUser(auth.replace("Bearer ", ""))
-    if (authErr || !user) throw new Error("Unauthorized")
-    const { data: roles } = await supabase.from('user_roles').select('role').eq('user_id', user.id).limit(5)
-    const ok = (roles || []).some((r: any) => ['admin', 'super_admin', 'moderator'].includes(r.role))
-    if (!ok) throw new Error("Admin only")
-
-    const { table, limit = 25, dryRun = false } = await req.json()
-    const cfg = TABLE_MAP[String(table)]
-    if (!cfg) throw new Error(`Unsupported table. Allowed: ${Object.keys(TABLE_MAP).join(', ')}`)
-
-    const lim = Math.min(Math.max(Number(limit) || 25, 1), 100)
-
-    let fetchQuery = supabase
-      .from(table)
-      .select(`id, ${cfg.col}`)
-      .limit(lim)
-
-    if (!cfg.isArray) {
-      fetchQuery = fetchQuery.ilike(cfg.col, `%${SUPABASE_HOST_FRAGMENT}%`)
+    const url = new URL(req.url)
+    const bucket = url.searchParams.get('bucket') || ''
+    const limit = Math.min(parseInt(url.searchParams.get('limit') || '10'), 25)
+    const offset = parseInt(url.searchParams.get('offset') || '0')
+    if (!BUCKET_TARGETS[bucket]) {
+      return new Response(JSON.stringify({ error: `unknown bucket: ${bucket}` }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
 
-    const { data: rows, error: fetchErr } = await fetchQuery
-    if (fetchErr) throw fetchErr
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!
 
-    const filteredRows = (rows || []).filter((row: any) => {
-      const value = row[cfg.col]
-      if (cfg.isArray) {
-        return Array.isArray(value) && value.some((url) => typeof url === 'string' && url.includes(SUPABASE_HOST_FRAGMENT))
-      }
-      return typeof value === 'string' && value.includes(SUPABASE_HOST_FRAGMENT)
+    // Verify caller is admin
+    const authHeader = req.headers.get('Authorization') || ''
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
     })
+    const { data: userRes } = await userClient.auth.getUser()
+    if (!userRes.user) {
+      return new Response(JSON.stringify({ error: 'unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+    const admin = createClient(supabaseUrl, serviceKey)
+    const { data: isAdmin } = await admin.rpc('has_admin_access', { _user_id: userRes.user.id })
+    if (!isAdmin) {
+      return new Response(JSON.stringify({ error: 'admin only' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
 
-    const results: Array<{ id: string; ok: boolean; provider?: string; newUrl?: string; error?: string }> = []
-    for (const row of filteredRows as any[]) {
-      const currentValue = row[cfg.col]
-      const urls = cfg.isArray ? ((currentValue as string[] | null) || []).filter(Boolean) : [currentValue as string]
-      if (urls.length === 0) {
-        results.push({ id: row.id, ok: false, error: 'No URLs to migrate' })
-        continue
-      }
+    // List objects (paginated)
+    const { data: objects, error: listErr } = await admin
+      .schema('storage')
+      .from('objects')
+      .select('id, name, bucket_id, metadata')
+      .eq('bucket_id', bucket)
+      .order('created_at', { ascending: true })
+      .range(offset, offset + limit - 1)
+    if (listErr) throw listErr
+
+    const targets = BUCKET_TARGETS[bucket]
+    const results: any[] = []
+
+    for (const obj of objects || []) {
+      const path = obj.name as string
+      const oldPublicUrl = `${supabaseUrl}/storage/v1/object/public/${bucket}/${path}`
       try {
-        const nextUrls: string[] = []
-        const toDelete: Array<{ bucket: string; path: string }> = []
-        for (const oldUrl of urls) {
-          if (!oldUrl?.includes(SUPABASE_HOST_FRAGMENT)) {
-            nextUrls.push(oldUrl)
-            continue
-          }
-
-          const dl = await fetch(oldUrl, { signal: AbortSignal.timeout(20_000) })
-          if (!dl.ok) throw new Error(`Download HTTP ${dl.status}`)
-          const blob = await dl.blob()
-          if (blob.size === 0) throw new Error('Empty blob')
-          if (blob.size > 10 * 1024 * 1024) {
-            nextUrls.push(oldUrl)
-            continue
-          }
-          const filename = oldUrl.split('/').pop() || `file_${Date.now()}.jpg`
-
-          let newUrl = ''
-          try {
-            newUrl = await uploadToCatbox(blob, filename)
-          } catch (catErr) {
-            console.warn('catbox failed, fallback cloudinary:', catErr)
-            newUrl = await uploadToCloudinary(blob, cfg.folder)
-          }
-
-          nextUrls.push(newUrl)
-
-          // Parse bucket/path from old Supabase URL for deletion after DB update
-          const m = oldUrl.match(/\/storage\/v1\/object\/(?:public|sign)\/([^/]+)\/(.+?)(?:\?|$)/)
-          if (m) toDelete.push({ bucket: m[1], path: decodeURIComponent(m[2]) })
+        // Download from storage
+        const { data: blob, error: dlErr } = await admin.storage.from(bucket).download(path)
+        if (dlErr || !blob) throw new Error(dlErr?.message || 'download failed')
+        const bytes = new Uint8Array(await blob.arrayBuffer())
+        if (bytes.length === 0) {
+          // empty placeholder — just delete
+          await admin.storage.from(bucket).remove([path])
+          results.push({ path, status: 'deleted_empty' })
+          continue
         }
+        const mime = (obj.metadata as any)?.mimetype || blob.type || 'application/octet-stream'
+        const filename = path.split('/').pop() || 'file'
 
-        let deletedCount = 0
-        if (!dryRun) {
-          await supabase
-            .from(table)
-            .update({ [cfg.col]: cfg.isArray ? nextUrls : nextUrls[0] ?? null })
-            .eq('id', row.id)
+        // Upload to Catbox
+        const newUrl = await uploadToCatbox(bytes, filename, mime)
 
-          // Delete originals from Supabase Storage (best-effort, frees quota)
-          const grouped = new Map<string, string[]>()
-          for (const d of toDelete) {
-            if (!grouped.has(d.bucket)) grouped.set(d.bucket, [])
-            grouped.get(d.bucket)!.push(d.path)
-          }
-          for (const [bucket, paths] of grouped) {
-            try {
-              const { error: rmErr } = await supabase.storage.from(bucket).remove(paths)
-              if (!rmErr) deletedCount += paths.length
-              else console.warn(`[migrator] delete failed bucket=${bucket}:`, rmErr.message)
-            } catch (delErr) {
-              console.warn(`[migrator] delete threw bucket=${bucket}:`, delErr)
-            }
+        // Rewrite text columns
+        let rewrites = 0
+        for (const c of targets.textColumns || []) {
+          const { data: rows } = await admin
+            .from(c.table).select('id').eq(c.column, oldPublicUrl).limit(500)
+          for (const r of rows || []) {
+            await admin.from(c.table).update({ [c.column]: newUrl }).eq('id', r.id)
+            rewrites++
           }
         }
-        results.push({ id: row.id, ok: true, provider: 'catbox', deleted: deletedCount, newUrl: cfg.isArray ? `${nextUrls.length} files migrated` : nextUrls[0] })
+        // Rewrite array columns (text[])
+        for (const c of targets.arrayColumns || []) {
+          const { data: rows } = await admin
+            .from(c.table).select(`id, ${c.column}`).contains(c.column, [oldPublicUrl]).limit(500)
+          for (const r of rows || []) {
+            const arr: string[] = (r as any)[c.column] || []
+            const next = arr.map((v) => (v === oldPublicUrl ? newUrl : v))
+            await admin.from(c.table).update({ [c.column]: next }).eq('id', r.id)
+            rewrites++
+          }
+        }
+
+        // Delete storage object last
+        await admin.storage.from(bucket).remove([path])
+        results.push({ path, status: 'migrated', rewrites, new_url: newUrl, bytes: bytes.length })
       } catch (e: any) {
-        results.push({ id: row.id, ok: false, error: e?.message || String(e) })
+        results.push({ path, status: 'error', error: String(e?.message || e) })
       }
     }
 
     return new Response(JSON.stringify({
-      table, processed: results.length, dryRun,
-      success: results.filter(r => r.ok).length,
-      failed: results.filter(r => !r.ok).length,
-      results,
+      bucket, offset, processed: results.length, results,
+      next_offset: (objects?.length || 0) === limit ? offset + limit : null,
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
   } catch (e: any) {
-    console.error('[migrate-storage-to-catbox]', e)
-    return new Response(JSON.stringify({ error: e?.message || 'Failed' }),
-      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    return new Response(JSON.stringify({ error: String(e?.message || e) }), {
+      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
   }
 })
