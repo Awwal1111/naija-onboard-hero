@@ -48,13 +48,13 @@ const Analytics = () => {
   const fetchAnalytics = async () => {
     try {
       const [profile, posts, transactions, stories, storyViews, jobs, jobApplications] = await Promise.all([
-        supabase.from('profiles').select('*').eq('user_id', user?.id).single(),
-        supabase.from('posts').select('*').eq('user_id', user?.id),
-        supabase.from('wallet_transactions').select('*').eq('user_id', user?.id).order('created_at', { ascending: false }),
-        supabase.from('stories').select('*').eq('user_id', user?.id),
-        supabase.from('story_views').select('*, stories!inner(user_id)').eq('stories.user_id', user?.id),
-        supabase.from('job_posts').select('*').eq('user_id', user?.id),
-        supabase.from('job_applications').select('*').eq('applicant_id', user?.id)
+        supabase.from('profiles').select('connections_count, wallet_balance, average_rating').eq('user_id', user?.id).single(),
+        supabase.from('posts').select('id, title, content, likes_count, comments_count, views_count, created_at').eq('user_id', user?.id).limit(500),
+        supabase.from('wallet_transactions').select('amount, created_at').eq('user_id', user?.id).order('created_at', { ascending: false }).limit(500),
+        supabase.from('stories').select('id, created_at').eq('user_id', user?.id).limit(200),
+        supabase.from('story_views').select('story_id, stories!inner(user_id)').eq('stories.user_id', user?.id).limit(1000),
+        supabase.from('job_posts').select('id').eq('user_id', user?.id).limit(500),
+        supabase.from('job_applications').select('id').eq('applicant_id', user?.id).limit(500)
       ])
       
       const postStats = posts.data?.reduce((acc, p) => ({
