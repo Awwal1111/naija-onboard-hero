@@ -6620,36 +6620,6 @@ export type Database = {
           },
         ]
       }
-      stripe_account: {
-        Row: {
-          attrs: Json | null
-          business_type: string | null
-          country: string | null
-          created: string | null
-          email: string | null
-          id: string | null
-          type: string | null
-        }
-        Insert: {
-          attrs?: Json | null
-          business_type?: string | null
-          country?: string | null
-          created?: string | null
-          email?: string | null
-          id?: string | null
-          type?: string | null
-        }
-        Update: {
-          attrs?: Json | null
-          business_type?: string | null
-          country?: string | null
-          created?: string | null
-          email?: string | null
-          id?: string | null
-          type?: string | null
-        }
-        Relationships: []
-      }
       support_tickets: {
         Row: {
           admin_response: string | null
@@ -8192,6 +8162,13 @@ export type Database = {
             Returns: undefined
           }
         | { Args: { p_safepay_id: string }; Returns: undefined }
+      admin_lookup_profile_by_wallet: {
+        Args: { _wallet: string }
+        Returns: {
+          celo_wallet_address: string
+          user_id: string
+        }[]
+      }
       admin_release_fundraising_funds: {
         Args: { p_admin_id: string; p_fundraising_id: string }
         Returns: Json
@@ -8372,6 +8349,30 @@ export type Database = {
         }[]
       }
       get_landing_stats: { Args: never; Returns: Json }
+      get_my_financial_profile: {
+        Args: never
+        Returns: {
+          balance_withdrawable: number
+          celo_wallet_address: string
+          phone_number: string
+          wallet_balance: number
+          whatsapp_number: string
+        }[]
+      }
+      get_payment_request_by_short_code: {
+        Args: { _short_code: string }
+        Returns: {
+          amount: number
+          created_at: string
+          creator_user_id: string
+          expires_at: string
+          id: string
+          note: string
+          paid_at: string
+          short_code: string
+          status: string
+        }[]
+      }
       get_personalized_connections: {
         Args: { p_limit?: number; p_offset?: number; p_user_id: string }
         Returns: {
