@@ -434,27 +434,23 @@ export default function AIHire() {
       setMatchedFreelancers(topFreelancers)
 
       if (topGigs.length > 0) {
-
-      setMatchedFreelancers(scoredFreelancers)
-
-      if (scoredGigs.length > 0) {
         setMessages(prev => [...prev, {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
-          content: `📦 Top ${scoredGigs.length} ready-to-order packages, ranked by match score:`,
-          gigs: scoredGigs,
+          content: `📦 Top ${topGigs.length} ready-to-order packages, ranked by match score:`,
+          gigs: topGigs,
         }])
       }
 
       setMessages(prev => [...prev, {
         id: (Date.now() + 2).toString(),
         role: 'assistant',
-        content: scoredFreelancers.length > 0
-          ? `👨‍💻 Top ${scoredFreelancers.length} freelancers for custom work, ranked by 9-signal score:`
-          : scoredGigs.length === 0
+        content: topFreelancers.length > 0
+          ? `👨‍💻 Top ${topFreelancers.length} freelancers for custom work, ranked by 9-signal score:`
+          : topGigs.length === 0
             ? "I couldn't find strong matches. Try a broader description or browse all experts."
             : "You can also reach out to these freelancers for custom work:",
-        freelancers: scoredFreelancers,
+        freelancers: topFreelancers,
       }])
       setIsComplete(true)
     } catch (error) {
