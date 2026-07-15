@@ -425,9 +425,15 @@ export default function AIHire() {
           match_reasons: reasons.slice(0, 3),
         } as Gig
       })
-        .filter(g => g.match_score >= 15)
         .sort((a, b) => b.match_score - a.match_score)
-        .slice(0, 5)
+      const topGigs = (scoredGigs.filter(g => g.match_score >= 15).length
+        ? scoredGigs.filter(g => g.match_score >= 15)
+        : scoredGigs
+      ).slice(0, 5)
+
+      setMatchedFreelancers(topFreelancers)
+
+      if (topGigs.length > 0) {
 
       setMatchedFreelancers(scoredFreelancers)
 
