@@ -341,9 +341,11 @@ export default function AIHire() {
           match_reasons: reasons.slice(0, 3),
         } as Freelancer
       })
-        .filter(f => f.match_score >= 15)
         .sort((a, b) => b.match_score - a.match_score)
-        .slice(0, 5)
+      const topFreelancers = (scoredFreelancers.filter(f => f.match_score >= 15).slice(0, 5).length
+        ? scoredFreelancers.filter(f => f.match_score >= 15)
+        : scoredFreelancers
+      ).slice(0, 5)
 
       // -------- Gig scoring --------
       const minBudget = context.budget_min ?? 0
