@@ -341,9 +341,11 @@ export default function AIHire() {
           match_reasons: reasons.slice(0, 3),
         } as Freelancer
       })
-        .filter(f => f.match_score >= 15)
         .sort((a, b) => b.match_score - a.match_score)
-        .slice(0, 5)
+      const topFreelancers = (scoredFreelancers.filter(f => f.match_score >= 15).slice(0, 5).length
+        ? scoredFreelancers.filter(f => f.match_score >= 15)
+        : scoredFreelancers
+      ).slice(0, 5)
 
       // -------- Gig scoring --------
       const minBudget = context.budget_min ?? 0
@@ -423,30 +425,32 @@ export default function AIHire() {
           match_reasons: reasons.slice(0, 3),
         } as Gig
       })
-        .filter(g => g.match_score >= 15)
         .sort((a, b) => b.match_score - a.match_score)
-        .slice(0, 5)
+      const topGigs = (scoredGigs.filter(g => g.match_score >= 15).length
+        ? scoredGigs.filter(g => g.match_score >= 15)
+        : scoredGigs
+      ).slice(0, 5)
 
-      setMatchedFreelancers(scoredFreelancers)
+      setMatchedFreelancers(topFreelancers)
 
-      if (scoredGigs.length > 0) {
+      if (topGigs.length > 0) {
         setMessages(prev => [...prev, {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
-          content: `📦 Top ${scoredGigs.length} ready-to-order packages, ranked by match score:`,
-          gigs: scoredGigs,
+          content: `📦 Top ${topGigs.length} ready-to-order packages, ranked by match score:`,
+          gigs: topGigs,
         }])
       }
 
       setMessages(prev => [...prev, {
         id: (Date.now() + 2).toString(),
         role: 'assistant',
-        content: scoredFreelancers.length > 0
-          ? `👨‍💻 Top ${scoredFreelancers.length} freelancers for custom work, ranked by 9-signal score:`
-          : scoredGigs.length === 0
+        content: topFreelancers.length > 0
+          ? `👨‍💻 Top ${topFreelancers.length} freelancers for custom work, ranked by 9-signal score:`
+          : topGigs.length === 0
             ? "I couldn't find strong matches. Try a broader description or browse all experts."
             : "You can also reach out to these freelancers for custom work:",
-        freelancers: scoredFreelancers,
+        freelancers: topFreelancers,
       }])
       setIsComplete(true)
     } catch (error) {
