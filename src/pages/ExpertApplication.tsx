@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { useNigerianStates } from '@/hooks/useNigerianStates'
 import { useProfile } from '@/hooks/useProfile'
+import { BlogTip } from '@/components/BlogTip'
 
 // Countries list
 const COUNTRIES = [
@@ -208,10 +209,23 @@ const ExpertApplication = () => {
       </header>
 
       <div className="px-6 py-6">
-        <div className="mb-6">
+        <div className="mb-4">
           <h1 className="text-2xl font-bold text-text-primary mb-2">Apply for Expert Status</h1>
           <p className="text-text-secondary">Complete this application to become a verified expert on NaijaLancers</p>
         </div>
+        <div className="mb-6 space-y-2">
+          <BlogTip
+            slug="why-expert-application-rejected-naijalancers-2026"
+            title="Why expert applications get rejected (and how to fix it in 24 hours)"
+            subtitle="Wrong portfolio link, 0 years experience, missing category — the exact fixes."
+          />
+          <BlogTip
+            slug="building-freelance-portfolio-that-converts-nigeria"
+            title="Build a portfolio that converts (even with no clients yet)"
+            subtitle="Your portfolio link is the #1 reason applications pass or fail."
+          />
+        </div>
+
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Personal Information */}

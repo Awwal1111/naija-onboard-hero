@@ -2,6 +2,7 @@ import React from 'react'
 import { ArrowLeft } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { CreateJobPostDialog } from '@/components/CreateJobPostDialog'
+import { BlogTip } from '@/components/BlogTip'
 
 /**
  * Full-page wrapper for posting a real Job (job_posts table).
@@ -26,12 +27,27 @@ const PostJob = () => {
         <div className="w-5" />
       </header>
 
-      <div className="px-4 sm:px-6 py-8 max-w-2xl mx-auto text-center">
-        <h2 className="text-lg font-semibold mb-2">Hire talent on NaijaLancers</h2>
-        <p className="text-sm text-muted-foreground mb-6">
-          Describe what you need. Freelancers will apply and you'll review them in your Job dashboard.
-        </p>
+      <div className="px-4 sm:px-6 py-8 max-w-2xl mx-auto">
+        <div className="text-center mb-6">
+          <h2 className="text-lg font-semibold mb-2">Hire talent on NaijaLancers</h2>
+          <p className="text-sm text-muted-foreground">
+            Describe what you need. Freelancers will apply and you'll review them in your Job dashboard.
+          </p>
+        </div>
+        <div className="space-y-2">
+          <BlogTip
+            slug="how-to-post-a-good-job-hire-fast-nigeria"
+            title="How to post a job that attracts top freelancers (not spam)"
+            subtitle="Budget signals, required fields, and screening filters that work."
+          />
+          <BlogTip
+            slug="client-guide-choose-right-freelancer-nigeria"
+            title="A client's guide to choosing the right freelancer"
+            subtitle="10 signals that separate a freelancer who delivers from one who disappears."
+          />
+        </div>
       </div>
+
 
       <CreateJobPostDialog
         open={open}

@@ -2868,6 +2868,289 @@ export const BLOG_POSTS: BlogPost[] = [
       <Section title="What AI cannot do for you"><p>It can't build your reputation, it can't show up on time, and it can't replace the trust that completed orders and reviews create on NaijaLancers. The freelancers winning in 2026 use AI as a multiplier on real skill — not as a substitute for it.</p></Section>
     </>),
   },
+  {
+    slug: 'why-expert-application-rejected-naijalancers-2026',
+    title: 'Why Your NaijaLancers Expert Application Was Rejected (And How to Fix It in 24 Hours)',
+    description: 'The real reasons expert applications get rejected on NaijaLancers — wrong portfolio link, 0 years experience, missing skill category — and the exact fix for each.',
+    keywords: 'naijalancers expert rejected, expert application rejected, freelance verification nigeria, expert application tips',
+    datePublished: '2026-07-19', dateModified: '2026-07-19', readTime: '7 min read',
+    author: 'NaijaLancers Trust & Safety', category: 'Expert Program',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">Every week we reject dozens of expert applications for the same handful of reasons. None of them are about talent — they are about how the form was filled. Read this once and you'll never fail the review again.</p>
+      <Section title="The 6 reasons applications fail">
+        <Sub title="1. Portfolio link is wrong, empty, or unreachable">
+          <p>By far the #1 reason. People paste their WhatsApp status, a broken Google Drive folder, a screenshot uploaded to their own phone, or literally the word "Instagram". Reviewers cannot see any of that.</p>
+          <p><strong>The fix:</strong> paste a full <em>https://</em> URL to a public page — your Behance, GitHub, Dribbble, a Google Drive folder set to "Anyone with the link can view", a YouTube channel, or a live website. Open it in a private browser tab first to confirm a stranger can load it without signing in.</p>
+        </Sub>
+        <Sub title="2. Years of experience set to 0">
+          <p>The form has a "Years of Experience" field. If you leave it at 0 or type "beginner", the application is auto-flagged. Expert status is for practitioners with real delivered work — not people starting today.</p>
+          <p><strong>The fix:</strong> put the honest number of years you have been doing this skill professionally or seriously. Even 1 year passes. 0 does not. If you truly have zero, build 2–3 free portfolio pieces first, then apply.</p>
+        </Sub>
+        <Sub title="3. Skill category left blank or set to 'Other'">
+          <p>"Other" tells the reviewer you didn't read the list. Pick the closest match — Web Development, Graphic Design, Content Writing, AI &amp; Automation, etc. If your niche is genuinely missing, choose the parent category and add specifics in your bio.</p>
+        </Sub>
+        <Sub title="4. Full name doesn't match your ID">
+          <p>Later verification tiers cross-check against your government ID. If your application says "Blaze Kingz" and your NIN says "Chukwuemeka David Okoro", you'll be rejected at level 2 verification. Use your real legal name from day one.</p>
+        </Sub>
+        <Sub title="5. Location fields incomplete">
+          <p>Nigerian applicants must fill Country → State → LGA → Area. Non-Nigerian applicants must fill Country + City. Leaving any of these blank blocks the geographic ranking that makes local clients find you.</p>
+        </Sub>
+        <Sub title="6. Phone number invalid or duplicated">
+          <p>Use the phone you actually own. Duplicate phone numbers across accounts get both rejected. Nigerian numbers should be 11 digits starting with 0, or in +234 format.</p>
+        </Sub>
+      </Section>
+      <Section title="How to reapply after rejection">
+        <p>Rejection is not a ban. Go to Profile → "Apply for Expert Status" again, fix the flagged field, and resubmit. Most re-applications are approved within 24 hours because the reviewer already knows your case.</p>
+        <p>Two tips that unlock the fastest approvals: (a) write 3–4 sentences in your bio describing a specific project you delivered — client, scope, outcome; (b) make sure your profile picture is a clear headshot, not a logo or a landscape.</p>
+      </Section>
+      <Section title="What happens after approval">
+        <p>You get the green "Expert" badge, priority ranking in Discovery, the ability to post gigs with milestone pricing, and access to the Hire Contract system where clients fund escrow upfront. Levels (L1 → L2 → Top Rated) then unlock automatically based on your delivered orders and ratings.</p>
+      </Section>
+    </>),
+  },
+  {
+    slug: 'why-nigerian-government-should-fund-naijalancers',
+    title: 'Why the Nigerian Government Should Fund NaijaLancers',
+    description: 'Nigeria has 40M+ underemployed young people and one of the largest freelance talent pools in Africa. Here is the case for public funding of NaijaLancers as national employment infrastructure.',
+    keywords: 'nigerian government fund naijalancers, freelance funding nigeria, digital economy nigeria, youth employment nigeria, ndic ncc nitda',
+    datePublished: '2026-07-19', dateModified: '2026-07-19', readTime: '9 min read',
+    author: 'Awwal Dayyabu — Founder, NaijaLancers', category: 'Policy & Growth',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">
+        Nigeria has more unemployed graduates than most African countries have citizens. It also has one of the largest, youngest, most English-fluent, digitally-native talent pools on the continent. The gap between those two facts is not a talent problem — it is an infrastructure problem. NaijaLancers is building that infrastructure, and the case for public co-funding is straightforward.
+      </p>
+      <Section title="The unemployment reality">
+        <p>Official figures put youth unemployment above 40%. Underemployment — graduates delivering Bolt rides, selling data on WhatsApp, doing informal work far below their qualifications — is higher. Meanwhile, foreign platforms like Upwork and Fiverr charge Nigerian freelancers 20% commissions, hold their money for 14 days, and freeze accounts without explanation. Every naira of value earned leaves the country before it circulates locally.</p>
+      </Section>
+      <Section title="What NaijaLancers changes">
+        <List items={[
+          'Payments settle in Naira on the same day, not 14 days later in dollars minus fees',
+          'Escrow removes the #1 reason freelance deals collapse in Nigeria — trust',
+          '5% platform fee vs 20% on foreign platforms — 15% of every deal stays with the freelancer',
+          'AI-powered matching in local languages (Hausa, Yoruba, Igbo, Pidgin) reaches the 60% of Nigerians foreign platforms ignore',
+          'Onboarding paths for people without formal degrees — informal skilled workers monetize on the same rails as software engineers',
+        ]} />
+      </Section>
+      <Section title="Why this deserves public co-funding">
+        <p>Because the outcomes are exactly what national policy already claims to want:</p>
+        <List items={[
+          '<strong>Job creation without factory investment.</strong> Every freelancer onboarded is one less unemployment statistic and one more taxable earner, at near-zero marginal cost per user.',
+          '<strong>Foreign exchange retention.</strong> International clients paying Nigerian freelancers through NaijaLancers settle in stablecoin/Naira on-platform. That FX stays in the local economy instead of routing through Payoneer and PayPal accounts held abroad.',
+          '<strong>Digital economy pillar.</strong> The National Digital Economy Policy targets a $500B digital economy by 2030. Freelance services are the fastest-scaling component of that number and require no physical build-out.',
+          '<strong>Financial inclusion.</strong> Freelancers who never qualified for a bank loan now hold on-chain payment history and NC balances — a real credit signal for the CBN\'s financial-inclusion targets.',
+          '<strong>Female participation.</strong> Roughly half of active freelance categories (writing, design, tutoring, virtual assistance) are dominated by women who cannot easily commute to formal jobs. NaijaLancers puts income in their hands from a phone.',
+        ]} />
+      </Section>
+      <Section title="What we are actually asking for">
+        <p>Not a bailout. Three specific forms of support:</p>
+        <List items={[
+          '<strong>NITDA / ITF partnership.</strong> Co-fund a nationwide skills-to-earnings pipeline: NITDA trains, NaijaLancers onboards graduates into paid gigs on completion. We already have the platform; they already have the trainees.',
+          '<strong>NCC / CBN sandbox recognition.</strong> Formal recognition inside the payments sandbox so our escrow and NC wallet operate under clear regulatory rails, unlocking bank partnerships that today take 9 months of email chains.',
+          '<strong>SMEDAN / BOI micro-grant matching.</strong> Match every ₦100,000 our top-rated freelancers earn on-platform with a ₦25,000 equipment micro-grant. Cheap, targeted, and rewards proven output — not paper applications.',
+        ]} />
+      </Section>
+      <Section title="Why us, why now">
+        <p>Nigerian freelancing platforms have been announced before. None survived because they under-invested in the two things that actually matter: <em>trust infrastructure</em> (escrow, verification, dispute resolution) and <em>payments</em> (real Naira on-ramps, stablecoin rails, instant settlement). We built those first, before the marketing. That is why we exist, and why user retention is what it is.</p>
+        <p>Every month the government delays, another million naira in commissions leaves Nigeria to Silicon Valley and Israel. Public co-funding of a domestic alternative pays for itself in FX retention alone within 18 months. The rest — jobs, taxes, dignity — is upside.</p>
+      </Section>
+      <Section title="How to reach us">
+        <p>If you are in NITDA, ITF, NCC, BOI, SMEDAN, or any state digital-economy office and this brief resonates, write to <a href="mailto:support@naijalancers.name.ng" className="text-primary underline">support@naijalancers.name.ng</a>. We will send the full deck, live metrics, and technical architecture within 24 hours.</p>
+      </Section>
+    </>),
+  },
+  {
+    slug: 'how-to-post-winning-gig-naijalancers',
+    title: 'How to Post a Gig That Actually Gets Orders on NaijaLancers',
+    description: 'The exact anatomy of a gig that converts: title, cover image, description, pricing tiers, FAQs. Real examples from top-rated Nigerian freelancers.',
+    keywords: 'post gig naijalancers, gig that sells, freelance gig tips, gig conversion, gig title examples',
+    datePublished: '2026-07-19', dateModified: '2026-07-19', readTime: '6 min read',
+    author: 'NaijaLancers Team', category: 'Selling & Gigs',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">A gig is a landing page for one skill. The gigs that sell all follow the same 6-part structure. Copy it.</p>
+      <Section title="The 6-part winning gig">
+        <Sub title="1. Title — outcome first, tool second"><p>Bad: "I will design graphics". Good: "I will design a modern logo + brand kit for your Nigerian business in 48 hours". Lead with the outcome and the timeframe. Add one specific detail (Nigerian, modern, e-commerce, real-estate) so it's not generic.</p></Sub>
+        <Sub title="2. Cover image — the actual work, not a stock photo"><p>The cover should be a real deliverable you produced. No Canva templates, no AI-generated hero graphics. Buyers can smell a fake portfolio in 2 seconds.</p></Sub>
+        <Sub title="3. Description — problem, promise, process"><p>Three short paragraphs: (a) the problem the client has, (b) what you deliver, (c) how the process works and how long each step takes. End with a one-line call to action: "Message me before you order to confirm scope."</p></Sub>
+        <Sub title="4. Three pricing tiers — Basic, Standard, Premium"><p>NaijaLancers now supports tiered packages. Use them. Basic is a foot-in-the-door test, Standard is what 70% of buyers pick, Premium unlocks the biggest customers. Anchor Premium high — even if it never sells, it makes Standard look reasonable.</p></Sub>
+        <Sub title="5. FAQs — 5 real questions"><p>Answer the objections buyers ask in chat before ordering: "Do you offer revisions?", "Do I get source files?", "Can you deliver faster for a rush fee?". Every FAQ is a chat message you never have to send.</p></Sub>
+        <Sub title="6. Tags &amp; category"><p>Pick the tightest category that fits. Wrong category is the #1 reason gigs get zero impressions.</p></Sub>
+      </Section>
+      <Section title="Before you hit Publish">
+        <List items={['Read the title out loud — does it promise a clear outcome?','Is the cover image a real thing you made?','Are the three tiers priced with real math (time × your rate)?','Would you buy this gig if you saw it as a stranger?']} />
+      </Section>
+    </>),
+  },
+  {
+    slug: 'how-to-post-a-good-job-hire-fast-nigeria',
+    title: 'How to Post a Job That Attracts Top Freelancers (Not Spam)',
+    description: 'Post a job on NaijaLancers that gets 20 quality applications instead of 200 copy-paste ones. The exact fields, budget signals, and screening filters that work.',
+    keywords: 'post job nigeria, hire freelancer nigeria, naijalancers job posting, screen applicants, hire fast',
+    datePublished: '2026-07-19', dateModified: '2026-07-19', readTime: '5 min read',
+    author: 'NaijaLancers Client Success', category: 'Hiring & Clients',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">The quality of applicants you get is set the moment you write the job post. Vague briefs attract vague people. Sharp briefs attract sharp people.</p>
+      <Section title="The 5 fields that actually matter">
+        <Sub title="1. Title — one job, one sentence"><p>"Need a React developer to fix 3 bugs in an existing Next.js dashboard (2-day job)". Not "Looking for developer".</p></Sub>
+        <Sub title="2. Budget — post a real number"><p>Jobs with a stated budget get 4× more quality applications. Freelancers ignore "budget: negotiable" because it usually means "unrealistic". Even a range (NC 50,000–80,000) filters serious people in.</p></Sub>
+        <Sub title="3. Contract type — Fixed or Hourly"><p>Fixed for scoped deliverables (logo, article, landing page). Hourly for ongoing or ambiguous work (bug fixing, consulting). The Apply dialog now asks freelancers to choose — matching your choice speeds up hiring.</p></Sub>
+        <Sub title="4. Required skills — 3 max"><p>Listing 15 skills tells top freelancers you don't know what you actually need. Pick the 3 that are non-negotiable.</p></Sub>
+        <Sub title="5. Description — context + deliverable + deadline"><p>One paragraph of context (what you're building and why), one bulleted list of what "done" looks like, one line with the deadline.</p></Sub>
+      </Section>
+      <Section title="Screening applicants fast">
+        <p>Every applicant now includes cover letter, proposed rate, contract type, and duration. Skim for three signals: (a) did they read the job — do they mention a specific detail from your post? (b) is the rate in your budget? (c) is there a portfolio link? Anyone missing all three, archive.</p>
+      </Section>
+      <Section title="After you shortlist">
+        <p>Move top 3 candidates to chat. Ask one specific question about their approach. Whoever answers with substance in under 12 hours is your hire. Fund the Hire Contract escrow and start.</p>
+      </Section>
+    </>),
+  },
+  {
+    slug: 'winning-cover-letter-freelance-jobs-nigeria',
+    title: 'The Cover Letter That Wins Freelance Jobs on NaijaLancers',
+    description: 'A 6-line cover letter framework Nigerian freelancers can copy to win 3× more job applications. Includes a real example and the mistakes that get you archived instantly.',
+    keywords: 'cover letter freelance nigeria, job proposal template, freelance application, win freelance jobs',
+    datePublished: '2026-07-19', dateModified: '2026-07-19', readTime: '5 min read',
+    author: 'NaijaLancers Career Desk', category: 'Career & Skills',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">Clients read the first 3 lines of 20+ cover letters. If yours doesn't earn line 4, you're archived. Here's the framework that survives the skim.</p>
+      <Section title="The 6-line framework">
+        <List items={[
+          '<strong>Line 1 — the specific hook.</strong> Reference one concrete detail from their job post ("I noticed you need this shipped before your November launch — I can hit that.").',
+          '<strong>Line 2 — your one-line credential.</strong> "I\'ve shipped 12 Next.js dashboards, 4 of them for Nigerian fintechs."',
+          '<strong>Line 3 — one portfolio link that matches.</strong> Not your whole portfolio — one item most relevant to their job.',
+          '<strong>Line 4 — your approach in 2 sentences.</strong> How you\'d attack the first day.',
+          '<strong>Line 5 — the rate and timeline.</strong> Match their budget signal. "NC 80,000, delivered in 5 working days."',
+          '<strong>Line 6 — a question that starts a conversation.</strong> "Is the current codebase on GitHub or should I expect a zip?"'
+        ]} />
+      </Section>
+      <Section title="Mistakes that get you archived">
+        <List items={['"Dear Sir/Ma, I am writing to..." — dead on arrival','Copy-pasting the same letter to every job','Attaching a 3MB PDF resume when the job asks for a portfolio link','Promising "high-quality work" with no specifics','Asking for the job before saying anything useful about their problem']} />
+      </Section>
+    </>),
+  },
+  {
+    slug: 'pricing-your-gig-basic-standard-premium-tiers',
+    title: 'How to Price Your Gig — Basic, Standard, Premium (With Real Math)',
+    description: 'A pricing formula for Nigerian freelancers using NaijaLancers\' new 3-tier gig packages. Includes the psychology of anchoring and 3 real examples.',
+    keywords: 'gig pricing nigeria, price freelance work, freelance rates naira, basic standard premium tiers',
+    datePublished: '2026-07-19', dateModified: '2026-07-19', readTime: '6 min read',
+    author: 'NaijaLancers Team', category: 'Selling & Gigs',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">NaijaLancers gigs now support three packages — Basic, Standard, Premium. Used well, this doubles your average order value. Used badly, it confuses buyers into leaving.</p>
+      <Section title="The core formula">
+        <p>Start with what your <em>time</em> is worth per hour. Multiply by the honest hours a job takes. Add 20% for revisions. That's your Standard price. Basic = Standard × 0.6 (less scope). Premium = Standard × 2.2 (more scope + speed).</p>
+      </Section>
+      <Section title="Real example — a logo designer">
+        <List items={['<strong>Basic — NC 15,000.</strong> 1 concept, 1 revision, PNG only, 3-day delivery.','<strong>Standard — NC 35,000.</strong> 3 concepts, 3 revisions, PNG + SVG + brand color palette, 48h delivery.','<strong>Premium — NC 90,000.</strong> 5 concepts, unlimited revisions, full brand kit + social banners + 24h delivery.']} />
+      </Section>
+      <Section title="The anchoring trick">
+        <p>Buyers rarely pick Premium — but its existence makes Standard look reasonable. Without a Premium tier, Standard feels expensive. This is why every airline shows Business class right next to Economy.</p>
+      </Section>
+      <Section title="What NOT to do">
+        <List items={['Making Basic almost identical to Standard — no reason to upgrade','Using the same delivery time on all three — speed is a lever, use it','Setting Premium at 1.3× Standard — too close to matter, price it at 2×+']} />
+      </Section>
+    </>),
+  },
+  {
+    slug: 'building-freelance-portfolio-that-converts-nigeria',
+    title: 'How to Build a Freelance Portfolio That Actually Converts (Even With No Clients Yet)',
+    description: 'You don\'t need paid clients to have a strong portfolio. Here is the 5-piece portfolio every Nigerian freelancer can build in one weekend.',
+    keywords: 'freelance portfolio nigeria, portfolio without clients, portfolio pieces, self-initiated work',
+    datePublished: '2026-07-19', dateModified: '2026-07-19', readTime: '6 min read',
+    author: 'NaijaLancers Team', category: 'Career & Skills',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">"I don't have clients so I can't build a portfolio" is the most expensive mistake new freelancers make. You build the portfolio, <em>then</em> the clients come. Here's how.</p>
+      <Section title="The 5-piece starter portfolio">
+        <List items={[
+          '<strong>1 self-initiated project</strong> — redesign the website of a Nigerian brand you actually use (a bank, a food app). Write a 3-paragraph case study explaining what you improved and why.',
+          '<strong>1 free project for a real business</strong> — offer one free deliverable to a small business in your neighbourhood. Get a testimonial in exchange.',
+          '<strong>1 collaboration</strong> — team up with another freelancer here. Their code + your design, or their copy + your video. Real client-like coordination.',
+          '<strong>1 challenge piece</strong> — take a public design/dev challenge (Frontend Mentor, Daily UI) and finish it end-to-end.',
+          '<strong>1 speculative pitch</strong> — a proposal you sent to a company that never hired you. Prove you can think in briefs.',
+        ]} />
+      </Section>
+      <Section title="Where to host it">
+        <p>Behance for design, GitHub for code, a personal domain for writing, a YouTube channel for video. Then paste that link into your NaijaLancers expert application. This alone is why 70% of the applications we approve get approved.</p>
+      </Section>
+    </>),
+  },
+  {
+    slug: 'first-five-star-review-naijalancers-guide',
+    title: 'How to Get Your First 5-Star Review on NaijaLancers',
+    description: 'Your first review is the hardest. Here is the exact playbook top-rated freelancers on NaijaLancers used to land their first perfect rating within 7 days.',
+    keywords: 'first review naijalancers, 5-star rating freelance, first order freelance, expert level up',
+    datePublished: '2026-07-19', dateModified: '2026-07-19', readTime: '5 min read',
+    author: 'NaijaLancers Team', category: 'Selling & Gigs',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">Your first review is worth more than the next 20. It moves you from "New" to Level 1, unlocks better placement in Discovery, and doubles your organic order rate. Here's how to earn it fast.</p>
+      <Section title="The 5-step first-order playbook">
+        <Sub title="1. Price your Basic tier low on purpose"><p>For your first 3 orders only, drop Basic to 40% of your normal rate. You are buying reviews, not maximising revenue.</p></Sub>
+        <Sub title="2. Reply in under 10 minutes"><p>NaijaLancers surfaces your response time on your profile. Fast replies alone push you up rankings before you have a single review.</p></Sub>
+        <Sub title="3. Over-scope the first delivery"><p>Deliver one extra thing they didn't ask for. A bonus revision, an extra format, a written summary. The delight is what makes a 5-star review feel automatic.</p></Sub>
+        <Sub title="4. Ask, don't beg"><p>Send one polite message after delivery: "If the work hit the mark, a quick review would mean a lot — it helps me unlock better tools on the platform."</p></Sub>
+        <Sub title="5. Don't argue about revisions"><p>Say yes to the first revision request even if it stings. One review lost early is 6 months of ranking damage.</p></Sub>
+      </Section>
+    </>),
+  },
+  {
+    slug: 'avoid-payment-disputes-freelancer-guide',
+    title: 'How to Avoid Payment Disputes as a Nigerian Freelancer',
+    description: 'Most freelance payment disputes are preventable at the briefing stage. Here are the 7 habits that keep your NaijaLancers escrow settling smoothly, every time.',
+    keywords: 'freelance payment dispute nigeria, escrow release, avoid chargebacks freelance, safe freelance work',
+    datePublished: '2026-07-19', dateModified: '2026-07-19', readTime: '6 min read',
+    author: 'NaijaLancers Trust & Safety', category: 'Payments & Security',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">Escrow protects you — but only if the scope was clear when the money was funded. The 7 habits below stop 90% of disputes before they start.</p>
+      <Section title="The 7 dispute-prevention habits">
+        <List items={[
+          '<strong>Write the scope in chat before you accept the order.</strong> "You are ordering X. Delivery is Y. Revisions: 2. Timeline: 5 days." Get a "yes" in writing.',
+          '<strong>Never start work before escrow is funded.</strong> No exceptions, ever, not even for repeat clients.',
+          '<strong>Send progress updates every 24–48 hours.</strong> Silence causes anxiety and anxiety causes disputes.',
+          '<strong>Deliver inside the platform.</strong> Files, links, and receipts go through the order chat — that\'s what the dispute team can see.',
+          '<strong>Use milestones for anything above NC 200,000.</strong> Break it into 3 chunks that release as you go.',
+          '<strong>Cap revisions in the gig, not in your head.</strong> "2 revisions" written in the FAQ is a shield during a dispute.',
+          '<strong>Escalate early, not late.</strong> If a client goes quiet after delivery, open a dispute at day 5, not day 25. Fresh evidence wins.',
+        ]} />
+      </Section>
+      <Section title="If it goes wrong anyway">
+        <p>Every dispute is reviewed by a human on our Trust &amp; Safety team. The party with the clearer paper trail — messages, scope, delivery files — wins. Nothing else matters.</p>
+      </Section>
+    </>),
+  },
+  {
+    slug: 'client-guide-choose-right-freelancer-nigeria',
+    title: 'A Client\'s Guide to Choosing the Right Freelancer on NaijaLancers',
+    description: 'Ten signals that separate a freelancer who will deliver from one who will disappear with your NC. A must-read before you hire anyone on NaijaLancers.',
+    keywords: 'hire freelancer nigeria, choose freelancer, freelance client guide, red flags freelancer',
+    datePublished: '2026-07-19', dateModified: '2026-07-19', readTime: '6 min read',
+    author: 'NaijaLancers Client Success', category: 'Hiring & Clients',
+    body: (<>
+      <p className="text-lg text-text-secondary leading-relaxed">Escrow protects your money — but choosing the wrong freelancer still wastes your time. Here's the 10-signal checklist top clients on NaijaLancers use before ordering.</p>
+      <Section title="Green flags — hire these people">
+        <List items={[
+          'Expert badge visible on the profile',
+          'Level 1 or higher (means past orders + real ratings)',
+          'Response time under 1 hour on their profile',
+          'Portfolio link opens without a sign-in wall',
+          'Their first chat reply asks a clarifying question',
+          'Their gig has 3 tiers and clear FAQs',
+        ]} />
+      </Section>
+      <Section title="Red flags — keep scrolling">
+        <List items={[
+          '"New" badge + no portfolio + no reviews and asking premium rates',
+          'Bio is one line and generic ("I am a hard-working professional...")',
+          'Wants to move the conversation off-platform to WhatsApp before you\'ve funded escrow',
+          'Won\'t answer specific questions with specifics',
+          'Offers to do the job for 1/10 of the going rate — either scam or you\'ll get 1/10 of the quality',
+        ]} />
+      </Section>
+      <Section title="The 3-message screening call">
+        <p>Before you order, send three messages: (1) describe the project in 3 sentences, (2) ask "how would you approach this?", (3) confirm the price and timeline. Anyone who can't handle those three messages fluently won't handle the actual job either.</p>
+      </Section>
+    </>),
+  },
+
 
 ];
 
