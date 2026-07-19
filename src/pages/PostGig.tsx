@@ -312,10 +312,23 @@ const PostGig = () => {
       </header>
 
       <div className="px-4 sm:px-6 py-6 max-w-2xl mx-auto">
-        <div className="mb-6">
+        <div className="mb-4">
           <h1 className="text-xl font-bold mb-1">Post a Service (Gig)</h1>
           <p className="text-sm text-muted-foreground">Create a listing for your product or service</p>
         </div>
+        <div className="mb-6 space-y-2">
+          <BlogTip
+            slug="how-to-post-winning-gig-naijalancers"
+            title="How to post a gig that actually gets orders"
+            subtitle="Title, cover image, tiered pricing and FAQs — the exact anatomy of a converting gig."
+          />
+          <BlogTip
+            slug="pricing-your-gig-basic-standard-premium-tiers"
+            title="Pricing your gig — Basic, Standard, Premium (with real math)"
+            subtitle="A pricing formula that doubles average order value."
+          />
+        </div>
+
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Photos Section - Moved to top for better UX */}
