@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { useNigerianStates } from '@/hooks/useNigerianStates'
 import { useProfile } from '@/hooks/useProfile'
+import { BlogTip } from '@/components/BlogTip'
 
 // Countries list
 const COUNTRIES = [
