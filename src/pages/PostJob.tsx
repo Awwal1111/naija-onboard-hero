@@ -2,6 +2,7 @@ import React from 'react'
 import { ArrowLeft } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { CreateJobPostDialog } from '@/components/CreateJobPostDialog'
+import { BlogTip } from '@/components/BlogTip'
 
 /**
  * Full-page wrapper for posting a real Job (job_posts table).
