@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { AIWritingAssistant } from '@/components/AIWritingAssistant'
 import { usePremiumGate } from '@/hooks/usePremiumGate'
+import { BlogTip } from '@/components/BlogTip'
 
 const PostGig = () => {
   const navigate = useNavigate()
