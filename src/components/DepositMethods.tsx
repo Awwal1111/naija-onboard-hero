@@ -39,9 +39,10 @@ export const DepositMethods = ({ onSelectMethod }: DepositMethodsProps) => {
         </Card>
       )}
 
-      {/* Quidax — Naira bank ramp. Works globally for anyone with a Quidax account (Nigeria, Ghana,
-          Kenya, South Africa, Uganda, Tanzania, Egypt and other Quidax-supported regions). */}
-      <Card className={`${!isMiniPay ? 'border-primary/20 bg-gradient-to-br from-primary/5 to-transparent' : ''} relative overflow-hidden`}>
+      {/* Pretium Mobile Money — shown FIRST to every user. Works with M-Pesa,
+          MTN, Airtel, Vodafone across Kenya, Ghana, Uganda, Malawi and DR Congo.
+          Nigerians can also use it if they hold any of these mobile-money numbers. */}
+      <Card className={`${!isMiniPay ? 'border-primary/20 bg-gradient-to-br from-primary/5 to-transparent' : 'hover:border-primary/40'} transition-colors relative overflow-hidden`}>
         {!isMiniPay && (
           <Badge className="absolute top-4 right-4 bg-primary">
             <Sparkles className="h-3 w-3 mr-1" />
@@ -49,7 +50,26 @@ export const DepositMethods = ({ onSelectMethod }: DepositMethodsProps) => {
           </Badge>
         )}
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Globe className="h-5 w-5 text-primary" />
+            Pretium Mobile Money
+          </CardTitle>
+          <CardDescription>
+            M-Pesa, MTN, Airtel, Vodafone • Kenya, Ghana, Uganda, Malawi, DR Congo
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <BrandButton onClick={() => onSelectMethod('pretium')} variant={!isMiniPay ? 'primary' : 'outline'} className="w-full">
+            Deposit with Mobile Money
+          </BrandButton>
+        </CardContent>
+      </Card>
+
+      {/* Quidax — Naira bank ramp. Works globally for anyone with a Quidax account
+          (Nigeria, Ghana, Kenya, South Africa, Uganda, Tanzania, Egypt and more). */}
+      <Card className="hover:border-primary/40 transition-colors relative overflow-hidden">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
             <ArrowDownUp className="h-5 w-5 text-primary" />
             Quidax {isNigerian ? '(₦ Bank Transfer)' : '(Buy NC with crypto or NGN)'}
           </CardTitle>
@@ -60,38 +80,11 @@ export const DepositMethods = ({ onSelectMethod }: DepositMethodsProps) => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <BrandButton onClick={() => onSelectMethod('ramp')} className="w-full" variant={isMiniPay ? 'outline' : 'primary'}>
+          <BrandButton onClick={() => onSelectMethod('ramp')} variant="outline" className="w-full">
             Deposit via Quidax
           </BrandButton>
         </CardContent>
       </Card>
-
-
-      {/* Pretium Mobile Money — for non-Nigerians */}
-      {!isNigerian && (
-        <Card className={`${!isMiniPay ? 'border-primary/20 bg-gradient-to-br from-primary/5 to-transparent' : 'hover:border-primary/40'} transition-colors relative overflow-hidden`}>
-          {!isMiniPay && (
-            <Badge className="absolute top-4 right-4 bg-primary">
-              <Sparkles className="h-3 w-3 mr-1" />
-              Recommended
-            </Badge>
-          )}
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Globe className="h-5 w-5 text-primary" />
-              Pretium Mobile Money
-            </CardTitle>
-            <CardDescription>
-              M-Pesa, MTN, Airtel • Kenya, Ghana, Uganda, Malawi, DR Congo
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <BrandButton onClick={() => onSelectMethod('pretium')} variant={!isMiniPay ? 'primary' : 'outline'} className="w-full">
-              Deposit with Mobile Money
-            </BrandButton>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Mt Pelerin - Global card / bank / SEPA ramp */}
       <Card className="hover:border-primary/40 transition-colors relative overflow-hidden">
