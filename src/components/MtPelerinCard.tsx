@@ -8,7 +8,6 @@ import { Globe, Info, Copy, ExternalLink } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/integrations/supabase/client'
-import { buildMtPelerinUrl } from '@/lib/mtpelerin'
 
 interface MtPelerinCardProps {
   /** 'buy' for deposits, 'sell' for withdrawals */
@@ -37,16 +36,11 @@ export const MtPelerinCard = ({ mode, defaultCrypto = 'USDT' }: MtPelerinCardPro
       })
   }, [user])
 
-  const externalUrl = buildMtPelerinUrl({
-    tab: mode,
-    tabs: ['buy', 'sell', 'swap'],
-    addr: mode === 'buy' ? walletAddress || undefined : undefined,
-    ...(mode === 'buy'
-      ? { bdc: defaultCrypto, dnet: 'celo_mainnet', bsc: 'EUR', pm: 'card' }
-      : { ssc: defaultCrypto, snet: 'celo_mainnet', sdc: 'EUR' }),
-    crys: 'USDT,CUSD,CELO',
-    directLink: true,
-  })
+  // Use Mt Pelerin's public hosted flow while the partner activation key is
+  // being re-approved. This avoids exposing customers to a forbidden iframe.
+  const externalUrl = mode === 'buy'
+    ? 'https://www.mtpelerin.com/buy-crypto'
+    : 'https://www.mtpelerin.com/sell-crypto'
 
 
   const copyAddress = () => {

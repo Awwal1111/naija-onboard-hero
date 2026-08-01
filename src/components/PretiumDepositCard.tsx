@@ -99,7 +99,7 @@ export const PretiumDepositCard = ({ onPending }: Props) => {
           <Label>Phone Number</Label>
           <BrandInput value={phone} onChange={e => setPhone(e.target.value)} placeholder={`e.g. ${country.sample}`} />
           <p className="text-xs text-muted-foreground">
-            Local or international format both work — we convert it to +{country.dial} automatically.
+            Local or international format both work — we send the local mobile-money format required by the provider.
           </p>
         </div>
 
