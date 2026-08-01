@@ -11,13 +11,16 @@ import { toast } from 'sonner'
 
 interface Props { onPending?: () => void }
 
+// Network values must match Pretium's supported MNO strings exactly
+// (https://docs.pretium.africa/mnos). Wrong values fail validation server-side.
 const COUNTRIES = [
-  { code: 'KES', label: '🇰🇪 Kenya (KES)', networks: ['Safaricom', 'Airtel'] },
-  { code: 'GHS', label: '🇬🇭 Ghana (GHS)', networks: ['MTN', 'Vodafone', 'AirtelTigo'] },
-  { code: 'UGX', label: '🇺🇬 Uganda (UGX)', networks: ['MTN', 'Airtel'] },
-  { code: 'MWK', label: '🇲🇼 Malawi (MWK)', networks: ['Airtel', 'TNM'] },
-  { code: 'CDF', label: '🇨🇩 DR Congo (CDF)', networks: ['M-Pesa', 'Orange', 'Airtel'] },
+  { code: 'KES', label: '🇰🇪 Kenya (KES)', networks: ['Safaricom', 'Airtel'], dial: '254', sample: '0712345678' },
+  { code: 'GHS', label: '🇬🇭 Ghana (GHS)', networks: ['MTN', 'AirtelTigo', 'Telecel'], dial: '233', sample: '024xxxxxxx' },
+  { code: 'UGX', label: '🇺🇬 Uganda (UGX)', networks: ['MTN', 'Airtel'], dial: '256', sample: '0772xxxxxx' },
+  { code: 'MWK', label: '🇲🇼 Malawi (MWK)', networks: ['Airtel', 'TNM Mpamba'], dial: '265', sample: '0991xxxxxx' },
+  { code: 'CDF', label: '🇨🇩 DR Congo (CDF)', networks: ['Mpesa', 'Airtel Money', 'Orange Money'], dial: '243', sample: '08xxxxxxxx' },
 ]
+
 
 export const PretiumDepositCard = ({ onPending }: Props) => {
   const [currency, setCurrency] = useState('KES')
@@ -36,13 +39,21 @@ export const PretiumDepositCard = ({ onPending }: Props) => {
       const { data, error } = await supabase.functions.invoke('pretium-ramp', {
         body: { action: 'onramp', currency, shortcode: phone, amount: a, mobile_network: network, asset: 'USDT' },
       })
-      if (error || !(data as any)?.success) throw new Error((data as any)?.error || error?.message || 'Failed')
+      if (error) {
+        // functions.invoke hides the response body on non-2xx — read it so the
+        // user sees Pretium's real reason instead of "non-2xx status code".
+        let detail = ''
+        try { detail = (await (error as any)?.context?.json?.())?.error || '' } catch { /* ignore */ }
+        throw new Error(detail || error.message || 'Deposit failed')
+      }
+      if (!(data as any)?.success) throw new Error((data as any)?.error || 'Deposit failed')
       toast.success((data as any).message || 'Approve the prompt on your phone to complete the deposit')
       setAmount(''); setPhone('')
       onPending?.()
     } catch (e: any) {
       toast.error(e?.message || 'Onramp failed')
     } finally {
+
       setIsLoading(false)
     }
   }
@@ -86,8 +97,12 @@ export const PretiumDepositCard = ({ onPending }: Props) => {
 
         <div className="space-y-2">
           <Label>Phone Number</Label>
-          <BrandInput value={phone} onChange={e => setPhone(e.target.value)} placeholder="e.g. 0712345678" />
+          <BrandInput value={phone} onChange={e => setPhone(e.target.value)} placeholder={`e.g. ${country.sample}`} />
+          <p className="text-xs text-muted-foreground">
+            Local or international format both work — we convert it to +{country.dial} automatically.
+          </p>
         </div>
+
 
         <div className="space-y-2">
           <Label>Amount ({currency})</Label>
