@@ -89,8 +89,12 @@ export const PretiumDepositCard = ({ onPending }: Props) => {
 
         <div className="space-y-2">
           <Label>Phone Number</Label>
-          <BrandInput value={phone} onChange={e => setPhone(e.target.value)} placeholder="e.g. 0712345678" />
+          <BrandInput value={phone} onChange={e => setPhone(e.target.value)} placeholder={`e.g. ${country.sample}`} />
+          <p className="text-xs text-muted-foreground">
+            Local or international format both work — we convert it to +{country.dial} automatically.
+          </p>
         </div>
+
 
         <div className="space-y-2">
           <Label>Amount ({currency})</Label>
