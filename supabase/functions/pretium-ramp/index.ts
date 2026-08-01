@@ -424,11 +424,15 @@ serve(async (req) => {
           headers: {
             "Content-Type": "application/json",
             "Authorization": authHeader,
+            "apikey": Deno.env.get("SUPABASE_ANON_KEY") ?? "",
           },
         });
         const wdata = await wresp.json().catch(() => ({}));
-        address = wdata?.address;
-        if (!address) return json({ error: "Could not provision wallet" }, 500);
+        if (!wresp.ok || !wdata?.address) {
+          console.error("[PRETIUM-RAMP] wallet provisioning failed", wresp.status, wdata?.error || wdata?.message || "Unknown error");
+          return json({ error: wdata?.error || wdata?.message || `Could not provision wallet (${wresp.status})` }, 500);
+        }
+        address = wdata.address;
       }
 
       const reference = crypto.randomUUID();
