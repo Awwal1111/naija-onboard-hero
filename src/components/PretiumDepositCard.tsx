@@ -11,13 +11,16 @@ import { toast } from 'sonner'
 
 interface Props { onPending?: () => void }
 
+// Network values must match Pretium's supported MNO strings exactly
+// (https://docs.pretium.africa/mnos). Wrong values fail validation server-side.
 const COUNTRIES = [
-  { code: 'KES', label: '🇰🇪 Kenya (KES)', networks: ['Safaricom', 'Airtel'] },
-  { code: 'GHS', label: '🇬🇭 Ghana (GHS)', networks: ['MTN', 'Vodafone', 'AirtelTigo'] },
-  { code: 'UGX', label: '🇺🇬 Uganda (UGX)', networks: ['MTN', 'Airtel'] },
-  { code: 'MWK', label: '🇲🇼 Malawi (MWK)', networks: ['Airtel', 'TNM'] },
-  { code: 'CDF', label: '🇨🇩 DR Congo (CDF)', networks: ['M-Pesa', 'Orange', 'Airtel'] },
+  { code: 'KES', label: '🇰🇪 Kenya (KES)', networks: ['Safaricom', 'Airtel'], dial: '254', sample: '0712345678' },
+  { code: 'GHS', label: '🇬🇭 Ghana (GHS)', networks: ['MTN', 'AirtelTigo', 'Telecel'], dial: '233', sample: '024xxxxxxx' },
+  { code: 'UGX', label: '🇺🇬 Uganda (UGX)', networks: ['MTN', 'Airtel'], dial: '256', sample: '0772xxxxxx' },
+  { code: 'MWK', label: '🇲🇼 Malawi (MWK)', networks: ['Airtel', 'TNM Mpamba'], dial: '265', sample: '0991xxxxxx' },
+  { code: 'CDF', label: '🇨🇩 DR Congo (CDF)', networks: ['Mpesa', 'Airtel Money', 'Orange Money'], dial: '243', sample: '08xxxxxxxx' },
 ]
+
 
 export const PretiumDepositCard = ({ onPending }: Props) => {
   const [currency, setCurrency] = useState('KES')
