@@ -352,12 +352,69 @@ serve(async (req) => {
       });
     }
 
-    // ---------- On-ramp (mobile money): KES/GHS/UGX/MWK/CDF/ETB ----------
+    // ---------- On-ramp availability (diagnostic / preflight) ----------
+    if (action === "onrampStatus") {
+      const codes: string[] = Array.isArray(body.currencies) && body.currencies.length
+        ? body.currencies.map((c: any) => String(c).toUpperCase())
+        : ["KES", "GHS", "UGX", "MWK", "CDF"];
+      const out: Record<string, any> = {};
+      for (const c of codes) {
+        const { resp, data, raw } = await callPretium("/v2/exchange-rate", {
+          method: "POST",
+          body: JSON.stringify({ currency_code: c }),
+        });
+        out[c] = resp.ok
+          ? {
+              ok: true,
+              onramp: data?.data?.is_onramp_active !== false,
+              offramp: data?.data?.is_offramp_active !== false,
+              buying_rate: data?.data?.buying_rate,
+              selling_rate: data?.data?.selling_rate,
+            }
+          : { ok: false, status: resp.status, error: data?.message || raw };
+      }
+      return json({ success: true, markets: out });
+    }
+
+    // ---------- On-ramp (mobile money): KES/GHS/UGX/MWK/CDF ----------
     if (action === "onramp") {
-      const { currency, shortcode, amount, mobile_network, asset = "USDT" } = body;
+      const { currency: rawCurrency, shortcode, amount, mobile_network, asset = "USDT" } = body;
+      const currency = String(rawCurrency || "").toUpperCase();
       if (!currency || !shortcode || !amount || !mobile_network) {
         return json({ error: "currency, shortcode, amount, mobile_network are required" }, 400);
       }
+
+      // Pretium expects the full international MSISDN (e.g. 254712345678).
+      // Users almost always type the local "0712345678" form, which Pretium
+      // rejects with a validation error — normalise it here.
+      const DIAL: Record<string, string> = {
+        KES: "254", UGX: "256", GHS: "233", MWK: "265", CDF: "243", NGN: "234", ETB: "251",
+      };
+      const dial = DIAL[currency];
+      const normalizeMsisdn = (input: string): string => {
+        let n = String(input).replace(/[^\d]/g, "");
+        if (!dial) return n;
+        if (n.startsWith("00" + dial)) n = n.slice(2);
+        if (n.startsWith(dial)) return n;
+        n = n.replace(/^0+/, "");
+        return dial + n;
+      };
+      const msisdn = normalizeMsisdn(shortcode);
+      if (msisdn.length < 9) return json({ error: "Enter a valid mobile money number" }, 400);
+
+      // Preflight: is this market's onramp actually open right now?
+      try {
+        const { resp: sResp, data: sData } = await callPretium("/v2/exchange-rate", {
+          method: "POST",
+          body: JSON.stringify({ currency_code: currency }),
+        });
+        if (sResp.ok && sData?.data?.is_onramp_active === false) {
+          return json({ error: `${currency} mobile-money deposits are temporarily paused by the provider. Please try another method or try again later.` }, 503);
+        }
+        if (sResp.status === 401 || sResp.status === 403) {
+          return json({ error: sData?.message || "Pretium rejected our API credentials for this market." }, 502);
+        }
+      } catch (_e) { /* non-fatal — continue to the live call */ }
 
       const { data: profile } = await supabaseAdmin
         .from("profiles").select("celo_wallet_address").eq("user_id", user.id).maybeSingle();
@@ -379,21 +436,29 @@ serve(async (req) => {
       const reference = crypto.randomUUID();
       const callbackUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/pretium-webhook?ref=${reference}`;
 
+      const payload = {
+        shortcode: msisdn,
+        amount: Number(amount),
+        mobile_network: String(mobile_network),
+        chain: "CELO",
+        asset: String(asset),
+        address,
+        callback_url: callbackUrl,
+        reference,
+      };
+      console.log(`[PRETIUM-RAMP] onramp ${currency}`, JSON.stringify({ ...payload, address }));
+
       const { resp, data, raw } = await callPretium(`/v1/onramp/${currency}`, {
         method: "POST",
-        body: JSON.stringify({
-          shortcode: String(shortcode),
-          amount: Number(amount),
-          mobile_network: String(mobile_network),
-          chain: "CELO",
-          asset: String(asset),
-          address,
-          callback_url: callbackUrl,
-        }),
+        body: JSON.stringify(payload),
       });
 
-      if (!resp.ok || data?.code >= 400) {
-        return json({ error: data?.message || raw || "Onramp failed" }, 502);
+      if (!resp.ok || (data?.code && data.code >= 400)) {
+        console.error(`[PRETIUM-RAMP] onramp ${currency} failed`, resp.status, raw?.slice(0, 500));
+        return json({
+          error: data?.message || raw || "Onramp failed",
+          status: resp.status,
+        }, 502);
       }
 
       const txCode = data?.data?.transaction_code || null;
@@ -408,7 +473,7 @@ serve(async (req) => {
         chain: "CELO",
         status: "pending",
         recipient_address: address,
-        metadata: { shortcode, mobile_network },
+        metadata: { shortcode: msisdn, mobile_network },
       });
 
       return json({
@@ -416,6 +481,7 @@ serve(async (req) => {
         message: data?.data?.message || "Prompt sent. Approve on your phone to complete the deposit.",
       });
     }
+
 
     return json({ error: `Unknown action: ${action}` }, 400);
   } catch (err: any) {
