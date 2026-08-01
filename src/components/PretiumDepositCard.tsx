@@ -39,13 +39,21 @@ export const PretiumDepositCard = ({ onPending }: Props) => {
       const { data, error } = await supabase.functions.invoke('pretium-ramp', {
         body: { action: 'onramp', currency, shortcode: phone, amount: a, mobile_network: network, asset: 'USDT' },
       })
-      if (error || !(data as any)?.success) throw new Error((data as any)?.error || error?.message || 'Failed')
+      if (error) {
+        // functions.invoke hides the response body on non-2xx — read it so the
+        // user sees Pretium's real reason instead of "non-2xx status code".
+        let detail = ''
+        try { detail = (await (error as any)?.context?.json?.())?.error || '' } catch { /* ignore */ }
+        throw new Error(detail || error.message || 'Deposit failed')
+      }
+      if (!(data as any)?.success) throw new Error((data as any)?.error || 'Deposit failed')
       toast.success((data as any).message || 'Approve the prompt on your phone to complete the deposit')
       setAmount(''); setPhone('')
       onPending?.()
     } catch (e: any) {
       toast.error(e?.message || 'Onramp failed')
     } finally {
+
       setIsLoading(false)
     }
   }
