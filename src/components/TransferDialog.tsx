@@ -144,8 +144,6 @@ export const TransferDialog = ({ open, onOpenChange }: TransferDialogProps) => {
 
     setLoading(true)
     try {
-      console.log('Starting transfer...', { sender_id: user?.id, recipient_email: email.trim(), amount: transferAmount })
-      
       const { data, error } = await supabase.rpc('transfer_funds', {
         sender_id: user?.id,
         recipient_email: email.trim(),
@@ -153,10 +151,7 @@ export const TransferDialog = ({ open, onOpenChange }: TransferDialogProps) => {
         pin_hash: pin
       })
 
-      console.log('Transfer response:', { data, error })
-
       if (error) {
-        console.error('Transfer RPC error:', error)
         throw error
       }
 
@@ -174,8 +169,6 @@ export const TransferDialog = ({ open, onOpenChange }: TransferDialogProps) => {
       await refreshWallet()
       handleClose()
     } catch (error: any) {
-      console.error('Transfer error:', error)
-      
       if (error.message?.includes('set up your transaction PIN')) {
         toast({
           title: "PIN Not Set",

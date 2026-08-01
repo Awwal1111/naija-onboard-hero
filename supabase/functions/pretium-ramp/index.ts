@@ -384,23 +384,21 @@ serve(async (req) => {
         return json({ error: "currency, shortcode, amount, mobile_network are required" }, 400);
       }
 
-      // Pretium expects the full international MSISDN (e.g. 254712345678).
-      // Users almost always type the local "0712345678" form, which Pretium
-      // rejects with a validation error — normalise it here.
+      // Pretium's current onramp contract expects the local mobile-money
+      // shortcode (for example 0712345678), not an E.164 dial string.
       const DIAL: Record<string, string> = {
         KES: "254", UGX: "256", GHS: "233", MWK: "265", CDF: "243", NGN: "234", ETB: "251",
       };
       const dial = DIAL[currency];
-      const normalizeMsisdn = (input: string): string => {
+      const normalizeShortcode = (input: string): string => {
         let n = String(input).replace(/[^\d]/g, "");
         if (!dial) return n;
         if (n.startsWith("00" + dial)) n = n.slice(2);
-        if (n.startsWith(dial)) return n;
-        n = n.replace(/^0+/, "");
-        return dial + n;
+        if (n.startsWith(dial)) n = n.slice(dial.length);
+        return n.startsWith("0") ? n : "0" + n;
       };
-      const msisdn = normalizeMsisdn(shortcode);
-      if (msisdn.length < 9) return json({ error: "Enter a valid mobile money number" }, 400);
+      const msisdn = normalizeShortcode(shortcode);
+      if (msisdn.length < 9 || msisdn.length > 11) return json({ error: "Enter a valid mobile money number" }, 400);
 
       // Preflight: is this market's onramp actually open right now?
       try {
@@ -456,9 +454,10 @@ serve(async (req) => {
       if (!resp.ok || (data?.code && data.code >= 400)) {
         console.error(`[PRETIUM-RAMP] onramp ${currency} failed`, resp.status, raw?.slice(0, 500));
         return json({
+          success: false,
           error: data?.message || raw || "Onramp failed",
           status: resp.status,
-        }, 502);
+        });
       }
 
       const txCode = data?.data?.transaction_code || null;

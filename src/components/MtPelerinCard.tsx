@@ -8,7 +8,7 @@ import { Globe, Info, Copy, ExternalLink } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/integrations/supabase/client'
-import { buildMtPelerinUrl, isMtPelerinAllowedHost, MT_PELERIN_ALLOWED_HOST } from '@/lib/mtpelerin'
+import { buildMtPelerinUrl } from '@/lib/mtpelerin'
 
 interface MtPelerinCardProps {
   /** 'buy' for deposits, 'sell' for withdrawals */
@@ -36,16 +36,6 @@ export const MtPelerinCard = ({ mode, defaultCrypto = 'USDT' }: MtPelerinCardPro
         if (data?.celo_wallet_address) setWalletAddress(data.celo_wallet_address)
       })
   }, [user])
-
-  const widgetUrl = buildMtPelerinUrl({
-    tab: mode,
-    tabs: ['buy', 'sell', 'swap'],
-    addr: mode === 'buy' ? walletAddress || undefined : undefined,
-    ...(mode === 'buy'
-      ? { bdc: defaultCrypto, dnet: 'celo_mainnet', bsc: 'EUR', pm: 'card' }
-      : { ssc: defaultCrypto, snet: 'celo_mainnet', sdc: 'EUR' }),
-    crys: 'USDT,CUSD,CELO',
-  })
 
   const externalUrl = buildMtPelerinUrl({
     tab: mode,
@@ -100,46 +90,12 @@ export const MtPelerinCard = ({ mode, defaultCrypto = 'USDT' }: MtPelerinCardPro
           </AlertDescription>
         </Alert>
 
-        {/* Always render the iframe — even on non-registered hosts Mt Pelerin
-            will show its own "access denied" page, but on the registered
-            domain (including TWA / WebView) the full widget will load. */}
-        <div className="overflow-hidden rounded-lg border">
-          <iframe
-            src={widgetUrl}
-            title="Mt Pelerin exchange widget"
-            allow="usb; ethereum; clipboard-write; payment; microphone; camera"
-            loading="lazy"
-            referrerPolicy="origin"
-            className="w-full h-[720px] block bg-background"
-          />
-        </div>
-
-        {!isMtPelerinAllowedHost() && (
-          <Alert>
-            <Info className="h-4 w-4" />
-            <AlertDescription className="text-xs">
-              The Mt Pelerin widget is locked to <strong>{MT_PELERIN_ALLOWED_HOST}</strong>.
-              If the widget above shows "access denied", tap the button below
-              to open it on the live site.
-            </AlertDescription>
-          </Alert>
-        )}
-
         <BrandButton
-          variant="outline"
           className="w-full"
-          onClick={() =>
-            window.open(
-              isMtPelerinAllowedHost()
-                ? externalUrl
-                : `https://${MT_PELERIN_ALLOWED_HOST}${window.location.pathname}${window.location.search}`,
-              '_blank',
-              'noopener,noreferrer',
-            )
-          }
+          onClick={() => window.open(externalUrl, '_blank', 'noopener,noreferrer')}
         >
           <ExternalLink className="h-4 w-4 mr-2" />
-          {isMtPelerinAllowedHost() ? 'Open in new tab' : `Open on ${MT_PELERIN_ALLOWED_HOST}`}
+          Continue securely on Mt Pelerin
         </BrandButton>
       </CardContent>
     </Card>
