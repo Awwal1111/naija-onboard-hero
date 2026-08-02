@@ -87,6 +87,10 @@ export const WalletDepositCard = ({ walletKind, recipientAddress, onSuccess }: W
   }
 
   const handleConnect = async () => {
+    if (walletKind === 'valora') {
+      handleManualSend()
+      return
+    }
     try {
       await connect(walletKind)
       toast.success(`${walletName} connected`)
@@ -179,9 +183,9 @@ export const WalletDepositCard = ({ walletKind, recipientAddress, onSuccess }: W
 
         {!account ? (
           <div className="space-y-2">
-            <BrandButton onClick={handleConnect} disabled={busy} className="w-full">
+            <BrandButton onClick={handleConnect} disabled={busy || (walletKind === 'valora' && !amount)} className="w-full">
               {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wallet className="mr-2 h-4 w-4" />}
-              Connect {walletName}
+              {walletKind === 'valora' ? 'Open Valora payment' : `Connect ${walletName}`}
             </BrandButton>
             <BrandButton onClick={handleManualSend} variant="outline" className="w-full" disabled={!recipientAddress}>
               <ExternalLink className="mr-2 h-4 w-4" />
