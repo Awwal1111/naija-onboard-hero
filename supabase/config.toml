@@ -257,6 +257,9 @@ verify_jwt = false
 [functions.pretium-ramp]
 verify_jwt = false
 
+[functions.pretium-onramp]
+verify_jwt = false
+
 [functions.pretium-webhook]
 verify_jwt = false
 
