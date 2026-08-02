@@ -10,12 +10,12 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
   headers: { ...corsHeaders, "Content-Type": "application/json" },
 });
 
-const localNumber = (input: unknown, currency: string) => {
+const internationalNumber = (input: unknown, currency: string) => {
   let number = String(input || "").replace(/[^\d]/g, "");
   const dial = DIAL[currency];
   if (number.startsWith(`00${dial}`)) number = number.slice(2);
-  if (number.startsWith(dial)) number = number.slice(dial.length);
-  return number.startsWith("0") ? number : `0${number}`;
+  if (number.startsWith("0")) number = number.slice(1);
+  return number.startsWith(dial) ? number : `${dial}${number}`;
 };
 
 Deno.serve(async (req) => {
@@ -44,8 +44,8 @@ Deno.serve(async (req) => {
     const amount = Number(body.amount);
     if (!SUPPORTED.has(currency)) return json({ error: "This currency is not supported" }, 400);
     if (!network || !Number.isFinite(amount) || amount <= 0) return json({ error: "Enter a valid network and amount" }, 400);
-    const shortcode = localNumber(body.shortcode, currency);
-    if (shortcode.length < 9 || shortcode.length > 11) return json({ error: "Enter a valid mobile-money number" }, 400);
+    const shortcode = internationalNumber(body.shortcode, currency);
+    if (shortcode.length < 11 || shortcode.length > 15) return json({ error: "Enter a valid mobile-money number" }, 400);
 
     const pretium = async (path: string, payload: Record<string, unknown>) => {
       const response = await fetch(`${PRETIUM_BASE}${path}`, {
@@ -58,14 +58,6 @@ Deno.serve(async (req) => {
       try { data = raw ? JSON.parse(raw) : null; } catch { /* retain provider text */ }
       return { response, data, raw };
     };
-
-    const status = await pretium("/v2/exchange-rate", { currency_code: currency });
-    if (status.response.ok && status.data?.data?.is_onramp_active === false) {
-      return json({ error: `${currency} deposits are temporarily paused by the provider.` }, 503);
-    }
-    if (status.response.status === 401 || status.response.status === 403) {
-      return json({ error: "The mobile-money provider rejected the configured credentials." }, 502);
-    }
 
     const { data: profile } = await admin.from("profiles").select("celo_wallet_address").eq("user_id", user.id).maybeSingle();
     let address = profile?.celo_wallet_address;
