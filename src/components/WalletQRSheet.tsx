@@ -70,8 +70,13 @@ export const WalletQRSheet = ({ open, onOpenChange, receiveAddress, onScanned }:
           if (match) {
             const addr = match[1]
             stopScan()
-            onScanned?.(addr)
-            toast.success(`Address scanned: ${addr.slice(0, 6)}…${addr.slice(-4)}`)
+            if (onScanned) {
+              onScanned(addr)
+              toast.success(`Address scanned: ${addr.slice(0, 6)}…${addr.slice(-4)}`)
+            } else {
+              navigator.clipboard?.writeText(addr).catch(() => {})
+              toast.success('Wallet address copied — open Send to complete payment')
+            }
             onOpenChange(false)
             return
           }
