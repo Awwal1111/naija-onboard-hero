@@ -47,7 +47,10 @@ function getProvider(kind: WalletKind): any | null {
     return providers.find((p: any) => p?.isMetaMask && !p?.isBraveWallet) || (eth.isMetaMask ? eth : null)
   }
   if (kind === 'valora') {
-    return providers.find((p: any) => p?.isValora) || (eth.isValora ? eth : null) || eth
+    // Never silently use MetaMask (or another injected wallet) for a Valora
+    // action. Valora normally completes web payments through its payment
+    // deeplink rather than injecting an EIP-1193 provider into normal browsers.
+    return providers.find((p: any) => p?.isValora) || (eth.isValora ? eth : null)
   }
   return eth
 }
@@ -89,16 +92,11 @@ export function useExternalWallet() {
           // No injected provider. On mobile, deep-link into the wallet's in-app browser
           // so the user lands back on this page WITH the provider injected.
           if (isMobile()) {
-            const here = window.location.host + window.location.pathname + window.location.search
+            const here = window.location.host + window.location.pathname
             if (kind === 'metamask') {
               // Canonical MetaMask universal link opens the dapp inside MetaMask's in-app browser
               // where window.ethereum is injected. Docs: https://docs.metamask.io/.../use-deeplinks/
               window.location.href = `https://link.metamask.io/dapp/${here}`
-            } else if (kind === 'valora') {
-              // Valora does not publish a documented "open dapp in browser" link. The closest
-              // working entry is the public app page, from which the user opens Discover → URL.
-              // For payments we use the celo://wallet/pay deeplink directly on the deposit card.
-              window.location.href = `https://valoraapp.com/`
             }
             await new Promise((r) => setTimeout(r, 1500))
           }
@@ -106,7 +104,7 @@ export function useExternalWallet() {
             kind === 'metamask'
               ? 'MetaMask not detected. If the MetaMask app didn\'t open, install it and reopen this page from inside its browser — or use the Crypto Deposit option to send manually.'
               : kind === 'valora'
-                ? 'Valora not detected. If the Valora app didn\'t open, install it and reopen this page from its in-app browser — or use the Crypto Deposit option to send manually.'
+                ? 'Valora connects through its payment screen. Enter an amount and use “Open Valora app to send”.'
                 : 'No wallet detected. Use the Crypto Deposit option to send to your address manually.'
           )
         }

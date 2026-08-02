@@ -70,8 +70,13 @@ export const WalletQRSheet = ({ open, onOpenChange, receiveAddress, onScanned }:
           if (match) {
             const addr = match[1]
             stopScan()
-            onScanned?.(addr)
-            toast.success(`Address scanned: ${addr.slice(0, 6)}…${addr.slice(-4)}`)
+            if (onScanned) {
+              onScanned(addr)
+              toast.success(`Address scanned: ${addr.slice(0, 6)}…${addr.slice(-4)}`)
+            } else {
+              navigator.clipboard?.writeText(addr).catch(() => {})
+              toast.success('Wallet address copied — open Send to complete payment')
+            }
             onOpenChange(false)
             return
           }
@@ -80,7 +85,11 @@ export const WalletQRSheet = ({ open, onOpenChange, receiveAddress, onScanned }:
             const u = new URL(text)
             stopScan()
             toast.success('Link scanned — opening')
-            window.open(u.toString(), '_blank', 'noopener,noreferrer')
+            if (u.host === window.location.host) {
+              window.location.assign(u.pathname + u.search)
+            } else {
+              window.open(u.toString(), '_blank', 'noopener,noreferrer')
+            }
             onOpenChange(false)
           } catch {
             stopScan()
@@ -171,8 +180,15 @@ export const WalletQRSheet = ({ open, onOpenChange, receiveAddress, onScanned }:
               </Alert>
             )}
             <p className="text-xs text-muted-foreground text-center">
-              Point your camera at any Celo / EVM wallet QR code.
+              Scan a NaijaLancers payment link or a Celo / EVM wallet address.
             </p>
+            {!onScanned && (
+              <Alert>
+                <AlertDescription className="text-xs">
+                  Payment-link QR codes open the secure PIN payment screen. Wallet-address QR codes are copied so you can paste them into Send.
+                </AlertDescription>
+              </Alert>
+            )}
           </TabsContent>
         </Tabs>
       </DialogContent>

@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import QRCode from 'qrcode'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -32,6 +33,15 @@ export const CreatePaymentLinkDialog = ({ open, onOpenChange }: Props) => {
   const [note, setNote] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [generatedLink, setGeneratedLink] = useState<string | null>(null)
+  const [qrDataUrl, setQrDataUrl] = useState('')
+
+  const visibleLink = generatedLink || profileLink
+  useEffect(() => {
+    if (!open || !visibleLink) { setQrDataUrl(''); return }
+    QRCode.toDataURL(visibleLink, { width: 256, margin: 1, errorCorrectionLevel: 'M' })
+      .then(setQrDataUrl)
+      .catch(() => setQrDataUrl(''))
+  }, [open, visibleLink])
 
   const copy = (text: string) => {
     navigator.clipboard.writeText(text)
@@ -120,6 +130,7 @@ export const CreatePaymentLinkDialog = ({ open, onOpenChange }: Props) => {
                 <div className="flex gap-2 items-center bg-muted rounded-md px-2 py-1.5">
                   <span className="text-xs flex-1 break-all">{generatedLink}</span>
                 </div>
+                {qrDataUrl && <img src={qrDataUrl} alt="Scannable payment request" className="h-56 w-56 mx-auto border border-border p-2 bg-background" />}
                 <div className="grid grid-cols-2 gap-2">
                   <Button variant="outline" onClick={() => copy(generatedLink)}>
                     <Copy className="h-4 w-4 mr-2" /> Copy
@@ -170,6 +181,7 @@ export const CreatePaymentLinkDialog = ({ open, onOpenChange }: Props) => {
             <div className="flex gap-2 items-center bg-muted rounded-md px-2 py-1.5">
               <span className="text-xs flex-1 break-all">{profileLink || 'Sign in to see your link'}</span>
             </div>
+            {!generatedLink && qrDataUrl && <img src={qrDataUrl} alt="Scannable payment profile link" className="h-56 w-56 mx-auto border border-border p-2 bg-background" />}
             {profileLink && (
               <div className="grid grid-cols-2 gap-2">
                 <Button variant="outline" onClick={() => copy(profileLink)}>
