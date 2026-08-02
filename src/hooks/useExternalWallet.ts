@@ -92,7 +92,7 @@ export function useExternalWallet() {
           // No injected provider. On mobile, deep-link into the wallet's in-app browser
           // so the user lands back on this page WITH the provider injected.
           if (isMobile()) {
-            const here = window.location.host + window.location.pathname + window.location.search
+            const here = window.location.host + window.location.pathname
             if (kind === 'metamask') {
               // Canonical MetaMask universal link opens the dapp inside MetaMask's in-app browser
               // where window.ethereum is injected. Docs: https://docs.metamask.io/.../use-deeplinks/

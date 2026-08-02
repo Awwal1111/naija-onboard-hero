@@ -42,6 +42,10 @@ const ScanCode = () => {
     if (!raw) return
     stopCamera()
     toast.success('Code detected')
+    if (/^(celo|ethereum):/i.test(raw)) {
+      window.location.assign(raw)
+      return
+    }
     try {
       const u = new URL(raw)
       if (u.host === window.location.host) {

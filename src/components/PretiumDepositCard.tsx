@@ -36,8 +36,8 @@ export const PretiumDepositCard = ({ onPending }: Props) => {
     if (!phone || a <= 0) return toast.error('Enter phone and amount')
     setIsLoading(true)
     try {
-      const { data, error } = await supabase.functions.invoke('pretium-ramp', {
-        body: { action: 'onramp', currency, shortcode: phone, amount: a, mobile_network: network, asset: 'USDT' },
+      const { data, error } = await supabase.functions.invoke('pretium-onramp', {
+        body: { currency, shortcode: phone, amount: a, mobile_network: network },
       })
       if (error) {
         // functions.invoke hides the response body on non-2xx — read it so the

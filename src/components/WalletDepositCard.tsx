@@ -10,6 +10,7 @@ import { useExternalWallet, type WalletKind } from '@/hooks/useExternalWallet'
 import { CUSD_ADDRESS, USDT_ADDRESS, USDC_ADDRESS } from '@/lib/minipay'
 import { supabase } from '@/integrations/supabase/client'
 import { toast } from 'sonner'
+import { parseUnits } from 'viem'
 
 interface WalletDepositCardProps {
   walletKind: WalletKind
@@ -42,7 +43,10 @@ export const WalletDepositCard = ({ walletKind, recipientAddress, onSuccess }: W
     if (!recipientAddress) return ''
     const t = TOKENS[token]
     const amt = parseFloat(amount)
-    const smallestUnits = amt > 0 ? BigInt(Math.floor(amt * 10 ** t.decimals)).toString() : ''
+    let smallestUnits = ''
+    try {
+      if (amt > 0) smallestUnits = parseUnits(amount, t.decimals).toString()
+    } catch { /* amount validation is handled before sending */ }
 
     if (walletKind === 'metamask') {
       // Celo mainnet chainId = 42220. link.metamask.io is the canonical universal-link host.
