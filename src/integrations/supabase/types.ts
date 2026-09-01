@@ -3708,6 +3708,10 @@ export type Database = {
           is_remote: boolean | null
           job_type: string | null
           location: string | null
+          moderated_at: string | null
+          moderated_by: string | null
+          moderation_note: string | null
+          moderation_status: string
           qualifications: Json | null
           required_skills: string[] | null
           requirements: string | null
@@ -3745,6 +3749,10 @@ export type Database = {
           is_remote?: boolean | null
           job_type?: string | null
           location?: string | null
+          moderated_at?: string | null
+          moderated_by?: string | null
+          moderation_note?: string | null
+          moderation_status?: string
           qualifications?: Json | null
           required_skills?: string[] | null
           requirements?: string | null
@@ -3782,6 +3790,10 @@ export type Database = {
           is_remote?: boolean | null
           job_type?: string | null
           location?: string | null
+          moderated_at?: string | null
+          moderated_by?: string | null
+          moderation_note?: string | null
+          moderation_status?: string
           qualifications?: Json | null
           required_skills?: string[] | null
           requirements?: string | null
