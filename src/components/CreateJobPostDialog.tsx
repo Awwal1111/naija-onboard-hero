@@ -12,6 +12,11 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useNigerianStates } from '@/hooks/useNigerianStates';
 import { AIWritingAssistant } from '@/components/AIWritingAssistant';
+import { usePremiumGate } from '@/hooks/usePremiumGate';
+import { looksLikeGigOffer } from '@/lib/jobFilters';
+import { useNavigate } from 'react-router-dom';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Crown, ShieldCheck } from 'lucide-react';
 
 interface CreateJobPostDialogProps {
   open: boolean;
@@ -27,8 +32,11 @@ export const CreateJobPostDialog: React.FC<CreateJobPostDialogProps> = ({
   const { user } = useAuth();
   const { toast } = useToast();
   const { states } = useNigerianStates();
+  const { isPremium } = usePremiumGate();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [skillInput, setSkillInput] = useState('');
+
   
   const [formData, setFormData] = useState({
     title: '',
@@ -88,7 +96,27 @@ export const CreateJobPostDialog: React.FC<CreateJobPostDialogProps> = ({
       return;
     }
 
+    if (!isPremium) {
+      toast({
+        title: "Premium required",
+        description: "Posting a job requires an active Premium subscription.",
+        variant: "destructive"
+      });
+      navigate('/premium');
+      return;
+    }
+
+    if (looksLikeGigOffer({ title: formData.title, description: formData.description })) {
+      toast({
+        title: "This looks like a service advert",
+        description: "Jobs are for hiring. To advertise your own services, create a Gig instead.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setLoading(true);
+
     try {
       const { error } = await supabase.from('job_posts').insert({
         user_id: user.id,
@@ -109,9 +137,10 @@ export const CreateJobPostDialog: React.FC<CreateJobPostDialogProps> = ({
       if (error) throw error;
 
       toast({
-        title: "Job Posted! 🎉",
-        description: "Your job post is now live and visible to all users"
+        title: "Submitted for review ✅",
+        description: "Your job goes live as soon as an admin approves it (usually within a few hours)."
       });
+
 
       onOpenChange(false);
       setFormData({
@@ -130,12 +159,18 @@ export const CreateJobPostDialog: React.FC<CreateJobPostDialogProps> = ({
       onSuccess?.();
     } catch (error: any) {
       console.error('Error posting job:', error);
+      const raw = error?.message || "Something went wrong";
+      const premiumBlocked = raw.includes('PREMIUM_REQUIRED');
       toast({
-        title: "Failed to Post",
-        description: error.message || "Something went wrong",
+        title: premiumBlocked ? "Premium required" : "Failed to Post",
+        description: premiumBlocked
+          ? "Only Premium members can post jobs. Upgrade to publish this job."
+          : raw,
         variant: "destructive"
       });
+      if (premiumBlocked) navigate('/premium');
     } finally {
+
       setLoading(false);
     }
   };
@@ -159,7 +194,33 @@ export const CreateJobPostDialog: React.FC<CreateJobPostDialogProps> = ({
           </div>
         </DialogHeader>
 
+        {!isPremium && (
+          <Alert variant="destructive">
+            <Crown className="h-4 w-4" />
+            <AlertDescription className="text-xs">
+              Job posting is a Premium feature.{' '}
+              <button
+                type="button"
+                className="underline font-medium"
+                onClick={() => { onOpenChange(false); navigate('/premium'); }}
+              >
+                Upgrade to Premium
+              </button>{' '}
+              to hire on NaijaLancers.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        <Alert>
+          <ShieldCheck className="h-4 w-4" />
+          <AlertDescription className="text-xs">
+            Jobs are reviewed by an admin before going live. Advertising your own services here will be
+            rejected — post a <span className="font-medium">Gig</span> instead.
+          </AlertDescription>
+        </Alert>
+
         <form onSubmit={handleSubmit} className="space-y-4">
+
           {/* Title */}
           <div className="space-y-1.5">
             <label className="text-sm font-medium">Job Title *</label>

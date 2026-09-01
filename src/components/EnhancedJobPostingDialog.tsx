@@ -12,6 +12,11 @@ import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { AIWritingAssistant } from "@/components/AIWritingAssistant";
+import { usePremiumGate } from "@/hooks/usePremiumGate";
+import { looksLikeGigOffer } from "@/lib/jobFilters";
+import { useNavigate } from "react-router-dom";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Crown, ShieldCheck } from "lucide-react";
 
 interface EnhancedJobPostingDialogProps {
   trigger: React.ReactNode;
@@ -21,7 +26,10 @@ interface EnhancedJobPostingDialogProps {
 export default function EnhancedJobPostingDialog({ trigger, onJobCreated }: EnhancedJobPostingDialogProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { isPremium } = usePremiumGate();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+
   const [formData, setFormData] = useState({
     title: "",
     company_name: "",
