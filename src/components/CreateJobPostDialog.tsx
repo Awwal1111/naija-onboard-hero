@@ -32,8 +32,11 @@ export const CreateJobPostDialog: React.FC<CreateJobPostDialogProps> = ({
   const { user } = useAuth();
   const { toast } = useToast();
   const { states } = useNigerianStates();
+  const { isPremium } = usePremiumGate();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [skillInput, setSkillInput] = useState('');
+
   
   const [formData, setFormData] = useState({
     title: '',
