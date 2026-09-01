@@ -96,7 +96,27 @@ export const CreateJobPostDialog: React.FC<CreateJobPostDialogProps> = ({
       return;
     }
 
+    if (!isPremium) {
+      toast({
+        title: "Premium required",
+        description: "Posting a job requires an active Premium subscription.",
+        variant: "destructive"
+      });
+      navigate('/premium');
+      return;
+    }
+
+    if (looksLikeGigOffer({ title: formData.title, description: formData.description })) {
+      toast({
+        title: "This looks like a service advert",
+        description: "Jobs are for hiring. To advertise your own services, create a Gig instead.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setLoading(true);
+
     try {
       const { error } = await supabase.from('job_posts').insert({
         user_id: user.id,
