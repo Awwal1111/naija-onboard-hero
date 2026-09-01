@@ -194,7 +194,33 @@ export const CreateJobPostDialog: React.FC<CreateJobPostDialogProps> = ({
           </div>
         </DialogHeader>
 
+        {!isPremium && (
+          <Alert variant="destructive">
+            <Crown className="h-4 w-4" />
+            <AlertDescription className="text-xs">
+              Job posting is a Premium feature.{' '}
+              <button
+                type="button"
+                className="underline font-medium"
+                onClick={() => { onOpenChange(false); navigate('/premium'); }}
+              >
+                Upgrade to Premium
+              </button>{' '}
+              to hire on NaijaLancers.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        <Alert>
+          <ShieldCheck className="h-4 w-4" />
+          <AlertDescription className="text-xs">
+            Jobs are reviewed by an admin before going live. Advertising your own services here will be
+            rejected — post a <span className="font-medium">Gig</span> instead.
+          </AlertDescription>
+        </Alert>
+
         <form onSubmit={handleSubmit} className="space-y-4">
+
           {/* Title */}
           <div className="space-y-1.5">
             <label className="text-sm font-medium">Job Title *</label>
