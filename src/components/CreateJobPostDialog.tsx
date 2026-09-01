@@ -137,9 +137,10 @@ export const CreateJobPostDialog: React.FC<CreateJobPostDialogProps> = ({
       if (error) throw error;
 
       toast({
-        title: "Job Posted! 🎉",
-        description: "Your job post is now live and visible to all users"
+        title: "Submitted for review ✅",
+        description: "Your job goes live as soon as an admin approves it (usually within a few hours)."
       });
+
 
       onOpenChange(false);
       setFormData({
