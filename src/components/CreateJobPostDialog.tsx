@@ -12,6 +12,11 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useNigerianStates } from '@/hooks/useNigerianStates';
 import { AIWritingAssistant } from '@/components/AIWritingAssistant';
+import { usePremiumGate } from '@/hooks/usePremiumGate';
+import { looksLikeGigOffer } from '@/lib/jobFilters';
+import { useNavigate } from 'react-router-dom';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Crown, ShieldCheck } from 'lucide-react';
 
 interface CreateJobPostDialogProps {
   open: boolean;
