@@ -67,6 +67,15 @@ export default function EnhancedJobPostingDialog({ trigger, onJobCreated }: Enha
         throw new Error("Please fill in all required fields");
       }
 
+      if (!isPremium) {
+        throw new Error("PREMIUM_REQUIRED");
+      }
+
+      if (looksLikeGigOffer({ title: data.title, description: data.description })) {
+        throw new Error("This looks like a service advert. Jobs are for hiring — please create a Gig instead.");
+      }
+
+
       const benefitsList = data.benefits.filter(b => b.item).map(b => b.item);
       const qualificationsList = data.qualifications.filter(q => q.item).map(q => q.item);
 
