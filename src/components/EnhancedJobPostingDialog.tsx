@@ -67,6 +67,15 @@ export default function EnhancedJobPostingDialog({ trigger, onJobCreated }: Enha
         throw new Error("Please fill in all required fields");
       }
 
+      if (!isPremium) {
+        throw new Error("PREMIUM_REQUIRED");
+      }
+
+      if (looksLikeGigOffer({ title: data.title, description: data.description })) {
+        throw new Error("This looks like a service advert. Jobs are for hiring — please create a Gig instead.");
+      }
+
+
       const benefitsList = data.benefits.filter(b => b.item).map(b => b.item);
       const qualificationsList = data.qualifications.filter(q => q.item).map(q => q.item);
 
@@ -103,7 +112,8 @@ export default function EnhancedJobPostingDialog({ trigger, onJobCreated }: Enha
       if (error) throw error;
     },
     onSuccess: () => {
-      toast({ title: "Job posted successfully!" });
+      toast({ title: "Submitted for review", description: "Your job goes live once an admin approves it." });
+
       queryClient.invalidateQueries({ queryKey: ["jobs-enhanced"] });
       setOpen(false);
       onJobCreated?.();
@@ -137,8 +147,20 @@ export default function EnhancedJobPostingDialog({ trigger, onJobCreated }: Enha
       });
     },
     onError: (error: any) => {
-      toast({ title: error.message || "Failed to post job", variant: "destructive" });
+      const raw = error?.message || "Failed to post job";
+      if (raw.includes("PREMIUM_REQUIRED")) {
+        toast({
+          title: "Premium required",
+          description: "Only Premium members can post jobs. Upgrade to publish this job.",
+          variant: "destructive",
+        });
+        setOpen(false);
+        navigate("/premium");
+        return;
+      }
+      toast({ title: raw, variant: "destructive" });
     },
+
   });
 
   const addSkill = (skill: string) => {
@@ -206,6 +228,30 @@ export default function EnhancedJobPostingDialog({ trigger, onJobCreated }: Enha
           </div>
         </DialogHeader>
         <div className="space-y-4 py-4">
+          {!isPremium && (
+            <Alert variant="destructive">
+              <Crown className="h-4 w-4" />
+              <AlertDescription className="text-xs">
+                Job posting is a Premium feature.{" "}
+                <button
+                  type="button"
+                  className="underline font-medium"
+                  onClick={() => { setOpen(false); navigate("/premium"); }}
+                >
+                  Upgrade to Premium
+                </button>{" "}
+                to hire on NaijaLancers.
+              </AlertDescription>
+            </Alert>
+          )}
+          <Alert>
+            <ShieldCheck className="h-4 w-4" />
+            <AlertDescription className="text-xs">
+              Every job is reviewed by an admin before going live. Adverts for your own services will be
+              rejected — post a <span className="font-medium">Gig</span> instead.
+            </AlertDescription>
+          </Alert>
+
           {/* Basic Information */}
           <div className="space-y-4 border-b pb-4">
             <h3 className="font-semibold">Basic Information</h3>

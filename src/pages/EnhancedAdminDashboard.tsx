@@ -42,6 +42,7 @@ import { AdminMiniAppsSection } from '@/components/admin/AdminMiniAppsSection'
 import { UserModeStatsCard } from '@/components/admin/UserModeStatsCard'
 import { IncompleteProfilesCard } from '@/components/admin/IncompleteProfilesCard'
 import { Briefcase as BriefcaseIcon } from 'lucide-react'
+import { AdminJobModeration } from '@/components/admin/AdminJobModeration'
 
 // Admin Gigs Management Section
 const AdminGigsSection = () => {
@@ -1773,13 +1774,18 @@ const EnhancedAdminDashboard = () => {
 
           {/* Marketplace Tab */}
           <TabsContent value="marketplace" className="space-y-6">
-            <Tabs defaultValue="gigs" className="w-full">
+            <Tabs defaultValue="job-posts" className="w-full">
               <div className="overflow-x-auto mb-6">
                 <TabsList className="inline-flex w-full min-w-max">
+                  <TabsTrigger value="job-posts">
+                    <BriefcaseIcon className="h-4 w-4 mr-2" />
+                    Job Posts
+                  </TabsTrigger>
                   <TabsTrigger value="gigs">
                     <BriefcaseIcon className="h-4 w-4 mr-2" />
                     Gigs/Services
                   </TabsTrigger>
+
                   <TabsTrigger value="donations">
                     <Heart className="h-4 w-4 mr-2" />
                     Donations
@@ -1803,7 +1809,12 @@ const EnhancedAdminDashboard = () => {
                 </TabsList>
               </div>
 
+              <TabsContent value="job-posts" className="mt-0">
+                <AdminJobModeration />
+              </TabsContent>
+
               <TabsContent value="gigs" className="mt-0">
+
                 <Card>
                   <CardHeader className="bg-muted/30">
                     <CardTitle className="flex items-center gap-2">
