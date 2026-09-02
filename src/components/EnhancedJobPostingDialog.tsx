@@ -228,6 +228,30 @@ export default function EnhancedJobPostingDialog({ trigger, onJobCreated }: Enha
           </div>
         </DialogHeader>
         <div className="space-y-4 py-4">
+          {!isPremium && (
+            <Alert variant="destructive">
+              <Crown className="h-4 w-4" />
+              <AlertDescription className="text-xs">
+                Job posting is a Premium feature.{" "}
+                <button
+                  type="button"
+                  className="underline font-medium"
+                  onClick={() => { setOpen(false); navigate("/premium"); }}
+                >
+                  Upgrade to Premium
+                </button>{" "}
+                to hire on NaijaLancers.
+              </AlertDescription>
+            </Alert>
+          )}
+          <Alert>
+            <ShieldCheck className="h-4 w-4" />
+            <AlertDescription className="text-xs">
+              Every job is reviewed by an admin before going live. Adverts for your own services will be
+              rejected — post a <span className="font-medium">Gig</span> instead.
+            </AlertDescription>
+          </Alert>
+
           {/* Basic Information */}
           <div className="space-y-4 border-b pb-4">
             <h3 className="font-semibold">Basic Information</h3>
