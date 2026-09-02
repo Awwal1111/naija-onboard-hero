@@ -147,8 +147,20 @@ export default function EnhancedJobPostingDialog({ trigger, onJobCreated }: Enha
       });
     },
     onError: (error: any) => {
-      toast({ title: error.message || "Failed to post job", variant: "destructive" });
+      const raw = error?.message || "Failed to post job";
+      if (raw.includes("PREMIUM_REQUIRED")) {
+        toast({
+          title: "Premium required",
+          description: "Only Premium members can post jobs. Upgrade to publish this job.",
+          variant: "destructive",
+        });
+        setOpen(false);
+        navigate("/premium");
+        return;
+      }
+      toast({ title: raw, variant: "destructive" });
     },
+
   });
 
   const addSkill = (skill: string) => {
