@@ -112,7 +112,8 @@ export default function EnhancedJobPostingDialog({ trigger, onJobCreated }: Enha
       if (error) throw error;
     },
     onSuccess: () => {
-      toast({ title: "Job posted successfully!" });
+      toast({ title: "Submitted for review", description: "Your job goes live once an admin approves it." });
+
       queryClient.invalidateQueries({ queryKey: ["jobs-enhanced"] });
       setOpen(false);
       onJobCreated?.();
