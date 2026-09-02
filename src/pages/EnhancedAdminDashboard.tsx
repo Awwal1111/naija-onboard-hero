@@ -1808,7 +1808,12 @@ const EnhancedAdminDashboard = () => {
                 </TabsList>
               </div>
 
+              <TabsContent value="job-posts" className="mt-0">
+                <AdminJobModeration />
+              </TabsContent>
+
               <TabsContent value="gigs" className="mt-0">
+
                 <Card>
                   <CardHeader className="bg-muted/30">
                     <CardTitle className="flex items-center gap-2">
