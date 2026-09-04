@@ -443,11 +443,13 @@ export default function CourseDetail() {
             <p>You are about to enroll in:</p>
             <div className="p-4 bg-muted rounded-lg">
               <p className="font-semibold">{course.title}</p>
-              <p className="text-2xl font-bold mt-2">₦{course.price?.toLocaleString()}NC</p>
+              <p className="text-2xl font-bold mt-2">{course.price?.toLocaleString()} NC</p>
             </div>
             <p className="text-sm text-muted-foreground">
-              This amount will be deducted from your wallet balance.
+              This amount leaves your wallet and is held in escrow for 7 days. The instructor is paid only after
+              that window; you can request a full refund before then if the course does not deliver.
             </p>
+
             <Button
               onClick={() => enrollMutation.mutate()}
               disabled={enrollMutation.isPending}
