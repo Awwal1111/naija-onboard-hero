@@ -1856,7 +1856,9 @@ const EnhancedAdminDashboard = () => {
                 </Card>
               </TabsContent>
 
-              <TabsContent value="courses" className="mt-0">
+              <TabsContent value="courses" className="mt-0 space-y-6">
+                <AdminCourseModeration />
+
                 <Card>
                   <CardHeader className="bg-muted/30">
                     <CardTitle className="flex items-center gap-2">
