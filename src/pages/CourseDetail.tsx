@@ -344,22 +344,60 @@ export default function CourseDetail() {
                     DEMO COURSE - NOT PURCHASABLE
                   </Badge>
                 )}
-                <div className="text-3xl font-bold">₦{course.price?.toLocaleString()}NC</div>
+                <div className="text-3xl font-bold">{course.price?.toLocaleString()} NC</div>
 
                 {isEnrolled ? (
-                  <Button className="w-full" size="lg">
-                    <PlayCircle className="w-4 h-4 mr-2" />
-                    Continue Learning
-                  </Button>
+                  <>
+                    <Button
+                      className="w-full"
+                      size="lg"
+                      onClick={() => document.getElementById("lessons")?.scrollIntoView({ behavior: "smooth" })}
+                    >
+                      <PlayCircle className="w-4 h-4 mr-2" />
+                      Continue Learning
+                    </Button>
+                    {enrollment?.escrow_status === "held" && (
+                      <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-xs space-y-2">
+                        <p className="font-medium">Payment protected by escrow</p>
+                        <p className="text-muted-foreground">
+                          {enrollment.amount?.toLocaleString()} NC is held until{" "}
+                          {enrollment.release_due_at
+                            ? new Date(enrollment.release_due_at).toLocaleDateString()
+                            : "7 days after purchase"}
+                          . If the course is not what was promised, get your money back.
+                        </p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full"
+                          disabled={!canRefund || refundMutation.isPending}
+                          onClick={() => refundMutation.mutate()}
+                        >
+                          {refundMutation.isPending ? "Processing..." : "Request refund"}
+                        </Button>
+                        {!canRefund && (
+                          <p className="text-muted-foreground">
+                            Refunds are unavailable once you pass 25% of the course.
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </>
                 ) : course.is_demo ? (
                   <Button className="w-full" size="lg" variant="outline" disabled>
                     Demo Course - Not Purchasable
                   </Button>
                 ) : (
-                  <Button onClick={() => setEnrollOpen(true)} className="w-full" size="lg">
-                    Enroll Now
-                  </Button>
+                  <>
+                    <Button onClick={() => setEnrollOpen(true)} className="w-full" size="lg">
+                      Enroll Now
+                    </Button>
+                    <p className="text-xs text-muted-foreground text-center">
+                      Escrow protected · 7-day money-back window
+                    </p>
+                  </>
                 )}
+
 
                 <Separator />
 
