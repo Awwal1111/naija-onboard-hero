@@ -127,6 +127,17 @@ export default function CourseDetail() {
       toast({ title: "Refund failed", description: error.message, variant: "destructive" }),
   });
 
+  const lessons: any[] = Array.isArray((course as any)?.course_urls) ? (course as any).course_urls : [];
+  const canRefund = enrollment?.escrow_status === "held" && (progress?.progress_percentage ?? 0) <= 25;
+
+  const toEmbed = (url: string) => {
+    const yt = url?.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([\w-]{11})/);
+    return yt ? `https://www.youtube.com/embed/${yt[1]}` : null;
+  };
+
+  if (isLoading) return <div className="container mx-auto px-4 py-8">Loading...</div>;
+  if (!course) return <div className="container mx-auto px-4 py-8">Course not found</div>;
+
 
   return (
     <div className="min-h-screen bg-background">
