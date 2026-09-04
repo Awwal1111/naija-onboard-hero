@@ -8348,6 +8348,7 @@ export type Database = {
         }
         Returns: Json
       }
+      enroll_in_course: { Args: { p_course_id: string }; Returns: Json }
       ensure_user_wallet_row: { Args: { _user_id: string }; Returns: undefined }
       expire_expert_boosts: { Args: never; Returns: undefined }
       file_dispute_safepay: {
@@ -8792,6 +8793,10 @@ export type Database = {
         Args: { p_safepay_id: string }
         Returns: undefined
       }
+      moderate_course: {
+        Args: { p_course_id: string; p_note?: string; p_status: string }
+        Returns: undefined
+      }
       place_gig_order: {
         Args: {
           p_amount: number
@@ -8845,6 +8850,10 @@ export type Database = {
         Returns: string
       }
       refresh_admin_stats: { Args: never; Returns: undefined }
+      refund_course_enrollment: {
+        Args: { p_enrollment_id: string; p_reason?: string }
+        Returns: Json
+      }
       refund_developer_escrow: {
         Args: { p_developer_id: string; p_escrow_id: string; p_reason?: string }
         Returns: Json
@@ -8852,6 +8861,10 @@ export type Database = {
       refund_safepay: {
         Args: { p_escrow_id: string; p_requester: string }
         Returns: undefined
+      }
+      release_course_escrow: {
+        Args: { p_enrollment_id?: string }
+        Returns: number
       }
       release_developer_escrow: {
         Args: { p_developer_id: string; p_escrow_id: string }

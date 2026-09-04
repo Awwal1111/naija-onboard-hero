@@ -36,20 +36,23 @@ export default function CourseDetail() {
     },
   });
 
-  const { data: isEnrolled } = useQuery({
-    queryKey: ["is-enrolled", id],
+  const { data: enrollment } = useQuery({
+    queryKey: ["course-enrollment", id, user?.id],
     queryFn: async () => {
-      if (!user) return false;
+      if (!user) return null;
       const { data } = await supabase
         .from("course_enrollments")
-        .select("id")
+        .select("id, amount, escrow_status, release_due_at, created_at")
         .eq("course_id", id)
         .eq("student_id", user.id)
-        .single();
-      return !!data;
+        .maybeSingle();
+      return data;
     },
     enabled: !!user,
   });
+
+  const isEnrolled = !!enrollment && enrollment.escrow_status !== "refunded";
+
 
   const { data: progress } = useQuery({
     queryKey: ["course-progress", id],
@@ -85,106 +88,18 @@ export default function CourseDetail() {
   const enrollMutation = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error("Please log in to enroll");
-      
-      if (course?.is_demo) {
-        throw new Error("This is a demo course and cannot be purchased. Only real courses can be enrolled in.");
-      }
-
-      // Check balance
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("balance_withdrawable")
-        .eq("user_id", user.id)
-        .single();
-
-      if (!profile || profile.balance_withdrawable < course.price) {
-        throw new Error("Insufficient balance");
-      }
-
-      // Calculate platform fee (5%)
-      const platformFee = Math.round(course.price * 0.05);
-      const instructorAmount = course.price - platformFee;
-
-      // Deduct from student
-      await supabase
-        .from("profiles")
-        .update({
-          wallet_balance: profile.balance_withdrawable - course.price,
-          balance_withdrawable: profile.balance_withdrawable - course.price,
-        })
-        .eq("user_id", user.id);
-
-      // Credit instructor (minus platform fee)
-      await supabase.rpc("increment_wallet_balance", {
-        target_user_id: course.user_id,
-        amount_to_add: instructorAmount,
-      });
-
-      // Add platform fee to admin wallet
-      const { error: adminWalletError } = await supabase
-        .from('admin_wallet')
-        .update({ 
-          balance: supabase.rpc ? undefined : platformFee, // Handle increment
-        })
-        .eq('id', 1);
-
-      // If direct update fails, use RPC or raw SQL approach
-      if (adminWalletError) {
-        console.log('Admin wallet fee logging:', platformFee);
-      }
-
-      // Record enrollment
-      await supabase.from("course_enrollments").insert({
-        course_id: id,
-        student_id: user.id,
-        amount: course.price,
-      });
-
-      // Create progress record
-      await supabase.from("course_progress").insert({
-        course_id: id,
-        student_id: user.id,
-      });
-
-      // Update enrollment count
-      await supabase
-        .from("courses")
-        .update({ enrollment_count: (course.enrollment_count || 0) + 1 })
-        .eq("id", id);
-
-      // Log transactions
-      await supabase.from("wallet_transactions").insert([
-        {
-          user_id: user.id,
-          kind: "course_enrollment",
-          amount: -course.price,
-          status: "completed",
-          reference: `Enrollment: ${course.title}`,
-        },
-        {
-          user_id: course.user_id,
-          kind: "course_sale",
-          amount: instructorAmount,
-          status: "completed",
-          reference: `Course sale: ${course.title} (after 5% fee)`,
-        },
-        {
-          user_id: course.user_id,
-          kind: "platform_fee",
-          amount: -platformFee,
-          status: "completed",
-          reference: `Platform fee (5%): ${course.title}`,
-        },
-      ]);
+      const { error } = await supabase.rpc("enroll_in_course", { p_course_id: id });
+      if (error) throw new Error(error.message);
     },
     onSuccess: () => {
       toast({
-        title: "Enrollment successful!",
-        description: "You can now access the course content",
+        title: "Enrollment successful",
+        description: "Your payment is held in escrow for 7 days. Start learning below.",
       });
-      queryClient.invalidateQueries({ queryKey: ["is-enrolled", id] });
+      queryClient.invalidateQueries({ queryKey: ["course-enrollment", id] });
       queryClient.invalidateQueries({ queryKey: ["course", id] });
       setEnrollOpen(false);
+      setTimeout(() => document.getElementById("lessons")?.scrollIntoView({ behavior: "smooth" }), 300);
     },
     onError: (error: any) => {
       toast({
@@ -195,8 +110,34 @@ export default function CourseDetail() {
     },
   });
 
+  const refundMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.rpc("refund_course_enrollment", {
+        p_enrollment_id: enrollment?.id,
+        p_reason: "Student requested refund during escrow window",
+      });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      toast({ title: "Refunded", description: "Your NC has been returned to your wallet." });
+      queryClient.invalidateQueries({ queryKey: ["course-enrollment", id] });
+      queryClient.invalidateQueries({ queryKey: ["course", id] });
+    },
+    onError: (error: any) =>
+      toast({ title: "Refund failed", description: error.message, variant: "destructive" }),
+  });
+
+  const lessons: any[] = Array.isArray((course as any)?.course_urls) ? (course as any).course_urls : [];
+  const canRefund = enrollment?.escrow_status === "held" && (progress?.progress_percentage ?? 0) <= 25;
+
+  const toEmbed = (url: string) => {
+    const yt = url?.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([\w-]{11})/);
+    return yt ? `https://www.youtube.com/embed/${yt[1]}` : null;
+  };
+
   if (isLoading) return <div className="container mx-auto px-4 py-8">Loading...</div>;
   if (!course) return <div className="container mx-auto px-4 py-8">Course not found</div>;
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -255,6 +196,52 @@ export default function CourseDetail() {
                   </div>
                 </Card>
               )}
+
+              {isEnrolled && (
+                <div id="lessons" className="mb-6 scroll-mt-20">
+                  <h2 className="text-xl font-semibold mb-3">Course Content</h2>
+                  {lessons.length === 0 ? (
+                    <Card className="p-4 text-sm text-muted-foreground">
+                      The instructor has not uploaded any lessons yet. You can request a full refund from the
+                      panel on the right while your payment is still in escrow.
+                    </Card>
+                  ) : (
+                    <div className="space-y-4">
+                      {lessons.map((lesson: any, index: number) => {
+                        const url = typeof lesson === "string" ? lesson : lesson?.url || lesson?.video_url || "";
+                        const title = typeof lesson === "string" ? `Lesson ${index + 1}` : lesson?.title || `Lesson ${index + 1}`;
+                        const embed = toEmbed(url);
+                        return (
+                          <Card key={index} className="p-4 space-y-3">
+                            <div className="flex items-center gap-2">
+                              <PlayCircle className="w-4 h-4 text-primary" />
+                              <span className="font-medium">{title}</span>
+                            </div>
+                            {embed ? (
+                              <div className="aspect-video w-full overflow-hidden rounded-lg">
+                                <iframe
+                                  src={embed}
+                                  title={title}
+                                  className="w-full h-full"
+                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; picture-in-picture"
+                                  allowFullScreen
+                                />
+                              </div>
+                            ) : url ? (
+                              <Button asChild variant="outline" size="sm">
+                                <a href={url} target="_blank" rel="noopener noreferrer">Open lesson</a>
+                              </Button>
+                            ) : (
+                              <p className="text-sm text-muted-foreground">Lesson link unavailable.</p>
+                            )}
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
 
               <p className="text-lg mb-6">{course.description}</p>
 
@@ -357,22 +344,60 @@ export default function CourseDetail() {
                     DEMO COURSE - NOT PURCHASABLE
                   </Badge>
                 )}
-                <div className="text-3xl font-bold">₦{course.price?.toLocaleString()}NC</div>
+                <div className="text-3xl font-bold">{course.price?.toLocaleString()} NC</div>
 
                 {isEnrolled ? (
-                  <Button className="w-full" size="lg">
-                    <PlayCircle className="w-4 h-4 mr-2" />
-                    Continue Learning
-                  </Button>
+                  <>
+                    <Button
+                      className="w-full"
+                      size="lg"
+                      onClick={() => document.getElementById("lessons")?.scrollIntoView({ behavior: "smooth" })}
+                    >
+                      <PlayCircle className="w-4 h-4 mr-2" />
+                      Continue Learning
+                    </Button>
+                    {enrollment?.escrow_status === "held" && (
+                      <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-xs space-y-2">
+                        <p className="font-medium">Payment protected by escrow</p>
+                        <p className="text-muted-foreground">
+                          {enrollment.amount?.toLocaleString()} NC is held until{" "}
+                          {enrollment.release_due_at
+                            ? new Date(enrollment.release_due_at).toLocaleDateString()
+                            : "7 days after purchase"}
+                          . If the course is not what was promised, get your money back.
+                        </p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full"
+                          disabled={!canRefund || refundMutation.isPending}
+                          onClick={() => refundMutation.mutate()}
+                        >
+                          {refundMutation.isPending ? "Processing..." : "Request refund"}
+                        </Button>
+                        {!canRefund && (
+                          <p className="text-muted-foreground">
+                            Refunds are unavailable once you pass 25% of the course.
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </>
                 ) : course.is_demo ? (
                   <Button className="w-full" size="lg" variant="outline" disabled>
                     Demo Course - Not Purchasable
                   </Button>
                 ) : (
-                  <Button onClick={() => setEnrollOpen(true)} className="w-full" size="lg">
-                    Enroll Now
-                  </Button>
+                  <>
+                    <Button onClick={() => setEnrollOpen(true)} className="w-full" size="lg">
+                      Enroll Now
+                    </Button>
+                    <p className="text-xs text-muted-foreground text-center">
+                      Escrow protected · 7-day money-back window
+                    </p>
+                  </>
                 )}
+
 
                 <Separator />
 
@@ -418,11 +443,13 @@ export default function CourseDetail() {
             <p>You are about to enroll in:</p>
             <div className="p-4 bg-muted rounded-lg">
               <p className="font-semibold">{course.title}</p>
-              <p className="text-2xl font-bold mt-2">₦{course.price?.toLocaleString()}NC</p>
+              <p className="text-2xl font-bold mt-2">{course.price?.toLocaleString()} NC</p>
             </div>
             <p className="text-sm text-muted-foreground">
-              This amount will be deducted from your wallet balance.
+              This amount leaves your wallet and is held in escrow for 7 days. The instructor is paid only after
+              that window; you can request a full refund before then if the course does not deliver.
             </p>
+
             <Button
               onClick={() => enrollMutation.mutate()}
               disabled={enrollMutation.isPending}
