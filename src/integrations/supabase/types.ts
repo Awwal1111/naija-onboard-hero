@@ -1123,21 +1123,39 @@ export type Database = {
           amount: number
           course_id: string
           created_at: string | null
+          escrow_status: string
           id: string
+          instructor_amount: number
+          platform_fee: number
+          refunded_at: string | null
+          release_due_at: string | null
+          released_at: string | null
           student_id: string
         }
         Insert: {
           amount: number
           course_id: string
           created_at?: string | null
+          escrow_status?: string
           id?: string
+          instructor_amount?: number
+          platform_fee?: number
+          refunded_at?: string | null
+          release_due_at?: string | null
+          released_at?: string | null
           student_id: string
         }
         Update: {
           amount?: number
           course_id?: string
           created_at?: string | null
+          escrow_status?: string
           id?: string
+          instructor_amount?: number
+          platform_fee?: number
+          refunded_at?: string | null
+          release_due_at?: string | null
+          released_at?: string | null
           student_id?: string
         }
         Relationships: [
@@ -1393,6 +1411,9 @@ export type Database = {
           level: string | null
           lifetime_access: boolean | null
           materials_included: Json | null
+          moderated_at: string | null
+          moderation_note: string | null
+          moderation_status: string
           money_back_guarantee: boolean | null
           prerequisites: string | null
           price: number
@@ -1425,6 +1446,9 @@ export type Database = {
           level?: string | null
           lifetime_access?: boolean | null
           materials_included?: Json | null
+          moderated_at?: string | null
+          moderation_note?: string | null
+          moderation_status?: string
           money_back_guarantee?: boolean | null
           prerequisites?: string | null
           price: number
@@ -1457,6 +1481,9 @@ export type Database = {
           level?: string | null
           lifetime_access?: boolean | null
           materials_included?: Json | null
+          moderated_at?: string | null
+          moderation_note?: string | null
+          moderation_status?: string
           money_back_guarantee?: boolean | null
           prerequisites?: string | null
           price?: number
@@ -8928,12 +8955,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -8957,11 +8984,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -8982,11 +9009,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -9007,11 +9034,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -9024,11 +9051,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
