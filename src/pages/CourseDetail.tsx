@@ -36,20 +36,23 @@ export default function CourseDetail() {
     },
   });
 
-  const { data: isEnrolled } = useQuery({
-    queryKey: ["is-enrolled", id],
+  const { data: enrollment } = useQuery({
+    queryKey: ["course-enrollment", id, user?.id],
     queryFn: async () => {
-      if (!user) return false;
+      if (!user) return null;
       const { data } = await supabase
         .from("course_enrollments")
-        .select("id")
+        .select("id, amount, escrow_status, release_due_at, created_at")
         .eq("course_id", id)
         .eq("student_id", user.id)
-        .single();
-      return !!data;
+        .maybeSingle();
+      return data;
     },
     enabled: !!user,
   });
+
+  const isEnrolled = !!enrollment && enrollment.escrow_status !== "refunded";
+
 
   const { data: progress } = useQuery({
     queryKey: ["course-progress", id],
