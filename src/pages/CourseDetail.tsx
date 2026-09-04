@@ -197,6 +197,52 @@ export default function CourseDetail() {
                 </Card>
               )}
 
+              {isEnrolled && (
+                <div id="lessons" className="mb-6 scroll-mt-20">
+                  <h2 className="text-xl font-semibold mb-3">Course Content</h2>
+                  {lessons.length === 0 ? (
+                    <Card className="p-4 text-sm text-muted-foreground">
+                      The instructor has not uploaded any lessons yet. You can request a full refund from the
+                      panel on the right while your payment is still in escrow.
+                    </Card>
+                  ) : (
+                    <div className="space-y-4">
+                      {lessons.map((lesson: any, index: number) => {
+                        const url = typeof lesson === "string" ? lesson : lesson?.url || lesson?.video_url || "";
+                        const title = typeof lesson === "string" ? `Lesson ${index + 1}` : lesson?.title || `Lesson ${index + 1}`;
+                        const embed = toEmbed(url);
+                        return (
+                          <Card key={index} className="p-4 space-y-3">
+                            <div className="flex items-center gap-2">
+                              <PlayCircle className="w-4 h-4 text-primary" />
+                              <span className="font-medium">{title}</span>
+                            </div>
+                            {embed ? (
+                              <div className="aspect-video w-full overflow-hidden rounded-lg">
+                                <iframe
+                                  src={embed}
+                                  title={title}
+                                  className="w-full h-full"
+                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; picture-in-picture"
+                                  allowFullScreen
+                                />
+                              </div>
+                            ) : url ? (
+                              <Button asChild variant="outline" size="sm">
+                                <a href={url} target="_blank" rel="noopener noreferrer">Open lesson</a>
+                              </Button>
+                            ) : (
+                              <p className="text-sm text-muted-foreground">Lesson link unavailable.</p>
+                            )}
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+
               <p className="text-lg mb-6">{course.description}</p>
 
               {course.learning_objectives && Array.isArray(course.learning_objectives) && course.learning_objectives.length > 0 && (
