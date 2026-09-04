@@ -51,29 +51,26 @@ export default function Courses() {
   };
 
   const enrollMutation = useMutation({
-    mutationFn: async ({ courseId, price, isDemo }: { courseId: string; price: number; isDemo: boolean }) => {
+    mutationFn: async ({ courseId, isDemo }: { courseId: string; price: number; isDemo: boolean }) => {
       if (isDemo) throw new Error("Demo courses cannot be purchased");
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (!authUser) throw new Error("Not authenticated");
-
-      const { data: existing } = await supabase.from("course_enrollments").select("id").eq("course_id", courseId).eq("student_id", authUser.id).single();
-      if (existing) throw new Error("Already enrolled");
-
-      const { data: profile } = await supabase.from("profiles").select("wallet_balance").eq("user_id", authUser.id).single();
-      if (!profile || profile.wallet_balance < price) throw new Error("Insufficient balance");
-
-      await supabase.from("profiles").update({ wallet_balance: profile.wallet_balance - price }).eq("user_id", authUser.id);
-      await supabase.from("course_enrollments").insert({ course_id: courseId, student_id: authUser.id, amount: price });
+      const { error } = await supabase.rpc("enroll_in_course", { p_course_id: courseId });
+      if (error) throw new Error(error.message);
+      return courseId;
     },
-    onSuccess: () => {
-      toast({ title: "Enrolled successfully!" });
+    onSuccess: (courseId) => {
+      toast({
+        title: "Enrolled successfully!",
+        description: "Your payment is held in escrow for 7 days — refundable if the course doesn't deliver.",
+      });
       queryClient.invalidateQueries({ queryKey: ["courses"] });
       fetchMyData();
+      navigate(`/courses/${courseId}`);
     },
     onError: (error: any) => {
       toast({ title: error.message, variant: "destructive" });
     },
   });
+
 
   const filteredCourses = courses.filter((c: any) =>
     c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
