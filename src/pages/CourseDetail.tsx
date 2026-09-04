@@ -88,106 +88,18 @@ export default function CourseDetail() {
   const enrollMutation = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error("Please log in to enroll");
-      
-      if (course?.is_demo) {
-        throw new Error("This is a demo course and cannot be purchased. Only real courses can be enrolled in.");
-      }
-
-      // Check balance
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("balance_withdrawable")
-        .eq("user_id", user.id)
-        .single();
-
-      if (!profile || profile.balance_withdrawable < course.price) {
-        throw new Error("Insufficient balance");
-      }
-
-      // Calculate platform fee (5%)
-      const platformFee = Math.round(course.price * 0.05);
-      const instructorAmount = course.price - platformFee;
-
-      // Deduct from student
-      await supabase
-        .from("profiles")
-        .update({
-          wallet_balance: profile.balance_withdrawable - course.price,
-          balance_withdrawable: profile.balance_withdrawable - course.price,
-        })
-        .eq("user_id", user.id);
-
-      // Credit instructor (minus platform fee)
-      await supabase.rpc("increment_wallet_balance", {
-        target_user_id: course.user_id,
-        amount_to_add: instructorAmount,
-      });
-
-      // Add platform fee to admin wallet
-      const { error: adminWalletError } = await supabase
-        .from('admin_wallet')
-        .update({ 
-          balance: supabase.rpc ? undefined : platformFee, // Handle increment
-        })
-        .eq('id', 1);
-
-      // If direct update fails, use RPC or raw SQL approach
-      if (adminWalletError) {
-        console.log('Admin wallet fee logging:', platformFee);
-      }
-
-      // Record enrollment
-      await supabase.from("course_enrollments").insert({
-        course_id: id,
-        student_id: user.id,
-        amount: course.price,
-      });
-
-      // Create progress record
-      await supabase.from("course_progress").insert({
-        course_id: id,
-        student_id: user.id,
-      });
-
-      // Update enrollment count
-      await supabase
-        .from("courses")
-        .update({ enrollment_count: (course.enrollment_count || 0) + 1 })
-        .eq("id", id);
-
-      // Log transactions
-      await supabase.from("wallet_transactions").insert([
-        {
-          user_id: user.id,
-          kind: "course_enrollment",
-          amount: -course.price,
-          status: "completed",
-          reference: `Enrollment: ${course.title}`,
-        },
-        {
-          user_id: course.user_id,
-          kind: "course_sale",
-          amount: instructorAmount,
-          status: "completed",
-          reference: `Course sale: ${course.title} (after 5% fee)`,
-        },
-        {
-          user_id: course.user_id,
-          kind: "platform_fee",
-          amount: -platformFee,
-          status: "completed",
-          reference: `Platform fee (5%): ${course.title}`,
-        },
-      ]);
+      const { error } = await supabase.rpc("enroll_in_course", { p_course_id: id });
+      if (error) throw new Error(error.message);
     },
     onSuccess: () => {
       toast({
-        title: "Enrollment successful!",
-        description: "You can now access the course content",
+        title: "Enrollment successful",
+        description: "Your payment is held in escrow for 7 days. Start learning below.",
       });
-      queryClient.invalidateQueries({ queryKey: ["is-enrolled", id] });
+      queryClient.invalidateQueries({ queryKey: ["course-enrollment", id] });
       queryClient.invalidateQueries({ queryKey: ["course", id] });
       setEnrollOpen(false);
+      setTimeout(() => document.getElementById("lessons")?.scrollIntoView({ behavior: "smooth" }), 300);
     },
     onError: (error: any) => {
       toast({
@@ -198,8 +110,23 @@ export default function CourseDetail() {
     },
   });
 
-  if (isLoading) return <div className="container mx-auto px-4 py-8">Loading...</div>;
-  if (!course) return <div className="container mx-auto px-4 py-8">Course not found</div>;
+  const refundMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.rpc("refund_course_enrollment", {
+        p_enrollment_id: enrollment?.id,
+        p_reason: "Student requested refund during escrow window",
+      });
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      toast({ title: "Refunded", description: "Your NC has been returned to your wallet." });
+      queryClient.invalidateQueries({ queryKey: ["course-enrollment", id] });
+      queryClient.invalidateQueries({ queryKey: ["course", id] });
+    },
+    onError: (error: any) =>
+      toast({ title: "Refund failed", description: error.message, variant: "destructive" }),
+  });
+
 
   return (
     <div className="min-h-screen bg-background">
