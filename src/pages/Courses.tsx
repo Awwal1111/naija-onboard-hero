@@ -114,18 +114,22 @@ export default function Courses() {
         </div>
       </CardContent>
       {showEnroll && (
-        <CardFooter className="p-3 pt-0">
+        <CardFooter className="p-3 pt-0 flex-col items-stretch gap-1">
           <Button
             size="sm"
             className="w-full"
             variant={course.is_demo ? "outline" : "default"}
-            disabled={course.is_demo || enrollMutation.isPending}
-            onClick={() => enrollMutation.mutate({ courseId: course.id, price: course.price, isDemo: course.is_demo })}
+            disabled={course.is_demo}
+            onClick={() => navigate(`/courses/${course.id}`)}
           >
-            {course.is_demo ? "Demo - Not Purchasable" : <><Award className="h-4 w-4 mr-1" />Enroll Now</>}
+            {course.is_demo ? "Demo - Not Purchasable" : <><Award className="h-4 w-4 mr-1" />View & Enroll</>}
           </Button>
+          {!course.is_demo && (
+            <p className="text-[10px] text-muted-foreground text-center">Escrow protected · 7-day refund window</p>
+          )}
         </CardFooter>
       )}
+
     </Card>
   );
 
