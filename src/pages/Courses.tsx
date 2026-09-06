@@ -55,26 +55,6 @@ export default function Courses() {
   };
 
 
-  const enrollMutation = useMutation({
-    mutationFn: async ({ courseId, isDemo }: { courseId: string; price: number; isDemo: boolean }) => {
-      if (isDemo) throw new Error("Demo courses cannot be purchased");
-      const { error } = await supabase.rpc("enroll_in_course", { p_course_id: courseId });
-      if (error) throw new Error(error.message);
-      return courseId;
-    },
-    onSuccess: (courseId) => {
-      toast({
-        title: "Enrolled successfully!",
-        description: "Your payment is held in escrow for 7 days — refundable if the course doesn't deliver.",
-      });
-      queryClient.invalidateQueries({ queryKey: ["courses"] });
-      fetchMyData();
-      navigate(`/courses/${courseId}`);
-    },
-    onError: (error: any) => {
-      toast({ title: error.message, variant: "destructive" });
-    },
-  });
 
 
   const filteredCourses = courses.filter((c: any) =>
