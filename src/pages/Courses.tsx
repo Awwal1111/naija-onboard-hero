@@ -36,9 +36,13 @@ export default function Courses() {
 
   const fetchMyData = async () => {
     const [createdRes, enrolledRes, enrollmentsRes] = await Promise.all([
-      supabase.from('courses').select('*').eq('user_id', user?.id).order('created_at', { ascending: false }),
-      supabase.from('course_enrollments').select('*, courses(*)').eq('student_id', user?.id),
-      supabase.from('course_enrollments').select('amount, courses!inner(user_id)').eq('courses.user_id', user?.id)
+      supabase.from('courses')
+        .select('id, title, description, status, moderation_status, moderation_note, enrollment_count, price')
+        .eq('user_id', user?.id).order('created_at', { ascending: false }).limit(50),
+      supabase.from('course_enrollments')
+        .select('id, course_id, created_at, escrow_status, courses(id, title)')
+        .eq('student_id', user?.id).limit(50),
+      supabase.from('course_enrollments').select('amount, courses!inner(user_id)').eq('courses.user_id', user?.id).limit(200)
     ]);
     setMyCourses(createdRes.data || []);
     setEnrolledCourses(enrolledRes.data || []);
@@ -49,6 +53,7 @@ export default function Courses() {
       students: enrollmentsRes.data?.length || 0
     });
   };
+
 
   const enrollMutation = useMutation({
     mutationFn: async ({ courseId, isDemo }: { courseId: string; price: number; isDemo: boolean }) => {
