@@ -188,9 +188,31 @@ export default function Courses() {
                       <h3 className="font-semibold mb-1">{course.title}</h3>
                       <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{course.description}</p>
                       <div className="flex items-center justify-between text-xs">
-                        <Badge variant={course.status === 'active' ? 'default' : 'secondary'}>{course.status}</Badge>
+                        <div className="flex items-center gap-1">
+                          <Badge variant={course.status === 'active' ? 'default' : 'secondary'}>{course.status}</Badge>
+                          <Badge
+                            variant="outline"
+                            className={
+                              course.moderation_status === 'approved'
+                                ? 'text-green-600 border-green-500/50'
+                                : course.moderation_status === 'rejected'
+                                ? 'text-destructive border-destructive/50'
+                                : 'text-yellow-600 border-yellow-500/50'
+                            }
+                          >
+                            {course.moderation_status === 'approved'
+                              ? 'Live'
+                              : course.moderation_status === 'rejected'
+                              ? 'Rejected'
+                              : 'Under review'}
+                          </Badge>
+                        </div>
                         <span className="text-muted-foreground"><Users className="h-3 w-3 inline mr-1" />{course.enrollment_count || 0} students</span>
                       </div>
+                      {course.moderation_note && (
+                        <p className="text-[11px] text-muted-foreground mt-2 italic">{course.moderation_note}</p>
+                      )}
+
                     </CardContent>
                   </Card>
                 ))}
