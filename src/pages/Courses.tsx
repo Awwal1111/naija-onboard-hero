@@ -36,9 +36,13 @@ export default function Courses() {
 
   const fetchMyData = async () => {
     const [createdRes, enrolledRes, enrollmentsRes] = await Promise.all([
-      supabase.from('courses').select('*').eq('user_id', user?.id).order('created_at', { ascending: false }),
-      supabase.from('course_enrollments').select('*, courses(*)').eq('student_id', user?.id),
-      supabase.from('course_enrollments').select('amount, courses!inner(user_id)').eq('courses.user_id', user?.id)
+      supabase.from('courses')
+        .select('id, title, description, status, moderation_status, moderation_note, enrollment_count, price')
+        .eq('user_id', user?.id).order('created_at', { ascending: false }).limit(50),
+      supabase.from('course_enrollments')
+        .select('id, course_id, created_at, escrow_status, courses(id, title)')
+        .eq('student_id', user?.id).limit(50),
+      supabase.from('course_enrollments').select('amount, courses!inner(user_id)').eq('courses.user_id', user?.id).limit(200)
     ]);
     setMyCourses(createdRes.data || []);
     setEnrolledCourses(enrolledRes.data || []);
@@ -50,26 +54,7 @@ export default function Courses() {
     });
   };
 
-  const enrollMutation = useMutation({
-    mutationFn: async ({ courseId, isDemo }: { courseId: string; price: number; isDemo: boolean }) => {
-      if (isDemo) throw new Error("Demo courses cannot be purchased");
-      const { error } = await supabase.rpc("enroll_in_course", { p_course_id: courseId });
-      if (error) throw new Error(error.message);
-      return courseId;
-    },
-    onSuccess: (courseId) => {
-      toast({
-        title: "Enrolled successfully!",
-        description: "Your payment is held in escrow for 7 days — refundable if the course doesn't deliver.",
-      });
-      queryClient.invalidateQueries({ queryKey: ["courses"] });
-      fetchMyData();
-      navigate(`/courses/${courseId}`);
-    },
-    onError: (error: any) => {
-      toast({ title: error.message, variant: "destructive" });
-    },
-  });
+
 
 
   const filteredCourses = courses.filter((c: any) =>
@@ -109,18 +94,22 @@ export default function Courses() {
         </div>
       </CardContent>
       {showEnroll && (
-        <CardFooter className="p-3 pt-0">
+        <CardFooter className="p-3 pt-0 flex-col items-stretch gap-1">
           <Button
             size="sm"
             className="w-full"
             variant={course.is_demo ? "outline" : "default"}
-            disabled={course.is_demo || enrollMutation.isPending}
-            onClick={() => enrollMutation.mutate({ courseId: course.id, price: course.price, isDemo: course.is_demo })}
+            disabled={course.is_demo}
+            onClick={() => navigate(`/courses/${course.id}`)}
           >
-            {course.is_demo ? "Demo - Not Purchasable" : <><Award className="h-4 w-4 mr-1" />Enroll Now</>}
+            {course.is_demo ? "Demo - Not Purchasable" : <><Award className="h-4 w-4 mr-1" />View & Enroll</>}
           </Button>
+          {!course.is_demo && (
+            <p className="text-[10px] text-muted-foreground text-center">Escrow protected · 7-day refund window</p>
+          )}
         </CardFooter>
       )}
+
     </Card>
   );
 
@@ -199,9 +188,31 @@ export default function Courses() {
                       <h3 className="font-semibold mb-1">{course.title}</h3>
                       <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{course.description}</p>
                       <div className="flex items-center justify-between text-xs">
-                        <Badge variant={course.status === 'active' ? 'default' : 'secondary'}>{course.status}</Badge>
+                        <div className="flex items-center gap-1">
+                          <Badge variant={course.status === 'active' ? 'default' : 'secondary'}>{course.status}</Badge>
+                          <Badge
+                            variant="outline"
+                            className={
+                              course.moderation_status === 'approved'
+                                ? 'text-green-600 border-green-500/50'
+                                : course.moderation_status === 'rejected'
+                                ? 'text-destructive border-destructive/50'
+                                : 'text-yellow-600 border-yellow-500/50'
+                            }
+                          >
+                            {course.moderation_status === 'approved'
+                              ? 'Live'
+                              : course.moderation_status === 'rejected'
+                              ? 'Rejected'
+                              : 'Under review'}
+                          </Badge>
+                        </div>
                         <span className="text-muted-foreground"><Users className="h-3 w-3 inline mr-1" />{course.enrollment_count || 0} students</span>
                       </div>
+                      {course.moderation_note && (
+                        <p className="text-[11px] text-muted-foreground mt-2 italic">{course.moderation_note}</p>
+                      )}
+
                     </CardContent>
                   </Card>
                 ))}

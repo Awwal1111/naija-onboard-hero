@@ -43,6 +43,8 @@ import { UserModeStatsCard } from '@/components/admin/UserModeStatsCard'
 import { IncompleteProfilesCard } from '@/components/admin/IncompleteProfilesCard'
 import { Briefcase as BriefcaseIcon } from 'lucide-react'
 import { AdminJobModeration } from '@/components/admin/AdminJobModeration'
+import { AdminCourseModeration } from '@/components/admin/AdminCourseModeration'
+
 
 // Admin Gigs Management Section
 const AdminGigsSection = () => {
