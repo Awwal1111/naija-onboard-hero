@@ -133,9 +133,21 @@ export const useAuth = () => {
       return { error }
     }
 
+    const locked = throttleCheck('login', email)
+    if (locked > 0) {
+      const error = { message: "Too many attempts" }
+      toast({
+        title: "Too many login attempts",
+        description: `For your security, sign-in is paused for ${formatWait(locked)}. You can reset your password instead.`,
+        variant: "destructive",
+      })
+      return { error }
+    }
+
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
 
     if (error) {
+      throttleRecord('login', email)
       let errorMessage = error.message
       if (error.message.includes('Invalid login credentials')) {
         errorMessage = "The email or password you entered is incorrect. Please check and try again."
@@ -144,6 +156,7 @@ export const useAuth = () => {
       }
       toast({ title: "Login failed", description: errorMessage, variant: "destructive" })
     } else {
+      throttleReset('login', email)
       toast({ title: "Welcome back!", description: "You've been signed in successfully." })
       // Fire and forget - non-blocking
       logLogin('email')
@@ -156,6 +169,7 @@ export const useAuth = () => {
       })
     }
     return { error }
+
   }, [logIPActivity, logLogin, toast, checkProfileAndRedirect])
 
   const signInWithGoogle = useCallback(async () => {
