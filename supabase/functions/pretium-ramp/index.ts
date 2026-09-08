@@ -1,7 +1,15 @@
-import { createClient } from "npm:@supabase/supabase-js@2.45.0";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
-import { ethers } from "npm:ethers@6.7.0";
-import CryptoJS from "npm:crypto-js@4.2.0";
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { ethers } from "https://esm.sh/ethers@6.7.0";
+import CryptoJS from "https://esm.sh/crypto-js@4.1.1";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
+const BUILD = "2026-09-08-onramp-fix";
 
 const CELO_RPC = "https://forno.celo.org";
 const USDT_ADDRESS_CELO = "0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e";
@@ -53,7 +61,7 @@ async function loadMasterKey(supabaseAdmin: any): Promise<string> {
   return normalizeHexKey(raw);
 }
 
-Deno.serve(async (req) => {
+serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
@@ -377,7 +385,7 @@ Deno.serve(async (req) => {
             }
           : { ok: false, status: resp.status, error: data?.message || raw };
       }
-      return json({ success: true, markets: out });
+      return json({ success: true, build: BUILD, markets: out });
     }
 
     // ---------- On-ramp (mobile money): KES/GHS/UGX/MWK/CDF ----------
