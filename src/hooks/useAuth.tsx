@@ -85,8 +85,21 @@ export const useAuth = () => {
       toast({ title: "Sign up failed", description: "Password must be at least 6 characters", variant: "destructive" })
       return { error }
     }
-    
+
+    const signupLock = throttleCheck('signup', email)
+    if (signupLock > 0) {
+      const error = { message: "Too many sign-up attempts" }
+      toast({
+        title: "Please slow down",
+        description: `Too many sign-up attempts from this device. Try again in ${formatWait(signupLock)}.`,
+        variant: "destructive",
+      })
+      return { error }
+    }
+    throttleRecord('signup', email)
+
     try {
+
       const { error, data } = await supabase.auth.signUp({
         email: email.trim(),
         password,
