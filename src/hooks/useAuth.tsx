@@ -193,15 +193,30 @@ export const useAuth = () => {
     const redirectUrl = window.location.hostname === 'localhost'
       ? `${window.location.origin}/reset-password`
       : `${window.location.protocol}//${window.location.host}/reset-password`
-    
-    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: redirectUrl })
-    if (error) {
-      toast({ title: "Password reset failed", description: error.message, variant: "destructive" })
-    } else {
-      toast({ title: "Password reset email sent", description: "Check your email for the password reset link." })
+
+    const locked = throttleCheck('reset', email)
+    if (locked > 0) {
+      // Generic response — never reveal whether the address exists.
+      toast({
+        title: "Check your email",
+        description: `If an account exists for that address, a reset link is on its way. You can request another in ${formatWait(locked)}.`,
+      })
+      return { error: null }
     }
-    return { error }
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: redirectUrl })
+    throttleRecord('reset', email)
+
+    // Always show the same message so the form cannot be used to discover
+    // which email addresses are registered.
+    toast({
+      title: "Check your email",
+      description: "If an account exists for that address, we've sent a password reset link.",
+    })
+    if (error) console.warn('[auth] reset request issue')
+    return { error: null }
   }, [toast])
+
 
   const updatePassword = useCallback(async (password: string) => {
     const { error } = await supabase.auth.updateUser({ password })
