@@ -5,6 +5,8 @@ import { useToast } from '@/hooks/use-toast'
 import { useIPProtection } from '@/hooks/useIPProtection'
 import { useAuthContext } from '@/contexts/AuthContext'
 import { useLoginLogger } from '@/hooks/useLoginLogger'
+import { throttleCheck, throttleRecord, throttleReset, formatWait } from '@/lib/authThrottle'
+
 
 /**
  * useAuth - provides auth state from the centralized AuthProvider
@@ -83,8 +85,21 @@ export const useAuth = () => {
       toast({ title: "Sign up failed", description: "Password must be at least 6 characters", variant: "destructive" })
       return { error }
     }
-    
+
+    const signupLock = throttleCheck('signup', email)
+    if (signupLock > 0) {
+      const error = { message: "Too many sign-up attempts" }
+      toast({
+        title: "Please slow down",
+        description: `Too many sign-up attempts from this device. Try again in ${formatWait(signupLock)}.`,
+        variant: "destructive",
+      })
+      return { error }
+    }
+    throttleRecord('signup', email)
+
     try {
+
       const { error, data } = await supabase.auth.signUp({
         email: email.trim(),
         password,
@@ -191,15 +206,30 @@ export const useAuth = () => {
     const redirectUrl = window.location.hostname === 'localhost'
       ? `${window.location.origin}/reset-password`
       : `${window.location.protocol}//${window.location.host}/reset-password`
-    
-    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: redirectUrl })
-    if (error) {
-      toast({ title: "Password reset failed", description: error.message, variant: "destructive" })
-    } else {
-      toast({ title: "Password reset email sent", description: "Check your email for the password reset link." })
+
+    const locked = throttleCheck('reset', email)
+    if (locked > 0) {
+      // Generic response — never reveal whether the address exists.
+      toast({
+        title: "Check your email",
+        description: `If an account exists for that address, a reset link is on its way. You can request another in ${formatWait(locked)}.`,
+      })
+      return { error: null }
     }
-    return { error }
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: redirectUrl })
+    throttleRecord('reset', email)
+
+    // Always show the same message so the form cannot be used to discover
+    // which email addresses are registered.
+    toast({
+      title: "Check your email",
+      description: "If an account exists for that address, we've sent a password reset link.",
+    })
+    if (error) console.warn('[auth] reset request issue')
+    return { error: null }
   }, [toast])
+
 
   const updatePassword = useCallback(async (password: string) => {
     const { error } = await supabase.auth.updateUser({ password })
