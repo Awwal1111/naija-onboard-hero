@@ -80,15 +80,24 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return json({ error: "Missing authorization" }, 401);
-    const { data: { user }, error: authErr } = await supabaseAuth.auth.getUser(
-      authHeader.replace("Bearer ", "")
-    );
-    if (authErr || !user) return json({ error: "Unauthorized" }, 401);
-
     const body = await req.json().catch(() => ({}));
     const action = String(body.action || "");
+
+    // Read-only market lookups carry no user data — allow them without a session
+    // so the deposit form can show live availability before sign-in.
+    const PUBLIC_ACTIONS = new Set(["banks", "exchangeRate", "onrampStatus"]);
+
+    const authHeader = req.headers.get("Authorization");
+    let user: any = null;
+    if (!PUBLIC_ACTIONS.has(action)) {
+      if (!authHeader) return json({ error: "Missing authorization" }, 401);
+      const { data: authData, error: authErr } = await supabaseAuth.auth.getUser(
+        authHeader.replace("Bearer ", "")
+      );
+      if (authErr || !authData?.user) return json({ error: "Unauthorized" }, 401);
+      user = authData.user;
+    }
+
 
     // ---------- Public lookups ----------
     if (action === "banks") {
