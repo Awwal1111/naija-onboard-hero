@@ -1,0 +1,9 @@
+/*
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(self), camera=(self), microphone=(self), payment=(self), usb=(), magnetometer=(), interest-cohort=()
+  Cross-Origin-Opener-Policy: same-origin-allow-popups
+  X-DNS-Prefetch-Control: off
+  Content-Security-Policy: frame-ancestors 'self' https://*.lovable.app https://*.lovableproject.com; base-uri 'self'; object-src 'none'; form-action 'self'; upgrade-insecure-requests
