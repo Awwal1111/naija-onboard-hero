@@ -234,12 +234,16 @@ export const useFeed = () => {
 
       return { success: true }
     } catch (error: any) {
+      const raw = error?.message || "Failed to create post"
+      const isLimit = raw.includes('2 posts per 24 hours')
       toast({
-        title: "Error",
-        description: error.message || "Failed to create post",
+        title: isLimit ? "Daily post limit reached" : "Error",
+        description: isLimit
+          ? "Free accounts can share 2 posts a day. Upgrade to Premium to post as much as you like."
+          : raw,
         variant: "destructive"
       })
-      return { error: error.message }
+      return { error: raw }
     }
   }
 
