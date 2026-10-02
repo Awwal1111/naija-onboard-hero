@@ -59,10 +59,11 @@ export const VTUAirtimeDialog = ({ open, onOpenChange, currentBalance, onSuccess
       return;
     }
 
-    if (amountNum > currentBalance) {
+    const totalWithFee = amountNum + Math.max(3, Math.ceil(amountNum * 0.03));
+    if (totalWithFee > currentBalance) {
       toast({
         title: "Error",
-        description: `Insufficient withdrawable balance. Available: ${currentBalance} NC`,
+        description: `You need ${totalWithFee} NC (incl. service fee). Available: ${currentBalance} NC`,
         variant: "destructive",
       });
       return;
@@ -172,6 +173,11 @@ export const VTUAirtimeDialog = ({ open, onOpenChange, currentBalance, onSuccess
               min={network === 'MTN' ? 10 : 50}
               max={50000}
             />
+            {parseFloat(amount) > 0 && (
+              <p className="text-xs text-foreground">
+                Service fee: {Math.max(3, Math.ceil(parseFloat(amount) * 0.03))} NC · Total: {parseFloat(amount) + Math.max(3, Math.ceil(parseFloat(amount) * 0.03))} NC
+              </p>
+            )}
             <p className="text-xs text-muted-foreground">
               Available withdrawable balance: {currentBalance} NC
             </p>
