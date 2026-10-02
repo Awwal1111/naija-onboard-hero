@@ -201,10 +201,12 @@ Deno.serve(async (req) => {
       .insert({
         user_id: user.id,
         kind: 'data_purchase',
-        amount: -price,
+        amount: -totalCharge,
         status: isSuccess ? 'completed' : 'failed',
         reference: `Data purchase - ${network} ${dataPlan}`,
         metadata: {
+          service_fee: serviceFee,
+          face_value: price,
           network,
           phone: cleanPhone,
           service_id: serviceId,
@@ -218,6 +220,14 @@ Deno.serve(async (req) => {
 
     if (txError) {
       console.error('Transaction logging error:', txError);
+    }
+
+    if (isSuccess) {
+      const { error: revErr } = await supabase.rpc('credit_platform_revenue', {
+        p_source: 'data_service_fee', p_amount: serviceFee, p_payer: user.id,
+        p_ref: requestId, p_meta: { network, face_value: price },
+      });
+      if (revErr) console.error('Revenue credit error:', revErr);
     }
 
     // Refund if failed
