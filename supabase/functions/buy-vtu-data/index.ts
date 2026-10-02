@@ -133,14 +133,17 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('User withdrawable balance:', profile.balance_withdrawable, 'Required:', price);
+    // Platform service fee: 3% (minimum 3 NC)
+    const serviceFee = Math.max(3, Math.ceil(Number(price) * 0.03));
+    const totalCharge = Number(price) + serviceFee;
+    console.log('User withdrawable balance:', profile.balance_withdrawable, 'Required:', totalCharge);
 
     // Check withdrawable balance (excludes signup bonus and daily signin rewards)
-    if (profile.balance_withdrawable < price) {
+    if (profile.balance_withdrawable < totalCharge) {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: `Insufficient withdrawable balance. Available: ₦${profile.balance_withdrawable} NC` 
+          error: `Insufficient withdrawable balance. Need ₦${totalCharge} NC (incl. ₦${serviceFee} service fee). Available: ₦${profile.balance_withdrawable} NC` 
         }),
         { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -150,8 +153,8 @@ Deno.serve(async (req) => {
     const { error: deductError } = await supabase
       .from('profiles')
       .update({
-        wallet_balance: profile.wallet_balance - price,
-        balance_withdrawable: profile.balance_withdrawable - price,
+        wallet_balance: profile.wallet_balance - totalCharge,
+        balance_withdrawable: profile.balance_withdrawable - totalCharge,
         updated_at: new Date().toISOString(),
       })
       .eq('user_id', user.id);
