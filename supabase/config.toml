@@ -33,14 +33,8 @@ verify_jwt = false
 [functions.cpx-postback]
 verify_jwt = false
 
-[functions.cpx-screenout]
-verify_jwt = false
 
-[functions.cpx-bonus]
-verify_jwt = false
 
-[functions.cpx-event-canceled]
-verify_jwt = false
 
 [functions.send-expert-notification]
 verify_jwt = true
@@ -113,8 +107,6 @@ verify_jwt = true
 [functions.notify-message-received]
 verify_jwt = false
 
-[functions.verify-face]
-verify_jwt = true
 
 [functions.send-phone-verification]
 verify_jwt = true
@@ -122,8 +114,6 @@ verify_jwt = true
 [functions.verify-phone-code]
 verify_jwt = true
 
-[functions.upload-video]
-verify_jwt = false
 
 [functions.quidax-on-ramp]
 verify_jwt = true
@@ -257,8 +247,6 @@ verify_jwt = false
 [functions.pretium-ramp]
 verify_jwt = false
 
-[functions.pretium-onramp]
-verify_jwt = false
 
 [functions.pretium-webhook]
 verify_jwt = false
