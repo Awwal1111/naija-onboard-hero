@@ -133,14 +133,17 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('User withdrawable balance:', profile.balance_withdrawable, 'Required:', price);
+    // Platform service fee: 3% (minimum 3 NC)
+    const serviceFee = Math.max(3, Math.ceil(Number(price) * 0.03));
+    const totalCharge = Number(price) + serviceFee;
+    console.log('User withdrawable balance:', profile.balance_withdrawable, 'Required:', totalCharge);
 
     // Check withdrawable balance (excludes signup bonus and daily signin rewards)
-    if (profile.balance_withdrawable < price) {
+    if (profile.balance_withdrawable < totalCharge) {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: `Insufficient withdrawable balance. Available: ₦${profile.balance_withdrawable} NC` 
+          error: `Insufficient withdrawable balance. Need ₦${totalCharge} NC (incl. ₦${serviceFee} service fee). Available: ₦${profile.balance_withdrawable} NC` 
         }),
         { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -150,8 +153,8 @@ Deno.serve(async (req) => {
     const { error: deductError } = await supabase
       .from('profiles')
       .update({
-        wallet_balance: profile.wallet_balance - price,
-        balance_withdrawable: profile.balance_withdrawable - price,
+        wallet_balance: profile.wallet_balance - totalCharge,
+        balance_withdrawable: profile.balance_withdrawable - totalCharge,
         updated_at: new Date().toISOString(),
       })
       .eq('user_id', user.id);
@@ -198,10 +201,12 @@ Deno.serve(async (req) => {
       .insert({
         user_id: user.id,
         kind: 'data_purchase',
-        amount: -price,
+        amount: -totalCharge,
         status: isSuccess ? 'completed' : 'failed',
         reference: `Data purchase - ${network} ${dataPlan}`,
         metadata: {
+          service_fee: serviceFee,
+          face_value: price,
           network,
           phone: cleanPhone,
           service_id: serviceId,
@@ -215,6 +220,14 @@ Deno.serve(async (req) => {
 
     if (txError) {
       console.error('Transaction logging error:', txError);
+    }
+
+    if (isSuccess) {
+      const { error: revErr } = await supabase.rpc('credit_platform_revenue', {
+        p_source: 'data_service_fee', p_amount: serviceFee, p_payer: user.id,
+        p_ref: requestId, p_meta: { network, face_value: price },
+      });
+      if (revErr) console.error('Revenue credit error:', revErr);
     }
 
     // Refund if failed

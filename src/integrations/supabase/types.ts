@@ -4609,6 +4609,36 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_revenue: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          metadata: Json
+          payer_id: string | null
+          reference_id: string | null
+          source: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          metadata?: Json
+          payer_id?: string | null
+          reference_id?: string | null
+          source: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          metadata?: Json
+          payer_id?: string | null
+          reference_id?: string | null
+          source?: string
+        }
+        Relationships: []
+      }
       portfolio_items: {
         Row: {
           created_at: string
@@ -8328,6 +8358,16 @@ export type Database = {
           p_user_id: string
         }
         Returns: Json
+      }
+      credit_platform_revenue: {
+        Args: {
+          p_amount: number
+          p_meta?: Json
+          p_payer: string
+          p_ref: string
+          p_source: string
+        }
+        Returns: undefined
       }
       decline_chat_intro: { Args: { p_intro_id: string }; Returns: undefined }
       deduct_nc_balance: {
