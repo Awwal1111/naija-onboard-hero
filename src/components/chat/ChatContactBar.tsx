@@ -3,6 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Phone, MessageCircle, Video, Facebook } from "lucide-react";
 import { trackCommunicationClick, ButtonType } from "@/lib/communicationAnalytics";
 import { useLocation } from "react-router-dom";
+import { ShieldCheck } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 interface ChatContactBarProps {
   userId: string;
@@ -24,6 +28,25 @@ export const ChatContactBar = ({
   facebookUrl,
 }: ChatContactBarProps) => {
   const location = useLocation();
+  const { user } = useAuth();
+  const me = user?.id;
+
+  // External contact unlocks only once the two users have a funded deal on NaijaLancers
+  const { data: hasFundedDeal = false } = useQuery({
+    queryKey: ['funded-deal', me, userId],
+    enabled: !!me && !!userId && me !== userId,
+    staleTime: 10 * 60 * 1000,
+    queryFn: async () => {
+      const pair = `and(buyer_id.eq.${me},seller_id.eq.${userId}),and(buyer_id.eq.${userId},seller_id.eq.${me})`;
+      const { count: g } = await supabase.from('gig_orders').select('id', { count: 'exact', head: true })
+        .or(pair).not('status', 'in', '(cancelled,pending)');
+      if ((g ?? 0) > 0) return true;
+      const cpair = `and(client_id.eq.${me},expert_id.eq.${userId}),and(client_id.eq.${userId},expert_id.eq.${me})`;
+      const { count: h } = await supabase.from('hire_contracts').select('id', { count: 'exact', head: true })
+        .or(cpair).in('status', ['active', 'completed']);
+      return (h ?? 0) > 0;
+    },
+  });
 
   const formatWhatsAppLink = (number: string) => {
     let formatted = number.replace(/[\s-]/g, '');
@@ -48,6 +71,17 @@ export const ChatContactBar = ({
   const hasAnyContact = phoneNumber || whatsappNumber || googleMeetLink || facebookUrl;
 
   if (!hasAnyContact) return null;
+
+  if (!hasFundedDeal) {
+    return (
+      <div className="bg-primary/5 border-b border-border px-3 py-2 flex items-center gap-2">
+        <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
+        <p className="text-xs text-muted-foreground">
+          Pay safely on NaijaLancers. WhatsApp and call buttons unlock once an order or contract is funded — your money stays protected in escrow until the work is done.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-gradient-to-r from-primary/10 via-accent/10 to-secondary/10 border-b border-border px-3 py-2">
