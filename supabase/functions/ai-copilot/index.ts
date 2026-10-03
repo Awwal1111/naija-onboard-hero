@@ -327,7 +327,7 @@ serve(async (req) => {
     const { message, action, prompt, context, attachments } = await req.json();
 
     if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+      console.warn('LOVABLE_API_KEY missing; Pollinations fallback will be used');
     }
 
     // Handle text-to-speech action
