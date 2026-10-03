@@ -1,3 +1,4 @@
+import { aiFetch } from "../_shared/ai-fallback.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 const corsHeaders = {
@@ -326,7 +327,7 @@ serve(async (req) => {
     const { message, action, prompt, context, attachments } = await req.json();
 
     if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+      console.warn('LOVABLE_API_KEY missing; Pollinations fallback will be used');
     }
 
     // Handle text-to-speech action
@@ -353,7 +354,7 @@ serve(async (req) => {
     if (action === 'web_search') {
       const searchResults = await webSearch(prompt);
       
-      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const response = await aiFetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${LOVABLE_API_KEY}`,
@@ -386,7 +387,7 @@ serve(async (req) => {
     if (action === 'scrape_website') {
       const scrapeResults = await scrapeWebsite(prompt);
       
-      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const response = await aiFetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${LOVABLE_API_KEY}`,
@@ -418,7 +419,7 @@ serve(async (req) => {
     if (action === 'generate_image') {
       console.log("Generating image with prompt:", prompt);
       
-      const imageResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const imageResponse = await aiFetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${LOVABLE_API_KEY}`,
@@ -455,7 +456,7 @@ serve(async (req) => {
 
     // Handle image analysis
     if (action === 'analyze_image') {
-      const analyzeResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const analyzeResponse = await aiFetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${LOVABLE_API_KEY}`,
@@ -556,7 +557,7 @@ serve(async (req) => {
     if (isImageRequest) {
       const imagePrompt = message.replace(/generate image:|create image:|please|can you|for me|i need/gi, '').trim();
       
-      const imageResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const imageResponse = await aiFetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${LOVABLE_API_KEY}`,
@@ -619,7 +620,7 @@ serve(async (req) => {
       messages.push({ role: "user", content: message });
     }
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await aiFetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
