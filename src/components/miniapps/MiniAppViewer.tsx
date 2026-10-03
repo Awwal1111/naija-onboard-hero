@@ -626,7 +626,7 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
           }
           setShowChargeDialog(open)
         }}>
-          <DialogContent className="max-w-sm">
+          <DialogContent className="max-w-sm z-[120]" overlayClassName="z-[110]">
             <DialogDescription className="sr-only">Approve or cancel this charge.</DialogDescription>
             <div className="text-center space-y-4">
               <div className="w-14 h-14 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center">
@@ -669,7 +669,7 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
           }
           setShowPayoutDialog(open)
         }}>
-          <DialogContent className="max-w-sm">
+          <DialogContent className="max-w-sm z-[120]" overlayClassName="z-[110]">
             <DialogDescription className="sr-only">Approve or decline this payout.</DialogDescription>
             <div className="text-center space-y-4">
               <div className="w-14 h-14 mx-auto rounded-2xl bg-emerald-500/10 flex items-center justify-center">
@@ -712,7 +712,7 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
           }
           setShowPinDialog(open)
         }}>
-          <DialogContent className="max-w-sm">
+          <DialogContent className="max-w-sm z-[120]" overlayClassName="z-[110]">
             <DialogDescription className="sr-only">Enter your PIN to verify.</DialogDescription>
             <div className="text-center space-y-4">
               <div className="w-14 h-14 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center">
@@ -762,7 +762,7 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
           }
           setShowChargePinDialog(open)
         }}>
-          <DialogContent className="max-w-sm">
+          <DialogContent className="max-w-sm z-[120]" overlayClassName="z-[110]">
             <DialogDescription className="sr-only">Enter your PIN to authorize this USDT payment.</DialogDescription>
             <div className="text-center space-y-4">
               <div className="w-14 h-14 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center">
