@@ -342,6 +342,30 @@ export default function AIHire() {
         } as Freelancer
       })
         .sort((a, b) => b.match_score - a.match_score)
+
+      // -------- Semantic AI boost (fail-open: keeps keyword ranking on any error) --------
+      try {
+        const pool = scoredFreelancers.slice(0, 25)
+        const bioById = new Map((freelancers || []).map(f => [f.user_id, f.bio || '']))
+        const { data: sem } = await supabase.functions.invoke('ai-escrow-tools', {
+          body: {
+            action: 'match',
+            query: [context.service_needed, context.complexity, context.preference].filter(Boolean).join(' — ').slice(0, 1000),
+            candidates: pool.map(f => ({ id: f.id, text: `${f.profession}. ${String(bioById.get(f.id) || '').slice(0, 400)}` })),
+          },
+        })
+        const semMap = new Map<string, { score: number; reason: string }>((sem?.scores || []).map((s: any) => [s.id, s]))
+        if (semMap.size > 0) {
+          scoredFreelancers.forEach(f => {
+            const s = semMap.get(f.id)
+            if (!s) return
+            f.match_score = Math.max(0, Math.min(100, f.match_score + s.score))
+            if (s.score >= 20 && s.reason) f.match_reasons = [s.reason, ...f.match_reasons].slice(0, 3)
+          })
+          scoredFreelancers.sort((a, b) => b.match_score - a.match_score)
+        }
+      } catch { /* keep keyword ranking */ }
+
       const topFreelancers = (scoredFreelancers.filter(f => f.match_score >= 15).slice(0, 5).length
         ? scoredFreelancers.filter(f => f.match_score >= 15)
         : scoredFreelancers
