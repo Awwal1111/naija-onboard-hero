@@ -260,3 +260,6 @@ verify_jwt = false
 
 [functions.reloadly-webhook]
 verify_jwt = false
+
+[functions.ai-escrow-tools]
+verify_jwt = false

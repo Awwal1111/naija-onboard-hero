@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { 
   AlertTriangle, CheckCircle, XCircle, Clock, MessageSquare, 
   ArrowUpRight, ArrowDownLeft, Wallet, DollarSign, User, History,
-  RefreshCw, Loader2
+  RefreshCw, Loader2, Scale
 } from "lucide-react";
 import { format } from "date-fns";
 import {
@@ -39,7 +39,25 @@ export const AdminDisputeManagement = () => {
   const [userAData, setUserAData] = useState<UserTransactionData | null>(null);
   const [userBData, setUserBData] = useState<UserTransactionData | null>(null);
   const [adminWalletBalance, setAdminWalletBalance] = useState<number>(0);
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiAnalysis, setAiAnalysis] = useState<any>(null);
   const { toast } = useToast();
+
+  useEffect(() => { setAiAnalysis(null); }, [selectedDispute?.id]);
+
+  const analyzeDispute = async () => {
+    if (!selectedDispute) return;
+    setAiBusy(true);
+    const { data, error } = await supabase.functions.invoke('ai-escrow-tools', {
+      body: { action: 'dispute', dispute_id: selectedDispute.id },
+    });
+    setAiBusy(false);
+    if (error || !data?.analysis) {
+      toast({ title: 'AI analysis unavailable', description: 'Please try again shortly.', variant: 'destructive' });
+      return;
+    }
+    setAiAnalysis(data.analysis);
+  };
 
   useEffect(() => {
     fetchDisputes();
@@ -471,6 +489,29 @@ export const AdminDisputeManagement = () => {
               {/* Actions */}
               {selectedDispute.status !== "resolved" && selectedDispute.status !== "rejected" && (
                 <div className="space-y-3 pt-4 border-t">
+                  <Card className="border-primary/30">
+                    <CardContent className="p-4 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="font-semibold flex items-center gap-2"><Scale className="h-4 w-4 text-primary" />AI dispute analysis</p>
+                        <Button size="sm" variant="outline" onClick={analyzeDispute} disabled={aiBusy}>
+                          {aiBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : aiAnalysis ? 'Re-analyze' : 'Analyze with AI'}
+                        </Button>
+                      </div>
+                      {aiAnalysis && (
+                        <div className="text-sm space-y-1.5">
+                          <p><span className="font-medium">Agreed:</span> {aiAnalysis.agreed}</p>
+                          <p><span className="font-medium">Delivered:</span> {aiAnalysis.delivered}</p>
+                          <p><span className="font-medium">Friction:</span> {aiAnalysis.friction}</p>
+                          <p><span className="font-medium">Suggested split:</span> {aiAnalysis.seller_percent}% seller / {aiAnalysis.buyer_percent}% buyer <Badge variant="outline">{aiAnalysis.confidence} confidence</Badge></p>
+                          <p className="text-muted-foreground">{aiAnalysis.rationale}</p>
+                          <Button size="sm" variant="ghost" className="px-0" onClick={() => setAdminResponse(`AI-assisted review: ${aiAnalysis.rationale} Suggested split ${aiAnalysis.seller_percent}% seller / ${aiAnalysis.buyer_percent}% buyer.`)}>
+                            Use as ruling draft
+                          </Button>
+                          <p className="text-xs text-muted-foreground">Suggestion only — no money moves until you choose an action below.</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
                   <div>
                     <Label>Admin Response / Ruling</Label>
                     <Textarea
