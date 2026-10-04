@@ -84,7 +84,8 @@ export async function aiFetch(url: string, init: RequestInit): Promise<Response>
 export async function aiText(system: string, user: string, json = false): Promise<string> {
   const key = Deno.env.get("LOVABLE_API_KEY") ?? "";
   const body: Record<string, unknown> = {
-    model: "google/gemini-2.5-flash",
+    model: "openai/gpt-6-astra",
+    reasoning_effort: "low",
     messages: [{ role: "system", content: system }, { role: "user", content: user }],
   };
   if (json) body.response_format = { type: "json_object" };
