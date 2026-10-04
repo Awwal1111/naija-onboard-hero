@@ -95,9 +95,9 @@ Deno.serve(async (req) => {
     let chat = "";
     if (d.safepay_id) {
       const { data: sp } = await admin.from("safepay_transactions")
-        .select("buyer_id, seller_id, amount, description, status, created_at")
+        .select("buyer_id, seller_id, amount, status, completed_at, created_at")
         .eq("id", d.safepay_id).maybeSingle();
-      if (sp) deal = `Buyer: ${sp.buyer_id}\nSeller: ${sp.seller_id}\nAmount: ${sp.amount} NC\nStatus: ${sp.status}\nAgreement: ${sp.description ?? "n/a"}`;
+      if (sp) deal = `Buyer: ${sp.buyer_id}\nSeller: ${sp.seller_id}\nAmount: ${sp.amount} NC\nStatus: ${sp.status}\nMarked complete: ${sp.completed_at ?? "no"}`;
       const { data: msgs } = await admin.from("disputed_chat_snapshots")
         .select("sender_id, message_text, created_at")
         .eq("safepay_id", d.safepay_id).order("created_at", { ascending: true }).limit(80);
