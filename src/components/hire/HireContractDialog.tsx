@@ -9,7 +9,11 @@ import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useHireContracts, ContractType } from '@/hooks/useHireContracts';
 import { useNavigate } from 'react-router-dom';
-import { ShieldCheck, Briefcase, Clock } from 'lucide-react';
+import { ShieldCheck, Briefcase, Clock, ListChecks, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+
+interface Milestone { title: string; deliverable: string; percent: number; amount: number }
 
 interface Props {
   open: boolean;
@@ -31,9 +35,24 @@ export function HireContractDialog({ open, onOpenChange, expertId, expertName }:
   const [deadline, setDeadline] = useState('');
   const [agree, setAgree] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [msBusy, setMsBusy] = useState(false);
+  const [milestones, setMilestones] = useState<Milestone[]>([]);
 
   const reset = () => {
-    setTitle(''); setScope(''); setTotal(''); setRate(''); setCap('20'); setDeposit(''); setDeadline(''); setAgree(false);
+    setTitle(''); setScope(''); setTotal(''); setRate(''); setCap('20'); setDeposit(''); setDeadline(''); setAgree(false); setMilestones([]);
+  };
+
+  const genMilestones = async () => {
+    setMsBusy(true);
+    const { data, error } = await supabase.functions.invoke('ai-escrow-tools', {
+      body: { action: 'milestones', title: title.trim(), scope: scope.trim(), total: Number(total) },
+    });
+    setMsBusy(false);
+    if (error || !data?.milestones) {
+      toast({ title: 'Could not plan milestones', description: 'Please try again in a moment.', variant: 'destructive' });
+      return;
+    }
+    setMilestones(data.milestones);
   };
 
   const submit = async () => {
@@ -94,6 +113,25 @@ export function HireContractDialog({ open, onOpenChange, expertId, expertName }:
                 <Input id="c-total" type="number" min={0} value={total} onChange={(e) => setTotal(e.target.value)} placeholder="50000" />
                 <p className="text-xs text-muted-foreground mt-1">Held in escrow at signing.</p>
               </div>
+              <Button type="button" variant="outline" size="sm" className="w-full" onClick={genMilestones}
+                disabled={msBusy || !title.trim() || !scope.trim() || !(Number(total) > 0)}>
+                {msBusy ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <ListChecks className="h-4 w-4 mr-1" />}
+                {msBusy ? 'Planning milestones…' : 'Plan payment milestones with AI'}
+              </Button>
+              {milestones.length > 0 && (
+                <Card className="p-3 space-y-2">
+                  {milestones.map((m, i) => (
+                    <div key={i} className="flex justify-between gap-2 text-sm">
+                      <div>
+                        <p className="font-medium">{i + 1}. {m.title} <span className="text-muted-foreground">({m.percent}%)</span></p>
+                        <p className="text-xs text-muted-foreground">{m.deliverable}</p>
+                      </div>
+                      <span className="font-semibold whitespace-nowrap">{m.amount.toLocaleString()} NC</span>
+                    </div>
+                  ))}
+                  <p className="text-xs text-muted-foreground">Added to the scope so both of you sign the same payment plan.</p>
+                </Card>
+              )}
             </TabsContent>
 
             <TabsContent value="hourly" className="space-y-3 m-0">
