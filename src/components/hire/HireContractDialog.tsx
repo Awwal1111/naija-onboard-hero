@@ -25,6 +25,7 @@ interface Props {
 export function HireContractDialog({ open, onOpenChange, expertId, expertName }: Props) {
   const navigate = useNavigate();
   const { create } = useHireContracts();
+  const { toast } = useToast();
   const [type, setType] = useState<ContractType>('fixed');
   const [title, setTitle] = useState('');
   const [scope, setScope] = useState('');
@@ -60,7 +61,10 @@ export function HireContractDialog({ open, onOpenChange, expertId, expertName }:
     if (!agree) return;
     setBusy(true);
     const payload: any = {
-      expert_id: expertId, contract_type: type, title: title.trim(), scope: scope.trim(),
+      expert_id: expertId, contract_type: type, title: title.trim(),
+      scope: type === 'fixed' && milestones.length
+        ? `${scope.trim()}\n\nPayment milestones:\n${milestones.map((m, i) => `${i + 1}. ${m.title} — ${m.deliverable} (${m.percent}%, ${m.amount} NC)`).join('\n')}`
+        : scope.trim(),
       deadline: deadline || null,
     };
     if (type === 'fixed') {
