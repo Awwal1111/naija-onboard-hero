@@ -194,7 +194,7 @@ const Jobs = () => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => navigate('/post-job')}>
+              <DropdownMenuItem onClick={() => navigate('/post-gig')}>
                 <Package className="h-4 w-4 mr-2" />
                 Create Gig (Service)
               </DropdownMenuItem>
@@ -328,7 +328,7 @@ const Jobs = () => {
                   <Button variant="outline" onClick={clearFilters} className="mr-2">
                     Clear Filters
                   </Button>
-                  <Button onClick={() => navigate('/post-job')}>
+                  <Button onClick={() => navigate('/post-gig')}>
                     <Plus className="h-4 w-4 mr-2" />
                     Create Gig
                   </Button>
