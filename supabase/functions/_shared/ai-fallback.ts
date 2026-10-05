@@ -13,7 +13,6 @@ async function callPollinations(body: Record<string, unknown>): Promise<Response
   };
   if (body.tools) payload.tools = body.tools;
   if (body.tool_choice) payload.tool_choice = body.tool_choice;
-  if (body.response_format) payload.response_format = body.response_format;
   return fetch(POLLINATIONS_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
