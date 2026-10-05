@@ -92,7 +92,7 @@ serve(async (req) => {
 
     // Calculate profile completion
     const requiredFields = ['full_name', 'profession', 'phone_number', 'bio'];
-    const missingFields = requiredFields.filter(field => !profile[field] || profile[field]?.trim() === '');
+    const missingFields = requiredFields.filter(field => !(profile as any)[field] || (profile as any)[field]?.trim() === '');
     const completionPercentage = Math.round(((requiredFields.length - missingFields.length) / requiredFields.length) * 100);
 
     // Calculate days since signup and last activity

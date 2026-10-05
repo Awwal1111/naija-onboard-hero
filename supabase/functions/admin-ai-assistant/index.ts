@@ -320,7 +320,7 @@ Respond as a helpful admin assistant analyzing platform operations.`;
     console.error('Error in admin AI assistant:', error);
     
     return new Response(JSON.stringify({ 
-      error: error.message || 'AI assistant error. Please try again.',
+      error: (error as Error)?.message || 'AI assistant error. Please try again.',
       success: false 
     }), {
       status: 200,
