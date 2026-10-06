@@ -1,0 +1,4 @@
+- [ ] Refocus public Developer API on escrow and payments: remove unrelated endpoint exposure while preserving hosted charge sessions and developer payouts.
+- [ ] Improve escrow with inspection-window metadata, dispute initiation, settlement/webhook events, and safe ownership-scoped retrieval.
+- [ ] Update Developer Portal and API docs with the supported product surface and JavaScript, Python, and PHP examples.
+- [ ] Preserve MiniApp marketplace, viewer, SDK charging, and dedicated MiniApp endpoints without edits; verify this before completion.
