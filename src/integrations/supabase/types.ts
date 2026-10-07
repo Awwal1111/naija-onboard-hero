@@ -1657,14 +1657,18 @@ export type Database = {
       developer_escrows: {
         Row: {
           amount: number
+          auto_release_at: string | null
           created_at: string
           currency: string | null
           description: string | null
           developer_id: string
+          dispute_reason: string | null
+          disputed_at: string | null
           escrow_id: string
           funded_at: string | null
           held_amount: number
           id: string
+          inspection_period_days: number
           payee_email: string | null
           payee_external_id: string
           payee_user_id: string | null
@@ -1677,14 +1681,18 @@ export type Database = {
         }
         Insert: {
           amount: number
+          auto_release_at?: string | null
           created_at?: string
           currency?: string | null
           description?: string | null
           developer_id: string
+          dispute_reason?: string | null
+          disputed_at?: string | null
           escrow_id: string
           funded_at?: string | null
           held_amount?: number
           id?: string
+          inspection_period_days?: number
           payee_email?: string | null
           payee_external_id: string
           payee_user_id?: string | null
@@ -1697,14 +1705,18 @@ export type Database = {
         }
         Update: {
           amount?: number
+          auto_release_at?: string | null
           created_at?: string
           currency?: string | null
           description?: string | null
           developer_id?: string
+          dispute_reason?: string | null
+          disputed_at?: string | null
           escrow_id?: string
           funded_at?: string | null
           held_amount?: number
           id?: string
+          inspection_period_days?: number
           payee_email?: string | null
           payee_external_id?: string
           payee_user_id?: string | null
@@ -8247,6 +8259,7 @@ export type Database = {
         Returns: undefined
       }
       auto_approve_user_task_submissions: { Args: never; Returns: undefined }
+      auto_release_developer_escrows: { Args: never; Returns: number }
       auto_release_safepay: { Args: never; Returns: undefined }
       boost_expert_profile: {
         Args: {
@@ -8801,6 +8814,10 @@ export type Database = {
       increment_wallet_balance: {
         Args: { amount_to_add: number; target_user_id: string }
         Returns: undefined
+      }
+      initiate_developer_escrow_dispute: {
+        Args: { p_developer_id: string; p_escrow_id: string; p_reason: string }
+        Returns: Json
       }
       is_admin_user: { Args: never; Returns: boolean }
       is_enrolled_in_course: {
