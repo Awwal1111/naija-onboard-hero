@@ -13,10 +13,31 @@ async function callPollinations(body: Record<string, unknown>): Promise<Response
   };
   if (body.tools) payload.tools = body.tools;
   if (body.tool_choice) payload.tool_choice = body.tool_choice;
-  return fetch(POLLINATIONS_URL, {
+  const response = await fetch(POLLINATIONS_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => "");
+    throw new Error(`Pollinations API request failed with status ${response.status}: ${errorText}`);
+  }
+
+  let data: unknown;
+  try {
+    data = await response.json();
+  } catch (err) {
+    throw new Error(`Invalid JSON response from Pollinations API: ${err instanceof Error ? err.message : String(err)}`);
+  }
+
+  if (!data || typeof data !== "object") {
+    throw new Error("Invalid JSON body received from Pollinations API");
+  }
+
+  return new Response(JSON.stringify(data), {
+    status: response.status,
+    headers: { "Content-Type": "application/json" },
   });
 }
 
