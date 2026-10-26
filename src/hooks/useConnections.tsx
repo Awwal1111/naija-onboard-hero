@@ -154,7 +154,7 @@ export const useConnections = () => {
         .from('connection_requests')
         .select('id')
         .or(`and(requester_id.eq.${user.id},requested_id.eq.${targetUserId}),and(requester_id.eq.${targetUserId},requested_id.eq.${user.id})`)
-        .single()
+        .maybeSingle()
 
       if (existingRequest) {
         toast({
@@ -170,7 +170,7 @@ export const useConnections = () => {
         .from('connections')
         .select('id')
         .or(`and(user1_id.eq.${user.id},user2_id.eq.${targetUserId}),and(user1_id.eq.${targetUserId},user2_id.eq.${user.id})`)
-        .single()
+        .maybeSingle()
 
       if (existingConnection) {
         toast({
@@ -309,7 +309,7 @@ export const useConnections = () => {
         .from('connections')
         .select('id')
         .or(`and(user1_id.eq.${user.id},user2_id.eq.${targetUserId}),and(user1_id.eq.${targetUserId},user2_id.eq.${user.id})`)
-        .single()
+        .maybeSingle()
 
       if (error && error.code !== 'PGRST116') throw error
       return !!data
