@@ -68,6 +68,7 @@ export const ConnectionRequests = () => {
   const handleAcceptRequest = async (request: any) => {
     const result = await respondToConnectionRequest(request.id, true)
     if (result?.success) {
+      refetch()
       toast({
         title: "Connection accepted",
         description: "You are now connected!",
@@ -91,6 +92,7 @@ export const ConnectionRequests = () => {
   const handleRejectRequest = async (request: any) => {
     const result = await respondToConnectionRequest(request.id, false)
     if (result?.success) {
+      refetch()
       toast({
         title: "Request declined",
         description: "Connection request has been declined.",
@@ -147,7 +149,7 @@ export const ConnectionRequests = () => {
               </div>
             </CardContent>
           </Card>
-        ))}
+        ))
       </div>
     )
   }
@@ -209,7 +211,7 @@ export const ConnectionRequests = () => {
                     <div className="flex items-center gap-3 md:gap-4 p-3 md:p-4">
                       <Avatar className="h-16 w-16 md:h-20 md:w-20 border-2 border-background shadow-md flex-shrink-0">
                         <AvatarImage 
-                          src={request.requester_profile?.profile_picture_url} 
+                          src={request.requester_profile?.profile_picture_url}
                           alt={request.requester_profile?.full_name}
                         />
                         <AvatarFallback className="text-lg md:text-xl font-semibold">
@@ -224,7 +226,8 @@ export const ConnectionRequests = () => {
                         
                         {request.requester_profile?.profession && (
                           <div className="flex items-center gap-1 md:gap-1.5 text-xs md:text-sm text-muted-foreground mb-1.5 md:mb-2">
-                            <Briefcase className="h-3 w-3 md:h-3.5 md:w-3.5 flex-shrink-0" />
+                            <Briefcase className="h-3 w-3 md:h-3.5 md:w-3.5 flex-shrink-0"
+                            />
                             <span className="truncate">{request.requester_profile.profession}</span>
                           </div>
                         )}
