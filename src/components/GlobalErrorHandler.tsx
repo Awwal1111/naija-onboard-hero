@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { toast } from 'sonner'
 import { handleChunkError } from '@/utils/chunkErrorHandler'
+import { isMiniPayEnvironment } from '@/lib/minipay'
 
 /**
  * Global Error Handler Component
@@ -68,6 +69,10 @@ export const GlobalErrorHandler = () => {
     let wasReallyOffline = false
 
     const handleOffline = () => {
+      // In in-app environments (e.g. MiniPay), network status is advisory
+      // and should not trigger an offline warning toast unless a request explicitly fails.
+      if (isMiniPayEnvironment()) return
+
       if (offlineTimer) clearTimeout(offlineTimer)
       offlineTimer = setTimeout(() => {
         if (!navigator.onLine) {
