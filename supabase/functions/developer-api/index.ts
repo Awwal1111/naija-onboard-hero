@@ -1,8 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { ethers } from "https://esm.sh/ethers@6.7.0";
-import CryptoJS from "https://esm.sh/crypto-js@4.1.1";
-import { ESCROW_ABI, ESCROW_BYTECODE } from "./escrow-contract.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,15 +9,6 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const WALLET_ENCRYPTION_SECRET = Deno.env.get("WALLET_ENCRYPTION_SECRET") || "default_secret";
-const VTU_AFRICA_API_KEY = Deno.env.get("VTU_AFRICA_API_KEY");
-const VTU_AFRICA_USERNAME = Deno.env.get("VTU_AFRICA_USERNAME");
-const CELO_RPC = "https://forno.celo.org";
-
-// Token addresses on Celo Mainnet
-const CUSD_ADDRESS = "0x765de816845861e75a25fca122bb6898b8b1282a";
-const USDT_ADDRESS = "0x48065fbbe25f71c9282ddf5e1cd6d6a887483d5e";
-
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 async function sha256Hex(input: string): Promise<string> {
@@ -31,63 +19,24 @@ async function sha256Hex(input: string): Promise<string> {
 
 // Rate limit configurations per endpoint (requests per hour)
 const RATE_LIMITS: Record<string, number> = {
-  'wallet/create': 10,
-  'wallet/balance': 100,
-  'wallet/transfer': 50,
-  'vtu/airtime': 100,
-  'vtu/data': 100,
-  'vtu/electricity': 50,
   'payments/escrow/create': 50,
+  'payments/escrow': 100,
+  'payments/escrow/dispute': 20,
   'payments/escrow/release': 50,
+  'payments/escrow/refund': 50,
   'payments/payout': 50,
-  'payments/credit': 50,
   'payments/charge/session': 100,
-  'notifications/send': 200,
-  'notifications/push': 500,
-  'notifications/sms': 100,
-  'video/create-room': 20,
-  'video/join-room': 100,
-  'ai/chat': 100,
-  'ramp/quote/buy': 200,
-  'ramp/quote/sell': 200,
-  'ramp/session/buy': 100,
-  'ramp/session/sell': 100,
-  'ramp/session': 200,
-  'contracts/deploy': 20,
-  'contracts/call': 100,
-  'contracts/read': 500,
-  'escrow/onchain/deploy': 20,
+  'webhooks': 100,
+  'webhooks/events': 100,
   'default': 1000
 };
 
 // Pricing per API call (in NC - Naira Credits, 1 NC = 1 NGN)
 const API_PRICING: Record<string, number> = {
-  'wallet/create': 0, // Free
-  'wallet/balance': 0, // Free
-  'wallet/transfer': 5, // 5 NC per transfer
-  'vtu/airtime': 2, // 2 NC per transaction
-  'vtu/data': 2,
-  'vtu/electricity': 3,
   'payments/escrow/create': 10,
   'payments/escrow/release': 0,
   'payments/payout': 5,
-  'payments/credit': 5,
   'payments/charge/session': 2,
-  'notifications/send': 5, // Email
-  'notifications/push': 0.5,
-  'notifications/sms': 4,
-  'video/create-room': 50,
-  'video/join-room': 0,
-  'ai/chat': 1,
-  'ramp/quote/buy': 0, // Free quote
-  'ramp/quote/sell': 0, // Free quote
-  'ramp/session/buy': 20, // Hosted onramp session
-  'ramp/session/sell': 20, // Hosted offramp session
-  'ramp/session': 0, // Status check is free
-  'contracts/deploy': 50, // 50 NC base fee + gas (or NC equiv if platform pays)
-  'contracts/call': 5,    // 5 NC base fee + gas
-  'contracts/read': 0,    // Read-only is free (no gas, no fee)
-  'escrow/onchain/deploy': 50, // 50 NC + gas
   'default': 0
 };
 
