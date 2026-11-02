@@ -102,7 +102,11 @@ async function validateApiKey(apiKey: string): Promise<DeveloperProfile | null> 
 // Atomic rate-limit check (eliminates TOCTOU: a single SQL statement
 // increments + reports the bucket count in one shot).
 async function checkRateLimit(userId: string, endpoint: string): Promise<{ allowed: boolean; remaining: number }> {
-  const limit = RATE_LIMITS[endpoint] || RATE_LIMITS['default'];
+  const escrowMatch = endpoint.match(/^payments\/escrow\/[^/]+(?:\/(fund|release|refund|dispute))?$/);
+  const rateKey = escrowMatch
+    ? escrowMatch[1] ? `payments/escrow/${escrowMatch[1]}` : 'payments/escrow'
+    : endpoint;
+  const limit = RATE_LIMITS[rateKey] || RATE_LIMITS['default'];
   const { data, error } = await supabase.rpc('check_and_increment_rate_limit', {
     p_user_id: userId,
     p_endpoint: endpoint,
@@ -182,17 +186,25 @@ async function triggerWebhook(developerId: string, eventType: string, payload: a
 
 // ESCROW/PAYMENT APIS
 async function handleCreateEscrow(developer: DeveloperProfile, body: any) {
-  const { payer_external_id, payee_external_id, payee_user_id, payee_email, amount, currency = 'NGN', description } = body;
+  const { payer_external_id, payee_external_id, payee_user_id, payee_email, amount, description } = body;
+  const inspectionDays = Number(body?.inspection_period_days ?? 5);
 
-  if (!payer_external_id || !payee_external_id || !amount) {
-    return { error: 'payer_external_id, payee_external_id, and amount required', status: 400 };
+  if (typeof payer_external_id !== 'string' || !payer_external_id.trim() || payer_external_id.length > 128 ||
+      typeof payee_external_id !== 'string' || !payee_external_id.trim() || payee_external_id.length > 128) {
+    return { error: 'payer_external_id and payee_external_id are required strings up to 128 characters', status: 400 };
   }
   if (!payee_user_id && !payee_email) {
     return { error: 'payee_user_id or payee_email required (escrow releases pay a NaijaLancers user)', status: 400 };
   }
   const amt = Number(amount);
-  if (!amt || amt <= 0) {
-    return { error: 'amount must be a positive number', status: 400 };
+  if (!Number.isFinite(amt) || amt <= 0 || amt > 1_000_000) {
+    return { error: 'amount must be a positive number up to 1,000,000 NC', status: 400 };
+  }
+  if (!Number.isInteger(inspectionDays) || inspectionDays < 1 || inspectionDays > 30) {
+    return { error: 'inspection_period_days must be an integer between 1 and 30', status: 400 };
+  }
+  if (typeof description === 'string' && description.length > 500) {
+    return { error: 'description must be 500 characters or fewer', status: 400 };
   }
 
   // Verify payee exists
@@ -216,8 +228,9 @@ async function handleCreateEscrow(developer: DeveloperProfile, body: any) {
     payee_user_id: resolvedPayee,
     payee_email: payee_email || null,
     amount: amt,
-    currency,
-    description,
+    currency: 'NC',
+    description: typeof description === 'string' ? description : null,
+    inspection_period_days: inspectionDays,
     status: 'pending',
   });
 
@@ -227,7 +240,7 @@ async function handleCreateEscrow(developer: DeveloperProfile, body: any) {
   }
 
   triggerWebhook(developer.user_id, 'escrow.created', {
-    escrow_id: escrowId, payer_external_id, payee_external_id, payee_user_id: resolvedPayee, amount: amt, currency, status: 'pending',
+    escrow_id: escrowId, payer_external_id, payee_external_id, payee_user_id: resolvedPayee, amount: amt, currency: 'NC', status: 'pending', inspection_period_days: inspectionDays,
   });
 
   return {
@@ -237,13 +250,15 @@ async function handleCreateEscrow(developer: DeveloperProfile, body: any) {
       payee_external_id,
       payee_user_id: resolvedPayee,
       amount: amt,
-      currency,
+      currency: 'NC',
+      inspection_period_days: inspectionDays,
       status: 'pending',
       description,
       actions: {
         fund: `/payments/escrow/${escrowId}/fund`,
         release: `/payments/escrow/${escrowId}/release`,
         refund: `/payments/escrow/${escrowId}/refund`,
+        dispute: `/payments/escrow/${escrowId}/dispute`,
       },
     },
   };
@@ -266,9 +281,9 @@ async function handleFundEscrow(developer: DeveloperProfile, escrowId: string) {
     return { error: msg, status };
   }
   triggerWebhook(developer.user_id, 'escrow.funded', {
-    escrow_id: escrowId, amount: res.amount, funded_at: res.funded_at,
+    escrow_id: escrowId, amount: res.amount, funded_at: res.funded_at, auto_release_at: res.auto_release_at,
   });
-  return { data: { escrow_id: escrowId, status: 'funded', amount: res.amount, funded_at: res.funded_at } };
+  return { data: { escrow_id: escrowId, status: 'funded', amount: res.amount, funded_at: res.funded_at, auto_release_at: res.auto_release_at } };
 }
 
 async function handleReleaseEscrow(developer: DeveloperProfile, escrowId: string) {
@@ -313,6 +328,59 @@ async function handleRefundEscrow(developer: DeveloperProfile, escrowId: string,
     escrow_id: escrowId, amount: res.amount, reason, refunded_at: res.refunded_at,
   });
   return { data: { escrow_id: escrowId, status: 'refunded', amount: res.amount, reason, refunded_at: res.refunded_at } };
+}
+
+async function handleGetEscrow(developer: DeveloperProfile, escrowId: string) {
+  if (!escrowId) return { error: 'escrow_id required', status: 400 };
+  const { data, error } = await supabase
+    .from('developer_escrows')
+    .select('escrow_id, payer_external_id, payee_external_id, payee_user_id, amount, currency, description, status, inspection_period_days, created_at, funded_at, auto_release_at, disputed_at, dispute_reason, released_at, refunded_at, refund_reason')
+    .eq('developer_id', developer.user_id)
+    .eq('escrow_id', escrowId)
+    .maybeSingle();
+  if (error || !data) return { error: 'Escrow not found', status: 404 };
+  return { data };
+}
+
+async function handleListEscrows(developer: DeveloperProfile, params: URLSearchParams) {
+  const requested = Number(params.get('limit') || 50);
+  const limit = Number.isInteger(requested) ? Math.min(Math.max(requested, 1), 100) : 50;
+  let query = supabase
+    .from('developer_escrows')
+    .select('escrow_id, payer_external_id, payee_external_id, payee_user_id, amount, currency, description, status, inspection_period_days, created_at, funded_at, auto_release_at, disputed_at, dispute_reason, released_at, refunded_at, refund_reason')
+    .eq('developer_id', developer.user_id)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  const status = params.get('status');
+  if (status && ['pending', 'funded', 'disputed', 'released', 'refunded'].includes(status)) query = query.eq('status', status);
+  const { data, error } = await query;
+  if (error) return { error: 'Failed to load escrows', status: 500 };
+  return { data: { escrows: data || [] } };
+}
+
+async function handleDisputeEscrow(developer: DeveloperProfile, escrowId: string, body: any) {
+  const reason = typeof body?.reason === 'string' ? body.reason.trim() : '';
+  if (reason.length < 3 || reason.length > 500) {
+    return { error: 'reason is required and must be 3 to 500 characters', status: 400 };
+  }
+  const { data, error } = await supabase.rpc('initiate_developer_escrow_dispute', {
+    p_developer_id: developer.user_id,
+    p_escrow_id: escrowId,
+    p_reason: reason,
+  });
+  if (error) {
+    console.error('[API] initiate_developer_escrow_dispute error:', error.message);
+    return { error: 'Failed to dispute escrow', status: 500 };
+  }
+  const res = data as any;
+  if (!res?.ok) {
+    const message = String(res?.error || 'Failed to dispute escrow');
+    return { error: message, status: message.toLowerCase().includes('not found') ? 404 : 400 };
+  }
+  triggerWebhook(developer.user_id, 'escrow.disputed', {
+    escrow_id: escrowId, reason, disputed_at: res.disputed_at, status: 'disputed',
+  });
+  return { data: res };
 }
 
 async function handlePayoutCredit(developer: DeveloperProfile, body: any) {
