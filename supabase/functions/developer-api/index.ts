@@ -658,8 +658,15 @@ serve(async (req) => {
   // Route to handlers
   try {
     switch (endpoint) {
+      case 'payments/escrow':
+        result = method === 'GET'
+          ? await handleListEscrows(developer, params)
+          : { error: 'Method not allowed', status: 405 };
+        break;
       case 'payments/escrow/create':
-        result = await handleCreateEscrow(developer, body);
+        result = method === 'POST'
+          ? await handleCreateEscrow(developer, body)
+          : { error: 'Method not allowed', status: 405 };
         break;
       case 'payments/payout':
         result = await handlePayoutCredit(developer, body);
@@ -685,9 +692,13 @@ serve(async (req) => {
           result = { data: { webhooks: webhooks || [] } };
         } else if (method === 'POST') {
           // Create webhook
-          const { url: webhookUrl, events, description: webhookDesc } = body;
-          if (!webhookUrl || !events?.length) {
-            result = { error: 'url and events array required', status: 400 };
+          const webhookUrl = typeof body?.url === 'string' ? body.url.trim() : '';
+          const events = body?.events;
+          const allowedEvents = ['escrow.created', 'escrow.funded', 'escrow.disputed', 'escrow.released', 'escrow.refunded', 'payments.charge.session.created', 'wallet.payout'];
+          let parsedWebhookUrl: URL | null = null;
+          try { parsedWebhookUrl = new URL(webhookUrl); } catch { parsedWebhookUrl = null; }
+          if (!parsedWebhookUrl || parsedWebhookUrl.protocol !== 'https:' || !Array.isArray(events) || events.length < 1 || events.length > allowedEvents.length || events.some((event: unknown) => typeof event !== 'string' || !allowedEvents.includes(event))) {
+            result = { error: 'A valid HTTPS url and 1 or more supported events are required', status: 400 };
           } else {
             const { data: secretData } = await supabase.rpc('generate_webhook_secret');
             const { data: newWebhook, error: createErr } = await supabase
