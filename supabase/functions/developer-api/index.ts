@@ -102,7 +102,11 @@ async function validateApiKey(apiKey: string): Promise<DeveloperProfile | null> 
 // Atomic rate-limit check (eliminates TOCTOU: a single SQL statement
 // increments + reports the bucket count in one shot).
 async function checkRateLimit(userId: string, endpoint: string): Promise<{ allowed: boolean; remaining: number }> {
-  const limit = RATE_LIMITS[endpoint] || RATE_LIMITS['default'];
+  const escrowMatch = endpoint.match(/^payments\/escrow\/[^/]+(?:\/(fund|release|refund|dispute))?$/);
+  const rateKey = escrowMatch
+    ? escrowMatch[1] ? `payments/escrow/${escrowMatch[1]}` : 'payments/escrow'
+    : endpoint;
+  const limit = RATE_LIMITS[rateKey] || RATE_LIMITS['default'];
   const { data, error } = await supabase.rpc('check_and_increment_rate_limit', {
     p_user_id: userId,
     p_endpoint: endpoint,
@@ -178,741 +182,29 @@ async function triggerWebhook(developerId: string, eventType: string, payload: a
   }
 }
 
-// ============= API HANDLERS =============
-
-// WALLET APIS
-async function handleWalletCreate(developer: DeveloperProfile, body: any) {
-  const { external_user_id } = body;
-  
-  if (!external_user_id) {
-    return { error: 'external_user_id is required', status: 400 };
-  }
-  
-  // Check if wallet already exists for this external user
-  const { data: existing } = await supabase
-    .from('developer_wallets')
-    .select('*')
-    .eq('developer_id', developer.user_id)
-    .eq('external_user_id', external_user_id)
-    .single();
-  
-  if (existing) {
-    return { 
-      data: { 
-        address: existing.wallet_address,
-        external_user_id,
-        message: 'Wallet already exists'
-      }
-    };
-  }
-  
-  // Create new wallet
-  const wallet = ethers.Wallet.createRandom();
-  const encryptedPrivateKey = CryptoJS.AES.encrypt(
-    wallet.privateKey,
-    WALLET_ENCRYPTION_SECRET
-  ).toString();
-  
-  // Save developer wallet
-  const { error } = await supabase.from('developer_wallets').insert({
-    developer_id: developer.user_id,
-    external_user_id,
-    wallet_address: wallet.address.toLowerCase(),
-    encrypted_private_key: encryptedPrivateKey
-  });
-  
-  if (error) {
-    console.error('[API] Error saving wallet:', error);
-    return { error: 'Failed to create wallet', status: 500 };
-  }
-  
-  // Trigger webhook for wallet creation
-  triggerWebhook(developer.user_id, 'wallet.created', {
-    address: wallet.address,
-    external_user_id,
-    network: 'celo-mainnet'
-  });
-  
-  return {
-    data: {
-      address: wallet.address,
-      external_user_id,
-      network: 'celo-mainnet',
-      supported_tokens: ['CELO', 'cUSD', 'USDT']
-    }
-  };
-}
-
-async function handleWalletBalance(developer: DeveloperProfile, params: URLSearchParams) {
-  const address = params.get('address');
-  const externalUserId = params.get('external_user_id');
-  
-  let walletAddress = address;
-  
-  if (!walletAddress && externalUserId) {
-    const { data } = await supabase
-      .from('developer_wallets')
-      .select('wallet_address')
-      .eq('developer_id', developer.user_id)
-      .eq('external_user_id', externalUserId)
-      .single();
-    
-    walletAddress = data?.wallet_address;
-  }
-  
-  if (!walletAddress) {
-    return { error: 'address or external_user_id required', status: 400 };
-  }
-  
-  try {
-    const provider = new ethers.JsonRpcProvider(CELO_RPC);
-    
-    // Get CELO balance
-    const celoBalance = await provider.getBalance(walletAddress);
-    
-    // Get cUSD balance
-    const erc20Abi = ['function balanceOf(address) view returns (uint256)'];
-    const cusdContract = new ethers.Contract(CUSD_ADDRESS, erc20Abi, provider);
-    const cusdBalance = await cusdContract.balanceOf(walletAddress);
-    
-    // Get USDT balance
-    const usdtContract = new ethers.Contract(USDT_ADDRESS, erc20Abi, provider);
-    const usdtBalance = await usdtContract.balanceOf(walletAddress);
-    
-    return {
-      data: {
-        address: walletAddress,
-        balances: {
-          CELO: ethers.formatEther(celoBalance),
-          cUSD: ethers.formatUnits(cusdBalance, 18),
-          USDT: ethers.formatUnits(usdtBalance, 6)
-        },
-        network: 'celo-mainnet'
-      }
-    };
-  } catch (error: any) {
-    console.error('[API] Balance check error:', error);
-    return { error: 'Failed to fetch balance', status: 500 };
-  }
-}
-
-async function handleWalletTransfer(developer: DeveloperProfile, body: any) {
-  const { from_external_user_id, to_address, amount, token = 'cUSD' } = body;
-  
-  if (!from_external_user_id || !to_address || !amount) {
-    return { error: 'from_external_user_id, to_address, and amount required', status: 400 };
-  }
-  
-  // Get the wallet
-  const { data: wallet } = await supabase
-    .from('developer_wallets')
-    .select('*')
-    .eq('developer_id', developer.user_id)
-    .eq('external_user_id', from_external_user_id)
-    .single();
-  
-  if (!wallet) {
-    return { error: 'Wallet not found', status: 404 };
-  }
-  
-  try {
-    // Decrypt private key
-    const bytes = CryptoJS.AES.decrypt(wallet.encrypted_private_key, WALLET_ENCRYPTION_SECRET);
-    const privateKey = bytes.toString(CryptoJS.enc.Utf8);
-    
-    const provider = new ethers.JsonRpcProvider(CELO_RPC);
-    const signer = new ethers.Wallet(privateKey, provider);
-    
-    let txHash: string;
-    
-    if (token === 'CELO') {
-      const tx = await signer.sendTransaction({
-        to: to_address,
-        value: ethers.parseEther(amount.toString())
-      });
-      txHash = tx.hash;
-    } else {
-      const tokenAddress = token === 'cUSD' ? CUSD_ADDRESS : USDT_ADDRESS;
-      const decimals = token === 'USDT' ? 6 : 18;
-      
-      const erc20Abi = ['function transfer(address to, uint256 amount) returns (bool)'];
-      const contract = new ethers.Contract(tokenAddress, erc20Abi, signer);
-      
-      const tx = await contract.transfer(to_address, ethers.parseUnits(amount.toString(), decimals));
-      txHash = tx.hash;
-    }
-    
-    return {
-      data: {
-        transaction_hash: txHash,
-        from: wallet.wallet_address,
-        to: to_address,
-        amount,
-        token,
-        network: 'celo-mainnet',
-        explorer_url: `https://celoscan.io/tx/${txHash}`
-      }
-    };
-  } catch (error: any) {
-    console.error('[API] Transfer error:', error);
-    return { error: error.message || 'Transfer failed', status: 500 };
-  }
-}
-
-// ============= CONTRACT APIS (Celo) =============
-
-const CELO_GAS_TO_NC_RATE = 5500; // 1 CELO ~ ₦5,500 base; +20% markup applied below
-const PLATFORM_GAS_MARKUP = 1.20;
-
-async function getDeveloperSigner(developer: DeveloperProfile, externalUserId: string | undefined) {
-  // If externalUserId provided -> use developer's managed wallet for that end-user.
-  // Otherwise -> use developer's OWN platform wallet (dev_<userId>).
-  const lookupId = externalUserId || `dev_${developer.user_id}`;
-  let { data: wallet } = await supabase
-    .from('developer_wallets')
-    .select('wallet_address, encrypted_private_key')
-    .eq('developer_id', developer.user_id)
-    .eq('external_user_id', lookupId)
-    .maybeSingle();
-
-  // Auto-provision the developer's own signing wallet if missing
-  if (!wallet && !externalUserId) {
-    const w = ethers.Wallet.createRandom();
-    const enc = CryptoJS.AES.encrypt(w.privateKey, WALLET_ENCRYPTION_SECRET).toString();
-    const { error } = await supabase.from('developer_wallets').insert({
-      developer_id: developer.user_id,
-      external_user_id: lookupId,
-      wallet_address: w.address.toLowerCase(),
-      encrypted_private_key: enc,
-    });
-    if (error) throw new Error('Could not provision developer signing wallet');
-    wallet = { wallet_address: w.address.toLowerCase(), encrypted_private_key: enc };
-  }
-  if (!wallet) throw new Error('Wallet not found for external_user_id');
-
-  const bytes = CryptoJS.AES.decrypt(wallet.encrypted_private_key, WALLET_ENCRYPTION_SECRET);
-  const privateKey = bytes.toString(CryptoJS.enc.Utf8);
-  const provider = new ethers.JsonRpcProvider(CELO_RPC);
-  return { signer: new ethers.Wallet(privateKey, provider), provider, address: wallet.wallet_address };
-}
-
-function getPlatformRelayer() {
-  const pk = Deno.env.get('CELO_MASTER_WALLET_PRIVATE_KEY');
-  if (!pk) throw new Error('Platform relayer not configured');
-  const provider = new ethers.JsonRpcProvider(CELO_RPC);
-  return { signer: new ethers.Wallet(pk, provider), provider };
-}
-
-async function chargeNcForGas(developer: DeveloperProfile, gasCostCelo: bigint) {
-  const celo = Number(ethers.formatEther(gasCostCelo));
-  const nc = Math.ceil(celo * CELO_GAS_TO_NC_RATE * PLATFORM_GAS_MARKUP);
-  if ((developer.wallet_balance || 0) < nc) {
-    throw new Error(`Insufficient NC for platform gas. Required ~${nc} NC`);
-  }
-  const ok = await deductBalance(developer.user_id, nc);
-  if (!ok) throw new Error('Failed to deduct NC for platform gas');
-  return { nc, celo };
-}
-
-async function handleContractDeploy(developer: DeveloperProfile, body: any) {
-  const { bytecode, abi, constructor_args = [], external_user_id, gas_payer = 'wallet', value } = body;
-  if (!bytecode || !abi) return { error: 'bytecode and abi required', status: 400 };
-  if (!Array.isArray(abi)) return { error: 'abi must be an array', status: 400 };
-
-  try {
-    let signer: ethers.Wallet;
-    let fromAddress: string;
-    let provider: ethers.JsonRpcProvider;
-    let platformGasNc = 0;
-
-    if (gas_payer === 'platform') {
-      const r = getPlatformRelayer();
-      signer = r.signer; provider = r.provider; fromAddress = await signer.getAddress();
-    } else {
-      const w = await getDeveloperSigner(developer, external_user_id);
-      signer = w.signer; provider = w.provider; fromAddress = w.address;
-    }
-
-    const factory = new ethers.ContractFactory(abi, bytecode, signer);
-    const deployTx = await factory.getDeployTransaction(...constructor_args, value ? { value: ethers.parseEther(String(value)) } : {});
-
-    // Gas pre-check
-    const gasEstimate = await provider.estimateGas({ ...deployTx, from: fromAddress });
-    const feeData = await provider.getFeeData();
-    const gasPrice = feeData.gasPrice ?? ethers.parseUnits('5', 'gwei');
-    const gasCost = gasEstimate * gasPrice;
-
-    if (gas_payer === 'wallet') {
-      const bal = await provider.getBalance(fromAddress);
-      if (bal < gasCost) {
-        return { error: 'Insufficient CELO for gas', status: 402, data: { required_wei: gasCost.toString(), balance_wei: bal.toString(), from: fromAddress } };
-      }
-    } else {
-      const charged = await chargeNcForGas(developer, gasCost);
-      platformGasNc = charged.nc;
-    }
-
-    const contract = await factory.deploy(...constructor_args, value ? { value: ethers.parseEther(String(value)) } : {});
-    const receipt = await contract.deploymentTransaction()?.wait();
-    const address = await contract.getAddress();
-
-    triggerWebhook(developer.user_id, 'contract.deployed', {
-      address, tx_hash: receipt?.hash, deployer: fromAddress, gas_payer
-    });
-
-    return {
-      data: {
-        address,
-        transaction_hash: receipt?.hash,
-        deployer: fromAddress,
-        gas_used: receipt?.gasUsed?.toString(),
-        gas_payer,
-        platform_gas_nc_charged: platformGasNc || undefined,
-        explorer_url: `https://celoscan.io/address/${address}`,
-        network: 'celo-mainnet'
-      }
-    };
-  } catch (e: any) {
-    console.error('[API] contract deploy error', e);
-    return { error: e.message || 'Deploy failed', status: 500 };
-  }
-}
-
-async function handleContractCall(developer: DeveloperProfile, body: any) {
-  const { address, abi, method, args = [], external_user_id, gas_payer = 'wallet', value } = body;
-  if (!address || !abi || !method) return { error: 'address, abi, method required', status: 400 };
-
-  try {
-    let signer: ethers.Wallet;
-    let from: string;
-    let provider: ethers.JsonRpcProvider;
-    let platformGasNc = 0;
-
-    if (gas_payer === 'platform') {
-      const r = getPlatformRelayer();
-      signer = r.signer; provider = r.provider; from = await signer.getAddress();
-    } else {
-      const w = await getDeveloperSigner(developer, external_user_id);
-      signer = w.signer; provider = w.provider; from = w.address;
-    }
-
-    const contract = new ethers.Contract(address, abi, signer);
-    if (typeof contract[method] !== 'function') return { error: `Method ${method} not found in ABI`, status: 400 };
-
-    const overrides: any = value ? { value: ethers.parseEther(String(value)) } : {};
-    const gasEstimate = await contract[method].estimateGas(...args, overrides);
-    const feeData = await provider.getFeeData();
-    const gasPrice = feeData.gasPrice ?? ethers.parseUnits('5', 'gwei');
-    const gasCost = gasEstimate * gasPrice;
-
-    if (gas_payer === 'wallet') {
-      const bal = await provider.getBalance(from);
-      if (bal < gasCost + (overrides.value || 0n)) {
-        return { error: 'Insufficient CELO for gas + value', status: 402, data: { required_wei: (gasCost + (overrides.value || 0n)).toString(), balance_wei: bal.toString(), from } };
-      }
-    } else {
-      const charged = await chargeNcForGas(developer, gasCost);
-      platformGasNc = charged.nc;
-    }
-
-    const tx = await contract[method](...args, overrides);
-    const receipt = await tx.wait();
-
-    return {
-      data: {
-        transaction_hash: receipt.hash,
-        from, to: address, method,
-        gas_used: receipt.gasUsed?.toString(),
-        gas_payer,
-        platform_gas_nc_charged: platformGasNc || undefined,
-        status: receipt.status === 1 ? 'success' : 'failed',
-        explorer_url: `https://celoscan.io/tx/${receipt.hash}`
-      }
-    };
-  } catch (e: any) {
-    console.error('[API] contract call error', e);
-    return { error: e.message || 'Call failed', status: 500 };
-  }
-}
-
-async function handleContractRead(developer: DeveloperProfile, body: any) {
-  const { address, abi, method, args = [] } = body;
-  if (!address || !abi || !method) return { error: 'address, abi, method required', status: 400 };
-  try {
-    const provider = new ethers.JsonRpcProvider(CELO_RPC);
-    const contract = new ethers.Contract(address, abi, provider);
-    if (typeof contract[method] !== 'function') return { error: `Method ${method} not found in ABI`, status: 400 };
-    const raw = await contract[method](...args);
-    // Normalize BigInt for JSON
-    const normalize = (v: any): any => {
-      if (typeof v === 'bigint') return v.toString();
-      if (Array.isArray(v)) return v.map(normalize);
-      if (v && typeof v === 'object' && v.toArray) return normalize(v.toArray());
-      return v;
-    };
-    return { data: { result: normalize(raw), address, method } };
-  } catch (e: any) {
-    console.error('[API] contract read error', e);
-    return { error: e.message || 'Read failed', status: 500 };
-  }
-}
-
-
-async function handleVtuAirtime(developer: DeveloperProfile, body: any) {
-  const { network, phone, amount } = body;
-  
-  if (!network || !phone || !amount) {
-    return { error: 'network, phone, and amount required', status: 400 };
-  }
-  
-  const networkCodes: Record<string, string> = {
-    'mtn': 'mtn',
-    'airtel': 'airtel',
-    'glo': 'glo',
-    '9mobile': 'etisalat'
-  };
-  
-  const networkCode = networkCodes[network.toLowerCase()];
-  if (!networkCode) {
-    return { error: 'Invalid network. Use: mtn, airtel, glo, 9mobile', status: 400 };
-  }
-  
-  try {
-    const requestId = `DEV_${developer.user_id.slice(0, 8)}_${Date.now()}`;
-    
-    const response = await fetch('https://vtuafrica.com/api/v1/airtime', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${VTU_AFRICA_API_KEY}`
-      },
-      body: JSON.stringify({
-        username: VTU_AFRICA_USERNAME,
-        network: networkCode,
-        phone,
-        amount,
-        request_id: requestId
-      })
-    });
-    
-    const result = await response.json();
-    
-    if (result.status === 'success' || result.code === '000') {
-      return {
-        data: {
-          reference: requestId,
-          status: 'success',
-          network,
-          phone,
-          amount,
-          message: result.message || 'Airtime sent successfully'
-        }
-      };
-    } else {
-      return { error: result.message || 'Airtime purchase failed', status: 400 };
-    }
-  } catch (error: any) {
-    console.error('[API] VTU Airtime error:', error);
-    return { error: 'Service temporarily unavailable', status: 503 };
-  }
-}
-
-async function handleVtuData(developer: DeveloperProfile, body: any) {
-  const { network, phone, plan_id } = body;
-  
-  if (!network || !phone || !plan_id) {
-    return { error: 'network, phone, and plan_id required', status: 400 };
-  }
-  
-  try {
-    const requestId = `DEV_DATA_${developer.user_id.slice(0, 8)}_${Date.now()}`;
-    
-    const response = await fetch('https://vtuafrica.com/api/v1/data', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${VTU_AFRICA_API_KEY}`
-      },
-      body: JSON.stringify({
-        username: VTU_AFRICA_USERNAME,
-        network: network.toLowerCase(),
-        phone,
-        plan: plan_id,
-        request_id: requestId
-      })
-    });
-    
-    const result = await response.json();
-    
-    if (result.status === 'success' || result.code === '000') {
-      return {
-        data: {
-          reference: requestId,
-          status: 'success',
-          network,
-          phone,
-          plan_id,
-          message: result.message || 'Data purchased successfully'
-        }
-      };
-    } else {
-      return { error: result.message || 'Data purchase failed', status: 400 };
-    }
-  } catch (error: any) {
-    console.error('[API] VTU Data error:', error);
-    return { error: 'Service temporarily unavailable', status: 503 };
-  }
-}
-
-// NOTIFICATION APIS
-async function handleSendEmail(developer: DeveloperProfile, body: any) {
-  const { to, subject, message, template } = body;
-  
-  if (!to || !subject || !message) {
-    return { error: 'to, subject, and message required', status: 400 };
-  }
-  
-  try {
-    const { data, error } = await supabase.functions.invoke('send-notification', {
-      body: {
-        to,
-        subject,
-        message,
-        template: template || 'general',
-        developer_id: developer.user_id
-      }
-    });
-    
-    if (error) throw error;
-    
-    return {
-      data: {
-        status: 'sent',
-        to,
-        subject,
-        message_id: data?.id || `msg_${Date.now()}`
-      }
-    };
-  } catch (error: any) {
-    console.error('[API] Email error:', error);
-    return { error: 'Failed to send email', status: 500 };
-  }
-}
-
-async function handleSendSms(developer: DeveloperProfile, body: any) {
-  const { phone, message } = body;
-  
-  if (!phone || !message) {
-    return { error: 'phone and message required', status: 400 };
-  }
-  
-  try {
-    const { data, error } = await supabase.functions.invoke('send-sms', {
-      body: { phone, message, developer_id: developer.user_id }
-    });
-    
-    if (error) throw error;
-    
-    return {
-      data: {
-        status: 'sent',
-        phone,
-        message_id: data?.id || `sms_${Date.now()}`
-      }
-    };
-  } catch (error: any) {
-    console.error('[API] SMS error:', error);
-    return { error: 'Failed to send SMS', status: 500 };
-  }
-}
-
-async function handleSendPush(developer: DeveloperProfile, body: any) {
-  const { user_id, title, message, data: pushData } = body;
-  
-  if (!user_id || !title || !message) {
-    return { error: 'user_id, title, and message required', status: 400 };
-  }
-  
-  try {
-    const { error } = await supabase.functions.invoke('send-push-notification', {
-      body: {
-        user_id,
-        title,
-        body: message,
-        data: pushData,
-        developer_id: developer.user_id
-      }
-    });
-    
-    if (error) throw error;
-    
-    return {
-      data: {
-        status: 'sent',
-        user_id,
-        title
-      }
-    };
-  } catch (error: any) {
-    console.error('[API] Push error:', error);
-    return { error: 'Failed to send push notification', status: 500 };
-  }
-}
-
-// VIDEO CONFERENCING APIS
-async function handleCreateVideoRoom(developer: DeveloperProfile, body: any) {
-  const { room_name, max_participants = 10, features = {} } = body;
-  
-  if (!room_name) {
-    return { error: 'room_name required', status: 400 };
-  }
-  
-  const roomId = `dev_${developer.user_id.slice(0, 8)}_${room_name.replace(/\s+/g, '_').toLowerCase()}_${Date.now()}`;
-  
-  // Create room record
-  const { error } = await supabase.from('developer_video_rooms').insert({
-    developer_id: developer.user_id,
-    room_id: roomId,
-    room_name,
-    max_participants,
-    features,
-    status: 'active',
-    created_at: new Date().toISOString()
-  });
-  
-  if (error) {
-    console.error('[API] Room creation error:', error);
-    return { error: 'Failed to create room', status: 500 };
-  }
-  
-  // Generate Jitsi room URL
-  const jitsiDomain = 'meet.jit.si';
-  const joinUrl = `https://${jitsiDomain}/${roomId}`;
-  
-  return {
-    data: {
-      room_id: roomId,
-      room_name,
-      join_url: joinUrl,
-      embed_code: `<iframe src="${joinUrl}" style="height: 100%; width: 100%; border: 0;" allow="camera; microphone; fullscreen; display-capture"></iframe>`,
-      max_participants,
-      features: {
-        screen_sharing: features.screen_sharing !== false,
-        chat: features.chat !== false,
-        recording: features.recording || false,
-        ...features
-      },
-      integration: {
-        type: 'jitsi',
-        domain: jitsiDomain,
-        config: {
-          roomName: roomId,
-          interfaceConfigOverwrite: {
-            SHOW_JITSI_WATERMARK: false,
-            SHOW_WATERMARK_FOR_GUESTS: false,
-            DEFAULT_BACKGROUND: '#1a1a1a'
-          }
-        }
-      }
-    }
-  };
-}
-
-async function handleJoinVideoRoom(developer: DeveloperProfile, body: any) {
-  const { room_id, user_name, user_id: externalUserId } = body;
-  
-  if (!room_id) {
-    return { error: 'room_id required', status: 400 };
-  }
-  
-  // Verify room exists and belongs to developer
-  const { data: room } = await supabase
-    .from('developer_video_rooms')
-    .select('*')
-    .eq('developer_id', developer.user_id)
-    .eq('room_id', room_id)
-    .single();
-  
-  if (!room) {
-    return { error: 'Room not found', status: 404 };
-  }
-  
-  if (room.status !== 'active') {
-    return { error: 'Room is not active', status: 400 };
-  }
-  
-  const jitsiDomain = 'meet.jit.si';
-  const joinUrl = `https://${jitsiDomain}/${room_id}`;
-  
-  return {
-    data: {
-      room_id,
-      join_url: joinUrl,
-      user_name: user_name || 'Guest',
-      external_user_id: externalUserId,
-      webrtc_config: {
-        iceServers: [
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' }
-        ]
-      },
-      signaling_info: {
-        type: 'jitsi',
-        domain: jitsiDomain,
-        room: room_id
-      }
-    }
-  };
-}
-
-// AI CHAT API
-async function handleAiChat(developer: DeveloperProfile, body: any) {
-  const { message, context = [], model = 'default' } = body;
-  
-  if (!message) {
-    return { error: 'message required', status: 400 };
-  }
-  
-  try {
-    const { data, error } = await supabase.functions.invoke('ai-chat', {
-      body: {
-        message,
-        history: context,
-        developer_id: developer.user_id
-      }
-    });
-    
-    if (error) throw error;
-    
-    return {
-      data: {
-        response: data?.response || data?.message || 'No response generated',
-        model,
-        usage: {
-          prompt_tokens: data?.usage?.prompt_tokens || 0,
-          completion_tokens: data?.usage?.completion_tokens || 0
-        }
-      }
-    };
-  } catch (error: any) {
-    console.error('[API] AI Chat error:', error);
-    return { error: 'AI service temporarily unavailable', status: 503 };
-  }
-}
+// API HANDLERS: Hosted NC escrow and payments only.
 
 // ESCROW/PAYMENT APIS
 async function handleCreateEscrow(developer: DeveloperProfile, body: any) {
-  const { payer_external_id, payee_external_id, payee_user_id, payee_email, amount, currency = 'NGN', description } = body;
+  const { payer_external_id, payee_external_id, payee_user_id, payee_email, amount, description } = body;
+  const inspectionDays = Number(body?.inspection_period_days ?? 5);
 
-  if (!payer_external_id || !payee_external_id || !amount) {
-    return { error: 'payer_external_id, payee_external_id, and amount required', status: 400 };
+  if (typeof payer_external_id !== 'string' || !payer_external_id.trim() || payer_external_id.length > 128 ||
+      typeof payee_external_id !== 'string' || !payee_external_id.trim() || payee_external_id.length > 128) {
+    return { error: 'payer_external_id and payee_external_id are required strings up to 128 characters', status: 400 };
   }
   if (!payee_user_id && !payee_email) {
     return { error: 'payee_user_id or payee_email required (escrow releases pay a NaijaLancers user)', status: 400 };
   }
   const amt = Number(amount);
-  if (!amt || amt <= 0) {
-    return { error: 'amount must be a positive number', status: 400 };
+  if (!Number.isFinite(amt) || amt <= 0 || amt > 1_000_000) {
+    return { error: 'amount must be a positive number up to 1,000,000 NC', status: 400 };
+  }
+  if (!Number.isInteger(inspectionDays) || inspectionDays < 1 || inspectionDays > 30) {
+    return { error: 'inspection_period_days must be an integer between 1 and 30', status: 400 };
+  }
+  if (typeof description === 'string' && description.length > 500) {
+    return { error: 'description must be 500 characters or fewer', status: 400 };
   }
 
   // Verify payee exists
@@ -936,8 +228,9 @@ async function handleCreateEscrow(developer: DeveloperProfile, body: any) {
     payee_user_id: resolvedPayee,
     payee_email: payee_email || null,
     amount: amt,
-    currency,
-    description,
+    currency: 'NC',
+    description: typeof description === 'string' ? description : null,
+    inspection_period_days: inspectionDays,
     status: 'pending',
   });
 
@@ -947,7 +240,7 @@ async function handleCreateEscrow(developer: DeveloperProfile, body: any) {
   }
 
   triggerWebhook(developer.user_id, 'escrow.created', {
-    escrow_id: escrowId, payer_external_id, payee_external_id, payee_user_id: resolvedPayee, amount: amt, currency, status: 'pending',
+    escrow_id: escrowId, payer_external_id, payee_external_id, payee_user_id: resolvedPayee, amount: amt, currency: 'NC', status: 'pending', inspection_period_days: inspectionDays,
   });
 
   return {
@@ -957,13 +250,15 @@ async function handleCreateEscrow(developer: DeveloperProfile, body: any) {
       payee_external_id,
       payee_user_id: resolvedPayee,
       amount: amt,
-      currency,
+      currency: 'NC',
+      inspection_period_days: inspectionDays,
       status: 'pending',
       description,
       actions: {
         fund: `/payments/escrow/${escrowId}/fund`,
         release: `/payments/escrow/${escrowId}/release`,
         refund: `/payments/escrow/${escrowId}/refund`,
+        dispute: `/payments/escrow/${escrowId}/dispute`,
       },
     },
   };
@@ -986,9 +281,9 @@ async function handleFundEscrow(developer: DeveloperProfile, escrowId: string) {
     return { error: msg, status };
   }
   triggerWebhook(developer.user_id, 'escrow.funded', {
-    escrow_id: escrowId, amount: res.amount, funded_at: res.funded_at,
+    escrow_id: escrowId, amount: res.amount, funded_at: res.funded_at, auto_release_at: res.auto_release_at,
   });
-  return { data: { escrow_id: escrowId, status: 'funded', amount: res.amount, funded_at: res.funded_at } };
+  return { data: { escrow_id: escrowId, status: 'funded', amount: res.amount, funded_at: res.funded_at, auto_release_at: res.auto_release_at } };
 }
 
 async function handleReleaseEscrow(developer: DeveloperProfile, escrowId: string) {
@@ -1035,159 +330,58 @@ async function handleRefundEscrow(developer: DeveloperProfile, escrowId: string,
   return { data: { escrow_id: escrowId, status: 'refunded', amount: res.amount, reason, refunded_at: res.refunded_at } };
 }
 
-// QUIDAX RAMP QUOTES — read-only NGN<>USDT (CELO) live pricing
-const QUIDAX_RAMP_BASE = 'https://ramp-be.quidax.io/api/v1/merchants';
-
-async function handleRampQuoteBuy(body: any) {
-  const fiatAmount = Number(body?.fiat_amount);
-  const token = String(body?.token || 'usdt').toLowerCase();
-  if (!fiatAmount || fiatAmount <= 0) {
-    return { error: 'fiat_amount (NGN) required and must be > 0', status: 400 };
-  }
-  const QUIDAX_PRIVATE_KEY = Deno.env.get('QUIDAX_PRIVATE_KEY');
-  if (!QUIDAX_PRIVATE_KEY) {
-    return { error: 'Ramp service not configured', status: 503 };
-  }
-  try {
-    const url = `${QUIDAX_RAMP_BASE}/purchase_quotes/buy?currency=ngn&token=${encodeURIComponent(token)}&fiat_amount=${fiatAmount}&token_network=celo`;
-    const resp = await fetch(url, {
-      headers: { accept: 'application/json', 'x-private-key': QUIDAX_PRIVATE_KEY },
-    });
-    const data = await resp.json();
-    if (!resp.ok) {
-      return { error: data?.message || 'Quote unavailable', status: resp.status };
-    }
-    return { data: { side: 'buy', fiat_currency: 'NGN', fiat_amount: fiatAmount, token, network: 'celo', quote: data?.data || data } };
-  } catch (e: any) {
-    console.error('[API] ramp buy quote error:', e);
-    return { error: 'Failed to fetch quote', status: 502 };
-  }
-}
-
-async function handleRampQuoteSell(body: any) {
-  const tokenAmount = Number(body?.token_amount);
-  const token = String(body?.token || 'usdt').toUpperCase();
-  if (!tokenAmount || tokenAmount <= 0) {
-    return { error: 'token_amount required and must be > 0', status: 400 };
-  }
-  const QUIDAX_PRIVATE_KEY = Deno.env.get('QUIDAX_PRIVATE_KEY');
-  if (!QUIDAX_PRIVATE_KEY) {
-    return { error: 'Ramp service not configured', status: 503 };
-  }
-  try {
-    const url = `${QUIDAX_RAMP_BASE}/purchase_quotes/sell?token=${encodeURIComponent(token)}&currency=NGN&token_amount=${tokenAmount}&token_network=CELO`;
-    const resp = await fetch(url, {
-      headers: { accept: 'application/json', 'x-private-key': QUIDAX_PRIVATE_KEY },
-    });
-    const data = await resp.json();
-    if (!resp.ok) {
-      return { error: data?.message || 'Quote unavailable', status: resp.status };
-    }
-    return { data: { side: 'sell', fiat_currency: 'NGN', token_amount: tokenAmount, token, network: 'CELO', quote: data?.data || data } };
-  } catch (e: any) {
-    console.error('[API] ramp sell quote error:', e);
-    return { error: 'Failed to fetch quote', status: 502 };
-  }
-}
-
-// HOSTED RAMP SESSIONS — developer creates a session, end-user completes on naijalancers.name.ng
-const APP_BASE_URL = Deno.env.get('APP_BASE_URL') || 'https://naijalancers.name.ng';
-
-async function handleCreateRampSession(developer: DeveloperProfile, side: 'buy' | 'sell', body: any) {
-  const token = String(body?.token || 'usdt').toLowerCase();
-  const fiatAmount = side === 'buy' ? Number(body?.fiat_amount) : null;
-  const tokenAmount = side === 'sell' ? Number(body?.token_amount) : null;
-  const externalUserId = body?.external_user_id ? String(body.external_user_id).slice(0, 128) : null;
-  const externalUserEmail = body?.external_user_email ? String(body.external_user_email).slice(0, 256) : null;
-  const metadata = (body?.metadata && typeof body.metadata === 'object') ? body.metadata : {};
-  const successUrl = body?.success_url ? String(body.success_url).slice(0, 500) : null;
-  const cancelUrl = body?.cancel_url ? String(body.cancel_url).slice(0, 500) : null;
-
-  // Pass-through destination_address (Celo EVM address). When provided on a BUY,
-  // bought USDT settles directly at this address — true wallet-as-a-service.
-  // Ignored on SELL (sell flow debits the end-user's NaijaLancers wallet).
-  let destinationAddress: string | null = null;
-  if (side === 'buy' && body?.destination_address) {
-    const raw = String(body.destination_address).trim();
-    if (!/^0x[a-fA-F0-9]{40}$/.test(raw)) {
-      return { error: 'destination_address must be a valid 0x EVM address', status: 400 };
-    }
-    destinationAddress = raw.toLowerCase();
-  }
-
-  if (side === 'buy' && (!fiatAmount || fiatAmount < 3000)) {
-    return { error: 'fiat_amount required and must be >= 3000 NGN', status: 400 };
-  }
-  if (side === 'sell' && (!tokenAmount || tokenAmount <= 0)) {
-    return { error: 'token_amount required and must be > 0', status: 400 };
-  }
-
-  if (side === 'sell' && (!tokenAmount || tokenAmount <= 0)) {
-    return { error: 'token_amount required and must be > 0', status: 400 };
-  }
-
-  const sessionId = `rs_${side}_${developer.user_id.slice(0, 8)}_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
-  const redirectUrl = `${APP_BASE_URL}/ramp/${sessionId}`;
-
-  const { error } = await supabase.from('developer_ramp_sessions').insert({
-    developer_id: developer.user_id,
-    session_id: sessionId,
-    type: side,
-    token,
-    fiat_amount: fiatAmount,
-    token_amount: tokenAmount,
-    external_user_id: externalUserId,
-    external_user_email: externalUserEmail,
-    destination_address: destinationAddress,
-    metadata: { ...metadata, success_url: successUrl, cancel_url: cancelUrl },
-    status: 'pending',
-    redirect_url: redirectUrl,
-  });
-
-  if (error) {
-    console.error('[API] Ramp session create error:', error);
-    return { error: 'Failed to create ramp session', status: 500 };
-  }
-
-  triggerWebhook(developer.user_id, `ramp.${side}.session.created`, {
-    session_id: sessionId,
-    type: side,
-    token,
-    fiat_amount: fiatAmount,
-    token_amount: tokenAmount,
-    external_user_id: externalUserId,
-    destination_address: destinationAddress,
-    redirect_url: redirectUrl,
-  });
-
-  return {
-    data: {
-      session_id: sessionId,
-      type: side,
-      token,
-      fiat_amount: fiatAmount,
-      token_amount: tokenAmount,
-      destination_address: destinationAddress,
-      status: 'pending',
-      redirect_url: redirectUrl,
-      expires_in_seconds: 7200,
-    },
-  };
-}
-
-async function handleGetRampSession(developer: DeveloperProfile, sessionId: string) {
-  if (!sessionId) return { error: 'session_id required', status: 400 };
+async function handleGetEscrow(developer: DeveloperProfile, escrowId: string) {
+  if (!escrowId) return { error: 'escrow_id required', status: 400 };
   const { data, error } = await supabase
-    .from('developer_ramp_sessions')
-    .select('session_id, type, token, fiat_amount, token_amount, status, reference, redirect_url, external_user_id, external_user_email, destination_address, naijalancers_user_id, completed_at, expires_at, created_at')
-
+    .from('developer_escrows')
+    .select('escrow_id, payer_external_id, payee_external_id, payee_user_id, amount, currency, description, status, inspection_period_days, created_at, funded_at, auto_release_at, disputed_at, dispute_reason, released_at, refunded_at, refund_reason')
     .eq('developer_id', developer.user_id)
-    .eq('session_id', sessionId)
+    .eq('escrow_id', escrowId)
     .maybeSingle();
-  if (error || !data) return { error: 'Session not found', status: 404 };
+  if (error || !data) return { error: 'Escrow not found', status: 404 };
   return { data };
 }
 
+async function handleListEscrows(developer: DeveloperProfile, params: URLSearchParams) {
+  const requested = Number(params.get('limit') || 50);
+  const limit = Number.isInteger(requested) ? Math.min(Math.max(requested, 1), 100) : 50;
+  let query = supabase
+    .from('developer_escrows')
+    .select('escrow_id, payer_external_id, payee_external_id, payee_user_id, amount, currency, description, status, inspection_period_days, created_at, funded_at, auto_release_at, disputed_at, dispute_reason, released_at, refunded_at, refund_reason')
+    .eq('developer_id', developer.user_id)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  const status = params.get('status');
+  if (status && ['pending', 'funded', 'disputed', 'released', 'refunded'].includes(status)) query = query.eq('status', status);
+  const { data, error } = await query;
+  if (error) return { error: 'Failed to load escrows', status: 500 };
+  return { data: { escrows: data || [] } };
+}
+
+async function handleDisputeEscrow(developer: DeveloperProfile, escrowId: string, body: any) {
+  const reason = typeof body?.reason === 'string' ? body.reason.trim() : '';
+  if (reason.length < 3 || reason.length > 500) {
+    return { error: 'reason is required and must be 3 to 500 characters', status: 400 };
+  }
+  const { data, error } = await supabase.rpc('initiate_developer_escrow_dispute', {
+    p_developer_id: developer.user_id,
+    p_escrow_id: escrowId,
+    p_reason: reason,
+  });
+  if (error) {
+    console.error('[API] initiate_developer_escrow_dispute error:', error.message);
+    return { error: 'Failed to dispute escrow', status: 500 };
+  }
+  const res = data as any;
+  if (!res?.ok) {
+    const message = String(res?.error || 'Failed to dispute escrow');
+    return { error: message, status: message.toLowerCase().includes('not found') ? 404 : 400 };
+  }
+  triggerWebhook(developer.user_id, 'escrow.disputed', {
+    escrow_id: escrowId, reason, disputed_at: res.disputed_at, status: 'disputed',
+  });
+  return { data: res };
+}
 
 async function handlePayoutCredit(developer: DeveloperProfile, body: any) {
   const { user_id, email, amount, reference, description } = body || {};
@@ -1464,137 +658,29 @@ serve(async (req) => {
   // Route to handlers
   try {
     switch (endpoint) {
-
-      // Wallet APIs
-      case 'wallet/create':
-        result = await handleWalletCreate(developer, body);
+      case 'payments/escrow':
+        result = method === 'GET'
+          ? await handleListEscrows(developer, params)
+          : { error: 'Method not allowed', status: 405 };
         break;
-      case 'wallet/balance':
-        result = await handleWalletBalance(developer, params);
-        break;
-      case 'wallet/transfer':
-        result = await handleWalletTransfer(developer, body);
-        break;
-
-      // Contract APIs (Celo)
-      case 'contracts/deploy':
-        result = await handleContractDeploy(developer, body);
-        break;
-      case 'contracts/call':
-        result = await handleContractCall(developer, body);
-        break;
-      case 'contracts/read':
-        result = await handleContractRead(developer, body);
-        break;
-
-      // On-chain Escrow (real money, ERC20 cUSD/USDT on Celo)
-      case 'escrow/onchain/deploy': {
-        const {
-          token = 'cUSD', payer, payee, arbiter, external_user_id, gas_payer = 'wallet',
-          dev_fee_bps = 0, dev_fee_recipient,
-        } = body;
-        const tokenAddr = token === 'CELO' ? null
-          : token === 'USDT' ? USDT_ADDRESS
-          : CUSD_ADDRESS;
-        if (!tokenAddr) { result = { error: 'Only ERC20 tokens (cUSD/USDT) supported for on-chain escrow', status: 400 }; break; }
-        if (!payer || !payee) { result = { error: 'payer and payee addresses required', status: 400 }; break; }
-        const platformAddr = Deno.env.get('CELO_MASTER_WALLET_ADDRESS');
-        if (!platformAddr) { result = { error: 'Platform wallet not configured', status: 500 }; break; }
-        const arb = arbiter || platformAddr;
-        const devBps = Math.max(0, Math.min(2000, Number(dev_fee_bps) || 0));   // cap dev fee at 20%
-        const platformBps = 50; // 0.5% NaijaLancers cut on every release
-        const devRecipient = dev_fee_recipient || platformAddr; // fallback so tx doesn't revert if dev didn't supply one
-        if (devBps + platformBps >= 10000) { result = { error: 'Fee too high', status: 400 }; break; }
-        result = await handleContractDeploy(developer, {
-          bytecode: ESCROW_BYTECODE,
-          abi: ESCROW_ABI,
-          constructor_args: [tokenAddr, payer, payee, arb, devRecipient, devBps, platformAddr, platformBps],
-          external_user_id,
-          gas_payer,
-        });
-        if (result.data) {
-          result.data.escrow_token = token;
-          result.data.fees = { dev_bps: devBps, platform_bps: platformBps, dev_recipient: devRecipient, platform_recipient: platformAddr };
-        }
-        break;
-      }
-
-      case 'escrow/onchain/source': {
-        const { ESCROW_SOURCE } = await import('./escrow-contract.ts');
-        result = { data: { source: ESCROW_SOURCE, compiler: 'solc 0.8.24', optimizer: { enabled: true, runs: 200 } } };
-        break;
-      }
-      
-      // VTU APIs
-      case 'vtu/airtime':
-        result = await handleVtuAirtime(developer, body);
-        break;
-      case 'vtu/data':
-        result = await handleVtuData(developer, body);
-        break;
-      
-      // Notification APIs
-      case 'notifications/email':
-      case 'notifications/send':
-        result = await handleSendEmail(developer, body);
-        break;
-      case 'notifications/sms':
-        result = await handleSendSms(developer, body);
-        break;
-      case 'notifications/push':
-        result = await handleSendPush(developer, body);
-        break;
-      
-      // Video APIs
-      case 'video/create-room':
-        result = await handleCreateVideoRoom(developer, body);
-        break;
-      case 'video/join-room':
-        result = await handleJoinVideoRoom(developer, body);
-        break;
-      
-      // AI APIs
-      case 'ai/chat':
-        result = await handleAiChat(developer, body);
-        break;
-      
-      // Payment/Escrow APIs
       case 'payments/escrow/create':
-        result = await handleCreateEscrow(developer, body);
+        result = method === 'POST'
+          ? await handleCreateEscrow(developer, body)
+          : { error: 'Method not allowed', status: 405 };
         break;
       case 'payments/payout':
-      case 'payments/credit':
         result = await handlePayoutCredit(developer, body);
         break;
-
-      // Hosted Charge Sessions (developer creates; end-user approves with PIN on naijalancers.name.ng)
       case 'payments/charge/session':
         if (method === 'POST') {
           result = await handleCreateChargeSession(developer, body);
         } else if (method === 'GET') {
-          const sid = params.session_id || params.id;
-          result = await handleGetChargeSession(developer, String(sid || ''));
+          result = await handleGetChargeSession(developer, String(params.get('session_id') || params.get('id') || ''));
         } else {
           result = { error: 'Method not allowed', status: 405 };
         }
         break;
 
-      // Quidax Ramp Quotes (read-only, NGN<>USDT live pricing)
-      case 'ramp/quote/buy':
-        result = await handleRampQuoteBuy(body);
-        break;
-      case 'ramp/quote/sell':
-        result = await handleRampQuoteSell(body);
-        break;
-
-      // Hosted Ramp Sessions (developer creates, end-user completes on naijalancers.name.ng)
-      case 'ramp/session/buy':
-        result = await handleCreateRampSession(developer, 'buy', body);
-        break;
-      case 'ramp/session/sell':
-        result = await handleCreateRampSession(developer, 'sell', body);
-        break;
-      
       // Webhook Management APIs
       case 'webhooks':
         if (method === 'GET') {
@@ -1606,9 +692,13 @@ serve(async (req) => {
           result = { data: { webhooks: webhooks || [] } };
         } else if (method === 'POST') {
           // Create webhook
-          const { url: webhookUrl, events, description: webhookDesc } = body;
-          if (!webhookUrl || !events?.length) {
-            result = { error: 'url and events array required', status: 400 };
+          const webhookUrl = typeof body?.url === 'string' ? body.url.trim() : '';
+          const events = body?.events;
+          const allowedEvents = ['escrow.created', 'escrow.funded', 'escrow.disputed', 'escrow.released', 'escrow.refunded', 'payments.charge.session.created', 'wallet.payout'];
+          let parsedWebhookUrl: URL | null = null;
+          try { parsedWebhookUrl = new URL(webhookUrl); } catch { parsedWebhookUrl = null; }
+          if (!parsedWebhookUrl || parsedWebhookUrl.protocol !== 'https:' || !Array.isArray(events) || events.length < 1 || events.length > allowedEvents.length || events.some((event: unknown) => typeof event !== 'string' || !allowedEvents.includes(event))) {
+            result = { error: 'A valid HTTPS url and 1 or more supported events are required', status: 400 };
           } else {
             const { data: secretData } = await supabase.rpc('generate_webhook_secret');
             const { data: newWebhook, error: createErr } = await supabase
@@ -1635,83 +725,60 @@ serve(async (req) => {
         break;
       
       case 'webhooks/events':
-        // List available webhook events
         result = {
           data: {
             events: [
-              { event: 'wallet.created', description: 'A new wallet was created' },
-              { event: 'wallet.deposit', description: 'Funds deposited into a wallet' },
-              { event: 'wallet.transfer', description: 'Transfer completed successfully' },
-              { event: 'escrow.created', description: 'New escrow payment created' },
-              { event: 'escrow.funded', description: 'Escrow was funded' },
-              { event: 'escrow.released', description: 'Escrow funds released' },
-              { event: 'escrow.refunded', description: 'Escrow was refunded' },
-              { event: 'vtu.airtime.success', description: 'Airtime purchase completed' },
-              { event: 'vtu.data.success', description: 'Data purchase completed' },
-              { event: 'video.room.created', description: 'Video room created' },
-              { event: 'video.room.ended', description: 'Video session ended' }
+              { event: 'escrow.created', description: 'A new escrow payment was created' },
+              { event: 'escrow.funded', description: 'Escrow funds were placed on hold' },
+              { event: 'escrow.disputed', description: 'A payer opened a dispute during inspection' },
+              { event: 'escrow.released', description: 'Escrow funds were released to the payee' },
+              { event: 'escrow.refunded', description: 'Escrow funds were returned' },
+              { event: 'payments.charge.session.created', description: 'A hosted payment link was created' },
+              { event: 'wallet.payout', description: 'A developer payout completed' },
             ]
           }
         };
         break;
-      
-      default:
-        // Check for dynamic routes
-        if (endpoint.startsWith('ramp/session/') && method === 'GET') {
-          const sid = pathParts[2];
-          result = await handleGetRampSession(developer, sid);
-        } else if (endpoint.startsWith('payments/escrow/') && endpoint.endsWith('/release')) {
-          const escrowId = pathParts[2];
-          result = await handleReleaseEscrow(developer, escrowId);
-        } else if (endpoint.startsWith('payments/escrow/') && endpoint.endsWith('/fund')) {
-          const escrowId = pathParts[2];
-          result = await handleFundEscrow(developer, escrowId);
-        } else if (endpoint.startsWith('payments/escrow/') && endpoint.endsWith('/refund')) {
-          const escrowId = pathParts[2];
-          result = await handleRefundEscrow(developer, escrowId, body);
+
+      default: {
+        const escrowMatch = endpoint.match(/^payments\/escrow\/([^/]+)(?:\/(fund|release|refund|dispute))?$/);
+        if (escrowMatch && method === 'GET' && !escrowMatch[2]) {
+          result = await handleGetEscrow(developer, escrowMatch[1]);
+        } else if (escrowMatch && method === 'POST' && escrowMatch[2] === 'fund') {
+          result = await handleFundEscrow(developer, escrowMatch[1]);
+        } else if (escrowMatch && method === 'POST' && escrowMatch[2] === 'release') {
+          result = await handleReleaseEscrow(developer, escrowMatch[1]);
+        } else if (escrowMatch && method === 'POST' && escrowMatch[2] === 'refund') {
+          result = await handleRefundEscrow(developer, escrowMatch[1], body);
+        } else if (escrowMatch && method === 'POST' && escrowMatch[2] === 'dispute') {
+          result = await handleDisputeEscrow(developer, escrowMatch[1], body);
         } else if (endpoint.startsWith('webhooks/') && method === 'DELETE') {
-          // Delete webhook
           const webhookId = pathParts[1];
           const { error: delErr } = await supabase
             .from('developer_webhooks')
             .delete()
             .eq('id', webhookId)
             .eq('developer_id', developer.user_id);
-          
-          if (delErr) {
-            result = { error: 'Webhook not found', status: 404 };
-          } else {
-            result = { data: { deleted: true } };
-          }
+          result = delErr ? { error: 'Webhook not found', status: 404 } : { data: { deleted: true } };
         } else if (endpoint.startsWith('webhooks/') && endpoint.endsWith('/test') && method === 'POST') {
-          // Test webhook
           const webhookId = pathParts[1];
           const { data: testResult, error: testErr } = await supabase.functions.invoke('developer-webhook', {
             body: { action: 'test', webhook_id: webhookId }
           });
-          
-          if (testErr) {
-            result = { error: testErr.message, status: 500 };
-          } else {
-            result = { data: testResult };
-          }
+          result = testErr ? { error: testErr.message, status: 500 } : { data: testResult };
         } else if (endpoint.startsWith('webhooks/') && endpoint.endsWith('/logs') && method === 'GET') {
-          // Get webhook logs
           const webhookId = pathParts[1];
           const { data: logs } = await supabase
             .from('webhook_logs')
-            .select('*')
+            .select('id, event_type, response_status, response_body, delivered_at, delivery_duration_ms, success, error_message, created_at, retry_count')
             .eq('webhook_id', webhookId)
             .order('created_at', { ascending: false })
             .limit(50);
-          
           result = { data: { logs: logs || [] } };
         } else {
-          result = { 
-            error: 'Endpoint not found', 
-            status: 404 
-          };
+          result = { error: 'Endpoint not found', status: 404 };
         }
+      }
     }
   } catch (error: any) {
     console.error(`[API] Handler error for ${endpoint}:`, error);

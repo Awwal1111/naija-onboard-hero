@@ -121,173 +121,62 @@ function assertFakeTxHash(hash: string) {
   assert(!/^0x[0-9a-f]{64}$/i.test(hash));
 }
 
-Deno.test("wallet/create returns simulated wallet with fake address", () => {
-  const res = handleSandbox(
-    "wallet/create",
-    "POST",
-    { external_user_id: "u_test_1" },
-    params(),
-  );
-  assertSimulated(res);
-  assertEquals(res.data.external_user_id, "u_test_1");
-  assertFakeAddress(res.data.address);
-  assertStringIncludes(res.data.wallet_id, "wlt_test_");
-});
-
-Deno.test("wallet/create rejects missing external_user_id", () => {
-  const res = handleSandbox("wallet/create", "POST", {}, params());
-  assertEquals(res.status, 400);
-  assertEquals(res.data, undefined);
-});
-
-Deno.test("wallet/balance returns deterministic mock balances", () => {
-  const res = handleSandbox(
-    "wallet/balance",
-    "GET",
-    null,
-    params("external_user_id=u_test_1"),
-  );
-  assertSimulated(res);
-  assertEquals(res.data.balances.NC, "10000");
-  assertEquals(res.data.balances.cUSD, "500.00");
-});
-
-Deno.test("wallet/transfer never produces a real on-chain tx_hash", () => {
-  const res = handleSandbox(
-    "wallet/transfer",
-    "POST",
-    { from: "u1", to: "u2", amount: 50, currency: "NC" },
-    params(),
-  );
-  assertSimulated(res);
-  assertEquals(res.data.status, "completed");
-  assertFakeTxHash(res.data.tx_hash);
-});
-
-Deno.test("wallet/transfer rejects incomplete bodies", () => {
-  const res = handleSandbox(
-    "wallet/transfer",
-    "POST",
-    { from: "u1" },
-    params(),
-  );
-  assertEquals(res.status, 400);
-});
-
-Deno.test("vtu airtime + data succeed without provider call", () => {
-  for (const endpoint of ["vtu/airtime", "vtu/data"]) {
-    const res = handleSandbox(
-      endpoint,
-      "POST",
-      { phone: "08012345678", amount: 100, provider: "MTN" },
-      params(),
-    );
-    assertSimulated(res);
-    assertEquals(res.data.status, "success");
-    assertStringIncludes(res.data.reference, "vtu_test_");
-  }
-});
-
-Deno.test("notification endpoints return queued ids", () => {
-  for (const endpoint of [
-    "notifications/email",
-    "notifications/send",
-    "notifications/sms",
-    "notifications/push",
-  ]) {
-    const res = handleSandbox(
-      endpoint,
-      "POST",
-      { to: "[email protected]", title: "t", body: "b" },
-      params(),
-    );
-    assertSimulated(res);
-  }
-});
-
-Deno.test("video room creation returns sandbox URL, never a real Daily/LiveKit url", () => {
-  const res = handleSandbox(
-    "video/create-room",
-    "POST",
-    { room_name: "demo" },
-    params(),
-  );
-  assertSimulated(res);
-  assertStringIncludes(res.data.join_url, "/video/sandbox/");
-});
-
-Deno.test("ai/chat returns mock LLM response, never a real model", () => {
-  const res = handleSandbox("ai/chat", "POST", { prompt: "hi" }, params());
-  assertSimulated(res);
-  assertEquals(res.data.model, "sandbox-mock-v1");
-});
-
-Deno.test("ramp quote + session return sandbox hosted_url and pending status", () => {
-  const quote = handleSandbox(
-    "ramp/quote/buy",
-    "GET",
-    null,
-    params("fiat_amount=15500"),
-  );
-  assertSimulated(quote);
-  assertEquals(quote.data.fiat_amount, 15500);
-
-  const session = handleSandbox(
-    "ramp/session/buy",
-    "POST",
-    { fiat_amount: 15500 },
-    params(),
-  );
-  assertSimulated(session);
-  assertStringIncludes(session.data.hosted_url, "/ramp/sandbox/");
-  assertEquals(session.data.status, "pending");
-});
-
-Deno.test("escrow create/fund/release/refund are all simulated", () => {
-  const create = handleSandbox(
+Deno.test("escrow create supports valid inspection windows and returns the dispute action", () => {
+  const created = handleSandbox(
     "payments/escrow/create",
     "POST",
-    { amount: 1000, payer_external_id: "a", payee_external_id: "b" },
+    { amount: 5000, payer_external_id: "buyer", payee_external_id: "seller", payee_user_id: "user-1", inspection_period_days: 14 },
     params(),
   );
-  assertSimulated(create);
-  const id = create.data.escrow_id;
+  assertSimulated(created);
+  assertEquals(created.data.amount, 5000);
+  assertEquals(created.data.currency, "NC");
+  assertEquals(created.data.inspection_period_days, 14);
+  assertStringIncludes(created.data.actions.dispute, "/dispute");
+});
 
-  for (const action of ["fund", "release", "refund"]) {
-    const r = handleSandbox(
-      `payments/escrow/${id}/${action}`,
-      "POST",
-      {},
-      params(),
-    );
-    assertSimulated(r);
+Deno.test("escrow inspection period accepts only whole days from 1 through 30", () => {
+  const body = { amount: 100, payer_external_id: "buyer", payee_external_id: "seller", payee_user_id: "user-1" };
+  for (const days of [1, 30]) {
+    const accepted = handleSandbox("payments/escrow/create", "POST", { ...body, inspection_period_days: days }, params());
+    assertSimulated(accepted);
+    assertEquals(accepted.data.inspection_period_days, days);
+  }
+  for (const days of [0, 31, 2.5]) {
+    const rejected = handleSandbox("payments/escrow/create", "POST", { ...body, inspection_period_days: days }, params());
+    assertEquals(rejected.status, 400);
   }
 });
 
-Deno.test("payments/payout returns simulated NC credit", () => {
-  const res = handleSandbox(
-    "payments/payout",
-    "POST",
-    { recipient_external_id: "r1", amount: 500 },
-    params(),
-  );
-  assertSimulated(res);
-  assertEquals(res.data.status, "completed");
-  assertEquals(res.data.currency, "NC");
+Deno.test("escrow fund, release, refund, and dispute are simulated", () => {
+  for (const action of ["fund", "release", "refund"]) {
+    const result = handleSandbox(`payments/escrow/esc_test_123/${action}`, "POST", {}, params());
+    assertSimulated(result);
+  }
+  const dispute = handleSandbox("payments/escrow/esc_test_123/dispute", "POST", { reason: "Work is incomplete" }, params());
+  assertSimulated(dispute);
+  assertEquals(dispute.data.status, "disputed");
 });
 
-Deno.test("smart contract endpoints stay on Alfajores testnet markers only", () => {
-  for (
-    const endpoint of [
-      "contracts/deploy",
-      "escrow/onchain/deploy",
-      "contracts/call",
-      "contracts/read",
-    ]
-  ) {
-    const res = handleSandbox(endpoint, "POST", {}, params());
-    assertSimulated(res);
-    assertEquals(res.data.chain, "CELO-Alfajores");
+Deno.test("escrow list and retrieval stay simulated", () => {
+  assertSimulated(handleSandbox("payments/escrow", "GET", null, params()));
+  assertSimulated(handleSandbox("payments/escrow/esc_test_123", "GET", null, params()));
+});
+
+Deno.test("charge session and payout preserve sandbox behavior", () => {
+  const charge = handleSandbox("payments/charge/session", "POST", { amount: 500 }, params());
+  assertSimulated(charge);
+  assertEquals(charge.data.amount, 500);
+  const payout = handleSandbox("payments/payout", "POST", { user_id: "u1", amount: 500 }, params());
+  assertSimulated(payout);
+  assertEquals(payout.data.status, "completed");
+  assertEquals(payout.data.currency, "NC");
+});
+
+Deno.test("removed product surfaces no longer return a sandbox success", () => {
+  for (const endpoint of ["wallet/create", "vtu/airtime", "video/create-room", "ai/chat", "contracts/call", "wallet/transfer"]) {
+    const result = handleSandbox(endpoint, "POST", {}, params());
+    assertEquals(result.status, 404);
   }
 });
 
