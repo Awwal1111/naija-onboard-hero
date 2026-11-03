@@ -28,6 +28,7 @@ import { FeedAd } from '@/components/ads/FeedAd'
 import { supabase } from '@/integrations/supabase/client'
 import { FeedSkeleton } from '@/components/FeedSkeleton'
 import CreatePostBar from '@/components/CreatePostBar'
+import { FeedJobCard, useFeedJobs } from '@/components/FeedJobCard'
 
 // Lazy-load heavy below-fold components
 const TrendingSection = lazy(() => import('@/components/TrendingSection'))
@@ -62,6 +63,7 @@ const MainFeed = () => {
     savePost,
     refreshFeed
   } = usePersonalizedFeed()
+  const { data: feedJobs = [] } = useFeedJobs()
   const [searchQuery, setSearchQuery] = useState('')
   
   const [showCreatePost, setShowCreatePost] = useState(false)
@@ -409,6 +411,9 @@ const MainFeed = () => {
                         onProfileClick={handleProfileClick}
                         currentUserId={user?.id}
                       />
+                      {(index + 1) % 4 === 0 && feedJobs[Math.floor(index / 4) % Math.max(feedJobs.length, 1)] && (
+                        <FeedJobCard job={feedJobs[Math.floor(index / 4) % feedJobs.length]} />
+                      )}
                       {/* Show in-feed ad after every 5 posts */}
                       {(index + 1) % 5 === 0 && (
                         <div className="p-4 bg-muted/20">
