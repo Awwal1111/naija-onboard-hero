@@ -43,6 +43,7 @@ import { UserModeStatsCard } from '@/components/admin/UserModeStatsCard'
 import { IncompleteProfilesCard } from '@/components/admin/IncompleteProfilesCard'
 import { Briefcase as BriefcaseIcon } from 'lucide-react'
 import { AdminJobModeration } from '@/components/admin/AdminJobModeration'
+import { AdminQuickJobPoster } from '@/components/admin/AdminQuickJobPoster'
 import { AdminCourseModeration } from '@/components/admin/AdminCourseModeration'
 
 
@@ -1812,6 +1813,7 @@ const EnhancedAdminDashboard = () => {
               </div>
 
               <TabsContent value="job-posts" className="mt-0">
+                <AdminQuickJobPoster />
                 <AdminJobModeration />
               </TabsContent>
 
