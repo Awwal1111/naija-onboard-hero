@@ -2,14 +2,14 @@ import { lazy, Suspense, useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { MiniPayAuthWrapper } from "@/components/MiniPayAuthWrapper";
 import { DeferredManagers } from "@/components/DeferredManagers";
 import GlobalErrorHandler from "@/components/GlobalErrorHandler";
 import { useAppState } from "@/hooks/useAppState";
 import { WebRTCProvider } from "@/contexts/WebRTCContext";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import AuthRedirectHandler from "@/components/AuthRedirectHandler";
 import RouteCanonical from "@/components/RouteCanonical";
 import ErrorBoundary from "@/components/ErrorBoundary";
@@ -61,6 +61,16 @@ const PageLoader = () => {
       </div>
     </div>
   );
+};
+
+const RootRedirect = () => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <PageLoader />;
+  }
+
+  return <Navigate to={user ? "/dashboard" : "/login"} replace />;
 };
 
 // ===== LAZY LOADED PAGES WITH CHUNK ERROR RECOVERY =====
@@ -258,7 +268,7 @@ const App = () => (
                 <Route path="/charge/:sessionId" element={<ChargeSession />} />
                 
                 {/* Public pages */}
-                <Route path="/" element={<Index />} />
+                <Route path="/" element={<RootRedirect />} />
                 <Route path="/index" element={<Index />} />
                 <Route path="/index.html" element={<Index />} />
                 <Route path="/install" element={<InstallApp />} />
