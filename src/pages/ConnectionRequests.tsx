@@ -149,7 +149,7 @@ export const ConnectionRequests = () => {
               </div>
             </CardContent>
           </Card>
-        ))
+        ))}
       </div>
     )
   }
