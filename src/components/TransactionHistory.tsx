@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { ArrowUpRight, ArrowDownLeft, Clock, CheckCircle, XCircle, ChevronRight, Download, FileText, FileSpreadsheet } from 'lucide-react'
+import { ArrowUpRight, ArrowDownLeft, Clock, CheckCircle, XCircle, ChevronRight, Download, FileText, FileSpreadsheet, RefreshCw } from 'lucide-react'
 import { useWallet, WalletTransaction } from '@/hooks/useWallet'
 import { TransactionDetailDialog } from './TransactionDetailDialog'
 import { AllTransactionsDialog } from './AllTransactionsDialog'
@@ -15,14 +15,28 @@ import { format } from 'date-fns'
 
 export const TransactionHistory = () => {
   const { toast } = useToast()
-  const { transactions, loading } = useWallet()
+  const { transactions, loading, fetchTransactions } = useWallet()
   const [selectedTransaction, setSelectedTransaction] = useState<WalletTransaction | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [allTransactionsOpen, setAllTransactionsOpen] = useState(false)
+  const [isSyncing, setIsSyncing] = useState(false)
 
   const handleTransactionClick = (transaction: WalletTransaction) => {
     setSelectedTransaction(transaction)
     setDialogOpen(true)
+  }
+
+  const handleManualSync = async () => {
+    setIsSyncing(true)
+    try {
+      await fetchTransactions()
+      toast({ title: 'Transactions synced successfully' })
+    } catch (error) {
+      console.error('Sync error:', error)
+      toast({ title: 'Failed to sync transactions', variant: 'destructive' })
+    } finally {
+      setIsSyncing(false)
+    }
   }
 
   const getTransactionIcon = (type: string) => {
@@ -125,28 +139,40 @@ export const TransactionHistory = () => {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-lg">Recent Transactions</CardTitle>
-        {transactions.length > 0 && (
-          <div className="flex gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={handleExportCSV}
-              title="Export CSV"
-            >
-              <FileSpreadsheet className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={handleExportPDF}
-              title="Export PDF"
-            >
-              <FileText className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
+        <div className="flex items-center gap-1">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleManualSync}
+            disabled={isSyncing}
+            className="h-8 text-xs flex items-center gap-1"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+            Manual Sync
+          </Button>
+          {transactions.length > 0 && (
+            <>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={handleExportCSV}
+                title="Export CSV"
+              >
+                <FileSpreadsheet className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={handleExportPDF}
+                title="Export PDF"
+              >
+                <FileText className="h-4 w-4" />
+              </Button>
+            </>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         {transactions.length === 0 ? (
