@@ -132,6 +132,27 @@ const Chat = () => {
     if ((!newMessage.trim() && !selectedFile) || !userId || !canSendMessage) return
     if (!requireAction('send_message', 'send messages')) return
 
+    // Deal protection: block contact details until a paid order/contract exists
+    const { detectContactLeak } = await import('@/lib/contactLeak')
+    const leak = detectContactLeak(newMessage)
+    if (leak && user?.id) {
+      const me = user.id
+      const pair = `and(buyer_id.eq.${me},seller_id.eq.${userId}),and(buyer_id.eq.${userId},seller_id.eq.${me})`
+      const cpair = `and(client_id.eq.${me},expert_id.eq.${userId}),and(client_id.eq.${userId},expert_id.eq.${me})`
+      const [{ count: g }, { count: h }] = await Promise.all([
+        supabase.from('gig_orders').select('id', { count: 'exact', head: true }).or(pair).not('status', 'in', '(cancelled,pending)'),
+        supabase.from('hire_contracts').select('id', { count: 'exact', head: true }).or(cpair).in('status', ['active', 'completed']),
+      ])
+      if ((g ?? 0) + (h ?? 0) === 0) {
+        toast({
+          title: `🛡️ Sharing a ${leak} is locked`,
+          description: 'Keep payment on NaijaLancers escrow so you are protected. Contact details unlock after an order or contract is funded.',
+          variant: 'destructive',
+        })
+        return
+      }
+    }
+
     setUploading(true)
     try {
       let mediaUrl = null
