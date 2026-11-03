@@ -63,6 +63,7 @@ const MainFeed = () => {
     savePost,
     refreshFeed
   } = usePersonalizedFeed()
+  const { data: feedJobs = [] } = useFeedJobs()
   const [searchQuery, setSearchQuery] = useState('')
   
   const [showCreatePost, setShowCreatePost] = useState(false)

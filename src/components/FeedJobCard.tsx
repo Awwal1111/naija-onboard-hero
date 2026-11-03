@@ -32,7 +32,7 @@ export function FeedJobCard({ job }: { job: Job }) {
         {job.budget_max ? `${job.budget_max} NC` : 'Budget negotiable'}
         {job.required_skills?.length ? ` · ${job.required_skills.slice(0, 3).join(', ')}` : ''}
       </p>
-      <Button size="sm" className="mt-3" onClick={() => navigate(`/job-posts/${job.id}`)}>View & apply</Button>
+      <Button size="sm" className="mt-3" onClick={() => navigate(`/job/${job.id}`)}>View & apply</Button>
     </div>
   )
 }
