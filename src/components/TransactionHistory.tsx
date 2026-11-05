@@ -15,7 +15,7 @@ import { format } from 'date-fns'
 
 export const TransactionHistory = () => {
   const { toast } = useToast()
-  const { transactions, loading, fetchTransactions } = useWallet()
+  const { transactions, loading, refreshTransactions: fetchTransactions } = useWallet()
   const [selectedTransaction, setSelectedTransaction] = useState<WalletTransaction | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [allTransactionsOpen, setAllTransactionsOpen] = useState(false)
