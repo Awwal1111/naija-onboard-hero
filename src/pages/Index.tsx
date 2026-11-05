@@ -14,7 +14,7 @@ import { WhatsAppShareCTA } from '@/components/WhatsAppShareCTA'
 import { BLOG_POSTS } from '@/content/blogPosts'
 
 import { detectMiniPaySync } from '@/lib/minipay'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuthContext as useAuth } from '@/contexts/AuthContext'
 
 // SYNC detection at module load - NO context hooks
 const isMiniPayEnv = detectMiniPaySync().isMiniPay
