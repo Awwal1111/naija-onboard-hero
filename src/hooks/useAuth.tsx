@@ -60,7 +60,7 @@ export const useAuth = () => {
     if (!user) return
     const currentPath = window.location.pathname
     const hasInitialRedirect = sessionStorage.getItem('hasAuthRedirect') === 'true'
-    if (!hasInitialRedirect && (currentPath === '/' || authPaths.includes(currentPath))) {
+    if (!hasInitialRedirect && (currentPath === '/' || currentPath === '/index' || currentPath === '/index.html' || authPaths.includes(currentPath))) {
       sessionStorage.setItem('hasAuthRedirect', 'true')
       checkProfileAndRedirect(user)
     }
