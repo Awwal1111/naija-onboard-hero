@@ -263,3 +263,6 @@ verify_jwt = false
 
 [functions.ai-escrow-tools]
 verify_jwt = false
+
+[functions.job-curator]
+verify_jwt = false
