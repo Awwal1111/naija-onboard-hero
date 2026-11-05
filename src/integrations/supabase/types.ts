@@ -3740,6 +3740,8 @@ export type Database = {
           currency: string | null
           description: string
           experience_level: string | null
+          external_id: string | null
+          external_url: string | null
           featured: boolean | null
           id: string
           industry: string | null
@@ -3757,6 +3759,7 @@ export type Database = {
           responsibilities: string | null
           salary_currency: string | null
           salary_period: string | null
+          source: string
           status: string | null
           title: string
           updated_at: string
@@ -3781,6 +3784,8 @@ export type Database = {
           currency?: string | null
           description: string
           experience_level?: string | null
+          external_id?: string | null
+          external_url?: string | null
           featured?: boolean | null
           id?: string
           industry?: string | null
@@ -3798,6 +3803,7 @@ export type Database = {
           responsibilities?: string | null
           salary_currency?: string | null
           salary_period?: string | null
+          source?: string
           status?: string | null
           title: string
           updated_at?: string
@@ -3822,6 +3828,8 @@ export type Database = {
           currency?: string | null
           description?: string
           experience_level?: string | null
+          external_id?: string | null
+          external_url?: string | null
           featured?: boolean | null
           id?: string
           industry?: string | null
@@ -3839,6 +3847,7 @@ export type Database = {
           responsibilities?: string | null
           salary_currency?: string | null
           salary_period?: string | null
+          source?: string
           status?: string | null
           title?: string
           updated_at?: string
