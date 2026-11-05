@@ -14,14 +14,32 @@ import { WhatsAppShareCTA } from '@/components/WhatsAppShareCTA'
 import { BLOG_POSTS } from '@/content/blogPosts'
 
 import { detectMiniPaySync } from '@/lib/minipay'
+import { useAuthContext as useAuth } from '@/contexts/AuthContext'
 
 // SYNC detection at module load - NO context hooks
 const isMiniPayEnv = detectMiniPaySync().isMiniPay
 
+// Installed app (Play Store wrapper / installed PWA) should never see the marketing page
+const isInstalledApp = (() => {
+  if (typeof window === 'undefined') return false
+  const ua = navigator.userAgent.toLowerCase()
+  return /median|gonative/.test(ua) ||
+    window.matchMedia?.('(display-mode: standalone)').matches ||
+    (navigator as any).standalone === true
+})()
+
 const Index = () => {
+  const { user, loading } = useAuth()
   // MiniPay users go directly to feed - NO login screens
   if (isMiniPayEnv) {
     return <Navigate to="/feed" replace />
+  }
+  if (user) {
+    return <Navigate to="/main-feed" replace />
+  }
+  if (isInstalledApp) {
+    if (loading) return null
+    return <Navigate to="/login" replace />
   }
 
   const handleSocialLink = (url: string) => {
