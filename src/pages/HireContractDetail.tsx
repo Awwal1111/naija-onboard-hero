@@ -13,8 +13,10 @@ import { useHireContracts, HireContract } from '@/hooks/useHireContracts';
 import { buildContractPdf, downloadContractPdf } from '@/lib/contractPdf';
 import { uploadToCatbox } from '@/lib/catbox';
 import { toast } from 'sonner';
+import { DepositDialog } from '@/components/DepositDialog';
 
 export default function HireContractDetail() {
+  const [showFundDialog, setShowFundDialog] = useState(false);
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -61,6 +63,11 @@ export default function HireContractDetail() {
     if (!sig.trim()) { toast.error('Type your full name to sign'); return; }
     setBusy(true);
     const r = await sign(c.id, sig.trim());
+    if (!r.success && /insufficient/i.test(String(r.error))) {
+      // Signature is saved; open checkout so the client can fund and sign again.
+      setShowFundDialog(true);
+      await load();
+    }
     if (r.success) {
       await load();
       // After both signed, regenerate PDF, upload, save url, send notifications
@@ -98,6 +105,7 @@ export default function HireContractDetail() {
 
   return (
     <div className="container max-w-3xl mx-auto p-4 space-y-4">
+      <DepositDialog open={showFundDialog} onOpenChange={setShowFundDialog} />
       <Button variant="ghost" onClick={() => navigate(-1)}><ArrowLeft className="h-4 w-4 mr-1" />Back</Button>
 
       <Card>

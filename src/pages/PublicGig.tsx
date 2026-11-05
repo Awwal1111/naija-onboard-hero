@@ -27,6 +27,7 @@ import { useGigOrders } from '@/hooks/useGigOrders';
 import { ShareButtons } from '@/components/ShareButtons';
 import { initiateContextualChat } from '@/lib/chatContext';
 import { EscrowProtectionCard } from '@/components/EscrowProtectionCard';
+import { DepositDialog } from '@/components/DepositDialog';
 
 export default function PublicGig() {
   const { gigId } = useParams<{ gigId: string }>();
@@ -35,6 +36,7 @@ export default function PublicGig() {
   const { createOrder } = useGigOrders();
   const [showBoostDialog, setShowBoostDialog] = useState(false);
   const [showOrderDialog, setShowOrderDialog] = useState(false);
+  const [showFundDialog, setShowFundDialog] = useState(false);
   const [orderNotes, setOrderNotes] = useState('');
   const [placingOrder, setPlacingOrder] = useState(false);
   const [reviewText, setReviewText] = useState('');
@@ -185,7 +187,13 @@ export default function PublicGig() {
         toast.success('Order placed successfully!');
         navigate(`/orders/${result.order.id}`);
       } else if (result && 'error' in result) {
-        toast.error(result.error || 'Failed to place order');
+        if (/insufficient/i.test(String(result.error))) {
+          // Don't dead-end the buyer: open checkout right here, keep their order details.
+          setShowFundDialog(true);
+          toast.info(`Add NC ${Number(gig.price).toLocaleString()} to finish this order — your details are kept.`);
+        } else {
+          toast.error(result.error || 'Failed to place order');
+        }
       }
     } catch (error: any) {
       toast.error(error.message || 'Failed to place order');
@@ -784,6 +792,7 @@ export default function PublicGig() {
       </div>
 
       {/* Order Dialog */}
+      <DepositDialog open={showFundDialog} onOpenChange={setShowFundDialog} />
       <Dialog open={showOrderDialog} onOpenChange={setShowOrderDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>

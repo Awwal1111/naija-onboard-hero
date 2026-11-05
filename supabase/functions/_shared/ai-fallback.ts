@@ -72,6 +72,38 @@ function imageFallbackResponse(body: Record<string, unknown>): Response {
   return new Response(JSON.stringify(json), { status: 200, headers: { "Content-Type": "application/json" } });
 }
 
+const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
+
+// Groq: fast, paid-by-key fallback (sub-second). Tried before Pollinations.
+async function callGroq(body: Record<string, unknown>): Promise<Response> {
+  const key = Deno.env.get("GROQ_API_KEY");
+  if (!key) throw new Error("GROQ_API_KEY not set");
+  const payload: Record<string, unknown> = {
+    model: "openai/gpt-oss-120b",
+    messages: body.messages,
+    stream: body.stream ?? false,
+  };
+  if (body.tools) payload.tools = body.tools;
+  if (body.tool_choice) payload.tool_choice = body.tool_choice;
+  if (body.response_format) payload.response_format = body.response_format;
+  const res = await fetch(GROQ_URL, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error(`Groq failed ${res.status}: ${(await res.text().catch(() => "")).slice(0, 200)}`);
+  return res;
+}
+
+async function textFallback(body: Record<string, unknown>): Promise<Response> {
+  try {
+    return await callGroq(body);
+  } catch (e) {
+    console.warn("Groq fallback failed; trying Pollinations:", e instanceof Error ? e.message : e);
+    return await callPollinations(body);
+  }
+}
+
 export async function aiFetch(url: string, init: RequestInit): Promise<Response> {
   let body: Record<string, unknown> = {};
   try {
@@ -82,20 +114,20 @@ export async function aiFetch(url: string, init: RequestInit): Promise<Response>
   const canFallback = Array.isArray(body.messages);
 
   const fallback = async (): Promise<Response> =>
-    isImage ? imageFallbackResponse(body) : await callPollinations(body);
+    isImage ? imageFallbackResponse(body) : await textFallback(body);
 
   try {
     const res = await fetch(url, init);
     if (res.ok || !canFallback) return res;
     if (res.status === 402 || res.status === 429 || res.status >= 500 || res.status === 401) {
-      console.warn(`Primary AI returned ${res.status}; using Pollinations fallback`);
+      console.warn(`Primary AI returned ${res.status}; using Groq/Pollinations fallback`);
       const fb = await fallback();
       return fb.ok ? fb : res;
     }
     return res;
   } catch (err) {
     if (!canFallback) throw err;
-    console.warn("Primary AI unreachable; using Pollinations fallback");
+    console.warn("Primary AI unreachable; using Groq/Pollinations fallback");
     return fallback();
   }
 }

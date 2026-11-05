@@ -9,7 +9,7 @@ import { DeferredManagers } from "@/components/DeferredManagers";
 import GlobalErrorHandler from "@/components/GlobalErrorHandler";
 import { useAppState } from "@/hooks/useAppState";
 import { WebRTCProvider } from "@/contexts/WebRTCContext";
-import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { AuthProvider, useAuthContext as useAuth } from "@/contexts/AuthContext";
 import AuthRedirectHandler from "@/components/AuthRedirectHandler";
 import RouteCanonical from "@/components/RouteCanonical";
 import ErrorBoundary from "@/components/ErrorBoundary";
