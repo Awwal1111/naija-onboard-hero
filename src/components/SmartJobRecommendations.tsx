@@ -80,7 +80,8 @@ const SmartJobRecommendations: React.FC<SmartJobRecommendationsProps> = ({
   }
 
   const currentItem = items[currentIndex];
-  const matchScore = Math.round((currentItem?.relevance_score || 0) * 100);
+  const rawScore = Number(currentItem?.relevance_score || 0);
+  const matchScore = Math.max(0, Math.min(100, Math.round(rawScore <= 1 ? rawScore * 100 : rawScore)));
 
   return (
     <Card className="border-primary/20 bg-gradient-to-br from-primary/5 via-background to-accent/5 overflow-hidden">

@@ -442,6 +442,10 @@ export default function JobDetail() {
                       {hasApplied.status}
                     </Badge>
                   </div>
+                ) : (job as any).external_url ? (
+                  <Button asChild className="w-full" size="lg">
+                    <a href={(job as any).external_url} target="_blank" rel="noopener noreferrer">Apply on company site</a>
+                  </Button>
                 ) : (
                   <Button onClick={() => setApplyOpen(true)} className="w-full" size="lg">
                     Apply Now

@@ -96,16 +96,6 @@ export const CreateJobPostDialog: React.FC<CreateJobPostDialogProps> = ({
       return;
     }
 
-    if (!isPremium) {
-      toast({
-        title: "Premium required",
-        description: "Posting a job requires an active Premium subscription.",
-        variant: "destructive"
-      });
-      navigate('/premium');
-      return;
-    }
-
     if (looksLikeGigOffer({ title: formData.title, description: formData.description })) {
       toast({
         title: "This looks like a service advert",
@@ -118,7 +108,7 @@ export const CreateJobPostDialog: React.FC<CreateJobPostDialogProps> = ({
     setLoading(true);
 
     try {
-      const { error } = await supabase.from('job_posts').insert({
+      const { data: inserted, error } = await supabase.from('job_posts').insert({
         user_id: user.id,
         title: formData.title,
         description: formData.description,
@@ -132,14 +122,23 @@ export const CreateJobPostDialog: React.FC<CreateJobPostDialogProps> = ({
         is_remote: formData.is_remote,
         application_deadline: formData.application_deadline || null,
         status: 'open'
-      });
+      }).select('id').single();
 
       if (error) throw error;
 
-      toast({
-        title: "Submitted for review ✅",
-        description: "Your job goes live as soon as an admin approves it (usually within a few hours)."
-      });
+      let verdict: { status?: string; reason?: string } = {};
+      try {
+        const { data } = await supabase.functions.invoke('job-curator', { body: { action: 'screen', job_id: inserted.id } });
+        verdict = data || {};
+      } catch { /* fail-open: stays pending for admin */ }
+
+      if (verdict.status === 'approved') {
+        toast({ title: "Your job is live ✅", description: "Freelancers can now see and apply to it." });
+      } else if (verdict.status === 'rejected') {
+        toast({ title: "Job not published", description: verdict.reason || "It didn't pass our quality check.", variant: "destructive" });
+      } else {
+        toast({ title: "Submitted for review ✅", description: "An admin will review it shortly." });
+      }
 
 
       onOpenChange(false);
@@ -193,23 +192,6 @@ export const CreateJobPostDialog: React.FC<CreateJobPostDialogProps> = ({
             <span className="text-xs text-muted-foreground">Let AI help you write</span>
           </div>
         </DialogHeader>
-
-        {!isPremium && (
-          <Alert variant="destructive">
-            <Crown className="h-4 w-4" />
-            <AlertDescription className="text-xs">
-              Job posting is a Premium feature.{' '}
-              <button
-                type="button"
-                className="underline font-medium"
-                onClick={() => { onOpenChange(false); navigate('/premium'); }}
-              >
-                Upgrade to Premium
-              </button>{' '}
-              to hire on NaijaLancers.
-            </AlertDescription>
-          </Alert>
-        )}
 
         <Alert>
           <ShieldCheck className="h-4 w-4" />
