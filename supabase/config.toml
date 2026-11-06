@@ -30,9 +30,6 @@ verify_jwt = true
 [functions.bitlabs-callbacks]
 verify_jwt = false
 
-[functions.cpx-postback]
-verify_jwt = false
-
 
 
 
@@ -72,9 +69,6 @@ verify_jwt = false
 verify_jwt = true
 
 [functions.check-celo-deposits]
-verify_jwt = true
-
-[functions.notifications-service]
 verify_jwt = true
 
 [functions.admin-ai-assistant]
@@ -118,16 +112,10 @@ verify_jwt = true
 [functions.quidax-on-ramp]
 verify_jwt = true
 
-[functions.quidax-off-ramp]
-verify_jwt = true
-
 [functions.quidax-webhook]
 verify_jwt = false
 
 [functions.process-quidax-sell]
-verify_jwt = true
-
-[functions.verify-quidax-ramp-transaction]
 verify_jwt = true
 
 [functions.get-quidax-public-key]
@@ -135,9 +123,6 @@ verify_jwt = true
 
 [functions.approve-payout]
 verify_jwt = true
-
-[functions.weekly-inactive-users-check]
-verify_jwt = false
 
 [functions.ai-copilot]
 verify_jwt = true
@@ -172,12 +157,6 @@ verify_jwt = false
 [functions.engage-inactive-users]
 verify_jwt = false
 
-[functions.notify-new-signup]
-verify_jwt = false
-
-[functions.notify-matching-content]
-verify_jwt = false
-
 [functions.learn-assessment]
 verify_jwt = true
 
@@ -194,12 +173,6 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.send-weekly-digest]
-verify_jwt = false
-
-[functions.send-welcome-email]
-verify_jwt = false
-
-[functions.send-job-alert]
 verify_jwt = false
 
 [functions.send-engagement-emails]
@@ -241,9 +214,6 @@ verify_jwt = false
 [functions.ivorypay-withdrawal]
 verify_jwt = false
 
-[functions.ivorypay-webhook]
-verify_jwt = false
-
 [functions.pretium-ramp]
 verify_jwt = false
 
@@ -251,14 +221,8 @@ verify_jwt = false
 [functions.pretium-webhook]
 verify_jwt = false
 
-[functions.pretium-admin-refund]
-verify_jwt = false
-
 
 [functions.reloadly-service]
-verify_jwt = false
-
-[functions.reloadly-webhook]
 verify_jwt = false
 
 [functions.ai-escrow-tools]
