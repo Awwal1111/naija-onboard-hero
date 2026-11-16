@@ -122,7 +122,20 @@ const AIChatInterface = () => {
 
     // If clicking on the same message that's playing, just stop
     if (playingAudioId === messageIndex) {
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel();
       setPlayingAudioId(null);
+      return;
+    }
+
+    // Free, instant read-aloud using the phone/browser's built-in voice
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const clean = text.replace(/[*#_`>\[\]()]/g, '').slice(0, 4000);
+      const u = new SpeechSynthesisUtterance(clean);
+      u.onend = () => setPlayingAudioId(null);
+      u.onerror = () => setPlayingAudioId(null);
+      window.speechSynthesis.speak(u);
+      setPlayingAudioId(messageIndex);
       return;
     }
 

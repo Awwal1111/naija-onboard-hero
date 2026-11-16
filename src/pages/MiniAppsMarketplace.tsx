@@ -198,7 +198,13 @@ const MiniAppsMarketplace = () => {
   // Combine all apps, filtering out Quidax-dependent apps for non-Nigerian users
   const NIGERIA_ONLY_IDS = new Set(['int-bank', 'int-bank-withdraw'])
   const filteredBuiltIn = BUILT_IN_APPS.filter(a => isNigerian || !NIGERIA_ONLY_IDS.has(a.id))
+  // Most-used first: personal open counts (stored on device) + install counts
+  const usage: Record<string, number> = (() => { try { return JSON.parse(localStorage.getItem('nl-app-usage') || '{}') } catch { return {} } })()
+  const score = (a: UnifiedApp) => (usage[a.id] || 0) * 10 + (a.miniApp?.install_count || 0)
   const allApps: UnifiedApp[] = [...filteredBuiltIn, ...externalUnified]
+    .map((a, i) => ({ a, i }))
+    .sort((x, y) => score(y.a) - score(x.a) || x.i - y.i)
+    .map(x => x.a)
 
   // Filter apps
   const filteredApps = allApps.filter(a => {
@@ -254,6 +260,11 @@ const MiniAppsMarketplace = () => {
   }
 
   const handleAppClick = (app: UnifiedApp) => {
+    try {
+      const u = JSON.parse(localStorage.getItem('nl-app-usage') || '{}')
+      u[app.id] = (u[app.id] || 0) + 1
+      localStorage.setItem('nl-app-usage', JSON.stringify(u))
+    } catch { /* ignore */ }
     if (app.internalAction) {
       handleInternalAction(app.internalAction)
     } else if (app.path) {

@@ -159,15 +159,7 @@ export const CreateJobPostDialog: React.FC<CreateJobPostDialogProps> = ({
     } catch (error: any) {
       console.error('Error posting job:', error);
       const raw = error?.message || "Something went wrong";
-      const premiumBlocked = raw.includes('PREMIUM_REQUIRED');
-      toast({
-        title: premiumBlocked ? "Premium required" : "Failed to Post",
-        description: premiumBlocked
-          ? "Only Premium members can post jobs. Upgrade to publish this job."
-          : raw,
-        variant: "destructive"
-      });
-      if (premiumBlocked) navigate('/premium');
+      toast({ title: "Failed to Post", description: raw, variant: "destructive" });
     } finally {
 
       setLoading(false);

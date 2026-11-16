@@ -67,10 +67,6 @@ export default function EnhancedJobPostingDialog({ trigger, onJobCreated }: Enha
         throw new Error("Please fill in all required fields");
       }
 
-      if (!isPremium) {
-        throw new Error("PREMIUM_REQUIRED");
-      }
-
       if (looksLikeGigOffer({ title: data.title, description: data.description })) {
         throw new Error("This looks like a service advert. Jobs are for hiring — please create a Gig instead.");
       }
@@ -228,22 +224,6 @@ export default function EnhancedJobPostingDialog({ trigger, onJobCreated }: Enha
           </div>
         </DialogHeader>
         <div className="space-y-4 py-4">
-          {!isPremium && (
-            <Alert variant="destructive">
-              <Crown className="h-4 w-4" />
-              <AlertDescription className="text-xs">
-                Job posting is a Premium feature.{" "}
-                <button
-                  type="button"
-                  className="underline font-medium"
-                  onClick={() => { setOpen(false); navigate("/premium"); }}
-                >
-                  Upgrade to Premium
-                </button>{" "}
-                to hire on NaijaLancers.
-              </AlertDescription>
-            </Alert>
-          )}
           <Alert>
             <ShieldCheck className="h-4 w-4" />
             <AlertDescription className="text-xs">
