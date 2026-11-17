@@ -11,6 +11,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/use-toast'
 import { useNigerianStates } from '@/hooks/useNigerianStates'
 import { useMiniPayContext } from '@/components/MiniPayAuthWrapper'
+import { OnboardingTour } from '@/components/onboarding/OnboardingTour'
 import { 
   User, 
   MapPin, 
@@ -80,9 +81,11 @@ const Onboarding = () => {
   const progress = (currentStep / totalSteps) * 100
   const isNigeria = formData.country === 'Nigeria'
 
-  // Update form data when profile loads
+  // Update form data when profile loads (only once on initial load)
+  const initialProfileLoaded = React.useRef(false)
   useEffect(() => {
-    if (profile) {
+    if (profile && !initialProfileLoaded.current) {
+      initialProfileLoaded.current = true
       setFormData(prev => ({
         ...prev,
         full_name: profile.full_name || '',
@@ -647,6 +650,8 @@ const Onboarding = () => {
           </div>
         </div>
       </div>
+
+      <OnboardingTour />
     </div>
   )
 }
