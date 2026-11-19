@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { ethers } from "https://esm.sh/ethers@6.7.0";
 import CryptoJS from "https://esm.sh/crypto-js@4.1.1";
+import { commitWithdrawal, refundWithdrawal, reserveWithdrawal } from "../_shared/withdrawal-security.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -140,7 +141,9 @@ serve(async (req) => {
     // ---------- Off-ramp NGN: convert NC → bank ----------
     if (action === "offrampNGN") {
       const { ncAmount, account_name, account_number, bank_name, bank_code, dryRun } = body;
-      if (!ncAmount || ncAmount < 1000) return json({ error: "Minimum withdrawal is NC 1000" }, 400);
+      if (typeof ncAmount !== "number" || !Number.isFinite(ncAmount) || ncAmount < 1000) {
+        return json({ error: "Minimum withdrawal is NC 1000" }, 400);
+      }
       if (!account_number || !bank_code || !account_name || !bank_name) {
         return json({ error: "Missing bank details" }, 400);
       }
@@ -197,15 +200,6 @@ serve(async (req) => {
         });
       }
 
-      const { data: profile } = await supabaseAdmin
-        .from("profiles")
-        .select("wallet_balance, balance_withdrawable")
-        .eq("user_id", user.id)
-        .single();
-      if (!profile || (profile.balance_withdrawable || 0) < ncAmount) {
-        return json({ error: "Insufficient withdrawable balance" }, 400);
-      }
-
       // 1 NC == ₦1 (internal). Fiat payout amount equals NC amount.
       const fiatAmount = Math.round(Number(ncAmount));
 
@@ -235,17 +229,9 @@ serve(async (req) => {
 
       const reference = crypto.randomUUID();
 
-      // Debit user
-      await supabaseAdmin
-        .from("profiles")
-        .update({
-          wallet_balance: (profile.wallet_balance || 0) - ncAmount,
-          balance_withdrawable: (profile.balance_withdrawable || 0) - ncAmount,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("user_id", user.id);
+      await reserveWithdrawal(supabaseAdmin, user.id, ncAmount, body.transactionPin, reference);
 
-      await supabaseAdmin.from("wallet_transactions").insert({
+      const { error: ledgerError } = await supabaseAdmin.from("wallet_transactions").insert({
         user_id: user.id,
         amount: -ncAmount,
         currency: "NC",
@@ -254,22 +240,18 @@ serve(async (req) => {
         reference,
         metadata: { provider: "pretium", fiat_currency: "NGN", fiat_amount: fiatAmount, pretium_rate: pretiumRate, usdt_amount: usdtAmount, bank_code, account_number },
       });
+      if (ledgerError) {
+        await refundWithdrawal(supabaseAdmin, reference);
+        throw new Error("Failed to record withdrawal transaction");
+      }
 
       const refund = async (msg: string) => {
-        const { data: cur } = await supabaseAdmin
-          .from("profiles").select("wallet_balance, balance_withdrawable")
-          .eq("user_id", user.id).single();
-        if (cur) {
-          await supabaseAdmin.from("profiles").update({
-            wallet_balance: (cur.wallet_balance || 0) + ncAmount,
-            balance_withdrawable: (cur.balance_withdrawable || 0) + ncAmount,
-            updated_at: new Date().toISOString(),
-          }).eq("user_id", user.id);
-        }
-        await supabaseAdmin.from("wallet_transactions").update({
+        await refundWithdrawal(supabaseAdmin, reference);
+        const { error } = await supabaseAdmin.from("wallet_transactions").update({
           status: "failed", kind: "withdrawal_failed",
           metadata: { provider: "pretium", error: msg, refunded: true },
         }).eq("reference", reference).eq("user_id", user.id);
+        if (error) throw new Error("Failed to update failed withdrawal record");
       };
 
       // Settlement: master wallet sends USDT to Pretium settlement address.
@@ -281,6 +263,7 @@ serve(async (req) => {
       }
 
       let txHash: string | null = null;
+      let settlementSubmitted = false;
       try {
         const masterPk = await loadMasterKey(supabaseAdmin);
         const provider = new ethers.JsonRpcProvider(CELO_RPC);
@@ -299,16 +282,20 @@ serve(async (req) => {
         const bal: bigint = await erc20.balanceOf(signer.address);
         if (bal < value) throw new Error("Master wallet USDT balance too low");
         const tx = await erc20.transfer(ethers.getAddress(settlementAddress), value);
+        settlementSubmitted = true;
         const receipt = await tx.wait();
         txHash = receipt?.hash || tx.hash;
         if (!txHash) throw new Error("No tx hash returned");
         console.log("[PRETIUM-RAMP] Settlement tx:", txHash);
       } catch (err: any) {
         console.error("[PRETIUM-RAMP] settlement transfer failed:", err?.message);
-        await refund(`Settlement transfer failed: ${err?.message || "unknown"}`);
+        if (!settlementSubmitted) {
+          await refund(`Settlement transfer failed: ${err?.message || "unknown"}`);
+        }
         return json({ error: `Could not settle on-chain: ${err?.message || "unknown"}` }, 500);
       }
 
+      await commitWithdrawal(supabaseAdmin, reference);
       const callbackUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/pretium-webhook?ref=${reference}`;
       const { resp: payResp, data: payData, raw: payRaw } = await callPretium("/v1/pay/NGN", {
         method: "POST",
@@ -325,8 +312,17 @@ serve(async (req) => {
 
       if (!payResp.ok || payData?.code >= 400) {
         const msg = payData?.message || payRaw || "Pretium payout failed";
-        await refund(msg);
-        return json({ error: msg }, 502);
+        const { error: reconciliationError } = await supabaseAdmin.from("wallet_transactions").update({
+          metadata: {
+            provider: "pretium", fiat_currency: "NGN", fiat_amount: fiatAmount,
+            bank_code, account_number, transaction_hash: txHash,
+            settlement_sent: true, payout_error: msg, reconciliation_required: true,
+          },
+        }).eq("reference", reference).eq("user_id", user.id);
+        if (reconciliationError) {
+          throw new Error("Settlement sent, but reconciliation details could not be recorded");
+        }
+        return json({ error: "Settlement was sent, but the payout was not confirmed. The transaction is being reconciled." }, 502);
       }
 
       const txCode = payData?.data?.transaction_code || null;

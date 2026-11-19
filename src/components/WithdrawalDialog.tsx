@@ -93,10 +93,10 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
     }
 
     setShowPinInput(false)
-    await handleCryptoWithdraw()
+    await handleCryptoWithdraw(pin)
   }
 
-  const handleCryptoWithdraw = async () => {
+  const handleCryptoWithdraw = async (transactionPin: string) => {
     const ncAmount = parseFloat(cryptoAmount)
     setIsLoading(true)
 
@@ -108,7 +108,8 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
         body: {
           walletAddress: cryptoWalletAddress,
           ncAmount: ncAmount,
-          currency: cryptoCurrency
+          currency: cryptoCurrency,
+          transactionPin
         },
         headers: {
           Authorization: `Bearer ${session?.access_token}`

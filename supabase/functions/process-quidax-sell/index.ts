@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 import { ethers } from 'https://esm.sh/ethers@6.13.4'
 import CryptoJS from "https://esm.sh/crypto-js@4.1.1"
+import { commitWithdrawal, refundWithdrawal, reserveWithdrawal } from "../_shared/withdrawal-security.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -66,10 +67,10 @@ serve(async (req) => {
       throw new Error('Unauthorized')
     }
 
-    const { reference, details, amount, ncAmount: providedNcAmount } = await req.json()
+    const { reference, details, amount, transactionPin } = await req.json()
 
     console.log(`[QUIDAX SELL] Processing sell for user ${user.id}, ref: ${reference}`)
-    console.log(`[QUIDAX SELL] Details:`, JSON.stringify({ amount, providedNcAmount, details }))
+    console.log(`[QUIDAX SELL] Details:`, JSON.stringify({ amount, details }))
 
     // Get user profile to verify and deduct balance
     const { data: profile, error: profileError } = await supabase
@@ -91,7 +92,10 @@ serve(async (req) => {
       throw new Error('Failed to fetch user profile')
     }
 
-    const usdtAmount = parseFloat(amount)
+    const usdtAmount = Number(amount)
+    if (!Number.isFinite(usdtAmount) || usdtAmount <= 0) {
+      throw new Error('Invalid USDT amount')
+    }
     
     // CRITICAL FIX: Get LIVE exchange rate instead of hardcoded 1600
     let usdToNgn = 1600 // Fallback only
@@ -108,23 +112,21 @@ serve(async (req) => {
       console.log(`[QUIDAX SELL] Using fallback exchange rate: ${usdToNgn}`)
     }
 
-    // Calculate NC based on live rate (or use provided NC amount if available)
-    const ncAmount = providedNcAmount || Math.floor(usdtAmount * usdToNgn)
+    // Derive the debit from the server-validated token amount and live rate.
+    const ncAmount = Math.floor(usdtAmount * usdToNgn)
+    if (!Number.isSafeInteger(ncAmount) || ncAmount <= 0) {
+      throw new Error('Invalid withdrawal amount')
+    }
+    if (ncAmount < 3200) {
+      throw new Error('Minimum Quidax withdrawal is NC 3200')
+    }
     
     console.log(`[QUIDAX SELL] NC Calculation: ${usdtAmount} USDT × ${usdToNgn} = ${ncAmount} NC`)
-
-    if (profile.balance_withdrawable < ncAmount) {
-      throw new Error(`Insufficient balance. Required: ${ncAmount} NC, Available: ${profile.balance_withdrawable} NC`)
-    }
-
-    // Store original balance for potential rollback - DON'T deduct yet
-    const originalBalance = profile.wallet_balance
-    const originalWithdrawable = profile.balance_withdrawable
 
     console.log(`[QUIDAX SELL] Processing ${ncAmount} NC withdrawal for user ${user.id}`)
 
     // Get Quidax deposit address from details (check multiple possible keys)
-    const quidaxDepositAddress = details.deposit_address || details.walletAddress || details.wallet_address || details.address || details.depositAddress
+    const quidaxDepositAddress = details?.deposit_address || details?.walletAddress || details?.wallet_address || details?.address || details?.depositAddress
     
     console.log(`[QUIDAX SELL] Received details:`, JSON.stringify(details))
     console.log(`[QUIDAX SELL] Extracted deposit address: ${quidaxDepositAddress}`)
@@ -132,6 +134,9 @@ serve(async (req) => {
     if (!quidaxDepositAddress) {
       console.error('[QUIDAX SELL] No deposit address found in details:', details)
       throw new Error('Quidax deposit address not provided. Please try again.')
+    }
+    if (!ethers.isAddress(quidaxDepositAddress)) {
+      throw new Error('Invalid Quidax deposit address')
     }
 
     // DUAL WALLET SYSTEM: Try user wallet first, then master wallet
@@ -181,24 +186,20 @@ serve(async (req) => {
     }
 
     // Send USDT
-    const tx = await usdtContract.transfer(quidaxDepositAddress, usdtAmountWei)
-    console.log(`[QUIDAX SELL] Transaction sent: ${tx.hash}`)
+    const withdrawalReference = crypto.randomUUID()
+    await reserveWithdrawal(supabase, user.id, ncAmount, transactionPin, withdrawalReference)
+    let tx
+    try {
+      tx = await usdtContract.transfer(quidaxDepositAddress, usdtAmountWei)
+      console.log(`[QUIDAX SELL] Transaction sent: ${tx.hash}`)
+    } catch (transferError) {
+      await refundWithdrawal(supabase, withdrawalReference)
+      throw transferError
+    }
 
     const receipt = await tx.wait()
+    await commitWithdrawal(supabase, withdrawalReference)
     console.log(`[QUIDAX SELL] Transaction confirmed: ${receipt.hash}`)
-
-    // NOW deduct balance from user AFTER successful transfer
-    const { error: updateError } = await supabase
-      .from('profiles')
-      .update({
-        wallet_balance: originalBalance - ncAmount,
-        balance_withdrawable: originalWithdrawable - ncAmount
-      })
-      .eq('user_id', user.id)
-
-    if (updateError) {
-      console.error(`[QUIDAX SELL] Failed to deduct balance after transfer: ${updateError.message}`)
-    }
 
     console.log(`[QUIDAX SELL] Deducted ${ncAmount} NC from user ${user.id} after successful transfer`)
 
@@ -209,7 +210,7 @@ serve(async (req) => {
         user_id: user.id,
         amount: -ncAmount,
         kind: 'quidax_sell_pending',
-        reference: `Sell ${usdtAmount} USDT via Quidax Ramp @ ₦${usdToNgn}/USDT (${walletSource} wallet)`,
+        reference: `${withdrawalReference}: Sell ${usdtAmount} USDT via Quidax Ramp @ ₦${usdToNgn}/USDT (${walletSource} wallet)`,
         status: 'pending'
       })
 

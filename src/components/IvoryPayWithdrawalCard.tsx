@@ -151,10 +151,10 @@ export const IvoryPayWithdrawalCard = ({ currentBalance, onSuccess }: IvoryPayWi
       return
     }
     setShowPin(false)
-    await processWithdrawal()
+    await processWithdrawal(pin)
   }
 
-  const processWithdrawal = async () => {
+  const processWithdrawal = async (transactionPin: string) => {
     setIsLoading(true)
     try {
       const { data: { session } } = await supabase.auth.getSession()
@@ -166,6 +166,7 @@ export const IvoryPayWithdrawalCard = ({ currentBalance, onSuccess }: IvoryPayWi
           bankCode,
           accountNumber,
           accountName: verifiedName || accountName,
+          transactionPin,
         },
         headers: { Authorization: `Bearer ${session?.access_token}` },
       })

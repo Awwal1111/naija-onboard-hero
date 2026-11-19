@@ -98,6 +98,7 @@ export const PretiumWithdrawalCard = ({ currentBalance, onSuccess }: Props) => {
           account_number: accountNumber.trim(),
           bank_name: bankName,
           bank_code: bankCode,
+          transactionPin: pin,
         },
       })
       if (error || !data?.success) throw new Error((data as any)?.error || error?.message || 'Failed')

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { commitWithdrawal, refundWithdrawal, reserveWithdrawal } from "../_shared/withdrawal-security.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -76,7 +77,7 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const { action, ncAmount, currency, bankCode, accountNumber, accountName } = body;
+    const { action, ncAmount, currency, bankCode, accountNumber, accountName, transactionPin } = body;
 
     // ============= listBanks: proxy IvoryPay's banks list so the user picks valid codes =============
     if (action === "listBanks") {
@@ -141,7 +142,7 @@ serve(async (req) => {
     }
 
     // ============= Default action: process the actual withdrawal =============
-    if (!ncAmount || ncAmount < 100) {
+    if (typeof ncAmount !== "number" || !Number.isFinite(ncAmount) || ncAmount < 100) {
       return new Response(
         JSON.stringify({ error: "Minimum withdrawal is NC 100" }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
@@ -160,20 +161,6 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // Check user balance
-    const { data: profile } = await supabaseService
-      .from("profiles")
-      .select("wallet_balance, balance_withdrawable")
-      .eq("user_id", user.id)
-      .single();
-
-    if (!profile || (profile.balance_withdrawable || 0) < ncAmount) {
-      return new Response(
-        JSON.stringify({ error: "Insufficient withdrawable balance" }),
-        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
     // Convert NC → USDT (1 USDT ≈ 1600 NC), then USDT → local fiat (approximate rates)
     const usdtAmount = ncAmount / 1600;
     const usdtToFiat: Record<string, number> = {
@@ -186,18 +173,10 @@ serve(async (req) => {
     const fiatAmount = Math.round(usdtAmount * (usdtToFiat[currency] || 1) * 100) / 100;
     const reference = crypto.randomUUID();
 
-    // Debit user balance first
-    await supabaseService
-      .from("profiles")
-      .update({
-        wallet_balance: (profile.wallet_balance || 0) - ncAmount,
-        balance_withdrawable: (profile.balance_withdrawable || 0) - ncAmount,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("user_id", user.id);
+    await reserveWithdrawal(supabaseService, user.id, ncAmount, transactionPin, reference);
 
     // Record pending transaction (correct schema: kind, currency, metadata)
-    await supabaseService.from("wallet_transactions").insert({
+    const { error: ledgerError } = await supabaseService.from("wallet_transactions").insert({
       user_id: user.id,
       amount: -ncAmount,
       currency: "NC",
@@ -212,25 +191,15 @@ serve(async (req) => {
         account_number: accountNumber,
       },
     });
+    if (ledgerError) {
+      await refundWithdrawal(supabaseService, reference);
+      throw new Error("Failed to record withdrawal transaction");
+    }
 
-    // Helper to safely refund the user (re-reads current balances to avoid races)
+    // Refund through the atomic balance function so concurrent withdrawals remain safe.
     const refundUser = async (errorMsg: string) => {
-      const { data: current } = await supabaseService
-        .from("profiles")
-        .select("wallet_balance, balance_withdrawable")
-        .eq("user_id", user.id)
-        .single();
-      if (current) {
-        await supabaseService
-          .from("profiles")
-          .update({
-            wallet_balance: (current.wallet_balance || 0) + ncAmount,
-            balance_withdrawable: (current.balance_withdrawable || 0) + ncAmount,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("user_id", user.id);
-      }
-      await supabaseService
+      await refundWithdrawal(supabaseService, reference);
+      const { error } = await supabaseService
         .from("wallet_transactions")
         .update({
           status: "failed",
@@ -239,17 +208,26 @@ serve(async (req) => {
         })
         .eq("reference", reference)
         .eq("user_id", user.id);
+      if (error) throw new Error("Failed to update failed withdrawal record");
     };
 
     // Step 1: Resolve account name to validate before sending money
-    const { response: resolveResp, data: resolveData, rawText: resolveRawText } = await callIvoryPay("/v1/fiat-transfer/account-resolution", {
-      method: "POST",
-      body: JSON.stringify({
-        accountNumber: String(accountNumber).trim(),
-        bankCode: String(bankCode).trim(),
-        currency: String(currency).toUpperCase(),
-      }),
-    });
+    let resolveResp: Response;
+    let resolveData: any;
+    let resolveRawText: string;
+    try {
+      ({ response: resolveResp, data: resolveData, rawText: resolveRawText } = await callIvoryPay("/v1/fiat-transfer/account-resolution", {
+        method: "POST",
+        body: JSON.stringify({
+          accountNumber: String(accountNumber).trim(),
+          bankCode: String(bankCode).trim(),
+          currency: String(currency).toUpperCase(),
+        }),
+      }));
+    } catch (error: any) {
+      await refundUser(error.message || "Account resolution request failed");
+      throw error;
+    }
     console.log("[IVORYPAY-WITHDRAWAL] Account resolution status:", resolveResp.status, "success:", resolveData?.status ?? resolveData?.success ?? null);
 
     if (!resolveResp.ok || resolveData?.status === false || resolveData?.success === false) {
@@ -291,7 +269,8 @@ serve(async (req) => {
 
     // Payout accepted — keep status pending until webhook confirms SUCCESS/FAILED
     // (do NOT mark completed here, do NOT insert crypto_transactions yet)
-    await supabaseService
+    await commitWithdrawal(supabaseService, reference);
+    const { error: finalLedgerError } = await supabaseService
       .from("wallet_transactions")
       .update({
         kind: "withdrawal",
@@ -308,6 +287,9 @@ serve(async (req) => {
       })
       .eq("reference", reference)
       .eq("user_id", user.id);
+    if (finalLedgerError) {
+      throw new Error("Withdrawal accepted, but its transaction record could not be updated");
+    }
 
     return new Response(
       JSON.stringify({

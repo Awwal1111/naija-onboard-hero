@@ -9,8 +9,11 @@ Comprehensive security features have been implemented across all sensitive opera
 Added PIN verification to:
 - ✅ **Quidax Ramp Withdrawals** (Sell/Bank Withdrawal) - PIN required before initiating withdrawal
 - ✅ **Crypto Withdrawals** - PIN required for all crypto withdrawals (cUSD, USDT, CELO)
+- ✅ **IvoryPay and Pretium Withdrawals** - PIN verified by the server before debiting funds
 - ✅ **Money Transfers** - Already had PIN (confirmed working)
 - ✅ **VTU Services** - Already had PIN (airtime, data, electricity, cable, betting)
+
+Withdrawal edge functions now enforce PIN verification server-side. The database stores a bcrypt hash for this check, throttles incorrect attempts, and atomically reserves both wallet balances before payout. Reservations are finalized or refunded by reference to prevent stale-balance updates and duplicate refunds.
 
 ### 2. Biometric Authentication
 - ✅ **Web Authentication API** - Uses device fingerprint/Face ID
@@ -95,8 +98,8 @@ Added columns:
 4. User can:
    - Use biometric (if enabled)
    - Enter 4-digit PIN manually
-5. PIN is verified against profile
-6. Action proceeds if PIN is correct
+5. The withdrawal endpoint verifies the PIN hash and applies the per-user attempt limit
+6. The database atomically checks and reserves the available balance before payout
 
 ### Biometric Authentication Flow
 1. User enables biometric in Settings → 2FA
@@ -121,8 +124,9 @@ Added columns:
 ## 🔒 Security Features
 
 ### PIN Security
-- ✅ Stored as plain text in profile (consider hashing in production)
-- ✅ Required for all withdrawals and sensitive operations
+- ✅ Withdrawal endpoints verify a bcrypt hash server-side and limit failed attempts
+- ⚠️ The legacy plaintext `transaction_pin` column remains for existing client-side PIN flows; those other flows still need migration before plaintext can be removed
+- ✅ Required for withdrawals as well as existing sensitive operations
 - ✅ 4-digit numeric format
 - ✅ Setup required before first transaction
 - ✅ Can be changed in Settings

@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { ethers } from "https://esm.sh/ethers@6.7.0";
 import CryptoJS from "https://esm.sh/crypto-js@4.1.1";
 import { sendAllNotifications } from '../_shared/notification-helper.ts';
+import { commitWithdrawal, refundWithdrawal, reserveWithdrawal } from '../_shared/withdrawal-security.ts';
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -36,6 +37,10 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let fundsReserved = false;
+  let payoutSubmitted = false;
+  let withdrawalReference: string | null = null;
+
   try {
     const authHeader = req.headers.get("authorization");
     if (!authHeader) {
@@ -49,7 +54,7 @@ serve(async (req) => {
       throw new Error("Unauthorized");
     }
 
-    const { walletAddress: rawWalletAddress, ncAmount, currency } = await req.json();
+    const { walletAddress: rawWalletAddress, ncAmount, currency, transactionPin } = await req.json();
 
     // Validate and checksum the address
     if (!rawWalletAddress || !ethers.isAddress(rawWalletAddress)) {
@@ -59,7 +64,7 @@ serve(async (req) => {
     // Convert to checksummed address to avoid checksum errors
     const walletAddress = ethers.getAddress(rawWalletAddress);
 
-    if (!ncAmount || ncAmount < MIN_WITHDRAWAL_NC) {
+    if (!Number.isFinite(ncAmount) || ncAmount < MIN_WITHDRAWAL_NC) {
       throw new Error(`Minimum withdrawal is ${MIN_WITHDRAWAL_NC} NC`);
     }
 
@@ -83,8 +88,8 @@ serve(async (req) => {
     
     const encryptedWallet = secrets?.encrypted_wallet || (profile as any)?.encrypted_wallet;
 
-    if (!profile || profile.balance_withdrawable < ncAmount) {
-      throw new Error("Insufficient withdrawable balance");
+    if (!profile) {
+      throw new Error("User profile not found");
     }
 
     // Get exchange rate (USD to NGN) with retry logic
@@ -146,6 +151,10 @@ serve(async (req) => {
 
     console.log(`[WITHDRAWAL] Final: ${ncAmount} NC → ${cryptoAmount.toFixed(6)} ${currency}`);
 
+    withdrawalReference = crypto.randomUUID();
+    await reserveWithdrawal(supabase, user.id, ncAmount, transactionPin, withdrawalReference);
+    fundsReserved = true;
+
     // Create transaction record
     const { data: txRecord, error: txError } = await supabase
       .from("crypto_transactions")
@@ -164,6 +173,8 @@ serve(async (req) => {
       .single();
 
     if (txError) {
+      await refundWithdrawal(supabase, withdrawalReference);
+      fundsReserved = false;
       console.error("[WITHDRAWAL] ❌ Failed to create transaction record:", txError);
       console.error("[WITHDRAWAL] Error details:", JSON.stringify(txError, null, 2));
       throw new Error(`Failed to create transaction record: ${txError.message || JSON.stringify(txError)}`);
@@ -171,27 +182,20 @@ serve(async (req) => {
 
     console.log(`[WITHDRAWAL] ✅ Transaction record created with ID: ${txRecord.id}`);
 
-    // Deduct from user balance first
-    const { error: walletError } = await supabase
-      .from("profiles")
-      .update({
-        wallet_balance: profile.wallet_balance - ncAmount,
-        balance_withdrawable: profile.balance_withdrawable - ncAmount
-      })
-      .eq("user_id", user.id);
-
-    if (walletError) {
-      throw new Error("Failed to update wallet balance");
-    }
-
     // Log wallet transaction
-    await supabase.from("wallet_transactions").insert({
+    const { error: walletTransactionError } = await supabase.from("wallet_transactions").insert({
       user_id: user.id,
       kind: "withdrawal",
       amount: -ncAmount,
       status: "processing",
-      reference: `Crypto withdrawal: ${cryptoAmount} ${currency} to ${walletAddress}`
+      reference: `${withdrawalReference}: Crypto withdrawal: ${cryptoAmount} ${currency} to ${walletAddress}`
     });
+    if (walletTransactionError) {
+      await refundWithdrawal(supabase, withdrawalReference);
+      fundsReserved = false;
+      await supabase.from("crypto_transactions").update({ status: "failed" }).eq("id", txRecord.id);
+      throw new Error("Failed to record withdrawal transaction");
+    }
 
     // Send blockchain transaction
     try {
@@ -353,8 +357,11 @@ serve(async (req) => {
         
         console.log(`[WITHDRAWAL] ✅ Sufficient balance, proceeding with transfer...`);
         const tx = await tokenContract.transfer(walletAddress, amount);
+        payoutSubmitted = true;
         const receipt = await tx.wait();
         txHash = receipt.hash;
+        await commitWithdrawal(supabase, withdrawalReference);
+        fundsReserved = false;
         console.log(`[WITHDRAWAL] ✅ ${currency} sent successfully: ${txHash}`);
       } else {
         // Send native CELO
@@ -376,8 +383,11 @@ serve(async (req) => {
           to: walletAddress,
           value: amount
         });
+        payoutSubmitted = true;
         const receipt = await tx.wait();
         txHash = receipt.hash;
+        await commitWithdrawal(supabase, withdrawalReference);
+        fundsReserved = false;
         console.log(`[WITHDRAWAL] ✅ CELO sent: ${txHash}`);
       }
 
@@ -443,27 +453,28 @@ serve(async (req) => {
     } catch (blockchainError) {
       console.error("Blockchain error:", blockchainError);
 
-      // Refund user on blockchain error
-      await supabase
-        .from("profiles")
-        .update({
-          wallet_balance: profile.wallet_balance,
-          balance_withdrawable: profile.balance_withdrawable
-        })
-        .eq("user_id", user.id);
+      if (!payoutSubmitted && fundsReserved && withdrawalReference) {
+        await refundWithdrawal(supabase, withdrawalReference);
+        fundsReserved = false;
+      }
 
-      await supabase
-        .from("crypto_transactions")
-        .update({
-          status: "failed",
-          error_message: blockchainError.message
-        })
-        .eq("id", txRecord.id);
+      if (!payoutSubmitted) {
+        await supabase
+          .from("crypto_transactions")
+          .update({
+            status: "failed",
+            error_message: blockchainError.message
+          })
+          .eq("id", txRecord.id);
+      }
 
       throw new Error(`Blockchain transaction failed: ${blockchainError.message}`);
     }
   } catch (error) {
     console.error("Withdrawal error:", error);
+    if (fundsReserved && !payoutSubmitted && withdrawalReference) {
+      await refundWithdrawal(supabase, withdrawalReference);
+    }
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500
