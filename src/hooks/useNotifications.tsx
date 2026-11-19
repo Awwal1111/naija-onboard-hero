@@ -249,6 +249,7 @@ export const useNotifications = () => {
           .from('push_subscriptions')
           .delete()
           .eq('user_id', user.id)
+          .eq('endpoint', pushSubscription.endpoint)
       }
       
       toast({

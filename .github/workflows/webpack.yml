@@ -1,4 +1,4 @@
-name: NodeJS with Webpack
+name: NodeJS Build
 
 on:
   push:
@@ -22,7 +22,9 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
 
-    - name: Build
+    - name: Install dependencies
       run: |
-        npm install
-        npx webpack
+        npm ci
+
+    - name: Build
+      run: npm run build
