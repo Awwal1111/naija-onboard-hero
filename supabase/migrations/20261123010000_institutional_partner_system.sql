@@ -151,7 +151,7 @@ AS $$
 DECLARE v_partner public.partners%ROWTYPE;
 BEGIN
   IF NOT public.is_institutional_partner_admin() THEN RAISE EXCEPTION 'Not authorized'; END IF;
-  IF p_amount <= 0 THEN RAISE EXCEPTION 'Payout amount must be greater than zero'; END IF;
+  IF p_amount IS NULL OR p_amount <= 0 THEN RAISE EXCEPTION 'Payout amount must be greater than zero'; END IF;
   SELECT * INTO v_partner FROM public.partners WHERE id = p_partner_id FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'Partner not found'; END IF;
   IF p_amount > (v_partner.total_earned - v_partner.total_paid_out) THEN
