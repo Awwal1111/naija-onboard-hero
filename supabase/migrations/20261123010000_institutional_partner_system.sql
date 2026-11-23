@@ -86,6 +86,10 @@ BEGIN
   IF NOT public.is_institutional_partner_admin() THEN
     RAISE EXCEPTION 'Not authorized';
   END IF;
+  SELECT COALESCE(SUM(gross_amount), 0) INTO v_gross_volume
+  FROM public.partner_payout_logs
+  WHERE partner_id = v_partner.id AND deal_type IN ('gig_order','hire_contract');
+
   SELECT COALESCE(jsonb_agg(jsonb_build_object(
     'id', p.id, 'name', p.name, 'slug', p.slug,
     'partner_cut_pct', p.partner_cut_pct,
@@ -185,7 +189,7 @@ RETURNS JSONB
 LANGUAGE plpgsql SECURITY DEFINER
 SET search_path = public, extensions
 AS $
-DECLARE v_partner public.partners%ROWTYPE; v_deals JSONB;
+DECLARE v_partner public.partners%ROWTYPE; v_deals JSONB; v_gross_volume NUMERIC := 0;
 BEGIN
   SELECT * INTO v_partner FROM public.partners
   WHERE slug = lower(trim(p_slug)) AND is_active = true;
@@ -213,6 +217,7 @@ BEGIN
     'success', true, 'partner_name', v_partner.name, 'slug', v_partner.slug,
     'stats', jsonb_build_object(
       'students_registered', (SELECT COUNT(*) FROM public.profiles WHERE partner_id = v_partner.id),
+      'gross_volume', v_gross_volume,
       'total_earned', v_partner.total_earned,
       'total_paid_out', v_partner.total_paid_out,
       'unpaid_balance', v_partner.total_earned - v_partner.total_paid_out
@@ -251,6 +256,31 @@ AFTER INSERT ON public.profiles
 FOR EACH ROW EXECUTE FUNCTION public.attach_institutional_partner_at_signup();
 
 REVOKE ALL ON FUNCTION public.attach_institutional_partner_at_signup() FROM PUBLIC, anon, authenticated;
+
+
+-- Allows a newly authenticated OAuth signup to apply a locally stored partner slug.
+-- Existing accounts older than 24 hours and already-attributed accounts cannot be reassigned.
+CREATE OR REPLACE FUNCTION public.attach_institutional_partner_attribution(p_slug TEXT)
+RETURNS BOOLEAN
+LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public
+AS $
+DECLARE v_user UUID := auth.uid();
+BEGIN
+  IF v_user IS NULL THEN RETURN FALSE; END IF;
+  UPDATE public.profiles pr
+  SET partner_id = p.id
+  FROM public.partners p
+  WHERE pr.user_id = v_user
+    AND pr.partner_id IS NULL
+    AND pr.created_at >= now() - interval '24 hours'
+    AND p.slug = lower(trim(p_slug))
+    AND p.is_active = true;
+  RETURN FOUND;
+END;
+$;
+REVOKE ALL ON FUNCTION public.attach_institutional_partner_attribution(TEXT) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.attach_institutional_partner_attribution(TEXT) TO authenticated;
 
 -- Atomic partner-aware gig and hire settlement. Existing rows remain unchanged.
 CREATE OR REPLACE FUNCTION public.complete_gig_order(p_order_id uuid)
@@ -422,6 +452,7 @@ REVOKE ALL ON FUNCTION public.admin_record_institutional_partner_payout(UUID,NUM
 REVOKE ALL ON FUNCTION public.get_public_institutional_partner(TEXT) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.verify_partner_portal(TEXT,TEXT) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.is_institutional_partner_admin() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.attach_institutional_partner_attribution(TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_list_institutional_partners() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_create_institutional_partner(TEXT,TEXT,NUMERIC,NUMERIC,TEXT,JSONB) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_set_institutional_partner_active(UUID,BOOLEAN) TO authenticated;
