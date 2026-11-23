@@ -214,6 +214,35 @@ BEGIN
 END;
 $$;
 
+-- Attach signup attribution from trusted auth metadata when the profile is created.
+CREATE OR REPLACE FUNCTION public.attach_institutional_partner_at_signup()
+RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public, auth
+AS $
+DECLARE v_slug TEXT;
+BEGIN
+  SELECT raw_user_meta_data ->> 'partner_slug'
+  INTO v_slug FROM auth.users WHERE id = NEW.user_id;
+  IF v_slug IS NOT NULL AND NEW.partner_id IS NULL THEN
+    UPDATE public.profiles pr
+    SET partner_id = p.id
+    FROM public.partners p
+    WHERE pr.user_id = NEW.user_id
+      AND p.slug = lower(trim(v_slug))
+      AND p.is_active = true;
+  END IF;
+  RETURN NEW;
+END;
+$;
+
+DROP TRIGGER IF EXISTS trg_attach_institutional_partner_signup ON public.profiles;
+CREATE TRIGGER trg_attach_institutional_partner_signup
+AFTER INSERT ON public.profiles
+FOR EACH ROW EXECUTE FUNCTION public.attach_institutional_partner_at_signup();
+
+REVOKE ALL ON FUNCTION public.attach_institutional_partner_at_signup() FROM PUBLIC, anon, authenticated;
+
 -- Atomic partner-aware gig and hire settlement. Existing rows remain unchanged.
 CREATE OR REPLACE FUNCTION public.complete_gig_order(p_order_id uuid)
 RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
