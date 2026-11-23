@@ -20,6 +20,7 @@ const SignUp = () => {
   const { toast } = useToast()
   const [searchParams] = useSearchParams()
   const inviteToken = searchParams.get('invite')
+  const partnerSlug = searchParams.get('partner') || (typeof window !== 'undefined' ? localStorage.getItem('nl_partner_slug') : null)
   
   const [formData, setFormData] = useState({
     fullName: '',
@@ -172,7 +173,8 @@ const SignUp = () => {
     const { error } = await signUp(
       formData.email || '', 
       formData.password || '', 
-      formData.fullName || 'User'
+      formData.fullName || 'User',
+      partnerSlug
     )
     
     if (!error && inviteToken) {
@@ -202,6 +204,7 @@ const SignUp = () => {
     setIsLoading(false)
     
     if (!error) {
+      if (partnerSlug) localStorage.removeItem('nl_partner_slug')
       navigate('/onboarding')
     }
   }
