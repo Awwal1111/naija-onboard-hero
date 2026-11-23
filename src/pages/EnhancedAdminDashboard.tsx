@@ -45,6 +45,7 @@ import { Briefcase as BriefcaseIcon } from 'lucide-react'
 import { AdminJobModeration } from '@/components/admin/AdminJobModeration'
 import { AdminQuickJobPoster } from '@/components/admin/AdminQuickJobPoster'
 import { AdminCourseModeration } from '@/components/admin/AdminCourseModeration'
+import { AdminPartnersSection } from '@/components/admin/AdminPartnersSection'
 
 
 // Admin Gigs Management Section
@@ -1423,6 +1424,7 @@ const EnhancedAdminDashboard = () => {
                 </TabsTrigger>
               )}
               {canAccessTab('wallet') && <TabsTrigger value="wallet">Wallet</TabsTrigger>}
+              {isAnyAdmin && <TabsTrigger value="partners">Partners</TabsTrigger>}
               {canAccessTab('api-sales') && (
                 <TabsTrigger value="api-sales">
                   <Code className="h-4 w-4 mr-1" />
@@ -1937,6 +1939,11 @@ const EnhancedAdminDashboard = () => {
                 <AdminManualDepositsSection />
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Institutional Partners Tab */}
+          <TabsContent value="partners" className="space-y-6">
+            <AdminPartnersSection />
           </TabsContent>
 
           {/* API Sales Tab */}
