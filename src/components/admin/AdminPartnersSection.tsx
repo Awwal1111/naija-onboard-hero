@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Copy, Plus, RefreshCw, Power, Wallet } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -33,7 +33,7 @@ export function AdminPartnersSection() {
   };
   useEffect(() => { void load(); }, []);
 
-  const create = async (e: React.FormEvent) => {
+  const create = async (e: FormEvent) => {
     e.preventDefault(); setSaving(true); setPin("");
     let payoutInfo: Record<string, unknown>;
     try { payoutInfo = JSON.parse(form.payout || "{}"); }
