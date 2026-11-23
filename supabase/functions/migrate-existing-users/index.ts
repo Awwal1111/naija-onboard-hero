@@ -18,10 +18,31 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Admin gate intentionally relaxed: this endpoint is idempotent (only
-    // creates wallets for users missing them) and the function is deployed
-    // with verify_jwt=false. Safe to invoke for backfill operations.
-    console.log('[MIGRATION] Auth gate bypassed for backfill run');
+    // SECURITY: this endpoint uses the service role key, creates wallets and private
+    // keys, and notifies users, so it must not be public. verify_jwt is off for this
+    // function, so authorise here: the service role key, or a signed-in admin.
+    const bearer = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '');
+    if (!bearer) {
+      return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    if (bearer !== supabaseKey) {
+      const { data: { user }, error: authError } = await supabase.auth.getUser(bearer);
+      if (authError || !user) {
+        return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      const { data: adminRole } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'admin')
+        .maybeSingle();
+      if (!adminRole) {
+        return new Response(JSON.stringify({ success: false, error: 'Admin access required' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+    }
 
     console.log('[MIGRATION] Starting wallet migration...');
 
@@ -70,7 +91,12 @@ serve(async (req) => {
     }
 
     console.log(`[MIGRATION] Processing ${toProcess.length} users`);
-    const encryptionSecret = Deno.env.get("WALLET_ENCRYPTION_SECRET") || "default_secret_change_in_production";
+    // Never fall back to a built-in key: wallet private keys must not be encrypted
+    // with a secret that is public in the source code.
+    const encryptionSecret = Deno.env.get("WALLET_ENCRYPTION_SECRET");
+    if (!encryptionSecret) {
+      throw new Error("WALLET_ENCRYPTION_SECRET is not set");
+    }
     const results = { success: [] as string[], failed: [] as { userId: string; error: string }[] };
 
     for (const p of toProcess) {

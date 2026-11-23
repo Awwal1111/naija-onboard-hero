@@ -20,6 +20,17 @@ const SMS_PRICING = {
   international: 25,  // 25 NC for international numbers
 };
 
+// Constant-time string comparison (avoids leaking the key through timing)
+function timingSafeEqual(a: string, b: string): boolean {
+  const enc = new TextEncoder();
+  const x = enc.encode(a);
+  const y = enc.encode(b);
+  let diff = x.length ^ y.length;
+  const len = Math.max(x.length, y.length);
+  for (let i = 0; i < len; i++) diff |= (x[i] ?? 0) ^ (y[i] ?? 0);
+  return diff === 0;
+}
+
 // Check if phone number is Nigerian
 function isNigerianNumber(phone: string): boolean {
   const cleaned = phone.replace(/\s+/g, '').replace(/-/g, '');
@@ -59,12 +70,32 @@ serve(async (req) => {
       );
     }
 
+    // SECURITY: this function sends SMS from the platform's number and can charge
+    // balances, so only trusted server-side callers (other Edge Functions that use
+    // the service role key) may call it. verify_jwt is off for this function, so the
+    // check has to happen here.
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+    const bearer = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '');
+    if (!serviceKey || !timingSafeEqual(bearer, serviceKey)) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      serviceKey
     );
 
     const { userId, phoneNumber, message, smsType = 'notification', skipCharge = false } = await req.json() as SMSRequest;
+
+    if (typeof message !== 'string' || !message.trim() || message.length > 1000) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid message' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     console.log('[SMS] ========================================');
     console.log('[SMS] Sending SMS notification');
@@ -142,15 +173,12 @@ serve(async (req) => {
         );
       }
 
-      // Deduct the SMS cost from user's withdrawable balance
-      const { error: deductError } = await supabase
-        .from('profiles')
-        .update({ 
-          balance_withdrawable: userBalance - smsCost 
-        })
-        .eq('user_id', userId);
+      // Deduct the SMS cost atomically (a single UPDATE with a balance check), so two
+      // simultaneous requests cannot both spend the same balance.
+      const { data: debited, error: deductError } = await supabase
+        .rpc('debit_user_balances', { p_user_id: userId, p_amount: smsCost });
 
-      if (deductError) {
+      if (deductError || debited !== true) {
         console.error('[SMS] Failed to deduct balance:', deductError);
         return new Response(
           JSON.stringify({ success: false, error: 'Failed to process SMS payment' }),
