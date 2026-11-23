@@ -112,7 +112,7 @@ BEGIN
   IF p_partner_cut_pct < 0 OR p_platform_fee_pct < 0 OR p_partner_cut_pct + p_platform_fee_pct > 100 THEN
     RAISE EXCEPTION 'Commission percentages must be non-negative and total no more than 100';
   END IF;
-  v_pin := 'NL-' || upper(encode(gen_random_bytes(4), 'hex'));
+  v_pin := 'NL-' || upper(encode(gen_random_bytes(8), 'hex'));
   INSERT INTO public.partners(
     name, slug, partner_cut_pct, platform_fee_pct, password_hash,
     plain_display_pin, website_url, payout_info
@@ -412,6 +412,7 @@ REVOKE ALL ON FUNCTION public.admin_set_institutional_partner_active(UUID,BOOLEA
 REVOKE ALL ON FUNCTION public.admin_record_institutional_partner_payout(UUID,NUMERIC,TEXT) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.get_public_institutional_partner(TEXT) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.verify_partner_portal(TEXT,TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.is_institutional_partner_admin() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_list_institutional_partners() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_create_institutional_partner(TEXT,TEXT,NUMERIC,NUMERIC,TEXT,JSONB) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_set_institutional_partner_active(UUID,BOOLEAN) TO authenticated;
