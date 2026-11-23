@@ -66,7 +66,7 @@ export const useAuth = () => {
     }
   }, [user, checkProfileAndRedirect])
 
-  const signUp = useCallback(async (email: string, password: string, fullName?: string) => {
+  const signUp = useCallback(async (email: string, password: string, fullName?: string, partnerSlug?: string | null) => {
     const ipCheck = await checkSignupAllowed()
     if (!ipCheck.allowed) {
       const error = { message: ipCheck.message || "Too many signups from your network. Please try again later." }
@@ -103,7 +103,7 @@ export const useAuth = () => {
       const { error, data } = await supabase.auth.signUp({
         email: email.trim(),
         password,
-        options: { data: { full_name: fullName || '' } }
+        options: { data: { full_name: fullName || '', ...(partnerSlug ? { partner_slug: partnerSlug } : {}) } }
       })
 
       if (error) {
