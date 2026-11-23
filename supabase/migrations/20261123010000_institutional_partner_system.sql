@@ -180,7 +180,8 @@ AS $$
   LEFT JOIN public.partners p ON p.slug = lower(trim(p_slug)) AND p.is_active = true;
 $$;
 
-CREATE OR REPLACE FUNCTION public.verify_partner_portal(p_slug TEXT, p_password TEXT)
+DROP FUNCTION IF EXISTS public.verify_partner_portal(TEXT, TEXT);
+CREATE FUNCTION public.verify_partner_portal(p_slug TEXT, p_pin TEXT)
 RETURNS JSONB
 LANGUAGE plpgsql SECURITY DEFINER
 SET search_path = public, extensions
@@ -189,8 +190,8 @@ DECLARE v_partner public.partners%ROWTYPE; v_deals JSONB; v_gross_volume NUMERIC
 BEGIN
   SELECT * INTO v_partner FROM public.partners
   WHERE slug = lower(trim(p_slug)) AND is_active = true;
-  IF NOT FOUND OR p_password IS NULL OR NOT (
-    v_partner.password_hash = crypt(trim(p_password), v_partner.password_hash)
+  IF NOT FOUND OR p_pin IS NULL OR NOT (
+    v_partner.password_hash = crypt(trim(p_pin), v_partner.password_hash)
     OR v_partner.password_hash = encode(digest(trim(p_password), 'sha256'), 'hex')
     OR v_partner.plain_display_pin = trim(p_password)
   ) THEN
