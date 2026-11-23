@@ -107,8 +107,8 @@ CREATE OR REPLACE FUNCTION public.admin_create_institutional_partner(
 )
 RETURNS JSONB
 LANGUAGE plpgsql SECURITY DEFINER
-SET search_path = public
-AS $$
+SET search_path = public, extensions
+AS $
 DECLARE v_pin TEXT; v_id UUID;
 BEGIN
   IF NOT public.is_institutional_partner_admin() THEN RAISE EXCEPTION 'Not authorized'; END IF;
@@ -183,8 +183,8 @@ $$;
 CREATE OR REPLACE FUNCTION public.verify_partner_portal(p_slug TEXT, p_password TEXT)
 RETURNS JSONB
 LANGUAGE plpgsql SECURITY DEFINER
-SET search_path = public
-AS $$
+SET search_path = public, extensions
+AS $
 DECLARE v_partner public.partners%ROWTYPE; v_deals JSONB;
 BEGIN
   SELECT * INTO v_partner FROM public.partners
@@ -361,8 +361,8 @@ BEGIN
   FOR UPDATE OF p;
 
   IF FOUND THEN
-    v_partner_share := ROUND(v_c.escrow_held * v_partner.partner_cut_pct / 100.0, 2);
-    v_fee := ROUND(v_c.escrow_held * v_partner.platform_fee_pct / 100.0, 2);
+    v_partner_share := ROUND(COALESCE(v_c.escrow_held, 0) * v_partner.partner_cut_pct / 100.0, 2);
+    v_fee := ROUND(COALESCE(v_c.escrow_held, 0) * v_partner.platform_fee_pct / 100.0, 2);
   ELSE
     v_fee := LEAST(COALESCE(v_c.platform_fee, 0), COALESCE(v_c.escrow_held, 0));
   END IF;
