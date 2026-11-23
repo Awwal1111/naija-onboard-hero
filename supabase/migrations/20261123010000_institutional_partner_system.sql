@@ -86,10 +86,6 @@ BEGIN
   IF NOT public.is_institutional_partner_admin() THEN
     RAISE EXCEPTION 'Not authorized';
   END IF;
-  SELECT COALESCE(SUM(gross_amount), 0) INTO v_gross_volume
-  FROM public.partner_payout_logs
-  WHERE partner_id = v_partner.id AND deal_type IN ('gig_order','hire_contract');
-
   SELECT COALESCE(jsonb_agg(jsonb_build_object(
     'id', p.id, 'name', p.name, 'slug', p.slug,
     'partner_cut_pct', p.partner_cut_pct,
@@ -200,6 +196,10 @@ BEGIN
   ) THEN
     RETURN jsonb_build_object('success', false, 'error', 'Invalid partner PIN or inactive partner');
   END IF;
+  SELECT COALESCE(SUM(gross_amount), 0) INTO v_gross_volume
+  FROM public.partner_payout_logs
+  WHERE partner_id = v_partner.id AND deal_type IN ('gig_order','hire_contract');
+
   SELECT COALESCE(jsonb_agg(jsonb_build_object(
     'id', d.id, 'deal_type', d.deal_type,
     'gross_amount', d.gross_amount,
