@@ -23,6 +23,23 @@ serve(async (req) => {
 
   try {
     const url = new URL(req.url);
+
+    // SECURITY: this endpoint is public (verify_jwt = false) and credits NC, so it
+    // must be authenticated. Set PRETIUM_WEBHOOK_SECRET in the Supabase function
+    // secrets and add `&secret=<value>` to the callback URL you give Pretium. Until
+    // the secret is set this check is skipped (so existing callbacks keep working),
+    // but the endpoint is NOT protected until you set it.
+    const expectedSecret = Deno.env.get("PRETIUM_WEBHOOK_SECRET");
+    if (expectedSecret) {
+      const provided = url.searchParams.get("secret") ?? req.headers.get("x-webhook-secret") ?? "";
+      if (provided !== expectedSecret) {
+        console.warn("[PRETIUM-WEBHOOK] rejected: bad or missing secret");
+        return new Response("unauthorized", { status: 401, headers: corsHeaders });
+      }
+    } else {
+      console.warn("[PRETIUM-WEBHOOK] PRETIUM_WEBHOOK_SECRET is not set: webhook is unauthenticated");
+    }
+
     const reference = url.searchParams.get("ref");
     const payload = await req.json().catch(() => ({}));
 
@@ -44,6 +61,19 @@ serve(async (req) => {
     if (!row) {
       console.warn("[PRETIUM-WEBHOOK] no matching tx for ref/txCode");
       return new Response("ok", { headers: corsHeaders });
+    }
+
+    // Claim the on-ramp release atomically: only the first request that moves the row
+    // to "released" may credit NC. A replayed or simultaneous webhook finds the row
+    // already released and credits nothing.
+    let claimedRelease = false;
+    if (row.type === "onramp" && isReleased) {
+      const { data: claimedRows } = await supabase.from("pretium_transactions")
+        .update({ status: "released", updated_at: new Date().toISOString() })
+        .eq("id", row.id)
+        .neq("status", "released")
+        .select("id");
+      claimedRelease = (claimedRows?.length ?? 0) > 0;
     }
 
     // Update the pretium tx itself
@@ -69,23 +99,18 @@ serve(async (req) => {
     // ===== On-ramp: when funds released to user wallet, credit NC balance =====
     if (row.type === "onramp" && (isReleased || status === "COMPLETE")) {
       // Only credit on the asset-release event (final), not the first collection event.
-      const shouldCredit = isReleased && row.status !== "released";
+      const shouldCredit = claimedRelease;
       if (shouldCredit) {
         const fiat = Number(row.fiat_amount || 0);
         const usdt = fiat * (USDT_PER_FIAT[row.currency] || 0);
         const nc = Math.round(usdt * NC_PER_USDT);
 
         if (nc > 0) {
-          const { data: profile } = await supabase
-            .from("profiles").select("wallet_balance, balance_withdrawable")
-            .eq("user_id", row.user_id).single();
-          if (profile) {
-            await supabase.from("profiles").update({
-              wallet_balance: (profile.wallet_balance || 0) + nc,
-              balance_withdrawable: (profile.balance_withdrawable || 0) + nc,
-              updated_at: new Date().toISOString(),
-            }).eq("user_id", row.user_id);
-
+          // Atomic credit (the old read-then-write could lose or double a credit).
+          const { data: credited } = await supabase.rpc("credit_user_balances", {
+            p_user_id: row.user_id, p_wallet: nc, p_withdrawable: nc,
+          });
+          if (credited === true) {
             await supabase.from("wallet_transactions").insert({
               user_id: row.user_id,
               amount: nc,

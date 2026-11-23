@@ -125,7 +125,10 @@ Deno.serve(async (req) => {
     }
 
     // Update transaction status
-    const { error: updateError } = await supabase
+    // The `.neq('status', newStatus)` filter means only the first delivery of a given
+    // status actually changes the row. A repeated or simultaneous webhook updates
+    // nothing, so it cannot trigger a second refund below.
+    const { data: changedRows, error: updateError } = await supabase
       .from('wallet_transactions')
       .update({
         status: newStatus,
@@ -137,7 +140,10 @@ Deno.serve(async (req) => {
           webhook_received_at: new Date().toISOString(),
         },
       })
-      .eq('id', transaction.id);
+      .eq('id', transaction.id)
+      .neq('status', newStatus)
+      .select('id');
+    const statusChanged = (changedRows?.length ?? 0) > 0;
 
     if (updateError) {
       console.error('Error updating transaction:', updateError);
@@ -147,19 +153,17 @@ Deno.serve(async (req) => {
     console.log('Transaction updated to status:', newStatus);
 
     // Handle refunds for failed/refunded transactions
-    if (shouldRefund && transaction.status !== 'refunded' && transaction.status !== 'failed') {
+    if (shouldRefund && statusChanged && transaction.status !== 'refunded' && transaction.status !== 'failed') {
       const refundAmount = Math.abs(transaction.amount);
       
       console.log('Processing refund of', refundAmount, 'NC for user', transaction.user_id);
 
-      const { error: refundError } = await supabase
-        .from('profiles')
-        .update({
-          wallet_balance: supabase.raw(`wallet_balance + ${refundAmount}`),
-          balance_withdrawable: supabase.raw(`balance_withdrawable + ${refundAmount}`),
-          updated_at: new Date().toISOString(),
-        })
-        .eq('user_id', transaction.user_id);
+      // `.raw()` does not exist in supabase-js, so the old refund always failed.
+      const { error: refundError } = await supabase.rpc('credit_user_balances', {
+        p_user_id: transaction.user_id,
+        p_wallet: refundAmount,
+        p_withdrawable: refundAmount,
+      });
 
       if (refundError) {
         console.error('Error processing refund:', refundError);

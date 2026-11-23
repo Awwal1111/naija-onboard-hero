@@ -63,18 +63,24 @@ serve(async (req) => {
       throw new Error("Escrow payment is not in holding status");
     }
 
-    // Update escrow status to refunded
-    const { error: updateError } = await supabaseService
+    // Claim the escrow atomically so two simultaneous refunds cannot both pay out.
+    const { data: claimed, error: updateError } = await supabaseService
       .from('escrow_payments')
       .update({
         status: 'refunded',
         refunded_at: new Date().toISOString()
       })
-      .eq('id', escrow_id);
+      .eq('id', escrow_id)
+      .eq('status', 'holding')
+      .select('id')
+      .maybeSingle();
 
     if (updateError) {
       console.error("Error updating escrow:", updateError);
       throw new Error("Failed to refund escrow payment");
+    }
+    if (!claimed) {
+      throw new Error("Escrow payment is not in holding status");
     }
 
     // Add funds back to client's wallet
@@ -104,12 +110,15 @@ serve(async (req) => {
     }
 
     // Also update profiles table for backward compatibility
-    await supabaseService
-      .from('profiles')
-      .update({
-        wallet_balance: supabaseService.raw(`wallet_balance + ${escrow.amount}`)
-      })
-      .eq('user_id', escrow.client_id);
+    // (`.raw()` does not exist in supabase-js; use an atomic database function.)
+    const { error: creditError } = await supabaseService.rpc('credit_user_balances', {
+      p_user_id: escrow.client_id,
+      p_wallet: escrow.amount,
+      p_withdrawable: 0
+    });
+    if (creditError) {
+      console.error("Error crediting profile balance:", creditError);
+    }
 
     // Create wallet transaction for client
     await supabaseService

@@ -59,19 +59,30 @@ serve(async (req) => {
       throw new Error("Escrow payment is not in holding status");
     }
 
-    // Update escrow status to released
-    const { error: updateError } = await supabaseService
+    // Claim the escrow atomically: the status filter makes the UPDATE succeed for
+    // only one request, so two simultaneous releases cannot both pay the expert.
+    const { data: claimed, error: updateError } = await supabaseService
       .from('escrow_payments')
       .update({
         status: 'released',
         released_at: new Date().toISOString()
       })
-      .eq('id', escrow_id);
+      .eq('id', escrow_id)
+      .eq('status', 'holding')
+      .select('id')
+      .maybeSingle();
 
     if (updateError) {
       console.error("Error updating escrow:", updateError);
       throw new Error("Failed to release escrow payment");
     }
+    if (!claimed) {
+      throw new Error("Escrow payment is not in holding status");
+    }
+
+    // Platform takes 5%; the expert receives the rest.
+    const commission = escrow.amount * 0.05;
+    const expertCut = escrow.amount - commission;
 
     // Add funds to expert's wallet
     const { data: expertWallet, error: walletFetchError } = await supabaseService
@@ -86,43 +97,44 @@ serve(async (req) => {
         .from('wallets')
         .insert({
           user_id: escrow.expert_id,
-          balance: escrow.amount
+          balance: expertCut
         });
     } else {
       // Update existing wallet
       await supabaseService
         .from('wallets')
         .update({
-          balance: expertWallet.balance + escrow.amount,
+          balance: expertWallet.balance + expertCut,
           last_update: new Date().toISOString()
         })
         .eq('user_id', escrow.expert_id);
     }
 
-    // Also update profiles table for backward compatibility
-    await supabaseService
-      .from('profiles')
-      .update({
-        wallet_balance: supabaseService.raw(`wallet_balance + ${escrow.amount}`)
-      })
-      .eq('user_id', escrow.expert_id);
+    // Also update profiles table for backward compatibility. This used to call
+    // supabase-js `.raw()`, which does not exist and made the whole function throw
+    // after the escrow was already marked released. Use an atomic database function.
+    const { error: creditError } = await supabaseService.rpc('credit_user_balances', {
+      p_user_id: escrow.expert_id,
+      p_wallet: expertCut,
+      p_withdrawable: 0
+    });
+    if (creditError) {
+      console.error("Error crediting profile balance:", creditError);
+    }
 
     // Create wallet transaction for expert
     await supabaseService
       .from('wallet_transactions')
       .insert({
         user_id: escrow.expert_id,
-        amount: escrow.amount,
+        amount: expertCut,
         transaction_type: 'credit',
         description: `Escrow payment released - Job ${escrow.job_id}`,
         reference_id: escrow_id,
         status: 'completed'
       });
 
-    // Create commission record (platform takes 5%)
-    const commission = escrow.amount * 0.05;
-    const expertCut = escrow.amount - commission;
-
+    // Create commission record
     await supabaseService
       .from('commissions')
       .insert({
