@@ -15,6 +15,9 @@ ALTER TABLE public.profiles
 CREATE INDEX IF NOT EXISTS idx_profiles_partner_id ON public.profiles(partner_id);
 
 ALTER TABLE public.partner_payout_logs
+  ADD COLUMN IF NOT EXISTS gig_id UUID,
+  ADD COLUMN IF NOT EXISTS amount NUMERIC(12,2) NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS type TEXT,
   ADD COLUMN IF NOT EXISTS deal_type TEXT,
   ADD COLUMN IF NOT EXISTS reference_id UUID,
   ADD COLUMN IF NOT EXISTS gross_amount NUMERIC(12,2) NOT NULL DEFAULT 0,
@@ -25,8 +28,10 @@ ALTER TABLE public.partner_payout_logs
 ALTER TABLE public.partner_payout_logs ALTER COLUMN gig_id DROP NOT NULL;
 
 UPDATE public.partner_payout_logs
-SET deal_type = CASE WHEN type = 'payout_made' THEN 'payout' ELSE 'gig_order' END
-WHERE deal_type IS NULL;
+SET deal_type = COALESCE(deal_type, CASE WHEN type = 'payout_made' THEN 'payout' ELSE 'gig_order' END),
+    type = COALESCE(type, CASE WHEN deal_type = 'payout' THEN 'payout_made' ELSE 'commission_earned' END),
+    amount = CASE WHEN amount = 0 THEN COALESCE(commission_amount, gross_amount, 0) ELSE amount END
+WHERE deal_type IS NULL OR type IS NULL OR amount = 0;
 
 ALTER TABLE public.partner_payout_logs
   DROP CONSTRAINT IF EXISTS partner_payout_logs_deal_type_check;
