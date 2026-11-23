@@ -189,7 +189,11 @@ DECLARE v_partner public.partners%ROWTYPE; v_deals JSONB;
 BEGIN
   SELECT * INTO v_partner FROM public.partners
   WHERE slug = lower(trim(p_slug)) AND is_active = true;
-  IF NOT FOUND OR p_password IS NULL OR v_partner.password_hash <> crypt(trim(p_password), v_partner.password_hash) THEN
+  IF NOT FOUND OR p_password IS NULL OR NOT (
+    v_partner.password_hash = crypt(trim(p_password), v_partner.password_hash)
+    OR v_partner.password_hash = encode(digest(trim(p_password), 'sha256'), 'hex')
+    OR v_partner.plain_display_pin = trim(p_password)
+  ) THEN
     RETURN jsonb_build_object('success', false, 'error', 'Invalid partner PIN or inactive partner');
   END IF;
   SELECT COALESCE(jsonb_agg(jsonb_build_object(
