@@ -51,7 +51,7 @@ export function AdminPartnersSection() {
     const {error}=await supabase.rpc("admin_set_institutional_partner_active",{p_partner_id:p.id,p_is_active:!p.is_active});
     if(error) toast({title:"Update failed",description:error.message,variant:"destructive"}); else await load();
   };
-  const recordPayout = async (e: React.FormEvent) => {
+  const recordPayout = async (e: FormEvent) => {
     e.preventDefault();
     const {error}=await supabase.rpc("admin_record_institutional_partner_payout",{
       p_partner_id:payout.partnerId,p_amount:Number(payout.amount),p_notes:payout.notes || null
