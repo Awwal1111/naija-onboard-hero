@@ -10,9 +10,6 @@ ALTER TABLE public.partners
 ALTER TABLE public.partners
   ALTER COLUMN plain_display_pin DROP NOT NULL;
 
-UPDATE public.partners SET plain_display_pin = NULL
-WHERE plain_display_pin IS NOT NULL;
-
 ALTER TABLE public.profiles
   ADD COLUMN IF NOT EXISTS partner_id UUID REFERENCES public.partners(id) ON DELETE SET NULL;
 CREATE INDEX IF NOT EXISTS idx_profiles_partner_id ON public.profiles(partner_id);
@@ -216,6 +213,168 @@ BEGIN
   );
 END;
 $$;
+
+-- Atomic partner-aware gig and hire settlement. Existing rows remain unchanged.
+CREATE OR REPLACE FUNCTION public.complete_gig_order(p_order_id uuid)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
+AS $function$
+DECLARE
+  v_actor uuid := auth.uid();
+  v_order RECORD;
+  v_partner RECORD;
+  v_partner_share numeric := 0;
+  v_platform_share numeric := 0;
+  v_seller_amount numeric := 0;
+BEGIN
+  IF v_actor IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Authentication required');
+  END IF;
+  SELECT * INTO v_order FROM public.gig_orders WHERE id = p_order_id FOR UPDATE;
+  IF NOT FOUND THEN RETURN jsonb_build_object('success', false, 'error', 'Order not found'); END IF;
+  IF v_order.buyer_id IS DISTINCT FROM v_actor THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Only the buyer can complete the order');
+  END IF;
+  IF v_order.status NOT IN ('delivered','revision_requested','in_progress','accepted') THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Order cannot be completed in current state');
+  END IF;
+
+  SELECT p.id, p.partner_cut_pct, p.platform_fee_pct
+  INTO v_partner
+  FROM public.profiles pr
+  JOIN public.partners p ON p.id = pr.partner_id AND p.is_active = true
+  WHERE pr.user_id = v_order.seller_id
+  FOR UPDATE OF p;
+
+  IF FOUND THEN
+    v_partner_share := ROUND(v_order.amount * v_partner.partner_cut_pct / 100.0, 2);
+    v_platform_share := ROUND(v_order.amount * v_partner.platform_fee_pct / 100.0, 2);
+  ELSE
+    v_platform_share := COALESCE(v_order.platform_fee, 0);
+  END IF;
+  v_seller_amount := v_order.amount - v_partner_share - v_platform_share;
+  IF v_seller_amount < 0 THEN
+    RAISE EXCEPTION 'Partner and platform fees exceed gig gross amount';
+  END IF;
+
+  UPDATE public.profiles
+  SET balance_withdrawable = balance_withdrawable + v_seller_amount,
+      wallet_balance = wallet_balance + v_seller_amount, updated_at = now()
+  WHERE user_id = v_order.seller_id;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Seller profile not found'; END IF;
+
+  UPDATE public.gig_orders SET status = 'completed', completed_at = now(), updated_at = now()
+  WHERE id = p_order_id;
+
+  INSERT INTO public.wallet_transactions(user_id, kind, amount, status, reference, metadata)
+  VALUES (v_order.seller_id, 'gig_order_payout', v_seller_amount, 'completed',
+    'Gig order completed: ' || v_order.title,
+    jsonb_build_object('order_id', p_order_id, 'gross', v_order.amount,
+      'partner_commission', v_partner_share, 'platform_fee', v_platform_share));
+
+  IF v_partner_share > 0 THEN
+    UPDATE public.partners SET total_earned = total_earned + v_partner_share WHERE id = v_partner.id;
+    INSERT INTO public.partner_payout_logs(
+      partner_id, gig_id, amount, type, deal_type, reference_id,
+      gross_amount, commission_amount, platform_fee_amount, notes
+    ) VALUES (
+      v_partner.id, p_order_id, v_partner_share, 'commission_earned', 'gig_order',
+      p_order_id, v_order.amount, v_partner_share, v_platform_share, 'Completed gig commission'
+    );
+  END IF;
+
+  PERFORM public.credit_platform_revenue(
+    'gig_order_fee', v_platform_share, v_order.buyer_id, p_order_id::text,
+    jsonb_build_object('seller_id', v_order.seller_id, 'gross', v_order.amount,
+      'partner_id', v_partner.id, 'partner_commission', v_partner_share)
+  );
+  RETURN jsonb_build_object('success', true, 'seller_amount', v_seller_amount,
+    'partner_commission', v_partner_share, 'platform_fee', v_platform_share);
+END;
+$function$;
+
+CREATE OR REPLACE FUNCTION public.complete_hire_contract(p_contract_id uuid)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
+AS $function$
+DECLARE
+  v_actor uuid := auth.uid();
+  v_c RECORD;
+  v_partner RECORD;
+  v_pay numeric;
+  v_partner_share numeric := 0;
+  v_fee numeric := 0;
+BEGIN
+  IF v_actor IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Authentication required');
+  END IF;
+  SELECT * INTO v_c FROM public.hire_contracts WHERE id = p_contract_id FOR UPDATE;
+  IF NOT FOUND THEN RETURN jsonb_build_object('success', false, 'error', 'Contract not found'); END IF;
+  IF v_c.client_id IS DISTINCT FROM v_actor THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Only client can complete contract');
+  END IF;
+  IF v_c.status <> 'active' THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Contract not active');
+  END IF;
+
+  SELECT p.id, p.partner_cut_pct, p.platform_fee_pct
+  INTO v_partner
+  FROM public.profiles pr
+  JOIN public.partners p ON p.id = pr.partner_id AND p.is_active = true
+  WHERE pr.user_id = v_c.expert_id
+  FOR UPDATE OF p;
+
+  IF FOUND THEN
+    v_partner_share := ROUND(v_c.escrow_held * v_partner.partner_cut_pct / 100.0, 2);
+    v_fee := ROUND(v_c.escrow_held * v_partner.platform_fee_pct / 100.0, 2);
+  ELSE
+    v_fee := LEAST(COALESCE(v_c.platform_fee, 0), COALESCE(v_c.escrow_held, 0));
+  END IF;
+  v_pay := COALESCE(v_c.escrow_held, 0) - v_partner_share - v_fee;
+  IF v_pay < 0 THEN RAISE EXCEPTION 'Partner and platform fees exceed contract escrow'; END IF;
+
+  IF v_pay > 0 THEN
+    UPDATE public.profiles SET balance_withdrawable = balance_withdrawable + v_pay,
+      wallet_balance = wallet_balance + v_pay, updated_at = now()
+    WHERE user_id = v_c.expert_id;
+    IF NOT FOUND THEN RAISE EXCEPTION 'Expert profile not found'; END IF;
+    INSERT INTO public.wallet_transactions(user_id, kind, amount, status, reference, metadata)
+    VALUES (v_c.expert_id, 'hire_contract_payout', v_pay, 'completed',
+      'Hire contract payout: ' || v_c.title,
+      jsonb_build_object('contract_id', p_contract_id, 'partner_commission', v_partner_share, 'platform_fee', v_fee));
+  END IF;
+
+  IF v_partner_share > 0 THEN
+    UPDATE public.partners SET total_earned = total_earned + v_partner_share WHERE id = v_partner.id;
+    INSERT INTO public.partner_payout_logs(
+      partner_id, gig_id, amount, type, deal_type, reference_id,
+      gross_amount, commission_amount, platform_fee_amount, notes
+    ) VALUES (
+      v_partner.id, NULL, v_partner_share, 'commission_earned', 'hire_contract',
+      p_contract_id, v_c.escrow_held, v_partner_share, v_fee, 'Completed hire contract commission'
+    );
+  END IF;
+
+  PERFORM public.credit_platform_revenue(
+    'hire_contract_fee', v_fee, v_c.client_id, p_contract_id::text,
+    jsonb_build_object('expert_id', v_c.expert_id, 'partner_id', v_partner.id,
+      'partner_commission', v_partner_share)
+  );
+
+  UPDATE public.hire_contracts SET status = 'completed', completed_at = now(),
+    escrow_held = 0, updated_at = now()
+  WHERE id = p_contract_id;
+  INSERT INTO public.hire_contract_events(contract_id, actor_id, event_type, payload)
+  VALUES (p_contract_id, v_actor, 'completed',
+    jsonb_build_object('paid', v_pay, 'partner_commission', v_partner_share, 'platform_fee', v_fee));
+
+  RETURN jsonb_build_object('success', true, 'paid', v_pay,
+    'partner_commission', v_partner_share, 'platform_fee', v_fee);
+END;
+$function$;
+
+REVOKE ALL ON FUNCTION public.complete_gig_order(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.complete_gig_order(uuid) TO authenticated;
+REVOKE ALL ON FUNCTION public.complete_hire_contract(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.complete_hire_contract(uuid) TO authenticated;
 
 REVOKE ALL ON FUNCTION public.is_institutional_partner_admin() FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.admin_list_institutional_partners() FROM PUBLIC, anon;
