@@ -171,6 +171,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [])
 
+  useEffect(() => {
+    if (!user?.id || typeof window === 'undefined') return
+    const partnerSlug = localStorage.getItem('nl_partner_slug')
+    if (!partnerSlug) return
+    supabase.rpc('attach_institutional_partner_attribution', { p_slug: partnerSlug })
+      .then(({ data, error }) => {
+        if (error) {
+          console.warn('[AuthProvider] Partner attribution could not be applied:', error.message)
+          return
+        }
+        if (data === true) localStorage.removeItem('nl_partner_slug')
+      })
+  }, [user?.id])
+
   return (
     <AuthContext.Provider value={{ user, session, loading, authTimedOut, retryAuth }}>
       {children}

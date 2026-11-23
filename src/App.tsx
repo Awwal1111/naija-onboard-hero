@@ -78,6 +78,8 @@ const RootRedirect = () => {
 const Welcome = lazy(lazyWithRetry(() => import("./pages/Welcome")));
 const Login = lazy(lazyWithRetry(() => import("./pages/Login")));
 const SignUp = lazy(lazyWithRetry(() => import("./pages/SignUp")));
+const PartnerJoin = lazy(lazyWithRetry(() => import("./pages/PartnerJoin")));
+const PartnerPortal = lazy(lazyWithRetry(() => import("./pages/PartnerPortal")));
 const ForgotPassword = lazy(lazyWithRetry(() => import("./pages/ForgotPassword")));
 const ResetPassword = lazy(lazyWithRetry(() => import("./pages/ResetPassword")));
 const Onboarding = lazy(lazyWithRetry(() => import("./pages/Onboarding")));
@@ -275,6 +277,8 @@ const App = () => (
                 <Route path="/welcome" element={<Welcome />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<SignUp />} />
+                <Route path="/join/:slug" element={<PartnerJoin />} />
+                <Route path="/partner/:slug" element={<PartnerPortal />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/fundraising" element={<Fundraising />} />
