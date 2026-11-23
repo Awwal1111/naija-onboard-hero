@@ -108,7 +108,7 @@ CREATE OR REPLACE FUNCTION public.admin_create_institutional_partner(
 RETURNS JSONB
 LANGUAGE plpgsql SECURITY DEFINER
 SET search_path = public, extensions
-AS $
+AS $$
 DECLARE v_pin TEXT; v_id UUID;
 BEGIN
   IF NOT public.is_institutional_partner_admin() THEN RAISE EXCEPTION 'Not authorized'; END IF;
@@ -184,7 +184,7 @@ CREATE OR REPLACE FUNCTION public.verify_partner_portal(p_slug TEXT, p_password 
 RETURNS JSONB
 LANGUAGE plpgsql SECURITY DEFINER
 SET search_path = public, extensions
-AS $
+AS $$
 DECLARE v_partner public.partners%ROWTYPE; v_deals JSONB; v_gross_volume NUMERIC := 0;
 BEGIN
   SELECT * INTO v_partner FROM public.partners
@@ -233,7 +233,7 @@ CREATE OR REPLACE FUNCTION public.attach_institutional_partner_at_signup()
 RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER
 SET search_path = public, auth
-AS $
+AS $$
 DECLARE v_slug TEXT;
 BEGIN
   SELECT raw_user_meta_data ->> 'partner_slug'
@@ -248,7 +248,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$;
+$$;
 
 DROP TRIGGER IF EXISTS trg_attach_institutional_partner_signup ON public.profiles;
 CREATE TRIGGER trg_attach_institutional_partner_signup
@@ -264,7 +264,7 @@ CREATE OR REPLACE FUNCTION public.attach_institutional_partner_attribution(p_slu
 RETURNS BOOLEAN
 LANGUAGE plpgsql SECURITY DEFINER
 SET search_path = public
-AS $
+AS $$
 DECLARE v_user UUID := auth.uid();
 BEGIN
   IF v_user IS NULL THEN RETURN FALSE; END IF;
@@ -278,7 +278,7 @@ BEGIN
     AND p.is_active = true;
   RETURN FOUND;
 END;
-$;
+$$;
 REVOKE ALL ON FUNCTION public.attach_institutional_partner_attribution(TEXT) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.attach_institutional_partner_attribution(TEXT) TO authenticated;
 
