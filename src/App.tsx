@@ -259,7 +259,8 @@ const App = () => (
                 <Route path="/jobs" element={<ProtectedRoute><Jobs /></ProtectedRoute>} />
                 <Route path="/experts" element={<ProtectedRoute><Experts /></ProtectedRoute>} />
                 <Route path="/u/:username" element={<PublicUser />} />
-                <Route path="/profile/:userId" element={<PublicProfile />} />
+                <Route path="/p/profile/:userId" element={<PublicProfile />} />
+                <Route path="/profile/:userId" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                 <Route path="/blog" element={<BlogIndex />} />
                 <Route path="/blog/:slug" element={<BlogPost />} />
                 
