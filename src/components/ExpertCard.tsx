@@ -332,7 +332,7 @@ export const ExpertCard: React.FC<ExpertCardProps> = ({ expert, viewMode, onProf
                   onClick={() => setShowHireDialog(true)}
                 >
                   <Briefcase className="h-3.5 w-3.5 mr-1" />
-                  My Gigs
+                  View Gigs
                 </Button>
                 <Button
                   size="sm"
