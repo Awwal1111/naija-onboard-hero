@@ -188,7 +188,6 @@ RETURNS TABLE (
   job_type text,
   required_skills text[],
   experience_level text,
-  industry text,
   created_at timestamptz,
   application_deadline timestamptz,
   poster_name text,
@@ -198,7 +197,7 @@ LANGUAGE sql
 STABLE
 SECURITY DEFINER
 SET search_path = public
-AS $$
+AS $
   SELECT j.id, j.user_id, j.title, j.description, j.company_name,
          j.location, j.budget_min, j.budget_max,
          j.currency, j.job_type, j.required_skills, j.experience_level,
