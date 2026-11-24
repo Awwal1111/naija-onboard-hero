@@ -19,6 +19,7 @@ interface Job {
   budget_min?: number | null;
   budget_max?: number | null;
   poster_name?: string | null;
+  company_name?: string | null;
   poster_username?: string | null;
   required_skills?: string[] | null;
   category: string;
