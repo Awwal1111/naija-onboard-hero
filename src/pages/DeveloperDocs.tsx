@@ -144,6 +144,11 @@ window.addEventListener('message', (event) => {
       console.log('Payout failed:', data.error);
     }
   }
+
+  if (data.type === 'njl_profile_result') console.log('My profile:', data.user);
+  if (data.type === 'njl_skills_result') console.log('My skills:', data.skills);
+  if (data.type === 'njl_portfolio_result') console.log('My portfolio:', data.items);
+  if (data.type === 'njl_notify_result') console.log('Inbox notification:', data.success, data.notification_id);
 });
 
 // 3. Charge the user
@@ -211,6 +216,26 @@ getBalance('USDT');                                                             
 payoutUser(200, 'Savings withdrawal');                                                 // NC credit
 payoutUser(5, 'Reward', 'USDT');                                                       // returns user's wallet address; you send USDT yourself
 verifyPin('confirm withdrawal');
+
+// 7. Read the signed-in user's own profile, skills and portfolio
+function requestHostData(type) {
+  const requestId = 'data_' + Math.random().toString(36).slice(2);
+  window.parent.postMessage({ type, requestId }, '*');
+}
+requestHostData('njl_get_profile');
+requestHostData('njl_get_skills');
+requestHostData('njl_get_portfolio');
+
+// 8. Create a persistent notification in the MAIN NaijaLancers inbox
+// This is not a browser push. The host app stores it and updates its bell in real time.
+function notifyMainApp(title, message, url) {
+  const requestId = 'notify_' + Math.random().toString(36).slice(2);
+  window.parent.postMessage({
+    type: 'njl_notify', requestId, title, message,
+    category: 'activity', url: url || '/apps'
+  }, '*');
+}
+notifyMainApp('Task completed', 'Your report is ready.', '/apps');
 </script>`;
 
 const MINIAPP_SDK_EVENTS = [
@@ -224,6 +249,14 @@ const MINIAPP_SDK_EVENTS = [
   { direction: '← Parent sends', event: 'njl_payout_result', description: 'Payout result. NC: { success, txRef, error }. USDT: { success, wallet_address, amount, user: { user_id, full_name, email, phone, profile_picture_url, wallet_address, country } } — use wallet_address to send USDT yourself.' },
   { direction: '→ App sends', event: 'njl_verify_pin', description: 'Request PIN verification for sensitive actions. Fields: reason, requestId.' },
   { direction: '← Parent sends', event: 'njl_verify_pin_result', description: 'PIN verification result. Fields: success, error, requestId.' },
+  { direction: '→ App sends', event: 'njl_get_profile', description: 'Request the signed-in user’s own allowlisted profile fields. Response: njl_profile_result.' },
+  { direction: '← Parent sends', event: 'njl_profile_result', description: 'Profile response: user_id, full_name, email, profession, bio, profile_picture_url, country_code, is_expert.' },
+  { direction: '→ App sends', event: 'njl_get_skills', description: 'Request the signed-in user’s skills. Response: njl_skills_result with skills array.' },
+  { direction: '← Parent sends', event: 'njl_skills_result', description: 'Skills response: id, skill_name, created_at. Only the current signed-in user’s skills are returned.' },
+  { direction: '→ App sends', event: 'njl_get_portfolio', description: 'Request the signed-in user’s portfolio. Response: njl_portfolio_result with items array.' },
+  { direction: '← Parent sends', event: 'njl_portfolio_result', description: 'Portfolio response: id, title, description, project_url, media_url, created_at. Only the current signed-in user’s items are returned.' },
+  { direction: '→ App sends', event: 'njl_notify', description: 'Create a persistent notification for the currently signed-in user in the main app inbox. Fields: title (80 chars), message (300 chars), optional category and same-app relative url. Response: njl_notify_result.' },
+  { direction: '← Parent sends', event: 'njl_notify_result', description: 'Inbox creation result: success, notification_id, error, requestId. The main app notification centre receives it through its existing realtime subscription.' },
 ];
 
 const CODE_EXAMPLES = {
