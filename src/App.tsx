@@ -252,11 +252,12 @@ const App = () => (
                 <Route path="/p/course/:courseId" element={<PublicCourse />} />
                 <Route path="/p/campaign/:campaignId" element={<PublicCampaign />} />
                 <Route path="/p/gigs" element={<PublicGigs />} />
-                <Route path="/gigs" element={<PublicGigs />} />
                 <Route path="/p/experts" element={<PublicExperts />} />
-                <Route path="/experts" element={<PublicExperts />} />
                 <Route path="/p/jobs" element={<PublicJobs />} />
-                <Route path="/jobs" element={<PublicJobs />} />
+                {/* Signed-in marketplace routes; public SEO pages stay under /p/* */}
+                <Route path="/gigs" element={<ProtectedRoute><Jobs /></ProtectedRoute>} />
+                <Route path="/jobs" element={<ProtectedRoute><Jobs /></ProtectedRoute>} />
+                <Route path="/experts" element={<ProtectedRoute><Experts /></ProtectedRoute>} />
                 <Route path="/u/:username" element={<PublicUser />} />
                 <Route path="/profile/:userId" element={<PublicProfile />} />
                 <Route path="/blog" element={<BlogIndex />} />
