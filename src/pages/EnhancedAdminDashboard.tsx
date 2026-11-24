@@ -14,9 +14,7 @@ import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/useAuth'
 import { useAdminRole, ROLE_LABELS, ROLE_COLORS, type AdminRole } from '@/hooks/useAdminRole'
-import { AdminSocialTasksSection } from '@/components/AdminSocialTasksSection'
 import { AdminReferralTasksSection } from '@/components/AdminReferralTasksSection'
-import { AdminArticlesSection } from '@/components/AdminArticlesSection'
 import { AdminWalletManagement } from '@/components/AdminWalletManagement'
 import { AdminMasterWalletInfo } from '@/components/AdminMasterWalletInfo'
 import { AdminWalletMigration } from '@/components/AdminWalletMigration'
@@ -28,7 +26,6 @@ import { AdminWithdrawalsSection } from '@/components/AdminWithdrawalsSection'
 import { AdminDisputeManagement } from '@/components/AdminDisputeManagement'
 import { AdminManualDepositsSection } from '@/components/AdminManualDepositsSection'
 import { AdminAIDrawer } from '@/components/admin/AdminAIDrawer'
-import { AdminTaskManager } from '@/components/admin/AdminTaskManager'
 import { AdminSetup } from '@/components/AdminSetup'
 import { AdminAnalyticsCharts } from '@/components/AdminAnalyticsCharts'
 import { AdminBroadcastDialog } from '@/components/AdminBroadcastDialog'
@@ -685,7 +682,7 @@ const FundraisingSection = () => {
   )
 }
 
-const EmergencySection = () => {
+__REMOVE_EMERGENCY_SECTION_START__
   const [emergencies, setEmergencies] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const { toast } = useToast()
@@ -1718,9 +1715,7 @@ const EnhancedAdminDashboard = () => {
                 <TabsList className="inline-flex w-full min-w-max">
                   <TabsTrigger value="expert">Expert Applications</TabsTrigger>
                   <TabsTrigger value="verification">Expert Verification</TabsTrigger>
-                  <TabsTrigger value="social">Social Tasks</TabsTrigger>
                   <TabsTrigger value="referral">Tasks</TabsTrigger>
-                  <TabsTrigger value="articles">Articles</TabsTrigger>
                   <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
                   <TabsTrigger value="disputes">Disputes</TabsTrigger>
                 </TabsList>
@@ -1747,17 +1742,8 @@ const EnhancedAdminDashboard = () => {
                 <AdminExpertVerification />
               </TabsContent>
 
-              <TabsContent value="social" className="space-y-4">
-                <AdminTaskManager />
-                <AdminSocialTasksSection />
-              </TabsContent>
-
               <TabsContent value="referral">
                 <AdminReferralTasksSection />
-              </TabsContent>
-
-              <TabsContent value="articles">
-                <AdminArticlesSection />
               </TabsContent>
 
               <TabsContent value="withdrawals">
@@ -1806,10 +1792,6 @@ const EnhancedAdminDashboard = () => {
                   <TabsTrigger value="fundraising">
                     <Target className="h-4 w-4 mr-2" />
                     Fundraising
-                  </TabsTrigger>
-                  <TabsTrigger value="emergency">
-                    <AlertTriangle className="h-4 w-4 mr-2" />
-                    Emergency
                   </TabsTrigger>
                 </TabsList>
               </div>
@@ -1892,19 +1874,6 @@ const EnhancedAdminDashboard = () => {
                 </Card>
               </TabsContent>
 
-              <TabsContent value="emergency" className="mt-0">
-                <Card>
-                  <CardHeader className="bg-muted/30">
-                    <CardTitle className="flex items-center gap-2">
-                      <AlertTriangle className="h-5 w-5 text-orange-500" />
-                      Emergency Requests
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-6">
-                    <EmergencySection />
-                  </CardContent>
-                </Card>
-              </TabsContent>
             </Tabs>
           </TabsContent>
 
