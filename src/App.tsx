@@ -131,14 +131,12 @@ const CopilotPage = lazy(lazyWithRetry(() => import("./pages/CopilotPage")));
 
 // Earn & Games
 const EnhancedEarn = lazy(lazyWithRetry(() => import("./pages/EnhancedEarn")));
-const SocialMediaTasks = lazy(lazyWithRetry(() => import("./pages/SocialMediaTasks").then(m => ({ default: m.SocialMediaTasks }))));
 const Surveys = lazy(lazyWithRetry(() => import("./pages/Surveys").then(m => ({ default: m.Surveys }))));
 const CpxSurveys = lazy(lazyWithRetry(() => import("./pages/CpxSurveys").then(m => ({ default: m.CpxSurveys }))));
 const GuessNumberGame = lazy(lazyWithRetry(() => import("./pages/GuessNumberGame").then(m => ({ default: m.GuessNumberGame }))));
 const Referrals = lazy(lazyWithRetry(() => import("./pages/Referrals").then(m => ({ default: m.Referrals }))));
 const Tasks = lazy(lazyWithRetry(() => import("./pages/Tasks")));
 const ReferralTasks = lazy(lazyWithRetry(() => import("./pages/ReferralTasks")));
-const Articles = lazy(lazyWithRetry(() => import("./pages/Articles")));
 const NigerianTrivia = lazy(lazyWithRetry(() => import("./components/NigerianTrivia")));
 const SpinWheelGame = lazy(lazyWithRetry(() => import("./components/SpinWheelGame")));
 const NaijaPredictor = lazy(lazyWithRetry(() => import("./components/NaijaPredictor")));
@@ -154,8 +152,6 @@ const OrderDetail = lazy(lazyWithRetry(() => import("./pages/OrderDetail")));
 // Finance
 const Fundraising = lazy(lazyWithRetry(() => import("./pages/Fundraising")));
 const FundraisingDetail = lazy(lazyWithRetry(() => import("./pages/FundraisingDetail")));
-const Emergency = lazy(lazyWithRetry(() => import("./pages/Emergency")));
-const Loan = lazy(lazyWithRetry(() => import("./pages/Loan")));
 const Donations = lazy(lazyWithRetry(() => import("./pages/Donations")));
 const PaymentSuccess = lazy(lazyWithRetry(() => import("./pages/PaymentSuccess")));
 const PaymentFailed = lazy(lazyWithRetry(() => import("./pages/PaymentFailed")));
@@ -334,7 +330,7 @@ const App = () => (
                 <Route path="/earn" element={<ProtectedRoute><EnhancedEarn /></ProtectedRoute>} />
                 <Route path="/wallet" element={<ProtectedRoute><EnhancedEarn /></ProtectedRoute>} />
                 <Route path="/contracts/:id" element={<ProtectedRoute><HireContractDetail /></ProtectedRoute>} />
-                <Route path="/earn/social-tasks" element={<ProtectedRoute><SocialMediaTasks /></ProtectedRoute>} />
+                <Route path="/earn/social-tasks" element={<Navigate to="/earn" replace />} />
                 <Route path="/earn/referral-tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
                 <Route path="/referral-tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
                 <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
@@ -343,15 +339,15 @@ const App = () => (
                 <Route path="/courses" element={<ProtectedRoute><Courses /></ProtectedRoute>} />
                 <Route path="/courses/:id" element={<ProtectedRoute><CourseDetail /></ProtectedRoute>} />
                 <Route path="/jobs/:id" element={<ProtectedRoute><JobDetail /></ProtectedRoute>} />
-                <Route path="/emergency" element={<ProtectedRoute><Emergency /></ProtectedRoute>} />
-                <Route path="/loan" element={<ProtectedRoute><Loan /></ProtectedRoute>} />
+                <Route path="/emergency" element={<Navigate to="/mini-apps" replace />} />
+                <Route path="/loan" element={<Navigate to="/mini-apps" replace />} />
                 <Route path="/donations" element={<ProtectedRoute><Donations /></ProtectedRoute>} />
                 <Route path="/jobs-enhanced" element={<ProtectedRoute><JobsEnhanced /></ProtectedRoute>} />
                 <Route path="/earn/guess-number" element={<ProtectedRoute><GuessNumberGame /></ProtectedRoute>} />
                 <Route path="/earn/trivia" element={<ProtectedRoute><NigerianTrivia /></ProtectedRoute>} />
                 <Route path="/earn/spin-wheel" element={<ProtectedRoute><SpinWheelGame /></ProtectedRoute>} />
                 <Route path="/earn/predictor" element={<ProtectedRoute><NaijaPredictor /></ProtectedRoute>} />
-                <Route path="/earn/articles" element={<ProtectedRoute><Articles /></ProtectedRoute>} />
+                <Route path="/earn/articles" element={<Navigate to="/earn" replace />} />
                 <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
                 <Route path="/chat/ai" element={<ProtectedRoute><AIChat /></ProtectedRoute>} />
                 <Route path="/ai-hire" element={<ProtectedRoute><AIHire /></ProtectedRoute>} />
