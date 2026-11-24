@@ -69,7 +69,7 @@ export default function PublicUser() {
     ? user.bio.slice(0, 155)
     : `${displayName} is a member of NaijaLancers, Africa's freelancing platform powered by Celo.`;
   const image = user.profile_picture_url || 'https://naijalancers.name.ng/logo.png';
-  const location = [user.area, user.country_code].filter(Boolean).join(', ');
+  const location = [user.area, user.lga_name, user.state_name].filter(Boolean).join(', ');
 
   const structuredData = {
     '@context': 'https://schema.org',
@@ -137,7 +137,7 @@ export default function PublicUser() {
 
               <div className="flex flex-wrap gap-2 mb-4">
                 <Badge variant="secondary">NaijaLancers Member</Badge>
-                {user.country_code && <Badge variant="outline">{user.country_code}</Badge>}
+                {user.state_name && <Badge variant="outline">{user.state_name}</Badge>}
               </div>
 
               <div className="flex gap-3 mt-4">
