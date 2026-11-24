@@ -207,7 +207,7 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
 
   // Main message handler - attached BEFORE iframe loads to catch early njl_ready
   useEffect(() => {
-    const handler = (event: MessageEvent) => {
+    const handler = async (event: MessageEvent) => {
       // Validate sender. Prefer window-identity match; fall back to origin
       // match because sandboxed iframes that navigate, redirect, or embed
       // nested frames can break strict source === contentWindow comparisons,
