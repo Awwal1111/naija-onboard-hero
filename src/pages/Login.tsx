@@ -56,7 +56,7 @@ const Login = () => {
   
   // If user is already authenticated, redirect to feed
   if (user) {
-    return <Navigate to="/main-feed" replace />
+    return <Navigate to="/feed" replace />
   }
 
   return (
