@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
-import { Coins, Wallet, Info, ArrowDownUp, Smartphone, ExternalLink, Copy, Check, Globe } from 'lucide-react'
+import { Coins, Wallet, Info, Smartphone, ExternalLink, Copy, Check, Globe } from 'lucide-react'
 import { SecurePinInput } from './SecurePinInput'
 import { useWallet } from '@/hooks/useWallet'
 import { useProfile } from '@/hooks/useProfile'
@@ -148,12 +148,12 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
             Withdraw Funds
           </DialogTitle>
           <DialogDescription>
-            Balance: NC {currentBalance.toLocaleString()} (~${usdEquivalent.toFixed(2)} USD)
+            {isNigerian ? `Available balance: ₦${currentBalance.toLocaleString()}` : `Balance: NC ${currentBalance.toLocaleString()} (~${usdEquivalent.toFixed(2)} USD)`}
           </DialogDescription>
         </DialogHeader>
         
         <Tabs defaultValue={isNigerian ? "pretium" : "crypto"} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 h-auto">
+          <TabsList className={`grid w-full ${isNigerian ? 'grid-cols-3' : 'grid-cols-3'} h-auto`}>
             {isNigerian && (
               <TabsTrigger value="pretium" className="gap-1 text-xs py-2">
                 <Globe className="h-3 w-3" />
@@ -182,7 +182,6 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
                 <CardTitle className="flex items-center gap-2">
                   <Wallet className="h-5 w-5" />
                   Crypto Withdrawal
-                  <Badge variant="default">Instant</Badge>
                 </CardTitle>
                 <CardDescription>
                   Convert your NC balance to {cryptoCurrency} and send to any wallet
@@ -195,7 +194,7 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
                     <p className="font-medium mb-1">How it works:</p>
                     <p>• Your NC balance will be converted to crypto at current rates</p>
                     <p>• Funds are sent to your specified wallet address</p>
-                    <p>• Transaction is instant and final</p>
+                    <p>• Network confirmation time may vary</p>
                   </AlertDescription>
                 </Alert>
 
