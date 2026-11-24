@@ -181,6 +181,13 @@ export default function PublicExpert() {
                 )}
               </div>
 
+              {expert.skill_category && (
+                <div className="mb-3 flex flex-wrap items-center gap-2">
+                  <Badge variant="secondary">{expert.skill_category}</Badge>
+                  {expert.years_experience != null && <Badge variant="outline">{expert.years_experience} years experience</Badge>}
+                </div>
+              )}
+
               {expert.bio && (
                 <p className="text-muted-foreground mb-4">{expert.bio}</p>
               )}
