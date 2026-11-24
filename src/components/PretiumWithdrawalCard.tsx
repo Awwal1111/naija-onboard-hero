@@ -20,6 +20,7 @@ interface Bank { Code: string; Name: string }
 
 export const PretiumWithdrawalCard = ({ currentBalance, onSuccess }: Props) => {
   const { transactionPin } = useUserSecrets()
+  const { requireAction } = useVerification()
   const [amount, setAmount] = useState('')
   const [bankCode, setBankCode] = useState('')
   const [accountNumber, setAccountNumber] = useState('')
@@ -78,6 +79,7 @@ export const PretiumWithdrawalCard = ({ currentBalance, onSuccess }: Props) => {
   }, [bankCode, accountNumber, banks])
 
   const handleContinue = () => {
+    if (!requireAction('withdraw_funds', 'withdraw funds')) return
     const nc = parseFloat(amount)
     if (!nc || nc < 1000) return toast.error('Minimum bank withdrawal is ₦1,000')
     if (nc > currentBalance) return toast.error(`Insufficient balance (₦${currentBalance.toLocaleString()})`)
