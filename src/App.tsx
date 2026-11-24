@@ -70,7 +70,7 @@ const RootRedirect = () => {
     return <PageLoader />;
   }
 
-  return <Navigate to={user ? "/dashboard" : "/login"} replace />;
+  return user ? <Navigate to="/feed" replace /> : <Index />;
 };
 
 // ===== LAZY LOADED PAGES WITH CHUNK ERROR RECOVERY =====
@@ -190,6 +190,7 @@ const PublicCampaign = lazy(lazyWithRetry(() => import("./pages/PublicCampaign")
 const PublicGigs = lazy(lazyWithRetry(() => import("./pages/PublicGigs")));
 const PublicExperts = lazy(lazyWithRetry(() => import("./pages/PublicExperts")));
 const PublicUser = lazy(lazyWithRetry(() => import("./pages/PublicUser")));
+const PublicProfile = lazy(lazyWithRetry(() => import("./pages/PublicProfile")));
 const PublicJobs = lazy(lazyWithRetry(() => import("./pages/PublicJobs")));
 const Sitemap = lazy(lazyWithRetry(() => import("./pages/Sitemap")));
 const RampSession = lazy(lazyWithRetry(() => import("./pages/RampSession")));
@@ -251,9 +252,13 @@ const App = () => (
                 <Route path="/p/course/:courseId" element={<PublicCourse />} />
                 <Route path="/p/campaign/:campaignId" element={<PublicCampaign />} />
                 <Route path="/p/gigs" element={<PublicGigs />} />
+                <Route path="/gigs" element={<PublicGigs />} />
                 <Route path="/p/experts" element={<PublicExperts />} />
+                <Route path="/experts" element={<PublicExperts />} />
                 <Route path="/p/jobs" element={<PublicJobs />} />
+                <Route path="/jobs" element={<PublicJobs />} />
                 <Route path="/u/:username" element={<PublicUser />} />
+                <Route path="/profile/:userId" element={<PublicProfile />} />
                 <Route path="/blog" element={<BlogIndex />} />
                 <Route path="/blog/:slug" element={<BlogPost />} />
                 
@@ -306,8 +311,6 @@ const App = () => (
                 <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
                 <Route path="/feed" element={<ProtectedRoute><MainFeed /></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-                <Route path="/profile/:userId" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-                <Route path="/expert/:userId" element={<ProtectedRoute><ExpertProfile /></ProtectedRoute>} />
                 <Route path="/expert-application" element={<ProtectedRoute><ExpertApplication /></ProtectedRoute>} />
                 <Route path="/admin/expert-applications" element={<ProtectedRoute><AdminExpertApplications /></ProtectedRoute>} />
                 <Route path="/admin/dashboard" element={<ProtectedRoute><EnhancedAdminDashboard /></ProtectedRoute>} />
@@ -317,11 +320,9 @@ const App = () => (
                 <Route path="/post-job" element={<ProtectedRoute><PostJob /></ProtectedRoute>} />
                 <Route path="/post-gig" element={<ProtectedRoute><PostGig /></ProtectedRoute>} />
                 <Route path="/scan" element={<ProtectedRoute><ScanCode /></ProtectedRoute>} />
-                <Route path="/experts" element={<ProtectedRoute><Experts /></ProtectedRoute>} />
                 <Route path="/expert-verification" element={<ProtectedRoute><ExpertVerification /></ProtectedRoute>} />
                 <Route path="/expert-class" element={<ProtectedRoute><ExpertClass /></ProtectedRoute>} />
                 <Route path="/expert-class/room/:classId" element={<ProtectedRoute><ClassRoom /></ProtectedRoute>} />
-                <Route path="/jobs" element={<ProtectedRoute><Jobs /></ProtectedRoute>} />
                 <Route path="/my-gigs" element={<ProtectedRoute><MyGigs /></ProtectedRoute>} />
                 <Route path="/edit-gig/:gigId" element={<ProtectedRoute><EditGig /></ProtectedRoute>} />
                 <Route path="/surveys" element={<ProtectedRoute><Surveys /></ProtectedRoute>} />

@@ -21,15 +21,9 @@ export default function PublicJob() {
   const { data: job, isLoading } = useQuery({
     queryKey: ['public-job', jobId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('job_posts')
-        .select('*')
-        .eq('id', jobId)
-        .eq('status', 'open')
-        .maybeSingle();
-
+      const { data, error } = await supabase.rpc('get_public_job' as any, { _job_id: jobId });
       if (error) throw error;
-      return data;
+      return Array.isArray(data) ? data[0] : data;
     },
 
   });
@@ -125,6 +119,9 @@ export default function PublicJob() {
               <h1 className="text-3xl font-bold mb-2">{job.title}</h1>
               {job.company_name && (
                 <p className="text-xl text-muted-foreground mb-2">{job.company_name}</p>
+              )}
+              {(job.poster_name || job.poster_username) && (
+                <p className="text-sm text-muted-foreground mb-2">Posted by {job.company_name || job.poster_name || job.poster_username}</p>
               )}
             </div>
           </div>

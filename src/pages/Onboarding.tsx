@@ -170,7 +170,7 @@ const Onboarding = () => {
         title: 'Welcome! 👋',
         description: 'Feel free to explore. You can update your profile anytime.'
       })
-      navigate('/main-feed')
+      navigate('/feed')
       return
     }
 
@@ -228,7 +228,7 @@ const Onboarding = () => {
         description: "You're all set. Start finding opportunities!"
       })
 
-      navigate('/main-feed')
+      navigate('/feed')
     } catch (error) {
       toast({ title: 'Error saving profile', variant: 'destructive' })
     } finally {
@@ -243,7 +243,7 @@ const Onboarding = () => {
   }
 
   const handleSkip = () => {
-    navigate('/main-feed')
+    navigate('/feed')
   }
 
   const steps = [

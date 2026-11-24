@@ -21,6 +21,10 @@ interface Expert {
   profile_picture_url: string | null;
   state_name: string | null;
   average_rating: number | null;
+  rating_count: number | null;
+  skill_category: string | null;
+  years_experience: number | null;
+  expert_verified_at: string | null;
 }
 
 const PublicExperts = () => {
@@ -29,12 +33,7 @@ const PublicExperts = () => {
   const { data: experts, isLoading } = useQuery({
     queryKey: ['public-experts'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('user_id, username, full_name, profession, bio, profile_picture_url, state_name, average_rating')
-        .eq('is_expert', true)
-        .order('created_at', { ascending: false })
-        .limit(50);
+      const { data, error } = await supabase.rpc('get_public_experts' as any);
       
       if (error) throw error;
       return (data || []) as Expert[];
@@ -164,9 +163,11 @@ const PublicExperts = () => {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
                           <h3 className="font-semibold truncate">{expert.full_name}</h3>
-                          <CheckCircle className="h-4 w-4 text-primary shrink-0" />
+                          {expert.expert_verified_at && <CheckCircle className="h-4 w-4 text-primary shrink-0" /> }
                         </div>
                         <p className="text-sm text-muted-foreground truncate">{expert.profession}</p>
+                        {expert.skill_category && <Badge variant="outline" className="mt-1 text-xs">{expert.skill_category}</Badge>}
+                        {expert.years_experience != null && <p className="text-xs text-muted-foreground mt-1">{expert.years_experience} years experience</p>}
                         {expert.state_name && (
                           <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
                             <MapPin className="h-3 w-3" />
@@ -184,11 +185,11 @@ const PublicExperts = () => {
                       <div className="flex items-center gap-1">
                         <Star className="h-4 w-4 fill-amber-500 text-amber-500" />
                         <span className="text-sm font-medium">
-                          {expert.average_rating?.toFixed(1) || '5.0'}
+                          {Number(expert.rating_count || 0) > 0 ? expert.average_rating?.toFixed(1) : 'New'}
                         </span>
                       </div>
                       <Badge variant="secondary" className="text-xs">
-                        Available for hire
+                        {Number(expert.rating_count || 0) > 0 ? `${expert.rating_count} reviews` : 'No reviews yet'}
                       </Badge>
                     </div>
                   </CardContent>

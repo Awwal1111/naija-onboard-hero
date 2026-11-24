@@ -68,7 +68,8 @@ Allow: /sitemap.xml
 # ===========================================
 Disallow: /feed
 Disallow: /main-feed
-Disallow: /profile
+Disallow: /profile$
+Allow: /profile/
 Disallow: /chat
 Disallow: /chat/
 Disallow: /settings
