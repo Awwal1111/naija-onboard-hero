@@ -64,29 +64,9 @@ export default function PublicGig() {
       if (gigError) throw gigError;
       if (!gigData) return null;
 
-      // Then get the profile separately
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select(`
-          user_id,
-          username,
-          full_name, 
-          profile_picture_url, 
-          is_expert, 
-          average_rating,
-          bio,
-          profession,
-          state_name,
-          lga_name,
-          email_verified,
-          phone_verified,
-          face_verified,
-          created_at,
-          connections_count,
-          verification_status
-        `)
-        .eq('user_id', gigData.user_id)
-        .maybeSingle();
+      // Use the public-safe profile RPC; direct profiles SELECT is intentionally restricted.
+      const { data: profileRows } = await supabase.rpc('get_public_profile_by_id' as any, { _user_id: gigData.user_id });
+      const profileData = Array.isArray(profileRows) ? profileRows[0] : profileRows;
 
       return {
         ...gigData,
