@@ -129,12 +129,6 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
     }
   }
 
-  const handleOpenQuidaxWidget = () => {
-    onOpenChange(false)
-    const event = new CustomEvent('open-quidax-widget', { detail: { mode: 'sell' } })
-    window.dispatchEvent(event)
-  }
-
   const handleCopyAddress = (address: string) => {
     navigator.clipboard.writeText(address)
     setCopiedAddress(true)
@@ -159,7 +153,7 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
         </DialogHeader>
         
         <Tabs defaultValue={isNigerian ? "pretium" : "crypto"} className="w-full">
-          <TabsList className={`grid w-full ${isNigerian ? 'grid-cols-4' : 'grid-cols-3'} h-auto`}>
+          <TabsList className={`grid w-full ${isNigerian ? 'grid-cols-3' : 'grid-cols-3'} h-auto`}>
             {isNigerian && (
               <TabsTrigger value="pretium" className="gap-1 text-xs py-2">
                 <Globe className="h-3 w-3" />
@@ -174,12 +168,7 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
               <Globe className="h-3 w-3" />
               <span>Mt Pelerin</span>
             </TabsTrigger>
-            {isNigerian ? (
-              <TabsTrigger value="ramp" className="gap-1 text-xs py-2">
-                <ArrowDownUp className="h-3 w-3" />
-                <span>Quidax</span>
-              </TabsTrigger>
-            ) : (
+            {!isNigerian && (
               <TabsTrigger value="minipay-guide" className="gap-1 text-xs py-2">
                 <Smartphone className="h-3 w-3" />
                 <span>MiniPay</span>
@@ -306,38 +295,7 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
                 <AlertDescription>
                   Withdraw to your bank account securely. Minimum withdrawal: ₦3,000 (~$2 USD).
                 </AlertDescription>
-              </Alert>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <ArrowDownUp className="h-5 w-5" />
-                    Bank Withdrawal
-                  </CardTitle>
-                  <CardDescription>
-                    Fast withdrawal to your Nigerian bank account
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <BrandButton
-                    onClick={handleOpenQuidaxWidget}
-                    className="w-full"
-                  >
-                    <Coins className="mr-2 h-4 w-4" />
-                    Proceed to Withdrawal
-                  </BrandButton>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          )}
-
-          {/* MiniPay Guide Tab - International users only */}
-          {!isNigerian && (
-            <TabsContent value="minipay-guide" className="space-y-4">
-              <Card className="border-green-500/30 bg-gradient-to-br from-green-500/5 to-transparent">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-green-600">
-                    <Smartphone className="h-5 w-5" />
+              <Smartphone className="h-5 w-5" />
                     Withdraw via MiniPay
                     <Badge variant="secondary">Recommended</Badge>
                   </CardTitle>
