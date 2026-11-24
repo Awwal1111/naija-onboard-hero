@@ -158,12 +158,12 @@ export const QuidaxRampWidget = ({ open, onOpenChange, mode }: QuidaxRampWidgetP
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ArrowDownUp className="h-5 w-5" />
-            {mode === 'buy' ? 'Bank Deposit' : 'Bank Withdrawal'}
+            {mode === 'buy' ? 'Naira deposit' : 'Quidax cash-out'}
           </DialogTitle>
           <DialogDescription>
             {mode === 'buy'
-              ? 'Fund your account with Naira - Instant & Secure'
-              : 'Withdraw to your bank account - Fast & Reliable'}
+              ? 'Pay through Quidax using a supported Naira payment method.'
+              : 'Sell USDT through Quidax using its supported cash-out process.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -171,7 +171,7 @@ export const QuidaxRampWidget = ({ open, onOpenChange, mode }: QuidaxRampWidgetP
           <CardHeader>
             <CardTitle className="text-base">Transaction Details</CardTitle>
             <CardDescription>
-              Secure Banking Transaction - Protected & Instant
+              Payment details
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -187,7 +187,7 @@ export const QuidaxRampWidget = ({ open, onOpenChange, mode }: QuidaxRampWidgetP
               />
               <p className="text-xs text-muted-foreground">
                 {mode === 'buy'
-                  ? 'Minimum deposit: ₦3,000 NC'
+                  ? 'Minimum deposit: ₦3,000'
                   : 'Enter your amount in Naira. We convert to USDT automatically.'}
               </p>
             </div>
