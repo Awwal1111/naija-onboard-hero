@@ -112,46 +112,14 @@ export const PretiumWithdrawalCard = ({ currentBalance, onSuccess }: Props) => {
     }
   }
 
-  const handleDryRun = async () => {
-    const nc = parseFloat(amount) || 1000
-    if (!verifiedName) return toast.error('Verify your bank account first')
-    setIsLoading(true)
-    try {
-      const { data, error } = await supabase.functions.invoke('pretium-ramp', {
-        body: {
-          action: 'offrampNGN',
-          dryRun: true,
-          ncAmount: nc,
-          account_name: verifiedName,
-          account_number: accountNumber.trim(),
-          bank_name: bankName,
-          bank_code: bankCode,
-        },
-      })
-      if (error) throw new Error(error.message)
-      const checks = (data as any)?.checks || {}
-      const lines = [
-        `Account validate: ${checks.validateAccount?.ok ? '✓' : '✗'}`,
-        `Exchange rate: ${checks.exchangeRate?.ok ? '✓' : '✗'}`,
-        `Master wallet: ${checks.masterWallet?.ok ? `${checks.masterWallet?.sufficient ? '✓ sufficient' : '⚠ insufficient'} (${checks.masterWallet?.usdt_balance} USDT)` : `✗ ${checks.masterWallet?.error}`}`,
-      ].join('\n')
-      if ((data as any)?.allOk) toast.success(`Pretium test passed\n${lines}`)
-      else toast.error(`Pretium test issues\n${lines}`)
-    } catch (e: any) {
-      toast.error(e?.message || 'Dry-run failed')
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Globe className="h-5 w-5 text-primary" />
-          Pretium Bank Withdrawal (NGN)
+          Bank transfer (NGN)
         </CardTitle>
-        <CardDescription>Direct bank payout via Pretium Finance — typically settled within minutes</CardDescription>
+        <CardDescription>Send an eligible withdrawal to a verified Nigerian bank account through our payment provider</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <Alert>
@@ -217,14 +185,6 @@ export const PretiumWithdrawalCard = ({ currentBalance, onSuccess }: Props) => {
               disabled={isLoading || !amount || !verifiedName}
             >
               {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing…</> : <><Send className="mr-2 h-4 w-4" /> Withdraw via Pretium</>}
-            </BrandButton>
-            <BrandButton
-              variant="outline"
-              className="w-full"
-              onClick={handleDryRun}
-              disabled={isLoading || !verifiedName}
-            >
-              Test Pretium (no funds spent)
             </BrandButton>
           </div>
         )}
