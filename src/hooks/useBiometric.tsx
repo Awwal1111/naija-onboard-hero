@@ -1,7 +1,43 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from './useAuth'
 import { toast } from 'sonner'
+
+type MedianAuthResult = {
+  hasTouchId?: boolean
+  hasSecret?: boolean
+  success?: boolean
+  secret?: string
+  error?: string
+}
+
+type MedianBridge = {
+  isNativeApp?: () => boolean
+  auth?: {
+    status: (options?: Record<string, unknown>) => Promise<MedianAuthResult>
+    save: (options: Record<string, unknown>) => Promise<MedianAuthResult>
+    get: (options?: Record<string, unknown>) => Promise<MedianAuthResult>
+    delete: (options?: Record<string, unknown>) => Promise<MedianAuthResult>
+  }
+}
+
+declare global {
+  interface Window {
+    Median?: MedianBridge
+  }
+}
+
+const DEVICE_AUTH_SECRET = 'naijalancers-biometric-unlock-v1'
+
+const waitForMedianBridge = async (): Promise<MedianBridge | null> => {
+  const startedAt = Date.now()
+  while (Date.now() - startedAt < 3000) {
+    const bridge = window.Median
+    if (bridge?.isNativeApp?.() && bridge.auth) return bridge
+    await new Promise(resolve => window.setTimeout(resolve, 150))
+  }
+  return null
+}
 
 export const useBiometric = () => {
   const { user } = useAuth()
@@ -9,33 +45,27 @@ export const useBiometric = () => {
   const [isEnabled, setIsEnabled] = useState(false)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    checkBiometricAvailability()
-    if (user) {
-      loadBiometricStatus()
-    }
-  }, [user])
-
-  const checkBiometricAvailability = async () => {
-    // Check if Web Authentication API is available
-    if (window.PublicKeyCredential) {
-      try {
-        const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
-        setIsAvailable(available)
-      } catch (error) {
-        console.error('Error checking biometric availability:', error)
-        setIsAvailable(false)
-      }
-    } else {
+  const loadBiometricStatus = useCallback(async () => {
+    if (!user) {
       setIsAvailable(false)
+      setIsEnabled(false)
+      setLoading(false)
+      return
     }
-    setLoading(false)
-  }
 
-  const loadBiometricStatus = async () => {
-    if (!user) return
-
+    setLoading(true)
     try {
+      const bridge = await waitForMedianBridge()
+      if (!bridge?.auth) {
+        setIsAvailable(false)
+        setIsEnabled(false)
+        return
+      }
+
+      const status = await bridge.auth.status({ minimumAndroidBiometric: 'strong' })
+      const available = status?.hasTouchId === true
+      setIsAvailable(available)
+
       const { data, error } = await supabase
         .from('profiles')
         .select('biometric_enabled')
@@ -43,69 +73,59 @@ export const useBiometric = () => {
         .single()
 
       if (error) throw error
-      setIsEnabled(data?.biometric_enabled || false)
+      setIsEnabled(available && data?.biometric_enabled === true && status?.hasSecret === true)
     } catch (error) {
-      console.error('Error loading biometric status:', error)
+      console.error('Error loading Median biometric status:', error)
+      setIsAvailable(false)
+      setIsEnabled(false)
+    } finally {
+      setLoading(false)
     }
-  }
+  }, [user])
+
+  useEffect(() => {
+    void loadBiometricStatus()
+  }, [loadBiometricStatus])
 
   const enableBiometric = async () => {
-    if (!user || !isAvailable) {
-      toast.error('Biometric authentication is not available on this device')
-      return false
-    }
+    if (!user) return false
 
     try {
-      // Create credential for biometric authentication
-      const challenge = new Uint8Array(32)
-      crypto.getRandomValues(challenge)
-
-      const credential = await navigator.credentials.create({
-        publicKey: {
-          challenge,
-          rp: {
-            name: 'NaijaLancers',
-            id: window.location.hostname
-          },
-          user: {
-            id: new TextEncoder().encode(user.id),
-            name: user.email || '',
-            displayName: user.email || ''
-          },
-          pubKeyCredParams: [
-            { alg: -7, type: 'public-key' },  // ES256
-            { alg: -257, type: 'public-key' } // RS256
-          ],
-          authenticatorSelection: {
-            authenticatorAttachment: 'platform',
-            userVerification: 'required'
-          },
-          timeout: 60000
-        }
-      })
-
-      if (!credential) {
-        throw new Error('Failed to create credential')
+      const bridge = await waitForMedianBridge()
+      if (!bridge?.auth) {
+        toast.error('Fingerprint is available in the supported NaijaLancers Android app only. Use your PIN on the website.')
+        return false
       }
 
-      // Store biometric enabled status
+      const status = await bridge.auth.status({ minimumAndroidBiometric: 'strong' })
+      if (status?.hasTouchId !== true) {
+        toast.error('No enrolled fingerprint or strong biometric was detected on this device.')
+        return false
+      }
+
+      const saved = await bridge.auth.save({
+        secret: DEVICE_AUTH_SECRET + ':' + user.id,
+        minimumAndroidBiometric: 'strong'
+      })
+      if (saved?.success !== true) throw new Error(saved?.error || 'Could not save device biometric')
+
       const { error } = await supabase
         .from('profiles')
         .update({ biometric_enabled: true })
         .eq('user_id', user.id)
 
-      if (error) throw error
-
-      setIsEnabled(true)
-      toast.success('Biometric authentication enabled')
-      return true
-    } catch (error: any) {
-      console.error('Error enabling biometric:', error)
-      if (error.name === 'NotAllowedError') {
-        toast.error('Biometric authentication was cancelled or denied')
-      } else {
-        toast.error('Failed to enable biometric authentication')
+      if (error) {
+        await bridge.auth.delete()
+        throw error
       }
+
+      setIsAvailable(true)
+      setIsEnabled(true)
+      toast.success('Fingerprint authentication enabled on this device')
+      return true
+    } catch (error) {
+      console.error('Error enabling Median biometric:', error)
+      toast.error('Could not enable fingerprint authentication. Your PIN still works.')
       return false
     }
   }
@@ -114,53 +134,42 @@ export const useBiometric = () => {
     if (!user) return false
 
     try {
+      const bridge = await waitForMedianBridge()
+      if (bridge?.auth) await bridge.auth.delete()
+
       const { error } = await supabase
         .from('profiles')
         .update({ biometric_enabled: false })
         .eq('user_id', user.id)
 
       if (error) throw error
-
       setIsEnabled(false)
-      toast.success('Biometric authentication disabled')
+      toast.success('Fingerprint authentication disabled')
       return true
     } catch (error) {
-      console.error('Error disabling biometric:', error)
-      toast.error('Failed to disable biometric authentication')
+      console.error('Error disabling Median biometric:', error)
+      toast.error('Could not disable fingerprint authentication')
       return false
     }
   }
 
   const authenticate = async (): Promise<boolean> => {
-    if (!user || !isEnabled || !isAvailable) {
-      return false
-    }
+    if (!user || !isEnabled || !isAvailable) return false
 
     try {
-      const challenge = new Uint8Array(32)
-      crypto.getRandomValues(challenge)
+      const bridge = await waitForMedianBridge()
+      if (!bridge?.auth) return false
 
-      const credential = await navigator.credentials.get({
-        publicKey: {
-          challenge,
-          rpId: window.location.hostname,
-          userVerification: 'required',
-          timeout: 60000
-        }
+      const result = await bridge.auth.get({
+        minimumAndroidBiometric: 'strong',
+        prompt: 'Confirm your NaijaLancers transaction',
+        callbackOnCancel: 1
       })
 
-      if (!credential) {
-        throw new Error('Authentication failed')
-      }
-
-      return true
-    } catch (error: any) {
-      console.error('Biometric authentication error:', error)
-      if (error.name === 'NotAllowedError') {
-        toast.error('Biometric authentication was cancelled')
-      } else {
-        toast.error('Biometric authentication failed')
-      }
+      return result?.success === true && result.secret === DEVICE_AUTH_SECRET + ':' + user.id
+    } catch (error) {
+      console.error('Median biometric authentication failed:', error)
+      toast.error('Fingerprint authentication failed. Enter your transaction PIN instead.')
       return false
     }
   }
@@ -171,6 +180,7 @@ export const useBiometric = () => {
     loading,
     enableBiometric,
     disableBiometric,
-    authenticate
+    authenticate,
+    refreshBiometricStatus: loadBiometricStatus
   }
 }
