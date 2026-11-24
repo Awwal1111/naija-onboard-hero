@@ -93,6 +93,12 @@ export default function PublicProfile() {
                 </div>
               </div>
             </div>
+            {(profile.skill_category || profile.years_experience != null) && (
+              <div className="flex flex-wrap gap-2 mt-5">
+                {profile.skill_category && <Badge variant="secondary">{profile.skill_category}</Badge>}
+                {profile.years_experience != null && <Badge variant="outline">{profile.years_experience} years experience</Badge>}
+              </div>
+            )}
             {profile.bio && <section className="mt-7"><h2 className="font-semibold mb-2">About</h2><p className="text-muted-foreground whitespace-pre-wrap">{profile.bio}</p></section>}
             <div className="flex flex-wrap gap-3 mt-7">
               {profile.is_expert && <Button onClick={() => navigate('/expert/' + profile.user_id)}>View expert profile</Button>}
