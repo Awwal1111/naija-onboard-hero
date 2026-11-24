@@ -170,6 +170,7 @@ AS $$
   FROM public.job_posts j
   LEFT JOIN public.profiles p ON p.user_id = j.user_id
   WHERE j.status = 'open'
+    AND COALESCE(j.privacy_setting, 'public') = 'public'
   ORDER BY j.created_at DESC
   LIMIT 100;
 $$;
@@ -214,6 +215,7 @@ AS $$
   FROM public.job_posts j
   LEFT JOIN public.profiles p ON p.user_id = j.user_id
   WHERE j.id = _job_id AND j.status = 'open'
+    AND COALESCE(j.privacy_setting, 'public') = 'public'
   LIMIT 1;
 $$;
 
