@@ -59,7 +59,6 @@ AS $$
          p.rating_count, p.updated_at
   FROM public.profiles p
   WHERE p.user_id = _user_id
-    AND COALESCE(p.is_private, false) = false
   LIMIT 1;
 $$;
 
@@ -91,7 +90,6 @@ AS $$
          p.rating_count, p.updated_at
   FROM public.profiles p
   WHERE lower(p.username) = lower(_username)
-    AND COALESCE(p.is_private, false) = false
   LIMIT 1;
 $$;
 
