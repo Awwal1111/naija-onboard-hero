@@ -153,7 +153,7 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
         </DialogHeader>
         
         <Tabs defaultValue={isNigerian ? "pretium" : "crypto"} className="w-full">
-          <TabsList className={`grid w-full ${isNigerian ? 'grid-cols-3' : 'grid-cols-3'} h-auto`}>
+          <TabsList className="grid w-full grid-cols-3 h-auto">
             {isNigerian && (
               <TabsTrigger value="pretium" className="gap-1 text-xs py-2">
                 <Globe className="h-3 w-3" />
@@ -285,9 +285,6 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
               />
             </TabsContent>
           )}
-
-          {/* Bank Transfer Tab - Nigerian users only */}
-
 
           {/* MiniPay Guide Tab - International users only */}
           {!isNigerian && (
