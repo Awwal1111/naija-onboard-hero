@@ -13,6 +13,8 @@ RETURNS TABLE (
   state_name text,
   average_rating numeric,
   rating_count integer,
+  skill_category text,
+  years_experience integer,
   expert_verified_at timestamptz,
   updated_at timestamptz
 )
@@ -23,7 +25,10 @@ SET search_path = public
 AS $$
   SELECT p.user_id, p.username, p.full_name, p.profession, p.bio,
          p.profile_picture_url, p.state_name, p.average_rating,
-         p.rating_count, p.expert_verified_at, p.updated_at
+         p.rating_count,
+         (SELECT ea.skill_category FROM public.expert_applications ea WHERE ea.user_id = p.user_id AND ea.status = 'approved' ORDER BY ea.reviewed_at DESC NULLS LAST LIMIT 1),
+         (SELECT ea.years_experience FROM public.expert_applications ea WHERE ea.user_id = p.user_id AND ea.status = 'approved' ORDER BY ea.reviewed_at DESC NULLS LAST LIMIT 1),
+         p.expert_verified_at, p.updated_at
   FROM public.profiles p
   WHERE p.is_expert = true
     AND COALESCE(p.full_name, '') <> ''
@@ -46,6 +51,8 @@ RETURNS TABLE (
   expert_verified_at timestamptz,
   average_rating numeric,
   rating_count integer,
+  skill_category text,
+  years_experience integer,
   updated_at timestamptz
 )
 LANGUAGE sql
@@ -56,7 +63,10 @@ AS $$
   SELECT p.user_id, p.username, p.full_name, p.profession, p.bio,
          p.profile_picture_url, p.state_name, p.lga_name, p.area,
          p.is_expert, p.expert_verified_at, p.average_rating,
-         p.rating_count, p.updated_at
+         p.rating_count,
+         (SELECT ea.skill_category FROM public.expert_applications ea WHERE ea.user_id = p.user_id AND ea.status = 'approved' ORDER BY ea.reviewed_at DESC NULLS LAST LIMIT 1),
+         (SELECT ea.years_experience FROM public.expert_applications ea WHERE ea.user_id = p.user_id AND ea.status = 'approved' ORDER BY ea.reviewed_at DESC NULLS LAST LIMIT 1),
+         p.updated_at
   FROM public.profiles p
   WHERE p.user_id = _user_id
   LIMIT 1;
@@ -210,3 +220,47 @@ $$;
 GRANT EXECUTE ON FUNCTION public.get_public_gigs() TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.get_public_jobs() TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.get_public_job(uuid) TO anon, authenticated;
+
+
+-- Extend the individual expert SEO payload with the approved public skill category.
+DROP FUNCTION IF EXISTS public.get_public_expert(text);
+CREATE FUNCTION public.get_public_expert(_slug text)
+RETURNS TABLE (
+  user_id uuid,
+  username text,
+  full_name text,
+  profession text,
+  bio text,
+  profile_picture_url text,
+  average_rating numeric,
+  state_name text,
+  area text,
+  lga_name text,
+  expert_level text,
+  portfolio_link text,
+  skill_category text,
+  years_experience integer
+)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT p.user_id, p.username, p.full_name, p.profession, p.bio,
+         p.profile_picture_url, p.average_rating, p.state_name, p.area,
+         p.lga_name, p.expert_level,
+         (SELECT ea.portfolio_link FROM public.expert_applications ea
+          WHERE ea.user_id = p.user_id AND ea.status = 'approved'
+          ORDER BY ea.reviewed_at DESC NULLS LAST LIMIT 1),
+         (SELECT ea.skill_category FROM public.expert_applications ea
+          WHERE ea.user_id = p.user_id AND ea.status = 'approved'
+          ORDER BY ea.reviewed_at DESC NULLS LAST LIMIT 1),
+         (SELECT ea.years_experience FROM public.expert_applications ea
+          WHERE ea.user_id = p.user_id AND ea.status = 'approved'
+          ORDER BY ea.reviewed_at DESC NULLS LAST LIMIT 1)
+  FROM public.profiles p
+  WHERE p.is_expert = true
+    AND (p.user_id::text = _slug OR p.username = _slug)
+  LIMIT 1;
+$$;
+GRANT EXECUTE ON FUNCTION public.get_public_expert(text) TO anon, authenticated;
