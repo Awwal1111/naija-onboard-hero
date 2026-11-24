@@ -45,7 +45,7 @@ export const QuidaxRampWidget = ({ open, onOpenChange, mode }: QuidaxRampWidgetP
 
     const minAmount = mode === 'buy' ? MIN_BUY_AMOUNT_NGN : MIN_SELL_AMOUNT_NGN
     if (parseFloat(amount) < minAmount) {
-      toast.error(`Minimum ${mode === 'buy' ? 'deposit' : 'withdrawal'} is ${mode === 'buy' ? '₦3,000 NC' : '₦3,200 NC (~$2)'}`)
+      toast.error(`Minimum ${mode === 'buy' ? 'deposit' : 'cash-out'} is ${mode === 'buy' ? '₦3,000' : '₦3,200'}`)
       return
     }
 
@@ -158,12 +158,12 @@ export const QuidaxRampWidget = ({ open, onOpenChange, mode }: QuidaxRampWidgetP
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ArrowDownUp className="h-5 w-5" />
-            {mode === 'buy' ? 'Bank Deposit' : 'Bank Withdrawal'}
+            {mode === 'buy' ? 'Naira deposit' : 'Quidax cash-out'}
           </DialogTitle>
           <DialogDescription>
             {mode === 'buy'
-              ? 'Fund your account with Naira - Instant & Secure'
-              : 'Withdraw to your bank account - Fast & Reliable'}
+              ? 'Pay through Quidax using a supported Naira payment method.'
+              : 'Sell USDT through Quidax using its supported cash-out process.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -171,7 +171,7 @@ export const QuidaxRampWidget = ({ open, onOpenChange, mode }: QuidaxRampWidgetP
           <CardHeader>
             <CardTitle className="text-base">Transaction Details</CardTitle>
             <CardDescription>
-              Secure Banking Transaction - Protected & Instant
+              Payment details
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -180,15 +180,15 @@ export const QuidaxRampWidget = ({ open, onOpenChange, mode }: QuidaxRampWidgetP
               <Input
                 id="amount"
                 type="number"
-                placeholder={mode === 'buy' ? 'Enter amount (min ₦3,000 NC)' : 'Enter amount (min ₦3,200 NC)'}
+                placeholder={mode === 'buy' ? 'Enter amount (min ₦3,000)' : 'Enter amount (min ₦3,200)'}
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 min={mode === 'buy' ? '3000' : '3200'}
               />
               <p className="text-xs text-muted-foreground">
                 {mode === 'buy'
-                  ? 'Minimum deposit: ₦3,000 NC'
-                  : 'Enter your amount in Naira. We convert to USDT automatically.'}
+                  ? 'Minimum deposit: ₦3,000'
+                  : 'Enter the Naira value you want to cash out. Quidax will show the final quote.'}
               </p>
             </div>
 
@@ -202,8 +202,7 @@ export const QuidaxRampWidget = ({ open, onOpenChange, mode }: QuidaxRampWidgetP
                   </>
                 ) : (
                   <>
-                    You'll be redirected to Quidax to complete your withdrawal.
-                    Funds will arrive in your bank account within minutes.
+                    You'll complete the USDT sale and any available cash-out directly with Quidax. Availability and timing are determined by Quidax.
                   </>
                 )}
               </AlertDescription>

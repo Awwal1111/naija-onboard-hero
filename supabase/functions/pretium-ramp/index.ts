@@ -140,6 +140,21 @@ serve(async (req) => {
 
     // ---------- Off-ramp NGN: convert NC → bank ----------
     if (action === "offrampNGN") {
+      // Enforce the same withdrawal verification requirement server-side.
+      // The UI check is for feedback only and must not be the security boundary.
+      const { data: verificationProfile, error: verificationError } = await supabaseAdmin
+        .from("profiles")
+        .select("verification_level")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (verificationError) {
+        console.error("[PRETIUM-RAMP] verification lookup failed:", verificationError.message);
+        return json({ error: "Unable to verify account eligibility. Please try again." }, 500);
+      }
+      if (!["verified", "fully_verified"].includes(verificationProfile?.verification_level || "")) {
+        return json({ error: "Complete account verification before withdrawing funds." }, 403);
+      }
+
       const { ncAmount, account_name, account_number, bank_name, bank_code, dryRun } = body;
       if (typeof ncAmount !== "number" || !Number.isFinite(ncAmount) || ncAmount < 1000) {
         return json({ error: "Minimum withdrawal is NC 1000" }, 400);

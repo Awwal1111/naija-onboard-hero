@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { BrandButton } from '@/components/ui/brand-button'
 import { Badge } from '@/components/ui/badge'
-import { ArrowDownUp, Send, Wallet, Sparkles, Zap, Globe } from 'lucide-react'
+import { ArrowDownUp, Send, Wallet, Sparkles, Globe } from 'lucide-react'
 import { useMiniPay } from '@/hooks/useMiniPay'
 import { useUserCountry } from '@/hooks/useUserCountry'
 
@@ -18,10 +18,6 @@ export const DepositMethods = ({ onSelectMethod }: DepositMethodsProps) => {
       {/* MiniPay - Show first if in MiniPay environment */}
       {isMiniPay && (
         <Card className="border-green-500/30 bg-gradient-to-br from-green-500/10 to-emerald-500/5 relative overflow-hidden">
-          <Badge className="absolute top-4 right-4 bg-green-600">
-            <Zap className="h-3 w-3 mr-1" />
-            Instant
-          </Badge>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <Wallet className="h-5 w-5 text-green-600" />
@@ -39,123 +35,137 @@ export const DepositMethods = ({ onSelectMethod }: DepositMethodsProps) => {
         </Card>
       )}
 
-      {/* Pretium Mobile Money — shown FIRST to every user. Works with M-Pesa,
-          MTN, Airtel, Vodafone across Kenya, Ghana, Uganda, Malawi and DR Congo.
-          Nigerians can also use it if they hold any of these mobile-money numbers. */}
-      <Card className={`${!isMiniPay ? 'border-primary/20 bg-gradient-to-br from-primary/5 to-transparent' : 'hover:border-primary/40'} transition-colors relative overflow-hidden`}>
-        {!isMiniPay && (
+      {/* Nigerian users: Quidax is the NGN on-ramp. The provider confirms payment
+          and the Celo deposit webhook credits the internal wallet after funds arrive. */}
+      {isNigerian && (
+        <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent relative overflow-hidden">
           <Badge className="absolute top-4 right-4 bg-primary">
             <Sparkles className="h-3 w-3 mr-1" />
             Recommended
           </Badge>
-        )}
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Globe className="h-5 w-5 text-primary" />
-            Pretium Mobile Money
-          </CardTitle>
-          <CardDescription>
-            M-Pesa, MTN, Airtel, Vodafone • Kenya, Ghana, Uganda, Malawi, DR Congo
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <BrandButton onClick={() => onSelectMethod('pretium')} variant={!isMiniPay ? 'primary' : 'outline'} className="w-full">
-            Deposit with Mobile Money
-          </BrandButton>
-        </CardContent>
-      </Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <ArrowDownUp className="h-5 w-5 text-primary" />
+              Add Naira
+            </CardTitle>
+            <CardDescription>
+              Pay in Nigerian Naira through Quidax. Your NaijaLancers balance is credited after payment is confirmed.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <BrandButton onClick={() => onSelectMethod('ramp')} variant="primary" className="w-full">
+              Deposit Naira
+            </BrandButton>
+          </CardContent>
+        </Card>
+      )}
 
-      {/* Quidax — Naira bank ramp. Works globally for anyone with a Quidax account
-          (Nigeria, Ghana, Kenya, South Africa, Uganda, Tanzania, Egypt and more). */}
-      <Card className="hover:border-primary/40 transition-colors relative overflow-hidden">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <ArrowDownUp className="h-5 w-5 text-primary" />
-            Quidax {isNigerian ? '(₦ Bank Transfer)' : '(Buy NC with crypto or NGN)'}
-          </CardTitle>
-          <CardDescription>
-            {isNigerian
-              ? 'Instant funding via Nigerian bank transfer powered by Quidax'
-              : 'Pay from your Quidax account — supported across Nigeria, Ghana, Kenya, South Africa, Uganda and more'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <BrandButton onClick={() => onSelectMethod('ramp')} variant="outline" className="w-full">
-            Deposit via Quidax
-          </BrandButton>
-        </CardContent>
-      </Card>
+      {/* Pretium on-ramp markets currently implemented by the backend: KES/GHS/UGX/MWK/CDF.
+          Do not present this as a Nigerian Naira method. */}
+      {!isNigerian && (
+        <Card className={`${!isMiniPay ? 'border-primary/20 bg-gradient-to-br from-primary/5 to-transparent' : 'hover:border-primary/40'} transition-colors relative overflow-hidden`}>
+          {!isMiniPay && (
+            <Badge className="absolute top-4 right-4 bg-primary">
+              <Sparkles className="h-3 w-3 mr-1" />
+              Recommended
+            </Badge>
+          )}
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Globe className="h-5 w-5 text-primary" />
+              Pretium Mobile Money
+            </CardTitle>
+            <CardDescription>
+              Mobile money payments in supported markets including Kenya, Ghana, Uganda, Malawi and DR Congo
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <BrandButton onClick={() => onSelectMethod('pretium')} variant={!isMiniPay ? 'primary' : 'outline'} className="w-full">
+              Deposit with Mobile Money
+            </BrandButton>
+          </CardContent>
+        </Card>
+      )}
 
-      {/* Mt Pelerin - Global card / bank / SEPA ramp */}
-      <Card className="hover:border-primary/40 transition-colors relative overflow-hidden">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Globe className="h-5 w-5 text-primary" />
-            Mt Pelerin (Card / Bank / SEPA)
-          </CardTitle>
-          <CardDescription>
-            Buy USDT or cUSD with card, bank transfer or SEPA • 60+ countries
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <BrandButton onClick={() => onSelectMethod('mtpelerin')} variant="outline" className="w-full">
-            Deposit with Mt Pelerin
-          </BrandButton>
-        </CardContent>
-      </Card>
+      <details className="rounded-xl border border-border/60 p-4">
+        <summary className="cursor-pointer list-none font-medium text-sm">
+          Advanced payment methods
+          <span className="block text-xs font-normal text-muted-foreground mt-1">
+            Wallet transfers and international payment providers
+          </span>
+        </summary>
+        <div className="grid gap-4 mt-4">
+        {/* Mt Pelerin - Global card / bank / SEPA ramp */}
+        <Card className="hover:border-primary/40 transition-colors relative overflow-hidden">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Globe className="h-5 w-5 text-primary" />
+              Mt Pelerin (Card / Bank / SEPA)
+            </CardTitle>
+            <CardDescription>
+              Buy USDT or cUSD with card, bank transfer or SEPA • 60+ countries
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <BrandButton onClick={() => onSelectMethod('mtpelerin')} variant="outline" className="w-full">
+              Deposit with Mt Pelerin
+            </BrandButton>
+          </CardContent>
+        </Card>
 
-      {/* Crypto Deposit */}
-      <Card className="hover:border-primary/40 transition-colors relative overflow-hidden">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Wallet className="h-5 w-5" />
-            Crypto Deposit
-          </CardTitle>
-          <CardDescription>
-            Send USDT, cUSD, or CELO to your wallet • Works globally
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <BrandButton onClick={() => onSelectMethod('crypto')} variant="outline" className="w-full">
-            View Wallet Address
-          </BrandButton>
-        </CardContent>
-      </Card>
+        {/* Crypto Deposit */}
+        <Card className="hover:border-primary/40 transition-colors relative overflow-hidden">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Wallet className="h-5 w-5" />
+              Crypto Deposit
+            </CardTitle>
+            <CardDescription>
+              Send USDT, cUSD, or CELO to your wallet • Works globally
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <BrandButton onClick={() => onSelectMethod('crypto')} variant="outline" className="w-full">
+              View Wallet Address
+            </BrandButton>
+          </CardContent>
+        </Card>
 
-      <Card className="hover:border-primary/40 transition-colors relative overflow-hidden">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Wallet className="h-5 w-5" />
-            MetaMask Deposit
-          </CardTitle>
-          <CardDescription>
-            Connect MetaMask and send cUSD or USDT on Celo to your NaijaLancers wallet
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <BrandButton onClick={() => onSelectMethod('metamask')} variant="outline" className="w-full">
-            Connect MetaMask
-          </BrandButton>
-        </CardContent>
-      </Card>
+        <Card className="hover:border-primary/40 transition-colors relative overflow-hidden">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Wallet className="h-5 w-5" />
+              MetaMask Deposit
+            </CardTitle>
+            <CardDescription>
+              Connect MetaMask and send cUSD or USDT on Celo to your NaijaLancers wallet
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <BrandButton onClick={() => onSelectMethod('metamask')} variant="outline" className="w-full">
+              Connect MetaMask
+            </BrandButton>
+          </CardContent>
+        </Card>
 
-      <Card className="hover:border-primary/40 transition-colors relative overflow-hidden">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Wallet className="h-5 w-5" />
-            Valora Deposit
-          </CardTitle>
-          <CardDescription>
-            Open Valora-compatible transfer details and send cUSD or USDT to your wallet
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <BrandButton onClick={() => onSelectMethod('valora')} variant="outline" className="w-full">
-            Deposit with Valora
-          </BrandButton>
-        </CardContent>
-      </Card>
+        <Card className="hover:border-primary/40 transition-colors relative overflow-hidden">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Wallet className="h-5 w-5" />
+              Valora Deposit
+            </CardTitle>
+            <CardDescription>
+              Open Valora-compatible transfer details and send cUSD or USDT to your wallet
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <BrandButton onClick={() => onSelectMethod('valora')} variant="outline" className="w-full">
+              Deposit with Valora
+            </BrandButton>
+          </CardContent>
+        </Card>
 
+        </div>
       {/* Telegram Bot */}
       <Card className="hover:border-blue-500/40 transition-colors">
         <CardHeader>
@@ -173,6 +183,9 @@ export const DepositMethods = ({ onSelectMethod }: DepositMethodsProps) => {
           </BrandButton>
         </CardContent>
       </Card>
+
+      </details>
+
     </div>
   )
 }
