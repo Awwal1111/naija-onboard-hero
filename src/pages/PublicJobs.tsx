@@ -27,12 +27,7 @@ const PublicJobs = () => {
   const { data: jobs, isLoading } = useQuery({
     queryKey: ['public-jobs'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('job_posts')
-        .select('id, title, description, budget_min, budget_max, industry, job_type, location, status, created_at')
-        .eq('status', 'open')
-        .order('created_at', { ascending: false })
-        .limit(50);
+      const { data, error } = await supabase.rpc('get_public_jobs' as any);
       
       if (error) throw error;
       return (data || []).map((job: any) => ({
