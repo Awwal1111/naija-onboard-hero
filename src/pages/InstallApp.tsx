@@ -22,7 +22,7 @@ const InstallApp = () => {
     if (installed) {
       toast.success('App installed successfully!');
       setCookie('app_installed', 'true', { expires: 365 });
-      setTimeout(() => navigate('/main-feed'), 2000);
+      setTimeout(() => navigate('/feed'), 2000);
     }
   };
 
@@ -50,7 +50,7 @@ const InstallApp = () => {
               <p className="text-muted-foreground">
                 You can find NaijaLancers on your home screen
               </p>
-              <Button onClick={() => navigate('/main-feed')} className="w-full">
+              <Button onClick={() => navigate('/feed')} className="w-full">
                 Open App
               </Button>
             </div>
@@ -184,7 +184,7 @@ const InstallApp = () => {
                 </p>
               </div>
               
-              <Button onClick={() => navigate('/main-feed')} variant="outline" className="w-full">
+              <Button onClick={() => navigate('/feed')} variant="outline" className="w-full">
                 Continue to Website
               </Button>
             </div>
@@ -192,7 +192,7 @@ const InstallApp = () => {
           
           <div className="pt-4 border-t">
             <Button 
-              onClick={() => navigate('/main-feed')} 
+              onClick={() => navigate('/feed')} 
               variant="ghost" 
               className="w-full"
             >
