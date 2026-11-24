@@ -60,7 +60,7 @@ export const WorkedWithSection = ({ userId, isOwnProfile }: WorkedWithSectionPro
             <p className="text-sm text-muted-foreground">
               Your completed client projects and collaborations will build your work history here.
             </p>
-            <Button size="sm" variant="outline" className="shrink-0" onClick={() => navigate('/gigs')}>
+            <Button size="sm" variant="outline" className="shrink-0" onClick={() => navigate('/p/gigs')}>
               <Search className="h-4 w-4 mr-2" />
               Explore gigs
             </Button>
