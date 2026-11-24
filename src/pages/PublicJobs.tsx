@@ -16,6 +16,11 @@ interface Job {
   title: string;
   description: string;
   price: number;
+  budget_min?: number | null;
+  budget_max?: number | null;
+  poster_name?: string | null;
+  poster_username?: string | null;
+  required_skills?: string[] | null;
   category: string;
   status: string;
   created_at: string;
@@ -159,6 +164,7 @@ const PublicJobs = () => {
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-lg line-clamp-1">{job.title}</h3>
+                        {(job.poster_name || job.company_name) && <p className="text-xs text-muted-foreground mt-1">Posted by {job.company_name || job.poster_name}</p>}
                         <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
                           {job.description}
                         </p>
@@ -169,11 +175,18 @@ const PublicJobs = () => {
                             {job.category}
                           </Badge>
                         </div>
+                        {job.required_skills?.length ? (
+                          <div className="flex flex-wrap gap-1.5 mt-3">
+                            {job.required_skills.slice(0, 4).map((skill: string) => <Badge key={skill} variant="outline" className="text-xs">{skill}</Badge>)}
+                          </div>
+                        ) : null}
 
                         <div className="flex items-center gap-4 mt-3 text-sm">
                           <span className="font-semibold text-primary flex items-center gap-1">
                             <DollarSign className="h-4 w-4" />
-                            {job.price?.toLocaleString()} NC
+                            {job.budget_min || job.budget_max
+                              ? `₦${(job.budget_min || 0).toLocaleString()} - ₦${(job.budget_max || job.budget_min || 0).toLocaleString()}`
+                              : 'Budget negotiable'}
                           </span>
                           <span className="text-muted-foreground flex items-center gap-1">
                             <Calendar className="h-3.5 w-3.5" />
