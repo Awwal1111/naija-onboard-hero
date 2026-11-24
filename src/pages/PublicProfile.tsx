@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Helmet } from 'react-helmet-async';
@@ -24,6 +24,10 @@ export default function PublicProfile() {
   });
 
   const profile = Array.isArray(rows) ? rows[0] : null;
+
+  if (profile?.username) {
+    return <Navigate to={profile.is_expert ? `/p/expert/${profile.username}` : `/u/${profile.username}`} replace />;
+  }
 
   if (isLoading) return <div className="container max-w-3xl mx-auto p-6"><Skeleton className="h-64 w-full rounded-xl" /></div>;
 
