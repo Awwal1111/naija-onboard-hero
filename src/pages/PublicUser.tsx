@@ -17,14 +17,9 @@ export default function PublicUser() {
     queryKey: ['public-user', username],
     enabled: !!username,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('user_id, username, full_name, profession, bio, profile_picture_url, area, country_code, is_expert')
-        .ilike('username', username!)
-        .limit(1)
-        .maybeSingle();
+      const { data, error } = await supabase.rpc('get_public_profile_by_username' as any, { _username: username! });
       if (error) throw error;
-      return data as any;
+      return (Array.isArray(data) ? data[0] : data) as any;
     },
   });
 
