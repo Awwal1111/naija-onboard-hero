@@ -3,8 +3,6 @@ import { useSearchParams, useNavigate } from 'react-router-dom'
 import { CheckCircle } from 'lucide-react'
 import { BrandButton } from '@/components/ui/brand-button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { supabase } from '@/integrations/supabase/client'
-import { toast } from 'sonner'
 
 const PaymentSuccess = () => {
   const [searchParams] = useSearchParams()
@@ -13,47 +11,13 @@ const PaymentSuccess = () => {
   const [message, setMessage] = useState('Finalizing your payment...')
 
   useEffect(() => {
-    const finalizeIvoryPay = async () => {
-      const pendingReference = reference || localStorage.getItem('ivorypay_pending_ref')
-
-      if (!pendingReference) {
-        setMessage('Your payment has been processed successfully.')
-        return
-      }
-
-      try {
-        const { data: { session } } = await supabase.auth.getSession()
-        if (!session) {
-          setMessage('Payment received. Please log in again to refresh your wallet.')
-          return
-        }
-
-        const response = await supabase.functions.invoke('ivorypay-deposit', {
-          body: { action: 'verify', reference: pendingReference },
-          headers: { Authorization: `Bearer ${session.access_token}` },
-        })
-
-        if (response.error) throw new Error(response.error.message)
-
-        const data = response.data
-        if (data?.status === 'SUCCESS' && data?.ncAmount > 0) {
-          localStorage.removeItem('ivorypay_pending_ref')
-          setMessage(`Deposit confirmed. NC ${data.ncAmount.toLocaleString()} has been added to your wallet.`)
-          toast.success('IvoryPay deposit confirmed')
-          return
-        }
-
-        setMessage(data?.message || 'Payment recorded. Wallet credit is still pending confirmation.')
-      } catch (error: any) {
-        setMessage(error.message || 'Payment received, but automatic confirmation is still pending.')
-      }
-    }
-
-    finalizeIvoryPay()
+    setMessage(reference
+      ? 'Your payment provider has returned a successful payment response. Check your wallet transaction history for the final status.'
+      : 'Your payment has been processed. Check your wallet for the latest transaction status.')
 
     const timer = setTimeout(() => navigate('/earn'), 7000)
     return () => clearTimeout(timer)
-  }, [navigate])
+  }, [navigate, reference])
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-6">
