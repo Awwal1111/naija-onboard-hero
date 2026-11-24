@@ -111,75 +111,86 @@ export const DepositMethods = ({ onSelectMethod }: DepositMethodsProps) => {
         </Card>
       )}
 
-      {/* Mt Pelerin - Global card / bank / SEPA ramp */}
-      <Card className="hover:border-primary/40 transition-colors relative overflow-hidden">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Globe className="h-5 w-5 text-primary" />
-            Mt Pelerin (Card / Bank / SEPA)
-          </CardTitle>
-          <CardDescription>
-            Buy USDT or cUSD with card, bank transfer or SEPA • 60+ countries
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <BrandButton onClick={() => onSelectMethod('mtpelerin')} variant="outline" className="w-full">
-            Deposit with Mt Pelerin
-          </BrandButton>
-        </CardContent>
-      </Card>
+      <details className="rounded-xl border border-border/60 p-4">
+        <summary className="cursor-pointer list-none font-medium text-sm">
+          Advanced payment methods
+          <span className="block text-xs font-normal text-muted-foreground mt-1">
+            Wallet transfers and international payment providers
+          </span>
+        </summary>
+        <div className="grid gap-4 mt-4">
+        {/* Mt Pelerin - Global card / bank / SEPA ramp */}
+        <Card className="hover:border-primary/40 transition-colors relative overflow-hidden">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Globe className="h-5 w-5 text-primary" />
+              Mt Pelerin (Card / Bank / SEPA)
+            </CardTitle>
+            <CardDescription>
+              Buy USDT or cUSD with card, bank transfer or SEPA • 60+ countries
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <BrandButton onClick={() => onSelectMethod('mtpelerin')} variant="outline" className="w-full">
+              Deposit with Mt Pelerin
+            </BrandButton>
+          </CardContent>
+        </Card>
 
-      {/* Crypto Deposit */}
-      <Card className="hover:border-primary/40 transition-colors relative overflow-hidden">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Wallet className="h-5 w-5" />
-            Crypto Deposit
-          </CardTitle>
-          <CardDescription>
-            Send USDT, cUSD, or CELO to your wallet • Works globally
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <BrandButton onClick={() => onSelectMethod('crypto')} variant="outline" className="w-full">
-            View Wallet Address
-          </BrandButton>
-        </CardContent>
-      </Card>
+        {/* Crypto Deposit */}
+        <Card className="hover:border-primary/40 transition-colors relative overflow-hidden">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Wallet className="h-5 w-5" />
+              Crypto Deposit
+            </CardTitle>
+            <CardDescription>
+              Send USDT, cUSD, or CELO to your wallet • Works globally
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <BrandButton onClick={() => onSelectMethod('crypto')} variant="outline" className="w-full">
+              View Wallet Address
+            </BrandButton>
+          </CardContent>
+        </Card>
 
-      <Card className="hover:border-primary/40 transition-colors relative overflow-hidden">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Wallet className="h-5 w-5" />
-            MetaMask Deposit
-          </CardTitle>
-          <CardDescription>
-            Connect MetaMask and send cUSD or USDT on Celo to your NaijaLancers wallet
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <BrandButton onClick={() => onSelectMethod('metamask')} variant="outline" className="w-full">
-            Connect MetaMask
-          </BrandButton>
-        </CardContent>
-      </Card>
+        <Card className="hover:border-primary/40 transition-colors relative overflow-hidden">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Wallet className="h-5 w-5" />
+              MetaMask Deposit
+            </CardTitle>
+            <CardDescription>
+              Connect MetaMask and send cUSD or USDT on Celo to your NaijaLancers wallet
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <BrandButton onClick={() => onSelectMethod('metamask')} variant="outline" className="w-full">
+              Connect MetaMask
+            </BrandButton>
+          </CardContent>
+        </Card>
 
-      <Card className="hover:border-primary/40 transition-colors relative overflow-hidden">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Wallet className="h-5 w-5" />
-            Valora Deposit
-          </CardTitle>
-          <CardDescription>
-            Open Valora-compatible transfer details and send cUSD or USDT to your wallet
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <BrandButton onClick={() => onSelectMethod('valora')} variant="outline" className="w-full">
-            Deposit with Valora
-          </BrandButton>
-        </CardContent>
-      </Card>
+        <Card className="hover:border-primary/40 transition-colors relative overflow-hidden">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Wallet className="h-5 w-5" />
+              Valora Deposit
+            </CardTitle>
+            <CardDescription>
+              Open Valora-compatible transfer details and send cUSD or USDT to your wallet
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <BrandButton onClick={() => onSelectMethod('valora')} variant="outline" className="w-full">
+              Deposit with Valora
+            </BrandButton>
+          </CardContent>
+        </Card>
+
+        </div>
+      </details>
 
       {/* Telegram Bot */}
       <Card className="hover:border-blue-500/40 transition-colors">
