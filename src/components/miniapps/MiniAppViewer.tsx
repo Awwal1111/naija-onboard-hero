@@ -147,7 +147,11 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
     if (s === 'njl_balance' || s === 'balance' || s === 'get_balance' || s === 'wallet_balance' || s === 'request_balance') return 'njl_balance'
     if (s === 'njl_charge' || s === 'charge' || s === 'charge_user' || s === 'pay' || s === 'payment' || s === 'request_payment' || s === 'request_charge' || s === 'debit' || s === 'purchase' || s === 'checkout') return 'njl_charge'
     if (s === 'njl_payout' || s === 'payout' || s === 'payout_user' || s === 'credit' || s === 'reward' || s === 'send_payment' || s === 'transfer_to_user') return 'njl_payout'
-    if (s === 'njl_push' || s === 'push' || s === 'notify' || s === 'send_push' || s === 'notification') return 'njl_push'
+    if (s === 'njl_push' || s === 'push' || s === 'send_push') return 'njl_push'
+    if (s === 'njl_notify' || s === 'notify' || s === 'in_app_notification') return 'njl_notify'
+    if (s === 'njl_get_profile' || s === 'get_profile' || s === 'profile') return 'njl_get_profile'
+    if (s === 'njl_get_skills' || s === 'get_skills' || s === 'skills') return 'njl_get_skills'
+    if (s === 'njl_get_portfolio' || s === 'get_portfolio' || s === 'portfolio') return 'njl_get_portfolio'
     if (s === 'njl_verify_pin' || s === 'verify_pin' || s === 'request_pin' || s === 'pin') return 'njl_verify_pin'
     return s.startsWith('njl_') ? s : ''
   }
@@ -219,6 +223,11 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
       const rawType = data.type || data.action || data.method || data.event
       const normType = normalizeType(rawType)
       if (!normType) return
+
+      // New read/notification capabilities require the actual embedded frame,
+      // not merely a matching origin. This prevents another same-origin window
+      // from invoking these host capabilities.
+      if ((normType === 'njl_get_profile' || normType === 'njl_get_skills' || normType === 'njl_get_portfolio' || normType === 'njl_notify') && event.source !== iframeRef.current?.contentWindow) return
 
       const rid = getRid(data)
       const currency = getCurrency(data)
@@ -332,6 +341,108 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
             currency,
           })
           setShowPayoutDialog(true)
+          break
+        }
+
+        case 'njl_get_profile': {
+          if (!user) {
+            postToIframe(withIds(rid, { type: 'njl_profile_result', success: false, error: 'Auth required' }))
+            return
+          }
+          // Return only an explicit allowlist from the signed-in user's own profile.
+          postToIframe(withIds(rid, {
+            type: 'njl_profile_result',
+            success: true,
+            user: {
+              user_id: user.id,
+              full_name: profile?.full_name || '',
+              email: user.email || '',
+              profession: (profile as any)?.profession || '',
+              bio: (profile as any)?.bio || '',
+              profile_picture_url: profile?.profile_picture_url || '',
+              country_code: (profile as any)?.country_code || '',
+              is_expert: !!(profile as any)?.is_expert,
+            },
+          }))
+          break
+        }
+
+        case 'njl_get_skills': {
+          if (!user) {
+            postToIframe(withIds(rid, { type: 'njl_skills_result', success: false, error: 'Auth required' }))
+            return
+          }
+          const { data: skills, error } = await supabase
+            .from('skills')
+            .select('id, skill_name, created_at')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
+          postToIframe(withIds(rid, {
+            type: 'njl_skills_result',
+            success: !error,
+            skills: skills || [],
+            ...(error ? { error: 'Unable to load skills' } : {}),
+          }))
+          break
+        }
+
+        case 'njl_get_portfolio': {
+          if (!user) {
+            postToIframe(withIds(rid, { type: 'njl_portfolio_result', success: false, error: 'Auth required' }))
+            return
+          }
+          const { data: items, error } = await supabase
+            .from('portfolio_items')
+            .select('id, title, description, project_url, media_url, created_at')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
+          postToIframe(withIds(rid, {
+            type: 'njl_portfolio_result',
+            success: !error,
+            items: items || [],
+            ...(error ? { error: 'Unable to load portfolio' } : {}),
+          }))
+          break
+        }
+
+        case 'njl_notify': {
+          if (!user) {
+            postToIframe(withIds(rid, { type: 'njl_notify_result', success: false, error: 'Auth required' }))
+            return
+          }
+          const title = String(getField(data, ['title', 'heading']) || '').trim().slice(0, 80)
+          const message = String(getField(data, ['message', 'body', 'text']) || '').trim().slice(0, 300)
+          const requestedUrl = String(getField(data, ['url', 'deepLink', 'deep_link']) || '/apps').trim()
+          const safeUrl = requestedUrl.startsWith('/') && !requestedUrl.startsWith('//') && !requestedUrl.includes('\\\\')
+            ? requestedUrl.slice(0, 300)
+            : '/apps'
+          if (!title || !message) {
+            postToIframe(withIds(rid, { type: 'njl_notify_result', success: false, error: 'Title and message are required' }))
+            return
+          }
+          const { data: notification, error } = await supabase
+            .from('notifications')
+            .insert({
+              user_id: user.id,
+              type: 'mini_app',
+              title,
+              message,
+              metadata: {
+                source: 'mini_app',
+                mini_app_id: app.id,
+                mini_app_name: app.app_name,
+                category: String(getField(data, ['category']) || 'general').slice(0, 40),
+                url: safeUrl,
+              },
+            })
+            .select('id')
+            .single()
+          postToIframe(withIds(rid, {
+            type: 'njl_notify_result',
+            success: !error,
+            notification_id: notification?.id || null,
+            ...(error ? { error: 'Unable to create notification' } : {}),
+          }))
           break
         }
 
