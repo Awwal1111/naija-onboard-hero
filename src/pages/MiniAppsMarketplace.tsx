@@ -68,14 +68,11 @@ const BUILT_IN_APPS: UnifiedApp[] = [
   // Finance
   { id: 'pa-fundraising', name: 'Fundraising', description: 'Create or support fundraising campaigns', icon: Heart, path: '/fundraising', category: 'finance', color: 'from-rose-500/20 to-pink-500/20', isInternal: true },
   { id: 'pa-donations', name: 'Donations', description: 'Support the platform with donations', icon: Gift, path: '/donations', category: 'finance', color: 'from-pink-500/20 to-rose-500/20', isInternal: true },
-  { id: 'pa-loan', name: 'Loan Services', description: 'Access quick loans via partners', icon: Banknote, path: '/loan', category: 'finance', color: 'from-indigo-500/20 to-purple-500/20', isInternal: true },
-  { id: 'pa-emergency', name: 'Emergency Fund', description: 'Request emergency financial assistance', icon: AlertCircle, path: '/emergency', category: 'finance', color: 'from-amber-500/20 to-orange-500/20', isInternal: true },
   { id: 'int-bills', name: 'Bills & Airtime', description: 'Pay bills, buy airtime & data', icon: Receipt, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, internalAction: 'bills' },
   { id: 'int-bank', name: 'Deposit', description: 'Deposit via bank or Naira', icon: Building2, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, internalAction: 'bank_deposit' },
   { id: 'int-bank-withdraw', name: 'Withdraw', description: 'Withdraw to your bank with Quidax', icon: Banknote, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, internalAction: 'bank_withdrawal' },
   { id: 'int-crypto', name: 'Crypto Deposit', description: 'Deposit via crypto wallet', icon: Wallet, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, internalAction: 'crypto_deposit' },
   { id: 'int-metamask', name: 'MetaMask Deposit', description: 'Deposit cUSD or USDT from MetaMask', icon: Wallet, category: 'finance', color: 'from-orange-500/20 to-amber-500/20', isInternal: true, internalAction: 'metamask_deposit' },
-  { id: 'int-ivorypay', name: 'IvoryPay Deposit', description: 'Pay via bank or crypto across Africa', icon: Wallet, category: 'finance', color: 'from-amber-500/20 to-yellow-500/20', isInternal: true, internalAction: 'ivorypay_deposit' },
   { id: 'int-escrow', name: 'Escrow', description: 'Secure escrow payments', icon: Shield, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, internalAction: 'escrow' },
   { id: 'int-escrowhubs', name: 'EscrowHubs (On-chain)', description: 'Non-custodial cUSD escrow on Celo with AI arbitration', icon: Shield, category: 'finance', color: 'from-emerald-500/20 to-teal-500/20', isInternal: true, internalAction: 'escrowhubs' },
   { id: 'int-converter', name: 'NC Converter', description: 'Convert non-withdrawable to withdrawable NC', icon: RefreshCw, category: 'finance', color: 'from-primary/20 to-accent/20', isInternal: true, internalAction: 'nc_converter' },
@@ -89,9 +86,7 @@ const BUILT_IN_APPS: UnifiedApp[] = [
   { id: 'pa-streak', name: 'Daily Streak', description: 'Claim your streak bonus every day', icon: Flame, path: '/earn', category: 'earn', color: 'from-orange-500/20 to-amber-500/20', isInternal: true },
   { id: 'pa-bitlabs', name: 'BitLabs Surveys', description: 'Complete surveys and earn NC rewards', icon: FileText, path: '/surveys', category: 'earn', color: 'from-primary/20 to-accent/20', isInternal: true },
   { id: 'pa-cpx', name: 'CPX Surveys', description: 'Open CPX Research surveys for extra rewards', icon: FileText, path: '/cpx-surveys', category: 'earn', color: 'from-blue-500/20 to-cyan-500/20', isInternal: true },
-  { id: 'pa-social-tasks', name: 'Social Tasks', description: 'Do social media tasks for cash rewards', icon: Zap, path: '/earn/social-tasks', category: 'earn', color: 'from-primary/20 to-accent/20', isInternal: true },
   { id: 'pa-tasks', name: 'Tasks', description: 'Complete community reward tasks', icon: Users, path: '/tasks', category: 'earn', color: 'from-violet-500/20 to-purple-500/20', isInternal: true },
-  { id: 'pa-media', name: 'Local Media Tasks', description: 'Read articles and submit short notes', icon: BookOpen, path: '/earn/articles', category: 'earn', color: 'from-sky-500/20 to-cyan-500/20', isInternal: true },
   { id: 'pa-referrals', name: 'Referrals', description: 'Invite friends and earn ₦50 each', icon: Users, path: '/referrals', category: 'earn', color: 'from-purple-500/20 to-violet-500/20', isInternal: true },
   // Games
   { id: 'pa-guess', name: 'Guess Number', description: 'Guess the number and win NC', icon: Dices, path: '/earn/guess-number', category: 'games', color: 'from-emerald-500/20 to-green-500/20', isInternal: true },
@@ -110,7 +105,7 @@ const MiniAppsMarketplace = () => {
   const [tab, setTab] = useState<'explore' | 'my-apps'>('explore')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [showDepositDialog, setShowDepositDialog] = useState(false)
-  const [depositMethod, setDepositMethod] = useState<'metamask' | 'ivorypay' | undefined>(undefined)
+  const [depositMethod, setDepositMethod] = useState<'metamask' | undefined>(undefined)
   const [showEscrowSearch, setShowEscrowSearch] = useState(false)
   const [showNCConverter, setShowNCConverter] = useState(false)
   const [showTransferDialog, setShowTransferDialog] = useState(false)
@@ -133,7 +128,7 @@ const MiniAppsMarketplace = () => {
         .order('is_featured', { ascending: false })
         .order('install_count', { ascending: false })
         .limit(100)
-      const internalIds = new Set(['bills', 'bank_deposit', 'bank_withdrawal', 'deposit_naira', 'crypto_deposit', 'metamask_deposit', 'ivorypay_deposit', 'escrow', 'nc_converter'])
+      const internalIds = new Set(['bills', 'bank_deposit', 'bank_withdrawal', 'deposit_naira', 'crypto_deposit', 'metamask_deposit', 'escrow', 'nc_converter'])
       return (data || []).filter((a: any) =>
         !internalIds.has(a.sdk_app_id) && !a.app_url?.startsWith('internal://')
       ) as MiniApp[]
@@ -238,10 +233,6 @@ const MiniAppsMarketplace = () => {
         break
       case 'metamask_deposit':
         setDepositMethod('metamask')
-        setShowDepositDialog(true)
-        break
-      case 'ivorypay_deposit':
-        setDepositMethod('ivorypay')
         setShowDepositDialog(true)
         break
       case 'escrow':
