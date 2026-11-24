@@ -135,7 +135,7 @@ AS $$
          p.username, p.full_name, p.profession, p.profile_picture_url
   FROM public.jobs_services g
   LEFT JOIN public.profiles p ON p.user_id = g.user_id
-  WHERE g.status IN ('open', 'active')
+  WHERE g.status = 'active'
   ORDER BY g.created_at DESC
   LIMIT 100;
 $$;
@@ -149,7 +149,6 @@ RETURNS TABLE (
   description text,
   budget_min numeric,
   budget_max numeric,
-  industry text,
   job_type text,
   location text,
   status text,
@@ -165,12 +164,11 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
   SELECT j.id, j.user_id, j.title, j.description, j.budget_min, j.budget_max,
-         j.industry, j.job_type, j.location, j.status, j.created_at,
+         j.job_type, j.location, j.status, j.created_at,
          j.required_skills, j.company_name, p.full_name, p.username
   FROM public.job_posts j
   LEFT JOIN public.profiles p ON p.user_id = j.user_id
   WHERE j.status = 'open'
-    AND COALESCE(j.privacy_setting, 'public') = 'public'
   ORDER BY j.created_at DESC
   LIMIT 100;
 $$;
@@ -183,19 +181,14 @@ RETURNS TABLE (
   title text,
   description text,
   company_name text,
-  company_logo_url text,
   location text,
   budget_min numeric,
   budget_max numeric,
   currency text,
-  salary_currency text,
-  salary_period text,
   job_type text,
   required_skills text[],
   experience_level text,
   industry text,
-  is_remote boolean,
-  work_schedule text,
   created_at timestamptz,
   application_deadline timestamptz,
   poster_name text,
@@ -207,15 +200,13 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
   SELECT j.id, j.user_id, j.title, j.description, j.company_name,
-         j.company_logo_url, j.location, j.budget_min, j.budget_max,
-         j.currency, j.salary_currency, j.salary_period, j.job_type,
-         j.required_skills, j.experience_level, j.industry, j.is_remote,
-         j.work_schedule, j.created_at, j.application_deadline,
+         j.location, j.budget_min, j.budget_max,
+         j.currency, j.job_type, j.required_skills, j.experience_level,
+         j.created_at, j.application_deadline,
          p.full_name, p.username
   FROM public.job_posts j
   LEFT JOIN public.profiles p ON p.user_id = j.user_id
   WHERE j.id = _job_id AND j.status = 'open'
-    AND COALESCE(j.privacy_setting, 'public') = 'public'
   LIMIT 1;
 $$;
 
