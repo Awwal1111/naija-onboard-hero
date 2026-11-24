@@ -101,7 +101,7 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
       host_origin: window.location.origin,
       host_domain: 'naijalancers.name.ng',
       allowed_parent_origins: [window.location.origin, 'https://naijalancers.name.ng'],
-      sdk_version: '2.0',
+      sdk_version: '2.1',
       timestamp: Date.now(),
     }
   }, [user, profile?.full_name, profile?.profile_picture_url, app.sdk_app_id])
