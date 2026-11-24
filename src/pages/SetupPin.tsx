@@ -193,7 +193,7 @@ export const SetupPin = () => {
 
         toast({
           title: "Success! ✓",
-          description: mode === 'change' ? "PIN changed successfully" : "PIN created successfully"
+          description: mode === 'change' ? "PIN changed successfully" : mode === 'reset' ? "PIN reset successfully" : "PIN created successfully"
         })
 
         setTimeout(() => navigate('/settings'), 500)
@@ -394,7 +394,7 @@ export const SetupPin = () => {
         <Alert className="mt-6">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            <strong>Security Notice:</strong> Your PIN is encrypted and required for all money transfers. Never share your PIN with anyone, including NaijaLancers support staff.
+            <strong>Security Notice:</strong> Your PIN is required to confirm money transfers. Never share it with anyone, including NaijaLancers support staff.
           </AlertDescription>
         </Alert>
       </div>
