@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { BrandButton } from '@/components/ui/brand-button'
 import { Badge } from '@/components/ui/badge'
-import { ArrowDownUp, Send, Wallet, Sparkles, Zap, Globe } from 'lucide-react'
+import { ArrowDownUp, Send, Wallet, Sparkles, Globe } from 'lucide-react'
 import { useMiniPay } from '@/hooks/useMiniPay'
 import { useUserCountry } from '@/hooks/useUserCountry'
 
@@ -18,10 +18,6 @@ export const DepositMethods = ({ onSelectMethod }: DepositMethodsProps) => {
       {/* MiniPay - Show first if in MiniPay environment */}
       {isMiniPay && (
         <Card className="border-green-500/30 bg-gradient-to-br from-green-500/10 to-emerald-500/5 relative overflow-hidden">
-          <Badge className="absolute top-4 right-4 bg-green-600">
-            <Zap className="h-3 w-3 mr-1" />
-            Instant
-          </Badge>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <Wallet className="h-5 w-5 text-green-600" />
@@ -190,8 +186,6 @@ export const DepositMethods = ({ onSelectMethod }: DepositMethodsProps) => {
         </Card>
 
         </div>
-      </details>
-
       {/* Telegram Bot */}
       <Card className="hover:border-blue-500/40 transition-colors">
         <CardHeader>
@@ -209,6 +203,9 @@ export const DepositMethods = ({ onSelectMethod }: DepositMethodsProps) => {
           </BrandButton>
         </CardContent>
       </Card>
+
+      </details>
+
     </div>
   )
 }
