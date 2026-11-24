@@ -151,17 +151,12 @@ serve(async (req) => {
     ]);
 
     // Log any data fetch errors (but continue)
-    if (articlesError) console.log('Articles fetch warning:', articlesError.message);
-    if (socialError) console.log('Social tasks fetch warning:', socialError.message);
     if (referralError) console.log('Referral tasks fetch warning:', referralError.message);
 
     const contextData = {
       pending_submissions: {
-        articles: pendingArticles?.length || 0,
-        social_tasks: pendingSocialTasks?.length || 0,
         referral_tasks: pendingReferralTasks?.length || 0,
         fundraisings: pendingFundraisings?.length || 0,
-        emergencies: pendingEmergencies?.length || 0
       },
       recent_activity: {
         new_users_7d: recentUsers?.length || 0,
@@ -200,10 +195,10 @@ serve(async (req) => {
     const systemPrompt = `You are NaijaLancers Admin AI Assistant, an intelligent system monitoring platform health.
 
 CAPABILITIES:
-- Monitor pending submissions (articles, social tasks, referral tasks)
+- Monitor pending referral task submissions
 - Track user activity and identify suspicious patterns
 - Analyze transaction flows and wallet operations
-- Review fundraising and emergency requests
+- Review fundraising requests
 - Generate daily breakdowns and reports
 - Flag unusual activity patterns
 - **LOOK UP SPECIFIC USERS** - When admin asks about a specific user, show their full profile and financial details
