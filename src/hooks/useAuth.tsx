@@ -44,11 +44,11 @@ export const useAuth = () => {
       const isOnboardingComplete = profile.full_name && profile.state_name && profile.lga_name
       
       if (isSignup) {
-        navigate(isOnboardingComplete ? '/main-feed' : '/onboarding')
+        navigate(isOnboardingComplete ? '/feed' : '/onboarding')
         return
       }
       
-      navigate(isOnboardingComplete ? '/main-feed' : '/onboarding')
+      navigate(isOnboardingComplete ? '/feed' : '/onboarding')
     } catch (error) {
       console.error('Error checking profile:', error)
       navigate('/onboarding')
