@@ -16,8 +16,13 @@ const cUSD_ADDRESS = USE_TESTNET
 
 const USDT_ADDRESS = '0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e'; // Tether USD on Celo Mainnet
 
-// Polling interval for deposit detection (5 minutes - reduced from 30s to save resources)
-const DEPOSIT_CHECK_INTERVAL = 300000;
+// Polling interval for deposit detection. Every check is an Edge Function call, and
+// the Supabase free tier has a monthly invocation limit, so poll slowly and only while
+// the tab is visible. When the user comes back to the tab we check again right away
+// (if the last check was more than DEPOSIT_RECHECK_ON_RETURN ago), so a fresh deposit
+// is still picked up quickly.
+const DEPOSIT_CHECK_INTERVAL = 15 * 60 * 1000;
+const DEPOSIT_RECHECK_ON_RETURN = 3 * 60 * 1000;
 
 export const useCeloWallet = () => {
   const [wallet, setWallet] = useState<ethers.HDNodeWallet | ethers.Wallet | null>(null);
@@ -27,6 +32,7 @@ export const useCeloWallet = () => {
   const [usdtBalance, setUsdtBalance] = useState<string>('0');
   const [loading, setLoading] = useState(true);
   const isCheckingDepositsRef = useRef(false);
+  const lastDepositCheckRef = useRef(0);
 
   // Update balances from blockchain - defined early for use in deposit check
   const updateBalancesForWallet = async (walletInstance: ethers.HDNodeWallet | ethers.Wallet) => {
@@ -61,6 +67,7 @@ export const useCeloWallet = () => {
 
     try {
       isCheckingDepositsRef.current = true;
+      lastDepositCheckRef.current = Date.now();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
@@ -99,17 +106,28 @@ export const useCeloWallet = () => {
 
     // Initial check (delayed 10s to avoid burst on mount)
     const initialTimer = setTimeout(() => {
-      checkForDeposits(address, wallet);
+      if (!document.hidden) checkForDeposits(address, wallet);
     }, 10000);
 
-    // Set up polling interval
+    // Set up polling interval (skipped while the tab is in the background)
     const intervalId = setInterval(() => {
+      if (document.hidden) return;
       checkForDeposits(address, wallet);
     }, DEPOSIT_CHECK_INTERVAL);
+
+    // Coming back to the tab: check now if it has been a while
+    const onVisibilityChange = () => {
+      if (document.hidden) return;
+      if (Date.now() - lastDepositCheckRef.current >= DEPOSIT_RECHECK_ON_RETURN) {
+        checkForDeposits(address, wallet);
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
 
     return () => {
       clearTimeout(initialTimer);
       clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
     };
   }, [address, wallet, checkForDeposits]);
 
