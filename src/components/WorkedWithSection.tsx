@@ -2,7 +2,8 @@ import { useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
-import { Briefcase, CheckCircle2 } from 'lucide-react'
+import { Briefcase, CheckCircle2, Search } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { useCollaborations } from '@/hooks/useCollaborations'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -55,9 +56,15 @@ export const WorkedWithSection = ({ userId, isOwnProfile }: WorkedWithSectionPro
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">
-            People you complete projects with will appear here.
-          </p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted-foreground">
+              Your completed client projects and collaborations will build your work history here.
+            </p>
+            <Button size="sm" variant="outline" className="shrink-0" onClick={() => navigate('/p/gigs')}>
+              <Search className="h-4 w-4 mr-2" />
+              Explore gigs
+            </Button>
+          </div>
         </CardContent>
       </Card>
     )

@@ -8,7 +8,6 @@ import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -34,6 +33,8 @@ export const SetupPin = () => {
   const [confirmPin, setConfirmPin] = useState('')
   const [loading, setLoading] = useState(false)
   const [showResetDialog, setShowResetDialog] = useState(false)
+  const [recoveryOtp, setRecoveryOtp] = useState('')
+  const [recoverySent, setRecoverySent] = useState(false)
 
   const [hasExistingPin, setHasExistingPin] = useState(false)
   const [storedPin, setStoredPin] = useState<string | null>(null)
@@ -64,34 +65,44 @@ export const SetupPin = () => {
   }, [hasExistingPin])
 
   const handleResetPin = async () => {
+    if (!user?.email) {
+      toast({ title: 'Email unavailable', description: 'Please contact support to recover your transaction PIN.', variant: 'destructive' })
+      return
+    }
+
     setLoading(true)
     try {
-      const { error } = await supabase
-        .from('user_secrets')
-        .upsert({ user_id: user?.id, transaction_pin: null }, { onConflict: 'user_id' })
+      if (!recoverySent) {
+        const { error } = await supabase.auth.signInWithOtp({
+          email: user.email,
+          options: { shouldCreateUser: false }
+        })
+        if (error) throw error
+        setRecoverySent(true)
+        toast({ title: 'Verification code sent', description: 'Check ' + user.email + ' for your one-time code.' })
+        return
+      }
 
+      if (!/^\d{6}$/.test(recoveryOtp)) {
+        toast({ title: 'Enter the code', description: 'Enter the 6-digit code sent to your email.', variant: 'destructive' })
+        return
+      }
+
+      const { error } = await supabase.auth.verifyOtp({ email: user.email, token: recoveryOtp, type: 'email' })
       if (error) throw error
 
-      await refetch()
-      
-      toast({
-        title: "PIN Reset",
-        description: "Your PIN has been reset. Please set a new PIN."
-      })
-
       setShowResetDialog(false)
-      setMode('setup')
+      setMode('reset')
       setStep('new')
       setCurrentPin('')
       setNewPin('')
       setConfirmPin('')
-    } catch (error) {
-      console.error('Error resetting PIN:', error)
-      toast({
-        title: "Error",
-        description: "Failed to reset PIN. Please try again.",
-        variant: "destructive"
-      })
+      setRecoveryOtp('')
+      setRecoverySent(false)
+      toast({ title: 'Identity verified', description: 'Create and confirm your new transaction PIN.' })
+    } catch (error: any) {
+      console.error('PIN recovery failed:', error)
+      toast({ title: 'Verification failed', description: error.message || 'Please request a new code and try again.', variant: 'destructive' })
     } finally {
       setLoading(false)
     }
@@ -182,7 +193,7 @@ export const SetupPin = () => {
 
         toast({
           title: "Success! ✓",
-          description: mode === 'change' ? "PIN changed successfully" : "PIN created successfully"
+          description: mode === 'change' ? "PIN changed successfully" : mode === 'reset' ? "PIN reset successfully" : "PIN created successfully"
         })
 
         setTimeout(() => navigate('/settings'), 500)
@@ -383,7 +394,7 @@ export const SetupPin = () => {
         <Alert className="mt-6">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            <strong>Security Notice:</strong> Your PIN is encrypted and required for all money transfers. Never share your PIN with anyone, including NaijaLancers support staff.
+            <strong>Security Notice:</strong> Your PIN is required to confirm money transfers. Never share it with anyone, including NaijaLancers support staff.
           </AlertDescription>
         </Alert>
       </div>
@@ -394,14 +405,20 @@ export const SetupPin = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Reset Transaction PIN?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete your current PIN. You'll need to create a new PIN immediately after. This action cannot be undone.
+              For your security, we will verify your email before allowing you to choose a new transaction PIN. Your existing PIN stays active until the new one is saved.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleResetPin} disabled={loading} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              {loading ? 'Resetting...' : 'Reset PIN'}
-            </AlertDialogAction>
+          <AlertDialogFooter className="flex-col sm:flex-row">
+            <AlertDialogCancel onClick={() => { setRecoverySent(false); setRecoveryOtp('') }}>Cancel</AlertDialogCancel>
+            {recoverySent && (
+              <div className="w-full sm:flex-1">
+                <Label htmlFor="pin-recovery-code">6-digit email code</Label>
+                <Input id="pin-recovery-code" value={recoveryOtp} onChange={(e) => setRecoveryOtp(e.target.value.replace(/\D/g, '').slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" placeholder="Enter code" maxLength={6} className="mt-2 text-center tracking-[0.4em] font-mono" />
+              </div>
+            )}
+            <Button onClick={handleResetPin} disabled={loading || (recoverySent && recoveryOtp.length !== 6)} className="w-full sm:w-auto">
+              {loading ? 'Please wait...' : recoverySent ? 'Verify & continue' : 'Send verification code'}
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
