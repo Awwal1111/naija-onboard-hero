@@ -91,7 +91,6 @@ CORE FEATURES:
 1. Complete freelance jobs (main income source)
 2. Daily sign-in rewards (5 NC daily - check Activity Log)
 3. CPX Research surveys (external survey platform)
-4. Social media tasks (follow, like, share, comment)
 5. Referral program (earn when referrals earn 1000 NC)
 6. Nigerian trivia games (test your knowledge)
 7. Spin wheel game (daily chances to win)
@@ -118,11 +117,9 @@ CORE FEATURES:
 - Online Courses: Create and sell courses with lessons
 - Purchase learning resources from other users
 
-💝 FUNDRAISING & EMERGENCY LOANS
+💝 FUNDRAISING
 - Create fundraising campaigns with goals
 - Support others' fundraising initiatives
-- Request emergency loans (subject to approval)
-- Community-driven financial support
 
 👥 PROFILE & PORTFOLIO
 - Complete profile setup for better visibility
