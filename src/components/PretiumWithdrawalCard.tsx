@@ -79,8 +79,8 @@ export const PretiumWithdrawalCard = ({ currentBalance, onSuccess }: Props) => {
 
   const handleContinue = () => {
     const nc = parseFloat(amount)
-    if (!nc || nc < 1000) return toast.error('Minimum withdrawal is NC 1000')
-    if (nc > currentBalance) return toast.error(`Insufficient balance (NC ${currentBalance.toLocaleString()})`)
+    if (!nc || nc < 1000) return toast.error('Minimum bank withdrawal is ₦1,000')
+    if (nc > currentBalance) return toast.error(`Insufficient balance (₦${currentBalance.toLocaleString()})`)
     if (!verifiedName) return toast.error('Verify your bank account first')
     setShowPin(true)
   }
@@ -163,10 +163,10 @@ export const PretiumWithdrawalCard = ({ currentBalance, onSuccess }: Props) => {
         </div>
 
         <div className="space-y-2">
-          <Label>Amount (NC)</Label>
-          <BrandInput type="number" value={amount} onChange={e => setAmount(e.target.value)} min="1000" placeholder="Min NC 1,000" />
+          <Label>Amount (₦)</Label>
+          <BrandInput type="number" value={amount} onChange={e => setAmount(e.target.value)} min="1000" placeholder="Min ₦1,000" />
           <p className="text-xs text-muted-foreground">
-            ≈ ₦{Math.round(parseFloat(amount || '0')).toLocaleString()} • Min: NC 1,000
+            Available balance: ₦{currentBalance.toLocaleString()} • Minimum: ₦1,000
           </p>
         </div>
 
@@ -175,7 +175,7 @@ export const PretiumWithdrawalCard = ({ currentBalance, onSuccess }: Props) => {
             onVerified={handlePin}
             onCancel={() => setShowPin(false)}
             title="Confirm Withdrawal"
-            description={`Withdraw NC ${parseFloat(amount).toLocaleString()} to ${verifiedName}`}
+            description={`Withdraw ₦${parseFloat(amount).toLocaleString()} to ${verifiedName}`}
           />
         ) : (
           <div className="space-y-2">
