@@ -11,7 +11,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/use-toast'
 import { useNigerianStates } from '@/hooks/useNigerianStates'
 import { useMiniPayContext } from '@/components/MiniPayAuthWrapper'
-import { OnboardingTour } from '@/components/onboarding/OnboardingTour'
+import { OnboardingTour } from '@/components/OnboardingTour'
 import { 
   User, 
   MapPin, 
