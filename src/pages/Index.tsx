@@ -348,7 +348,7 @@ const Index = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground">
-                    Earn rewards through daily sign-ins, surveys, referrals, and social media tasks.
+                    Explore available surveys, build your professional network, and find paid work.
                   </p>
                 </CardContent>
               </Card>
