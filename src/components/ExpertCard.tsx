@@ -211,9 +211,8 @@ export const ExpertCard: React.FC<ExpertCardProps> = ({ expert, viewMode, onProf
                 <Button
                   size="sm"
                   variant="default"
-                  className="flex-1 h-8"
-                  onClick={() => setShowContractDialog(true)}
                   className="col-span-2 sm:col-span-1 h-9"
+                  onClick={() => setShowContractDialog(true)}
                 >
                   Hire
                 </Button>
