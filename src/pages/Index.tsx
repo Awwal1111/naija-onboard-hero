@@ -35,7 +35,7 @@ const Index = () => {
     return <Navigate to="/feed" replace />
   }
   if (user) {
-    return <Navigate to="/main-feed" replace />
+    return <Navigate to="/feed" replace />
   }
   if (isInstalledApp) {
     if (loading) return null
