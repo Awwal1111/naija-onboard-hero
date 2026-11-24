@@ -21,15 +21,9 @@ export default function PublicJob() {
   const { data: job, isLoading } = useQuery({
     queryKey: ['public-job', jobId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('job_posts')
-        .select('*')
-        .eq('id', jobId)
-        .eq('status', 'open')
-        .maybeSingle();
-
+      const { data, error } = await supabase.rpc('get_public_job' as any, { _job_id: jobId });
       if (error) throw error;
-      return data;
+      return Array.isArray(data) ? data[0] : data;
     },
 
   });
