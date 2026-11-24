@@ -120,6 +120,9 @@ export default function PublicJob() {
               {job.company_name && (
                 <p className="text-xl text-muted-foreground mb-2">{job.company_name}</p>
               )}
+              {(job.poster_name || job.poster_username) && (
+                <p className="text-sm text-muted-foreground mb-2">Posted by {job.company_name || job.poster_name || job.poster_username}</p>
+              )}
             </div>
           </div>
 
