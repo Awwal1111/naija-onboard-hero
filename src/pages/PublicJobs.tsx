@@ -28,14 +28,18 @@ const PublicJobs = () => {
     queryKey: ['public-jobs'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('jobs_services')
-        .select('id, title, description, price, category, status, created_at')
+        .from('job_posts')
+        .select('id, title, description, budget_min, budget_max, industry, job_type, location, status, created_at')
         .eq('status', 'open')
         .order('created_at', { ascending: false })
         .limit(50);
       
       if (error) throw error;
-      return (data || []) as Job[];
+      return (data || []).map((job: any) => ({
+        ...job,
+        category: job.industry || job.job_type || 'General',
+        price: job.budget_max ?? job.budget_min ?? 0
+      })) as Job[];
     },
     staleTime: 1000 * 60 * 5,
   });
