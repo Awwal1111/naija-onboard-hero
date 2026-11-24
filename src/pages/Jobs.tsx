@@ -39,6 +39,31 @@ const Jobs = () => {
   const [categoryFilter, setCategoryFilter] = useState('all')
   
   const [activeTab, setActiveTab] = useState('gigs')
+
+  // Keep direct marketplace URLs and tab selection in sync.
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const requestedTab = params.get('tab')
+    if (location.pathname === '/gigs') {
+      setActiveTab('gigs')
+    } else if (requestedTab === 'jobs' || requestedTab === 'my-posts') {
+      setActiveTab(requestedTab)
+    } else {
+      setActiveTab('gigs')
+    }
+  }, [location.pathname, location.search])
+
+  const handleTabChange = (nextTab: string) => {
+    setActiveTab(nextTab)
+    const params = new URLSearchParams(location.search)
+    if (nextTab === 'gigs') {
+      params.delete('tab')
+    } else {
+      params.set('tab', nextTab)
+    }
+    const query = params.toString()
+    navigate({ pathname: '/jobs', search: query ? '?' + query : '' }, { replace: true })
+  }
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [myJobs, setMyJobs] = useState<any[]>([])
   const [myApplications, setMyApplications] = useState<any[]>([])
@@ -222,7 +247,7 @@ const Jobs = () => {
 
       <div className="max-w-6xl mx-auto">
         {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <div className="sticky top-[105px] z-10 bg-background border-b px-4">
             <div className="flex items-center justify-between">
               <TabsList className="h-10 bg-transparent p-0 gap-4">
