@@ -39,8 +39,11 @@ export const useVoiceRecorder = () => {
       mediaStream.current = stream
       
       // Create MediaRecorder with preferred format
-      const options = { mimeType: 'audio/webm;codecs=opus' }
-      mediaRecorder.current = new MediaRecorder(stream, options)
+      // Pick a format this browser can actually record (Safari/iOS and some
+      // Android WebViews reject audio/webm and threw "Recording Failed").
+      const mimeType = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus']
+        .find(t => typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported?.(t))
+      mediaRecorder.current = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream)
       
       chunks.current = []
       
@@ -51,7 +54,7 @@ export const useVoiceRecorder = () => {
       }
       
       mediaRecorder.current.onstop = () => {
-        const blob = new Blob(chunks.current, { type: 'audio/webm' })
+        const blob = new Blob(chunks.current, { type: mediaRecorder.current?.mimeType || 'audio/webm' })
         const url = URL.createObjectURL(blob)
         
         setState(prev => ({

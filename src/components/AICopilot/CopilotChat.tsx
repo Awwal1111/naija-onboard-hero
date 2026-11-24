@@ -1,3 +1,4 @@
+import { ChatMarkdown } from '@/components/ChatMarkdown';
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Send, Loader2, Image as ImageIcon, Sparkles, Download, 
@@ -154,6 +155,7 @@ const CopilotChat = () => {
 
   const handleTextToSpeech = async (messageId: string, text: string) => {
     if (isPlayingAudio === messageId) {
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel();
       audioElement?.pause();
       setIsPlayingAudio(null);
       setAudioElement(null);
@@ -166,6 +168,16 @@ const CopilotChat = () => {
       });
 
       if (error || !data?.audioUrl) {
+        // ElevenLabs unavailable (key missing / quota): use the device's own voice instead
+        if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+          const u = new SpeechSynthesisUtterance(text.replace(/[*_`#]/g, '').slice(0, 3000));
+          u.onend = () => setIsPlayingAudio(null);
+          u.onerror = () => setIsPlayingAudio(null);
+          window.speechSynthesis.speak(u);
+          setIsPlayingAudio(messageId);
+          return;
+        }
         toast({
           title: "Text-to-Speech Error",
           description: "Could not generate audio. Please try again.",
@@ -397,7 +409,9 @@ const CopilotChat = () => {
                   </Badge>
                 )}
 
-                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                {message.role === 'assistant'
+                  ? <ChatMarkdown text={message.content} />
+                  : <p className="text-sm whitespace-pre-wrap">{message.content}</p>}
 
                 {/* Show attached user image */}
                 {message.metadata?.attachments?.[0]?.url && (
