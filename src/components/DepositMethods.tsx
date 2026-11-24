@@ -6,7 +6,7 @@ import { useMiniPay } from '@/hooks/useMiniPay'
 import { useUserCountry } from '@/hooks/useUserCountry'
 
 interface DepositMethodsProps {
-  onSelectMethod: (method: 'ramp' | 'crypto' | 'telegram' | 'minipay' | 'ivorypay' | 'metamask' | 'valora' | 'pretium' | 'mtpelerin') => void
+  onSelectMethod: (method: 'ramp' | 'crypto' | 'telegram' | 'minipay' | 'metamask' | 'valora' | 'pretium' | 'mtpelerin') => void
 }
 
 export const DepositMethods = ({ onSelectMethod }: DepositMethodsProps) => {
@@ -103,8 +103,6 @@ export const DepositMethods = ({ onSelectMethod }: DepositMethodsProps) => {
           </BrandButton>
         </CardContent>
       </Card>
-
-      {/* IvoryPay temporarily hidden from UI by request — backend left intact */}
 
       {/* Crypto Deposit */}
       <Card className="hover:border-primary/40 transition-colors relative overflow-hidden">
