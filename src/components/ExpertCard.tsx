@@ -161,8 +161,14 @@ export const ExpertCard: React.FC<ExpertCardProps> = ({ expert, viewMode, onProf
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
                   <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                  <span className="font-medium text-sm">{rating.toFixed(1)}</span>
-                  <span className="text-muted-foreground text-xs">({reviewCount})</span>
+                  {reviewCount > 0 ? (
+                    <>
+                      <span className="font-medium text-sm">{rating.toFixed(1)}</span>
+                      <span className="text-muted-foreground text-xs">({reviewCount} reviews)</span>
+                    </>
+                  ) : (
+                    <span className="text-muted-foreground text-xs font-medium">New · No reviews yet</span>
+                  )}
                 </div>
                 <TrustScoreBadge score={trustScore.score} level={trustScore.level} size="sm" />
               </div>
@@ -184,7 +190,7 @@ export const ExpertCard: React.FC<ExpertCardProps> = ({ expert, viewMode, onProf
               </div>
 
               {/* Actions */}
-              <div className="flex gap-2 pt-2">
+              <div className="grid grid-cols-2 sm:flex gap-2 pt-2">
                 <Button
                   size="sm"
                   className="flex-1 h-8"
@@ -200,7 +206,7 @@ export const ExpertCard: React.FC<ExpertCardProps> = ({ expert, viewMode, onProf
                   onClick={() => setShowHireDialog(true)}
                 >
                   <Briefcase className="h-3.5 w-3.5 mr-1" />
-                  My Gigs
+                  View Gigs
                 </Button>
                 <Button
                   size="sm"
@@ -295,7 +301,7 @@ export const ExpertCard: React.FC<ExpertCardProps> = ({ expert, viewMode, onProf
               <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground mb-3">
                 <div className="flex items-center gap-1">
                   <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
-                  <span>{rating.toFixed(1)} ({reviewCount})</span>
+                  <span>{reviewCount > 0 ? `${rating.toFixed(1)} (${reviewCount} reviews)` : 'New · No reviews yet'}</span>
                 </div>
                 <TrustScoreBadge score={trustScore.score} level={trustScore.level} size="sm" />
                 <div className="flex items-center gap-1">
@@ -312,7 +318,7 @@ export const ExpertCard: React.FC<ExpertCardProps> = ({ expert, viewMode, onProf
               </div>
 
               {/* Actions */}
-              <div className="flex gap-2 flex-wrap">
+              <div className="flex flex-wrap gap-2">
                 <Button
                   size="sm"
                   onClick={() => navigate(`/chat/${expert.user_id}`)}
