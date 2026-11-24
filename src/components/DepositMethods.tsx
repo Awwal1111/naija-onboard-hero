@@ -39,52 +39,77 @@ export const DepositMethods = ({ onSelectMethod }: DepositMethodsProps) => {
         </Card>
       )}
 
-      {/* Pretium Mobile Money — shown FIRST to every user. Works with M-Pesa,
-          MTN, Airtel, Vodafone across Kenya, Ghana, Uganda, Malawi and DR Congo.
-          Nigerians can also use it if they hold any of these mobile-money numbers. */}
-      <Card className={`${!isMiniPay ? 'border-primary/20 bg-gradient-to-br from-primary/5 to-transparent' : 'hover:border-primary/40'} transition-colors relative overflow-hidden`}>
-        {!isMiniPay && (
+      {/* Nigerian users: Quidax is the NGN on-ramp. The provider confirms payment
+          and the Celo deposit webhook credits the internal wallet after funds arrive. */}
+      {isNigerian && (
+        <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent relative overflow-hidden">
           <Badge className="absolute top-4 right-4 bg-primary">
             <Sparkles className="h-3 w-3 mr-1" />
             Recommended
           </Badge>
-        )}
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Globe className="h-5 w-5 text-primary" />
-            Pretium Mobile Money
-          </CardTitle>
-          <CardDescription>
-            M-Pesa, MTN, Airtel, Vodafone • Kenya, Ghana, Uganda, Malawi, DR Congo
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <BrandButton onClick={() => onSelectMethod('pretium')} variant={!isMiniPay ? 'primary' : 'outline'} className="w-full">
-            Deposit with Mobile Money
-          </BrandButton>
-        </CardContent>
-      </Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <ArrowDownUp className="h-5 w-5 text-primary" />
+              Add Naira
+            </CardTitle>
+            <CardDescription>
+              Pay in Nigerian Naira through Quidax. Your NaijaLancers balance is credited after payment is confirmed.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <BrandButton onClick={() => onSelectMethod('ramp')} variant="primary" className="w-full">
+              Deposit Naira
+            </BrandButton>
+          </CardContent>
+        </Card>
+      )}
 
-      {/* Quidax — Naira bank ramp. Works globally for anyone with a Quidax account
-          (Nigeria, Ghana, Kenya, South Africa, Uganda, Tanzania, Egypt and more). */}
-      <Card className="hover:border-primary/40 transition-colors relative overflow-hidden">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <ArrowDownUp className="h-5 w-5 text-primary" />
-            Quidax {isNigerian ? '(₦ Bank Transfer)' : '(Buy NC with crypto or NGN)'}
-          </CardTitle>
-          <CardDescription>
-            {isNigerian
-              ? 'Instant funding via Nigerian bank transfer powered by Quidax'
-              : 'Pay from your Quidax account — supported across Nigeria, Ghana, Kenya, South Africa, Uganda and more'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <BrandButton onClick={() => onSelectMethod('ramp')} variant="outline" className="w-full">
-            Deposit via Quidax
-          </BrandButton>
-        </CardContent>
-      </Card>
+      {/* Pretium on-ramp markets currently implemented by the backend: KES/GHS/UGX/MWK/CDF.
+          Do not present this as a Nigerian Naira method. */}
+      {!isNigerian && (
+        <Card className={`${!isMiniPay ? 'border-primary/20 bg-gradient-to-br from-primary/5 to-transparent' : 'hover:border-primary/40'} transition-colors relative overflow-hidden`}>
+          {!isMiniPay && (
+            <Badge className="absolute top-4 right-4 bg-primary">
+              <Sparkles className="h-3 w-3 mr-1" />
+              Recommended
+            </Badge>
+          )}
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Globe className="h-5 w-5 text-primary" />
+              Pretium Mobile Money
+            </CardTitle>
+            <CardDescription>
+              Mobile money payments in supported markets including Kenya, Ghana, Uganda, Malawi and DR Congo
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <BrandButton onClick={() => onSelectMethod('pretium')} variant={!isMiniPay ? 'primary' : 'outline'} className="w-full">
+              Deposit with Mobile Money
+            </BrandButton>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Quidax remains available to international users as a provider account option. */}
+      {!isNigerian && (
+        <Card className="hover:border-primary/40 transition-colors relative overflow-hidden">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <ArrowDownUp className="h-5 w-5 text-primary" />
+              Quidax
+            </CardTitle>
+            <CardDescription>
+              Use your Quidax account where supported to fund your NaijaLancers balance
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <BrandButton onClick={() => onSelectMethod('ramp')} variant="outline" className="w-full">
+              Continue with Quidax
+            </BrandButton>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Mt Pelerin - Global card / bank / SEPA ramp */}
       <Card className="hover:border-primary/40 transition-colors relative overflow-hidden">
