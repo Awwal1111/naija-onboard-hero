@@ -1,3 +1,4 @@
+import { ChatMarkdown } from '@/components/ChatMarkdown'
 import React, { useState, useEffect, useRef } from 'react';
 import { Send, Loader2, Image as ImageIcon, Sparkles, Download, Search, Upload, X, Globe, Volume2, VolumeX, Link } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -556,7 +557,9 @@ const AIChatInterface = () => {
                 </div>
               )}
               
-              <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+              {message.role === 'assistant'
+                ? <ChatMarkdown text={message.content} />
+                : <p className="text-sm whitespace-pre-wrap">{message.content}</p>}
               
               {/* Display AI-generated image */}
               {message.imageUrl && (
