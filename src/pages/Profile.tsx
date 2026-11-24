@@ -265,7 +265,9 @@ const Profile = () => {
   }
 
   const handleShare = async () => {
-    const profileUrl = `${window.location.origin}/profile/${profile?.user_id}`
+    const profileUrl = profile?.username
+      ? `${window.location.origin}/u/${profile.username}`
+      : `${window.location.origin}/profile/${profile?.user_id}`
     
     if (navigator.share) {
       try {
