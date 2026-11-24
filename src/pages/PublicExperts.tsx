@@ -29,12 +29,7 @@ const PublicExperts = () => {
   const { data: experts, isLoading } = useQuery({
     queryKey: ['public-experts'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('user_id, username, full_name, profession, bio, profile_picture_url, state_name, average_rating')
-        .eq('is_expert', true)
-        .order('created_at', { ascending: false })
-        .limit(50);
+      const { data, error } = await supabase.rpc('get_public_experts' as any);
       
       if (error) throw error;
       return (data || []) as Expert[];
