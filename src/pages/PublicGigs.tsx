@@ -21,6 +21,10 @@ interface Gig {
   status: string;
   created_at: string;
   photo_urls: string[] | null;
+  seller_name?: string | null;
+  seller_username?: string | null;
+  seller_profession?: string | null;
+  seller_picture?: string | null;
 }
 
 const PublicGigs = () => {
@@ -29,12 +33,7 @@ const PublicGigs = () => {
   const { data: gigs, isLoading } = useQuery({
     queryKey: ['public-gigs'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('jobs_services')
-        .select('id, title, description, price, category, status, created_at, photo_urls')
-        .in('status', ['open', 'active'])
-        .order('created_at', { ascending: false })
-        .limit(50);
+      const { data, error } = await supabase.rpc('get_public_gigs' as any);
       
       if (error) throw error;
       return (data || []) as Gig[];
@@ -165,6 +164,12 @@ const PublicGigs = () => {
                     <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
                       {gig.description}
                     </p>
+                    {(gig.seller_name || gig.seller_profession) && (
+                      <p className="text-xs text-muted-foreground mb-3">
+                        By <span className="font-medium text-foreground">{gig.seller_name || gig.seller_username}</span>
+                        {gig.seller_profession ? ` · ${gig.seller_profession}` : ''}
+                      </p>
+                    )}
                     <div className="flex items-center justify-between">
                       <Badge variant="secondary" className="text-xs">
                         {getCategoryIcon(gig.category)} {gig.category}
