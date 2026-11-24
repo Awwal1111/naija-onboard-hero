@@ -87,26 +87,6 @@ export const DepositMethods = ({ onSelectMethod }: DepositMethodsProps) => {
         </Card>
       )}
 
-      {/* Quidax remains available to international users as a provider account option. */}
-      {!isNigerian && (
-        <Card className="hover:border-primary/40 transition-colors relative overflow-hidden">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <ArrowDownUp className="h-5 w-5 text-primary" />
-              Quidax
-            </CardTitle>
-            <CardDescription>
-              Use your Quidax account where supported to fund your NaijaLancers balance
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <BrandButton onClick={() => onSelectMethod('ramp')} variant="outline" className="w-full">
-              Continue with Quidax
-            </BrandButton>
-          </CardContent>
-        </Card>
-      )}
-
       <details className="rounded-xl border border-border/60 p-4">
         <summary className="cursor-pointer list-none font-medium text-sm">
           Advanced payment methods
