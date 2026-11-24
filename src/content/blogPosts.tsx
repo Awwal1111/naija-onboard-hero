@@ -2120,15 +2120,15 @@ export const BLOG_POSTS: BlogPost[] = [
     slug: 'why-cryptocurrency-considered-scam-naijalancers-celo',
     title: 'Why Cryptocurrency Feels Like a Scam (And How NaijaLancers Hides the Hard Parts)',
     description: 'Mainnet, testnet, gas, ramps, private keys — the jargon makes crypto look like a scam. Here is what every term means, why NaijaLancers chose Celo, and why you never need to learn any of it.',
-    keywords: 'cryptocurrency scam, celo blockchain, mainnet testnet explained, ramp on off crypto, quidax pretium ivorypay mt pelerin, naijalancers crypto',
+    keywords: 'cryptocurrency scam, celo blockchain, mainnet testnet explained, ramp on off crypto, quidax pretium mt pelerin, naijalancers crypto',
     datePublished: '2026-06-10', dateModified: '2026-06-10', readTime: '10 min read', author: 'NaijaLancers Team', category: 'Crypto & Payments',
     body: (<>
       <p className="text-lg text-text-secondary leading-relaxed">Crypto looks scammy because the people building it talk in code. "Send 0.05 ETH to my MetaMask on Polygon zkEVM mainnet, not testnet, gas is 12 gwei." No normal person wants that. NaijaLancers fixed this by hiding every confusing term behind a Naira balance.</p>
       <Section title="The crypto terms decoded in plain English"><List items={['Mainnet — the real, live network where real money moves','Testnet — a sandbox copy used by developers; the coins are worthless','Gas fee — the small payment to miners/validators for processing your transaction','Wallet address — like your account number, but for crypto (long string of letters and numbers)','Private key / seed phrase — the master password; anyone with it owns your money','Blockchain — the public ledger where every transaction is permanently recorded','Stablecoin (USDT, cUSD) — crypto pegged 1:1 to the US Dollar — no volatility','On-ramp — the bridge to convert Naira into crypto','Off-ramp — the bridge to convert crypto back into Naira']} /></Section>
       <Section title="Why we chose the Celo blockchain"><List items={['Gas fees under ₦5 per transaction — Ethereum can cost ₦5,000+','Mobile-first — Celo was built for African phones, not desktop wallets','Native stablecoins (cUSD, cNGN) — no Naira-to-USDT volatility risk','Carbon-negative network — environmentally responsible','MiniPay integration — 50M+ Africans already have a Celo wallet in their browser']} /></Section>
       <Section title="Why you never see any of this on NaijaLancers"><p>Your wallet shows a Naira balance. You deposit Naira, you withdraw Naira. In the background, Celo + USDT move the money instantly and cheaply — but you never see "mainnet", never sign a transaction, never copy a wallet address unless you choose to.</p></Section>
-      <Section title="What ramps actually do"><p>An on-ramp turns ₦100,000 into $66 USDT inside the platform in seconds. An off-ramp does the reverse. NaijaLancers offers four ramps so you always get the best rate:</p>
-      <List items={['Quidax — Naira ↔ USDT, best for large Nigerian-bank deposits','Pretium Finance — Naira ↔ cUSD, mobile-money friendly across Africa','Mt Pelerin — EUR/USD ↔ crypto, ideal for European clients','IvoryPay — pan-African card and bank rails']} /></Section>
+      <Section title="What ramps actually do"><p>An on-ramp turns ₦100,000 into $66 USDT inside the platform in seconds. An off-ramp does the reverse. NaijaLancers lists three ramp providers; availability and rates depend on the provider:</p>
+      <List items={['Quidax — Naira ↔ USDT, best for large Nigerian-bank deposits','Pretium Finance — Naira ↔ cUSD, mobile-money friendly across Africa','Mt Pelerin — EUR/USD ↔ crypto, ideal for European clients','']} /></Section>
       <Section title="Why your money is safer than in a Nigerian bank"><List items={['Every payment is recorded permanently on Celo — fully traceable','Escrow holds funds in a smart contract, not a person\'s account','No bank can freeze your wallet because of "suspicious activity"','You can prove every transaction with one URL — auditor-friendly']} /></Section>
       <Section title="The bottom line"><p>Crypto is not the scam — bad UX is the scam. NaijaLancers gives you the speed and security of blockchain with the simplicity of a regular Naira app. You will never see the word "mainnet" unless you go looking for it.</p></Section>
     </>),
@@ -2174,7 +2174,7 @@ export const BLOG_POSTS: BlogPost[] = [
     body: (<>
       <p className="text-lg text-text-secondary leading-relaxed">Nigerian freelancers used to need a domiciliary account, a Payoneer card, and 7 working days to receive $200 from a US client. In 2026 you need none of that.</p>
       <Section title="What banks still charge in 2026"><List items={['$25–$50 SWIFT receiving fees','3–7 day clearing delays','CBN FX restrictions on dollar withdrawals','Account freezes when "suspicious" foreign transfers arrive','Forced conversion at the official rate (sometimes 30% below market)']} /></Section>
-      <Section title="What NaijaLancers + Celo gives you instead"><List items={['Client pays in USD/USDT — lands in your NC wallet in under 60 seconds','Total fee under ₦200 (vs ₦15,000+ via bank)','Convert to Naira at the best live rate via Quidax, Pretium, Mt Pelerin or IvoryPay','Withdraw to ANY Nigerian bank in 5 minutes','Hold balances in USDT to hedge against Naira devaluation']} /></Section>
+      <Section title="What NaijaLancers + Celo gives you instead"><List items={['Client pays in USD/USDT — lands in your NC wallet in under 60 seconds','Total fee under ₦200 (vs ₦15,000+ via bank)','Convert to Naira at the best live rate via Quidax, Pretium, Mt Pelerin','Withdraw to ANY Nigerian bank in 5 minutes','Hold balances in USDT to hedge against Naira devaluation']} /></Section>
       <Section title="The new freelance payment stack"><List items={['Earn — invoice the client through NaijaLancers escrow','Hold — keep funds in USDT inside NC wallet','Spend — pay African vendors via MiniPay','Convert — off-ramp to Naira only when you need cash','Save — park idle USDT in NC Savings @ 5% APY']} /></Section>
       <Section title="When you still want a bank"><p>For physical card payments at restaurants and rent. For everything else — international invoices, savings, conversions — banks have been quietly replaced.</p></Section>
     </>),
@@ -2212,7 +2212,7 @@ export const BLOG_POSTS: BlogPost[] = [
       <p className="text-lg text-text-secondary leading-relaxed">Crypto-as-payment has real limitations. Pretending otherwise is dishonest. Here is the full list — and the exact NaijaLancers fix for each.</p>
       <Section title="1. Volatility"><p>BTC swings 10% in an afternoon. <strong>Fix:</strong> NaijaLancers uses stablecoins (USDT, cUSD) and cNGN — value never moves.</p></Section>
       <Section title="2. User-education barrier"><p>Most users cannot define "gas" or "mainnet". <strong>Fix:</strong> our UI shows only Naira balances — every crypto term is hidden.</p></Section>
-      <Section title="3. Regulatory uncertainty"><p>Rules change. <strong>Fix:</strong> NaijaLancers is registered and KYC-compliant, partnered with regulated ramps (Quidax, Pretium, IvoryPay, Mt Pelerin).</p></Section>
+      <Section title="3. Regulatory uncertainty"><p>Rules change. <strong>Fix:</strong> NaijaLancers is registered and KYC-compliant, partnered with regulated ramps (Quidax, Pretium and Mt Pelerin).</p></Section>
       <Section title="4. Network congestion"><p>Ethereum slows during peak hours. <strong>Fix:</strong> we run on Celo — sub-5-second blocks, never congested.</p></Section>
       <Section title="5. High transaction fees"><p>Ethereum gas can hit $30. <strong>Fix:</strong> Celo gas is under ₦5 per transaction.</p></Section>
       <Section title="6. Recovery difficulty after mistakes"><p>Send to the wrong address = gone. <strong>Fix:</strong> address validation, network auto-detection, confirmation step, and 24-hour dispute panel for in-platform mistakes.</p></Section>
@@ -2308,16 +2308,16 @@ export const BLOG_POSTS: BlogPost[] = [
   },
   {
     slug: 'naijalancers-hidden-complexity-crypto-deposits-withdrawals',
-    title: 'How NaijaLancers Uses Valora, MetaMask, MiniPay, Quidax, IvoryPay, Mt Pelerin & Pretium — Without Showing You Any of It',
+    title: 'How NaijaLancers Uses Valora, MetaMask, MiniPay, Quidax, Mt Pelerin & Pretium — Without Showing You Any of It',
     description: 'Behind every NaijaLancers deposit and withdrawal is a stack of crypto rails and ramps. Here is what runs in the background — and why you never need to touch it.',
-    keywords: 'naijalancers deposit withdrawal, quidax ramp, ivorypay nigeria, mt pelerin nigeria, pretium finance nigeria, minipay metamask valora',
+    keywords: 'naijalancers deposit withdrawal, quidax ramp, mt pelerin nigeria, pretium finance nigeria, minipay metamask valora',
     datePublished: '2026-06-10', dateModified: '2026-06-10', readTime: '8 min read', author: 'NaijaLancers Team', category: 'Crypto & Payments',
     body: (<>
       <p className="text-lg text-text-secondary leading-relaxed">When you click "Withdraw ₦50,000 to my GTBank account", a quiet symphony of ramps, wallets, and stablecoin conversions runs in the background. Here is the full picture — and why you will never have to see it.</p>
       <Section title="The wallets we plug into"><List items={['Valora — beautiful Celo wallet, popular in East Africa','MiniPay — 50M+ African users, built into Opera Mini','MetaMask — for power users on Celo and other chains']} /></Section>
-      <Section title="The on/off-ramps we route through"><List items={['Quidax — best Naira ↔ USDT liquidity in Nigeria','Pretium Finance — cUSD ↔ mobile money across Africa','Mt Pelerin — EUR/USD ↔ crypto for European clients','IvoryPay — pan-African card and bank rails']} /></Section>
+      <Section title="The on/off-ramps we route through"><List items={['Quidax — best Naira ↔ USDT liquidity in Nigeria','Pretium Finance — cUSD ↔ mobile money across Africa','Mt Pelerin — EUR/USD ↔ crypto for European clients','']} /></Section>
       <Section title="What happens when you deposit ₦100,000"><List items={['You enter the amount in Naira','We auto-select the best ramp (lowest fee + fastest at that moment)','The ramp converts ₦ to USDT or cUSD on Celo','Stablecoin lands in your NC wallet — UI still shows ₦','Total user-visible steps: 2. Hidden steps: 6.']} /></Section>
-      <Section title="What happens when you withdraw to bank"><List items={['You pick the bank account and amount','We convert your USDT/cUSD back to Naira at the best live rate','Quidax / IvoryPay payout to your Nigerian bank in ~5 minutes','You get an SMS confirmation — done.']} /></Section>
+      <Section title="What happens when you withdraw to bank"><List items={['You pick the bank account and amount','We convert your USDT/cUSD back to Naira at the best live rate','Quidax payout to your Nigerian bank in ~5 minutes','You get an SMS confirmation — done.']} /></Section>
       <Section title="Why we hide the complexity"><p>Most users want a Naira balance that works. The crypto rails are how we deliver speed and low cost — not what we ask you to learn. Power users can switch to "Advanced mode" and see every step; everyone else gets a clean Naira app.</p></Section>
     </>),
   },

@@ -52,27 +52,11 @@ const EnhancedEarn = () => {
       category: 'rewards'
     },
     {
-      title: 'Social Media Tasks',
-      description: 'Complete social tasks to earn NC rewards',
-      icon: Zap,
-      reward: 'Up to NC 500',
-      path: '/earn/social-tasks',
-      category: 'tasks'
-    },
-    {
       title: 'Community Tasks',
       description: 'Complete or create reward tasks',
       icon: Users,
       reward: 'Min 20 NC/slot',
       path: '/tasks',
-      category: 'tasks'
-    },
-    {
-      title: 'Local Media Tasks',
-      description: 'Read articles and submit short notes for rewards',
-      icon: FileText,
-      reward: 'Up to NC 200',
-      path: '/earn/articles',
       category: 'tasks'
     },
     {

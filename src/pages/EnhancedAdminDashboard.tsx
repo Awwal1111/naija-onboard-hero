@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { ArrowLeft, Users, FileText, TrendingUp, DollarSign, Eye, Settings, AlertCircle, CheckCircle, Clock, Star, MessageCircle, Briefcase, Award, Calendar, BarChart3, PieChart, Activity, Search, Filter, MoreVertical, Trash2, Edit, Ban, Heart, Package, BookOpen, Target, AlertTriangle, Megaphone, Code, Ticket, Gauge, Shield } from 'lucide-react'
+import { ArrowLeft, Users, FileText, TrendingUp, DollarSign, Eye, Settings, AlertCircle, CheckCircle, Clock, MessageCircle, Briefcase, Award, Activity, Search, Filter, MoreVertical, Trash2, Edit, Ban, Heart, Package, BookOpen, Target, Megaphone, Code, Ticket, Gauge, Shield } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Logo } from '@/components/ui/logo'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -14,9 +14,7 @@ import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/useAuth'
 import { useAdminRole, ROLE_LABELS, ROLE_COLORS, type AdminRole } from '@/hooks/useAdminRole'
-import { AdminSocialTasksSection } from '@/components/AdminSocialTasksSection'
 import { AdminReferralTasksSection } from '@/components/AdminReferralTasksSection'
-import { AdminArticlesSection } from '@/components/AdminArticlesSection'
 import { AdminWalletManagement } from '@/components/AdminWalletManagement'
 import { AdminMasterWalletInfo } from '@/components/AdminMasterWalletInfo'
 import { AdminWalletMigration } from '@/components/AdminWalletMigration'
@@ -28,7 +26,6 @@ import { AdminWithdrawalsSection } from '@/components/AdminWithdrawalsSection'
 import { AdminDisputeManagement } from '@/components/AdminDisputeManagement'
 import { AdminManualDepositsSection } from '@/components/AdminManualDepositsSection'
 import { AdminAIDrawer } from '@/components/admin/AdminAIDrawer'
-import { AdminTaskManager } from '@/components/admin/AdminTaskManager'
 import { AdminSetup } from '@/components/AdminSetup'
 import { AdminAnalyticsCharts } from '@/components/AdminAnalyticsCharts'
 import { AdminBroadcastDialog } from '@/components/AdminBroadcastDialog'
@@ -674,211 +671,6 @@ const FundraisingSection = () => {
                   <Button size="sm" onClick={() => handleReleaseFunds(fundraising)} className="w-full" variant="default">
                     <CheckCircle className="h-4 w-4 mr-2" />
                     Release Funds to Campaign Owner
-                  </Button>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  )
-}
-
-const EmergencySection = () => {
-  const [emergencies, setEmergencies] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const { toast } = useToast()
-
-  useEffect(() => {
-    fetchEmergencies()
-  }, [])
-
-  const fetchEmergencies = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('emergency_requests')
-        .select(`
-          *,
-          profiles!emergency_requests_user_id_fkey(full_name, wallet_balance)
-        `)
-        .order('created_at', { ascending: false })
-        .limit(50)
-
-      if (error) throw error
-      setEmergencies(data || [])
-    } catch (error) {
-      console.error('Error fetching emergencies:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleApprove = async (emergency: any) => {
-    try {
-      const user = await supabase.auth.getUser()
-      
-      // Update emergency status
-      const { error: updateError } = await supabase
-        .from('emergency_requests')
-        .update({ 
-          status: 'approved',
-          approved_at: new Date().toISOString(),
-          approved_by: user.data.user?.id
-        })
-        .eq('id', emergency.id)
-
-      if (updateError) throw updateError
-
-      // Credit user wallet - use correct column for withdrawable balance
-      const { data: userProfile } = await supabase
-        .from('profiles')
-        .select('wallet_balance, balance_withdrawable')
-        .eq('user_id', emergency.user_id)
-        .single()
-
-      if (!userProfile) throw new Error('User profile not found')
-
-      const { error: walletError } = await supabase
-        .from('profiles')
-        .update({ 
-          wallet_balance: (userProfile.wallet_balance || 0) + emergency.amount_requested,
-          balance_withdrawable: (userProfile.balance_withdrawable || 0) + emergency.amount_requested
-        })
-        .eq('user_id', emergency.user_id)
-
-      if (walletError) throw walletError
-
-      // Log transaction
-      await supabase
-        .from('wallet_transactions')
-        .insert({
-          user_id: emergency.user_id,
-          amount: emergency.amount_requested,
-          kind: 'emergency_disbursement',
-          status: 'completed',
-          reference: `Emergency request approved: ${emergency.reason.substring(0, 50)}`
-        })
-
-      // Notify user
-      await supabase.functions.invoke('send-notification', {
-        body: {
-          userId: emergency.user_id,
-          type: 'emergency_approved',
-          title: '✅ Emergency Request Approved',
-          message: `Your emergency request for NC ${emergency.amount_requested.toLocaleString()} has been approved and the funds have been credited to your wallet.`,
-          sendEmail: true,
-          emailTemplate: 'general',
-          metadata: {
-            actionUrl: 'https://naijalancers.name.ng/wallet',
-            actionText: 'View Your Wallet',
-          }
-        }
-      })
-
-      toast({
-        title: "Success",
-        description: "Emergency request approved and funds disbursed",
-      })
-      fetchEmergencies()
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to approve emergency request",
-        variant: "destructive"
-      })
-    }
-  }
-
-  const handleReject = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('emergency_requests')
-        .update({ status: 'rejected' })
-        .eq('id', id)
-
-      if (error) throw error
-
-      toast({
-        title: "Success",
-        description: "Emergency request rejected",
-      })
-      fetchEmergencies()
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to reject emergency request",
-        variant: "destructive"
-      })
-    }
-  }
-
-  if (loading) {
-    return <div className="text-center py-8">Loading emergency requests...</div>
-  }
-
-  if (emergencies.length === 0) {
-    return (
-      <div className="text-center py-8">
-        <AlertTriangle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-        <p className="text-text-secondary">No emergency requests yet</p>
-      </div>
-    )
-  }
-
-  return (
-    <div className="max-h-[600px] overflow-y-auto pr-2 space-y-4">
-      <div className="mb-4 p-4 bg-muted/30 rounded-lg grid grid-cols-3 gap-4 sticky top-0 z-10">
-        <div>
-          <p className="text-sm text-text-secondary">Total Requests</p>
-          <p className="text-2xl font-bold text-text-primary">{emergencies.length}</p>
-        </div>
-        <div>
-          <p className="text-sm text-text-secondary">Pending</p>
-          <p className="text-2xl font-bold text-orange-500">{emergencies.filter(e => e.status === 'pending').length}</p>
-        </div>
-        <div>
-          <p className="text-sm text-text-secondary">Total Amount</p>
-          <p className="text-2xl font-bold text-primary">NC {emergencies.reduce((sum, e) => sum + Number(e.amount_requested), 0).toLocaleString()}</p>
-        </div>
-      </div>
-      {emergencies.map((emergency) => (
-        <Card key={emergency.id} className="border-l-4 border-l-orange-500">
-          <CardContent className="pt-6">
-            <div className="space-y-4">
-              <div className="flex justify-between items-start">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <h3 className="font-semibold text-text-primary">
-                      {emergency.profiles?.full_name || 'User'}
-                    </h3>
-                    <Badge variant={
-                      emergency.status === 'approved' ? 'default' : 
-                      emergency.status === 'pending' ? 'secondary' : 'destructive'
-                    } className="text-xs">
-                      {emergency.status}
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-text-secondary mb-3 line-clamp-2">{emergency.reason}</p>
-                  <p className="text-lg font-bold text-primary mb-2">
-                    Amount: NC {emergency.amount_requested.toLocaleString()}
-                  </p>
-                  {emergency.admin_notes && (
-                    <p className="text-xs text-text-secondary italic border-l-2 border-border pl-3">
-                      Admin Note: {emergency.admin_notes}
-                    </p>
-                  )}
-                </div>
-              </div>
-              {emergency.status === 'pending' && (
-                <div className="flex gap-2 pt-3 border-t">
-                  <Button size="sm" onClick={() => handleApprove(emergency)} className="flex-1">
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Approve & Disburse
-                  </Button>
-                  <Button size="sm" variant="destructive" onClick={() => handleReject(emergency.id)} className="flex-1">
-                    <AlertCircle className="h-4 w-4 mr-2" />
-                    Reject
                   </Button>
                 </div>
               )}
@@ -1718,9 +1510,7 @@ const EnhancedAdminDashboard = () => {
                 <TabsList className="inline-flex w-full min-w-max">
                   <TabsTrigger value="expert">Expert Applications</TabsTrigger>
                   <TabsTrigger value="verification">Expert Verification</TabsTrigger>
-                  <TabsTrigger value="social">Social Tasks</TabsTrigger>
                   <TabsTrigger value="referral">Tasks</TabsTrigger>
-                  <TabsTrigger value="articles">Articles</TabsTrigger>
                   <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
                   <TabsTrigger value="disputes">Disputes</TabsTrigger>
                 </TabsList>
@@ -1747,17 +1537,8 @@ const EnhancedAdminDashboard = () => {
                 <AdminExpertVerification />
               </TabsContent>
 
-              <TabsContent value="social" className="space-y-4">
-                <AdminTaskManager />
-                <AdminSocialTasksSection />
-              </TabsContent>
-
               <TabsContent value="referral">
                 <AdminReferralTasksSection />
-              </TabsContent>
-
-              <TabsContent value="articles">
-                <AdminArticlesSection />
               </TabsContent>
 
               <TabsContent value="withdrawals">
@@ -1806,10 +1587,6 @@ const EnhancedAdminDashboard = () => {
                   <TabsTrigger value="fundraising">
                     <Target className="h-4 w-4 mr-2" />
                     Fundraising
-                  </TabsTrigger>
-                  <TabsTrigger value="emergency">
-                    <AlertTriangle className="h-4 w-4 mr-2" />
-                    Emergency
                   </TabsTrigger>
                 </TabsList>
               </div>
@@ -1892,19 +1669,6 @@ const EnhancedAdminDashboard = () => {
                 </Card>
               </TabsContent>
 
-              <TabsContent value="emergency" className="mt-0">
-                <Card>
-                  <CardHeader className="bg-muted/30">
-                    <CardTitle className="flex items-center gap-2">
-                      <AlertTriangle className="h-5 w-5 text-orange-500" />
-                      Emergency Requests
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-6">
-                    <EmergencySection />
-                  </CardContent>
-                </Card>
-              </TabsContent>
             </Tabs>
           </TabsContent>
 

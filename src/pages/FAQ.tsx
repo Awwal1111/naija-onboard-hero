@@ -44,12 +44,7 @@ const faqData: FAQItem[] = [
   {
     category: "Earning Money",
     question: "How can I earn money on NaijaLancers?",
-    answer: "Multiple ways: Complete social media tasks, answer surveys, refer friends, create and sell courses/digital products, offer expert services, post jobs, daily sign-in bonuses, and play games."
-  },
-  {
-    category: "Earning Money",
-    question: "What are Social Media Tasks?",
-    answer: "These are simple tasks like following accounts, liking posts, or sharing content. Create tasks to grow your social media or complete tasks from others to earn NC."
+    answer: "You can offer professional services, apply for jobs, sell digital products or courses, participate in available surveys, and use other features currently listed in the app. Earnings depend on finding work or completing eligible activities; income is not guaranteed."
   },
   {
     category: "Earning Money",
@@ -120,16 +115,6 @@ const faqData: FAQItem[] = [
     category: "Account & Security",
     question: "How do I block someone?",
     answer: "Open chat with the user, click their profile, and select 'Block User'. Blocked users cannot message you or view your activity."
-  },
-  {
-    category: "Emergency & Loans",
-    question: "What is the Emergency Fund?",
-    answer: "For urgent financial needs, request emergency funds by explaining your situation. Admin reviews genuine cases and may provide assistance. This is different from regular withdrawals."
-  },
-  {
-    category: "Emergency & Loans",
-    question: "Can I get a loan?",
-    answer: "Yes, based on your activity and trustworthiness on the platform. Apply for a loan with amount and reason. Admin reviews and approves qualified users."
   },
   {
     category: "Community & Support",

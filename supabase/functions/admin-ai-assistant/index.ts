@@ -129,39 +129,28 @@ serve(async (req) => {
 
     // Gather comprehensive admin data
     const [
-      { data: pendingArticles, error: articlesError },
-      { data: pendingSocialTasks, error: socialError },
       { data: pendingReferralTasks, error: referralError },
       { data: recentUsers, error: usersError },
       { data: recentTransactions, error: txError },
       { data: pendingFundraisings, error: fundError },
-      { data: pendingEmergencies, error: emergError },
       { data: adminStats, error: statsError },
       { data: suspiciousActivity, error: suspError }
     ] = await Promise.all([
-      supabase.from('article_submissions').select('*, profiles(full_name)').eq('status', 'pending').order('created_at', { ascending: false }).limit(20),
-      supabase.from('social_tasks_progress').select('*, social_tasks(platform, type, reward), profiles:earner_id(full_name)').eq('status', 'pending').order('created_at', { ascending: false }).limit(20),
       supabase.from('referral_submissions').select('*, referral_tasks(title, reward), profiles:user_id(full_name)').eq('status', 'pending').order('created_at', { ascending: false }).limit(20),
       supabase.from('profiles').select('user_id, full_name, wallet_balance, created_at').order('created_at', { ascending: false }).limit(10),
       supabase.from('wallet_transactions').select('*, profiles(full_name)').order('created_at', { ascending: false }).limit(20),
       supabase.from('fundraisings').select('*, profiles(full_name)').eq('status', 'pending').limit(10),
-      supabase.from('emergency_requests').select('*, profiles(full_name)').eq('status', 'pending').limit(10),
       supabase.from('admin_stats').select('*').order('stat_date', { ascending: false }).limit(7),
       supabase.rpc('get_suspicious_users')
     ]);
 
     // Log any data fetch errors (but continue)
-    if (articlesError) console.log('Articles fetch warning:', articlesError.message);
-    if (socialError) console.log('Social tasks fetch warning:', socialError.message);
     if (referralError) console.log('Referral tasks fetch warning:', referralError.message);
 
     const contextData = {
       pending_submissions: {
-        articles: pendingArticles?.length || 0,
-        social_tasks: pendingSocialTasks?.length || 0,
         referral_tasks: pendingReferralTasks?.length || 0,
         fundraisings: pendingFundraisings?.length || 0,
-        emergencies: pendingEmergencies?.length || 0
       },
       recent_activity: {
         new_users_7d: recentUsers?.length || 0,
@@ -200,10 +189,10 @@ serve(async (req) => {
     const systemPrompt = `You are NaijaLancers Admin AI Assistant, an intelligent system monitoring platform health.
 
 CAPABILITIES:
-- Monitor pending submissions (articles, social tasks, referral tasks)
+- Monitor pending referral task submissions
 - Track user activity and identify suspicious patterns
 - Analyze transaction flows and wallet operations
-- Review fundraising and emergency requests
+- Review fundraising requests
 - Generate daily breakdowns and reports
 - Flag unusual activity patterns
 - **LOOK UP SPECIFIC USERS** - When admin asks about a specific user, show their full profile and financial details
@@ -224,9 +213,7 @@ ${JSON.stringify(specificUserData, null, 2)}
 ` : ''}
 
 PENDING ITEMS DETAILS:
-Articles: ${pendingArticles?.map(a => `- ${a.profiles?.full_name || 'Unknown'} submitted ${new Date(a.created_at).toLocaleString()}`).join('\n') || 'None pending'}
 
-Social Tasks: ${pendingSocialTasks?.map(s => `- ${s.profiles?.full_name || 'Unknown'} for "${s.social_tasks?.task_name || 'Unknown task'}" at ${new Date(s.created_at).toLocaleString()}`).join('\n') || 'None pending'}
 
 Referral Tasks: ${pendingReferralTasks?.map(r => `- ${r.profiles?.full_name || 'Unknown'} for "${r.referral_tasks?.title || 'Unknown task'}" at ${new Date(r.created_at).toLocaleString()}`).join('\n') || 'None pending'}
 

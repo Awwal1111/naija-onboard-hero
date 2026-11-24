@@ -327,10 +327,6 @@ export const useWallet = () => {
     return `NC ${amount.toLocaleString()}`
   }
 
-  // NOTE: Paystack deposit/escrow flows removed — use IvoryPay/Pretium/Quidax instead
-
-
-
   const initiateWithdrawal = async (amount: number, bankDetails: any) => {
     if (!user || amount <= 0) {
       toast({
