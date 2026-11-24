@@ -377,6 +377,7 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
             .select('id, skill_name, created_at')
             .eq('user_id', user.id)
             .order('created_at', { ascending: false })
+            .limit(50)
           postToIframe(withIds(rid, {
             type: 'njl_skills_result',
             success: !error,
@@ -396,6 +397,7 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
             .select('id, title, description, project_url, media_url, created_at')
             .eq('user_id', user.id)
             .order('created_at', { ascending: false })
+            .limit(50)
           postToIframe(withIds(rid, {
             type: 'njl_portfolio_result',
             success: !error,
@@ -413,7 +415,7 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
           const title = String(getField(data, ['title', 'heading']) || '').trim().slice(0, 80)
           const message = String(getField(data, ['message', 'body', 'text']) || '').trim().slice(0, 300)
           const requestedUrl = String(getField(data, ['url', 'deepLink', 'deep_link']) || '/apps').trim()
-          const safeUrl = requestedUrl.startsWith('/') && !requestedUrl.startsWith('//') && !requestedUrl.includes('\\\\')
+          const safeUrl = requestedUrl.startsWith('/') && !requestedUrl.startsWith('//') && !requestedUrl.includes('\\')
             ? requestedUrl.slice(0, 300)
             : '/apps'
           if (!title || !message) {
