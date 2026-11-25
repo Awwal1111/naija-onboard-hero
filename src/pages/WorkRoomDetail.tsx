@@ -43,6 +43,8 @@ const WorkRoomDetail = () => {
     startTimer,
     stopTimer,
     getPendingApprovals,
+    getApprovedUnpaidEntries,
+    approveEntry,
     payForEntries
   } = useWorkDiary();
 
@@ -51,6 +53,7 @@ const WorkRoomDetail = () => {
   const [comments, setComments] = useState<WorkroomComment[]>([]);
   const [members, setMembers] = useState<WorkroomMember[]>([]);
   const [pendingTime, setPendingTime] = useState<any[]>([]);
+  const [approvedUnpaidTime, setApprovedUnpaidTime] = useState<any[]>([]);
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskDescription, setNewTaskDescription] = useState("");
   const [newTaskPriority, setNewTaskPriority] = useState<"low" | "medium" | "high">("medium");
@@ -85,8 +88,12 @@ const WorkRoomDetail = () => {
 
     // Load pending time approvals for owner
     if (workroom?.owner_id === user?.id) {
-      const pending = await getPendingApprovals(roomId);
+      const [pending, approvedUnpaid] = await Promise.all([
+        getPendingApprovals(roomId),
+        getApprovedUnpaidEntries(roomId)
+      ]);
       setPendingTime(pending);
+      setApprovedUnpaidTime(approvedUnpaid);
     }
   };
 
@@ -316,17 +323,51 @@ const WorkRoomDetail = () => {
           </Card>
         )}
 
-        {/* Pending Time Approvals for Owner */}
-        {isOwner && pendingTime.length > 0 && (
-          <Alert>
-            <Clock className="h-4 w-4" />
-            <AlertDescription className="flex items-center justify-between">
-              <span>{pendingTime.length} pending time entries need approval</span>
-              <Button size="sm" variant="outline" onClick={() => navigate('/work-diary')}>
-                Review Time
-              </Button>
-            </AlertDescription>
-          </Alert>
+        {/* Client review and payment controls for hourly work */}
+        {isOwner && (pendingTime.length > 0 || approvedUnpaidTime.length > 0) && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                Work Diary review
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Check the freelancer's recorded hours before approving and paying.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {pendingTime.map((entry: any) => (
+                <div key={entry.id} className="flex items-center justify-between gap-3 border-b pb-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{entry.description || 'Work session'}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {entry.duration_minutes || 0} minutes · NC {Number(((entry.duration_minutes || 0) / 60) * (entry.hourly_rate || 0)).toFixed(2)}
+                    </p>
+                    {entry.is_manual && <Badge variant="outline" className="mt-1">Manual entry</Badge>}
+                  </div>
+                  <Button size="sm" onClick={async () => {
+                    const result = await approveEntry(entry.id);
+                    if (!result.error) await loadData();
+                  }}>Approve</Button>
+                </div>
+              ))}
+              {approvedUnpaidTime.length > 0 && (
+                <div className="flex items-center justify-between gap-3 pt-1">
+                  <div>
+                    <p className="text-sm font-medium">{approvedUnpaidTime.length} approved entries</p>
+                    <p className="text-xs text-muted-foreground">
+                      NC {approvedUnpaidTime.reduce((sum: number, entry: any) =>
+                        sum + ((entry.duration_minutes || 0) / 60) * (entry.hourly_rate || 0), 0).toFixed(2)} due
+                    </p>
+                  </div>
+                  <Button size="sm" onClick={async () => {
+                    const result = await payForEntries(approvedUnpaidTime.map((entry: any) => entry.id));
+                    if (!result.error) await loadData();
+                  }}>Pay approved hours</Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         )}
 
         {/* Team Members */}
