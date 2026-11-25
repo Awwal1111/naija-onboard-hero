@@ -9,6 +9,10 @@ import { CacheableResponsePlugin } from 'workbox-cacheable-response'
 
 declare const self: ServiceWorkerGlobalScope
 
+// Share the existing PWA worker with OneSignal. Registering a second worker
+// at scope '/' would replace this worker and break offline/PWA behaviour.
+importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js')
+
 // Workbox precaching (injected by VitePWA injectManifest)
 cleanupOutdatedCaches()
 precacheAndRoute(self.__WB_MANIFEST)
