@@ -28,24 +28,34 @@ export default function HireContractDetail() {
   const [reason, setReason] = useState('');
   const [changeReason, setChangeReason] = useState('');
   const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [revisions, setRevisions] = useState<ContractRevision[]>([]);
   const [edit, setEdit] = useState(false);
   const [draft, setDraft] = useState<ReviseContractInput | null>(null);
 
   const load = async () => {
-    if (!id) return;
-    const { data } = await supabase.from('hire_contracts').select('*').eq('id', id).maybeSingle();
-    if (!data) return;
+    if (!id) { setLoadError('Contract ID is missing.'); setLoading(false); return; }
+    setLoading(true); setLoadError(null);
+    const { data, error } = await supabase.from('hire_contracts').select('*').eq('id', id).maybeSingle();
+    if (error) { setLoadError(error.message); setLoading(false); return; }
+    if (!data) { setC(null); setLoadError('Contract not found, or you do not have permission to view it.'); setLoading(false); return; }
     setC(data as HireContract);
-    const { data: profs } = await supabase.from('profiles').select('user_id,full_name,profile_picture_url,telegram_user_id').in('user_id', [data.client_id, data.expert_id]);
+    const { data: profs, error: profileError } = await supabase.from('profiles').select('user_id,full_name,profile_picture_url,telegram_user_id').in('user_id', [data.client_id, data.expert_id]);
+    if (profileError) console.warn('[hire-contract] profile lookup failed', profileError);
     const map = new Map((profs || []).map((p: any) => [p.user_id, p]));
     setClient(map.get(data.client_id)); setExpert(map.get(data.expert_id));
-    const { data: history, error } = await supabase.from('hire_contract_revisions').select('*').eq('contract_id', id).order('revision_number', { ascending: false });
-    if (!error) setRevisions((history || []) as ContractRevision[]);
+    const { data: history, error: historyError } = await supabase.from('hire_contract_revisions').select('*').eq('contract_id', id).order('revision_number', { ascending: false });
+    if (historyError && !/does not exist|schema cache/i.test(historyError.message)) {
+      console.warn('[hire-contract] revision history unavailable', historyError);
+    }
+    setRevisions((history || []) as ContractRevision[]);
+    setLoading(false);
   };
-  useEffect(() => { load(); }, [id]);
+  useEffect(() => { void load(); }, [id]);
 
-  if (!c) return <div className="container max-w-3xl mx-auto p-6">Loading…</div>;
+  if (loading) return <div className="container max-w-3xl mx-auto p-6">Loading contract…</div>;
+  if (!c) return <div className="container max-w-3xl mx-auto p-6 space-y-3"><p className="text-sm text-destructive">{loadError || 'Contract unavailable.'}</p><Button variant="outline" onClick={() => navigate(-1)}>Go back</Button></div>;
   const isClient = user?.id === c.client_id;
   const isExpert = user?.id === c.expert_id;
   const canSign = ['pending_expert_signature', 'pending_client_signature'].includes(c.status) &&
@@ -97,15 +107,15 @@ export default function HireContractDetail() {
   const submitRevision = async () => {
     if (!draft || !draft.title.trim() || !draft.scope.trim()) return;
     if (draft.contract_type === 'fixed' && !(Number(draft.total_amount) > 0)) { toast.error('Enter a valid total amount.'); return; }
-    if (draft.contract_type === 'hourly' && (!(Number(draft.hourly_rate) > 0) || Number(draft.deposit_amount) < 0)) { toast.error('Enter valid hourly payment terms.'); return; }
+    if (draft.contract_type === 'hourly' && (!(Number(draft.hourly_rate) > 0) || !(Number(draft.deposit_amount) > 0) || !(Number(draft.weekly_cap_hours) >= 1 && Number(draft.weekly_cap_hours) <= 168))) { toast.error('Hourly contracts need a positive rate and deposit, with a weekly cap from 1 to 168 hours.'); return; }
     if (!window.confirm('Submit these changes as a new contract revision? Previous terms will remain in the revision history and both parties must sign again.')) return;
     setBusy(true);
     const r = await revise(c.id, { ...draft, title: draft.title.trim(), scope: draft.scope.trim(), deadline: draft.deadline ? new Date(draft.deadline).toISOString() : null });
     if (r.success) { setEdit(false); setDraft(null); await load(); }
     setBusy(false);
   };
-  const handleComplete = async () => { if (!window.confirm('Confirm the work is complete and release the escrowed funds?')) return; setBusy(true); await complete(c.id); await load(); setBusy(false); };
-  const handleCancel = async () => { if (!reason.trim()) { toast.error('Please give a reason'); return; } if (!window.confirm('Cancel this contract?')) return; setBusy(true); await cancel(c.id, reason.trim()); await load(); setBusy(false); };
+  const handleComplete = async () => { if (!window.confirm('Confirm the work is complete and release the escrowed funds?')) return; setBusy(true); const r = await complete(c.id); if (r?.success) await load(); setBusy(false); };
+  const handleCancel = async () => { if (!reason.trim()) { toast.error('Please give a reason'); return; } if (!window.confirm('Cancel this contract?')) return; setBusy(true); const r = await cancel(c.id, reason.trim()); if (r?.success) await load(); setBusy(false); };
 
   const statusColor: Record<string, string> = {
     pending_expert_signature: 'bg-amber-100 text-amber-700', pending_client_signature: 'bg-amber-100 text-amber-700',
@@ -134,7 +144,7 @@ export default function HireContractDetail() {
             {c.contract_type === 'fixed' ? <div className="p-3 rounded-md bg-muted col-span-2"><div className="text-xs text-muted-foreground">Agreed total</div><div className="font-medium">NC {Number(c.total_amount).toLocaleString()}</div></div> : <>
               <div className="p-3 rounded-md bg-muted"><div className="text-xs text-muted-foreground">Hourly rate</div><div className="font-medium">NC {Number(c.hourly_rate || 0).toLocaleString()}/hr</div></div>
               <div className="p-3 rounded-md bg-muted"><div className="text-xs text-muted-foreground">Weekly hour cap</div><div className="font-medium">{c.weekly_cap_hours || 'Not set'} hrs</div></div>
-              <div className="p-3 rounded-md bg-muted col-span-2"><div className="text-xs text-muted-foreground">Initial deposit / escrow target</div><div className="font-medium">NC {Number(c.deposit_amount).toLocaleString()}</div></div>
+              <div className="p-3 rounded-md bg-muted col-span-2"><div className="text-xs text-muted-foreground">Initial deposit / escrow target</div><div className="font-medium">NC {Number(c.deposit_amount).toLocaleString()}</div></div><p className="col-span-2 text-xs text-amber-700 dark:text-amber-400">Hourly contracts currently hold an initial deposit only. Timesheet submission, client approval of hours, and automatic weekly payouts are not yet supported.</p>
             </>}
             {c.deadline && <div className="p-3 rounded-md bg-muted col-span-2"><div className="text-xs text-muted-foreground">Deadline</div><div className="font-medium">{new Date(c.deadline).toLocaleDateString()}</div></div>}
           </div>
@@ -170,8 +180,8 @@ export default function HireContractDetail() {
             <div><Label>Scope of work</Label><Textarea rows={5} value={draft.scope} onChange={e => updateDraft('scope',e.target.value)}/></div>
             <div><Label>Contract type</Label><select className="w-full h-10 rounded-md border bg-background px-3 text-sm" value={draft.contract_type} onChange={e => updateDraft('contract_type',e.target.value)}><option value="fixed">Fixed price</option><option value="hourly">Hourly</option></select></div>
             {draft.contract_type === 'fixed' ? <div><Label>Total amount (NC)</Label><Input type="number" min="1" value={draft.total_amount ?? 0} onChange={e => updateDraft('total_amount',Number(e.target.value))}/></div> : <>
-              <div className="grid grid-cols-2 gap-2"><div><Label>Hourly rate (NC)</Label><Input type="number" min="1" value={draft.hourly_rate ?? 0} onChange={e => updateDraft('hourly_rate',Number(e.target.value))}/></div><div><Label>Weekly cap (hours)</Label><Input type="number" min="1" value={draft.weekly_cap_hours ?? 20} onChange={e => updateDraft('weekly_cap_hours',Number(e.target.value))}/></div></div>
-              <div><Label>Initial deposit (NC)</Label><Input type="number" min="0" value={draft.deposit_amount ?? 0} onChange={e => updateDraft('deposit_amount',Number(e.target.value))}/></div>
+              <div className="grid grid-cols-2 gap-2"><div><Label>Hourly rate (NC)</Label><Input type="number" min="1" value={draft.hourly_rate ?? 0} onChange={e => updateDraft('hourly_rate',Number(e.target.value))}/></div><div><Label>Weekly cap (hours)</Label><Input type="number" min="1" max="168" value={draft.weekly_cap_hours ?? 20} onChange={e => updateDraft('weekly_cap_hours',Number(e.target.value))}/></div></div>
+              <div><Label>Initial deposit (NC)</Label><Input type="number" min="1" value={draft.deposit_amount ?? 0} onChange={e => updateDraft('deposit_amount',Number(e.target.value))}/></div>
             </>}
             <div><Label>Deadline</Label><Input type="date" value={draft.deadline || ''} onChange={e => updateDraft('deadline',e.target.value || null)}/></div>
             <div className="flex gap-2"><Button onClick={submitRevision} disabled={busy || !draft.title.trim() || !draft.scope.trim()}><Send className="h-4 w-4 mr-2"/>Send revised contract</Button><Button variant="outline" onClick={() => setEdit(false)} disabled={busy}>Discard</Button></div>
