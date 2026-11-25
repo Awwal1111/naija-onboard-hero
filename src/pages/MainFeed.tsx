@@ -13,6 +13,7 @@ import { useRoleFeatures } from '@/hooks/useRoleFeatures'
 import { BottomNavBar } from '@/components/BottomNavBar'
 import LinkedInPostCard from '@/components/LinkedInPostCard'
 import StoriesSection from '@/components/StoriesSection'
+import { AIHireBanner } from '@/components/AIHireBanner'
 import { usePersonalizedFeed } from '@/hooks/usePersonalizedFeed'
 import EnhancedCreatePostDialog from '@/components/EnhancedCreatePostDialog'
 import CreateStoryDialog from '@/components/CreateStoryDialog'
@@ -341,6 +342,9 @@ const MainFeed = () => {
             fullName={profile?.full_name}
             onCreatePost={() => setShowCreatePost(true)}
           />
+
+          {/* AI freelancer finder entry point */}
+          <AIHireBanner />
 
           {/* Feed Toggle */}
           <div className="bg-card border-b border-border">
