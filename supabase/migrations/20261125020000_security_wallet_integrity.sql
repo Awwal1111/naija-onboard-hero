@@ -1097,3 +1097,41 @@ END;
 $$;
 REVOKE ALL ON FUNCTION public.place_gig_order(uuid,uuid,text,text,numeric,integer,text,jsonb) FROM PUBLIC,anon;
 GRANT EXECUTE ON FUNCTION public.place_gig_order(uuid,uuid,text,text,numeric,integer,text,jsonb) TO authenticated;
+
+
+-- Auto-release and buyer-initiated release both lock the SafePay row. SKIP
+-- LOCKED prevents a scheduled payout racing a manual buyer release.
+CREATE OR REPLACE FUNCTION public.auto_release_safepay()
+RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=''
+AS $$
+DECLARE
+  v_tx record;
+BEGIN
+  FOR v_tx IN
+    SELECT id,buyer_id,seller_id,amount
+    FROM public.safepay_transactions
+    WHERE status='complete' AND auto_release_at<=now()
+    FOR UPDATE SKIP LOCKED
+  LOOP
+    UPDATE public.user_wallets
+    SET escrow_hold=GREATEST(0,COALESCE(escrow_hold,0)-v_tx.amount),updated_at=now()
+    WHERE user_id=v_tx.buyer_id;
+
+    UPDATE public.profiles
+    SET wallet_balance=COALESCE(wallet_balance,0)+v_tx.amount,
+        balance_withdrawable=balance_withdrawable+v_tx.amount,updated_at=now()
+    WHERE user_id=v_tx.seller_id;
+    IF NOT FOUND THEN RAISE EXCEPTION 'Seller profile not found for SafePay auto-release'; END IF;
+
+    INSERT INTO public.wallet_transactions(user_id,safepay_id,kind,amount,status,reference)
+    VALUES(v_tx.seller_id,v_tx.id,'payment_received',v_tx.amount,'completed','SafePay auto-released');
+
+    UPDATE public.safepay_transactions
+    SET status='released',released_at=now(),updated_at=now()
+    WHERE id=v_tx.id;
+  END LOOP;
+END;
+$$;
+REVOKE ALL ON FUNCTION public.auto_release_safepay() FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.auto_release_safepay() TO service_role;
