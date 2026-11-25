@@ -81,12 +81,13 @@ export const AdminSetup = () => {
       }
 
       // @ts-ignore
-      const { error } = await supabase.rpc('grant_admin_role', {
+      const { data: grantResult, error } = await supabase.rpc('grant_admin_role', {
         target_user_id: (targetUser as any).user_id,
         target_role: 'admin'
       })
 
       if (error) throw error
+      if (!(grantResult as any)?.success) throw new Error((grantResult as any)?.error || 'Admin role was not granted')
 
       toast.success(`Admin role granted to ${(targetUser as any).full_name || email}`)
       setEmail('')
