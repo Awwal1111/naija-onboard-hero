@@ -174,6 +174,8 @@ const WebRTCProviderInternal: React.FC<{ children: React.ReactNode }> = ({ child
   const pendingCandidates = useRef<RTCIceCandidate[]>([])
   const isInCallRef = useRef(false)
   const ringtone = useRef<HTMLAudioElement | null>(null)
+  // Id of the call currently ringing on this device (used to dismiss it on cancel/timeout)
+  const ringingCallIdRef = useRef<string | null>(null)
 
   // Keep ref in sync with state
   useEffect(() => {
@@ -444,6 +446,24 @@ const WebRTCProviderInternal: React.FC<{ children: React.ReactNode }> = ({ child
 
           // Play ringtone
           ringtone.current?.play().catch(err => console.error('Ringtone play error:', err))
+
+          // Stop ringing if nobody answers (the caller gives up after 30s)
+          ringingCallIdRef.current = payload.callId
+          setTimeout(() => {
+            if (ringingCallIdRef.current === payload.callId) {
+              ringingCallIdRef.current = null
+              stopRingtone()
+              setIncomingCall(prev => (prev && prev.callId === payload.callId ? null : prev))
+            }
+          }, 35000)
+        }
+      })
+      .on('broadcast', { event: 'call-cancelled' }, ({ payload }: any) => {
+        // Caller hung up (or timed out) before we answered: stop ringing
+        if (payload.to === user.id && ringingCallIdRef.current === payload.callId) {
+          ringingCallIdRef.current = null
+          stopRingtone()
+          setIncomingCall(prev => (prev && prev.callId === payload.callId ? null : prev))
         }
       })
       .subscribe((status) => {
@@ -673,6 +693,7 @@ const WebRTCProviderInternal: React.FC<{ children: React.ReactNode }> = ({ child
       console.log('Answering', callType, 'call from', callerId)
       
       stopRingtone()
+      ringingCallIdRef.current = null
       
       const stream = await getMediaStream(callType)
       if (!stream) {
@@ -983,6 +1004,28 @@ const WebRTCProviderInternal: React.FC<{ children: React.ReactNode }> = ({ child
     clearCallTimeout()
     stopRingtone()
     
+    // If we are the caller and the call never connected, tell the receiver to stop ringing.
+    // (The receiver only joins the call channel after answering, so use their personal channel.)
+    if (callState.isCaller && !callStartTime.current && callState.callId && callState.remoteUserId && user) {
+      try {
+        const cancelChannel = supabase.channel(`user-${callState.remoteUserId}-calls`)
+        const cancelCallId = callState.callId
+        const cancelTo = callState.remoteUserId
+        cancelChannel.subscribe(async (status) => {
+          if (status === 'SUBSCRIBED') {
+            await cancelChannel.send({
+              type: 'broadcast',
+              event: 'call-cancelled',
+              payload: { from: user.id, to: cancelTo, callId: cancelCallId }
+            })
+            setTimeout(() => supabase.removeChannel(cancelChannel), 1000)
+          }
+        })
+      } catch (err) {
+        console.error('Error sending call-cancelled:', err)
+      }
+    }
+
     // Notify the other party
     if (signalingChannel.current && callState.remoteUserId && user) {
       try {
