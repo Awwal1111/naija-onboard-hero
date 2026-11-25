@@ -1,6 +1,6 @@
 # NaijaLancers Robots.txt
 # Optimized for SEO and Google indexing
-# Last updated: 2026-01-31
+# Last updated: 2026-11-25
 
 # ===========================================
 # DEFAULT: Allow all major search engines
@@ -127,12 +127,77 @@ Disallow: /payment-success
 Disallow: /payment-failed
 
 # ===========================================
-# OPENAI SEARCH CRAWLER
-# Allows ChatGPT search to discover public NaijaLancers pages.
-# This does not grant model-training access (GPTBot is separate).
+# AI SEARCH & USER-REQUESTED FETCH CRAWLERS
+# Allow public discovery while keeping protected routes excluded.
+# Search crawlers are used for indexing/citations; user agents fetch
+# pages when a person explicitly asks an AI assistant to open a URL.
 # ===========================================
 User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: Claude-SearchBot
+User-agent: Claude-User
+User-agent: PerplexityBot
+User-agent: Perplexity-User
 Allow: /
+Disallow: /feed
+Disallow: /main-feed
+Disallow: /profile$
+Allow: /profile/
+Disallow: /chat
+Disallow: /chat/
+Disallow: /settings
+Disallow: /admin
+Disallow: /admin/
+Disallow: /onboarding
+Disallow: /dashboard
+Disallow: /client-dashboard
+Disallow: /analytics
+Disallow: /orders
+Disallow: /orders/
+Disallow: /workrooms
+Disallow: /workrooms/
+Disallow: /work-diary
+Disallow: /contests
+Disallow: /contests/
+Disallow: /earn
+Disallow: /earn/
+Disallow: /developer
+Disallow: /ai-hire
+Disallow: /copilot
+Disallow: /learn/
+Disallow: /certificate/
+Disallow: /bookmarks
+Disallow: /notifications
+Disallow: /connections
+Disallow: /my-gigs
+Disallow: /edit-gig/
+Disallow: /post-job
+Disallow: /activity-log
+Disallow: /expert-application
+Disallow: /expert-verification
+Disallow: /expert-class
+Disallow: /groups/
+Disallow: /call-history
+Disallow: /search
+Disallow: /leaderboard
+Disallow: /digital-products
+Disallow: /courses
+Disallow: /courses/
+Disallow: /products/
+Disallow: /jobs-enhanced
+Disallow: /emergency
+Disallow: /loan
+Disallow: /donations
+Disallow: /referrals
+Disallow: /referral-tasks
+Disallow: /tasks
+Disallow: /surveys
+Disallow: /cpx-surveys
+Disallow: /games/
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /payment-success
+Disallow: /payment-failed
 
 # ===========================================
 # GOOGLEBOT-SPECIFIC RULES
