@@ -1,4 +1,11 @@
 {
+  "git": {
+    "deploymentEnabled": {
+      "fix/*": false,
+      "feat/*": false,
+      "chore/*": false
+    }
+  },
   "rewrites": [
     { "source": "/((?!.*\\.).*)", "destination": "/index.html" }
   ],
