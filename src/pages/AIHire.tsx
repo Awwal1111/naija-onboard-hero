@@ -245,15 +245,17 @@ export default function AIHire() {
       const { data: freelancers, error } = await supabase
         .from('profiles')
         .select('user_id, full_name, profession, bio, profile_picture_url, is_expert, is_premium, state_name, average_rating, rating_count, completed_jobs_count, avg_response_time_seconds, updated_at')
-        .not('profession', 'is', null)
-        .limit(80)
+        .or('profession.not.is.null,bio.not.is.null')
+        .order('updated_at', { ascending: false })
+        .range(0, 999)
       if (error) throw error
 
       const { data: gigs } = await supabase
         .from('jobs_services')
         .select('id, title, description, price, delivery_days, average_rating, photo_urls, user_id, boost_amount, status, created_at')
         .eq('status', 'active')
-        .limit(80)
+        .order('created_at', { ascending: false })
+        .limit(200)
 
       const queryTokens = [
         ...tokenize(context.service_needed || ''),
