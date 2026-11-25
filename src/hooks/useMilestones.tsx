@@ -142,11 +142,40 @@ export const useMilestones = () => {
   }
 
   const releaseMilestone = async (milestoneId: string) => {
-    // In a real app, this would trigger the payment release
-    return updateMilestone(milestoneId, {
-      status: 'released',
-      released_at: new Date().toISOString()
-    })
+    try {
+      setLoading(true)
+      const { data: milestone, error: lookupError } = await supabase
+        .from('project_milestones')
+        .select('order_id, safepay_transaction_id, status')
+        .eq('id', milestoneId)
+        .maybeSingle()
+
+      if (lookupError) throw lookupError
+      if (!milestone) throw new Error('Milestone not found')
+      if (milestone.status !== 'approved') throw new Error('The buyer must approve this milestone before funds can be released')
+      if (!milestone.order_id) {
+        throw new Error('This release action only supports gig-order milestones. SafePay milestone release is not available here.')
+      }
+
+      const { data, error } = await supabase.rpc('release_gig_milestone', {
+        p_milestone_id: milestoneId
+      })
+      if (error) throw error
+
+      const result = data as { success?: boolean; error?: string; seller_amount?: number; remaining?: number }
+      if (!result?.success) throw new Error(result?.error || 'Milestone payout failed')
+
+      toast({
+        title: 'Milestone funds released',
+        description: 'NC ' + Number(result.seller_amount || 0).toLocaleString() + ' released to the expert.'
+      })
+      return { success: true, data: result }
+    } catch (error: any) {
+      toast({ title: 'Could not release milestone', description: error.message, variant: 'destructive' })
+      return { error: error.message }
+    } finally {
+      setLoading(false)
+    }
   }
 
   const getMilestoneProgress = (milestones: Milestone[]) => {

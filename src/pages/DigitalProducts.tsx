@@ -57,30 +57,26 @@ export default function DigitalProducts() {
   const products = selectedCategory === "all" ? allProducts : allProducts.filter((p: any) => p.category === selectedCategory);
 
   const purchaseMutation = useMutation({
-    mutationFn: async ({ productId, price, isDemo }: { productId: string; price: number; isDemo: boolean }) => {
+    mutationFn: async ({ productId, isDemo }: { productId: string; price: number; isDemo: boolean }) => {
       if (isDemo) throw new Error("Demo products cannot be purchased");
       const { data: { user: authUser } } = await supabase.auth.getUser();
       if (!authUser) throw new Error("Not authenticated");
 
-      const { data: existing } = await supabase.from("digital_product_purchases").select("id").eq("product_id", productId).eq("buyer_id", authUser.id).single();
-      if (existing) throw new Error("Already purchased");
-
-      const { data: profile } = await supabase.from("profiles").select("wallet_balance").eq("user_id", authUser.id).single();
-      if (!profile || profile.wallet_balance < price) throw new Error("Insufficient balance");
-
-      await supabase.from("profiles").update({ wallet_balance: profile.wallet_balance - price }).eq("user_id", authUser.id);
-      await supabase.from("digital_product_purchases").insert({ product_id: productId, buyer_id: authUser.id, amount: price });
-      
-      const { data: product } = await supabase.from("digital_products").select("download_count").eq("id", productId).single();
-      if (product) await supabase.from("digital_products").update({ download_count: (product.download_count || 0) + 1 }).eq("id", productId);
+      const { data, error } = await supabase.rpc("purchase_digital_product", {
+        p_product_id: productId,
+      });
+      if (error) throw error;
+      const result = data as { success?: boolean; error?: string; already_purchased?: boolean };
+      if (!result?.success) throw new Error(result?.error || "Purchase could not be completed");
+      return result;
     },
     onSuccess: () => {
-      toast({ title: "Purchase successful!" });
+      toast({ title: "Purchase successful!", description: "The product is now available in your Purchased tab." });
       queryClient.invalidateQueries({ queryKey: ["digital-products"] });
       fetchMyData();
     },
     onError: (error: any) => {
-      toast({ title: error.message, variant: "destructive" });
+      toast({ title: "Purchase failed", description: error.message, variant: "destructive" });
     },
   });
 

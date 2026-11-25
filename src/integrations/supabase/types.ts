@@ -8907,6 +8907,7 @@ export type Database = {
         }
         Returns: Json
       }
+      purchase_digital_product: { Args: { p_product_id: string }; Returns: Json }
       propose_safepay: {
         Args: { p_amount: number; p_buyer_id: string; p_seller_id: string }
         Returns: Json
@@ -8928,6 +8929,7 @@ export type Database = {
         Args: { p_escrow_id: string; p_requester: string }
         Returns: undefined
       }
+      resolve_user_id_by_email: { Args: { p_email: string }; Returns: string }
       release_course_escrow: {
         Args: { p_enrollment_id?: string }
         Returns: number
