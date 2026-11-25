@@ -8929,6 +8929,7 @@ export type Database = {
         Args: { p_escrow_id: string; p_requester: string }
         Returns: undefined
       }
+      resolve_user_id_by_email: { Args: { p_email: string }; Returns: string }
       release_course_escrow: {
         Args: { p_enrollment_id?: string }
         Returns: number
