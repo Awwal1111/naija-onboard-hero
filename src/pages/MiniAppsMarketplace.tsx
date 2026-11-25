@@ -82,11 +82,7 @@ const BUILT_IN_APPS: UnifiedApp[] = [
   // Learning
   { id: 'pa-courses', name: 'Courses', description: 'Buy or sell professional courses', icon: GraduationCap, path: '/courses', category: 'learning', color: 'from-blue-500/20 to-cyan-500/20', isInternal: true },
   // Earn
-  { id: 'pa-savings', name: 'NC Savings', description: 'Grow NC with 5% yearly interest', icon: PiggyBank, path: '/earn', category: 'earn', color: 'from-emerald-500/20 to-teal-500/20', isInternal: true },
   { id: 'pa-streak', name: 'Daily Streak', description: 'Claim your streak bonus every day', icon: Flame, path: '/earn', category: 'earn', color: 'from-orange-500/20 to-amber-500/20', isInternal: true },
-  { id: 'pa-bitlabs', name: 'BitLabs Surveys', description: 'Complete surveys and earn NC rewards', icon: FileText, path: '/surveys', category: 'earn', color: 'from-primary/20 to-accent/20', isInternal: true },
-  { id: 'pa-cpx', name: 'CPX Surveys', description: 'Open CPX Research surveys for extra rewards', icon: FileText, path: '/cpx-surveys', category: 'earn', color: 'from-blue-500/20 to-cyan-500/20', isInternal: true },
-  { id: 'pa-tasks', name: 'Tasks', description: 'Complete community reward tasks', icon: Users, path: '/tasks', category: 'earn', color: 'from-violet-500/20 to-purple-500/20', isInternal: true },
   { id: 'pa-referrals', name: 'Referrals', description: 'Invite friends and earn ₦50 each', icon: Users, path: '/referrals', category: 'earn', color: 'from-purple-500/20 to-violet-500/20', isInternal: true },
   // Games
   { id: 'pa-guess', name: 'Guess Number', description: 'Guess the number and win NC', icon: Dices, path: '/earn/guess-number', category: 'games', color: 'from-emerald-500/20 to-green-500/20', isInternal: true },
