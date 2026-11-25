@@ -68,12 +68,14 @@ serve(async (req) => {
       return json({ success: false, error: "Could not safely provision wallet" }, 500);
     }
 
-    if (provision?.status === "needs_recovery") {
+    if (provision?.status === "needs_recovery" || provision?.status === "orphaned_key") {
       return json({
         success: false,
         code: "WALLET_KEY_RECOVERY_REQUIRED",
-        address: provision.address,
-        error: "An existing wallet address has no stored encrypted key. The address was preserved; manual recovery is required.",
+        address: provision.address ?? null,
+        error: provision.status === "orphaned_key"
+          ? "Encrypted legacy wallet material exists without a profile address. It was preserved; manual recovery is required."
+          : "An existing wallet address has no stored encrypted key. The address was preserved; manual recovery is required.",
       }, 409);
     }
 
