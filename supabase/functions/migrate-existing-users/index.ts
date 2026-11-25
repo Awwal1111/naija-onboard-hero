@@ -35,8 +35,9 @@ serve(async (req) => {
       .from("user_roles").select("role").eq("user_id", user.id).eq("role", "super_admin").maybeSingle();
     if (roleError || !roleRow) return json({ success: false, error: "Super-admin access required" }, 403);
 
-    const summary = { scanned: 0, createdCeloWallets: 0, existingCeloWalletsPreserved: 0, needsKeyRecovery: 0, internalWalletRowsCreated: 0, failed: 0 };
-    const pageSize = 400;
+    const summary = { scanned: 0, createdCeloWallets: 0, existingCeloWalletsPreserved: 0, needsKeyRecovery: 0, internalWalletRowsCreated: 0, notificationsCreated: 0, notificationFailures: 0, failed: 0 };
+    // Keep each PostgREST IN() query short; large UUID lists caused request/network failures.
+    const pageSize = 50;
 
     for (let offset = 0; ; offset += pageSize) {
       const { data: profiles, error: profilesError } = await supabase
@@ -57,6 +58,7 @@ serve(async (req) => {
 
       for (let i = 0; i < profiles.length; i += 20) {
         const group = profiles.slice(i, i + 20);
+        const walletNotifications: Array<{ user_id: string; type: string; title: string; message: string; metadata: Record<string, unknown> }> = [];
         await Promise.all(group.map(async (profile: any) => {
           summary.scanned++;
           const userId = profile.user_id as string;
@@ -74,7 +76,17 @@ serve(async (req) => {
                 p_user_id: userId, p_wallet_address: wallet.address.toLowerCase(), p_encrypted_wallet: encrypted,
               });
               if (error) throw new Error("Atomic provisioning failed: " + error.message);
-              if (provision?.status === "created") summary.createdCeloWallets++;
+              if (provision?.status === "created") {
+                summary.createdCeloWallets++;
+                const address = String(provision.address || wallet.address).toLowerCase();
+                walletNotifications.push({
+                  user_id: userId,
+                  type: "system",
+                  title: "Your Celo wallet is ready",
+                  message: `Your permanent Celo wallet has been created. Address: ${address}`,
+                  metadata: { wallet_address: address, actionUrl: "/wallet", source: "user_wallet_migration" },
+                });
+              }
               else if (provision?.status === "exists") summary.existingCeloWalletsPreserved++;
               else if (provision?.status === "needs_recovery" || provision?.status === "orphaned_key") summary.needsKeyRecovery++;
               else throw new Error("Unexpected wallet provisioning result");
@@ -91,11 +103,24 @@ serve(async (req) => {
             console.error("[MIGRATION] User wallet reconciliation failed", userId, error instanceof Error ? error.message : "Unknown error");
           }
         }));
+        // Insert notifications in a small batch after wallet provisioning.
+        if (walletNotifications.length > 0) {
+          const { data: inserted, error: notificationError } = await supabase
+            .from("notifications")
+            .insert(walletNotifications)
+            .select("id");
+          if (notificationError) {
+            summary.notificationFailures += walletNotifications.length;
+            console.error("[MIGRATION] Wallets were created but notification insert failed:", notificationError.message);
+          } else {
+            summary.notificationsCreated += inserted?.length ?? walletNotifications.length;
+          }
+        }
       }
       if (profiles.length < pageSize) break;
     }
 
-    return json({ success: summary.failed === 0, message: "Wallet reconciliation finished; existing addresses, encrypted keys, balances and escrow values were preserved.", ...summary });
+    return json({ success: summary.failed === 0 && summary.notificationFailures === 0, message: "Wallet reconciliation finished; existing addresses, encrypted keys, balances and escrow values were preserved. New wallet holders were notified in-app.", ...summary });
   } catch (error) {
     console.error("[MIGRATION_ERROR]", error instanceof Error ? error.message : "Unknown error");
     return json({ success: false, error: "Wallet reconciliation failed" }, 500);
