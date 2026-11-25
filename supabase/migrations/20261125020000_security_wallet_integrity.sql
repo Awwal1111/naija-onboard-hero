@@ -1220,3 +1220,329 @@ DROP POLICY IF EXISTS "Product owners can view purchases" ON public.digital_prod
 CREATE POLICY "Product owners can view purchases"
 ON public.digital_product_purchases FOR SELECT TO authenticated
 USING (public.is_digital_product_owner(product_id));
+
+
+-- 12) Developer charge sessions are paid by the authenticated session user.
+-- Use the current wallet ledger schema and keep the debit/credit atomic.
+CREATE OR REPLACE FUNCTION public.developer_charge_consume_atomic(
+  p_session_id text,p_payer_user_id uuid
+) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=''
+AS $$
+DECLARE
+  v_session public.developer_charge_sessions%ROWTYPE;
+  v_wallet numeric;
+  v_withdrawable numeric;
+  v_non_withdrawable numeric;
+  v_developer_wallet numeric;
+  v_ref text;
+  v_deduct_withdrawable numeric;
+  v_deduct_non_withdrawable numeric;
+BEGIN
+  IF auth.uid() IS NULL OR auth.uid() IS DISTINCT FROM p_payer_user_id THEN
+    RETURN jsonb_build_object('ok',false,'error','You can only pay from your own account');
+  END IF;
+  SELECT * INTO v_session FROM public.developer_charge_sessions
+  WHERE session_id=p_session_id FOR UPDATE;
+  IF NOT FOUND THEN RETURN jsonb_build_object('ok',false,'error','Session not found'); END IF;
+  IF v_session.status<>'pending' THEN
+    RETURN jsonb_build_object('ok',false,'error','Session already '||v_session.status);
+  END IF;
+  IF v_session.expires_at<now() THEN
+    UPDATE public.developer_charge_sessions SET status='expired',updated_at=now() WHERE id=v_session.id;
+    RETURN jsonb_build_object('ok',false,'error','Session expired');
+  END IF;
+  IF v_session.developer_id=p_payer_user_id THEN
+    RETURN jsonb_build_object('ok',false,'error','Cannot pay yourself');
+  END IF;
+  IF v_session.amount IS NULL OR v_session.amount<=0 THEN
+    RETURN jsonb_build_object('ok',false,'error','Invalid charge amount');
+  END IF;
+
+  PERFORM 1 FROM public.profiles
+  WHERE user_id IN (p_payer_user_id,v_session.developer_id)
+  ORDER BY user_id FOR UPDATE;
+
+  SELECT wallet_balance,balance_withdrawable,balance_non_withdrawable
+  INTO v_wallet,v_withdrawable,v_non_withdrawable
+  FROM public.profiles WHERE user_id=p_payer_user_id;
+  IF NOT FOUND THEN RETURN jsonb_build_object('ok',false,'error','Payer wallet not found'); END IF;
+  IF COALESCE(v_wallet,0)<v_session.amount
+    OR COALESCE(v_withdrawable,0)+COALESCE(v_non_withdrawable,0)<v_session.amount THEN
+    RETURN jsonb_build_object('ok',false,'error','Insufficient available balance');
+  END IF;
+  SELECT wallet_balance INTO v_developer_wallet
+  FROM public.profiles WHERE user_id=v_session.developer_id;
+  IF NOT FOUND THEN RETURN jsonb_build_object('ok',false,'error','Developer wallet missing'); END IF;
+
+  v_deduct_withdrawable:=LEAST(COALESCE(v_withdrawable,0),v_session.amount);
+  v_deduct_non_withdrawable:=v_session.amount-v_deduct_withdrawable;
+  v_ref:='dev_charge_'||v_session.session_id;
+
+  UPDATE public.profiles SET
+    wallet_balance=COALESCE(wallet_balance,0)-v_session.amount,
+    balance_withdrawable=COALESCE(balance_withdrawable,0)-v_deduct_withdrawable,
+    balance_non_withdrawable=COALESCE(balance_non_withdrawable,0)-v_deduct_non_withdrawable,
+    updated_at=now()
+  WHERE user_id=p_payer_user_id;
+
+  UPDATE public.profiles SET
+    wallet_balance=COALESCE(wallet_balance,0)+v_session.amount,
+    balance_withdrawable=COALESCE(balance_withdrawable,0)+v_session.amount,
+    updated_at=now()
+  WHERE user_id=v_session.developer_id;
+
+  INSERT INTO public.wallet_transactions(user_id,currency,kind,amount,status,reference,metadata)
+  VALUES
+    (p_payer_user_id,'NC','developer_charge',-v_session.amount,'completed',v_ref,
+      jsonb_build_object('developer_id',v_session.developer_id,'description',v_session.description)),
+    (v_session.developer_id,'NC','developer_charge_received',v_session.amount,'completed',v_ref,
+      jsonb_build_object('payer_user_id',p_payer_user_id,'description',v_session.description));
+
+  UPDATE public.developer_charge_sessions
+  SET status='completed',payer_user_id=p_payer_user_id,reference=v_ref,
+      completed_at=now(),updated_at=now()
+  WHERE id=v_session.id;
+
+  RETURN jsonb_build_object('ok',true,'reference',v_ref,'amount',v_session.amount,
+    'developer_id',v_session.developer_id,'payer_balance_after',v_wallet-v_session.amount);
+END;
+$$;
+REVOKE ALL ON FUNCTION public.developer_charge_consume_atomic(text,uuid) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.developer_charge_consume_atomic(text,uuid) TO authenticated;
+
+-- 13) Mini-app payments are self-funded; mini-app payouts can only be initiated
+-- by that mini-app's registered developer.
+CREATE OR REPLACE FUNCTION public.process_mini_app_payment(
+  p_user_id uuid,p_mini_app_id uuid,p_amount numeric,p_description text,p_tx_ref text
+) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=''
+AS $$
+DECLARE
+  v_actor uuid:=auth.uid();
+  v_wallet numeric;
+  v_withdrawable numeric;
+  v_non_withdrawable numeric;
+  v_developer_id uuid;
+  v_rate numeric;
+  v_developer_amount numeric;
+  v_commission numeric;
+  v_deduct_withdrawable numeric;
+  v_deduct_non_withdrawable numeric;
+  v_app_name text;
+BEGIN
+  IF v_actor IS NULL OR v_actor IS DISTINCT FROM p_user_id THEN
+    RETURN jsonb_build_object('success',false,'error','You can only pay from your own account');
+  END IF;
+  IF p_amount IS NULL OR p_amount<=0 OR NULLIF(trim(COALESCE(p_tx_ref,'')),'') IS NULL THEN
+    RETURN jsonb_build_object('success',false,'error','Invalid payment details');
+  END IF;
+
+  SELECT developer_id,commission_rate,app_name INTO v_developer_id,v_rate,v_app_name
+  FROM public.mini_apps WHERE id=p_mini_app_id AND status='approved' FOR SHARE;
+  IF NOT FOUND THEN RETURN jsonb_build_object('success',false,'error','Mini app is not approved or available'); END IF;
+  IF v_developer_id=p_user_id THEN
+    RETURN jsonb_build_object('success',false,'error','You cannot pay your own mini app');
+  END IF;
+
+  PERFORM 1 FROM public.profiles
+  WHERE user_id IN (p_user_id,v_developer_id)
+  ORDER BY user_id FOR UPDATE;
+
+  SELECT wallet_balance,balance_withdrawable,balance_non_withdrawable
+  INTO v_wallet,v_withdrawable,v_non_withdrawable
+  FROM public.profiles WHERE user_id=p_user_id;
+  IF NOT FOUND THEN RETURN jsonb_build_object('success',false,'error','User wallet not found'); END IF;
+  IF COALESCE(v_wallet,0)<p_amount
+    OR COALESCE(v_withdrawable,0)+COALESCE(v_non_withdrawable,0)<p_amount THEN
+    RETURN jsonb_build_object('success',false,'error','Insufficient balance');
+  END IF;
+
+  v_rate:=COALESCE(v_rate,0.10);
+  IF v_rate<0 OR v_rate>1 THEN RAISE EXCEPTION 'Mini-app commission rate is invalid'; END IF;
+  v_commission:=ROUND(p_amount*v_rate,2);
+  v_developer_amount:=p_amount-v_commission;
+  v_deduct_withdrawable:=LEAST(COALESCE(v_withdrawable,0),p_amount);
+  v_deduct_non_withdrawable:=p_amount-v_deduct_withdrawable;
+
+  UPDATE public.profiles SET
+    wallet_balance=COALESCE(wallet_balance,0)-p_amount,
+    balance_withdrawable=COALESCE(balance_withdrawable,0)-v_deduct_withdrawable,
+    balance_non_withdrawable=COALESCE(balance_non_withdrawable,0)-v_deduct_non_withdrawable,
+    updated_at=now()
+  WHERE user_id=p_user_id;
+
+  UPDATE public.profiles SET
+    wallet_balance=COALESCE(wallet_balance,0)+v_developer_amount,
+    balance_withdrawable=COALESCE(balance_withdrawable,0)+v_developer_amount,
+    updated_at=now()
+  WHERE user_id=v_developer_id;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Mini-app developer wallet not found'; END IF;
+
+  UPDATE public.admin_wallet SET balance=balance+v_commission,updated_at=now() WHERE id=1;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Platform commission wallet is unavailable'; END IF;
+
+  INSERT INTO public.mini_app_transactions(
+    mini_app_id,user_id,amount,description,tx_ref,status,
+    developer_amount,commission_amount,developer_credited
+  ) VALUES(p_mini_app_id,p_user_id,p_amount,p_description,p_tx_ref,'completed',
+    v_developer_amount,v_commission,true);
+
+  UPDATE public.mini_apps SET total_earnings=COALESCE(total_earnings,0)+v_developer_amount,updated_at=now()
+  WHERE id=p_mini_app_id;
+
+  INSERT INTO public.wallet_transactions(user_id,currency,kind,amount,status,reference,metadata)
+  VALUES
+    (p_user_id,'NC','mini_app_payment',-p_amount,'completed',p_tx_ref,
+      jsonb_build_object('mini_app_id',p_mini_app_id,'description',p_description)),
+    (v_developer_id,'NC','mini_app_earning',v_developer_amount,'completed',p_tx_ref,
+      jsonb_build_object('mini_app_id',p_mini_app_id,'description',p_description));
+
+  RETURN jsonb_build_object('success',true,'tx_ref',p_tx_ref,
+    'developer_amount',v_developer_amount,'commission_amount',v_commission);
+END;
+$$;
+REVOKE ALL ON FUNCTION public.process_mini_app_payment(uuid,uuid,numeric,text,text) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.process_mini_app_payment(uuid,uuid,numeric,text,text) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.process_mini_app_payout(
+  p_mini_app_id uuid,p_user_id uuid,p_amount numeric,p_description text,p_tx_ref text
+) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=''
+AS $$
+DECLARE
+  v_actor uuid:=auth.uid();
+  v_developer_id uuid;
+  v_wallet numeric;
+  v_withdrawable numeric;
+  v_app_name text;
+BEGIN
+  IF v_actor IS NULL THEN RETURN jsonb_build_object('success',false,'error','Authentication required'); END IF;
+  IF p_user_id IS NULL OR p_amount IS NULL OR p_amount<=0
+    OR NULLIF(trim(COALESCE(p_tx_ref,'')),'') IS NULL THEN
+    RETURN jsonb_build_object('success',false,'error','Invalid payout details');
+  END IF;
+
+  SELECT developer_id,app_name INTO v_developer_id,v_app_name
+  FROM public.mini_apps WHERE id=p_mini_app_id AND status='approved' FOR SHARE;
+  IF NOT FOUND THEN RETURN jsonb_build_object('success',false,'error','Mini app is not approved or available'); END IF;
+  IF v_actor IS DISTINCT FROM v_developer_id THEN
+    RETURN jsonb_build_object('success',false,'error','Only the mini-app developer can issue payouts');
+  END IF;
+
+  PERFORM 1 FROM public.profiles
+  WHERE user_id IN (v_developer_id,p_user_id)
+  ORDER BY user_id FOR UPDATE;
+
+  SELECT wallet_balance,balance_withdrawable INTO v_wallet,v_withdrawable
+  FROM public.profiles WHERE user_id=v_developer_id;
+  IF NOT FOUND THEN RETURN jsonb_build_object('success',false,'error','Developer wallet not found'); END IF;
+  IF COALESCE(v_wallet,0)<p_amount OR COALESCE(v_withdrawable,0)<p_amount THEN
+    RETURN jsonb_build_object('success',false,'error','Insufficient withdrawable balance');
+  END IF;
+
+  UPDATE public.profiles SET
+    wallet_balance=COALESCE(wallet_balance,0)-p_amount,
+    balance_withdrawable=COALESCE(balance_withdrawable,0)-p_amount,
+    updated_at=now()
+  WHERE user_id=v_developer_id;
+
+  UPDATE public.profiles SET
+    wallet_balance=COALESCE(wallet_balance,0)+p_amount,
+    balance_withdrawable=COALESCE(balance_withdrawable,0)+p_amount,
+    updated_at=now()
+  WHERE user_id=p_user_id;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Payout recipient not found'; END IF;
+
+  INSERT INTO public.mini_app_transactions(
+    mini_app_id,user_id,amount,description,tx_ref,status,
+    developer_amount,commission_amount,developer_credited,charge_type
+  ) VALUES(p_mini_app_id,p_user_id,p_amount,p_description,p_tx_ref,'completed',
+    -p_amount,0,true,'payout');
+
+  INSERT INTO public.wallet_transactions(user_id,currency,kind,amount,status,reference,metadata)
+  VALUES
+    (v_developer_id,'NC','mini_app_payout',-p_amount,'completed',p_tx_ref,
+      jsonb_build_object('mini_app_id',p_mini_app_id,'recipient_user_id',p_user_id,'description',p_description)),
+    (p_user_id,'NC','mini_app_payout_received',p_amount,'completed',p_tx_ref,
+      jsonb_build_object('mini_app_id',p_mini_app_id,'developer_id',v_developer_id,'description',p_description));
+
+  RETURN jsonb_build_object('success',true,'tx_ref',p_tx_ref,'amount',p_amount);
+END;
+$$;
+REVOKE ALL ON FUNCTION public.process_mini_app_payout(uuid,uuid,numeric,text,text) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.process_mini_app_payout(uuid,uuid,numeric,text,text) TO authenticated;
+
+-- 14) Course enrollment must check both wallet totals before debiting.
+CREATE OR REPLACE FUNCTION public.enroll_in_course(p_course_id uuid)
+RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=''
+AS $$
+DECLARE
+  v_user uuid:=auth.uid();
+  v_course public.courses%ROWTYPE;
+  v_withdrawable numeric;
+  v_wallet numeric;
+  v_fee numeric;
+  v_instructor numeric;
+  v_enrollment_id uuid;
+BEGIN
+  IF v_user IS NULL THEN RAISE EXCEPTION 'Not authenticated'; END IF;
+  SELECT * INTO v_course FROM public.courses WHERE id=p_course_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Course not found'; END IF;
+  IF v_course.is_demo THEN RAISE EXCEPTION 'Demo courses cannot be purchased'; END IF;
+  IF v_course.status<>'active'::public.course_status OR v_course.moderation_status<>'approved' THEN
+    RAISE EXCEPTION 'This course is not available for enrollment';
+  END IF;
+  IF COALESCE(jsonb_array_length(v_course.course_urls),0)<1 THEN
+    RAISE EXCEPTION 'This course has no lessons yet and cannot be purchased';
+  END IF;
+  IF v_course.user_id=v_user THEN RAISE EXCEPTION 'You cannot enroll in your own course'; END IF;
+  IF EXISTS(SELECT 1 FROM public.course_enrollments WHERE course_id=p_course_id AND student_id=v_user) THEN
+    RAISE EXCEPTION 'You are already enrolled in this course';
+  END IF;
+
+  SELECT balance_withdrawable,wallet_balance INTO v_withdrawable,v_wallet
+  FROM public.profiles WHERE user_id=v_user FOR UPDATE;
+  IF NOT FOUND OR COALESCE(v_withdrawable,0)<v_course.price OR COALESCE(v_wallet,0)<v_course.price THEN
+    RAISE EXCEPTION 'Insufficient available NC balance';
+  END IF;
+
+  v_fee:=ROUND(v_course.price*0.05,2);
+  v_instructor:=v_course.price-v_fee;
+
+  UPDATE public.profiles SET
+    balance_withdrawable=COALESCE(balance_withdrawable,0)-v_course.price,
+    wallet_balance=COALESCE(wallet_balance,0)-v_course.price,updated_at=now()
+  WHERE user_id=v_user;
+
+  INSERT INTO public.course_enrollments(course_id,student_id,amount,escrow_status,platform_fee,instructor_amount,release_due_at)
+  VALUES(p_course_id,v_user,v_course.price,'held',v_fee,v_instructor,now()+interval '7 days')
+  RETURNING id INTO v_enrollment_id;
+
+  INSERT INTO public.course_progress(course_id,student_id)
+  VALUES(p_course_id,v_user) ON CONFLICT DO NOTHING;
+
+  UPDATE public.courses SET enrollment_count=COALESCE(enrollment_count,0)+1 WHERE id=p_course_id;
+
+  INSERT INTO public.wallet_transactions(user_id,currency,kind,amount,status,reference,metadata)
+  VALUES(v_user,'NC','course_enrollment',-v_course.price,'completed',
+    'Enrollment (escrow): '||v_course.title,
+    jsonb_build_object('course_id',p_course_id,'enrollment_id',v_enrollment_id));
+
+  INSERT INTO public.notifications(user_id,title,message,type)
+  VALUES(v_course.user_id,'New course enrollment',
+    'A student enrolled in "'||v_course.title||'". Funds are held in escrow for 7 days.','course');
+
+  RETURN jsonb_build_object('enrollment_id',v_enrollment_id,'amount',v_course.price,'escrow_status','held');
+END;
+$$;
+REVOKE ALL ON FUNCTION public.enroll_in_course(uuid) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.enroll_in_course(uuid) TO authenticated;
+REVOKE ALL ON FUNCTION public.refund_course_enrollment(uuid,text) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.refund_course_enrollment(uuid,text) TO authenticated;
+
+-- Automatic course escrow release is a scheduled/service operation. Individual
+-- student/admin release can be handled by a separately authorized path.
+REVOKE ALL ON FUNCTION public.release_course_escrow(uuid) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.release_course_escrow(uuid) TO service_role;
