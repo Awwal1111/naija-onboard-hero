@@ -274,8 +274,8 @@ BEGIN
   IF v_order.buyer_id IS DISTINCT FROM v_actor THEN
     RETURN jsonb_build_object('success',false,'error','Only the buyer can release this milestone');
   END IF;
-  IF v_order.status IN ('completed','cancelled') THEN
-    RETURN jsonb_build_object('success',false,'error','This order is already closed');
+  IF v_order.status NOT IN ('accepted','in_progress','delivered','revision_requested') THEN
+    RETURN jsonb_build_object('success',false,'error','The order must be accepted or in progress before a milestone can be released');
   END IF;
 
   SELECT COALESCE(SUM(amount),0),
@@ -371,8 +371,8 @@ BEGIN
   IF v_order.buyer_id IS DISTINCT FROM v_actor THEN
     RETURN jsonb_build_object('success',false,'error','Only the buyer can complete the order');
   END IF;
-  IF v_order.status NOT IN ('delivered','revision_requested','in_progress','accepted') THEN
-    RETURN jsonb_build_object('success',false,'error','Order cannot be completed in current state');
+  IF v_order.status<>'delivered' THEN
+    RETURN jsonb_build_object('success',false,'error','The seller must mark the order delivered before the buyer can release payment');
   END IF;
   IF EXISTS (SELECT 1 FROM public.project_milestones WHERE order_id=p_order_id) THEN
     RETURN jsonb_build_object('success',false,'error','This order uses milestones. Approve and release each milestone separately.');
@@ -942,7 +942,7 @@ BEGIN
 
   v_payee:=v_escrow.payee_user_id;
   IF v_payee IS NULL AND v_escrow.payee_email IS NOT NULL THEN
-    SELECT user_id INTO v_payee FROM public.profiles WHERE email=v_escrow.payee_email LIMIT 1;
+    SELECT p.user_id INTO v_payee FROM auth.users u JOIN public.profiles p ON p.user_id=u.id WHERE lower(u.email)=lower(v_escrow.payee_email) LIMIT 1;
   END IF;
   IF v_payee IS NULL THEN RETURN jsonb_build_object('ok',false,'error','Payee user not found'); END IF;
 
