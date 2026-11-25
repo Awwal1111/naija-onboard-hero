@@ -126,6 +126,11 @@ self.addEventListener('push', (event) => {
     data = { title: 'NaijaLancers', body: event.data.text() }
   }
 
+  // OneSignal payloads include custom.i (their notification UUID). Let the
+  // OneSignal worker runtime display and handle those; this handler is only
+  // for legacy NaijaLancers VAPID payloads.
+  if (data?.custom?.i) return
+
   const options: any = {
     body: data.body || '',
     icon: data.icon || '/icon-512.png',
