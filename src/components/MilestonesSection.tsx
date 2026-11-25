@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useMilestones, Milestone } from '@/hooks/useMilestones';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -47,6 +48,7 @@ export const MilestonesSection = ({
   orderStatus
 }: MilestonesSectionProps) => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const {
     getMilestones,
     createMilestones,
@@ -88,14 +90,20 @@ export const MilestonesSection = ({
   const progress = getMilestoneProgress(milestones);
 
   const handleCreateMilestones = async () => {
-    const validMilestones = newMilestones.filter(m => m.title && m.amount > 0);
+    const validMilestones = newMilestones.filter(m => m.title.trim() && m.amount > 0);
     if (validMilestones.length === 0) return;
+    const allocated = validMilestones.reduce((sum, m) => sum + m.amount, 0);
+    if (Math.round(allocated * 100) !== Math.round(totalAmount * 100)) {
+      toast({ title: 'Milestone total does not match escrow', description: 'The milestone amounts must add up to the full order amount before release.', variant: 'destructive' });
+      return;
+    }
 
-    await createMilestones({
+    const result = await createMilestones({
       orderId,
       safepayId,
       milestones: validMilestones
     });
+    if (!result.data) return;
 
     setShowCreateDialog(false);
     setNewMilestones([{ title: '', description: '', amount: 0, due_date: '' }]);
@@ -106,8 +114,9 @@ export const MilestonesSection = ({
     if (!selectedMilestone) return;
     
     const urls = deliverables.split('\n').filter(url => url.trim());
-    await submitMilestone(selectedMilestone.id, urls, notes);
-    
+    const result = await submitMilestone(selectedMilestone.id, urls, notes);
+    if (!result.success) return;
+
     setShowSubmitDialog(false);
     setDeliverables('');
     setNotes('');
@@ -123,8 +132,9 @@ export const MilestonesSection = ({
   const handleRequestRevision = async () => {
     if (!selectedMilestone) return;
     
-    await requestRevision(selectedMilestone.id, feedback);
-    
+    const result = await requestRevision(selectedMilestone.id, feedback);
+    if (result.error) return;
+
     setShowRevisionDialog(false);
     setFeedback('');
     setSelectedMilestone(null);
