@@ -18,7 +18,7 @@ developer escrow/payout functions. No production database changes were made.
   service-role-only.
 - NC conversion is owner-only and enforces the published 100:5 conversion ratio.
 - Developer charge sessions now require the payer's authenticated identity and use correct wallet ledger columns.
-- Mini-app charges are restricted to the paying user; mini-app payouts are restricted to the registered app developer. Both check wallet buckets and require an approved mini app.
+- Mini-app charges are restricted to the paying user; NC payouts can no longer be initiated by an untrusted mini-app iframe in a user's browser. NC payouts must be issued by the developer's server through the Developer API. Mini-app payment RPCs check wallet buckets and require an approved app.
 - Course enrollment now checks both wallet balance fields before debiting; scheduled course escrow release is service-role-only.
 - SafePay proposal, acceptance, cancellation, completion, release and dispute
   functions now explicitly reject missing authentication and enforce the correct
