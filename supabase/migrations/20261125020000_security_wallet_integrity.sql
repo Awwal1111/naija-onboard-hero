@@ -1135,3 +1135,16 @@ END;
 $$;
 REVOKE ALL ON FUNCTION public.auto_release_safepay() FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.auto_release_safepay() TO service_role;
+
+
+-- Resolve developer payout email addresses against auth.users (profiles has no email column).
+CREATE OR REPLACE FUNCTION public.resolve_user_id_by_email(p_email text)
+RETURNS uuid
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path=''
+AS $$
+  SELECT id FROM auth.users
+  WHERE lower(email)=lower(trim(COALESCE(p_email,'')))
+  LIMIT 1
+$$;
+REVOKE ALL ON FUNCTION public.resolve_user_id_by_email(text) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.resolve_user_id_by_email(text) TO service_role;
