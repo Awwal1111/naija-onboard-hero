@@ -583,6 +583,7 @@ AS $$
 DECLARE
   v_actor uuid:=auth.uid();
   v_balance numeric;
+  v_wallet numeric;
   v_id uuid;
 BEGIN
   IF v_actor IS NULL OR v_actor IS DISTINCT FROM p_buyer_id THEN
@@ -595,9 +596,9 @@ BEGIN
     RETURN jsonb_build_object('success',false,'error','Seller account not found');
   END IF;
 
-  SELECT balance_withdrawable INTO v_balance
+  SELECT balance_withdrawable,wallet_balance INTO v_balance,v_wallet
   FROM public.profiles WHERE user_id=p_buyer_id FOR UPDATE;
-  IF NOT FOUND OR COALESCE(v_balance,0)<p_amount THEN
+  IF NOT FOUND OR COALESCE(v_balance,0)<p_amount OR COALESCE(v_wallet,0)<p_amount THEN
     RETURN jsonb_build_object('success',false,'error','Insufficient withdrawable NC balance');
   END IF;
 
@@ -993,3 +994,106 @@ REVOKE ALL ON FUNCTION public.release_developer_escrow(uuid,text) FROM PUBLIC,an
 GRANT EXECUTE ON FUNCTION public.release_developer_escrow(uuid,text) TO service_role;
 REVOKE ALL ON FUNCTION public.admin_resolve_safepay_dispute(uuid,text,text) FROM PUBLIC,anon;
 GRANT EXECUTE ON FUNCTION public.admin_resolve_safepay_dispute(uuid,text,text) TO authenticated;
+
+
+-- 11) Harden gig checkout against mismatched seller IDs and divergent wallet
+-- columns. Both balances must cover the escrow debit.
+CREATE OR REPLACE FUNCTION public.place_gig_order(
+  p_gig_id uuid,p_seller_id uuid,p_title text,p_description text,
+  p_amount numeric,p_delivery_days integer,p_tier text DEFAULT NULL,p_milestones jsonb DEFAULT NULL
+) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=''
+AS $$
+DECLARE
+  v_buyer uuid:=auth.uid();
+  v_balance numeric;
+  v_wallet numeric;
+  v_gig_seller uuid;
+  v_order_id uuid;
+  v_platform_fee numeric;
+  v_deadline timestamptz;
+  v_ms_sum numeric:=0;
+  v_ms jsonb;
+  v_idx integer:=0;
+BEGIN
+  IF v_buyer IS NULL THEN
+    RETURN jsonb_build_object('success',false,'error','Not authenticated');
+  END IF;
+  IF p_seller_id IS NULL OR v_buyer=p_seller_id THEN
+    RETURN jsonb_build_object('success',false,'error','Invalid seller');
+  END IF;
+  IF p_amount IS NULL OR p_amount<=0 OR NULLIF(trim(COALESCE(p_title,'')),'') IS NULL THEN
+    RETURN jsonb_build_object('success',false,'error','Invalid order details');
+  END IF;
+  IF p_delivery_days IS NULL OR p_delivery_days<1 OR p_delivery_days>365 THEN
+    RETURN jsonb_build_object('success',false,'error','Delivery period must be between 1 and 365 days');
+  END IF;
+
+  SELECT user_id INTO v_gig_seller
+  FROM public.jobs_services
+  WHERE id=p_gig_id AND status='active'
+  FOR SHARE;
+  IF NOT FOUND OR v_gig_seller IS DISTINCT FROM p_seller_id THEN
+    RETURN jsonb_build_object('success',false,'error','Gig is unavailable or seller does not match the gig owner');
+  END IF;
+
+  IF p_milestones IS NOT NULL AND jsonb_typeof(p_milestones)<>'array' THEN
+    RETURN jsonb_build_object('success',false,'error','Milestones must be an array');
+  END IF;
+  IF p_milestones IS NOT NULL AND jsonb_array_length(p_milestones)>0 THEN
+    IF jsonb_array_length(p_milestones)>50 THEN
+      RETURN jsonb_build_object('success',false,'error','A maximum of 50 milestones is allowed');
+    END IF;
+    FOR v_ms IN SELECT * FROM jsonb_array_elements(p_milestones) LOOP
+      IF COALESCE(NULLIF(v_ms->>'amount','')::numeric,0)<=0 THEN
+        RETURN jsonb_build_object('success',false,'error','Every milestone must have a positive amount');
+      END IF;
+      v_ms_sum:=v_ms_sum+(v_ms->>'amount')::numeric;
+    END LOOP;
+    IF ROUND(v_ms_sum,2)<>ROUND(p_amount,2) THEN
+      RETURN jsonb_build_object('success',false,'error','Milestones total must equal order amount');
+    END IF;
+  END IF;
+
+  SELECT balance_withdrawable,wallet_balance INTO v_balance,v_wallet
+  FROM public.profiles WHERE user_id=v_buyer FOR UPDATE;
+  IF NOT FOUND OR COALESCE(v_balance,0)<p_amount OR COALESCE(v_wallet,0)<p_amount THEN
+    RETURN jsonb_build_object('success',false,'error','Insufficient available NC balance');
+  END IF;
+
+  v_platform_fee:=ROUND(p_amount*0.05,2);
+  v_deadline:=now()+make_interval(days=>p_delivery_days);
+
+  UPDATE public.profiles
+  SET balance_withdrawable=balance_withdrawable-p_amount,
+      wallet_balance=COALESCE(wallet_balance,0)-p_amount,updated_at=now()
+  WHERE user_id=v_buyer;
+
+  INSERT INTO public.gig_orders(
+    gig_id,buyer_id,seller_id,title,description,amount,platform_fee,status,delivery_deadline,buyer_notes
+  ) VALUES(
+    p_gig_id,v_buyer,p_seller_id,
+    CASE WHEN p_tier IS NULL OR p_tier='' THEN trim(p_title) ELSE upper(p_tier)||' • '||trim(p_title) END,
+    p_description,p_amount,v_platform_fee,'pending',v_deadline,p_description
+  ) RETURNING id INTO v_order_id;
+
+  INSERT INTO public.wallet_transactions(user_id,kind,amount,status,reference,metadata)
+  VALUES(v_buyer,'gig_order_hold',-p_amount,'completed',
+    'Gig order escrow: '||trim(p_title),
+    jsonb_build_object('order_id',v_order_id,'gig_id',p_gig_id,'seller_id',p_seller_id,'tier',p_tier));
+
+  IF p_milestones IS NOT NULL AND jsonb_array_length(p_milestones)>0 THEN
+    FOR v_ms IN SELECT * FROM jsonb_array_elements(p_milestones) LOOP
+      v_idx:=v_idx+1;
+      INSERT INTO public.project_milestones(order_id,title,description,amount,due_date,status,order_index)
+      VALUES(v_order_id,COALESCE(NULLIF(v_ms->>'title',''),'Milestone '||v_idx),
+        v_ms->>'description',(v_ms->>'amount')::numeric,
+        NULLIF(v_ms->>'due_date','')::timestamptz,'pending',v_idx);
+    END LOOP;
+  END IF;
+
+  RETURN jsonb_build_object('success',true,'order_id',v_order_id);
+END;
+$$;
+REVOKE ALL ON FUNCTION public.place_gig_order(uuid,uuid,text,text,numeric,integer,text,jsonb) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.place_gig_order(uuid,uuid,text,text,numeric,integer,text,jsonb) TO authenticated;
