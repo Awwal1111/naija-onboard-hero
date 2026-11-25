@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Helmet } from 'react-helmet-async';
@@ -64,6 +64,12 @@ export default function PublicExpert() {
         </Card>
       </div>
     );
+  }
+
+  // Freelancers found by AI search / hiring lists are not always approved experts, so the
+  // public expert lookup returns nothing for them. Signed-in users get the in-app profile.
+  if (!expert && user && slug && UUID_RE.test(slug)) {
+    return <Navigate to={`/profile/${slug}`} replace />;
   }
 
   if (!expert) {
