@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { requestDeposit } from '@/lib/depositPrompt'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/use-toast'
@@ -140,11 +141,7 @@ export const useContests = () => {
     const prizeAmount = contestData.prize_amount || 5000
     
     if (currentBalance < prizeAmount) {
-      toast({ 
-        title: 'Insufficient Balance', 
-        description: `You need NC ${prizeAmount.toLocaleString()} to create this contest. Your balance: NC ${currentBalance.toLocaleString()}. Please top up your wallet first.`, 
-        variant: 'destructive' 
-      })
+      requestDeposit({ needed: prizeAmount, available: currentBalance })
       return { error: 'Insufficient balance' }
     }
 
@@ -170,11 +167,7 @@ export const useContests = () => {
       if (error) {
         // Check for insufficient balance error from trigger
         if (error.message.includes('Insufficient wallet balance')) {
-          toast({ 
-            title: 'Insufficient Balance', 
-            description: error.message, 
-            variant: 'destructive' 
-          })
+          requestDeposit({ message: error.message })
           return { error: error.message }
         }
         throw error

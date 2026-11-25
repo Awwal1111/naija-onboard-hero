@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { requestDeposit } from '@/lib/depositPrompt'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from './useAuth'
 import { useToast } from './use-toast'
@@ -225,11 +226,7 @@ export const useWallet = () => {
     }
     
     if (availableBalance < cost) {
-      toast({
-        title: "Insufficient Balance",
-        description: `You need NC ${cost} to play Spin Wheel`,
-        variant: "destructive",
-      })
+      requestDeposit({ needed: cost, available: availableBalance })
       return null
     }
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { requestDeposit } from '@/lib/depositPrompt'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -82,11 +83,7 @@ const NaijaPredictor: React.FC = () => {
     }
 
     if (balance.total < stakeAmount) {
-      toast({
-        title: "Insufficient Balance",
-        description: `You need NC ${stakeAmount} to place this bet`,
-        variant: "destructive",
-      })
+      requestDeposit({ needed: stakeAmount, available: balance.total })
       return
     }
 

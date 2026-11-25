@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { requestDeposit } from '@/lib/depositPrompt'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
@@ -38,7 +39,7 @@ export const GuessNumberGame = () => {
   const startGame = async () => {
     // Deduct 10 NC first
     if (!user || !profile || (profile.wallet_balance || 0) < 10) {
-      toast.error('Insufficient balance. You need 10 NC to play.')
+      requestDeposit({ needed: 10, available: profile?.wallet_balance || 0 })
       return
     }
 

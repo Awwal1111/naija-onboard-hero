@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { requestDeposit } from '@/lib/depositPrompt'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/use-toast'
@@ -398,11 +399,7 @@ export const useWorkDiary = () => {
 
       const balance = Number(profile?.wallet_balance || 0)
       if (balance < totalAmount) {
-        toast({ 
-          title: 'Insufficient Balance', 
-          description: `You need NC ${totalAmount.toFixed(0)} to pay for these hours. Your balance: NC ${balance.toFixed(0)}`,
-          variant: 'destructive'
-        })
+        requestDeposit({ needed: totalAmount, available: balance })
         return { error: 'Insufficient balance' }
       }
 

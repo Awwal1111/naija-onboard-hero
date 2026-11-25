@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { requestDeposit } from '@/lib/depositPrompt'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,11 +47,7 @@ export const PremiumSubscriptionDialog = ({
 
   const handleSubscribe = async () => {
     if (!canAfford) {
-      toast({
-        title: "Insufficient Balance",
-        description: `You need ₦${totalCost.toLocaleString()} NC. Current balance: ₦${currentBalance.toLocaleString()} NC`,
-        variant: "destructive",
-      });
+      requestDeposit({ needed: totalCost, available: currentBalance });
       return;
     }
 

@@ -12,6 +12,7 @@ import { WebRTCProvider } from "@/contexts/WebRTCContext";
 import { AuthProvider, useAuthContext as useAuth } from "@/contexts/AuthContext";
 import AuthRedirectHandler from "@/components/AuthRedirectHandler";
 import RouteCanonical from "@/components/RouteCanonical";
+import GlobalDepositPrompt from "@/components/GlobalDepositPrompt";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { detectMiniPaySync } from "@/lib/minipay";
 import { useOneSignalPush } from "@/hooks/useOneSignalPush";
@@ -234,6 +235,7 @@ const App = () => (
           <WebRTCProvider>
             <MiniPayAuthWrapper>
               <RouteCanonical />
+              <GlobalDepositPrompt />
               {!isMiniPayEnv && <AuthRedirectHandler />}
               {!isMiniPayEnv && <AppStateManager />}
               {!isMiniPayEnv && <OneSignalInitializer />}
