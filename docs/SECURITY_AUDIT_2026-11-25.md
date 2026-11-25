@@ -59,12 +59,7 @@ developer escrow/payout functions. No production database changes were made.
    This can falsify transaction history even though it does not directly change
    balances. Move remaining browser ledger writes to trusted RPCs, then revoke
    direct client INSERT.
-4. The profile guard remains staged until direct profile/wallet writers are migrated.
-5. `increment_wallet_balance` remains a critical open issue: it is SECURITY DEFINER,
-   has no caller authorization, and is used by browser game/reward components.
-6. Authenticated users can still INSERT their own `wallet_transactions` rows;
-   direct ledger INSERT must be migrated to trusted RPCs before it is revoked.
-7. Hourly hire contracts still do not have timesheet submission, approval, or
+4. Hourly hire contracts still do not have timesheet submission, approval, or
    weekly settlement. The contract UI discloses this limitation.
 
 ## Deployment
