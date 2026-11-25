@@ -52,3 +52,14 @@ authorization, and is used by browser game flows. Do not apply
 `lock_down_increment_wallet_balance.sql` until the browser callers are moved to
 dedicated server-side game/reward functions. The referral Edge Function already
 uses the service role and can continue after that migration.
+
+
+## Wallet ledger INSERT policy
+The security-audit branch removes client UPDATE and DELETE permissions from
+`wallet_transactions`, but direct authenticated INSERT is still enabled because
+several browser flows write their own transaction rows. This permits forged
+history entries (not direct balance changes). Migrate those writers to trusted
+RPCs, then revoke client INSERT as well.
+
+Mini-app NC payouts are no longer accepted from the user browser. Developers
+must issue NC rewards from their server using the Developer API.
