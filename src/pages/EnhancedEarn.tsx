@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Zap, FileText, User, Users, ArrowUpRight, Phone, Wifi, TrendingUp, Tv, Wallet, Coins, Clock } from 'lucide-react'
+import { Zap, User, Users, ArrowUpRight, Phone, Wifi, TrendingUp, Tv, Wallet, Coins, Clock } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useWallet } from '@/hooks/useWallet'
 import { useQueryClient } from '@tanstack/react-query'
@@ -17,7 +17,6 @@ import { BettingFundDialog } from '@/components/BettingFundDialog'
 import { VTUElectricityDialog } from '@/components/VTUElectricityDialog'
 import { VTUCableTVDialog } from '@/components/VTUCableTVDialog'
 import { BottomNavBar } from '@/components/BottomNavBar'
-import { USDTStakingCard } from '@/components/USDTStakingCard'
 
 const EnhancedEarn = () => {
   const { balance } = useWallet()
@@ -52,29 +51,8 @@ const EnhancedEarn = () => {
       category: 'rewards'
     },
     {
-      title: 'Community Tasks',
-      description: 'Complete or create reward tasks',
-      icon: Users,
-      reward: 'Min 20 NC/slot',
-      path: '/tasks',
-      category: 'tasks'
-    },
     {
-      title: 'BitLabs Surveys',
-      description: 'Complete surveys from BitLabs',
-      icon: FileText,
-      reward: 'Up to NC 1000',
-      path: '/surveys',
-      category: 'surveys'
-    },
     {
-      title: 'CPX Research Surveys',
-      description: 'Complete surveys from CPX Research',
-      icon: FileText,
-      reward: 'Up to NC 2000',
-      path: '/cpx-surveys',
-      category: 'surveys'
-    },
     {
       title: 'Gigs & Services',
       description: 'Offer your professional services and earn directly',
@@ -94,8 +72,6 @@ const EnhancedEarn = () => {
   ]
 
   const rewardMethods = earningMethods.filter((method) => method.category === 'rewards')
-  const taskMethods = earningMethods.filter((method) => method.category === 'tasks')
-  const surveyMethods = earningMethods.filter((method) => method.category === 'surveys')
   const serviceMethods = earningMethods.filter((method) => method.category === 'services')
 
   const renderMethodSection = (title: string, methods: typeof earningMethods) => {
@@ -138,7 +114,7 @@ const EnhancedEarn = () => {
         <div className="text-center py-4 mb-2">
           <h1 className="text-2xl font-bold text-foreground">{walletOnly ? 'My Wallet' : 'Earn Hub'}</h1>
           <p className="text-sm text-muted-foreground">
-            {walletOnly ? 'Your balances, withdrawals and recent transactions' : 'Tasks, surveys, savings and daily rewards in one place'}
+            {walletOnly ? 'Your balances, withdrawals and recent transactions' : 'Daily rewards and services in one place'}
           </p>
         </div>
 
@@ -158,10 +134,7 @@ const EnhancedEarn = () => {
 
           <TabsContent value="earn" className="space-y-6 mt-0">
             <DailySigninCard />
-            <USDTStakingCard />
             {renderMethodSection('Rewards', rewardMethods)}
-            {renderMethodSection('Tasks', taskMethods)}
-            {renderMethodSection('Surveys', surveyMethods)}
             {renderMethodSection('Services', serviceMethods)}
           </TabsContent>
 
