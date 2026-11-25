@@ -172,7 +172,7 @@ begin
     raise exception 'Select at least one time entry';
   end if;
 
-  select min(workroom_id), count(*)
+  select (array_agg(workroom_id))[1], count(*)
     into v_room_id, v_count
   from public.work_diary_entries
   where id = any(p_entry_ids)
@@ -249,7 +249,7 @@ begin
   order by id
   for update;
 
-  select min(workroom_id), min(user_id), count(*),
+  select (array_agg(workroom_id))[1], (array_agg(user_id))[1], count(*),
          round(sum((duration_minutes::numeric / 60) * hourly_rate), 2)
     into v_room_id, v_freelancer_id, v_count, v_total
   from public.work_diary_entries
