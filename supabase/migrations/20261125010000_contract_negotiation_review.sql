@@ -223,3 +223,64 @@ REVOKE ALL ON FUNCTION public.revise_hire_contract(uuid,text,text,text,numeric,n
 GRANT EXECUTE ON FUNCTION public.revise_hire_contract(uuid,text,text,text,numeric,numeric,numeric,numeric,timestamptz) TO authenticated;
 REVOKE ALL ON FUNCTION public.sign_hire_contract(uuid,text) FROM PUBLIC,anon;
 GRANT EXECUTE ON FUNCTION public.sign_hire_contract(uuid,text) TO authenticated;
+
+
+-- Close the pre-existing anonymous execution path for contract settlement.
+-- Cancellation still refunds the original escrow amount, but only an authenticated
+-- contract party may invoke it.
+CREATE OR REPLACE FUNCTION public.cancel_hire_contract(p_contract_id uuid,p_reason text)
+RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = ''
+AS $$
+DECLARE
+  v_actor uuid := auth.uid();
+  v_c public.hire_contracts%ROWTYPE;
+BEGIN
+  IF v_actor IS NULL THEN
+    RETURN jsonb_build_object('success',false,'error','Authentication required');
+  END IF;
+  IF length(trim(coalesce(p_reason,'')))=0 THEN
+    RETURN jsonb_build_object('success',false,'error','A cancellation reason is required');
+  END IF;
+
+  SELECT * INTO v_c FROM public.hire_contracts WHERE id=p_contract_id FOR UPDATE;
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('success',false,'error','Contract not found');
+  END IF;
+  IF v_actor NOT IN (v_c.client_id,v_c.expert_id) THEN
+    RETURN jsonb_build_object('success',false,'error','Not a party to this contract');
+  END IF;
+  IF v_c.status NOT IN ('pending_expert_signature','pending_client_signature','active') THEN
+    RETURN jsonb_build_object('success',false,'error','Cannot cancel in current state');
+  END IF;
+
+  IF coalesce(v_c.escrow_held,0)>0 THEN
+    UPDATE public.profiles
+    SET balance_withdrawable=coalesce(balance_withdrawable,0)+v_c.escrow_held,
+        wallet_balance=coalesce(wallet_balance,0)+v_c.escrow_held,
+        updated_at=now()
+    WHERE user_id=v_c.client_id;
+    IF NOT FOUND THEN RAISE EXCEPTION 'Client profile not found for escrow refund'; END IF;
+
+    INSERT INTO public.wallet_transactions(user_id,kind,amount,status,reference,metadata)
+    VALUES (v_c.client_id,'hire_contract_refund',v_c.escrow_held,'completed',
+      'Hire contract refund: '||v_c.title,
+      jsonb_build_object('contract_id',p_contract_id,'reason',trim(p_reason)));
+  END IF;
+
+  UPDATE public.hire_contracts
+  SET status='cancelled',cancelled_at=now(),cancellation_reason=trim(p_reason),
+      escrow_held=0,updated_at=now()
+  WHERE id=p_contract_id;
+
+  INSERT INTO public.hire_contract_events(contract_id,actor_id,event_type,payload)
+  VALUES (p_contract_id,v_actor,'cancelled',jsonb_build_object('reason',trim(p_reason)));
+
+  RETURN jsonb_build_object('success',true);
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.cancel_hire_contract(uuid,text) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.cancel_hire_contract(uuid,text) TO authenticated;
+REVOKE ALL ON FUNCTION public.complete_hire_contract(uuid) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.complete_hire_contract(uuid) TO authenticated;
