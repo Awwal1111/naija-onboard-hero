@@ -35,6 +35,69 @@ Deno.serve(async (req) => {
     console.log('[PUSH] Title:', title)
     console.log('[PUSH] Body:', body)
 
+    // Prefer OneSignal for users who subscribed through the OneSignal Web SDK.
+    // The REST API key must be stored as a Supabase Edge Function secret; never
+    // expose it in browser code or commit it to this repository.
+    const oneSignalRestKey = Deno.env.get('ONESIGNAL_REST_API_KEY')
+    const oneSignalAppId = Deno.env.get('ONESIGNAL_APP_ID') || 'bdedddd2-3acd-4822-ad6a-88fd37ade488'
+
+    if (oneSignalRestKey) {
+      if (!userId || !title || !body) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'userId, title and body are required' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      const requestedUrl = new URL(url || '/main-feed', 'https://naijalancers.name.ng')
+      const safeUrl = requestedUrl.origin === 'https://naijalancers.name.ng'
+        ? requestedUrl.toString()
+        : 'https://naijalancers.name.ng/main-feed'
+
+      const oneSignalResponse = await fetch('https://api.onesignal.com/notifications?c=push', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Key ${oneSignalRestKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          app_id: oneSignalAppId,
+          target_channel: 'push',
+          include_aliases: { external_id: [userId] },
+          headings: { en: title },
+          contents: { en: body },
+          url: safeUrl,
+          data: data || {},
+          chrome_web_icon: icon || 'https://naijalancers.name.ng/icon-512.png',
+          chrome_web_badge: badge || 'https://naijalancers.name.ng/icon-512.png',
+        }),
+      })
+
+      const oneSignalResult = await oneSignalResponse.json().catch(() => ({}))
+      if (!oneSignalResponse.ok) {
+        console.error('[PUSH] OneSignal API rejected request:', oneSignalResponse.status)
+        return new Response(
+          JSON.stringify({ success: false, provider: 'onesignal', error: 'OneSignal rejected the push request' }),
+          { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      const sent = Number(oneSignalResult.recipients || 0)
+      console.log('[PUSH] OneSignal accepted notification; recipients:', sent)
+      return new Response(
+        JSON.stringify({
+          success: true,
+          provider: 'onesignal',
+          notificationId: oneSignalResult.id || null,
+          sent,
+          total: sent,
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    console.log('[PUSH] OneSignal REST key not configured; using legacy VAPID delivery during migration.')
+
     // Get user's push subscriptions
     const { data: subscriptions, error: subError } = await supabaseClient
       .from('push_subscriptions')
