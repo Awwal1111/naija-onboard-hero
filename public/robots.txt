@@ -127,6 +127,14 @@ Disallow: /payment-success
 Disallow: /payment-failed
 
 # ===========================================
+# OPENAI SEARCH CRAWLER
+# Allows ChatGPT search to discover public NaijaLancers pages.
+# This does not grant model-training access (GPTBot is separate).
+# ===========================================
+User-agent: OAI-SearchBot
+Allow: /
+
+# ===========================================
 # GOOGLEBOT-SPECIFIC RULES
 # Allow images and assets for rich results
 # ===========================================
