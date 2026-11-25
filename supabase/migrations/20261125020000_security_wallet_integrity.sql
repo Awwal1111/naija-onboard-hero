@@ -1182,3 +1182,41 @@ USING (EXISTS (
   SELECT 1 FROM public.digital_product_purchases purchase
   WHERE purchase.product_id=digital_products.id AND purchase.buyer_id=auth.uid()
 ));
+
+
+-- Break the reciprocal RLS lookup between digital_products and
+-- digital_product_purchases with narrow SECURITY DEFINER predicates.
+CREATE OR REPLACE FUNCTION public.can_view_purchased_digital_product(p_product_id uuid)
+RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path=''
+AS $$
+  SELECT EXISTS(
+    SELECT 1 FROM public.digital_product_purchases
+    WHERE product_id=p_product_id AND buyer_id=auth.uid()
+  )
+$$;
+
+CREATE OR REPLACE FUNCTION public.is_digital_product_owner(p_product_id uuid)
+RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path=''
+AS $$
+  SELECT EXISTS(
+    SELECT 1 FROM public.digital_products
+    WHERE id=p_product_id AND user_id=auth.uid()
+  )
+$$;
+
+REVOKE ALL ON FUNCTION public.can_view_purchased_digital_product(uuid) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.can_view_purchased_digital_product(uuid) TO authenticated;
+REVOKE ALL ON FUNCTION public.is_digital_product_owner(uuid) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.is_digital_product_owner(uuid) TO authenticated;
+
+DROP POLICY IF EXISTS "Buyers can view purchased digital products" ON public.digital_products;
+CREATE POLICY "Buyers can view purchased digital products"
+ON public.digital_products FOR SELECT TO authenticated
+USING (public.can_view_purchased_digital_product(id));
+
+DROP POLICY IF EXISTS "Product owners can view purchases" ON public.digital_product_purchases;
+CREATE POLICY "Product owners can view purchases"
+ON public.digital_product_purchases FOR SELECT TO authenticated
+USING (public.is_digital_product_owner(product_id));
