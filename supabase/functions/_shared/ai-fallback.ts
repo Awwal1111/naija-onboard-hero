@@ -74,25 +74,56 @@ function imageFallbackResponse(body: Record<string, unknown>): Response {
 
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
-// Groq: fast, paid-by-key fallback (sub-second). Tried before Pollinations.
-async function callGroq(body: Record<string, unknown>): Promise<Response> {
+// Groq: fast fallback (sub-second). Tried before Pollinations.
+// Groq rate limits are per model, so when one model returns 429 we move to the next and
+// remember (per warm instance) to skip it until its retry-after has passed. Override the
+// list with the GROQ_MODELS secret (comma separated) if Groq retires a model.
+const GROQ_MODELS = (Deno.env.get("GROQ_MODELS") ?? "openai/gpt-oss-120b,llama-3.3-70b-versatile,llama-3.1-8b-instant")
+  .split(",").map((m) => m.trim()).filter(Boolean);
+const groqCooldown = new Map<string, number>();
+
+export async function callGroq(body: Record<string, unknown>): Promise<Response> {
   const key = Deno.env.get("GROQ_API_KEY");
   if (!key) throw new Error("GROQ_API_KEY not set");
-  const payload: Record<string, unknown> = {
-    model: "openai/gpt-oss-120b",
-    messages: body.messages,
-    stream: body.stream ?? false,
-  };
-  if (body.tools) payload.tools = body.tools;
-  if (body.tool_choice) payload.tool_choice = body.tool_choice;
-  if (body.response_format) payload.response_format = body.response_format;
-  const res = await fetch(GROQ_URL, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) throw new Error(`Groq failed ${res.status}: ${(await res.text().catch(() => "")).slice(0, 200)}`);
-  return res;
+  const now = Date.now();
+  const available = GROQ_MODELS.filter((m) => (groqCooldown.get(m) ?? 0) <= now);
+  const order = available.length ? available : GROQ_MODELS; // all cooling down: try anyway
+  let lastError = "no Groq model available";
+
+  for (const model of order) {
+    const payload: Record<string, unknown> = {
+      model,
+      messages: body.messages,
+      stream: body.stream ?? false,
+    };
+    if (body.tools) payload.tools = body.tools;
+    if (body.tool_choice) payload.tool_choice = body.tool_choice;
+    if (body.response_format) payload.response_format = body.response_format;
+    if (body.temperature !== undefined) payload.temperature = body.temperature;
+    const res = await fetch(GROQ_URL, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (res.ok) return res;
+
+    const text = (await res.text().catch(() => "")).slice(0, 200);
+    lastError = `Groq ${model} failed ${res.status}: ${text}`;
+    if (res.status === 429) {
+      const retryAfter = Number(res.headers.get("retry-after"));
+      const waitMs = Math.min((retryAfter > 0 ? retryAfter : 20) * 1000, 120_000);
+      groqCooldown.set(model, Date.now() + waitMs);
+      console.warn(`${lastError}; skipping ${model} for ${Math.round(waitMs / 1000)}s`);
+      continue;
+    }
+    if (res.status === 404 || (res.status === 400 && /model/i.test(text))) {
+      groqCooldown.set(model, Date.now() + 10 * 60_000); // model retired/unavailable
+      console.warn(lastError);
+      continue;
+    }
+    throw new Error(lastError);
+  }
+  throw new Error(lastError);
 }
 
 async function textFallback(body: Record<string, unknown>): Promise<Response> {
