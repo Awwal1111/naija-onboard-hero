@@ -129,9 +129,11 @@ const MainFeed = () => {
   useEffect(() => {
     if (profile && user) {
       const p = profile as any
-      if (p.onboarding_completed === false && !p.full_name) {
-        setShowOnboarding(true)
-      }
+      // Show guided setup to recent signups even when auth metadata supplied a name.
+      // Legacy accounts get a non-blocking completion prompt instead of a surprise modal.
+      const createdAt = p.created_at ? new Date(p.created_at).getTime() : 0
+      const isRecentSignup = createdAt > 0 && Date.now() - createdAt < 14 * 24 * 60 * 60 * 1000
+      if (p.onboarding_completed === false && isRecentSignup) setShowOnboarding(true)
     }
   }, [profile, user])
 
@@ -342,6 +344,25 @@ const MainFeed = () => {
             fullName={profile?.full_name}
             onCreatePost={() => setShowCreatePost(true)}
           />
+
+          {!isComplete && (
+            <div className="mx-4 mt-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-semibold text-sm text-foreground">
+                    {isClient ? 'Finish setting up your hiring profile' : 'Help clients trust and find you'}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Add the missing details so clients can contact you and understand what you offer.
+                  </p>
+                  <p className="mt-2 text-xs font-medium text-primary">{missingFields.length} profile details still needed</p>
+                </div>
+                <BrandButton size="sm" onClick={() => navigate('/profile?edit=true')} className="shrink-0">
+                  Finish profile
+                </BrandButton>
+              </div>
+            </div>
+          )}
 
           {/* AI freelancer finder entry point */}
           <AIHireBanner />

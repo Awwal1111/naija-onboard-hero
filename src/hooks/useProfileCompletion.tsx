@@ -17,59 +17,35 @@ export const useProfileCompletion = () => {
   const [shouldShowDialog, setShouldShowDialog] = useState(false)
 
   useEffect(() => {
-    if (!loading && profile) {
-      checkProfileCompletion()
+    if (loading) return
+    if (!profile) {
+      setCompletionStatus({ isComplete: false, missingFields: ['Profile'] })
+      setShouldShowDialog(false)
+      return
     }
-  }, [profile, loading, location.pathname])
-
-  const checkProfileCompletion = () => {
-    if (!profile) return
 
     const missingFields: string[] = []
-    
-    // Check required fields
-    if (!profile.full_name || profile.full_name.trim() === '') {
-      missingFields.push('Full Name')
-    }
-    
-    if (!profile.profession || profile.profession.trim() === '') {
-      missingFields.push('Profession')
-    }
-    
-    if (!profile.phone_number || profile.phone_number.trim() === '') {
-      missingFields.push('Phone Number')
-    }
-    
-    if (!profile.bio || profile.bio.trim() === '') {
-      missingFields.push('Bio')
-    }
+    const hasValue = (value?: string | null) => Boolean(value && value.trim())
 
-    // Check location fields
-    if (!profile.state_name || profile.state_name.trim() === '') {
-      missingFields.push('State')
-    }
-    
-    if (!profile.lga_name || profile.lga_name.trim() === '') {
-      missingFields.push('Local Government Area')
-    }
+    if (!hasValue(profile.full_name)) missingFields.push('Full Name')
+    if (!hasValue(profile.phone_number)) missingFields.push('Phone Number')
+
+    // Clients do not need a freelancer profession or portfolio bio to hire.
+    const isClient = profile.account_type === 'client' || profile.user_mode === 'client'
+    if (!isClient && !hasValue(profile.profession)) missingFields.push('Profession')
+    if (!isClient && !hasValue(profile.bio)) missingFields.push('Bio')
+
+    // LGA is optional in onboarding; only Nigerian accounts require a state.
+    const country = String(profile.country_code || profile.country || '').trim().toLowerCase()
+    const isNigeria = country === 'nigeria' || country === 'ng' || country === 'nga'
+    if (isNigeria && !hasValue(profile.state_name)) missingFields.push('State')
 
     const isComplete = missingFields.length === 0
-    
-    setCompletionStatus({
-      isComplete,
-      missingFields
-    })
+    setCompletionStatus({ isComplete, missingFields })
 
-    // Show dialog only if profile is incomplete and not on profile/settings pages
     const excludedPaths = ['/profile', '/settings', '/onboarding', '/setup-pin']
-    const shouldShow = !isComplete && !excludedPaths.some(path => location.pathname.startsWith(path))
-    
-    setShouldShowDialog(shouldShow)
-  }
+    setShouldShowDialog(!isComplete && !excludedPaths.some(path => location.pathname.startsWith(path)))
+  }, [profile, loading, location.pathname])
 
-  return {
-    ...completionStatus,
-    shouldShowDialog,
-    loading
-  }
+  return { ...completionStatus, shouldShowDialog, loading }
 }

@@ -149,13 +149,17 @@ export const QuickOnboarding: React.FC<QuickOnboardingProps> = ({
     setFormData(prev => ({ ...prev, goal }))
     
     if (goal === 'exploring') {
-      // Just exploring - no onboarding completion, just close and browse
-      toast({
-        title: 'Welcome! 👋',
-        description: 'Feel free to explore. You can complete setup anytime.'
-      })
-      onOpenChange(false)
-      onComplete?.()
+      setLoading(true)
+      try {
+        await updateProfile({ full_name: formData.full_name.trim(), profession: formData.profession.trim() || null, country_code: formData.country, state_name: isNigeria ? formData.state : null, lga_name: isNigeria ? formData.lga : null, area: !isNigeria ? formData.city : null, account_type: formData.account_type, onboarding_completed: true } as any)
+        toast({ title: 'Welcome! 👋', description: 'Your basic details are saved. You can explore and update your profile anytime.' })
+        onOpenChange(false)
+        onComplete?.()
+      } catch (error) {
+        toast({ title: 'Could not save your details', description: 'Please try again.', variant: 'destructive' })
+      } finally {
+        setLoading(false)
+      }
       return
     }
 
@@ -172,7 +176,7 @@ export const QuickOnboarding: React.FC<QuickOnboardingProps> = ({
           area: !isNigeria ? formData.city : null,
           account_type: 'client',
           user_mode: 'client',
-          onboarding_completed: false
+          onboarding_completed: true
         } as any)
 
         // Also update localStorage for immediate effect
