@@ -349,6 +349,8 @@ DECLARE
   v_order public.gig_orders%ROWTYPE;
   v_seller_amt numeric;
   v_fee_share numeric;
+  v_partner_share numeric := 0;
+  v_partner record;
   v_remaining integer;
   v_milestone_total numeric;
   v_released_total numeric;
@@ -388,8 +390,18 @@ BEGIN
     RETURN jsonb_build_object('success',false,'error','Milestone release would exceed the order escrow');
   END IF;
 
-  v_fee_share := ROUND((v_m.amount/NULLIF(v_order.amount,0))*COALESCE(v_order.platform_fee,0),2);
-  v_seller_amt := v_m.amount-COALESCE(v_fee_share,0);
+  SELECT p.id,p.partner_cut_pct,p.platform_fee_pct INTO v_partner
+  FROM public.profiles pr
+  JOIN public.partners p ON p.id=pr.partner_id AND p.is_active IS TRUE
+  WHERE pr.user_id=v_order.seller_id FOR UPDATE OF p;
+
+  IF FOUND THEN
+    v_partner_share:=ROUND(v_m.amount*v_partner.partner_cut_pct/100.0,2);
+    v_fee_share:=ROUND(v_m.amount*v_partner.platform_fee_pct/100.0,2);
+  ELSE
+    v_fee_share:=ROUND((v_m.amount/NULLIF(v_order.amount,0))*COALESCE(v_order.platform_fee,0),2);
+  END IF;
+  v_seller_amt := v_m.amount-COALESCE(v_partner_share,0)-COALESCE(v_fee_share,0);
   IF v_seller_amt<0 THEN RAISE EXCEPTION 'Milestone fee exceeds milestone amount'; END IF;
 
   UPDATE public.profiles
@@ -403,9 +415,19 @@ BEGIN
     'Milestone released: '||v_m.title,
     jsonb_build_object('order_id',v_order.id,'milestone_id',p_milestone_id,'platform_fee',v_fee_share));
 
+  IF v_partner_share>0 THEN
+    UPDATE public.partners SET total_earned=total_earned+v_partner_share WHERE id=v_partner.id;
+    INSERT INTO public.partner_payout_logs(
+      partner_id,gig_id,amount,type,deal_type,reference_id,
+      gross_amount,commission_amount,platform_fee_amount,notes
+    ) VALUES (v_partner.id,v_order.gig_id,v_partner_share,'commission_earned','gig_milestone',
+      p_milestone_id,v_m.amount,v_partner_share,v_fee_share,'Released gig milestone commission');
+  END IF;
+
   IF v_fee_share>0 THEN
     PERFORM public.credit_platform_revenue('gig_milestone_fee',v_fee_share,v_order.buyer_id,
-      p_milestone_id::text,jsonb_build_object('order_id',v_order.id,'seller_id',v_order.seller_id));
+      p_milestone_id::text,jsonb_build_object('order_id',v_order.id,'seller_id',v_order.seller_id,
+        'partner_id',v_partner.id,'partner_commission',v_partner_share));
   END IF;
 
   UPDATE public.project_milestones SET status='released',released_at=now()
@@ -507,6 +529,7 @@ GRANT EXECUTE ON FUNCTION public.complete_gig_order(uuid) TO authenticated;
 
 -- 7) Permit seller deliverable submissions while preventing either party from
 -- editing milestone amounts or marking funds released without the payout RPC.
+DROP POLICY IF EXISTS "Sellers can update their own milestone submissions" ON public.project_milestones;
 CREATE POLICY "Sellers can update their own milestone submissions"
 ON public.project_milestones FOR UPDATE TO authenticated
 USING (
@@ -619,6 +642,13 @@ BEGIN
       OR NEW.revision_count IS DISTINCT FROM OLD.revision_count
     THEN
       RAISE EXCEPTION 'Only the buyer can provide feedback or manage revisions' USING ERRCODE='42501';
+    END IF;
+    IF (NEW.deliverable_urls IS DISTINCT FROM OLD.deliverable_urls
+      OR NEW.freelancer_notes IS DISTINCT FROM OLD.freelancer_notes
+      OR NEW.completed_at IS DISTINCT FROM OLD.completed_at)
+      AND NOT (OLD.status IN ('pending','in_progress','revision_requested','submitted') AND NEW.status='submitted')
+    THEN
+      RAISE EXCEPTION 'Freelancer can only submit deliverables for a pending or revised milestone' USING ERRCODE='42501';
     END IF;
     IF NEW.status IS DISTINCT FROM OLD.status
       AND NOT (OLD.status IN ('pending','in_progress','revision_requested') AND NEW.status='submitted')
