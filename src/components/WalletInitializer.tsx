@@ -41,7 +41,7 @@ const WalletInitializerInternal: React.FC = () => {
         if (!existingWallet) {
           const { error } = await supabase
             .from('user_wallets')
-            .upsert({ user_id: user.id, balance: 0, escrow_hold: 0 }, { onConflict: 'user_id' })
+            .upsert({ user_id: user.id, balance: 0, escrow_hold: 0 }, { onConflict: 'user_id', ignoreDuplicates: true })
           if (error) throw error
         }
 
