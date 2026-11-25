@@ -632,30 +632,9 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
   const handleConfirmPayout = async () => {
     if (!pendingPayout) return
     const rid = pendingPayout.requestId
-    const { currency } = pendingPayout
-
-    // USDT payouts are handled inline in the message handler (just returns the
-    // user's wallet address). Anything reaching this dialog is NC.
-    if (!user) return
-    try {
-      const txRef = 'njl_po_' + crypto.randomUUID().replace(/-/g, '').slice(0, 16)
-      const { data, error } = await supabase.rpc('process_mini_app_payout', {
-        p_mini_app_id: app.id, p_user_id: user.id,
-        p_amount: pendingPayout.amount, p_description: pendingPayout.description, p_tx_ref: txRef,
-      })
-      const result = data as any
-      if (error || !result?.success) {
-        const errMsg = result?.error || error?.message || 'Payout failed'
-        toast.error(errMsg)
-        sendResult(rid, { type: 'njl_payout_result', success: false, error: errMsg })
-      } else {
-        sendResult(rid, { type: 'njl_payout_result', success: true, txRef: result.tx_ref, tx_ref: result.tx_ref })
-        toast.success(`₦${pendingPayout.amount}NC received from ${app.app_name}`)
-      }
-    } catch {
-      sendResult(rid, { type: 'njl_payout_result', success: false, error: 'Payout failed' })
-      toast.error('Payout failed')
-    }
+    const message = 'NC payouts must be sent by the mini-app developer through the NaijaLancers Developer API. This browser approval cannot transfer funds.'
+    sendResult(rid, { type: 'njl_payout_result', success: false, currency: 'NC', error: message })
+    toast.error('The app developer must issue this NC payout from their server.')
     setPendingPayout(null)
     setShowPayoutDialog(false)
   }
@@ -794,7 +773,7 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
               </div>
               <div>
                 <h3 className="font-semibold text-foreground">{app.app_name}</h3>
-                <p className="text-sm text-muted-foreground mt-1">wants to send you money</p>
+                <p className="text-sm text-muted-foreground mt-1">requested an NC payout</p><p className="text-xs text-muted-foreground mt-2">For security, NC payouts must be issued by the app developer through the NaijaLancers Developer API. This browser approval cannot transfer funds.</p>
               </div>
               <div className="bg-muted rounded-xl p-4">
                 <p className="text-2xl font-bold text-emerald-600">
@@ -809,7 +788,7 @@ export const MiniAppViewer = ({ app, onClose }: MiniAppViewerProps) => {
                   setShowPayoutDialog(false)
                 }}>Decline</Button>
                 <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700" onClick={handleConfirmPayout}>
-                  Accept {pendingPayout ? formatAmount(pendingPayout.amount, pendingPayout.currency) : ''}
+                  Close
                 </Button>
               </div>
             </div>
