@@ -334,6 +334,23 @@ export const useWorkDiary = () => {
     }
   }
 
+  const getApprovedUnpaidEntries = async (workroomId: string): Promise<WorkDiaryEntry[]> => {
+    const { data, error } = await supabase
+      .from('work_diary_entries')
+      .select('*')
+      .eq('workroom_id', workroomId)
+      .eq('billable', true)
+      .eq('is_approved', true)
+      .eq('payment_status', 'pending')
+      .not('ended_at', 'is', null)
+      .order('started_at', { ascending: false })
+    if (error) {
+      console.error('Error fetching approved unpaid time:', error)
+      return []
+    }
+    return (data || []) as WorkDiaryEntry[]
+  }
+
   // Bulk approve entries
   const bulkApproveEntries = async (entryIds: string[]) => {
     if (!user) return { error: 'Not authenticated' }
