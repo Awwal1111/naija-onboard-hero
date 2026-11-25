@@ -103,7 +103,7 @@ export const MilestonesSection = ({
       safepayId,
       milestones: validMilestones
     });
-    if (!result.data) return;
+    if (!('data' in result) || !result.data) return;
 
     setShowCreateDialog(false);
     setNewMilestones([{ title: '', description: '', amount: 0, due_date: '' }]);
@@ -115,7 +115,7 @@ export const MilestonesSection = ({
     
     const urls = deliverables.split('\n').filter(url => url.trim());
     const result = await submitMilestone(selectedMilestone.id, urls, notes);
-    if (!result.success) return;
+    if (!('success' in result) || !result.success) return;
 
     setShowSubmitDialog(false);
     setDeliverables('');
@@ -133,7 +133,7 @@ export const MilestonesSection = ({
     if (!selectedMilestone) return;
     
     const result = await requestRevision(selectedMilestone.id, feedback);
-    if (result.error) return;
+    if ('error' in result) return;
 
     setShowRevisionDialog(false);
     setFeedback('');
