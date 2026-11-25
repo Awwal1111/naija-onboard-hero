@@ -350,6 +350,8 @@ DECLARE
   v_seller_amt numeric;
   v_fee_share numeric;
   v_remaining integer;
+  v_milestone_total numeric;
+  v_released_total numeric;
 BEGIN
   IF v_actor IS NULL THEN
     RETURN jsonb_build_object('success',false,'error','Authentication required');
@@ -371,6 +373,19 @@ BEGIN
   END IF;
   IF v_order.status IN ('completed','cancelled') THEN
     RETURN jsonb_build_object('success',false,'error','This order is already closed');
+  END IF;
+
+  SELECT COALESCE(SUM(amount),0),
+         COALESCE(SUM(amount) FILTER (WHERE status='released'),0)
+  INTO v_milestone_total,v_released_total
+  FROM public.project_milestones
+  WHERE order_id=v_order.id;
+
+  IF ROUND(v_milestone_total,2)<>ROUND(v_order.amount,2) THEN
+    RETURN jsonb_build_object('success',false,'error','Milestone amounts must add up to the full escrowed order amount before release');
+  END IF;
+  IF v_released_total+v_m.amount>v_order.amount THEN
+    RETURN jsonb_build_object('success',false,'error','Milestone release would exceed the order escrow');
   END IF;
 
   v_fee_share := ROUND((v_m.amount/NULLIF(v_order.amount,0))*COALESCE(v_order.platform_fee,0),2);
@@ -488,3 +503,135 @@ END;
 $$;
 REVOKE ALL ON FUNCTION public.complete_gig_order(uuid) FROM PUBLIC,anon;
 GRANT EXECUTE ON FUNCTION public.complete_gig_order(uuid) TO authenticated;
+
+
+-- 7) Permit seller deliverable submissions while preventing either party from
+-- editing milestone amounts or marking funds released without the payout RPC.
+CREATE POLICY "Sellers can update their own milestone submissions"
+ON public.project_milestones FOR UPDATE TO authenticated
+USING (
+  (order_id IS NOT NULL AND EXISTS (
+    SELECT 1 FROM public.gig_orders o WHERE o.id=project_milestones.order_id AND o.seller_id=auth.uid()
+  ))
+  OR
+  (safepay_transaction_id IS NOT NULL AND EXISTS (
+    SELECT 1 FROM public.safepay_transactions s WHERE s.id=project_milestones.safepay_transaction_id AND s.seller_id=auth.uid()
+  ))
+)
+WITH CHECK (
+  (order_id IS NOT NULL AND EXISTS (
+    SELECT 1 FROM public.gig_orders o WHERE o.id=project_milestones.order_id AND o.seller_id=auth.uid()
+  ))
+  OR
+  (safepay_transaction_id IS NOT NULL AND EXISTS (
+    SELECT 1 FROM public.safepay_transactions s WHERE s.id=project_milestones.safepay_transaction_id AND s.seller_id=auth.uid()
+  ))
+);
+
+CREATE OR REPLACE FUNCTION public.guard_project_milestone_changes()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = ''
+AS $$
+DECLARE
+  v_buyer uuid;
+  v_seller uuid;
+  v_actor uuid := auth.uid();
+  v_order_amount numeric;
+  v_existing_total numeric;
+BEGIN
+  IF current_user NOT IN ('anon','authenticated') THEN
+    RETURN NEW;
+  END IF;
+  IF v_actor IS NULL THEN
+    RAISE EXCEPTION 'Authentication required' USING ERRCODE='42501';
+  END IF;
+
+  IF TG_OP='INSERT' THEN
+    IF NEW.order_id IS NOT NULL THEN
+      SELECT buyer_id,seller_id,amount INTO v_buyer,v_seller,v_order_amount
+      FROM public.gig_orders WHERE id=NEW.order_id;
+    ELSIF NEW.safepay_transaction_id IS NOT NULL THEN
+      SELECT buyer_id,seller_id,amount INTO v_buyer,v_seller,v_order_amount
+      FROM public.safepay_transactions WHERE id=NEW.safepay_transaction_id;
+    END IF;
+    IF v_buyer IS DISTINCT FROM v_actor THEN
+      RAISE EXCEPTION 'Only the buyer can create milestones' USING ERRCODE='42501';
+    END IF;
+    IF NEW.amount<=0 THEN RAISE EXCEPTION 'Milestone amount must be positive'; END IF;
+    IF NEW.order_id IS NOT NULL THEN
+      SELECT COALESCE(SUM(amount),0) INTO v_existing_total
+      FROM public.project_milestones WHERE order_id=NEW.order_id;
+      IF v_existing_total+NEW.amount>v_order_amount THEN
+        RAISE EXCEPTION 'Milestone amounts cannot exceed the order amount';
+      END IF;
+    END IF;
+    RETURN NEW;
+  END IF;
+
+  IF OLD.order_id IS NOT NULL THEN
+    SELECT buyer_id,seller_id INTO v_buyer,v_seller
+    FROM public.gig_orders WHERE id=OLD.order_id;
+  ELSIF OLD.safepay_transaction_id IS NOT NULL THEN
+    SELECT buyer_id,seller_id INTO v_buyer,v_seller
+    FROM public.safepay_transactions WHERE id=OLD.safepay_transaction_id;
+  END IF;
+
+  IF v_actor IS DISTINCT FROM v_buyer AND v_actor IS DISTINCT FROM v_seller THEN
+    RAISE EXCEPTION 'Only milestone participants can update milestones' USING ERRCODE='42501';
+  END IF;
+
+  IF NEW.order_id IS DISTINCT FROM OLD.order_id
+    OR NEW.safepay_transaction_id IS DISTINCT FROM OLD.safepay_transaction_id
+    OR NEW.amount IS DISTINCT FROM OLD.amount
+    OR NEW.title IS DISTINCT FROM OLD.title
+    OR NEW.description IS DISTINCT FROM OLD.description
+    OR NEW.due_date IS DISTINCT FROM OLD.due_date
+    OR NEW.order_index IS DISTINCT FROM OLD.order_index
+    OR NEW.max_revisions IS DISTINCT FROM OLD.max_revisions
+    OR NEW.created_at IS DISTINCT FROM OLD.created_at
+    OR NEW.released_at IS DISTINCT FROM OLD.released_at
+  THEN
+    RAISE EXCEPTION 'Milestone scope and amount cannot be changed after creation' USING ERRCODE='42501';
+  END IF;
+
+  IF v_actor=v_buyer THEN
+    IF NEW.deliverable_urls IS DISTINCT FROM OLD.deliverable_urls
+      OR NEW.freelancer_notes IS DISTINCT FROM OLD.freelancer_notes
+      OR NEW.completed_at IS DISTINCT FROM OLD.completed_at
+    THEN
+      RAISE EXCEPTION 'Only the freelancer can submit deliverables' USING ERRCODE='42501';
+    END IF;
+    IF NEW.status IS DISTINCT FROM OLD.status
+      AND NOT (OLD.status='submitted' AND NEW.status IN ('approved','revision_requested'))
+    THEN
+      RAISE EXCEPTION 'Buyer can only approve or request a revision after submission' USING ERRCODE='42501';
+    END IF;
+    IF NEW.status='revision_requested' THEN
+      IF NEW.revision_count<>OLD.revision_count+1 THEN
+        RAISE EXCEPTION 'Revision count must increase by exactly one';
+      END IF;
+    ELSIF NEW.revision_count IS DISTINCT FROM OLD.revision_count THEN
+      RAISE EXCEPTION 'Revision count can only change when requesting a revision';
+    END IF;
+  ELSE
+    IF NEW.client_feedback IS DISTINCT FROM OLD.client_feedback
+      OR NEW.revision_count IS DISTINCT FROM OLD.revision_count
+    THEN
+      RAISE EXCEPTION 'Only the buyer can provide feedback or manage revisions' USING ERRCODE='42501';
+    END IF;
+    IF NEW.status IS DISTINCT FROM OLD.status
+      AND NOT (OLD.status IN ('pending','in_progress','revision_requested') AND NEW.status='submitted')
+    THEN
+      RAISE EXCEPTION 'Freelancer can only submit a pending or revised milestone' USING ERRCODE='42501';
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_guard_project_milestone_changes ON public.project_milestones;
+CREATE TRIGGER trg_guard_project_milestone_changes
+BEFORE INSERT OR UPDATE ON public.project_milestones
+FOR EACH ROW EXECUTE FUNCTION public.guard_project_milestone_changes();
