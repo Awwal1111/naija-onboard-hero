@@ -6,9 +6,21 @@ import { toast } from 'sonner';
 import { AlertCircle, CheckCircle2, Users, Wallet } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
+type MigrationResult = {
+  success: boolean;
+  message?: string;
+  scanned?: number;
+  createdCeloWallets?: number;
+  existingCeloWalletsPreserved?: number;
+  needsKeyRecovery?: number;
+  internalWalletRowsCreated?: number;
+  failed?: number;
+  error?: string;
+};
+
 export const AdminWalletMigration = () => {
   const [migrating, setMigrating] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<MigrationResult | null>(null);
   const [usersWithoutWallets, setUsersWithoutWallets] = useState<number | null>(null);
 
   const checkUsersWithoutWallets = async () => {
@@ -19,51 +31,44 @@ export const AdminWalletMigration = () => {
         .is('celo_wallet_address', null);
 
       if (error) throw error;
-      
       setUsersWithoutWallets(count || 0);
-      
-      if (count === 0) {
-        toast.success('All users already have wallets!');
-      }
+      if (count === 0) toast.success('All profiles already have Celo addresses.');
     } catch (error: any) {
       console.error('Error checking users:', error);
-      toast.error(error.message);
+      toast.error(error.message || 'Could not check wallet coverage');
     }
   };
 
   const runMigration = async () => {
+    if (usersWithoutWallets === null || usersWithoutWallets === 0) return;
     setMigrating(true);
     setResult(null);
 
     try {
-      toast.info('Starting wallet migration...', {
-        description: 'This may take a few moments'
+      toast.info('Starting secure Celo wallet reconciliation', {
+        description: 'Existing addresses and encrypted keys will be preserved.'
       });
 
-      const { data, error } = await supabase.functions.invoke('migrate-existing-users', {
-        body: {}
-      });
-
+      const { data, error } = await supabase.functions.invoke('migrate-existing-users', { body: {} });
       if (error) throw error;
 
-      setResult(data);
+      const migration = data as MigrationResult;
+      setResult(migration);
 
-      if (data.success) {
-        toast.success('Migration completed!', {
-          description: `✅ ${data.migrated} users migrated successfully`
+      if (migration.success && (migration.failed || 0) === 0 && (migration.needsKeyRecovery || 0) === 0) {
+        toast.success('Celo wallet reconciliation completed', {
+          description: `${migration.createdCeloWallets || 0} new wallets created.`
         });
       } else {
-        toast.error('Migration completed with errors', {
-          description: data.message
+        toast.warning('Celo reconciliation needs attention', {
+          description: `${migration.failed || 0} failed; ${migration.needsKeyRecovery || 0} need key recovery.`
         });
       }
-
-      // Refresh the count
       await checkUsersWithoutWallets();
     } catch (error: any) {
-      console.error('Migration error:', error);
-      toast.error('Migration failed', {
-        description: error.message
+      console.error('Wallet migration error:', error);
+      toast.error('Wallet migration could not run', {
+        description: error.message || 'Check that you are signed in as a super admin.'
       });
     } finally {
       setMigrating(false);
@@ -75,96 +80,74 @@ export const AdminWalletMigration = () => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Wallet className="h-5 w-5" />
-          User Wallet Migration
+          Celo Wallet Reconciliation
         </CardTitle>
         <CardDescription>
-          Create permanent Celo wallets for existing users without wallet addresses
+          Create permanent Celo wallets for profiles that do not yet have an address.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            This will create permanent Celo wallet addresses for all users who don't have one yet.
-            Each user will be notified about their new wallet address.
+            This creates and encrypts a new private key only when both the Celo address and encrypted key are absent.
+            Existing addresses and encrypted keys are never overwritten. Profiles with an address but no key are
+            reported for manual recovery instead of receiving a replacement wallet.
           </AlertDescription>
         </Alert>
 
-        <div className="flex gap-2">
-          <Button
-            onClick={checkUsersWithoutWallets}
-            variant="outline"
-            disabled={migrating}
-          >
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={checkUsersWithoutWallets} variant="outline" disabled={migrating}>
             <Users className="mr-2 h-4 w-4" />
-            Check Users Without Wallets
+            Check Celo Coverage
           </Button>
-
-          <Button
-            onClick={runMigration}
-            disabled={migrating || usersWithoutWallets === 0}
-          >
-            {migrating ? 'Migrating...' : 'Run Migration'}
+          <Button onClick={runMigration} disabled={migrating || usersWithoutWallets === null || usersWithoutWallets === 0}>
+            {migrating ? 'Reconciling wallets...' : 'Run Celo Reconciliation'}
           </Button>
         </div>
 
         {usersWithoutWallets !== null && (
-          <div className="p-4 border rounded-lg bg-muted">
+          <div className="rounded-lg border bg-muted p-4">
             <p className="text-sm font-medium">
-              Users without wallets: <span className="text-lg font-bold">{usersWithoutWallets}</span>
+              Profiles without a Celo address: <span className="text-lg font-bold">{usersWithoutWallets}</span>
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Internal NC wallet coverage is checked separately; this count is for blockchain addresses only.
             </p>
           </div>
         )}
 
         {result && (
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-green-600">
-              <CheckCircle2 className="h-5 w-5" />
-              <span className="font-medium">Migration Results</span>
+            <div className="flex items-center gap-2">
+              {result.success && !result.failed && !result.needsKeyRecovery
+                ? <CheckCircle2 className="h-5 w-5 text-green-600" />
+                : <AlertCircle className="h-5 w-5 text-amber-600" />}
+              <span className="font-medium">Reconciliation Results</span>
             </div>
-            
-            <div className="p-4 border rounded-lg space-y-2">
-              <p className="text-sm">
-                <strong>Total Users:</strong> {result.total}
-              </p>
-              <p className="text-sm text-green-600">
-                <strong>Successfully Migrated:</strong> {result.migrated}
-              </p>
-              {result.failedUsers && result.failedUsers.length > 0 && (
-                <p className="text-sm text-red-600">
-                  <strong>Failed:</strong> {result.failedUsers.length}
-                </p>
-              )}
-              <p className="text-sm text-muted-foreground mt-2">
-                {result.message}
-              </p>
+            <div className="rounded-lg border p-4">
+              <dl className="grid grid-cols-2 gap-3 text-sm">
+                <div><dt className="text-muted-foreground">Profiles scanned</dt><dd className="font-semibold">{result.scanned ?? 0}</dd></div>
+                <div><dt className="text-muted-foreground">New Celo wallets</dt><dd className="font-semibold">{result.createdCeloWallets ?? 0}</dd></div>
+                <div><dt className="text-muted-foreground">Existing wallets preserved</dt><dd className="font-semibold">{result.existingCeloWalletsPreserved ?? 0}</dd></div>
+                <div><dt className="text-muted-foreground">Need key recovery</dt><dd className="font-semibold">{result.needsKeyRecovery ?? 0}</dd></div>
+                <div><dt className="text-muted-foreground">Internal wallet rows added</dt><dd className="font-semibold">{result.internalWalletRowsCreated ?? 0}</dd></div>
+                <div><dt className="text-muted-foreground">Failures</dt><dd className="font-semibold">{result.failed ?? 0}</dd></div>
+              </dl>
+              {result.message && <p className="mt-3 text-sm text-muted-foreground">{result.message}</p>}
+              {result.error && <p className="mt-3 text-sm text-destructive">{result.error}</p>}
             </div>
-
-            {result.failedUsers && result.failedUsers.length > 0 && (
-              <details className="p-4 border rounded-lg bg-red-50">
-                <summary className="cursor-pointer font-medium text-red-600">
-                  View Failed Users
-                </summary>
-                <ul className="mt-2 space-y-1">
-                  {result.failedUsers.map((fail: any) => (
-                    <li key={fail.userId} className="text-sm">
-                      <strong>{fail.userId}:</strong> {fail.error}
-                    </li>
-                  ))}
-                </ul>
-              </details>
-            )}
           </div>
         )}
 
-        <div className="pt-4 border-t space-y-2">
-          <h4 className="font-medium text-sm">What this does:</h4>
-          <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-            <li>Creates a permanent Celo wallet for each user</li>
-            <li>Encrypts and stores the private key securely</li>
-            <li>Saves the wallet address to user's profile</li>
-            <li>Sends a notification with wallet address to each user</li>
-            <li>Enables deposits to work for all users</li>
+        <div className="border-t pt-4">
+          <h4 className="text-sm font-medium">Safety guarantees</h4>
+          <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-muted-foreground">
+            <li>New wallets are generated with cryptographically secure random keys.</li>
+            <li>Private keys are encrypted server-side before storage.</li>
+            <li>Existing Celo addresses, encrypted keys, NC balances and escrow holds are preserved.</li>
+            <li>Only a super admin can run the server-side reconciliation.</li>
+            <li>Profiles with an address but missing encrypted key are flagged for manual recovery.</li>
           </ul>
         </div>
       </CardContent>
