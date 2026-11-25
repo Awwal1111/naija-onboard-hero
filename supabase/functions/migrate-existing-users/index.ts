@@ -65,7 +65,7 @@ serve(async (req) => {
       createdCeloWallets: [] as string[],
       existingCeloWalletsPreserved: 0,
       internalWalletRowsCreated: [] as string[],
-      needsKeyRecovery: [] as { userId: string; address: string }[],
+      needsKeyRecovery: [] as { userId: string; address: string | null }[],
       failed: [] as { userId: string; error: string }[],
     };
 
@@ -90,8 +90,8 @@ serve(async (req) => {
             p_encrypted_wallet: encrypted,
           });
           if (provisionError) throw new Error(`Atomic wallet provisioning failed: ${provisionError.message}`);
-          if (provision?.status === "needs_recovery") {
-            results.needsKeyRecovery.push({ userId, address: provision.address });
+          if (provision?.status === "needs_recovery" || provision?.status === "orphaned_key") {
+            results.needsKeyRecovery.push({ userId, address: provision.address ?? null });
           } else if (provision?.status === "created") {
             results.createdCeloWallets.push(userId);
             const { error: notificationError } = await supabase.from("notifications").insert({
