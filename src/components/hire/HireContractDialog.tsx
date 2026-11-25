@@ -73,10 +73,14 @@ export function HireContractDialog({ open, onOpenChange, expertId, expertName }:
       payload.total_amount = amt;
     } else {
       const r = Number(rate); const c = Number(cap); const d = Number(deposit);
-      if (!r || r <= 0) { setBusy(false); return; }
+      const initialDeposit = d > 0 ? d : r * c;
+      if (!(r > 0) || !(c >= 1 && c <= 168) || !(initialDeposit > 0)) {
+        toast({ title: 'Invalid hourly terms', description: 'Enter a positive hourly rate, a weekly cap from 1 to 168 hours, and a positive initial deposit.', variant: 'destructive' });
+        setBusy(false); return;
+      }
       payload.hourly_rate = r;
-      payload.weekly_cap_hours = c || null;
-      payload.deposit_amount = d || (r * (c || 20));
+      payload.weekly_cap_hours = c;
+      payload.deposit_amount = initialDeposit;
     }
     const res = await create(payload);
     setBusy(false);
@@ -146,14 +150,14 @@ export function HireContractDialog({ open, onOpenChange, expertId, expertName }:
                 </div>
                 <div>
                   <Label htmlFor="c-cap">Weekly cap (hrs)</Label>
-                  <Input id="c-cap" type="number" min={1} value={cap} onChange={(e) => setCap(e.target.value)} />
+                  <Input id="c-cap" type="number" min={1} max={168} value={cap} onChange={(e) => setCap(e.target.value)} />
                 </div>
               </div>
               <div>
                 <Label htmlFor="c-dep">Initial deposit (NC)</Label>
-                <Input id="c-dep" type="number" min={0} value={deposit} onChange={(e) => setDeposit(e.target.value)}
+                <Input id="c-dep" type="number" min={1} value={deposit} onChange={(e) => setDeposit(e.target.value)}
                   placeholder={String(Number(rate || 0) * Number(cap || 0))} />
-                <p className="text-xs text-muted-foreground mt-1">Defaults to one week (rate × cap). Held in escrow at signing.</p>
+                <p className="text-xs text-muted-foreground mt-1">Defaults to one week (rate × cap). Held in escrow at signing. This is an initial deposit only; timesheet approval and automatic weekly payouts are not available yet.</p>
               </div>
             </TabsContent>
 
