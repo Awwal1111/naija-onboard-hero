@@ -6,13 +6,52 @@ const corsHeaders = {
 }
 
 interface PushNotificationRequest {
-  userId: string
+  userId?: string
+  user_id?: string
   title: string
   body: string
   icon?: string
   badge?: string
   data?: any
   url?: string
+}
+
+
+function readVerifiedJwtClaims(req: Request): { sub?: string; role?: string } | null {
+  const authorization = req.headers.get('Authorization') || req.headers.get('authorization');
+  if (!authorization?.startsWith('Bearer ')) return null;
+  const token = authorization.slice(7);
+  const payload = token.split('.')[1];
+  if (!payload) return null;
+  try {
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const decoded = atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, '='));
+    return JSON.parse(decoded);
+  } catch {
+    return null;
+  }
+}
+
+async function canNotifyTarget(
+  supabase: ReturnType<typeof createClient>,
+  req: Request,
+  targetUserId: string,
+): Promise<boolean> {
+  // Supabase's Edge gateway verifies the JWT signature when verify_jwt=true.
+  // Service-role calls are trusted server-to-server; users may notify
+  // themselves; only admin/super_admin users may target another account.
+  const claims = readVerifiedJwtClaims(req);
+  if (!claims?.sub || !claims.role) return false;
+  if (claims.role === 'service_role' || claims.sub === targetUserId) return true;
+
+  const { data, error } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', claims.sub)
+    .in('role', ['admin', 'super_admin'])
+    .limit(1);
+
+  return !error && Array.isArray(data) && data.length > 0;
 }
 
 Deno.serve(async (req) => {
@@ -27,7 +66,19 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const { userId, title, body, icon, badge, data, url } = await req.json() as PushNotificationRequest
+    const { userId: requestedUserId, user_id, title, body, icon, badge, data, url } = await req.json() as PushNotificationRequest
+    const userId = requestedUserId || user_id
+
+    if (!userId || typeof userId !== 'string' || !title || !body) {
+      return new Response(JSON.stringify({ success: false, error: 'userId, title and body are required' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+    if (!(await canNotifyTarget(supabaseClient, req, userId))) {
+      return new Response(JSON.stringify({ success: false, error: 'Not authorized to notify this user' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
 
     console.log('========================================')
     console.log('[PUSH] Sending push notification')
