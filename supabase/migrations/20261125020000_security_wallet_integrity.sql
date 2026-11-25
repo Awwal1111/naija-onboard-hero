@@ -1148,3 +1148,19 @@ AS $$
 $$;
 REVOKE ALL ON FUNCTION public.resolve_user_id_by_email(text) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.resolve_user_id_by_email(text) TO service_role;
+
+
+-- Keep seller dashboards and existing buyer entitlements working when a
+-- product is no longer publicly active.
+DROP POLICY IF EXISTS "Sellers can view their own digital products" ON public.digital_products;
+CREATE POLICY "Sellers can view their own digital products"
+ON public.digital_products FOR SELECT TO authenticated
+USING (auth.uid()=user_id);
+
+DROP POLICY IF EXISTS "Buyers can view purchased digital products" ON public.digital_products;
+CREATE POLICY "Buyers can view purchased digital products"
+ON public.digital_products FOR SELECT TO authenticated
+USING (EXISTS (
+  SELECT 1 FROM public.digital_product_purchases purchase
+  WHERE purchase.product_id=digital_products.id AND purchase.buyer_id=auth.uid()
+));
