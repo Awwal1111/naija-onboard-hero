@@ -9,6 +9,10 @@ import { CacheableResponsePlugin } from 'workbox-cacheable-response'
 
 declare const self: ServiceWorkerGlobalScope
 
+// Share the existing PWA worker with OneSignal. Registering a second worker
+// at scope '/' would replace this worker and break offline/PWA behaviour.
+importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js')
+
 // Workbox precaching (injected by VitePWA injectManifest)
 cleanupOutdatedCaches()
 precacheAndRoute(self.__WB_MANIFEST)
@@ -121,6 +125,11 @@ self.addEventListener('push', (event) => {
   } catch {
     data = { title: 'NaijaLancers', body: event.data.text() }
   }
+
+  // OneSignal payloads include custom.i (their notification UUID). Let the
+  // OneSignal worker runtime display and handle those; this handler is only
+  // for legacy NaijaLancers VAPID payloads.
+  if (data?.custom?.i) return
 
   const options: any = {
     body: data.body || '',

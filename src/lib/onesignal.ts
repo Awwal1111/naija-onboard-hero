@@ -1,112 +1,115 @@
 import OneSignal from 'react-onesignal'
 
 const ONESIGNAL_APP_ID = 'bdedddd2-3acd-4822-ad6a-88fd37ade488'
+const SERVICE_WORKER_PATH = '/sw.js'
 
 let initialized = false
+let initPromise: Promise<boolean> | null = null
 
-export const initOneSignal = async () => {
-  if (initialized) return
-  
-  // Don't init in iframes or preview hosts
+const isUnsupportedContext = () => {
   const isInIframe = (() => {
     try { return window.self !== window.top } catch { return true }
   })()
+  const hostname = window.location.hostname
   const isPreviewHost =
-    window.location.hostname.includes('id-preview--') ||
-    window.location.hostname.includes('lovableproject.com') ||
-    window.location.hostname.includes('localhost')
+    hostname.includes('id-preview--') ||
+    hostname.includes('lovableproject.com') ||
+    hostname === 'localhost'
 
-  if (isInIframe || isPreviewHost) {
-    console.log('[OneSignal] Skipping init in preview/iframe')
-    return
-  }
+  return isInIframe || isPreviewHost
+}
 
-  try {
-    // Guard against the SDK hanging indefinitely (seen in some WebViews) —
-    // resolve after 8s so the UI never gets stuck on "Setting up...".
-    await Promise.race([
-      OneSignal.init({
-        appId: ONESIGNAL_APP_ID,
-        allowLocalhostAsSecureOrigin: false,
-        serviceWorkerParam: { scope: '/' },
-      }),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('OneSignal init timeout')), 8000)),
-    ])
-    initialized = true
-    console.log('[OneSignal] Initialized successfully')
-  } catch (error) {
-    console.error('[OneSignal] Init error:', error)
-  }
+export const initOneSignal = async (): Promise<boolean> => {
+  if (initialized) return true
+  if (initPromise) return initPromise
+  if (typeof window === 'undefined' || isUnsupportedContext()) return false
+
+  initPromise = (async () => {
+    try {
+      await Promise.race([
+        OneSignal.init({
+          appId: ONESIGNAL_APP_ID,
+          allowLocalhostAsSecureOrigin: false,
+          serviceWorkerPath: SERVICE_WORKER_PATH,
+          serviceWorkerParam: { scope: '/' },
+        }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('OneSignal initialization timed out')), 12000),
+        ),
+      ])
+      initialized = true
+      console.info('[OneSignal] Initialized with the shared PWA service worker')
+      return true
+    } catch (error) {
+      console.error('[OneSignal] Initialization failed:', error)
+      return false
+    } finally {
+      initPromise = null
+    }
+  })()
+
+  return initPromise
 }
 
 export const setOneSignalExternalUserId = async (userId: string) => {
-  if (!initialized) return
+  if (!initialized) return false
   try {
     await OneSignal.login(userId)
-    console.log('[OneSignal] External user ID set:', userId)
+    console.info('[OneSignal] User linked')
+    return true
   } catch (error) {
-    console.error('[OneSignal] Error setting external user ID:', error)
-  }
-}
-
-export const removeOneSignalExternalUserId = async () => {
-  if (!initialized) return
-  try {
-    await OneSignal.logout()
-    console.log('[OneSignal] External user ID removed')
-  } catch (error) {
-    console.error('[OneSignal] Error removing external user ID:', error)
-  }
-}
-
-export const requestOneSignalPermission = async (): Promise<boolean> => {
-  if (!initialized) {
-    await initOneSignal()
-  }
-
-  // Fast path: use the native Notification API directly. OneSignal's
-  // requestPermission() can hang silently in WebViews, leaving the UI stuck
-  // on "Setting up...". The browser prompt itself is what actually matters
-  // for the permission grant; OneSignal picks it up via its own listener.
-  try {
-    if (typeof Notification === 'undefined') return false
-
-    let perm: NotificationPermission = Notification.permission
-    if (perm === 'default') {
-      perm = await Promise.race([
-        Notification.requestPermission(),
-        new Promise<NotificationPermission>((resolve) =>
-          setTimeout(() => resolve(Notification.permission), 15000),
-        ),
-      ])
-    }
-
-    // Best-effort: ask OneSignal to opt the user in so the subscription is
-    // registered server-side. Don't await — if it hangs we still return.
-    try {
-      if (initialized && perm === 'granted') {
-        OneSignal.User.PushSubscription.optIn().catch(() => {})
-      }
-    } catch {}
-
-    return perm === 'granted'
-  } catch (error) {
-    console.error('[OneSignal] Permission error:', error)
+    console.error('[OneSignal] User linking failed:', error)
     return false
   }
 }
 
-export const isOneSignalPushEnabled = (): boolean => {
-  if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-    return true
-  }
+export const removeOneSignalExternalUserId = async () => {
   if (!initialized) return false
   try {
-    return OneSignal.Notifications.permission
+    await OneSignal.logout()
+    return true
+  } catch (error) {
+    console.error('[OneSignal] Logout failed:', error)
+    return false
+  }
+}
+
+/** True only when OneSignal confirms an opted-in push subscription. */
+export const isOneSignalPushEnabled = (): boolean => {
+  if (!initialized || typeof Notification === 'undefined') return false
+  try {
+    return Notification.permission === 'granted' &&
+      OneSignal.User.PushSubscription.optedIn === true &&
+      Boolean(OneSignal.User.PushSubscription.id)
   } catch {
     return false
   }
 }
 
+export const requestOneSignalPermission = async (): Promise<boolean> => {
+  const ready = initialized || await initOneSignal()
+  if (!ready) return false
+
+  try {
+    const granted = await OneSignal.Notifications.requestPermission()
+    if (!granted) return false
+
+    await OneSignal.User.PushSubscription.optIn()
+
+    // OneSignal may finish creating the subscription shortly after opt-in.
+    // Verify the actual OneSignal subscription; browser permission alone is
+    // not proof that push delivery is configured.
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+      if (isOneSignalPushEnabled()) return true
+      await new Promise(resolve => setTimeout(resolve, 500))
+    }
+
+    console.warn('[OneSignal] Permission granted, but no opted-in subscription was confirmed')
+    return false
+  } catch (error) {
+    console.error('[OneSignal] Push subscription failed:', error)
+    return false
+  }
+}
 
 export { OneSignal }

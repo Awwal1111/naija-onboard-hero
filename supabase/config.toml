@@ -87,7 +87,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.send-push-notification]
-verify_jwt = false
+verify_jwt = true
 
 [functions.save-push-subscription]
 verify_jwt = true
@@ -152,7 +152,7 @@ verify_jwt = true
 verify_jwt = false
 
 [functions.smart-notification]
-verify_jwt = false
+verify_jwt = true
 
 [functions.engage-inactive-users]
 verify_jwt = false

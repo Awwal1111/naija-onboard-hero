@@ -19,46 +19,50 @@ export const useOneSignalPush = () => {
   const [pushEnabled, setPushEnabled] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  // Initialize OneSignal and link user
+  // Initialize once, then link (or unlink) the currently authenticated user.
   useEffect(() => {
     if (isMiniPayEnv) return
+
+    let active = true
+    const syncStatus = () => {
+      if (active) setPushEnabled(isOneSignalPushEnabled())
+    }
 
     const setup = async () => {
-      await initOneSignal()
-      setPushEnabled(isOneSignalPushEnabled())
-
-      if (user) {
-        await setOneSignalExternalUserId(user.id)
+      const ready = await initOneSignal()
+      if (!ready || !active) {
+        syncStatus()
+        return
       }
+
+      if (user?.id) {
+        await setOneSignalExternalUserId(user.id)
+      } else {
+        await removeOneSignalExternalUserId()
+      }
+
+      syncStatus()
+
+      // Keep the UI tied to the actual OneSignal subscription, not just the
+      // browser's notification permission.
+      OneSignal.User.PushSubscription.addEventListener('change', syncStatus)
+      OneSignal.Notifications.addEventListener('permissionChange', syncStatus)
     }
 
-    setup()
+    void setup()
 
     return () => {
-      if (!user) {
-        removeOneSignalExternalUserId()
+      active = false
+      if (typeof OneSignal !== 'undefined') {
+        try {
+          OneSignal.User.PushSubscription.removeEventListener('change', syncStatus)
+          OneSignal.Notifications.removeEventListener('permissionChange', syncStatus)
+        } catch {
+          // SDK may not have initialized yet.
+        }
       }
     }
-  }, [user])
-
-  // Listen for permission changes
-  useEffect(() => {
-    if (isMiniPayEnv) return
-
-    const handlePermissionChange = (permission: boolean) => {
-      console.log('[OneSignal] Permission changed:', permission)
-      setPushEnabled(permission)
-    }
-
-    try {
-      OneSignal.Notifications.addEventListener('permissionChange', handlePermissionChange)
-      return () => {
-        OneSignal.Notifications.removeEventListener('permissionChange', handlePermissionChange)
-      }
-    } catch {
-      // OneSignal not initialized yet
-    }
-  }, [])
+  }, [user?.id])
 
   const requestPushPermission = useCallback(async () => {
     if (isMiniPayEnv) {
@@ -73,23 +77,23 @@ export const useOneSignalPush = () => {
     setLoading(true)
     try {
       const granted = await requestOneSignalPermission()
-      setPushEnabled(granted)
+      setPushEnabled(isOneSignalPushEnabled())
 
       if (granted) {
         toast({
-          title: 'Success! 🔔',
-          description: 'Push notifications enabled. You\'ll receive alerts even when the app is closed.',
+          title: 'Push notifications enabled',
+          description: 'This device is subscribed through OneSignal.',
         })
       } else {
         toast({
-          title: 'Permission Denied',
-          description: 'Please enable notifications in your browser/phone settings',
+          title: 'Setup not completed',
+          description: 'Browser permission was not enough to confirm a OneSignal subscription. Please try again in your browser.',
           variant: 'destructive',
         })
       }
 
       return granted
-    } catch (error: any) {
+    } catch (error) {
       console.error('[OneSignal] Request permission error:', error)
       toast({
         title: 'Error',
@@ -103,13 +107,14 @@ export const useOneSignalPush = () => {
   }, [toast])
 
   const disablePushNotifications = useCallback(async () => {
+    setLoading(true)
     try {
-      // OneSignal doesn't have a direct "disable" — we opt out
+      if (!(await initOneSignal())) throw new Error('OneSignal is not initialized')
       await OneSignal.User.PushSubscription.optOut()
       setPushEnabled(false)
       toast({
         title: 'Disabled',
-        description: 'Push notifications have been disabled',
+        description: 'Push notifications have been disabled on this device',
       })
     } catch (error) {
       console.error('[OneSignal] Disable error:', error)
@@ -118,6 +123,8 @@ export const useOneSignalPush = () => {
         description: 'Failed to disable push notifications',
         variant: 'destructive',
       })
+    } finally {
+      setLoading(false)
     }
   }, [toast])
 

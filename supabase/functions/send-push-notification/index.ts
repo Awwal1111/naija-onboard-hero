@@ -6,13 +6,52 @@ const corsHeaders = {
 }
 
 interface PushNotificationRequest {
-  userId: string
+  userId?: string
+  user_id?: string
   title: string
   body: string
   icon?: string
   badge?: string
   data?: any
   url?: string
+}
+
+
+function readVerifiedJwtClaims(req: Request): { sub?: string; role?: string } | null {
+  const authorization = req.headers.get('Authorization') || req.headers.get('authorization');
+  if (!authorization?.startsWith('Bearer ')) return null;
+  const token = authorization.slice(7);
+  const payload = token.split('.')[1];
+  if (!payload) return null;
+  try {
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const decoded = atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, '='));
+    return JSON.parse(decoded);
+  } catch {
+    return null;
+  }
+}
+
+async function canNotifyTarget(
+  supabase: ReturnType<typeof createClient>,
+  req: Request,
+  targetUserId: string,
+): Promise<boolean> {
+  // Supabase's Edge gateway verifies the JWT signature when verify_jwt=true.
+  // Service-role calls are trusted server-to-server; users may notify
+  // themselves; only admin/super_admin users may target another account.
+  const claims = readVerifiedJwtClaims(req);
+  if (!claims?.sub || !claims.role) return false;
+  if (claims.role === 'service_role' || claims.sub === targetUserId) return true;
+
+  const { data, error } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', claims.sub)
+    .in('role', ['admin', 'super_admin'])
+    .limit(1);
+
+  return !error && Array.isArray(data) && data.length > 0;
 }
 
 Deno.serve(async (req) => {
@@ -27,13 +66,88 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const { userId, title, body, icon, badge, data, url } = await req.json() as PushNotificationRequest
+    const { userId: requestedUserId, user_id, title, body, icon, badge, data, url } = await req.json() as PushNotificationRequest
+    const userId = requestedUserId || user_id
+
+    if (!userId || typeof userId !== 'string' || !title || !body) {
+      return new Response(JSON.stringify({ success: false, error: 'userId, title and body are required' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+    if (!(await canNotifyTarget(supabaseClient, req, userId))) {
+      return new Response(JSON.stringify({ success: false, error: 'Not authorized to notify this user' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
 
     console.log('========================================')
     console.log('[PUSH] Sending push notification')
     console.log('[PUSH] User ID:', userId)
     console.log('[PUSH] Title:', title)
     console.log('[PUSH] Body:', body)
+
+    // Prefer OneSignal for users who subscribed through the OneSignal Web SDK.
+    // The REST API key must be stored as a Supabase Edge Function secret; never
+    // expose it in browser code or commit it to this repository.
+    const oneSignalRestKey = Deno.env.get('ONESIGNAL_REST_API_KEY')
+    const oneSignalAppId = Deno.env.get('ONESIGNAL_APP_ID') || 'bdedddd2-3acd-4822-ad6a-88fd37ade488'
+
+    if (oneSignalRestKey) {
+      if (!userId || !title || !body) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'userId, title and body are required' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      const requestedUrl = new URL(url || '/main-feed', 'https://naijalancers.name.ng')
+      const safeUrl = requestedUrl.origin === 'https://naijalancers.name.ng'
+        ? requestedUrl.toString()
+        : 'https://naijalancers.name.ng/main-feed'
+
+      const oneSignalResponse = await fetch('https://api.onesignal.com/notifications?c=push', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Key ${oneSignalRestKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          app_id: oneSignalAppId,
+          target_channel: 'push',
+          include_aliases: { external_id: [userId] },
+          headings: { en: title },
+          contents: { en: body },
+          url: safeUrl,
+          data: data || {},
+          chrome_web_icon: icon || 'https://naijalancers.name.ng/icon-512.png',
+          chrome_web_badge: badge || 'https://naijalancers.name.ng/icon-512.png',
+        }),
+      })
+
+      const oneSignalResult = await oneSignalResponse.json().catch(() => ({}))
+      if (!oneSignalResponse.ok) {
+        console.error('[PUSH] OneSignal API rejected request:', oneSignalResponse.status)
+        return new Response(
+          JSON.stringify({ success: false, provider: 'onesignal', error: 'OneSignal rejected the push request' }),
+          { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      const sent = Number(oneSignalResult.recipients || 0)
+      console.log('[PUSH] OneSignal accepted notification; recipients:', sent)
+      return new Response(
+        JSON.stringify({
+          success: true,
+          provider: 'onesignal',
+          notificationId: oneSignalResult.id || null,
+          sent,
+          total: sent,
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    console.log('[PUSH] OneSignal REST key not configured; using legacy VAPID delivery during migration.')
 
     // Get user's push subscriptions
     const { data: subscriptions, error: subError } = await supabaseClient
