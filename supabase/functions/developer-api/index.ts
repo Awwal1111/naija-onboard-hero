@@ -397,12 +397,14 @@ async function handlePayoutCredit(developer: DeveloperProfile, body: any) {
   // Resolve recipient
   let targetId: string | null = user_id || null;
   if (!targetId && email) {
-    const { data } = await supabase
-      .from('profiles')
-      .select('user_id')
-      .eq('email', email)
-      .maybeSingle();
-    targetId = (data as any)?.user_id || null;
+    const { data, error: lookupError } = await supabase.rpc('resolve_user_id_by_email', {
+      p_email: String(email).trim(),
+    });
+    if (lookupError) {
+      console.error('[API] recipient email lookup failed:', lookupError);
+      return { error: 'Could not resolve recipient email', status: 500 };
+    }
+    targetId = typeof data === 'string' ? data : null;
   }
   if (!targetId) return { error: 'Recipient user not found', status: 404 };
 
