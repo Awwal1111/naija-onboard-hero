@@ -82,7 +82,8 @@ export const AdminSetup = () => {
 
       // @ts-ignore
       const { error } = await supabase.rpc('grant_admin_role', {
-        target_user_id: (targetUser as any).user_id
+        target_user_id: (targetUser as any).user_id,
+        target_role: 'admin'
       })
 
       if (error) throw error
