@@ -150,13 +150,17 @@ export const useConnections = () => {
 
     try {
       // Check if request already exists
-      const { data: existingRequest } = await supabase
+      // Only a *pending* request blocks a new one. Previously rejected/accepted rows also
+      // matched, so a rejected request could never be sent again. limit(1) instead of
+      // maybeSingle() because both directions can exist and maybeSingle errors on 2 rows.
+      const { data: existingRequests } = await supabase
         .from('connection_requests')
         .select('id')
+        .eq('status', 'pending')
         .or(`and(requester_id.eq.${user.id},requested_id.eq.${targetUserId}),and(requester_id.eq.${targetUserId},requested_id.eq.${user.id})`)
-        .maybeSingle()
+        .limit(1)
 
-      if (existingRequest) {
+      if (existingRequests && existingRequests.length > 0) {
         toast({
           title: "Request Already Sent",
           description: "A connection request already exists with this user.",
@@ -170,6 +174,7 @@ export const useConnections = () => {
         .from('connections')
         .select('id')
         .or(`and(user1_id.eq.${user.id},user2_id.eq.${targetUserId}),and(user1_id.eq.${targetUserId},user2_id.eq.${user.id})`)
+        .limit(1)
         .maybeSingle()
 
       if (existingConnection) {
@@ -228,11 +233,13 @@ export const useConnections = () => {
         // Get the request details
         const { data: request, error: requestError } = await supabase
           .from('connection_requests')
-          .select('requester_id, requested_id')
+          .select('requester_id, requested_id, status')
           .eq('id', requestId)
           .single()
 
         if (requestError) throw requestError
+        if (request.status !== 'pending') throw new Error('This request is no longer pending')
+        if (request.requested_id !== user.id) throw new Error('Only the person invited can accept this request')
 
         // Create connection
         const { error: connectionError } = await supabase
