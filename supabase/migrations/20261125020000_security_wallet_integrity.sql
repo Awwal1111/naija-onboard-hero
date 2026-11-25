@@ -573,3 +573,423 @@ FOR EACH ROW EXECUTE FUNCTION public.guard_project_milestone_changes();
 DROP POLICY IF EXISTS "Wallet update by owner" ON public.wallet_transactions;
 DROP POLICY IF EXISTS "Wallet delete by owner" ON public.wallet_transactions;
 REVOKE UPDATE,DELETE ON public.wallet_transactions FROM anon,authenticated;
+
+
+-- 9) Close SafePay SECURITY DEFINER authorization gaps.
+CREATE OR REPLACE FUNCTION public.propose_safepay(p_buyer_id uuid,p_seller_id uuid,p_amount integer)
+RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=''
+AS $$
+DECLARE
+  v_actor uuid:=auth.uid();
+  v_balance numeric;
+  v_id uuid;
+BEGIN
+  IF v_actor IS NULL OR v_actor IS DISTINCT FROM p_buyer_id THEN
+    RETURN jsonb_build_object('success',false,'error','You can only create SafePay from your own account');
+  END IF;
+  IF p_amount IS NULL OR p_amount<=0 OR p_seller_id IS NULL OR p_buyer_id=p_seller_id THEN
+    RETURN jsonb_build_object('success',false,'error','Invalid SafePay details');
+  END IF;
+  IF NOT EXISTS(SELECT 1 FROM public.profiles WHERE user_id=p_seller_id) THEN
+    RETURN jsonb_build_object('success',false,'error','Seller account not found');
+  END IF;
+
+  SELECT balance_withdrawable INTO v_balance
+  FROM public.profiles WHERE user_id=p_buyer_id FOR UPDATE;
+  IF NOT FOUND OR COALESCE(v_balance,0)<p_amount THEN
+    RETURN jsonb_build_object('success',false,'error','Insufficient withdrawable NC balance');
+  END IF;
+
+  UPDATE public.profiles
+  SET wallet_balance=COALESCE(wallet_balance,0)-p_amount,
+      balance_withdrawable=balance_withdrawable-p_amount,updated_at=now()
+  WHERE user_id=p_buyer_id;
+
+  INSERT INTO public.safepay_transactions(buyer_id,seller_id,amount,status)
+  VALUES(p_buyer_id,p_seller_id,p_amount,'proposed')
+  RETURNING id INTO v_id;
+
+  INSERT INTO public.user_wallets(user_id,balance,escrow_hold)
+  VALUES(p_buyer_id,0,p_amount)
+  ON CONFLICT(user_id) DO UPDATE
+    SET escrow_hold=COALESCE(public.user_wallets.escrow_hold,0)+EXCLUDED.escrow_hold,
+        updated_at=now();
+
+  INSERT INTO public.wallet_transactions(user_id,safepay_id,kind,amount,status,reference,metadata)
+  VALUES(p_buyer_id,v_id,'escrow_hold',-p_amount,'completed','SafePay funds locked',
+    jsonb_build_object('seller_id',p_seller_id));
+
+  RETURN jsonb_build_object('success',true,'safepay_id',v_id);
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.accept_safepay(p_safepay_id uuid)
+RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=''
+AS $$
+DECLARE
+  v_actor uuid:=auth.uid();
+  v_tx public.safepay_transactions%ROWTYPE;
+BEGIN
+  IF v_actor IS NULL THEN RAISE EXCEPTION 'Authentication required'; END IF;
+  SELECT * INTO v_tx FROM public.safepay_transactions WHERE id=p_safepay_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'SafePay not found'; END IF;
+  IF v_actor IS DISTINCT FROM v_tx.seller_id THEN RAISE EXCEPTION 'Only the seller can accept this SafePay'; END IF;
+  IF v_tx.status<>'proposed' THEN RAISE EXCEPTION 'SafePay must be in proposed state'; END IF;
+  UPDATE public.safepay_transactions SET status='active',updated_at=now() WHERE id=p_safepay_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.cancel_safepay_proposal(p_safepay_id uuid)
+RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=''
+AS $$
+DECLARE
+  v_actor uuid:=auth.uid();
+  v_tx public.safepay_transactions%ROWTYPE;
+BEGIN
+  IF v_actor IS NULL THEN RAISE EXCEPTION 'Authentication required'; END IF;
+  SELECT * INTO v_tx FROM public.safepay_transactions WHERE id=p_safepay_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'SafePay not found'; END IF;
+  IF v_actor IS DISTINCT FROM v_tx.buyer_id THEN RAISE EXCEPTION 'Only the buyer can cancel a proposed SafePay'; END IF;
+  IF v_tx.status<>'proposed' THEN RAISE EXCEPTION 'Only proposed SafePay can be cancelled'; END IF;
+
+  UPDATE public.user_wallets
+  SET escrow_hold=GREATEST(0,COALESCE(escrow_hold,0)-v_tx.amount),updated_at=now()
+  WHERE user_id=v_tx.buyer_id;
+
+  UPDATE public.profiles
+  SET wallet_balance=COALESCE(wallet_balance,0)+v_tx.amount,
+      balance_withdrawable=balance_withdrawable+v_tx.amount,updated_at=now()
+  WHERE user_id=v_tx.buyer_id;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Buyer profile not found for refund'; END IF;
+
+  INSERT INTO public.wallet_transactions(user_id,safepay_id,kind,amount,status,reference)
+  VALUES(v_tx.buyer_id,p_safepay_id,'refund',v_tx.amount,'completed','SafePay cancelled - refund');
+
+  UPDATE public.safepay_transactions
+  SET status='cancelled',cancelled_at=now(),updated_at=now()
+  WHERE id=p_safepay_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.mark_safepay_complete(p_safepay_id uuid)
+RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=''
+AS $$
+DECLARE
+  v_actor uuid:=auth.uid();
+  v_tx public.safepay_transactions%ROWTYPE;
+BEGIN
+  IF v_actor IS NULL THEN RAISE EXCEPTION 'Authentication required'; END IF;
+  SELECT * INTO v_tx FROM public.safepay_transactions WHERE id=p_safepay_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'SafePay not found'; END IF;
+  IF v_actor IS DISTINCT FROM v_tx.seller_id THEN RAISE EXCEPTION 'Only the seller can mark complete'; END IF;
+  IF v_tx.status<>'active' THEN RAISE EXCEPTION 'SafePay must be active'; END IF;
+  UPDATE public.safepay_transactions
+  SET status='complete',completed_at=now(),updated_at=now()
+  WHERE id=p_safepay_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.release_safepay_funds(p_safepay_id uuid)
+RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=''
+AS $$
+DECLARE
+  v_actor uuid:=auth.uid();
+  v_tx public.safepay_transactions%ROWTYPE;
+BEGIN
+  IF v_actor IS NULL THEN RAISE EXCEPTION 'Authentication required'; END IF;
+  SELECT * INTO v_tx FROM public.safepay_transactions WHERE id=p_safepay_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'SafePay not found'; END IF;
+  IF v_actor IS DISTINCT FROM v_tx.buyer_id THEN RAISE EXCEPTION 'Only the buyer can release funds'; END IF;
+  IF v_tx.status<>'complete' THEN RAISE EXCEPTION 'SafePay must be completed first'; END IF;
+
+  UPDATE public.user_wallets
+  SET escrow_hold=GREATEST(0,COALESCE(escrow_hold,0)-v_tx.amount),updated_at=now()
+  WHERE user_id=v_tx.buyer_id;
+
+  UPDATE public.profiles
+  SET wallet_balance=COALESCE(wallet_balance,0)+v_tx.amount,
+      balance_withdrawable=balance_withdrawable+v_tx.amount,updated_at=now()
+  WHERE user_id=v_tx.seller_id;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Seller profile not found'; END IF;
+
+  INSERT INTO public.wallet_transactions(user_id,safepay_id,kind,amount,status,reference)
+  VALUES(v_tx.seller_id,p_safepay_id,'payment_received',v_tx.amount,'completed','SafePay payment received');
+
+  UPDATE public.safepay_transactions
+  SET status='released',released_at=now(),updated_at=now()
+  WHERE id=p_safepay_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.file_dispute_safepay(p_safepay_id uuid,p_reason text)
+RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=''
+AS $$
+DECLARE
+  v_actor uuid:=auth.uid();
+  v_tx public.safepay_transactions%ROWTYPE;
+  v_chat_id uuid;
+  v_message record;
+BEGIN
+  IF v_actor IS NULL THEN RAISE EXCEPTION 'Authentication required'; END IF;
+  IF NULLIF(trim(COALESCE(p_reason,'')),'') IS NULL THEN RAISE EXCEPTION 'A dispute reason is required'; END IF;
+  SELECT * INTO v_tx FROM public.safepay_transactions WHERE id=p_safepay_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'SafePay transaction not found'; END IF;
+  IF v_actor IS DISTINCT FROM v_tx.buyer_id THEN RAISE EXCEPTION 'Only the buyer can file this dispute'; END IF;
+  IF v_tx.status<>'complete' THEN RAISE EXCEPTION 'Only completed SafePay can be disputed'; END IF;
+
+  SELECT id INTO v_chat_id FROM public.chats
+  WHERE (user1_id=v_tx.buyer_id AND user2_id=v_tx.seller_id)
+     OR (user1_id=v_tx.seller_id AND user2_id=v_tx.buyer_id)
+  LIMIT 1;
+
+  IF v_chat_id IS NOT NULL THEN
+    FOR v_message IN
+      SELECT sender_id,content,created_at FROM public.messages
+      WHERE chat_id=v_chat_id ORDER BY created_at ASC
+    LOOP
+      INSERT INTO public.disputed_chat_snapshots(safepay_id,sender_id,message_text,created_at,snapshot_created_at)
+      VALUES(p_safepay_id,v_message.sender_id,v_message.content,v_message.created_at,now());
+    END LOOP;
+  END IF;
+
+  UPDATE public.safepay_transactions
+  SET status='disputed',dispute_reason=trim(p_reason),disputed_at=now(),updated_at=now()
+  WHERE id=p_safepay_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.raise_safepay_dispute(
+  p_safepay_id uuid,p_reason text,p_details text DEFAULT NULL
+) RETURNS uuid
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=''
+AS $$
+DECLARE
+  v_actor uuid:=auth.uid();
+  v_tx public.safepay_transactions%ROWTYPE;
+  v_dispute_id uuid;
+  v_counterparty uuid;
+BEGIN
+  IF v_actor IS NULL THEN RAISE EXCEPTION 'Authentication required'; END IF;
+  IF NULLIF(trim(COALESCE(p_reason,'')),'') IS NULL THEN RAISE EXCEPTION 'Reason is required'; END IF;
+  SELECT * INTO v_tx FROM public.safepay_transactions WHERE id=p_safepay_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'SafePay not found'; END IF;
+  IF v_actor IS DISTINCT FROM v_tx.buyer_id AND v_actor IS DISTINCT FROM v_tx.seller_id THEN
+    RAISE EXCEPTION 'Not a party to this SafePay';
+  END IF;
+  IF v_tx.status NOT IN ('active','complete') THEN
+    RAISE EXCEPTION 'Cannot dispute SafePay in % status',v_tx.status;
+  END IF;
+  v_counterparty:=CASE WHEN v_actor=v_tx.buyer_id THEN v_tx.seller_id ELSE v_tx.buyer_id END;
+
+  UPDATE public.safepay_transactions
+  SET status='disputed',dispute_reason=p_reason,updated_at=now()
+  WHERE id=p_safepay_id;
+
+  INSERT INTO public.transaction_disputes(
+    user_id,transaction_id,dispute_reason,dispute_details,dispute_type,safepay_id,counterparty_id,status
+  ) VALUES(v_actor,p_safepay_id,p_reason,p_details,'safepay',p_safepay_id,v_counterparty,'pending')
+  RETURNING id INTO v_dispute_id;
+
+  INSERT INTO public.notifications(user_id,type,title,message,data)
+  VALUES(v_counterparty,'safepay_disputed','SafePay dispute raised',
+    'The other party raised a dispute. Funds are locked pending admin review.',
+    jsonb_build_object('safepay_id',p_safepay_id,'dispute_id',v_dispute_id));
+
+  RETURN v_dispute_id;
+END;
+$$;
+
+-- Gig cancellation is party-only; unauthenticated NULL comparisons must not pass.
+CREATE OR REPLACE FUNCTION public.cancel_gig_order(p_order_id uuid,p_reason text)
+RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=''
+AS $$
+DECLARE
+  v_actor uuid:=auth.uid();
+  v_order public.gig_orders%ROWTYPE;
+BEGIN
+  IF v_actor IS NULL THEN RETURN jsonb_build_object('success',false,'error','Authentication required'); END IF;
+  SELECT * INTO v_order FROM public.gig_orders WHERE id=p_order_id FOR UPDATE;
+  IF NOT FOUND THEN RETURN jsonb_build_object('success',false,'error','Order not found'); END IF;
+  IF v_actor IS DISTINCT FROM v_order.buyer_id AND v_actor IS DISTINCT FROM v_order.seller_id THEN
+    RETURN jsonb_build_object('success',false,'error','Not authorized');
+  END IF;
+  IF v_order.status NOT IN ('pending','accepted') THEN
+    RETURN jsonb_build_object('success',false,'error','Order cannot be cancelled now. Please open a dispute.');
+  END IF;
+  IF EXISTS(SELECT 1 FROM public.project_milestones WHERE order_id=p_order_id AND status='released') THEN
+    RETURN jsonb_build_object('success',false,'error','A milestone has already been paid. Open a dispute instead of cancelling the full order.');
+  END IF;
+
+  UPDATE public.profiles
+  SET balance_withdrawable=balance_withdrawable+v_order.amount,
+      wallet_balance=COALESCE(wallet_balance,0)+v_order.amount,updated_at=now()
+  WHERE user_id=v_order.buyer_id;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Buyer profile not found for refund'; END IF;
+
+  UPDATE public.gig_orders
+  SET status='cancelled',cancelled_at=now(),cancellation_reason=NULLIF(trim(COALESCE(p_reason,'')),''),
+      updated_at=now()
+  WHERE id=p_order_id;
+
+  INSERT INTO public.wallet_transactions(user_id,kind,amount,status,reference,metadata)
+  VALUES(v_order.buyer_id,'gig_order_refund',v_order.amount,'completed',
+    'Gig order refunded: '||v_order.title,jsonb_build_object('order_id',p_order_id,'reason',p_reason));
+
+  RETURN jsonb_build_object('success',true);
+END;
+$$;
+
+-- 10) Fix developer escrow ledger writes: the live table uses kind/reference/
+-- metadata (not the obsolete type/description columns).
+CREATE OR REPLACE FUNCTION public.fund_developer_escrow(p_developer_id uuid,p_escrow_id text)
+RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=''
+AS $$
+DECLARE
+  v_escrow public.developer_escrows%ROWTYPE;
+  v_balance numeric;
+  v_ref text;
+  v_funded_at timestamptz:=now();
+BEGIN
+  SELECT * INTO v_escrow FROM public.developer_escrows
+  WHERE escrow_id=p_escrow_id AND developer_id=p_developer_id FOR UPDATE;
+  IF NOT FOUND THEN RETURN jsonb_build_object('ok',false,'error','Escrow not found'); END IF;
+  IF v_escrow.status<>'pending' THEN
+    RETURN jsonb_build_object('ok',false,'error','Cannot fund escrow with status: '||v_escrow.status);
+  END IF;
+
+  SELECT wallet_balance INTO v_balance FROM public.profiles WHERE user_id=p_developer_id FOR UPDATE;
+  IF NOT FOUND OR COALESCE(v_balance,0)<v_escrow.amount THEN
+    RETURN jsonb_build_object('ok',false,'error','Insufficient developer NC balance',
+      'required',v_escrow.amount,'balance',COALESCE(v_balance,0));
+  END IF;
+
+  UPDATE public.profiles SET wallet_balance=COALESCE(wallet_balance,0)-v_escrow.amount,updated_at=now()
+  WHERE user_id=p_developer_id;
+  UPDATE public.developer_escrows
+  SET status='funded',funded_at=v_funded_at,held_amount=v_escrow.amount,
+      auto_release_at=v_funded_at+make_interval(days=>v_escrow.inspection_period_days)
+  WHERE escrow_id=p_escrow_id AND developer_id=p_developer_id;
+
+  v_ref:='esc_fund_'||v_escrow.escrow_id;
+  INSERT INTO public.wallet_transactions(user_id,amount,kind,status,reference,metadata)
+  VALUES(p_developer_id,-v_escrow.amount,'developer_escrow_fund','completed',v_ref,
+    jsonb_build_object('escrow_id',v_escrow.escrow_id));
+
+  RETURN jsonb_build_object('ok',true,'escrow_id',v_escrow.escrow_id,'amount',v_escrow.amount,
+    'funded_at',v_funded_at,'auto_release_at',v_funded_at+make_interval(days=>v_escrow.inspection_period_days));
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.refund_developer_escrow(
+  p_developer_id uuid,p_escrow_id text,p_reason text DEFAULT NULL
+) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=''
+AS $$
+DECLARE
+  v_escrow public.developer_escrows%ROWTYPE;
+  v_ref text;
+BEGIN
+  SELECT * INTO v_escrow FROM public.developer_escrows
+  WHERE escrow_id=p_escrow_id AND developer_id=p_developer_id FOR UPDATE;
+  IF NOT FOUND THEN RETURN jsonb_build_object('ok',false,'error','Escrow not found'); END IF;
+  IF v_escrow.status NOT IN ('pending','funded','disputed') THEN
+    RETURN jsonb_build_object('ok',false,'error','Cannot refund escrow with status: '||v_escrow.status);
+  END IF;
+
+  IF v_escrow.status IN ('funded','disputed') AND COALESCE(v_escrow.held_amount,0)>0 THEN
+    UPDATE public.profiles
+    SET wallet_balance=COALESCE(wallet_balance,0)+v_escrow.held_amount,updated_at=now()
+    WHERE user_id=p_developer_id;
+    IF NOT FOUND THEN RAISE EXCEPTION 'Developer profile not found for refund'; END IF;
+    v_ref:='esc_ref_'||v_escrow.escrow_id;
+    INSERT INTO public.wallet_transactions(user_id,amount,kind,status,reference,metadata)
+    VALUES(p_developer_id,v_escrow.held_amount,'developer_escrow_refund','completed',v_ref,
+      jsonb_build_object('escrow_id',v_escrow.escrow_id,'reason',p_reason));
+  END IF;
+
+  UPDATE public.developer_escrows
+  SET status='refunded',refunded_at=now(),refund_reason=p_reason
+  WHERE escrow_id=p_escrow_id AND developer_id=p_developer_id;
+
+  RETURN jsonb_build_object('ok',true,'escrow_id',v_escrow.escrow_id,
+    'amount',v_escrow.held_amount,'refunded_at',now());
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.release_developer_escrow(p_developer_id uuid,p_escrow_id text)
+RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=''
+AS $$
+DECLARE
+  v_escrow public.developer_escrows%ROWTYPE;
+  v_payee uuid;
+  v_ref text;
+BEGIN
+  SELECT * INTO v_escrow FROM public.developer_escrows
+  WHERE escrow_id=p_escrow_id AND developer_id=p_developer_id FOR UPDATE;
+  IF NOT FOUND THEN RETURN jsonb_build_object('ok',false,'error','Escrow not found'); END IF;
+  IF v_escrow.status NOT IN ('funded','disputed') THEN
+    RETURN jsonb_build_object('ok',false,'error','Cannot release escrow with status: '||v_escrow.status);
+  END IF;
+
+  v_payee:=v_escrow.payee_user_id;
+  IF v_payee IS NULL AND v_escrow.payee_email IS NOT NULL THEN
+    SELECT user_id INTO v_payee FROM public.profiles WHERE email=v_escrow.payee_email LIMIT 1;
+  END IF;
+  IF v_payee IS NULL THEN RETURN jsonb_build_object('ok',false,'error','Payee user not found'); END IF;
+
+  UPDATE public.profiles
+  SET wallet_balance=COALESCE(wallet_balance,0)+v_escrow.held_amount,updated_at=now()
+  WHERE user_id=v_payee;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Payee profile not found'; END IF;
+
+  UPDATE public.developer_escrows
+  SET status='released',released_at=now(),payee_user_id=v_payee,
+      payout_reference='esc_rel_'||v_escrow.escrow_id
+  WHERE escrow_id=p_escrow_id AND developer_id=p_developer_id;
+
+  v_ref:='esc_rel_'||v_escrow.escrow_id;
+  INSERT INTO public.wallet_transactions(user_id,amount,kind,status,reference,metadata)
+  VALUES(v_payee,v_escrow.held_amount,'developer_escrow_release','completed',v_ref,
+    jsonb_build_object('escrow_id',v_escrow.escrow_id,'developer_id',p_developer_id));
+
+  RETURN jsonb_build_object('ok',true,'escrow_id',v_escrow.escrow_id,
+    'amount',v_escrow.held_amount,'payee_user_id',v_payee,'released_at',now());
+END;
+$$;
+
+-- Tighten execution grants for the corrected RPCs.
+REVOKE ALL ON FUNCTION public.propose_safepay(uuid,uuid,integer) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.propose_safepay(uuid,uuid,integer) TO authenticated;
+REVOKE ALL ON FUNCTION public.accept_safepay(uuid) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.accept_safepay(uuid) TO authenticated;
+REVOKE ALL ON FUNCTION public.cancel_safepay_proposal(uuid) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.cancel_safepay_proposal(uuid) TO authenticated;
+REVOKE ALL ON FUNCTION public.mark_safepay_complete(uuid) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.mark_safepay_complete(uuid) TO authenticated;
+REVOKE ALL ON FUNCTION public.release_safepay_funds(uuid) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.release_safepay_funds(uuid) TO authenticated;
+REVOKE ALL ON FUNCTION public.file_dispute_safepay(uuid,text) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.file_dispute_safepay(uuid,text) TO authenticated;
+REVOKE ALL ON FUNCTION public.raise_safepay_dispute(uuid,text,text) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.raise_safepay_dispute(uuid,text,text) TO authenticated;
+REVOKE ALL ON FUNCTION public.cancel_gig_order(uuid,text) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.cancel_gig_order(uuid,text) TO authenticated;
+REVOKE ALL ON FUNCTION public.auto_release_safepay() FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.auto_release_safepay() TO service_role;
+REVOKE ALL ON FUNCTION public.fund_developer_escrow(uuid,text) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.fund_developer_escrow(uuid,text) TO service_role;
+REVOKE ALL ON FUNCTION public.refund_developer_escrow(uuid,text,text) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.refund_developer_escrow(uuid,text,text) TO service_role;
+REVOKE ALL ON FUNCTION public.release_developer_escrow(uuid,text) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.release_developer_escrow(uuid,text) TO service_role;
+REVOKE ALL ON FUNCTION public.admin_resolve_safepay_dispute(uuid,text,text) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.admin_resolve_safepay_dispute(uuid,text,text) TO authenticated;
