@@ -1698,3 +1698,10 @@ END;
 $$;
 REVOKE ALL ON FUNCTION public.admin_release_fundraising_funds(uuid,uuid) FROM PUBLIC,anon;
 GRANT EXECUTE ON FUNCTION public.admin_release_fundraising_funds(uuid,uuid) TO authenticated;
+
+
+-- Disable unused legacy SafePay RPC overloads that operate on the retired
+-- escrow_payments/wallets schema and accept caller-supplied actor IDs.
+REVOKE ALL ON FUNCTION public.accept_safepay(uuid,uuid) FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION public.refund_safepay(uuid,uuid) FROM PUBLIC,anon,authenticated;
+REVOKE ALL ON FUNCTION public.release_safepay(uuid,uuid) FROM PUBLIC,anon,authenticated;
