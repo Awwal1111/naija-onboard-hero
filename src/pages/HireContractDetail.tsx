@@ -151,9 +151,9 @@ export default function HireContractDetail() {
           <section className="rounded-lg border p-3 space-y-2">
             <h3 className="text-sm font-semibold">Payment breakdown</h3>
             <div className="flex justify-between text-sm"><span>Amount intended for escrow</span><strong>NC {hold.toLocaleString()}</strong></div>
-            <div className="flex justify-between text-sm"><span>Platform fee estimate (5%)</span><span>NC {feeEstimate.toLocaleString()}</span></div>
-            <div className="flex justify-between text-sm border-t pt-2"><span>Estimated expert payout after platform fee</span><strong>NC {netEstimate.toLocaleString()}</strong></div>
-            <p className="text-xs text-muted-foreground">The escrow target is debited from the client only when both parties sign. The platform fee is accounted for at settlement; any applicable institutional-partner commission can affect the final split. The final settlement is determined by the platform's payout calculation.</p>
+            <div className="flex justify-between text-sm"><span>Illustrative platform fee estimate (5%)</span><span>NC {feeEstimate.toLocaleString()}</span></div>
+            <div className="flex justify-between text-sm border-t pt-2"><span>Estimated amount after 5% fee, before partner commission</span><strong>NC {netEstimate.toLocaleString()}</strong></div>
+            <p className="text-xs text-muted-foreground">This is an estimate, not a guaranteed payout. The client is debited only when both parties sign. Final platform fees may follow partner terms, and any institutional-partner commission can further reduce the expert payout.</p>
           </section>
           <div><h3 className="text-sm font-semibold mb-1">Scope of work</h3><p className="text-sm whitespace-pre-wrap text-muted-foreground">{c.scope}</p></div>
           <div className="grid grid-cols-2 gap-3 text-sm">
