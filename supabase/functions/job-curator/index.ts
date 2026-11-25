@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { callGroq } from "../_shared/ai-fallback.ts";
 const corsHeaders = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type" };
 
 const SB_URL = Deno.env.get("SUPABASE_URL")!;
@@ -9,13 +10,11 @@ const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: 
 async function groqJson(system: string, user: string): Promise<any | null> {
   if (!GROQ) return null;
   try {
-    const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${GROQ}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ model: "openai/gpt-oss-120b", temperature: 0.2, response_format: { type: "json_object" },
-        messages: [{ role: "system", content: system }, { role: "user", content: user }] }),
+    // Shared helper rotates across Groq models when one is rate limited (429).
+    const r = await callGroq({
+      temperature: 0.2, response_format: { type: "json_object" },
+      messages: [{ role: "system", content: system }, { role: "user", content: user }],
     });
-    if (!r.ok) { console.error("groq", r.status, await r.text()); return null; }
     const d = await r.json();
     return JSON.parse(d.choices?.[0]?.message?.content || "null");
   } catch (e) { console.error("groq err", e); return null; }
