@@ -51,7 +51,7 @@ begin
       select balance_withdrawable into v_balance
         from public.profiles where user_id = v_c.client_id for update;
       if v_balance is null or v_balance < v_hold then
-        return jsonb_build_object('success', false, 'error', 'Insufficient NC balance for escrow');
+        raise exception 'Insufficient NC balance for escrow';
       end if;
       v_fee := v_hold * 0.05;
       update public.profiles
@@ -91,7 +91,7 @@ begin
       insert into public.workroom_activities(workroom_id, user_id, activity_type, description, metadata)
       values (v_room_id, v_actor, 'workroom_created', 'WorkRoom created for signed hiring contract',
         jsonb_build_object('contract_id', p_contract_id));
-      insert into public.notifications(user_id, title, message, type, data)
+      insert into public.notifications(user_id, title, message, type, metadata)
       values
         (v_c.client_id, 'Your WorkRoom is ready', 'Your contract is signed and its WorkRoom is ready.', 'workroom',
           jsonb_build_object('workroom_id', v_room_id, 'contract_id', p_contract_id)),
@@ -151,3 +151,189 @@ using (
       and m.user_id = auth.uid()
   )
 );
+
+
+-- Work Diary approvals and payouts must be performed atomically on the server.
+create or replace function public.approve_work_diary_entries(p_entry_ids uuid[])
+returns jsonb
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $function$
+declare
+  v_actor uuid := auth.uid();
+  v_room_id uuid;
+  v_count integer;
+begin
+  if v_actor is null then
+    raise exception 'Authentication required';
+  end if;
+  if coalesce(array_length(p_entry_ids, 1), 0) = 0 then
+    raise exception 'Select at least one time entry';
+  end if;
+
+  select min(workroom_id), count(*)
+    into v_room_id, v_count
+  from public.work_diary_entries
+  where id = any(p_entry_ids)
+    and workroom_id is not null
+    and ended_at is not null
+    and billable = true
+    and coalesce(is_approved, false) = false
+    and coalesce(payment_status, 'pending') = 'pending';
+
+  if v_count <> cardinality(p_entry_ids) then
+    raise exception 'Some entries are missing, already approved, unpaid status changed, or not billable';
+  end if;
+  if exists (
+    select 1 from public.work_diary_entries
+    where id = any(p_entry_ids) and workroom_id is distinct from v_room_id
+  ) then
+    raise exception 'Approve entries from one WorkRoom at a time';
+  end if;
+  if not exists (
+    select 1 from public.workrooms w
+    where w.id = v_room_id and w.owner_id = v_actor
+  ) then
+    raise exception 'Only the WorkRoom client can approve time';
+  end if;
+
+  perform 1 from public.work_diary_entries
+  where id = any(p_entry_ids)
+  order by id
+  for update;
+
+  update public.work_diary_entries
+  set is_approved = true, approved_by = v_actor, approved_at = now()
+  where id = any(p_entry_ids)
+    and workroom_id = v_room_id
+    and ended_at is not null
+    and billable = true
+    and coalesce(is_approved, false) = false
+    and coalesce(payment_status, 'pending') = 'pending';
+
+  get diagnostics v_count = row_count;
+  if v_count <> cardinality(p_entry_ids) then
+    raise exception 'Time entries changed during approval; refresh and try again';
+  end if;
+
+  return jsonb_build_object('success', true, 'approved_count', v_count);
+end;
+$function$;
+
+create or replace function public.pay_work_diary_entries(p_entry_ids uuid[])
+returns jsonb
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $function$
+declare
+  v_actor uuid := auth.uid();
+  v_room_id uuid;
+  v_freelancer_id uuid;
+  v_count integer;
+  v_total numeric(18,2);
+  v_balance numeric(18,2);
+  v_withdrawable numeric(18,2);
+  v_entry_count integer;
+begin
+  if v_actor is null then
+    raise exception 'Authentication required';
+  end if;
+  if coalesce(array_length(p_entry_ids, 1), 0) = 0 then
+    raise exception 'Select at least one time entry';
+  end if;
+
+  perform 1 from public.work_diary_entries
+  where id = any(p_entry_ids)
+  order by id
+  for update;
+
+  select min(workroom_id), min(user_id), count(*),
+         round(sum((duration_minutes::numeric / 60) * hourly_rate), 2)
+    into v_room_id, v_freelancer_id, v_count, v_total
+  from public.work_diary_entries
+  where id = any(p_entry_ids)
+    and workroom_id is not null
+    and ended_at is not null
+    and billable = true
+    and coalesce(is_approved, false) = true
+    and coalesce(payment_status, 'pending') = 'pending'
+    and duration_minutes > 0
+    and hourly_rate > 0;
+
+  if v_count <> cardinality(p_entry_ids) then
+    raise exception 'Some entries are not approved, payable, or have invalid hours';
+  end if;
+  if exists (
+    select 1 from public.work_diary_entries
+    where id = any(p_entry_ids)
+      and (workroom_id is distinct from v_room_id or user_id is distinct from v_freelancer_id)
+  ) then
+    raise exception 'Pay one freelancer in one WorkRoom at a time';
+  end if;
+  if v_freelancer_id = v_actor then
+    raise exception 'A client cannot pay their own time entries';
+  end if;
+  if not exists (
+    select 1 from public.workrooms w
+    where w.id = v_room_id and w.owner_id = v_actor
+  ) then
+    raise exception 'Only the WorkRoom client can pay these entries';
+  end if;
+
+  select wallet_balance, balance_withdrawable
+    into v_balance, v_withdrawable
+  from public.profiles
+  where user_id = v_actor
+  for update;
+
+  if v_balance is null or v_withdrawable is null
+     or v_balance < v_total or v_withdrawable < v_total then
+    return jsonb_build_object('success', false, 'error', 'Insufficient withdrawable NC balance', 'needed', v_total);
+  end if;
+
+  update public.profiles
+  set wallet_balance = wallet_balance - v_total,
+      balance_withdrawable = balance_withdrawable - v_total,
+      updated_at = now()
+  where user_id = v_actor;
+
+  update public.profiles
+  set wallet_balance = wallet_balance + v_total,
+      balance_withdrawable = balance_withdrawable + v_total,
+      updated_at = now()
+  where user_id = v_freelancer_id;
+
+  insert into public.wallet_transactions(user_id, amount, currency, kind, status, reference, metadata)
+  values
+    (v_actor, -v_total, 'NC', 'hourly_payment', 'completed',
+      'Work Diary payment', jsonb_build_object('workroom_id', v_room_id, 'freelancer_id', v_freelancer_id, 'entry_ids', p_entry_ids)),
+    (v_freelancer_id, v_total, 'NC', 'hourly_earning', 'completed',
+      'Work Diary earnings', jsonb_build_object('workroom_id', v_room_id, 'client_id', v_actor, 'entry_ids', p_entry_ids));
+
+  update public.work_diary_entries
+  set payment_status = 'paid'
+  where id = any(p_entry_ids)
+    and workroom_id = v_room_id
+    and user_id = v_freelancer_id
+    and is_approved = true
+    and coalesce(payment_status, 'pending') = 'pending';
+
+  get diagnostics v_entry_count = row_count;
+  if v_entry_count <> cardinality(p_entry_ids) then
+    raise exception 'Entries changed during payment; transaction cancelled';
+  end if;
+
+  insert into public.notifications(user_id, title, message, type, metadata)
+  values (v_freelancer_id, 'Payment received', 'NC ' || v_total::text || ' has been paid for approved Work Diary hours.',
+    'payment', jsonb_build_object('amount', v_total, 'entry_count', v_entry_count, 'workroom_id', v_room_id));
+
+  return jsonb_build_object('success', true, 'amount', v_total, 'entry_count', v_entry_count);
+end;
+$function$;
+
+revoke all on function public.approve_work_diary_entries(uuid[]) from public, anon;
+revoke all on function public.pay_work_diary_entries(uuid[]) from public, anon;
+grant execute on function public.approve_work_diary_entries(uuid[]) to authenticated;
+grant execute on function public.pay_work_diary_entries(uuid[]) to authenticated;
