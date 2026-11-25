@@ -8,10 +8,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 const json = (body: Record<string, unknown>, status = 200) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+  new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -23,123 +20,84 @@ serve(async (req) => {
     const encryptionSecret = Deno.env.get("WALLET_ENCRYPTION_SECRET");
     if (!supabaseUrl || !serviceRoleKey) return json({ success: false, error: "Server configuration missing" }, 503);
     if (!encryptionSecret || encryptionSecret.length < 32) {
-      return json({ success: false, error: "WALLET_ENCRYPTION_SECRET is missing or too short" }, 503);
+      return json({ success: false, error: "Wallet encryption is not configured securely" }, 503);
     }
 
-    const supabase = createClient(supabaseUrl, serviceRoleKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
+    const authorization = req.headers.get("Authorization") ?? "";
+    const token = authorization.replace(/^Bearer\s+/i, "").trim();
+    if (!token) return json({ success: false, error: "Unauthorized" }, 401);
 
-    // This function may use the service role key or a verified admin JWT only.
-    const bearer = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
-    if (!bearer) return json({ success: false, error: "Unauthorized" }, 401);
-    if (bearer !== serviceRoleKey) {
-      const { data: { user }, error: authError } = await supabase.auth.getUser(bearer);
-      if (authError || !user) return json({ success: false, error: "Unauthorized" }, 401);
-      const { data: adminRole, error: roleError } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .eq("role", "admin")
-        .maybeSingle();
-      if (roleError || !adminRole) return json({ success: false, error: "Admin access required" }, 403);
-    }
+    const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false, autoRefreshToken: false } });
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) return json({ success: false, error: "Unauthorized" }, 401);
 
-    const [{ data: profiles, error: profilesError }, { data: secretRows, error: secretsError }, { data: walletRows, error: walletsError }] =
-      await Promise.all([
-        supabase.from("profiles").select("user_id, celo_wallet_address").limit(10000),
-        supabase.from("user_secrets").select("user_id, encrypted_wallet").limit(10000),
-        supabase.from("user_wallets").select("user_id").limit(10000),
+    const { data: roleRow, error: roleError } = await supabase
+      .from("user_roles").select("role").eq("user_id", user.id).eq("role", "super_admin").maybeSingle();
+    if (roleError || !roleRow) return json({ success: false, error: "Super-admin access required" }, 403);
+
+    const summary = { scanned: 0, createdCeloWallets: 0, existingCeloWalletsPreserved: 0, needsKeyRecovery: 0, internalWalletRowsCreated: 0, failed: 0 };
+    const pageSize = 400;
+
+    for (let offset = 0; ; offset += pageSize) {
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles").select("user_id,celo_wallet_address").order("user_id").range(offset, offset + pageSize - 1);
+      if (profilesError) throw new Error("Profile scan failed: " + profilesError.message);
+      if (!profiles?.length) break;
+
+      const ids = profiles.map((profile: any) => profile.user_id);
+      const [{ data: secrets, error: secretsError }, { data: wallets, error: walletsError }] = await Promise.all([
+        supabase.from("user_secrets").select("user_id,encrypted_wallet").in("user_id", ids),
+        supabase.from("user_wallets").select("user_id").in("user_id", ids),
       ]);
-    if (profilesError) throw new Error(`Profile scan failed: ${profilesError.message}`);
-    if (secretsError) throw new Error(`Encrypted-wallet scan failed: ${secretsError.message}`);
-    if (walletsError) throw new Error(`Internal-wallet scan failed: ${walletsError.message}`);
+      if (secretsError) throw new Error("Encrypted-wallet scan failed: " + secretsError.message);
+      if (walletsError) throw new Error("Internal-wallet scan failed: " + walletsError.message);
 
-    const encryptedByUser = new Set(
-      (secretRows ?? []).filter((row: any) => typeof row.encrypted_wallet === "string" && row.encrypted_wallet.length > 0)
-        .map((row: any) => row.user_id),
-    );
-    const hasInternalWallet = new Set((walletRows ?? []).map((row: any) => row.user_id));
+      const keys = new Set((secrets ?? []).filter((row: any) => typeof row.encrypted_wallet === "string" && row.encrypted_wallet.trim().length > 0).map((row: any) => row.user_id));
+      const internal = new Set((wallets ?? []).map((row: any) => row.user_id));
 
-    const results = {
-      createdCeloWallets: [] as string[],
-      existingCeloWalletsPreserved: 0,
-      internalWalletRowsCreated: [] as string[],
-      needsKeyRecovery: [] as { userId: string; address: string | null }[],
-      failed: [] as { userId: string; error: string }[],
-    };
-
-    for (const profile of profiles ?? []) {
-      const userId = profile.user_id as string;
-      const address = profile.celo_wallet_address as string | null;
-      const hasEncryptedKey = encryptedByUser.has(userId);
-
-      try {
-        // An address without its encrypted key is NOT a blank wallet. Never rotate it.
-        if (address && !hasEncryptedKey) {
-          results.needsKeyRecovery.push({ userId, address });
-        } else if (address && hasEncryptedKey) {
-          results.existingCeloWalletsPreserved += 1;
-        } else {
-          // New candidate material is committed atomically by the per-user RPC.
-          const wallet = ethers.Wallet.createRandom();
-          const encrypted = CryptoJS.AES.encrypt(wallet.privateKey, encryptionSecret).toString();
-          const { data: provision, error: provisionError } = await supabase.rpc("provision_celo_wallet", {
-            p_user_id: userId,
-            p_wallet_address: wallet.address.toLowerCase(),
-            p_encrypted_wallet: encrypted,
-          });
-          if (provisionError) throw new Error(`Atomic wallet provisioning failed: ${provisionError.message}`);
-          if (provision?.status === "needs_recovery" || provision?.status === "orphaned_key") {
-            results.needsKeyRecovery.push({ userId, address: provision.address ?? null });
-          } else if (provision?.status === "created") {
-            results.createdCeloWallets.push(userId);
-            const { error: notificationError } = await supabase.from("notifications").insert({
-              user_id: userId,
-              type: "system",
-              title: "Your Celo Wallet is Ready!",
-              message: `Your permanent Celo wallet address: ${provision.address}`,
-              metadata: { wallet_address: provision.address, migration: true },
-            });
-            if (notificationError) {
-              console.error("[MIGRATION] Notification failed for", userId, notificationError.message);
+      for (let i = 0; i < profiles.length; i += 20) {
+        const group = profiles.slice(i, i + 20);
+        await Promise.all(group.map(async (profile: any) => {
+          summary.scanned++;
+          const userId = profile.user_id as string;
+          const address = typeof profile.celo_wallet_address === "string" ? profile.celo_wallet_address.trim() : "";
+          const hasKey = keys.has(userId);
+          try {
+            if (address && hasKey) {
+              summary.existingCeloWalletsPreserved++;
+            } else if (address && !hasKey) {
+              summary.needsKeyRecovery++;
+            } else {
+              const wallet = ethers.Wallet.createRandom();
+              const encrypted = CryptoJS.AES.encrypt(wallet.privateKey, encryptionSecret).toString();
+              const { data: provision, error } = await supabase.rpc("provision_celo_wallet", {
+                p_user_id: userId, p_wallet_address: wallet.address.toLowerCase(), p_encrypted_wallet: encrypted,
+              });
+              if (error) throw new Error("Atomic provisioning failed: " + error.message);
+              if (provision?.status === "created") summary.createdCeloWallets++;
+              else if (provision?.status === "exists") summary.existingCeloWalletsPreserved++;
+              else if (provision?.status === "needs_recovery" || provision?.status === "orphaned_key") summary.needsKeyRecovery++;
+              else throw new Error("Unexpected wallet provisioning result");
             }
-          } else if (provision?.status === "exists") {
-            results.existingCeloWalletsPreserved += 1;
-          } else {
-            throw new Error("Unexpected wallet provisioning response");
-          }
-        }
 
-        // Create only missing internal wallet rows. Never overwrite balances.
-        if (!hasInternalWallet) {
-          const { error: internalError } = await supabase.from("user_wallets").insert({
-            user_id: userId,
-            balance: 0,
-            escrow_hold: 0,
-          });
-          if (internalError) throw new Error(`Internal wallet creation failed: ${internalError.message}`);
-          results.internalWalletRowsCreated.push(userId);
-        }
-      } catch (error) {
-        const message = error instanceof Error ? error.message : "Unknown error";
-        console.error("[MIGRATION] Failed user", userId, message);
-        results.failed.push({ userId, error: message });
+            if (!internal.has(userId)) {
+              const { error: insertError } = await supabase.from("user_wallets")
+                .upsert({ user_id: userId, balance: 0, escrow_hold: 0 }, { onConflict: "user_id", ignoreDuplicates: true });
+              if (insertError) throw new Error("Internal wallet insert failed: " + insertError.message);
+              summary.internalWalletRowsCreated++;
+            }
+          } catch (error) {
+            summary.failed++;
+            console.error("[MIGRATION] User wallet reconciliation failed", userId, error instanceof Error ? error.message : "Unknown error");
+          }
+        }));
       }
+      if (profiles.length < pageSize) break;
     }
 
-    return json({
-      success: results.failed.length === 0,
-      message: "Wallet reconciliation completed. Existing addresses were never replaced.",
-      createdCeloWallets: results.createdCeloWallets.length,
-      existingCeloWalletsPreserved: results.existingCeloWalletsPreserved,
-      internalWalletRowsCreated: results.internalWalletRowsCreated.length,
-      needsKeyRecovery: results.needsKeyRecovery,
-      failedUsers: results.failed,
-      scannedUsers: (profiles ?? []).length,
-    });
+    return json({ success: summary.failed === 0, message: "Wallet reconciliation finished; existing addresses, encrypted keys, balances and escrow values were preserved.", ...summary });
   } catch (error) {
     console.error("[MIGRATION_ERROR]", error instanceof Error ? error.message : "Unknown error");
-    return json({ success: false, error: error instanceof Error ? error.message : "Migration failed" }, 500);
+    return json({ success: false, error: "Wallet reconciliation failed" }, 500);
   }
 });
