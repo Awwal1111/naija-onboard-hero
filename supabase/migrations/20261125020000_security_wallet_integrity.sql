@@ -1491,6 +1491,7 @@ BEGIN
   SELECT * INTO v_course FROM public.courses WHERE id=p_course_id FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'Course not found'; END IF;
   IF v_course.is_demo THEN RAISE EXCEPTION 'Demo courses cannot be purchased'; END IF;
+  IF v_course.price IS NULL OR v_course.price<=0 THEN RAISE EXCEPTION 'Course price is invalid'; END IF;
   IF v_course.status<>'active'::public.course_status OR v_course.moderation_status<>'approved' THEN
     RAISE EXCEPTION 'This course is not available for enrollment';
   END IF;
@@ -1546,3 +1547,6 @@ GRANT EXECUTE ON FUNCTION public.refund_course_enrollment(uuid,text) TO authenti
 -- student/admin release can be handled by a separately authorized path.
 REVOKE ALL ON FUNCTION public.release_course_escrow(uuid) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.release_course_escrow(uuid) TO service_role;
+
+REVOKE ALL ON FUNCTION public.process_ivorypay_deposit(uuid,text,numeric,numeric,text,text) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.process_ivorypay_deposit(uuid,text,numeric,numeric,text,text) TO service_role;
