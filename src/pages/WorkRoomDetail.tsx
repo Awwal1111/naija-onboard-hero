@@ -154,16 +154,13 @@ const WorkRoomDetail = () => {
     const file = e.target.files?.[0];
     if (!file || !roomId) return;
     
-    // In production, upload to storage and get URL
-    const fakeUrl = URL.createObjectURL(file);
-    await uploadFile(roomId, {
-      file_name: file.name,
-      file_url: fakeUrl,
-      file_type: file.type,
-      file_size: file.size
-    });
-    loadData();
-    toast.success("File uploaded!");
+    const result = await uploadFile(roomId, file);
+    if (result.error) {
+      toast.error(result.error);
+      return;
+    }
+    await loadData();
+    toast.success("File uploaded securely!");
   };
 
   const priorityColors = {
