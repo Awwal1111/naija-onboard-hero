@@ -299,21 +299,14 @@ export const useWorkDiary = () => {
   // Client approves time entries
   const approveEntry = async (entryId: string) => {
     if (!user) return { error: 'Not authenticated' }
-
     try {
-      const { error } = await supabase
-        .from('work_diary_entries')
-        .update({
-          is_approved: true,
-          approved_by: user.id,
-          approved_at: new Date().toISOString()
-        })
-        .eq('id', entryId)
-
+      const { data, error } = await (supabase as any).rpc('approve_work_diary_entries', {
+        p_entry_ids: [entryId]
+      })
       if (error) throw error
-
+      if (!data?.success) throw new Error(data?.error || 'Approval failed')
       toast({ title: 'Time Approved', description: 'The time entry has been approved for payment.' })
-      fetchEntries()
+      await fetchEntries()
       return { success: true }
     } catch (error: any) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
@@ -344,20 +337,15 @@ export const useWorkDiary = () => {
   // Bulk approve entries
   const bulkApproveEntries = async (entryIds: string[]) => {
     if (!user) return { error: 'Not authenticated' }
-
+    if (!entryIds.length) return { error: 'Select at least one entry' }
     try {
-      const { error } = await supabase
-        .from('work_diary_entries')
-        .update({
-          is_approved: true,
-          approved_by: user.id,
-          approved_at: new Date().toISOString()
-        })
-        .in('id', entryIds)
-
+      const { data, error } = await (supabase as any).rpc('approve_work_diary_entries', {
+        p_entry_ids: entryIds
+      })
       if (error) throw error
-
-      toast({ title: 'Entries Approved', description: `${entryIds.length} time entries approved.` })
+      if (!data?.success) throw new Error(data?.error || 'Approval failed')
+      toast({ title: 'Entries Approved', description: `${data.approved_count || entryIds.length} time entries approved.` })
+      await fetchEntries()
       return { success: true }
     } catch (error: any) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
@@ -366,108 +354,26 @@ export const useWorkDiary = () => {
   }
 
   // Pay for approved entries
-  const payForEntries = async (entryIds: string[], freelancerId: string) => {
+  const payForEntries = async (entryIds: string[], _freelancerId?: string) => {
     if (!user) return { error: 'Not authenticated' }
-
+    if (!entryIds.length) return { error: 'Select at least one entry' }
     try {
-      // Calculate total amount
-      const { data: entries, error: fetchError } = await supabase
-        .from('work_diary_entries')
-        .select('*')
-        .in('id', entryIds)
-        .eq('is_approved', true)
-        .eq('payment_status', 'pending')
-
-      if (fetchError) throw fetchError
-
-      const totalAmount = (entries || []).reduce((sum, entry) => {
-        if (!entry.billable || !entry.hourly_rate || !entry.duration_minutes) return sum
-        return sum + (entry.duration_minutes / 60) * entry.hourly_rate
-      }, 0)
-
-      if (totalAmount <= 0) {
-        toast({ title: 'No Billable Hours', description: 'No billable hours to pay.', variant: 'destructive' })
-        return { error: 'No billable hours' }
-      }
-
-      // Check client balance
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('wallet_balance')
-        .eq('user_id', user.id)
-        .single()
-
-      const balance = Number(profile?.wallet_balance || 0)
-      if (balance < totalAmount) {
-        requestDeposit({ needed: totalAmount, available: balance })
-        return { error: 'Insufficient balance' }
-      }
-
-      // Deduct from client
-      await supabase
-        .from('profiles')
-        .update({
-          wallet_balance: balance - totalAmount,
-          balance_withdrawable: Math.max(0, balance - totalAmount)
-        })
-        .eq('user_id', user.id)
-
-      // Credit freelancer
-      const { data: freelancerProfile } = await supabase
-        .from('profiles')
-        .select('wallet_balance, balance_withdrawable')
-        .eq('user_id', freelancerId)
-        .single()
-
-      const freelancerBalance = Number(freelancerProfile?.wallet_balance || 0)
-      const freelancerWithdrawable = Number(freelancerProfile?.balance_withdrawable || 0)
-
-      await supabase
-        .from('profiles')
-        .update({
-          wallet_balance: freelancerBalance + totalAmount,
-          balance_withdrawable: freelancerWithdrawable + totalAmount
-        })
-        .eq('user_id', freelancerId)
-
-      // Record transactions
-      await supabase.from('wallet_transactions').insert([
-        {
-          user_id: user.id,
-          kind: 'hourly_payment',
-          amount: totalAmount,
-          status: 'completed',
-          reference: `Payment for ${entryIds.length} time entries`
-        },
-        {
-          user_id: freelancerId,
-          kind: 'hourly_earning',
-          amount: totalAmount,
-          status: 'completed',
-          reference: `Payment received for ${entryIds.length} time entries`
-        }
-      ])
-
-      // Update entries as paid
-      await supabase
-        .from('work_diary_entries')
-        .update({ payment_status: 'paid' })
-        .in('id', entryIds)
-
-      // Notify freelancer
-      await supabase.from('notifications').insert([{
-        user_id: freelancerId,
-        title: '💰 Payment Received!',
-        message: `You received NC ${totalAmount.toFixed(0)} for your logged hours`,
-        type: 'payment',
-        data: { amount: totalAmount, entry_count: entryIds.length }
-      }])
-
-      toast({ 
-        title: 'Payment Successful! 💰', 
-        description: `NC ${totalAmount.toFixed(0)} has been transferred to the freelancer.` 
+      const { data, error } = await (supabase as any).rpc('pay_work_diary_entries', {
+        p_entry_ids: entryIds
       })
-      return { success: true, amount: totalAmount }
+      if (error) throw error
+      if (!data?.success) {
+        if (data?.error?.toLowerCase().includes('insufficient')) {
+          requestDeposit({ needed: Number(data.needed || 0), available: 0 })
+        }
+        throw new Error(data?.error || 'Payment failed')
+      }
+      toast({
+        title: 'Payment Successful',
+        description: `NC ${Number(data.amount).toLocaleString()} paid for ${data.entry_count} approved time entries.`
+      })
+      await fetchEntries()
+      return { success: true, amount: Number(data.amount) }
     } catch (error: any) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' })
       return { error: error.message }
