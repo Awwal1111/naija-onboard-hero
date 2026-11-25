@@ -44,7 +44,7 @@ export default function ProductDetail() {
         .select("id")
         .eq("product_id", id)
         .eq("buyer_id", user.id)
-        .single();
+        .maybeSingle();
       return !!data;
     },
     enabled: !!user,
@@ -69,84 +69,21 @@ export default function ProductDetail() {
   const purchaseMutation = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error("Please log in to purchase");
+      if (!id) throw new Error("Product not found");
 
-      // Check balance
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("balance_withdrawable")
-        .eq("user_id", user.id)
-        .single();
-
-      if (!profile || profile.balance_withdrawable < product.price) {
-        throw new Error("Insufficient balance");
-      }
-
-      // Calculate platform fee (5%)
-      const platformFee = Math.round(product.price * 0.05);
-      const sellerAmount = product.price - platformFee;
-
-      // Deduct from buyer
-      await supabase
-        .from("profiles")
-        .update({
-          wallet_balance: profile.balance_withdrawable - product.price,
-          balance_withdrawable: profile.balance_withdrawable - product.price,
-        })
-        .eq("user_id", user.id);
-
-      // Credit seller (minus platform fee)
-      await supabase.rpc("increment_wallet_balance", {
-        target_user_id: product.user_id,
-        amount_to_add: sellerAmount,
+      // The database calculates the price, checks the buyer's withdrawable
+      // balance, records access, and settles both wallets in one transaction.
+      const { data, error } = await supabase.rpc("purchase_digital_product", {
+        p_product_id: id,
       });
-
-      // Record purchase
-      await supabase.from("digital_product_purchases").insert({
-        product_id: id,
-        buyer_id: user.id,
-        amount: product.price,
-      });
-
-      // Create download access
-      await supabase.from("product_downloads").insert({
-        product_id: id,
-        buyer_id: user.id,
-      });
-
-      // Update download count
-      await supabase
-        .from("digital_products")
-        .update({ download_count: (product.download_count || 0) + 1 })
-        .eq("id", id);
-
-      // Log transactions
-      await supabase.from("wallet_transactions").insert([
-        {
-          user_id: user.id,
-          kind: "product_purchase",
-          amount: -product.price,
-          status: "completed",
-          reference: `Purchase: ${product.title}`,
-        },
-        {
-          user_id: product.user_id,
-          kind: "product_sale",
-          amount: sellerAmount,
-          status: "completed",
-          reference: `Sale: ${product.title} (after 5% fee)`,
-        },
-        {
-          user_id: product.user_id,
-          kind: "platform_fee",
-          amount: -platformFee,
-          status: "completed",
-          reference: `Platform fee (5%): ${product.title}`,
-        },
-      ]);
+      if (error) throw error;
+      const result = data as { success?: boolean; error?: string; already_purchased?: boolean };
+      if (!result?.success) throw new Error(result?.error || "Purchase could not be completed");
+      return result;
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       toast({
-        title: "Purchase successful!",
+        title: result.already_purchased ? "Already purchased" : "Purchase successful!",
         description: "You can now download the product",
       });
       queryClient.invalidateQueries({ queryKey: ["has-purchased", id] });
@@ -166,8 +103,9 @@ export default function ProductDetail() {
     mutationFn: async () => {
       if (!hasPurchased) throw new Error("Product not purchased");
 
-      // Update download count
-      await supabase
+      if (!product.file_url) throw new Error("The seller has not added a download file yet");
+
+      const { error } = await supabase
         .from("product_downloads")
         .update({
           download_count: 1,
@@ -175,11 +113,10 @@ export default function ProductDetail() {
         })
         .eq("product_id", id)
         .eq("buyer_id", user!.id);
+      if (error) throw error;
 
-      // Open file URL
-      if (product.file_url) {
-        window.open(product.file_url, "_blank");
-      }
+      // Open file URL only after confirming the purchase record can be updated.
+      window.open(product.file_url, "_blank", "noopener,noreferrer");
     },
     onSuccess: () => {
       toast({
