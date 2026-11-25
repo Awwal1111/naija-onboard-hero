@@ -17,13 +17,15 @@ developer escrow/payout functions. No production database changes were made.
   `type/description` columns). Privileged developer escrow/payout RPCs are
   service-role-only.
 - NC conversion is owner-only and enforces the published 100:5 conversion ratio.
+- Admin role grants/revocations now fail closed when the caller has no role; only a super admin can grant/revoke admin roles. The legacy one-argument grant is service-role-only.
+- Fundraising release is now locked and one-time, preventing repeat payout of the same campaign.
 - Developer charge sessions now require the payer's authenticated identity and use correct wallet ledger columns.
 - Mini-app charges are restricted to the paying user; NC payouts can no longer be initiated by an untrusted mini-app iframe in a user's browser. NC payouts must be issued by the developer's server through the Developer API. Mini-app payment RPCs check wallet buckets and require an approved app.
 - Course enrollment now checks both wallet balance fields before debiting; scheduled course escrow release is service-role-only.
 - SafePay proposal, acceptance, cancellation, completion, release and dispute
   functions now explicitly reject missing authentication and enforce the correct
   buyer/seller role. The SafePay auto-release loop locks rows with SKIP LOCKED to
-  prevent a race with manual release.
+  prevent a race with manual release. Unused legacy SafePay overloads are disabled.
 - Gig checkout verifies that the seller matches the actual active gig owner and
   checks both wallet balance columns before deducting escrow.
 - Gig cancellation now rejects unauthenticated callers and prevents a full refund
@@ -57,7 +59,12 @@ developer escrow/payout functions. No production database changes were made.
    This can falsify transaction history even though it does not directly change
    balances. Move remaining browser ledger writes to trusted RPCs, then revoke
    direct client INSERT.
-4. Hourly hire contracts still do not have timesheet submission, approval, or
+4. The profile guard remains staged until direct profile/wallet writers are migrated.
+5. `increment_wallet_balance` remains a critical open issue: it is SECURITY DEFINER,
+   has no caller authorization, and is used by browser game/reward components.
+6. Authenticated users can still INSERT their own `wallet_transactions` rows;
+   direct ledger INSERT must be migrated to trusted RPCs before it is revoked.
+7. Hourly hire contracts still do not have timesheet submission, approval, or
    weekly settlement. The contract UI discloses this limitation.
 
 ## Deployment
