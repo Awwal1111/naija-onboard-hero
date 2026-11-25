@@ -327,7 +327,7 @@ export const MilestonesSection = ({
                     )}
 
                     {/* Buyer: Release funds */}
-                    {isBuyer && milestone.status === 'approved' && (
+                    {isBuyer && orderId && milestone.status === 'approved' && (
                       <Button
                         size="sm"
                         onClick={() => handleRelease(milestone)}
@@ -336,6 +336,11 @@ export const MilestonesSection = ({
                         <DollarSign className="h-3 w-3 mr-1" />
                         Release Payment
                       </Button>
+                    )}
+                    {isBuyer && safepayId && milestone.status === 'approved' && (
+                      <p className="text-xs text-muted-foreground">
+                        Milestone approval is recorded here. Release the full SafePay through its payment controls.
+                      </p>
                     )}
                   </div>
                 </div>
