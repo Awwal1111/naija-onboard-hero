@@ -182,6 +182,8 @@ AS $$
 DECLARE
   v_dev_wallet numeric;
   v_dev_withdrawable numeric;
+  v_existing_amount numeric;
+  v_existing_metadata jsonb;
 BEGIN
   IF p_amount IS NULL OR p_amount<=0 THEN
     RETURN jsonb_build_object('ok',false,'error','Amount must be positive');
@@ -191,6 +193,22 @@ BEGIN
   END IF;
   IF NULLIF(trim(COALESCE(p_reference,'')),'') IS NULL THEN
     RETURN jsonb_build_object('ok',false,'error','A payout reference is required');
+  END IF;
+
+  PERFORM pg_advisory_xact_lock(hashtextextended('developer_payout:'||p_developer_id::text||':'||p_reference,0));
+  SELECT amount,metadata INTO v_existing_amount,v_existing_metadata
+  FROM public.wallet_transactions
+  WHERE user_id=p_developer_id AND kind='developer_payout'
+    AND reference=p_reference AND status='completed'
+  LIMIT 1;
+  IF FOUND THEN
+    IF ABS(v_existing_amount)<>p_amount
+      OR v_existing_metadata->>'recipient_user_id' IS DISTINCT FROM p_recipient_user_id::text THEN
+      RETURN jsonb_build_object('ok',false,'error','Payout reference has already been used for different details');
+    END IF;
+    SELECT wallet_balance INTO v_dev_wallet FROM public.profiles WHERE user_id=p_developer_id;
+    RETURN jsonb_build_object('ok',true,'already_processed',true,'reference',p_reference,
+      'recipient_user_id',p_recipient_user_id,'amount',p_amount,'developer_balance_after',v_dev_wallet);
   END IF;
 
   PERFORM 1 FROM public.profiles
