@@ -18,7 +18,6 @@ Crawl-delay: 1
 Allow: /welcome
 Allow: /faq
 Allow: /help
-Allow: /fundraising
 Allow: /terms-conditions
 Allow: /privacy-policy
 Allow: /refund-policy
@@ -42,14 +41,12 @@ Allow: /p/gigs
 Allow: /p/job/
 Allow: /p/jobs
 Allow: /p/course/
-Allow: /p/campaign/
 
 # Short URL aliases (redirect to /p/ versions for better UX)
 Allow: /expert/
 Allow: /gig/
 Allow: /job/
 Allow: /course/
-Allow: /campaign/
 
 # ===========================================
 # CERTIFICATE VERIFICATION (Public)

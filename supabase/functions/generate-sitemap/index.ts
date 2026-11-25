@@ -19,12 +19,11 @@ Deno.serve(async (req) => {
   const today = new Date().toISOString().split("T")[0];
 
   // Fetch all public content in parallel
-  const [expertsRes, gigsRes, jobsRes, coursesRes, campaignsRes, usersRes] = await Promise.all([
+  const [expertsRes, gigsRes, jobsRes, coursesRes, usersRes] = await Promise.all([
     supabase.from("profiles").select("user_id, username, updated_at").eq("is_expert", true).limit(2000),
     supabase.from("jobs_services").select("id, updated_at").eq("status", "active").limit(2000),
     supabase.from("job_posts").select("id, updated_at").eq("status", "active").limit(2000),
     supabase.from("courses").select("id, updated_at").eq("status", "active").limit(2000),
-    supabase.from("fundraisings").select("id, updated_at").limit(2000),
     supabase.from("profiles").select("username, updated_at").not("username", "is", null).eq("is_expert", false).limit(5000),
   ]);
 
@@ -40,7 +39,6 @@ Deno.serve(async (req) => {
     { loc: "/p/jobs", priority: "0.9", freq: "daily" },
     { loc: "/signup", priority: "0.8", freq: "monthly" },
     { loc: "/login", priority: "0.6", freq: "monthly" },
-    { loc: "/fundraising", priority: "0.8", freq: "daily" },
     { loc: "/developers", priority: "0.7", freq: "weekly" },
     { loc: "/faq", priority: "0.7", freq: "monthly" },
     { loc: "/help", priority: "0.7", freq: "monthly" },
@@ -109,17 +107,6 @@ Deno.serve(async (req) => {
     <lastmod>${lastmod}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
-  </url>`);
-  }
-
-  // Campaigns
-  for (const campaign of campaignsRes.data || []) {
-    const lastmod = campaign.updated_at?.split("T")[0] || today;
-    urls.push(`  <url>
-    <loc>${baseUrl}/p/campaign/${campaign.id}</loc>
-    <lastmod>${lastmod}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
   </url>`);
   }
 

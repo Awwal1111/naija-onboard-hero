@@ -14,7 +14,7 @@ const faqData: FAQItem[] = [
   {
     category: "Getting Started",
     question: "What is NaijaLancers?",
-    answer: "NaijaLancers is a comprehensive platform connecting Nigerian professionals, freelancers, and businesses. It offers job opportunities, expert services, fundraising, courses, digital products, and various ways to earn money online."
+    answer: "NaijaLancers is a comprehensive platform connecting Nigerian professionals, freelancers, and businesses. It offers job opportunities, expert services, courses, digital products, and various ways to earn money online."
   },
   {
     category: "Getting Started",
@@ -70,26 +70,6 @@ const faqData: FAQItem[] = [
     category: "Jobs & Services",
     question: "How do I post a job?",
     answer: "Click 'Post Job', fill in job details, budget, and requirements. Jobs are visible to all users. You'll receive applications directly in your messages."
-  },
-  {
-    category: "Fundraising",
-    question: "How does fundraising work?",
-    answer: "Create a campaign with your goal, story, and fund breakdown. Admin reviews and approves campaigns. All contributions go to admin wallet first for security. Once your goal is reached, request fund release from admin."
-  },
-  {
-    category: "Fundraising",
-    question: "Can anyone contribute to fundraising campaigns?",
-    answer: "Yes! Fundraising campaigns are publicly accessible. Anyone can view and share campaigns, but only registered users can contribute."
-  },
-  {
-    category: "Fundraising",
-    question: "Why are contributions held by admin?",
-    answer: "This protects both campaigners and contributors. Admin verifies campaign legitimacy and ensures funds are released appropriately. This prevents fraud and builds trust."
-  },
-  {
-    category: "Fundraising",
-    question: "How do I get my fundraising money?",
-    answer: "Once your campaign reaches its goal or deadline, request fund release from your campaign dashboard. Admin reviews and releases funds within 3-5 business days."
   },
   {
     category: "Digital Products & Courses",
