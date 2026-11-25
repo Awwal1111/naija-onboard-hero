@@ -17,6 +17,9 @@ developer escrow/payout functions. No production database changes were made.
   `type/description` columns). Privileged developer escrow/payout RPCs are
   service-role-only.
 - NC conversion is owner-only and enforces the published 100:5 conversion ratio.
+- Developer charge sessions now require the payer's authenticated identity and use correct wallet ledger columns.
+- Mini-app charges are restricted to the paying user; mini-app payouts are restricted to the registered app developer. Both check wallet buckets and require an approved mini app.
+- Course enrollment now checks both wallet balance fields before debiting; scheduled course escrow release is service-role-only.
 - SafePay proposal, acceptance, cancellation, completion, release and dispute
   functions now explicitly reject missing authentication and enforce the correct
   buyer/seller role. The SafePay auto-release loop locks rows with SKIP LOCKED to
