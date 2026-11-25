@@ -32,6 +32,11 @@ BEGIN
       NEW.business_verified := false;
       NEW.identity_verified := false;
       NEW.identity_verified_at := NULL;
+      NEW.verification_status := 'unverified';
+      NEW.verification_payment_status := 'not_paid';
+      NEW.verification_level := 'none';
+      NEW.verification_reviewed_at := NULL;
+      NEW.verification_reviewed_by := NULL;
       NEW.is_boosted := false;
       NEW.boost_expires_at := NULL;
       NEW.is_premium := false;
@@ -307,8 +312,8 @@ BEGIN
   END IF;
 
   UPDATE public.profiles
-  SET wallet_balance=wallet_balance-p_amount,
-      balance_withdrawable=balance_withdrawable-p_amount,updated_at=now()
+  SET wallet_balance=COALESCE(wallet_balance,0)-p_amount,
+      balance_withdrawable=COALESCE(balance_withdrawable,0)-p_amount,updated_at=now()
   WHERE user_id=p_developer_id;
 
   UPDATE public.profiles
