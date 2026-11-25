@@ -297,8 +297,8 @@ BEGIN
   WHERE pr.user_id=v_order.seller_id FOR UPDATE OF p;
 
   IF FOUND THEN
-    v_partner_share:=ROUND(v_m.amount*v_partner.partner_cut_pct/100.0,2);
-    v_fee_share:=ROUND(v_m.amount*v_partner.platform_fee_pct/100.0,2);
+    v_partner_share:=ROUND(v_m.amount*COALESCE(v_partner.partner_cut_pct,0)/100.0,2);
+    v_fee_share:=ROUND(v_m.amount*COALESCE(v_partner.platform_fee_pct,0)/100.0,2);
   ELSE
     v_fee_share:=ROUND((v_m.amount/NULLIF(v_order.amount,0))*COALESCE(v_order.platform_fee,0),2);
   END IF;
@@ -384,8 +384,8 @@ BEGIN
   WHERE pr.user_id=v_order.seller_id FOR UPDATE OF p;
 
   IF FOUND THEN
-    v_partner_share:=ROUND(v_order.amount*v_partner.partner_cut_pct/100.0,2);
-    v_platform_share:=ROUND(v_order.amount*v_partner.platform_fee_pct/100.0,2);
+    v_partner_share:=ROUND(v_order.amount*COALESCE(v_partner.partner_cut_pct,0)/100.0,2);
+    v_platform_share:=ROUND(v_order.amount*COALESCE(v_partner.platform_fee_pct,0)/100.0,2);
   ELSE
     v_platform_share:=COALESCE(v_order.platform_fee,0);
   END IF;
