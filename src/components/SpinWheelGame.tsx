@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { requestDeposit } from '@/lib/depositPrompt'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
@@ -19,11 +20,7 @@ const SpinWheelGame: React.FC = () => {
     
     const totalBalance = balance.withdrawable + balance.non_withdrawable
     if (totalBalance < 10) {
-      toast({
-        title: "Insufficient Balance",
-        description: "You need at least NC 10 to play",
-        variant: "destructive",
-      })
+      requestDeposit({ needed: 10, available: totalBalance })
       return
     }
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { requestDeposit } from '@/lib/depositPrompt'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -166,11 +167,7 @@ const NigerianTrivia: React.FC = () => {
     }
 
     if (balance.total < ENTRY_FEE) {
-      toast({
-        title: "Insufficient Balance",
-        description: `You need NC ${ENTRY_FEE} to play Nigerian Trivia`,
-        variant: "destructive",
-      })
+      requestDeposit({ needed: ENTRY_FEE, available: balance.total })
       return
     }
 
