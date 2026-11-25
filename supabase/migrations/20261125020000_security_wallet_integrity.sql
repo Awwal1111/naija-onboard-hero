@@ -1549,3 +1549,152 @@ GRANT EXECUTE ON FUNCTION public.release_course_escrow(uuid) TO service_role;
 
 REVOKE ALL ON FUNCTION public.process_ivorypay_deposit(uuid,text,numeric,numeric,text,text) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.process_ivorypay_deposit(uuid,text,numeric,numeric,text,text) TO service_role;
+
+
+-- 15) Admin role RPCs must fail closed when get_user_admin_role() returns NULL.
+-- Only super_admin may grant the admin role; admins may grant/revoke moderators.
+CREATE OR REPLACE FUNCTION public.grant_admin_role(
+  target_user_id uuid,target_role public.user_role DEFAULT 'moderator'
+) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=''
+AS $$
+DECLARE
+  caller_role text;
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RETURN jsonb_build_object('success',false,'error','Authentication required');
+  END IF;
+  caller_role:=public.get_user_admin_role();
+  IF caller_role IS NULL THEN
+    RETURN jsonb_build_object('success',false,'error','Admin access required');
+  END IF;
+  IF target_user_id IS NULL THEN
+    RETURN jsonb_build_object('success',false,'error','Target user is required');
+  END IF;
+  IF target_role='super_admin' THEN
+    RETURN jsonb_build_object('success',false,'error','Cannot grant super_admin role');
+  END IF;
+  IF target_role='admin' AND caller_role<>'super_admin' THEN
+    RETURN jsonb_build_object('success',false,'error','Only super admins can grant admin role');
+  END IF;
+  IF target_role='moderator' AND caller_role NOT IN ('super_admin','admin') THEN
+    RETURN jsonb_build_object('success',false,'error','Only admins can grant moderator role');
+  END IF;
+  INSERT INTO public.user_roles(user_id,role,granted_by)
+  VALUES(target_user_id,target_role,auth.uid())
+  ON CONFLICT(user_id,role) DO NOTHING;
+  RETURN jsonb_build_object('success',true);
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.revoke_admin_role(
+  target_user_id uuid,target_role public.user_role
+) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=''
+AS $$
+DECLARE
+  caller_role text;
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RETURN jsonb_build_object('success',false,'error','Authentication required');
+  END IF;
+  caller_role:=public.get_user_admin_role();
+  IF caller_role IS NULL THEN
+    RETURN jsonb_build_object('success',false,'error','Admin access required');
+  END IF;
+  IF target_role='super_admin' THEN
+    RETURN jsonb_build_object('success',false,'error','Cannot revoke super_admin role');
+  END IF;
+  IF target_user_id=auth.uid() THEN
+    RETURN jsonb_build_object('success',false,'error','Cannot revoke your own role');
+  END IF;
+  IF target_role='admin' AND caller_role<>'super_admin' THEN
+    RETURN jsonb_build_object('success',false,'error','Only super admins can revoke admin role');
+  END IF;
+  IF target_role='moderator' AND caller_role NOT IN ('super_admin','admin') THEN
+    RETURN jsonb_build_object('success',false,'error','Only admins can revoke moderator role');
+  END IF;
+  DELETE FROM public.user_roles WHERE user_id=target_user_id AND role=target_role;
+  RETURN jsonb_build_object('success',true);
+END;
+$$;
+
+-- Legacy one-argument grant is service-role-only; browser admin setup now calls
+-- the role-aware two-argument RPC.
+CREATE OR REPLACE FUNCTION public.grant_admin_role(target_user_id uuid)
+RETURNS boolean
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=''
+AS $$
+BEGIN
+  IF COALESCE(auth.role(),'')<>'service_role' THEN
+    RAISE EXCEPTION 'Use the role-aware admin grant flow';
+  END IF;
+  INSERT INTO public.user_roles(user_id,role,granted_by)
+  VALUES(target_user_id,'admin',NULL)
+  ON CONFLICT(user_id,role) DO NOTHING;
+  RETURN TRUE;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.grant_admin_role(uuid) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.grant_admin_role(uuid) TO service_role;
+REVOKE ALL ON FUNCTION public.grant_admin_role(uuid,public.user_role) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.grant_admin_role(uuid,public.user_role) TO authenticated;
+REVOKE ALL ON FUNCTION public.revoke_admin_role(uuid,public.user_role) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.revoke_admin_role(uuid,public.user_role) TO authenticated;
+
+-- 16) Fundraising release is a one-time admin settlement.
+CREATE OR REPLACE FUNCTION public.admin_release_fundraising_funds(
+  p_fundraising_id uuid,p_admin_id uuid
+) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=''
+AS $$
+DECLARE
+  v_actor uuid:=auth.uid();
+  v_amount numeric;
+  v_owner uuid;
+  v_held boolean;
+  v_released_at timestamptz;
+  v_admin_balance numeric;
+BEGIN
+  IF v_actor IS NULL OR NOT public.is_admin_user() THEN
+    RETURN jsonb_build_object('success',false,'error','Admin authentication required');
+  END IF;
+
+  SELECT raised_amount,user_id,funds_held_by_admin,funds_released_at
+  INTO v_amount,v_owner,v_held,v_released_at
+  FROM public.fundraisings WHERE id=p_fundraising_id FOR UPDATE;
+  IF NOT FOUND THEN RETURN jsonb_build_object('success',false,'error','Fundraising campaign not found'); END IF;
+  IF v_held IS DISTINCT FROM TRUE OR v_released_at IS NOT NULL THEN
+    RETURN jsonb_build_object('success',false,'error','Funds have already been released or are not held by admin');
+  END IF;
+  IF v_amount IS NULL OR v_amount<=0 THEN
+    RETURN jsonb_build_object('success',false,'error','There are no funds to release');
+  END IF;
+
+  SELECT balance INTO v_admin_balance FROM public.admin_wallet WHERE id=1 FOR UPDATE;
+  IF NOT FOUND OR COALESCE(v_admin_balance,0)<v_amount THEN
+    RETURN jsonb_build_object('success',false,'error','Insufficient admin funds');
+  END IF;
+  PERFORM 1 FROM public.profiles WHERE user_id=v_owner FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Campaign owner wallet not found'; END IF;
+
+  UPDATE public.admin_wallet SET balance=balance-v_amount,updated_at=now() WHERE id=1;
+  UPDATE public.profiles
+  SET wallet_balance=COALESCE(wallet_balance,0)+v_amount,
+      balance_withdrawable=COALESCE(balance_withdrawable,0)+v_amount,updated_at=now()
+  WHERE user_id=v_owner;
+  UPDATE public.fundraisings
+  SET funds_held_by_admin=false,funds_released_at=now()
+  WHERE id=p_fundraising_id;
+
+  INSERT INTO public.wallet_transactions(user_id,currency,kind,amount,status,reference,metadata)
+  VALUES(v_owner,'NC','fundraising_release',v_amount,'completed',
+    'Fundraising funds released by admin',
+    jsonb_build_object('fundraising_id',p_fundraising_id,'released_by',v_actor));
+
+  RETURN jsonb_build_object('success',true,'amount',v_amount);
+END;
+$$;
+REVOKE ALL ON FUNCTION public.admin_release_fundraising_funds(uuid,uuid) FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.admin_release_fundraising_funds(uuid,uuid) TO authenticated;
