@@ -50,6 +50,25 @@ export function useHireContracts() {
 
   const create = async (input: CreateContractInput): Promise<{ success?: boolean; id?: string; error?: string }> => {
     if (!user) return { error: 'Not authenticated' };
+    if (!input.title.trim() || !input.scope.trim()) {
+      const message = 'Contract title and scope are required.';
+      toast({ title: 'Invalid contract', description: message, variant: 'destructive' });
+      return { error: message };
+    }
+    if (input.contract_type === 'fixed' && !(Number(input.total_amount) > 0)) {
+      const message = 'Fixed-price contracts require a total amount greater than zero.';
+      toast({ title: 'Invalid contract', description: message, variant: 'destructive' });
+      return { error: message };
+    }
+    if (input.contract_type === 'hourly' && (
+      !(Number(input.hourly_rate) > 0) ||
+      !(Number(input.weekly_cap_hours) >= 1 && Number(input.weekly_cap_hours) <= 168) ||
+      !(Number(input.deposit_amount) > 0)
+    )) {
+      const message = 'Hourly contracts require a positive rate and deposit, with a weekly cap from 1 to 168 hours.';
+      toast({ title: 'Invalid contract', description: message, variant: 'destructive' });
+      return { error: message };
+    }
     const { data, error } = await supabase.from('hire_contracts').insert({
       client_id: user.id, expert_id: input.expert_id, contract_type: input.contract_type,
       title: input.title, scope: input.scope, total_amount: input.total_amount ?? 0,
