@@ -502,24 +502,38 @@ export const useWorkrooms = () => {
     }
   }
 
-  const uploadFile = async (workroomId: string, file: { file_name: string; file_url: string; file_type?: string; file_size?: number; task_id?: string }) => {
+  const uploadFile = async (workroomId: string, file: File) => {
     if (!user) return { error: 'Not authenticated' }
+    if (file.size > 10 * 1024 * 1024) return { error: 'Files must be 10 MB or smaller.' }
+
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(-120) || 'file'
+    const objectPath = `${workroomId}/${user.id}/${crypto.randomUUID()}-${safeName}`
 
     try {
+      const { error: storageError } = await supabase.storage
+        .from('workroom-files')
+        .upload(objectPath, file, { contentType: file.type || 'application/octet-stream', upsert: false })
+      if (storageError) throw storageError
+
       const { data, error } = await supabase
         .from('workroom_files')
         .insert([{
           workroom_id: workroomId,
           uploaded_by: user.id,
-          ...file
+          file_name: file.name,
+          file_url: objectPath,
+          file_type: file.type || null,
+          file_size: file.size
         }])
         .select()
         .single()
 
-      if (error) throw error
+      if (error) {
+        await supabase.storage.from('workroom-files').remove([objectPath])
+        throw error
+      }
 
-      await logActivity(workroomId, 'file_uploaded', `File "${file.file_name}" was uploaded`, file.task_id, data.id)
-
+      await logActivity(workroomId, 'file_uploaded', `File "${file.name}" was uploaded`, undefined, data.id)
       return { data }
     } catch (error: any) {
       return { error: error.message }
@@ -535,7 +549,14 @@ export const useWorkrooms = () => {
         .order('created_at', { ascending: false })
 
       if (error) throw error
-      return data || []
+      const rows = data || []
+      return await Promise.all(rows.map(async (file) => {
+        const { data: signed, error: signedError } = await supabase.storage
+          .from('workroom-files')
+          .createSignedUrl(file.file_url, 60 * 10)
+        if (signedError) console.warn('[workroom] signed URL failed', signedError)
+        return { ...file, file_url: signed?.signedUrl || '' }
+      }))
     } catch (error) {
       console.error('Error fetching files:', error)
       return []
