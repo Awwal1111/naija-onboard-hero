@@ -31,7 +31,7 @@ export const useProfileCompletion = () => {
     if (!hasValue(profile.phone_number)) missingFields.push('Phone Number')
 
     // Clients do not need a freelancer profession or portfolio bio to hire.
-    const isClient = profile.account_type === 'client'
+    const isClient = profile.account_type === 'client' || profile.user_mode === 'client'
     if (!isClient && !hasValue(profile.profession)) missingFields.push('Profession')
     if (!isClient && !hasValue(profile.bio)) missingFields.push('Bio')
 
