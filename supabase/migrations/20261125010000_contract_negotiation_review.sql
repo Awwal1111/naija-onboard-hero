@@ -5,6 +5,23 @@ ALTER TABLE public.hire_contracts
   ADD COLUMN IF NOT EXISTS revision_number integer NOT NULL DEFAULT 1,
   ADD COLUMN IF NOT EXISTS change_request text;
 
+DO $
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid='public.hire_contracts'::regclass AND conname='hire_contracts_fixed_amount_valid') THEN
+    ALTER TABLE public.hire_contracts ADD CONSTRAINT hire_contracts_fixed_amount_valid
+      CHECK (contract_type <> 'fixed' OR coalesce(total_amount,0)>0) NOT VALID;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid='public.hire_contracts'::regclass AND conname='hire_contracts_hourly_terms_valid') THEN
+    ALTER TABLE public.hire_contracts ADD CONSTRAINT hire_contracts_hourly_terms_valid
+      CHECK (contract_type <> 'hourly' OR (
+        coalesce(hourly_rate,0)>0 AND coalesce(weekly_cap_hours,0) BETWEEN 1 AND 168
+        AND coalesce(deposit_amount,0)>0
+      )) NOT VALID;
+  END IF;
+END $;
+ALTER TABLE public.hire_contracts VALIDATE CONSTRAINT hire_contracts_fixed_amount_valid;
+ALTER TABLE public.hire_contracts VALIDATE CONSTRAINT hire_contracts_hourly_terms_valid;
+
 CREATE TABLE IF NOT EXISTS public.hire_contract_revisions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   contract_id uuid NOT NULL REFERENCES public.hire_contracts(id) ON DELETE CASCADE,
