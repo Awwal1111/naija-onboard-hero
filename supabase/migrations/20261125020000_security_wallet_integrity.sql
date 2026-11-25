@@ -1417,7 +1417,6 @@ DECLARE
   v_withdrawable numeric;
   v_app_name text;
 BEGIN
-  IF v_actor IS NULL THEN RETURN jsonb_build_object('success',false,'error','Authentication required'); END IF;
   IF p_user_id IS NULL OR p_amount IS NULL OR p_amount<=0
     OR NULLIF(trim(COALESCE(p_tx_ref,'')),'') IS NULL THEN
     RETURN jsonb_build_object('success',false,'error','Invalid payout details');
@@ -1426,8 +1425,8 @@ BEGIN
   SELECT developer_id,app_name INTO v_developer_id,v_app_name
   FROM public.mini_apps WHERE id=p_mini_app_id AND status='approved' FOR SHARE;
   IF NOT FOUND THEN RETURN jsonb_build_object('success',false,'error','Mini app is not approved or available'); END IF;
-  IF v_actor IS DISTINCT FROM v_developer_id THEN
-    RETURN jsonb_build_object('success',false,'error','Only the mini-app developer can issue payouts');
+  IF COALESCE(auth.role(),'')<>'service_role' AND v_actor IS DISTINCT FROM v_developer_id THEN
+    RETURN jsonb_build_object('success',false,'error','Only a trusted developer payout service can issue mini-app payouts');
   END IF;
 
   PERFORM 1 FROM public.profiles
@@ -1470,8 +1469,8 @@ BEGIN
   RETURN jsonb_build_object('success',true,'tx_ref',p_tx_ref,'amount',p_amount);
 END;
 $$;
-REVOKE ALL ON FUNCTION public.process_mini_app_payout(uuid,uuid,numeric,text,text) FROM PUBLIC,anon;
-GRANT EXECUTE ON FUNCTION public.process_mini_app_payout(uuid,uuid,numeric,text,text) TO authenticated;
+REVOKE ALL ON FUNCTION public.process_mini_app_payout(uuid,uuid,numeric,text,text) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.process_mini_app_payout(uuid,uuid,numeric,text,text) TO service_role;
 
 -- 14) Course enrollment must check both wallet totals before debiting.
 CREATE OR REPLACE FUNCTION public.enroll_in_course(p_course_id uuid)
