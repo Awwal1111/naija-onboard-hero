@@ -14,6 +14,8 @@ type MigrationResult = {
   existingCeloWalletsPreserved?: number;
   needsKeyRecovery?: number;
   internalWalletRowsCreated?: number;
+  notificationsCreated?: number;
+  notificationFailures?: number;
   failed?: number;
   error?: string;
 };
@@ -28,7 +30,7 @@ export const AdminWalletMigration = () => {
       const { count, error } = await supabase
         .from('profiles')
         .select('user_id', { count: 'exact', head: true })
-        .is('celo_wallet_address', null);
+        .or('celo_wallet_address.is.null,celo_wallet_address.eq.');
 
       if (error) throw error;
       setUsersWithoutWallets(count || 0);
@@ -132,6 +134,8 @@ export const AdminWalletMigration = () => {
                 <div><dt className="text-muted-foreground">Existing wallets preserved</dt><dd className="font-semibold">{result.existingCeloWalletsPreserved ?? 0}</dd></div>
                 <div><dt className="text-muted-foreground">Need key recovery</dt><dd className="font-semibold">{result.needsKeyRecovery ?? 0}</dd></div>
                 <div><dt className="text-muted-foreground">Internal wallet rows added</dt><dd className="font-semibold">{result.internalWalletRowsCreated ?? 0}</dd></div>
+                <div><dt className="text-muted-foreground">Users notified in-app</dt><dd className="font-semibold">{result.notificationsCreated ?? 0}</dd></div>
+                <div><dt className="text-muted-foreground">Notification failures</dt><dd className="font-semibold">{result.notificationFailures ?? 0}</dd></div>
                 <div><dt className="text-muted-foreground">Failures</dt><dd className="font-semibold">{result.failed ?? 0}</dd></div>
               </dl>
               {result.message && <p className="mt-3 text-sm text-muted-foreground">{result.message}</p>}
