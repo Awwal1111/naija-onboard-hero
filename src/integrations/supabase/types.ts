@@ -8907,6 +8907,7 @@ export type Database = {
         }
         Returns: Json
       }
+      purchase_digital_product: { Args: { p_product_id: string }; Returns: Json }
       propose_safepay: {
         Args: { p_amount: number; p_buyer_id: string; p_seller_id: string }
         Returns: Json
