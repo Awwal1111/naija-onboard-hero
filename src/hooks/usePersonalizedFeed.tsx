@@ -134,12 +134,22 @@ export const usePersonalizedFeed = () => {
       console.log('[Feed] Fetching personalized feed for user:', userId, 'offset:', offset)
 
       // Use the personalized feed function
-      const { data: personalizedPosts, error } = await supabase
-        .rpc('get_personalized_feed', {
+      // The personalized RPC can occasionally stall on a slow database/network.
+      // Bound its wait so the ordinary posts query can still serve the feed.
+      const rpcResult = await Promise.race([
+        supabase.rpc('get_personalized_feed', {
           p_user_id: userId,
           p_limit: POSTS_PER_PAGE,
           p_offset: offset
+        }),
+        new Promise<any>((resolve) => {
+          window.setTimeout(() => resolve({
+            data: null,
+            error: new Error('Personalized feed timed out after 8 seconds')
+          }), 8000)
         })
+      ])
+      const { data: personalizedPosts, error } = rpcResult
 
       if (error) {
         console.error('[Feed] Personalized feed RPC error:', error)
@@ -271,7 +281,9 @@ export const usePersonalizedFeed = () => {
   // React Query v5: isLoading is true when status='pending' AND fetchStatus='fetching'
   // But when enabled=false, status='pending' and fetchStatus='idle' → isLoading should be false
   // However, to be safe, we explicitly check: only "loading" if user is ready AND queries are fetching
-  const loading = isUserReady ? (postsLoading || storiesLoading) : false
+  // Posts are the critical path. Stories load independently and must never
+  // hold the entire feed behind the skeleton on a slow stories/profile query.
+  const loading = isUserReady ? postsLoading : false
 
   // Post creation with cache invalidation
   const createPost = useCallback(async (content: string, contentType: string = 'status', visibility: string = 'public', title?: string, mediaUrls?: string[]) => {
