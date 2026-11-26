@@ -26,9 +26,10 @@ export const CurrencyDisplay: React.FC<CurrencyDisplayProps> = ({
   }
   const preferred = formatPreferred(amount, false)
   const nativeAmount = `NC ${amount.toLocaleString()}`
+  const showNative = currency !== 'NC' && currency !== 'NGN'
 
   if (compact) {
-    return <span className={`${sizeClasses[size]} ${className}`}>{formatPreferred(amount, false)}</span>
+    return <span className={`inline-flex flex-wrap items-baseline gap-x-1 ${className}`}><span className={sizeClasses[size]}>{preferred}</span>{showNative && <span className="text-[10px] text-muted-foreground">({nativeAmount})</span>}</span>
   }
 
   return (
@@ -36,7 +37,7 @@ export const CurrencyDisplay: React.FC<CurrencyDisplayProps> = ({
       <TooltipTrigger asChild>
         <div className={`flex items-center gap-2 ${className}`}>
           <span className={sizeClasses[size]}>{preferred}</span>
-          {showEquivalent && amount >= 100 && currency !== 'NC' && currency !== 'NGN' && (
+          {showEquivalent && showNative && (
             <Badge variant="secondary" className="text-xs">{nativeAmount}</Badge>
           )}
         </div>
@@ -59,11 +60,35 @@ export const CurrencyDisplay: React.FC<CurrencyDisplayProps> = ({
 export const formatAmount = (amount: number, _showEquivalent = false): string =>
   `NC ${amount.toLocaleString()}`
 
-export const formatUsdOnly = (amount: number): string =>
-  `$${(amount / 1600).toFixed(2)}`
+const getDisplayCurrency = (isNigerian: boolean): string => {
+  try {
+    const saved = localStorage.getItem('preferred_currency')
+    if (saved) return saved
+  } catch {}
+  return isNigerian ? 'NGN' : 'USD'
+}
 
-export const formatPriceForDisplay = (amount: number, isNigerian: boolean): string =>
-  isNigerian ? `₦${amount.toLocaleString()}` : `NC ${amount.toLocaleString()} (~$${(amount / 1600).toFixed(2)})`
+const getCachedRate = (code: string): number | null => {
+  try {
+    const cached = JSON.parse(localStorage.getItem('naijalancers_fx_rates_v1') || 'null')
+    const rate = cached?.rates?.[code]
+    return typeof rate === 'number' && rate > 0 ? rate : null
+  } catch { return null }
+}
 
-export const formatPriceCompact = (amount: number, isNigerian: boolean): string =>
-  isNigerian ? `₦${amount.toLocaleString()}` : `~$${(amount / 1600).toFixed(2)}`
+const formatGlobalAmount = (amount: number, isNigerian: boolean, includeNC: boolean): string => {
+  const code = getDisplayCurrency(isNigerian)
+  if (code === 'NC' || code === 'NGN') return code === 'NGN' ? `₦${amount.toLocaleString()} (NC ${amount.toLocaleString()})` : `NC ${amount.toLocaleString()}`
+  const rate = getCachedRate(code)
+  if (!rate) return `NC ${amount.toLocaleString()} (USDT reference unavailable)`
+  const currencyCode = code === 'USDT' ? 'USD' : code
+  const converted = amount / rate
+  const formatted = code === 'USDT'
+    ? `USDT ${converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+    : new Intl.NumberFormat(undefined, { style: 'currency', currency: currencyCode, minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(converted)
+  return includeNC ? `${formatted} (NC ${amount.toLocaleString()})` : formatted
+}
+
+export const formatUsdOnly = (amount: number): string => formatGlobalAmount(amount, false, false)
+export const formatPriceForDisplay = (amount: number, isNigerian: boolean): string => formatGlobalAmount(amount, isNigerian, true)
+export const formatPriceCompact = (amount: number, isNigerian: boolean): string => formatGlobalAmount(amount, isNigerian, true)
