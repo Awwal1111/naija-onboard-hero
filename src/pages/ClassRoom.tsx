@@ -373,7 +373,7 @@ const ClassRoom = () => {
           event: 'peer-left',
           payload: { from: userIdRef.current },
         })
-      } catch {}
+      } catch { /* Broadcast cleanup is best-effort. */ }
     }
 
     // Close all peer connections
