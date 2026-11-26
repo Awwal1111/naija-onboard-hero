@@ -167,7 +167,9 @@ const Onboarding = () => {
         if (!result.success) throw new Error(result.error || 'Failed to save profile')
         await setMode(userMode, false)
       } catch (error) {
-        // Non-blocking - still navigate
+        console.error('Failed to save onboarding profile:', error)
+        toast({ title: 'Could not save your profile', description: 'Please try again.', variant: 'destructive' })
+        return
       } finally {
         setLoading(false)
       }
