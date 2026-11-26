@@ -66,7 +66,7 @@ const FEED_AUX_TIMEOUT_MS = 8_000
 // A stalled enrichment request must not keep the initial feed query pending.
 // Return an empty result for optional enrichment so posts can still render.
 const withFeedTimeout = <T,>(request: PromiseLike<T>, label: string, fallback: T): Promise<T> => {
-  let timeoutId: ReturnType<typeof window.setTimeout>
+  let timeoutId: ReturnType<typeof window.setTimeout> | undefined
   return Promise.race([
     Promise.resolve(request),
     new Promise<T>((resolve) => {
@@ -75,7 +75,14 @@ const withFeedTimeout = <T,>(request: PromiseLike<T>, label: string, fallback: T
         resolve(fallback)
       }, FEED_AUX_TIMEOUT_MS)
     })
-  ]).finally(() => window.clearTimeout(timeoutId))
+  ])
+    .catch((error) => {
+      console.warn(`[Feed] ${label} failed; continuing without optional data:`, error)
+      return fallback
+    })
+    .finally(() => {
+      if (timeoutId !== undefined) window.clearTimeout(timeoutId)
+    })
 }
 
 export const usePersonalizedFeed = () => {
