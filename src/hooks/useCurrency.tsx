@@ -161,7 +161,10 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
     const apply = (cc: string) => {
       if (cancelled) return
       const next = COUNTRY_TO_CURRENCY[cc.toUpperCase()]
-      if (next && CURRENCIES[next]) setCurrencyState(next)
+      if (next && CURRENCIES[next]) {
+        setCurrencyState(next)
+        localStorage.setItem('detected_currency_v1', next)
+      }
     }
     try {
       const cached = localStorage.getItem('geo_location_v1')
@@ -202,10 +205,8 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
   }
 
   const formatPreferred = (ncAmount: number, showNC = true): string => {
-    if (currency === 'NC' || currency === 'NGN') {
-      const symbol = currency === 'NC' ? 'NC ' : '₦'
-      return `${symbol}${ncAmount.toLocaleString()}`
-    }
+    if (currency === 'NC') return `NC ${ncAmount.toLocaleString()}`
+    if (currency === 'NGN') return showNC ? `₦${ncAmount.toLocaleString()} (NC ${ncAmount.toLocaleString()})` : `₦${ncAmount.toLocaleString()}`
 
     if (!liveRates || !liveRates[currency]) {
       return `NC ${ncAmount.toLocaleString()} (USDT reference unavailable)`
