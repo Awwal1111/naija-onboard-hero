@@ -8,14 +8,14 @@ const DepositDialog = lazy(() =>
   import('@/components/DepositDialog').then((m) => ({ default: m.DepositDialog }))
 )
 
-const nc = (n: number) => `NC ${Math.round(n).toLocaleString()}`
-
 // Shown when the user tries something they can't afford: explains the gap and opens the
 // deposit screen in one tap, instead of a toast that leaves them to find the wallet.
 export const GlobalDepositPrompt = () => {
   const [promptOpen, setPromptOpen] = useState(false)
   const [depositOpen, setDepositOpen] = useState(false)
   const [detail, setDetail] = useState<DepositPromptDetail>({})
+  const { formatPreferred } = useCurrency()
+  const nc = (n: number) => formatPreferred(Math.round(n), true)
 
   useEffect(() => {
     const handler = (e: Event) => {
