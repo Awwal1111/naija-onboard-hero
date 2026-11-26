@@ -233,7 +233,7 @@ const LinkedInPostCard: React.FC<LinkedInPostCardProps> = ({
 
   const renderContentType = () => {
     switch (post.content_type) {
-      case 'job':
+      case 'job': {
         const jobLocation = post.metadata?.job?.location
         const jobBudget = post.metadata?.job?.budget
         return (
@@ -265,6 +265,7 @@ const LinkedInPostCard: React.FC<LinkedInPostCardProps> = ({
             )}
           </div>
         )
+      }
       case 'achievement':
         return (
           <div className="mx-4 mb-3 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center gap-3">
