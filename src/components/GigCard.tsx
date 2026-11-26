@@ -6,10 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { BookmarkButton } from '@/components/BookmarkButton';
 import { cn } from '@/lib/utils';
 import { getCategoryPlaceholder, getCategoryIcon, normalizeCategory } from '@/lib/gigCategories';
-import { useUserCountry } from '@/hooks/useUserCountry';
-
-// NC is pegged 1:1 to NGN, approximate USD rate
-const NGN_TO_USD_RATE = 1600;
+import { useCurrency } from '@/hooks/useCurrency';
 export interface GigCardProps {
   id: string;
   title: string;
@@ -49,16 +46,8 @@ export const GigCard: React.FC<GigCardProps> = ({
   className,
 }) => {
   const navigate = useNavigate();
-  const { isNigerian } = useUserCountry();
-  
-  const formatPrice = (amount: number) => {
-    if (isNigerian) {
-      return `₦${amount.toLocaleString()}`;
-    }
-    // Show NC with USD equivalent for international users
-    const usdAmount = amount / NGN_TO_USD_RATE;
-    return `NC ${amount.toLocaleString()} (~$${usdAmount.toFixed(2)})`;
-  };
+  const { formatPreferred } = useCurrency();
+  const formatPrice = (amount: number) => formatPreferred(amount, false);
   
   const handleCardClick = () => {
     navigate(`/gig/${id}`);
@@ -199,15 +188,8 @@ export const GigCardCompact: React.FC<GigCardProps> = ({
   className,
 }) => {
   const navigate = useNavigate();
-  const { isNigerian } = useUserCountry();
-  
-  const formatPrice = (amount: number) => {
-    if (isNigerian) {
-      return `₦${amount.toLocaleString()}`;
-    }
-    const usdAmount = amount / NGN_TO_USD_RATE;
-    return `~$${usdAmount.toFixed(2)}`;
-  };
+  const { formatPreferred } = useCurrency();
+  const formatPrice = (amount: number) => formatPreferred(amount, false);
   
   // Use uploaded image or category-specific placeholder
   const normalizedCategory = normalizeCategory(category);
