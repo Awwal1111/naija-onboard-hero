@@ -53,9 +53,19 @@ set search_path = public
 as $$
 declare
   accepted_at_value timestamptz;
-  telegram_opt_in boolean := coalesce((new.raw_user_meta_data ->> 'telegram_notifications_opt_in')::boolean, false);
-  marketing_opt_in boolean := coalesce((new.raw_user_meta_data ->> 'marketing_updates_opt_in')::boolean, false);
+  telegram_opt_in boolean := false;
+  marketing_opt_in boolean := false;
 begin
+  begin
+    telegram_opt_in := coalesce((new.raw_user_meta_data ->> 'telegram_notifications_opt_in')::boolean, false);
+  exception when others then
+    telegram_opt_in := false;
+  end;
+  begin
+    marketing_opt_in := coalesce((new.raw_user_meta_data ->> 'marketing_updates_opt_in')::boolean, false);
+  exception when others then
+    marketing_opt_in := false;
+  end;
   begin
     accepted_at_value := (new.raw_user_meta_data ->> 'accepted_terms_at')::timestamptz;
   exception when others then
