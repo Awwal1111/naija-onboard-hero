@@ -395,7 +395,7 @@ const Settings = () => {
                   }} />
                 </div>
                 <p className="text-xs text-muted-foreground">Enabling this setting does not link your account. Connect the bot below and verify your email to receive messages.</p>
-                <TelegramConnectCard />
+                <TelegramConnectCard notificationsEnabled={telegramNotifications} />
               </CardContent>
             </Card>
 
