@@ -77,12 +77,24 @@ const MainFeed = () => {
   const [jobApplicationDialog, setJobApplicationDialog] = useState<{ isOpen: boolean; jobPost: any | null }>({ isOpen: false, jobPost: null })
   const [profilePreview, setProfilePreview] = useState<{ isOpen: boolean; userId: string | null }>({ isOpen: false, userId: null })
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [feedLoadTimedOut, setFeedLoadTimedOut] = useState(false)
   const [pullStartY, setPullStartY] = useState(0)
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [showDepositDialog, setShowDepositDialog] = useState(false)
   const [showEscrowSearch, setShowEscrowSearch] = useState(false)
   const [showNCConverter, setShowNCConverter] = useState(false)
   const [showRatingDialog, setShowRatingDialog] = useState(false)
+
+  // Keep a slow or stalled feed request from trapping the entire page on a
+  // skeleton. The feed can continue resolving in the background.
+  useEffect(() => {
+    if (!user || !loading) {
+      setFeedLoadTimedOut(false)
+      return
+    }
+    const timer = window.setTimeout(() => setFeedLoadTimedOut(true), 12_000)
+    return () => window.clearTimeout(timer)
+  }, [user?.id, loading])
 
   // Check if user should see the platform rating prompt
   useEffect(() => {
@@ -257,7 +269,7 @@ const MainFeed = () => {
 
   // Show skeleton only when auth is ready AND feed is actually fetching
   // Never show skeleton indefinitely when auth hasn't resolved
-  if (authLoading || (loading && user)) {
+  if (authLoading || (loading && user && !feedLoadTimedOut)) {
     return <FeedSkeleton />
   }
 
@@ -412,16 +424,27 @@ const MainFeed = () => {
                   <div className="w-20 h-20 mx-auto mb-5 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
                     <FileText className="h-10 w-10 text-primary/60" />
                   </div>
-                  <h3 className="text-lg font-bold text-foreground mb-2">No posts to show</h3>
-                  <p className="text-muted-foreground text-sm mb-6 max-w-[240px] mx-auto">
-                    {selectedCategory !== 'all' 
-                      ? `No ${selectedCategory} posts found. Try a different filter.`
-                      : 'Your feed is empty. Start by sharing something or connecting with others!'}
+                  <h3 className="text-lg font-bold text-foreground mb-2">
+                    {feedLoadTimedOut ? 'Your feed is taking longer than expected' : 'No posts to show'}
+                  </h3>
+                  <p className="text-muted-foreground text-sm mb-6 max-w-[260px] mx-auto">
+                    {feedLoadTimedOut
+                      ? 'Your account is still active. You can retry while the feed finishes loading.'
+                      : selectedCategory !== 'all'
+                        ? `No ${selectedCategory} posts found. Try a different filter.`
+                        : 'Your feed is empty. Start by sharing something or connecting with others!'}
                   </p>
-                  <BrandButton onClick={() => setShowCreatePost(true)} className="px-6">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create a Post
-                  </BrandButton>
+                  {feedLoadTimedOut ? (
+                    <BrandButton onClick={handleRefresh} className="px-6">
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Retry Feed
+                    </BrandButton>
+                  ) : (
+                    <BrandButton onClick={() => setShowCreatePost(true)} className="px-6">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create a Post
+                    </BrandButton>
+                  )}
                 </div>
               ) : (
                 <>
