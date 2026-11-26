@@ -8,45 +8,65 @@ import { Globe, Info, Copy, ExternalLink } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/integrations/supabase/client'
+import { buildMtPelerinUrl, isMtPelerinAllowedHost } from '@/lib/mtpelerin'
 
 interface MtPelerinCardProps {
   /** 'buy' for deposits, 'sell' for withdrawals */
   mode: 'buy' | 'sell'
-  /** Defaults to USDT on Celo */
-  defaultCrypto?: 'USDT' | 'CUSD' | 'CELO'
+  /** Defaults to USDT on Celo. CUSD is retained as a legacy prop value and maps to USDT. */
+  defaultCrypto?: 'USDT' | 'USDC' | 'CUSD' | 'CELO'
 }
 
-/**
- * Mt Pelerin on/off-ramp widget embedded as an iframe.
- * Supports 60+ countries via card, bank transfer, and SEPA.
- */
 export const MtPelerinCard = ({ mode, defaultCrypto = 'USDT' }: MtPelerinCardProps) => {
   const { user } = useAuth()
   const [walletAddress, setWalletAddress] = useState('')
+  const [addressLoading, setAddressLoading] = useState(false)
+  const allowedHost = isMtPelerinAllowedHost()
+  const crypto = defaultCrypto === 'CUSD' ? 'USDT' : defaultCrypto
 
   useEffect(() => {
-    if (!user) return
+    let active = true
+    if (!user) {
+      setWalletAddress('')
+      return
+    }
+    setAddressLoading(true)
     supabase
       .from('profiles')
       .select('celo_wallet_address')
       .eq('user_id', user.id)
       .single()
-      .then(({ data }) => {
-        if (data?.celo_wallet_address) setWalletAddress(data.celo_wallet_address)
+      .then(({ data, error }) => {
+        if (!active) return
+        if (error) console.warn('[MT-PELERIN] Could not load Celo wallet address:', error.message)
+        setWalletAddress(data?.celo_wallet_address || '')
       })
+      .finally(() => {
+        if (active) setAddressLoading(false)
+      })
+    return () => { active = false }
   }, [user])
 
-  // Use Mt Pelerin's public hosted flow while the partner activation key is
-  // being re-approved. This avoids exposing customers to a forbidden iframe.
-  const externalUrl = mode === 'buy'
-    ? 'https://www.mtpelerin.com/buy-crypto'
-    : 'https://www.mtpelerin.com/sell-crypto'
+  // Mt Pelerin requires a signed one-time code/hash along with addr to pre-validate
+  // a user's address. Do not pass addr alone: that would fail their validation.
+  // Users can enter/connect their own address in the official widget instead.
+  const widgetUrl = buildMtPelerinUrl({
+    tab: mode,
+    tabs: [mode],
+    crys: 'USDT,USDC,CELO',
+    ...(mode === 'buy'
+      ? { bdc: crypto, dnet: 'celo_mainnet' }
+      : { ssc: crypto, snet: 'celo_mainnet' }),
+  })
 
-
-  const copyAddress = () => {
+  const copyAddress = async () => {
     if (!walletAddress) return
-    navigator.clipboard.writeText(walletAddress)
-    toast.success('Wallet address copied')
+    try {
+      await navigator.clipboard.writeText(walletAddress)
+      toast.success('Celo wallet address copied')
+    } catch {
+      toast.error('Could not copy automatically. Please select and copy the address.')
+    }
   }
 
   return (
@@ -54,43 +74,83 @@ export const MtPelerinCard = ({ mode, defaultCrypto = 'USDT' }: MtPelerinCardPro
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
           <Globe className="h-5 w-5 text-primary" />
-          Mt Pelerin {mode === 'buy' ? 'Deposit' : 'Withdrawal'}
+          Mt Pelerin {mode === 'buy' ? 'Buy crypto' : 'Cash out'}
         </CardTitle>
         <CardDescription>
           {mode === 'buy'
-            ? 'Buy crypto with card, bank transfer or SEPA — funds arrive in your NaijaLancers wallet, then auto-credit to NC.'
-            : 'Sell USDT/cUSD from your wallet to your bank account. Supports EUR, CHF, GBP, USD and more.'}
+            ? 'Buy USDT, USDC or CELO on Celo and send it to your NaijaLancers wallet.'
+            : 'Sell supported Celo assets and receive fiat through Mt Pelerin’s available payout methods.'}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
-        {mode === 'buy' && walletAddress && (
-          <div className="space-y-1">
-            <Label className="text-xs">Your NaijaLancers wallet (Celo)</Label>
-            <div className="flex gap-2">
-              <Input value={walletAddress} readOnly className="font-mono text-xs" />
-              <BrandButton size="icon" variant="outline" onClick={copyAddress}>
-                <Copy className="h-4 w-4" />
-              </BrandButton>
-            </div>
-          </div>
+        {!allowedHost ? (
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertDescription className="text-xs">
+              This integration key is registered for www.naijalancers.name.ng. Open NaijaLancers on that exact domain to use the partner widget.
+              <div className="mt-2">
+                <a className="underline font-medium" href="https://www.naijalancers.name.ng">Open the registered NaijaLancers domain</a>
+              </div>
+            </AlertDescription>
+          </Alert>
+        ) : (
+          <>
+            {mode === 'buy' && (
+              <div className="space-y-1">
+                <Label className="text-xs">Your NaijaLancers Celo wallet</Label>
+                {addressLoading ? (
+                  <p className="text-xs text-muted-foreground">Loading wallet address…</p>
+                ) : walletAddress ? (
+                  <div className="flex gap-2">
+                    <Input value={walletAddress} readOnly className="font-mono text-xs" />
+                    <BrandButton size="icon" variant="outline" onClick={copyAddress} aria-label="Copy Celo wallet address">
+                      <Copy className="h-4 w-4" />
+                    </BrandButton>
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">Your Celo wallet address is not available yet. Please finish wallet setup before buying.</p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  The widget may ask you to confirm or enter the receiving address. Check that it matches the address above before paying.
+                </p>
+              </div>
+            )}
+
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertDescription className="text-xs">
+                {mode === 'buy'
+                  ? 'Mt Pelerin sends crypto directly to the wallet address you confirm in its widget. NaijaLancers credits deposits only after the matching Celo transfer is detected.'
+                  : 'You will connect or enter the wallet holding your crypto inside Mt Pelerin. Review the destination bank details and quote before confirming.'}
+              </AlertDescription>
+            </Alert>
+
+            <iframe
+              title={`Mt Pelerin ${mode} crypto widget`}
+              src={widgetUrl}
+              loading="lazy"
+              allow="payment; camera; microphone; usb"
+              className="w-full rounded-lg border bg-background"
+              style={{ height: '720px' }}
+            />
+            <BrandButton
+              className="w-full"
+              variant="outline"
+              onClick={() => window.open(buildMtPelerinUrl({
+                tab: mode,
+                tabs: [mode],
+                crys: 'USDT,USDC,CELO',
+                ...(mode === 'buy'
+                  ? { bdc: crypto, dnet: 'celo_mainnet' }
+                  : { ssc: crypto, snet: 'celo_mainnet' }),
+                directLink: true,
+              }), '_blank', 'noopener,noreferrer')}
+            >
+              <ExternalLink className="h-4 w-4 mr-2" />
+              Open Mt Pelerin in a new tab
+            </BrandButton>
+          </>
         )}
-
-        <Alert>
-          <Info className="h-4 w-4" />
-          <AlertDescription className="text-xs">
-            {mode === 'buy'
-              ? 'Send USDT/cUSD on Celo to the address above. It will be auto-converted to NC and credited within minutes.'
-              : 'Withdraw USDT to the bank account you set up in the widget. Mt Pelerin handles KYC and fiat settlement.'}
-          </AlertDescription>
-        </Alert>
-
-        <BrandButton
-          className="w-full"
-          onClick={() => window.open(externalUrl, '_blank', 'noopener,noreferrer')}
-        >
-          <ExternalLink className="h-4 w-4 mr-2" />
-          Continue securely on Mt Pelerin
-        </BrandButton>
       </CardContent>
     </Card>
   )

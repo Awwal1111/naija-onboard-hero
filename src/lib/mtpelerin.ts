@@ -1,18 +1,13 @@
-// Mt Pelerin on/off ramp integration
-// The customer key (_ctkn) is a PUBLIC integration identifier embedded in
-// every iframe URL — it is not a secret and is safe to include in client code.
+// Mt Pelerin on/off-ramp integration.
+// The customer key (_ctkn) is a public integration identifier intended for client-side use.
 export const MT_PELERIN_CTKN = '6efaf1ac-aec0-4ad6-abcb-dcca479fab62'
 
-// Mt Pelerin binds the integration key to ONE registered domain.
-// Loading the widget on any other host returns "access denied".
-// Our key is registered for the custom domain below — open the widget there.
-export const MT_PELERIN_ALLOWED_HOST = 'naijalancers.name.ng'
+// Mt Pelerin confirmed that this key is registered for this exact hostname.
+export const MT_PELERIN_ALLOWED_HOST = 'www.naijalancers.name.ng'
 
 export function isMtPelerinAllowedHost(): boolean {
   if (typeof window === 'undefined') return true
-  const host = window.location.hostname
-  // Match the registered host or any subdomain of it (covers www., TWA, etc.)
-  return host === MT_PELERIN_ALLOWED_HOST || host.endsWith(`.${MT_PELERIN_ALLOWED_HOST}`)
+  return window.location.hostname.toLowerCase() === MT_PELERIN_ALLOWED_HOST
 }
 
 export type MtPelerinTab = 'buy' | 'sell' | 'swap'
@@ -20,33 +15,21 @@ export type MtPelerinTab = 'buy' | 'sell' | 'swap'
 interface MtPelerinUrlOptions {
   tab?: MtPelerinTab
   tabs?: MtPelerinTab[]
-  /** Destination wallet address (on-ramp) or source (off-ramp) */
+  /** Destination wallet address (buy) or source wallet address (sell). */
   addr?: string
-  /** Buy tab destination crypto e.g. 'USDT', 'CUSD', 'CELO' */
   bdc?: string
-  /** Buy tab source fiat e.g. 'USD', 'EUR' */
   bsc?: string
-  /** Buy tab source amount (pre-fills the amount field) */
   bsa?: number
-  /** Sell tab source crypto */
   ssc?: string
-  /** Sell tab destination fiat */
   sdc?: string
-  /** Sell tab source amount */
   ssa?: number
-  /** Allowed cryptos, comma-separated */
   crys?: string
-  /** Allowed fiats, comma-separated */
   curs?: string
-  /** Destination network (buy/swap) e.g. 'celo_mainnet' */
   dnet?: string
-  /** Source network (sell) e.g. 'celo_mainnet' */
   snet?: string
-  /** Pre-select payment method, e.g. 'card' */
   pm?: 'card'
   lang?: string
   mode?: 'dark'
-  /** Use direct-link redirect (set false for in-iframe embedding) */
   directLink?: boolean
 }
 
@@ -72,4 +55,3 @@ export function buildMtPelerinUrl(opts: MtPelerinUrlOptions = {}): string {
   if (opts.mode) params.set('mode', opts.mode)
   return `https://widget.mtpelerin.com/?${params.toString()}`
 }
-
