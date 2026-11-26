@@ -97,7 +97,7 @@ const Settings = () => {
         setTelegramNotifications(data?.telegram_enabled === true)
         if (data) {
           setEmailNotifications(data.email_enabled !== false)
-          if (data.category_preferences) setNotifications({ ...notifications, ...data.category_preferences })
+          if (data.category_preferences) setNotifications(prev => ({ ...prev, ...data.category_preferences }))
         }
       })
   }, [user?.id])
@@ -110,9 +110,7 @@ const Settings = () => {
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' || 'light'
-    const savedNotifications = localStorage.getItem('notifications')
     setTheme(savedTheme)
-    if (savedNotifications) setNotifications(JSON.parse(savedNotifications))
     document.documentElement.classList.toggle('dark', savedTheme === 'dark')
   }, [])
 
