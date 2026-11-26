@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { ArrowLeft, Trash2, Eye, Globe, Users, Lock, Moon, Sun, Bell, Languages, Shield, HelpCircle, FileText, User, Activity, TrendingUp, CheckCircle, ShieldCheck, Phone, Mail, Camera, Fingerprint, IdCard, ShieldAlert, Send } from 'lucide-react'
+import { ArrowLeft, Trash2, Lock, Moon, Sun, Bell, Shield, HelpCircle, FileText, User, Activity, TrendingUp, CheckCircle, ShieldCheck, Phone, Mail, Fingerprint, IdCard, ShieldAlert, Send } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -10,14 +10,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
-import { useLanguage } from '@/hooks/useLanguage'
 import { useBiometric } from '@/hooks/useBiometric'
 import { supabase } from '@/integrations/supabase/client'
 import { useUserSecrets } from '@/hooks/useUserSecrets'
 import { Logo } from '@/components/ui/logo'
 import { Separator } from '@/components/ui/separator'
 import { PushNotificationToggle } from '@/components/PushNotificationToggle'
-import { TestNotifications } from '@/components/TestNotifications'
 import { TwoFactorSetup } from '@/components/TwoFactorSetup'
 import { EmailVerificationStatus } from '@/components/EmailVerificationBanner'
 import { UserBadges } from '@/components/UserBadges'
@@ -70,12 +68,10 @@ interface NotificationPreferences {
 const Settings = () => {
   const navigate = useNavigate()
   const { toast } = useToast()
-  const { user, signOut } = useAuth()
-  const { profile, updateProfile } = useProfile()
+  const { user } = useAuth()
+  const { profile } = useProfile()
   const { hasPin } = useUserSecrets()
-  const { language, setLanguage, t, languageNames } = useLanguage()
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
-  const [profileVisibility, setProfileVisibility] = useState<'public' | 'registered' | 'private'>('public')
   const [notifications, setNotifications] = useState<NotificationPreferences>({
     chats: true,
     jobs: true,
@@ -121,10 +117,7 @@ const Settings = () => {
     toast({ title: "Theme Updated", description: `Switched to ${newTheme} mode` })
   }
 
-  const handleLanguageChange = (newLanguage: 'en' | 'ha' | 'yo' | 'ig' | 'pcm') => {
-    setLanguage(newLanguage)
-    toast({ title: t('message.success'), description: `${t('settings.language')}: ${languageNames[newLanguage]}` })
-  }
+
 
   const handleNotificationChange = async (key: keyof NotificationPreferences, value: boolean) => {
     const updated = { ...notifications, [key]: value }
@@ -137,24 +130,26 @@ const Settings = () => {
     }
   }
 
-  const handleProfileVisibilityChange = async (visibility: 'public' | 'registered' | 'private') => {
-    setProfileVisibility(visibility)
-    await updateProfile({ bio: profile?.bio || '' })
-    toast({ title: "Privacy Updated", description: `Profile visibility set to ${visibility}` })
-  }
-
   const handleDeleteAccount = async () => {
-    const confirmed = confirm("Are you sure you want to permanently delete your account? This action cannot be undone.")
-    if (confirmed) {
-      try {
-        const { error } = await supabase.auth.admin.deleteUser(user?.id || '')
-        if (error) throw error
-        toast({ title: "Account Deleted", description: "Your account has been permanently deleted" })
-        await signOut()
-        navigate('/')
-      } catch (error) {
-        toast({ title: "Error", description: "Failed to delete account. Please contact support.", variant: "destructive" })
-      }
+    if (!user?.email) return
+    const confirmed = confirm("Submit an account deletion request? Your account will remain active until our support team reviews the request and checks for outstanding orders, escrow, or wallet balances.")
+    if (!confirmed) return
+    try {
+      const { error } = await supabase.from('support_tickets').insert({
+        user_id: user.id,
+        email: user.email,
+        name: user.user_metadata?.full_name || user.email,
+        category: 'account',
+        subject: 'Account deletion request',
+        description: 'I am requesting deletion of my NaijaLancers account and associated personal data, subject to applicable legal, financial, escrow, and record-retention obligations.',
+        priority: 'high',
+        status: 'open'
+      })
+      if (error) throw error
+      toast({ title: 'Request submitted', description: 'Support will review your account, wallet, and outstanding transactions before processing deletion.' })
+    } catch (error) {
+      console.error('Account deletion request failed:', error)
+      toast({ title: 'Could not submit request', description: 'Please contact support to request account deletion.', variant: 'destructive' })
     }
   }
 
@@ -282,7 +277,7 @@ const Settings = () => {
               <CardContent className="pt-6">
                 <Button variant="destructive" onClick={handleDeleteAccount} className="w-full">
                   <Trash2 className="h-4 w-4 mr-2" />
-                  Delete Account
+                  Request Account Deletion
                 </Button>
               </CardContent>
             </Card>
@@ -334,12 +329,14 @@ const Settings = () => {
                   <Switch 
                     checked={emailNotifications}
                     onCheckedChange={async (checked) => {
+                      const previous = emailNotifications
                       setEmailNotifications(checked)
                       if (user) {
                         const { error } = await supabase.from('notification_preferences').upsert({ user_id: user.id, email_enabled: checked, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
-                        if (error) toast({ title: 'Could not update email preferences', description: error.message, variant: 'destructive' })
+                        if (error) { setEmailNotifications(previous); toast({ title: 'Could not update email preferences', description: error.message, variant: 'destructive' }) }
                         else {
-                          await supabase.from('profiles').update({ email_notifications: checked }).eq('user_id', user.id)
+                          const { error: profileError } = await supabase.from('profiles').update({ email_notifications: checked }).eq('user_id', user.id)
+                          if (profileError) console.error('Could not sync legacy email preference:', profileError)
                           toast({ title: checked ? 'Email notifications enabled' : 'Email notifications disabled' })
                         }
                       }
@@ -355,10 +352,16 @@ const Settings = () => {
                   <Select 
                     value={emailDigestFrequency} 
                     onValueChange={async (v: 'daily' | 'weekly' | 'monthly' | 'never') => {
-                      setEmailDigestFrequency(v)
+                      const previous = emailDigestFrequency
                       if (user) {
-                        await supabase.from('profiles').update({ email_digest_frequency: v }).eq('user_id', user.id)
-                        toast({ title: `Digest frequency set to ${v}` })
+                        const { error } = await supabase.from('profiles').update({ email_digest_frequency: v }).eq('user_id', user.id)
+                        if (error) {
+                          toast({ title: 'Could not save digest frequency', description: error.message, variant: 'destructive' })
+                          setEmailDigestFrequency(previous)
+                        } else {
+                          setEmailDigestFrequency(v)
+                          toast({ title: `Digest frequency set to ${v}` })
+                        }
                       }
                     }}
                   >
@@ -405,8 +408,6 @@ const Settings = () => {
             {/* SMS Settings */}
             <SMSNotificationSettings />
 
-            {/* Test Notifications */}
-            <TestNotifications />
           </TabsContent>
 
           {/* ===== VERIFICATION TAB ===== */}
@@ -536,55 +537,16 @@ const Settings = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-medium">Profile Visibility</h4>
-                    <p className="text-sm text-muted-foreground">Control who can see your profile</p>
-                  </div>
-                  <Select value={profileVisibility} onValueChange={handleProfileVisibilityChange}>
-                    <SelectTrigger className="w-48">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="public">
-                        <div className="flex items-center gap-2">
-                          <Globe className="h-4 w-4" />
-                          Public
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="registered">
-                        <div className="flex items-center gap-2">
-                          <Users className="h-4 w-4" />
-                          Registered Only
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="private">
-                        <div className="flex items-center gap-2">
-                          <Lock className="h-4 w-4" />
-                          Private
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="rounded-lg border p-3">
+                  <h4 className="font-medium">Profile visibility</h4>
+                  <p className="text-sm text-muted-foreground">Advanced public, registered-only, and private visibility controls are temporarily unavailable while server-side access rules are being completed. Your profile's visibility is not changed by this screen.</p>
                 </div>
 
                 <Separator />
                 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-medium">Public on Google</h4>
-                    <p className="text-sm text-muted-foreground">Allow profile in search results</p>
-                  </div>
-                  <Switch 
-                    checked={(profile as any)?.public_on_google ?? true}
-                    onCheckedChange={async (checked) => {
-                      await updateProfile({ public_on_google: checked } as any)
-                      toast({
-                        title: "SEO Settings Updated",
-                        description: checked ? "Your profile will appear in search results" : "Your profile is hidden from search engines"
-                      })
-                    }}
-                  />
+                <div className="rounded-lg border p-3">
+                  <h4 className="font-medium">Search engine visibility</h4>
+                  <p className="text-sm text-muted-foreground">This control is temporarily unavailable because the database preference and public profile indexing rules are not yet implemented consistently. We will not show a switch that cannot be reliably enforced.</p>
                 </div>
               </CardContent>
             </Card>
@@ -602,7 +564,7 @@ const Settings = () => {
                   <div className="flex-1">
                     <p className="font-medium">Fingerprint / Face ID</p>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Use biometrics to authorize transactions
+                      Use fingerprint or Face ID instead of manually entering your transaction PIN on supported Android devices.
                     </p>
                   </div>
                   <BiometricToggle />
