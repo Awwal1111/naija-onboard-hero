@@ -9,7 +9,6 @@ import { CurrencyProvider } from "./hooks/useCurrency"
 import { TimezoneProvider } from "./hooks/useTimezone"
 import { UserModeProvider } from "./hooks/useUserMode"
 import { detectMiniPaySync } from './lib/minipay'
-import { clearReloadTracking } from './utils/chunkErrorHandler'
 import { checkAndHealCache } from './utils/cacheHealer'
 
 // SYNC detection at module load
@@ -67,7 +66,8 @@ if (!isMiniPayEnv) {
   });
 }
 
-createRoot(document.getElementById("root")!).render(
+const root = createRoot(document.getElementById("root")!)
+root.render(
   <HelmetProvider>
     <QueryProvider>
       <ThemeProvider defaultTheme="system" storageKey="naijalancers-theme" attribute="class">
