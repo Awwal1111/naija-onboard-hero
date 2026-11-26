@@ -3,7 +3,7 @@
 import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching'
 import { clientsClaim } from 'workbox-core'
 import { registerRoute } from 'workbox-routing'
-import { CacheFirst, StaleWhileRevalidate, NetworkFirst } from 'workbox-strategies'
+import { CacheFirst } from 'workbox-strategies'
 import { ExpirationPlugin } from 'workbox-expiration'
 import { CacheableResponsePlugin } from 'workbox-cacheable-response'
 
@@ -13,15 +13,28 @@ declare const self: ServiceWorkerGlobalScope
 // at scope '/' would replace this worker and break offline/PWA behaviour.
 importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js')
 
-// Workbox precaching (injected by VitePWA injectManifest)
+// Precache only build-versioned assets injected by VitePWA.
+// Workbox removes outdated precache entries when a new deployment activates.
 cleanupOutdatedCaches()
 precacheAndRoute(self.__WB_MANIFEST)
 
-// Activate immediately
+// Activate the updated worker promptly without creating a second worker.
 self.skipWaiting()
 clientsClaim()
 
-// Catbox + Cloudinary images are immutable (hashed URLs) → cache aggressively
+// Remove private/stale runtime caches created by older releases. These caches
+// must not survive the move to network-only Supabase requests.
+self.addEventListener('activate', (event) => {
+  const legacyCaches = ['supabase-api', 'supabase-auth', 'supabase-images', 'static-assets']
+  event.waitUntil(
+    caches.keys().then((names) =>
+      Promise.all(names.filter((name) => legacyCaches.includes(name)).map((name) => caches.delete(name)))
+    )
+  )
+})
+
+// Public media only. Do not cache Supabase storage because it can contain
+// private profile, verification, or other user-specific images.
 registerRoute(
   ({ url }) =>
     url.hostname === 'files.catbox.moe' ||
@@ -35,21 +48,10 @@ registerRoute(
   })
 )
 
-// Cache Supabase storage images with CacheFirst (KYC/private only after migration)
+// Cache ordinary non-Supabase images. Supabase responses are deliberately
+// network-only so private/user-specific images are never persisted here.
 registerRoute(
-  ({ url }) => url.hostname.includes('supabase.co') && url.pathname.includes('/storage/'),
-  new CacheFirst({
-    cacheName: 'supabase-images',
-    plugins: [
-      new CacheableResponsePlugin({ statuses: [200] }),
-      new ExpirationPlugin({ maxEntries: 200, maxAgeSeconds: 30 * 24 * 60 * 60 }),
-    ],
-  })
-)
-
-// Cache ALL other images with CacheFirst
-registerRoute(
-  ({ request }) => request.destination === 'image',
+  ({ request, url }) => request.destination === 'image' && !url.hostname.includes('supabase.co'),
   new CacheFirst({
     cacheName: 'images',
     plugins: [
@@ -59,7 +61,7 @@ registerRoute(
   })
 )
 
-// Cache fonts with CacheFirst — fonts never change
+// Fonts are public static assets and can be cached for a long time.
 registerRoute(
   ({ request }) => request.destination === 'font',
   new CacheFirst({
@@ -71,49 +73,9 @@ registerRoute(
   })
 )
 
-// Cache CSS and JS with CacheFirst — hashed filenames mean they're immutable
-registerRoute(
-  ({ request, url }) =>
-    (request.destination === 'style' || request.destination === 'script') &&
-    !url.hostname.includes('supabase.co'),
-  new CacheFirst({
-    cacheName: 'static-assets',
-    plugins: [
-      new CacheableResponsePlugin({ statuses: [200] }),
-      new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 30 * 24 * 60 * 60 }),
-    ],
-  })
-)
-
-// Cache Supabase REST API with StaleWhileRevalidate (not CacheFirst!)
-// This serves cached data instantly but revalidates in background for freshness
-registerRoute(
-  ({ url, request }) =>
-    url.hostname.includes('supabase.co') &&
-    url.pathname.includes('/rest/') &&
-    request.method === 'GET',
-  new StaleWhileRevalidate({
-    cacheName: 'supabase-api',
-    plugins: [
-      new CacheableResponsePlugin({ statuses: [200] }),
-      new ExpirationPlugin({ maxEntries: 200, maxAgeSeconds: 10 * 60 }), // 10 min TTL — matches QueryClient staleTime
-    ],
-  })
-)
-
-// Supabase auth — always network first (needs freshness)
-registerRoute(
-  ({ url }) =>
-    url.hostname.includes('supabase.co') &&
-    url.pathname.includes('/auth/'),
-  new NetworkFirst({
-    cacheName: 'supabase-auth',
-    plugins: [
-      new CacheableResponsePlugin({ statuses: [200] }),
-      new ExpirationPlugin({ maxEntries: 10, maxAgeSeconds: 60 }),
-    ],
-  })
-)
+// IMPORTANT: Do not add runtime caching for Supabase REST or Auth requests.
+// User-specific API responses and auth state must always be fetched from the
+// network. VitePWA already precaches fingerprinted JS/CSS build assets.
 
 // Push notification handler
 self.addEventListener('push', (event) => {

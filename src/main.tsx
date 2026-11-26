@@ -33,7 +33,7 @@ if (isPreviewHost || isInIframe) {
   // Register SW manually in production only
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js', { scope: '/' }).then((reg) => {
+      navigator.serviceWorker.register('/sw.js', { scope: '/', updateViaCache: 'none' }).then((reg) => {
         console.log('[SW] Registered:', reg.scope);
       }).catch((err) => {
         console.warn('[SW] Registration failed:', err);
