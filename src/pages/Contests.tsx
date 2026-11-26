@@ -372,7 +372,7 @@ export default function Contests() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0 ml-3">
-                        <p className="font-bold">NC {contest.prize_amount.toLocaleString()}</p>
+                        <p className="font-bold">{formatNCDisplay(contest.prize_amount)}</p>
                         {contest.status === 'open' && !contest.winner_id && (
                           <Button 
                             variant="ghost" 
