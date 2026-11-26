@@ -103,12 +103,24 @@ serve(async (req) => {
 
     const { data: preferences } = await supabase
       .from("notification_preferences")
-      .select("in_app_enabled, email_enabled, telegram_enabled, push_enabled, sms_enabled")
+      .select("in_app_enabled, email_enabled, telegram_enabled, push_enabled, sms_enabled, category_preferences")
       .eq("user_id", userId)
       .maybeSingle();
     const prefs = preferences || {
-      in_app_enabled: true, email_enabled: true, telegram_enabled: false, push_enabled: true, sms_enabled: false
+      in_app_enabled: true, email_enabled: true, telegram_enabled: false, push_enabled: true, sms_enabled: false,
+      category_preferences: { chats: true, jobs: true, referrals: true, tasks: true, expertStatus: true }
     };
+    const normalizedType = String(type).toLowerCase();
+    const category = normalizedType.includes('chat') || normalizedType.includes('message') ? 'chats'
+      : normalizedType.includes('job') ? 'jobs'
+      : normalizedType.includes('referral') ? 'referrals'
+      : normalizedType.includes('task') ? 'tasks'
+      : normalizedType.includes('expert') ? 'expertStatus' : null;
+    if (category && prefs.category_preferences?.[category] === false) {
+      return new Response(JSON.stringify({ success: true, channels: [], skipped: 'category_disabled' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
 
     // Get user email from auth
     const { data: authData } = await supabase.auth.admin.getUserById(userId);
