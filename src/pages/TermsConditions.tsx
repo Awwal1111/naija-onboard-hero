@@ -295,7 +295,7 @@ const TermsConditions = () => {
 
                 {/* Section 11 */}
                 <section>
-                  <h2 className="text-xl font-semibold mb-3">10. Intellectual Property</h2>
+                  <h2 className="text-xl font-semibold mb-3">11. Intellectual Property</h2>
                   <ul className="list-disc list-inside space-y-2 text-muted-foreground">
                     <li>NaijaLancers owns all platform branding, design, and code.</li>
                     <li>Users own the content they create but grant NaijaLancers license to display it.</li>
@@ -307,7 +307,7 @@ const TermsConditions = () => {
 
                 {/* Section 11 */}
                 <section>
-                  <h2 className="text-xl font-semibold mb-3">11. Account Suspension & Termination</h2>
+                  <h2 className="text-xl font-semibold mb-3">12. Account Suspension & Termination</h2>
                   <ul className="list-disc list-inside space-y-2 text-muted-foreground">
                     <li>Users may close their accounts anytime.</li>
                     <li>NaijaLancers may suspend accounts violating these Terms.</li>
@@ -320,7 +320,7 @@ const TermsConditions = () => {
 
                 {/* Section 12 */}
                 <section>
-                  <h2 className="text-xl font-semibold mb-3">12. Limitation of Liability</h2>
+                  <h2 className="text-xl font-semibold mb-3">13. Limitation of Liability</h2>
                   <ul className="list-disc list-inside space-y-2 text-muted-foreground">
                     <li>NaijaLancers is not responsible for disputes between freelancers and clients.</li>
                     <li>We are not liable for delays caused by third-party payment processors.</li>
@@ -333,7 +333,7 @@ const TermsConditions = () => {
 
                 {/* Section 13 */}
                 <section>
-                  <h2 className="text-xl font-semibold mb-3">13. Governing Law</h2>
+                  <h2 className="text-xl font-semibold mb-3">14. Governing Law</h2>
                   <ul className="list-disc list-inside space-y-2 text-muted-foreground">
                     <li>These Terms are governed by the laws of the Federal Republic of Nigeria.</li>
                     <li>Disputes will be resolved through mediation, arbitration, or Nigerian courts.</li>
@@ -344,7 +344,7 @@ const TermsConditions = () => {
 
                 {/* Section 14 */}
                 <section>
-                  <h2 className="text-xl font-semibold mb-3">14. Contact Information</h2>
+                  <h2 className="text-xl font-semibold mb-3">15. Contact Information</h2>
                   <div className="space-y-1 text-muted-foreground">
                     <p><strong>Company:</strong> NaijaLancers Limited</p>
                     <p><strong>CAC Registration:</strong> BN8870047</p>
@@ -357,7 +357,7 @@ const TermsConditions = () => {
 
                 {/* Section 15 */}
                 <section>
-                  <h2 className="text-xl font-semibold mb-3">15. Updates to Terms</h2>
+                  <h2 className="text-xl font-semibold mb-3">16. Updates to Terms</h2>
                   <p className="text-muted-foreground">
                     We may update these Terms occasionally. Continued use of the platform means you accept the updated version.
                   </p>
