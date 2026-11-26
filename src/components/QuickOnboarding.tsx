@@ -153,7 +153,7 @@ export const QuickOnboarding: React.FC<QuickOnboardingProps> = ({
     if (goal === 'exploring') {
       setLoading(true)
       try {
-        const result = await updateProfile({ full_name: formData.full_name.trim(), profession: formData.profession.trim() || null, country_code: formData.country, state_name: isNigeria ? formData.state : null, lga_name: isNigeria ? formData.lga : null, area: !isNigeria ? formData.city : null, account_type: formData.account_type, user_mode: formData.account_type, onboarding_completed: true } as any)
+        const result = await updateProfile({ full_name: formData.full_name.trim(), profession: formData.profession.trim() || null, country_code: formData.country, state_name: isNigeria ? formData.state : null, lga_name: isNigeria ? formData.lga : null, area: !isNigeria ? formData.city : null, user_mode: formData.account_type, onboarding_completed: true } as any)
         if (!result.success) throw new Error(result.error || 'Could not save account details')
         await setMode(formData.account_type, false)
         toast({ title: 'Welcome! 👋', description: 'Your basic details are saved. You can explore and update your profile anytime.' })
@@ -181,7 +181,6 @@ export const QuickOnboarding: React.FC<QuickOnboardingProps> = ({
           state_name: isNigeria ? formData.state : null,
           lga_name: isNigeria ? formData.lga : null,
           area: !isNigeria ? formData.city : null,
-          account_type: userMode,
           user_mode: userMode,
           onboarding_completed: true
         } as any)
@@ -220,7 +219,6 @@ export const QuickOnboarding: React.FC<QuickOnboardingProps> = ({
         state_name: isNigeria ? formData.state : null,
         lga_name: isNigeria ? formData.lga : null,
         area: !isNigeria ? formData.city : null,
-        account_type: userMode,
         user_mode: userMode,
         onboarding_completed: true
       } as any)
