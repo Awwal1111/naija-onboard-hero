@@ -101,6 +101,9 @@ verify_jwt = true
 [functions.notify-message-received]
 verify_jwt = true
 
+[functions.notify-chat-intro]
+verify_jwt = true
+
 
 [functions.send-phone-verification]
 verify_jwt = true
