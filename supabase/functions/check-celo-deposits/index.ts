@@ -34,18 +34,59 @@ serve(async (req) => {
   }
 
   try {
-    const { user_id, wallet_address } = await req.json();
-    
-    if (!user_id || !wallet_address) {
-      console.log("[CHECK-DEPOSIT] ❌ Missing user_id or wallet_address");
-      return new Response(JSON.stringify({ 
-        error: "Missing user_id or wallet_address" 
-      }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 });
+    // Derive identity from the verified Supabase access token; never trust a
+    // user ID supplied by the caller. Bind the requested address to that user's profile.
+    const authHeader = req.headers.get("Authorization") || "";
+    const accessToken = authHeader.replace(/^Bearer\s+/i, "").trim();
+    if (!accessToken) {
+      return new Response(JSON.stringify({ error: "Authentication required" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401
+      });
+    }
+
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    if (!anonKey) {
+      console.error("[CHECK-DEPOSIT] SUPABASE_ANON_KEY is not configured");
+      return new Response(JSON.stringify({ error: "Deposit verification is temporarily unavailable" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500
+      });
+    }
+
+    const authClient = createClient(SUPABASE_URL, anonKey, {
+      auth: { persistSession: false, autoRefreshToken: false }
+    });
+    const { data: authData, error: authError } = await authClient.auth.getUser(accessToken);
+    if (authError || !authData?.user?.id) {
+      return new Response(JSON.stringify({ error: "Invalid or expired session" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401
+      });
+    }
+    const user_id = authData.user.id;
+    const { wallet_address } = await req.json();
+
+    if (!wallet_address || !ethers.isAddress(wallet_address)) {
+      return new Response(JSON.stringify({ error: "A valid wallet_address is required" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400
+      });
+    }
+
+    const { data: ownedProfile, error: profileError } = await supabase
+      .from("profiles")
+      .select("celo_wallet_address")
+      .eq("user_id", user_id)
+      .single();
+
+    if (profileError || !ownedProfile?.celo_wallet_address ||
+        ownedProfile.celo_wallet_address.toLowerCase() !== wallet_address.toLowerCase()) {
+      console.warn(`[CHECK-DEPOSIT] Rejected wallet ownership mismatch for user: ${user_id}`);
+      return new Response(JSON.stringify({ error: "Wallet does not belong to the authenticated user" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 403
+      });
     }
 
     console.log(`[CHECK-DEPOSIT] ========================================`);
-    console.log(`[CHECK-DEPOSIT] 🔍 Checking deposits for user: ${user_id}`);
-    console.log(`[CHECK-DEPOSIT] 📍 Wallet: ${wallet_address}`);
+    console.log(`[CHECK-DEPOSIT] 🔍 Checking deposits for authenticated user: ${user_id}`);
+    console.log(`[CHECK-DEPOSIT] 📍 Verified wallet: ${wallet_address}`);
 
     // ===== CRITICAL: Check processing lock to prevent double-credit =====
     const lockKey = `deposit_processing_${user_id}`;

@@ -7,7 +7,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Wallet, Loader2, ExternalLink, CheckCircle2, AlertCircle, Copy } from 'lucide-react'
 import { useExternalWallet, type WalletKind } from '@/hooks/useExternalWallet'
-import { CUSD_ADDRESS, USDT_ADDRESS, USDC_ADDRESS } from '@/lib/minipay'
+import { CUSD_ADDRESS, USDT_ADDRESS } from '@/lib/minipay'
 import { supabase } from '@/integrations/supabase/client'
 import { toast } from 'sonner'
 import { parseUnits } from 'viem'
@@ -21,7 +21,6 @@ interface WalletDepositCardProps {
 const TOKENS = {
   cUSD: { address: CUSD_ADDRESS, decimals: 18, label: 'cUSD' },
   USDT: { address: USDT_ADDRESS, decimals: 6, label: 'USDT' },
-  USDC: { address: USDC_ADDRESS, decimals: 6, label: 'USDC' },
 } as const
 type TokenKey = keyof typeof TOKENS
 
@@ -168,13 +167,18 @@ export const WalletDepositCard = ({ walletKind, recipientAddress, onSuccess }: W
 
       setStage('crediting')
       try {
-        await supabase.functions.invoke('check-celo-deposits')
+        const { error: checkError } = await supabase.functions.invoke('check-celo-deposits', {
+          body: { wallet_address: recipientAddress },
+        })
+        if (checkError) throw checkError
       } catch (e) {
-        console.warn('check-celo-deposits invoke failed (cron will catch it)', e)
+        // The chain transfer is confirmed, but server-side verification did
+        // not complete. Do not claim that NC has been credited.
+        console.warn('check-celo-deposits invoke failed; NC credit remains pending verification:', e)
       }
 
       setStage('done')
-      toast.success(`${amount} ${t.label} confirmed on Celo. NC crediting will follow deposit detection.`)
+      toast.success(`${amount} ${t.label} confirmed on Celo. NC will appear after deposit verification.`)
       onSuccess?.()
     } catch (e: any) {
       console.error('[WALLET-DEPOSIT]', e)
@@ -193,7 +197,7 @@ export const WalletDepositCard = ({ walletKind, recipientAddress, onSuccess }: W
           {walletName} Deposit
         </CardTitle>
         <CardDescription>
-          Send cUSD / USDT / USDC on Celo to your NaijaLancers wallet. Only approve the transaction after checking the token, network and recipient in your wallet.
+          Send cUSD or USDT on Celo to your NaijaLancers wallet. Only approve the transaction after checking the token, network and recipient in your wallet.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -221,7 +225,7 @@ export const WalletDepositCard = ({ walletKind, recipientAddress, onSuccess }: W
             </BrandButton>
             <p className="text-xs text-muted-foreground text-center">
               {walletKind === 'valora'
-                ? 'Valora quick-pay supports cUSD. For USDT or USDC, copy the address and send manually on Celo.'
+                ? 'Valora quick-pay supports cUSD. For USDT, copy the address and send manually on Celo.'
                 : 'On mobile, connect from MetaMask’s in-app browser or use the pre-filled transfer link.'}
             </p>
           </div>
@@ -242,7 +246,6 @@ export const WalletDepositCard = ({ walletKind, recipientAddress, onSuccess }: W
               <SelectContent>
                 <SelectItem value="cUSD">cUSD</SelectItem>
                 <SelectItem value="USDT">USDT</SelectItem>
-                <SelectItem value="USDC">USDC</SelectItem>
               </SelectContent>
             </Select>
           </div>

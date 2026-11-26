@@ -190,10 +190,14 @@ export function useExternalWallet() {
         const receipt = json?.result
         if (receipt) {
           if (receipt.status === '0x1') return true
-          if (receipt.status === '0x0') throw new Error('Transaction failed on-chain')
+          if (receipt.status === '0x0') throw new Error('Transaction failed on Celo. No deposit was credited.')
         }
       } catch (err) {
-        // ignore and retry
+        // Retry transient RPC errors; reverted receipts are handled outside
+        // this catch and must fail immediately.
+        if (err instanceof Error && err.message === 'Transaction failed on Celo. No deposit was credited.') {
+          throw err
+        }
       }
       await new Promise((r) => setTimeout(r, 4000))
     }
