@@ -5,7 +5,7 @@ export type UserMode = 'freelancer' | 'client' | 'both'
 
 interface UserModeContextType {
   mode: UserMode
-  setMode: (mode: UserMode) => Promise<void>
+  setMode: (mode: UserMode, persist?: boolean) => Promise<void>
   isFreelancer: boolean
   isClient: boolean
   isLoading: boolean
@@ -13,15 +13,18 @@ interface UserModeContextType {
 
 const UserModeContext = createContext<UserModeContextType | undefined>(undefined)
 
+const isUserMode = (value: unknown): value is UserMode =>
+  value === 'freelancer' || value === 'client' || value === 'both'
+
 export const UserModeProvider = ({ children }: { children: ReactNode }) => {
   const [mode, setModeState] = useState<UserMode>(() => {
-    const saved = localStorage.getItem('user_mode') as UserMode
-    return saved || 'both'
+    const saved = localStorage.getItem('user_mode')
+    return isUserMode(saved) ? saved : 'both'
   })
   const [userId, setUserId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  // Get user ID from auth state changes only (no getSession call to avoid race conditions)
+  // Get user ID from auth state changes only (no getSession call to avoid race conditions).
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
       setUserId(session?.user?.id || null)
@@ -30,38 +33,55 @@ export const UserModeProvider = ({ children }: { children: ReactNode }) => {
     return () => subscription.unsubscribe()
   }, [])
 
-  // Sync with profile when user is authenticated
+  // Sync the saved account mode when the authenticated profile changes.
   useEffect(() => {
-    if (userId) {
+    let cancelled = false
+
+    const syncMode = async () => {
+      if (!userId) {
+        setIsLoading(false)
+        return
+      }
+
       setIsLoading(true)
-      supabase
-        .from('profiles')
-        .select('user_mode')
-        .eq('user_id', userId)
-        .maybeSingle()
-        .then(({ data }) => {
-          if (data?.user_mode) {
-            setModeState(data.user_mode as UserMode)
-            localStorage.setItem('user_mode', data.user_mode)
-          }
-          setIsLoading(false)
-        })
-    } else {
-      setIsLoading(false)
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('user_mode')
+          .eq('user_id', userId)
+          .maybeSingle()
+
+        if (error) throw error
+        if (!cancelled && isUserMode(data?.user_mode)) {
+          setModeState(data.user_mode)
+          localStorage.setItem('user_mode', data.user_mode)
+        }
+      } catch (error) {
+        console.error('Failed to load account mode:', error)
+      } finally {
+        if (!cancelled) setIsLoading(false)
+      }
     }
+
+    void syncMode()
+    return () => { cancelled = true }
   }, [userId])
 
-  const setMode = async (newMode: UserMode) => {
-    setModeState(newMode)
-    localStorage.setItem('user_mode', newMode)
-    
-    // Save to profile if authenticated
-    if (userId) {
-      await supabase
+  const setMode = async (newMode: UserMode, persist = true) => {
+    if (!isUserMode(newMode)) throw new Error('Invalid account mode')
+
+    // Persist first so the UI never claims a mode was saved when the database rejected it.
+    if (persist && userId) {
+      const { error } = await supabase
         .from('profiles')
         .update({ user_mode: newMode } as any)
         .eq('user_id', userId)
+
+      if (error) throw error
     }
+
+    setModeState(newMode)
+    localStorage.setItem('user_mode', newMode)
   }
 
   const isFreelancer = mode === 'freelancer' || mode === 'both'
