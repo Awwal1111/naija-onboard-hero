@@ -9,7 +9,7 @@ import { useCurrency, CURRENCIES, CurrencyCode } from '@/hooks/useCurrency'
 import { Badge } from '@/components/ui/badge'
 
 export const CurrencyConverterDialog = () => {
-  const { currencies, currency: userCurrency } = useCurrency()
+  const { currencies, currency: userCurrency, ratesAvailable } = useCurrency()
   const [ncAmount, setNcAmount] = useState<string>('')
   const [fromCurrency, setFromCurrency] = useState<CurrencyCode>('NC')
   const [toCurrency, setToCurrency] = useState<CurrencyCode>(userCurrency === 'NC' ? 'USD' : userCurrency)
@@ -22,6 +22,7 @@ export const CurrencyConverterDialog = () => {
 
   const convertAmount = (): string => {
     if (!ncAmount) return '0.00'
+    if (!ratesAvailable) return 'Rate unavailable'
     const amount = parseFloat(ncAmount)
     if (isNaN(amount)) return '0.00'
 
@@ -122,19 +123,16 @@ export const CurrencyConverterDialog = () => {
                 </SelectContent>
               </Select>
               <div className="flex-1 p-3 bg-muted rounded-md text-lg font-semibold">
-                {currencies[toCurrency]?.symbol}{convertAmount()}
+                {ratesAvailable ? `${currencies[toCurrency]?.symbol}${convertAmount()}` : convertAmount()}
               </div>
             </div>
           </div>
 
           {/* Exchange Rate Info */}
           <div className="bg-primary/10 rounded-lg p-3 text-center space-y-1">
-            <p className="text-sm text-muted-foreground">Exchange Rate</p>
+            <p className="text-sm text-muted-foreground">{ratesAvailable ? 'Indicative exchange rate' : 'Exchange rate unavailable'}</p>
             <p className="font-bold text-primary">
-              1 {fromCurrency} = {currencies[fromCurrency]?.symbol}1 → {
-                fromCurrency === toCurrency ? '1' :
-                (currencies[fromCurrency].rateToNC / currencies[toCurrency].rateToNC).toFixed(4)
-              } {toCurrency}
+              {ratesAvailable ? `1 ${fromCurrency} ≈ ${(currencies[fromCurrency].rateToNC / currencies[toCurrency].rateToNC).toFixed(4)} ${toCurrency}` : 'Use NC / USDT reference when FX is unavailable'}
             </p>
           </div>
 
