@@ -1,26 +1,25 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Send, Copy, CheckCircle2, ExternalLink } from 'lucide-react'
+import { Send, CheckCircle2, ExternalLink } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
 import { toast } from 'sonner'
+import { supabase } from '@/integrations/supabase/client'
 
 const TelegramConnectCard = () => {
   const { user } = useAuth()
   const { profile, refetch } = useProfile()
-  const [copied, setCopied] = useState(false)
-  const [checking, setChecking] = useState(false)
+   const [checking, setChecking] = useState(false)
   
   const isConnected = !!profile?.telegram_user_id
-  const referralCode = profile?.referral_code || user?.email || ''
-  const telegramLink = `https://t.me/NaijaLancersBot?start=${referralCode}`
+  const telegramLink = 'https://t.me/NaijaLancersBot'
 
   const handleConnectTelegram = () => {
     // Open Telegram with deep link
     window.open(telegramLink, '_blank')
-    toast.success('Opening Telegram bot... After you send /start, click "Check Connection" below.')
+    toast.success('In Telegram, send /login followed by your account email. Verify using the code sent to your email.')
   }
 
   const handleCheckConnection = async () => {
@@ -29,22 +28,17 @@ const TelegramConnectCard = () => {
     // Wait a moment then refetch profile
     await new Promise(resolve => setTimeout(resolve, 1000))
     await refetch()
-    
+    const { data: refreshedProfile } = await supabase.from('profiles').select('telegram_user_id').eq('user_id', user?.id || '').maybeSingle()
     setChecking(false)
     
-    if ((profile as any)?.telegram_user_id) {
+    if (refreshedProfile?.telegram_user_id) {
       toast.success('✅ Successfully connected to Telegram!')
     } else {
-      toast.error('Not connected yet. Make sure you sent /start to @NaijaLancersBot')
+      toast.error('Not connected yet. Complete /login and /verify in the Telegram bot first.')
     }
   }
 
-  const handleCopyCode = () => {
-    navigator.clipboard.writeText(referralCode)
-    setCopied(true)
-    toast.success('Referral code copied!')
-    setTimeout(() => setCopied(false), 2000)
-  }
+
 
   return (
     <Card>
@@ -93,7 +87,7 @@ const TelegramConnectCard = () => {
         {!isConnected && (
           <div className="space-y-2">
             <p className="text-xs text-center text-muted-foreground">
-              Click the button, start the bot in Telegram, then check status below
+              Click the button, send /login your@email.com in the bot, then enter the code emailed to you. Check status below.
             </p>
             <Button
               onClick={handleCheckConnection}
