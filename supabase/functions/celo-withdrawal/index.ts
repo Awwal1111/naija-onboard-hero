@@ -325,7 +325,7 @@ serve(async (req) => {
         
         // Check master wallet balance with retries
         let masterBalance = BigInt(0);
-        let balanceCheckAttempts = 3;
+        const balanceCheckAttempts = 3;
         
         for (let i = 0; i < balanceCheckAttempts; i++) {
           try {
