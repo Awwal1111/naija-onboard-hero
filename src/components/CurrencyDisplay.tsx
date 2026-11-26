@@ -11,116 +11,59 @@ interface CurrencyDisplayProps {
   compact?: boolean
 }
 
-export const CurrencyDisplay: React.FC<CurrencyDisplayProps> = ({ 
-  amount, 
+export const CurrencyDisplay: React.FC<CurrencyDisplayProps> = ({
+  amount,
   showEquivalent = true,
   className = '',
   size = 'md',
   compact = false
 }) => {
-  const { currency, formatPreferred, currencies, convertFromNC } = useCurrency()
-  
+  const { currency, formatPreferred, currencies } = useCurrency()
   const sizeClasses = {
     sm: 'text-sm',
     md: 'text-base',
     lg: 'text-2xl font-bold'
   }
+  const preferred = formatPreferred(amount, !compact && showEquivalent)
+  const nativeAmount = `NC ${amount.toLocaleString()}`
 
-  const ncDisplay = `NC ${amount.toLocaleString()}`
-
-  // Compact mode - just show the amount in preferred currency
   if (compact) {
-    if (currency === 'NC' || currency === 'NGN') {
-      return (
-        <span className={`${sizeClasses[size]} ${className}`}>
-          {currency === 'NGN' ? `₦${amount.toLocaleString()}` : ncDisplay}
-        </span>
-      )
-    }
-    const converted = convertFromNC(amount, currency)
-    return (
-      <span className={`${sizeClasses[size]} ${className}`}>
-        {currencies[currency].symbol}{converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-      </span>
-    )
+    return <span className={`${sizeClasses[size]} ${className}`}>{formatPreferred(amount, false)}</span>
   }
 
-  // For NC or NGN, show simple NC with naira tooltip
-  if (currency === 'NC' || currency === 'NGN') {
-    return (
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span className={`${sizeClasses[size]} ${className}`}>
-            {ncDisplay}
-          </span>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>₦{amount.toLocaleString()} (1 NC = ₦1)</p>
-        </TooltipContent>
-      </Tooltip>
-    )
-  }
-
-  // For international currencies, show converted amount with NC badge
-  const converted = convertFromNC(amount, currency)
-  
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <div className={`flex items-center gap-2 ${className}`}>
-          <span className={sizeClasses[size]}>
-            {currencies[currency].symbol}{converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </span>
-          {showEquivalent && amount >= 100 && (
-            <Badge variant="secondary" className="text-xs">
-              NC {amount.toLocaleString()}
-            </Badge>
+          <span className={sizeClasses[size]}>{preferred}</span>
+          {showEquivalent && amount >= 100 && currency !== 'NC' && currency !== 'NGN' && (
+            <Badge variant="secondary" className="text-xs">{nativeAmount}</Badge>
           )}
         </div>
       </TooltipTrigger>
       <TooltipContent>
         <div className="text-xs space-y-1">
-          <p>NC {amount.toLocaleString()} (₦{amount.toLocaleString()})</p>
-          <p className="text-muted-foreground">
-            Rate: 1 {currency} = NC {currencies[currency].rateToNC.toLocaleString()}
-          </p>
+          <p>{nativeAmount} (₦{amount.toLocaleString()})</p>
+          {currency !== 'NC' && currency !== 'NGN' && (
+            <p className="text-muted-foreground">
+              Indicative rate: 1 {currency} = NC {currencies[currency].rateToNC.toLocaleString()}
+            </p>
+          )}
         </div>
       </TooltipContent>
     </Tooltip>
   )
 }
 
-/**
- * Format amount for display based on context
- */
-export const formatAmount = (amount: number, showEquivalent = false): string => {
-  return `NC ${amount.toLocaleString()}`
-}
+/** Legacy formatters remain NC-based because they are also used in payment logic and exports. */
+export const formatAmount = (amount: number, _showEquivalent = false): string =>
+  `NC ${amount.toLocaleString()}`
 
-export const formatUsdOnly = (amount: number): string => {
-  const usdAmount = amount / 1600 // NC to USD rate
-  return `$${usdAmount.toFixed(2)}`
-}
+export const formatUsdOnly = (amount: number): string =>
+  `$${(amount / 1600).toFixed(2)}`
 
-/**
- * Simple price formatter for use in components
- * Shows NC by default, can show in user's preferred currency
- */
-export const formatPriceForDisplay = (amount: number, isNigerian: boolean): string => {
-  if (isNigerian) {
-    return `₦${amount.toLocaleString()}`
-  }
-  const usdAmount = amount / 1600
-  return `NC ${amount.toLocaleString()} (~$${usdAmount.toFixed(2)})`
-}
+export const formatPriceForDisplay = (amount: number, isNigerian: boolean): string =>
+  isNigerian ? `₦${amount.toLocaleString()}` : `NC ${amount.toLocaleString()} (~$${(amount / 1600).toFixed(2)})`
 
-/**
- * Compact price formatter - shorter format for tight spaces
- */
-export const formatPriceCompact = (amount: number, isNigerian: boolean): string => {
-  if (isNigerian) {
-    return `₦${amount.toLocaleString()}`
-  }
-  const usdAmount = amount / 1600
-  return `~$${usdAmount.toFixed(2)}`
-}
+export const formatPriceCompact = (amount: number, isNigerian: boolean): string =>
+  isNigerian ? `₦${amount.toLocaleString()}` : `~$${(amount / 1600).toFixed(2)}`
