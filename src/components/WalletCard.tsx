@@ -3,9 +3,9 @@ import { Plus, Minus, Eye, EyeOff, Send, QrCode, Link as LinkIcon } from 'lucide
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { BrandButton } from '@/components/ui/brand-button'
 import { useWallet, WalletBalance } from '@/hooks/useWallet'
-import { useUserCountry } from '@/hooks/useUserCountry'
 import { useCurrency, CURRENCIES, CurrencyCode } from '@/hooks/useCurrency'
 import { useCeloWallet } from '@/hooks/useCeloWallet'
+import { useLanguage } from '@/hooks/useLanguage'
 import {
   Select,
   SelectContent,
@@ -21,9 +21,9 @@ import { CreatePaymentLinkDialog } from './CreatePaymentLinkDialog'
 
 export const WalletCard = () => {
   const { balance, loading } = useWallet()
-  const { isNigerian } = useUserCountry()
   const { address: celoAddress } = useCeloWallet()
-  const { currency, setCurrency, formatPreferred, convertFromNC } = useCurrency()
+  const { currency, setCurrency, formatPreferred } = useCurrency()
+  const { t } = useLanguage()
   const [showBalance, setShowBalance] = useState(true)
   const [showDeposit, setShowDeposit] = useState(false)
   const [showWithdrawal, setShowWithdrawal] = useState(false)
@@ -31,31 +31,19 @@ export const WalletCard = () => {
   const [showQR, setShowQR] = useState(false)
   const [showPayLink, setShowPayLink] = useState(false)
 
-  const curr = CURRENCIES[currency]
+  const formatBalance = (amount: number) => formatPreferred(amount, false)
 
-  const formatBalance = (amount: number) => {
-    if (currency === 'NC') return `NC ${amount.toLocaleString()}`
-    const converted = convertFromNC(amount, currency)
-    return `${curr.symbol}${converted.toLocaleString(undefined, {
-      minimumFractionDigits: currency === 'NGN' ? 0 : 2,
-      maximumFractionDigits: 2,
-    })}`
-  }
-
-  const formatSecondary = (amount: number) => {
-    if (currency === 'NC') {
-      const usd = convertFromNC(amount, 'USD')
-      return `~$${usd.toFixed(2)} USD`
-    }
-    return `NC ${amount.toLocaleString()}`
-  }
+  const formatSecondary = (amount: number) =>
+    currency === 'NC' || currency === 'NGN'
+      ? '1 NC = ₦1'
+      : `NC ${amount.toLocaleString()} (accounting amount)`
 
   return (
     <>
       <Card className="bg-gradient-to-br from-primary to-primary-glow border-none text-white">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between gap-2">
-            <CardTitle className="text-lg font-medium text-white/90">Wallet</CardTitle>
+            <CardTitle className="text-lg font-medium text-white/90">{t('wallet.balance')}</CardTitle>
             <div className="flex items-center gap-1">
               <Select
                 value={currency}
@@ -124,7 +112,7 @@ export const WalletCard = () => {
                 className="bg-white/10 border-white/20 text-white hover:bg-white/20"
               >
                 <Plus className="h-4 w-4 mr-1" />
-                Buy
+                {t('wallet.deposit')}
               </BrandButton>
               <BrandButton
                 variant="outline"
@@ -133,7 +121,7 @@ export const WalletCard = () => {
                 className="bg-white/10 border-white/20 text-white hover:bg-white/20"
               >
                 <Send className="h-4 w-4 mr-1" />
-                Send
+                {t('wallet.transfer')}
               </BrandButton>
               <BrandButton
                 variant="outline"
@@ -143,7 +131,7 @@ export const WalletCard = () => {
                 className="bg-white/10 border-white/20 text-white hover:bg-white/20 disabled:opacity-50"
               >
                 <Minus className="h-4 w-4 mr-1" />
-                Withdraw
+                {t('wallet.withdraw')}
               </BrandButton>
             </div>
 

@@ -48,6 +48,8 @@ const translations: Translations = {
     fr: 'Plus', es: 'Más', ar: 'المزيد', pt: 'Mais', sw: 'Zaidi', hi: 'अधिक', zh: '更多'
   },
 
+  'nav.apps': { en: 'Apps', ha: 'Manhajoji', yo: 'Àwọn App', ig: 'Ngwa', pcm: 'Apps', fr: 'Applications', es: 'Apps', ar: 'التطبيقات', pt: 'Apps', sw: 'Programu', hi: 'ऐप्स', zh: '应用' },
+  'nav.hub': { en: 'Hub', ha: 'Cibiya', yo: 'Ibudo', ig: 'Ebe etiti', pcm: 'Hub', fr: 'Espace', es: 'Centro', ar: 'المركز', pt: 'Central', sw: 'Kitovu', hi: 'हब', zh: '中心' },
   // Common Actions
   'action.save': {
     en: 'Save', ha: 'Ajiye', yo: 'Fi pamọ́', ig: 'Chekwaa', pcm: 'Save',
@@ -218,6 +220,20 @@ const translations: Translations = {
     fr: 'Pas de messages', es: 'Sin mensajes', ar: 'لا توجد رسائل', pt: 'Sem mensagens', sw: 'Hakuna ujumbe', hi: 'कोई संदेश नहीं', zh: '没有消息'
   },
 
+  // Dashboard
+  'dashboard.title': { en: 'Dashboard', ha: 'Allon Sarrafawa', yo: 'Pẹpẹ Iṣakoso', ig: 'Dashboard', pcm: 'Dashboard', fr: 'Tableau de bord', es: 'Panel', ar: 'لوحة التحكم', pt: 'Painel', sw: 'Dashibodi', hi: 'डैशबोर्ड', zh: '仪表板' },
+  'dashboard.welcome': { en: 'Welcome back', ha: 'Barka da dawowa', yo: 'Ẹ káàbọ̀ padà', ig: 'Nnọọ ọzọ', pcm: 'Welcome back', fr: 'Bon retour', es: 'Bienvenido de nuevo', ar: 'مرحباً بعودتك', pt: 'Bem-vindo de volta', sw: 'Karibu tena', hi: 'वापसी पर स्वागत है', zh: '欢迎回来' },
+  'dashboard.balance': { en: 'Balance', ha: 'Ma’auni', yo: 'Ìwọ̀ntúnwọ̀nsì', ig: 'Ego fọdụrụ', pcm: 'Balance', fr: 'Solde', es: 'Saldo', ar: 'الرصيد', pt: 'Saldo', sw: 'Salio', hi: 'शेष राशि', zh: '余额' },
+  'dashboard.earned': { en: 'Earned', ha: 'An samu', yo: 'Ti wọlé', ig: 'E nwetara', pcm: 'Earned', fr: 'Gagné', es: 'Ganado', ar: 'المكتسب', pt: 'Recebido', sw: 'Imepatikana', hi: 'कमाई', zh: '已赚取' },
+  'dashboard.spent': { en: 'Spent', ha: 'An kashe', yo: 'Ti ná', ig: 'E mefuru', pcm: 'Spent', fr: 'Dépensé', es: 'Gastado', ar: 'المنفق', pt: 'Gasto', sw: 'Imetumika', hi: 'खर्च', zh: '已支出' },
+  'dashboard.quickAccess': { en: 'Quick Access', ha: 'Saurin shiga', yo: 'Wíwọlé kíákíá', ig: 'Nbanye ngwa ngwa', pcm: 'Quick Access', fr: 'Accès rapide', es: 'Acceso rápido', ar: 'وصول سريع', pt: 'Acesso rápido', sw: 'Ufikiaji wa haraka', hi: 'त्वरित पहुँच', zh: '快速访问' },
+  'dashboard.overview': { en: 'Overview', ha: 'Bayani', yo: 'Àkótán', ig: 'Nchịkọta', pcm: 'Overview', fr: 'Aperçu', es: 'Resumen', ar: 'نظرة عامة', pt: 'Visão geral', sw: 'Muhtasari', hi: 'अवलोकन', zh: '概览' },
+  'dashboard.content': { en: 'Content', ha: 'Abun ciki', yo: 'Àkóónú', ig: 'Ọdịnaya', pcm: 'Content', fr: 'Contenu', es: 'Contenido', ar: 'المحتوى', pt: 'Conteúdo', sw: 'Maudhui', hi: 'सामग्री', zh: '内容' },
+  'dashboard.business': { en: 'Business', ha: 'Kasuwanci', yo: 'Òwò', ig: 'Azụmahịa', pcm: 'Business', fr: 'Affaires', es: 'Negocios', ar: 'الأعمال', pt: 'Negócios', sw: 'Biashara', hi: 'व्यवसाय', zh: '业务' },
+  'dashboard.earnings': { en: 'Earnings', ha: 'Abubuwan samu', yo: 'Owó tí a jèrè', ig: 'Ego enwetara', pcm: 'Earnings', fr: 'Revenus', es: 'Ingresos', ar: 'الأرباح', pt: 'Ganhos', sw: 'Mapato', hi: 'आय', zh: '收入' },
+  'dashboard.settings': { en: 'Settings', ha: 'Saituna', yo: 'Ètò', ig: 'Ntọala', pcm: 'Settings', fr: 'Paramètres', es: 'Configuración', ar: 'الإعدادات', pt: 'Configurações', sw: 'Mipangilio', hi: 'सेटिंग्स', zh: '设置' },
+  'dashboard.trustScore': { en: 'Trust Score', ha: 'Makin amana', yo: 'Iwọn Ìgbẹ́kẹ̀lé', ig: 'Ọkwa ntụkwasị obi', pcm: 'Trust Score', fr: 'Score de confiance', es: 'Puntuación de confianza', ar: 'درجة الثقة', pt: 'Pontuação de confiança', sw: 'Alama ya uaminifu', hi: 'विश्वास स्कोर', zh: '信任评分' },
+
   // International
   'international.globalMarketplace': {
     en: 'Global Marketplace', ha: 'Kasuwar Duniya', yo: 'Ọjà Àgbáyé', ig: 'Ahịa Ụwa', pcm: 'World Market',
@@ -241,8 +257,9 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 
 export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   const [language, setLanguageState] = useState<Language>(() => {
-    const saved = localStorage.getItem('language') as Language;
-    return saved || 'en';
+    const saved = localStorage.getItem('language') as Language | null;
+    const supported: Language[] = ['en', 'ha', 'yo', 'ig', 'pcm', 'fr', 'es', 'ar', 'pt', 'sw', 'hi', 'zh'];
+    return saved && supported.includes(saved) ? saved : 'en';
   });
 
   const languageNames: { [key in Language]: string } = {

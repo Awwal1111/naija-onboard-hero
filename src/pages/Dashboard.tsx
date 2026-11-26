@@ -14,6 +14,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useDynamicTrustScore } from '@/hooks/useDynamicTrustScore';
 import { ProfileVisitorsCard } from '@/components/dashboard/ProfileVisitorsCard';
+import { useCurrency } from '@/hooks/useCurrency';
+import { useLanguage } from '@/hooks/useLanguage';
 import { 
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend 
@@ -24,6 +26,8 @@ const COLORS = ['hsl(var(--primary))', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { formatPreferred } = useCurrency();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
   const [stats, setStats] = useState({
@@ -235,12 +239,12 @@ const Dashboard = () => {
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div>
-              <h1 className="text-lg font-bold">Dashboard</h1>
-              <p className="text-xs text-muted-foreground">Welcome back, {profile?.full_name?.split(' ')[0] || 'User'}</p>
+              <h1 className="text-lg font-bold">{t('dashboard.title')}</h1>
+              <p className="text-xs text-muted-foreground">{t('dashboard.welcome')}, {profile?.full_name?.split(' ')[0] || 'User'}</p>
             </div>
           </div>
           <Button variant="outline" size="sm" onClick={() => navigate('/settings')}>
-            Settings
+            {t('dashboard.settings')}
           </Button>
         </div>
       </header>
@@ -255,7 +259,7 @@ const Dashboard = () => {
                   <Shield className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <h3 className="font-semibold">Trust Score</h3>
+                  <h3 className="font-semibold">{t('dashboard.trustScore')}</h3>
                   <p className="text-xs text-muted-foreground">{trustScore.levelLabel}</p>
                 </div>
               </div>
@@ -280,27 +284,27 @@ const Dashboard = () => {
             <CardContent className="pt-4 pb-4">
               <div className="flex items-center gap-2 mb-2">
                 <div className="p-2 bg-emerald-500/10 rounded-lg"><Wallet className="h-4 w-4 text-emerald-500" /></div>
-                <span className="text-xs text-muted-foreground">Balance</span>
+                <span className="text-xs text-muted-foreground">{t('dashboard.balance')}</span>
               </div>
-              <div className="text-xl font-bold">₦{stats.walletBalance.toLocaleString()}</div>
+              <div className="text-xl font-bold">{formatPreferred(stats.walletBalance, false)}</div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-4 pb-4">
               <div className="flex items-center gap-2 mb-2">
                 <div className="p-2 bg-green-500/10 rounded-lg"><ArrowUpRight className="h-4 w-4 text-green-500" /></div>
-                <span className="text-xs text-muted-foreground">Earned</span>
+                <span className="text-xs text-muted-foreground">{t('dashboard.earned')}</span>
               </div>
-              <div className="text-xl font-bold text-green-600">+₦{stats.totalEarnings.toLocaleString()}</div>
+              <div className="text-xl font-bold text-green-600">+{formatPreferred(stats.totalEarnings, false)}</div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-4 pb-4">
               <div className="flex items-center gap-2 mb-2">
                 <div className="p-2 bg-red-500/10 rounded-lg"><ArrowDownRight className="h-4 w-4 text-red-500" /></div>
-                <span className="text-xs text-muted-foreground">Spent</span>
+                <span className="text-xs text-muted-foreground">{t('dashboard.spent')}</span>
               </div>
-              <div className="text-xl font-bold text-red-600">-₦{stats.totalSpent.toLocaleString()}</div>
+              <div className="text-xl font-bold text-red-600">-{formatPreferred(stats.totalSpent, false)}</div>
             </CardContent>
           </Card>
           <Card>
@@ -316,7 +320,7 @@ const Dashboard = () => {
 
         {/* Quick Actions */}
         <Card>
-          <CardHeader className="pb-3"><CardTitle className="text-base">Quick Access</CardTitle></CardHeader>
+          <CardHeader className="pb-3"><CardTitle className="text-base">{t('dashboard.quickAccess')}</CardTitle></CardHeader>
           <CardContent>
             <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
               {quickActions.map((action) => (
@@ -333,10 +337,10 @@ const Dashboard = () => {
         {/* Tabs */}
         <Tabs defaultValue="overview" className="w-full">
           <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="content">Content</TabsTrigger>
-            <TabsTrigger value="business">Business</TabsTrigger>
-            <TabsTrigger value="earnings">Earnings</TabsTrigger>
+            <TabsTrigger value="overview">{t('dashboard.overview')}</TabsTrigger>
+            <TabsTrigger value="content">{t('dashboard.content')}</TabsTrigger>
+            <TabsTrigger value="business">{t('dashboard.business')}</TabsTrigger>
+            <TabsTrigger value="earnings">{t('dashboard.earnings')}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4 mt-4">
@@ -392,10 +396,10 @@ const Dashboard = () => {
                 <CardContent className="pt-4"><div className="flex items-center gap-3 mb-2"><div className="p-2 bg-blue-500/10 rounded-lg"><Briefcase className="h-5 w-5 text-blue-500" /></div><div><div className="font-semibold">Jobs</div><div className="text-xs text-muted-foreground">Posted: {stats.jobsPosted}</div></div></div><div className="text-xs text-muted-foreground">Applied: {stats.jobApplications}</div></CardContent>
               </Card>
               <Card className="cursor-pointer hover:bg-accent/50" onClick={() => navigate('/courses')}>
-                <CardContent className="pt-4"><div className="flex items-center gap-3 mb-2"><div className="p-2 bg-orange-500/10 rounded-lg"><GraduationCap className="h-5 w-5 text-orange-500" /></div><div><div className="font-semibold">Courses</div><div className="text-xs text-muted-foreground">Created: {stats.coursesCreated}</div></div></div><div className="text-xs text-muted-foreground">Revenue: ₦{stats.courseRevenue}</div></CardContent>
+                <CardContent className="pt-4"><div className="flex items-center gap-3 mb-2"><div className="p-2 bg-orange-500/10 rounded-lg"><GraduationCap className="h-5 w-5 text-orange-500" /></div><div><div className="font-semibold">Courses</div><div className="text-xs text-muted-foreground">Created: {stats.coursesCreated}</div></div></div><div className="text-xs text-muted-foreground">Revenue: {formatPreferred(stats.courseRevenue, false)}</div></CardContent>
               </Card>
               <Card className="cursor-pointer hover:bg-accent/50" onClick={() => navigate('/digital-products')}>
-                <CardContent className="pt-4"><div className="flex items-center gap-3 mb-2"><div className="p-2 bg-green-500/10 rounded-lg"><ShoppingBag className="h-5 w-5 text-green-500" /></div><div><div className="font-semibold">Products</div><div className="text-xs text-muted-foreground">Created: {stats.productsCreated}</div></div></div><div className="text-xs text-muted-foreground">Revenue: ₦{stats.productRevenue}</div></CardContent>
+                <CardContent className="pt-4"><div className="flex items-center gap-3 mb-2"><div className="p-2 bg-green-500/10 rounded-lg"><ShoppingBag className="h-5 w-5 text-green-500" /></div><div><div className="font-semibold">Products</div><div className="text-xs text-muted-foreground">Created: {stats.productsCreated}</div></div></div><div className="text-xs text-muted-foreground">Revenue: {formatPreferred(stats.productRevenue, false)}</div></CardContent>
               </Card>
               <Card className="cursor-pointer hover:bg-accent/50" onClick={() => navigate('/experts')}>
                 <CardContent className="pt-4"><div className="flex items-center gap-3 mb-2"><div className="p-2 bg-purple-500/10 rounded-lg"><Video className="h-5 w-5 text-purple-500" /></div><div><div className="font-semibold">Classes</div><div className="text-xs text-muted-foreground">Created: {stats.classesCreated}</div></div></div><div className="text-xs text-muted-foreground">Participants: {stats.classParticipants}</div></CardContent>
@@ -427,7 +431,7 @@ const Dashboard = () => {
                 <CardHeader><CardTitle className="text-base">Revenue Sources</CardTitle></CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={200}>
-                    <PieChart><Pie data={charts.revenueBreakdown} cx="50%" cy="50%" outerRadius={80} label={({ name, value }) => `${name}: ₦${value}`} dataKey="value">{charts.revenueBreakdown.map((_, index) => (<Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />))}</Pie><Tooltip /></PieChart>
+                    <PieChart><Pie data={charts.revenueBreakdown} cx="50%" cy="50%" outerRadius={80} label={({ name, value }) => `${name}: ${formatPreferred(Number(value), false)}`} dataKey="value">{charts.revenueBreakdown.map((_, index) => (<Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />))}</Pie><Tooltip /></PieChart>
                   </ResponsiveContainer>
                 </CardContent>
               </Card>

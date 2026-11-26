@@ -7,6 +7,7 @@ import { useRoleFeatures } from "@/hooks/useRoleFeatures";
 import { Badge } from "@/components/ui/badge";
 import BugReportDialog from "@/components/BugReportDialog";
 import { supabase } from "@/integrations/supabase/client";
+import { useLanguage } from "@/hooks/useLanguage";
 
 interface MoreMenuDrawerProps {
   open: boolean;
@@ -16,6 +17,12 @@ interface MoreMenuDrawerProps {
 export const MoreMenuDrawer = ({ open, onOpenChange }: MoreMenuDrawerProps) => {
   const navigate = useNavigate();
   const { mode, isFreelancer, isClient } = useRoleFeatures();
+  const { t } = useLanguage();
+  const itemTranslations: Record<string, string> = {
+    Dashboard: 'dashboard.title', Notifications: 'settings.notifications', Profile: 'profile.myProfile',
+    Wallet: 'wallet.balance', Search: 'action.search', 'Post a Job': 'jobs.postJob',
+    'Find Jobs': 'jobs.myJobs', Settings: 'settings.title', Business: 'dashboard.business'
+  };
   const [showBugReport, setShowBugReport] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -95,7 +102,7 @@ export const MoreMenuDrawer = ({ open, onOpenChange }: MoreMenuDrawerProps) => {
         <item.icon className="h-5 w-5" />
       </div>
       <div className="text-left">
-        <span className="text-sm font-medium block">{item.label}</span>
+        <span className="text-sm font-medium block">{itemTranslations[item.label] ? t(itemTranslations[item.label]) : item.label}</span>
         {withDescription && item.description && (
           <span className="text-xs text-muted-foreground">{item.description}</span>
         )}
@@ -119,7 +126,7 @@ export const MoreMenuDrawer = ({ open, onOpenChange }: MoreMenuDrawerProps) => {
       <SheetContent side="right" className="w-[300px] sm:w-[380px] overflow-y-auto">
         <SheetHeader>
           <div className="flex items-center justify-between">
-            <SheetTitle>Menu</SheetTitle>
+            <SheetTitle>{t('nav.more')}</SheetTitle>
             <Badge className={`${modeColor} text-white text-xs`}>
               {modeLabel}
             </Badge>
@@ -166,7 +173,7 @@ export const MoreMenuDrawer = ({ open, onOpenChange }: MoreMenuDrawerProps) => {
 
           {/* Shared Business Items */}
           <div>
-            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-3">Business</h3>
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-3">{t('dashboard.business')}</h3>
             <div className="space-y-1">
               {sharedBusinessItems.map(item => renderSimpleItem(item))}
             </div>
@@ -176,7 +183,7 @@ export const MoreMenuDrawer = ({ open, onOpenChange }: MoreMenuDrawerProps) => {
 
           {/* Other */}
           <div>
-            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-3">More</h3>
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-3">{t('nav.more')}</h3>
             <div className="space-y-1">
               {filterByRole(otherItems).map(item => renderSimpleItem(item))}
               

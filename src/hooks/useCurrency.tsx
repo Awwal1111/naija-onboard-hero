@@ -11,7 +11,9 @@ interface Currency {
   rateToNC: number // How many NC per 1 unit of this currency
 }
 
-// Exchange rates (NC is pegged 1:1 to NGN)
+// Indicative display conversion rates only. These are not live FX quotes and must never
+// be used to calculate charges, payouts, escrow, or blockchain transaction amounts.
+// NC remains pegged 1:1 to NGN for the platform's internal accounting.
 export const CURRENCIES: Record<CurrencyCode, Currency> = {
   NC: { code: 'NC', symbol: 'NC', name: 'NaijaCoin', flag: '🪙', rateToNC: 1 },
   NGN: { code: 'NGN', symbol: '₦', name: 'Nigerian Naira', flag: '🇳🇬', rateToNC: 1 },
@@ -57,22 +59,45 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
     return () => subscription.unsubscribe()
   }, [])
 
-  // Sync with profile when user is authenticated
+  // Sync with profile when authenticated. A currency explicitly chosen on this
+  // device takes priority; otherwise load the saved account preference.
   useEffect(() => {
-    if (userId) {
-      supabase
-        .from('profiles')
-        .select('preferred_currency')
-        .eq('user_id', userId)
-        .maybeSingle()
-        .then(({ data }) => {
-          if (data?.preferred_currency && CURRENCIES[data.preferred_currency as CurrencyCode]) {
-            setCurrencyState(data.preferred_currency as CurrencyCode)
-            setHasExplicitChoice(true)
+    if (!userId) return
+    let cancelled = false
+
+    supabase
+      .from('profiles')
+      .select('preferred_currency')
+      .eq('user_id', userId)
+      .maybeSingle()
+      .then(async ({ data }) => {
+        if (cancelled) return
+
+        const localPreference = localStorage.getItem('preferred_currency') as CurrencyCode | null
+        const validLocalPreference = localPreference && CURRENCIES[localPreference] ? localPreference : null
+        const profilePreference = data?.preferred_currency as CurrencyCode | null
+        const validProfilePreference = profilePreference && CURRENCIES[profilePreference] ? profilePreference : null
+
+        if (hasExplicitChoice && validLocalPreference) {
+          setCurrencyState(validLocalPreference)
+          if (validLocalPreference !== validProfilePreference) {
+            await supabase
+              .from('profiles')
+              .update({ preferred_currency: validLocalPreference } as any)
+              .eq('user_id', userId)
           }
-        })
-    }
-  }, [userId])
+          return
+        }
+
+        if (validProfilePreference) {
+          setCurrencyState(validProfilePreference)
+          localStorage.setItem('preferred_currency', validProfilePreference)
+          setHasExplicitChoice(true)
+        }
+      })
+
+    return () => { cancelled = true }
+  }, [userId, hasExplicitChoice])
 
   // Auto-detect currency from IP geolocation when user has no explicit choice
   useEffect(() => {
@@ -136,10 +161,12 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
 
     const curr = CURRENCIES[currency]
     const convertedAmount = ncAmount / curr.rateToNC
-    const formatted = `${curr.symbol}${convertedAmount.toLocaleString(undefined, {
+    const formatted = new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency: curr.code,
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
-    })}`
+    }).format(convertedAmount)
 
     if (showNC && ncAmount > 0) {
       return `${formatted} (NC ${ncAmount.toLocaleString()})`
