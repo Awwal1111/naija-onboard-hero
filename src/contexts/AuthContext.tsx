@@ -80,7 +80,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (!isMounted.current || settled) return
       settled = true
       clearTimeout(timeoutId)
-      if (error) throw error
+      if (error) {
+        console.error('[AuthProvider] Retry getSession returned an error:', error)
+        loadingResolved.current = true
+        setLoading(false)
+        setAuthTimedOut(true)
+        return
+      }
       resolveLoading(existingSession)
     }).catch((err) => {
       if (!isMounted.current || settled) return
@@ -136,7 +142,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
 
         if (event === 'SIGNED_OUT') {
-              setSession(null)
+          setSession(null)
           setUser(null)
           resetPostHog()
           if (!loadingResolved.current) {
