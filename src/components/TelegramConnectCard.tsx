@@ -60,10 +60,10 @@ const TelegramConnectCard = ({ notificationsEnabled = false }: { notificationsEn
         {isConnected ? (
           <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
             <p className="text-sm font-medium text-green-700 dark:text-green-400 mb-2">
-              ✅ Successfully Connected
+              {notificationsEnabled ? '✅ Successfully Connected' : 'Telegram Connected — Alerts Off'}
             </p>
             <p className="text-xs text-muted-foreground">
-              You'll receive instant notifications for deposits, withdrawals, jobs, and tasks via Telegram.
+              {notificationsEnabled ? 'You can receive account and activity alerts through Telegram.' : 'Your Telegram account is linked, but alerts remain off until you enable them in Settings.'}
             </p>
           </div>
         ) : (
