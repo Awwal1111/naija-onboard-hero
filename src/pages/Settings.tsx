@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { ArrowLeft, Trash2, Eye, Globe, Users, Lock, Moon, Sun, Bell, Languages, Shield, HelpCircle, FileText, User, Activity, TrendingUp, CheckCircle, ShieldCheck, Phone, Mail, Camera, Fingerprint, IdCard, ShieldAlert } from 'lucide-react'
+import { ArrowLeft, Trash2, Eye, Globe, Users, Lock, Moon, Sun, Bell, Languages, Shield, HelpCircle, FileText, User, Activity, TrendingUp, CheckCircle, ShieldCheck, Phone, Mail, Camera, Fingerprint, IdCard, ShieldAlert, Send } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -29,6 +29,7 @@ import { AccountTypeSettings } from '@/components/AccountTypeSettings'
 import { InternationalSettings } from '@/components/settings/InternationalSettings'
 import { UserModeSettings } from '@/components/settings/UserModeSettings'
 import { SMSNotificationSettings } from '@/components/settings/SMSNotificationSettings'
+import TelegramConnectCard from '@/components/TelegramConnectCard'
 
 const BiometricToggle = () => {
   const { isAvailable, isEnabled, enableBiometric, disableBiometric, loading } = useBiometric()
@@ -83,8 +84,19 @@ const Settings = () => {
     expertStatus: true
   })
   const [emailNotifications, setEmailNotifications] = useState(true)
+  const [telegramNotifications, setTelegramNotifications] = useState(false)
+  const [savingTelegram, setSavingTelegram] = useState(false)
   const [emailDigestFrequency, setEmailDigestFrequency] = useState<'daily' | 'weekly' | 'monthly' | 'never'>('weekly')
   const [phoneVerifyOpen, setPhoneVerifyOpen] = useState(false)
+
+  useEffect(() => {
+    if (!user) return
+    supabase.from('notification_preferences').select('telegram_enabled').eq('user_id', user.id).maybeSingle()
+      .then(({ data, error }) => {
+        if (error) console.error('Could not load notification preferences:', error)
+        setTelegramNotifications(data?.telegram_enabled === true)
+      })
+  }, [user?.id])
 
   useEffect(() => {
     if (profile) {
@@ -351,6 +363,29 @@ const Settings = () => {
                     </SelectContent>
                   </Select>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Telegram notifications require an explicit opt-in and a verified bot link. */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Send className="h-5 w-5" />Telegram Notifications</CardTitle>
+                <p className="text-sm text-muted-foreground">Choose whether NaijaLancers may send account and activity alerts to your linked Telegram account.</p>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div><h4 className="font-medium">Allow Telegram alerts</h4><p className="text-xs text-muted-foreground">You can turn this off at any time.</p></div>
+                  <Switch checked={telegramNotifications} disabled={savingTelegram || !user} onCheckedChange={async (checked) => {
+                    if (!user) return
+                    setSavingTelegram(true)
+                    const { error } = await supabase.from('notification_preferences').upsert({ user_id: user.id, telegram_enabled: checked, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
+                    if (error) { toast({ title: 'Could not update Telegram settings', description: error.message, variant: 'destructive' }) }
+                    else { setTelegramNotifications(checked); toast({ title: checked ? 'Telegram alerts enabled' : 'Telegram alerts disabled' }) }
+                    setSavingTelegram(false)
+                  }} />
+                </div>
+                <p className="text-xs text-muted-foreground">Enabling this setting does not link your account. Connect the bot below and verify your email to receive messages.</p>
+                <TelegramConnectCard />
               </CardContent>
             </Card>
 
