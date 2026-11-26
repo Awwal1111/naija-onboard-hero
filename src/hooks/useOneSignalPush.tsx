@@ -81,7 +81,12 @@ export const useOneSignalPush = () => {
       setPushEnabled(isOneSignalPushEnabled())
 
       if (user?.id) {
-        await supabase.from('notification_preferences').upsert({ user_id: user.id, push_enabled: granted && isOneSignalPushEnabled(), updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
+        const { error } = await supabase.from('notification_preferences').upsert({
+          user_id: user.id,
+          push_enabled: granted && isOneSignalPushEnabled(),
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'user_id' })
+        if (error) throw error
       }
 
       if (granted) {
