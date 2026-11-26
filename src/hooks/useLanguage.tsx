@@ -48,6 +48,8 @@ const translations: Translations = {
     fr: 'Plus', es: 'Más', ar: 'المزيد', pt: 'Mais', sw: 'Zaidi', hi: 'अधिक', zh: '更多'
   },
 
+  'nav.apps': { en: 'Apps', ha: 'Manhajoji', yo: 'Àwọn App', ig: 'Ngwa', pcm: 'Apps', fr: 'Applications', es: 'Apps', ar: 'التطبيقات', pt: 'Apps', sw: 'Programu', hi: 'ऐप्स', zh: '应用' },
+  'nav.hub': { en: 'Hub', ha: 'Cibiya', yo: 'Ibudo', ig: 'Ebe etiti', pcm: 'Hub', fr: 'Espace', es: 'Centro', ar: 'المركز', pt: 'Central', sw: 'Kitovu', hi: 'हब', zh: '中心' },
   // Common Actions
   'action.save': {
     en: 'Save', ha: 'Ajiye', yo: 'Fi pamọ́', ig: 'Chekwaa', pcm: 'Save',
