@@ -17,7 +17,6 @@ import { useUserSecrets } from '@/hooks/useUserSecrets'
 import { Logo } from '@/components/ui/logo'
 import { Separator } from '@/components/ui/separator'
 import { PushNotificationToggle } from '@/components/PushNotificationToggle'
-import { TestNotifications } from '@/components/TestNotifications'
 import { TwoFactorSetup } from '@/components/TwoFactorSetup'
 import { EmailVerificationStatus } from '@/components/EmailVerificationBanner'
 import { UserBadges } from '@/components/UserBadges'
@@ -70,7 +69,7 @@ interface NotificationPreferences {
 const Settings = () => {
   const navigate = useNavigate()
   const { toast } = useToast()
-  const { user, signOut } = useAuth()
+  const { user } = useAuth()
   const { profile, updateProfile } = useProfile()
   const { hasPin } = useUserSecrets()
   const { language, setLanguage, t, languageNames } = useLanguage()
@@ -335,12 +334,14 @@ const Settings = () => {
                   <Switch 
                     checked={emailNotifications}
                     onCheckedChange={async (checked) => {
+                      const previous = emailNotifications
                       setEmailNotifications(checked)
                       if (user) {
                         const { error } = await supabase.from('notification_preferences').upsert({ user_id: user.id, email_enabled: checked, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
-                        if (error) toast({ title: 'Could not update email preferences', description: error.message, variant: 'destructive' })
+                        if (error) { setEmailNotifications(previous); toast({ title: 'Could not update email preferences', description: error.message, variant: 'destructive' }) }
                         else {
-                          await supabase.from('profiles').update({ email_notifications: checked }).eq('user_id', user.id)
+                          const { error: profileError } = await supabase.from('profiles').update({ email_notifications: checked }).eq('user_id', user.id)
+                          if (profileError) console.error('Could not sync legacy email preference:', profileError)
                           toast({ title: checked ? 'Email notifications enabled' : 'Email notifications disabled' })
                         }
                       }
@@ -356,10 +357,16 @@ const Settings = () => {
                   <Select 
                     value={emailDigestFrequency} 
                     onValueChange={async (v: 'daily' | 'weekly' | 'monthly' | 'never') => {
-                      setEmailDigestFrequency(v)
+                      const previous = emailDigestFrequency
                       if (user) {
-                        await supabase.from('profiles').update({ email_digest_frequency: v }).eq('user_id', user.id)
-                        toast({ title: `Digest frequency set to ${v}` })
+                        const { error } = await supabase.from('profiles').update({ email_digest_frequency: v }).eq('user_id', user.id)
+                        if (error) {
+                          toast({ title: 'Could not save digest frequency', description: error.message, variant: 'destructive' })
+                          setEmailDigestFrequency(previous)
+                        } else {
+                          setEmailDigestFrequency(v)
+                          toast({ title: `Digest frequency set to ${v}` })
+                        }
                       }
                     }}
                   >
@@ -406,8 +413,6 @@ const Settings = () => {
             {/* SMS Settings */}
             <SMSNotificationSettings />
 
-            {/* Test Notifications */}
-            <TestNotifications />
           </TabsContent>
 
           {/* ===== VERIFICATION TAB ===== */}
@@ -577,7 +582,7 @@ const Settings = () => {
                   <div className="flex-1">
                     <p className="font-medium">Fingerprint / Face ID</p>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Use biometrics to authorize transactions
+                      Use fingerprint or Face ID instead of manually entering your transaction PIN on supported Android devices.
                     </p>
                   </div>
                   <BiometricToggle />
