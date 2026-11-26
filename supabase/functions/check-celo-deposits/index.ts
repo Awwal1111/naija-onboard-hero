@@ -37,7 +37,7 @@ serve(async (req) => {
     // Derive identity from the verified Supabase access token; never trust a
     // user ID supplied by the caller. Bind the requested address to that user's profile.
     const authHeader = req.headers.get("Authorization") || "";
-    const accessToken = authHeader.replace(/^Bearer\\s+/i, "").trim();
+    const accessToken = authHeader.replace(/^Bearer\s+/i, "").trim();
     if (!accessToken) {
       return new Response(JSON.stringify({ error: "Authentication required" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401
