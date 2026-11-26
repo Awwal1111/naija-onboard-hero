@@ -112,7 +112,7 @@ const NaijaLanceWalletCard: React.FC<NaijaLanceWalletCardProps> = ({
           {/* Exchange Rate Info */}
           <div className="text-center">
             <Badge variant="secondary" className="text-xs">
-              1 NC = ₦1 • {currency !== 'NC' && currency !== 'NGN' ? `1 ${currency} = NC ${currencies[currency]?.rateToNC.toLocaleString()}` : 'Instant transactions'}
+              1 NC = ₦1 • {currency !== 'NC' && currency !== 'NGN' ? (ratesAvailable ? `1 ${currency} ≈ NC ${currencies[currency]?.rateToNC.toLocaleString()}` : 'FX unavailable • NC / USDT reference') : 'Instant transactions'}
             </Badge>
           </div>
         </CardContent>
