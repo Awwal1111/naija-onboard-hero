@@ -90,7 +90,7 @@ const SafePayDialog: React.FC<SafePayDialogProps> = ({ otherUserId, otherUserNam
           }}
           title="Confirm SafePay Action"
           description={
-            pendingAction === 'propose' ? `Lock ${amount} NC in escrow` :
+            pendingAction === 'propose' ? `Lock ${formatNCDisplay(Number(amount))} in escrow` :
             pendingAction === 'accept' ? 'Accept SafePay proposal' :
             pendingAction === 'release' ? 'Release funds to seller' :
             'Confirm action'
