@@ -295,15 +295,14 @@ export const AdminAIDrawer = () => {
 
       let notified = 0;
       for (const expert of experts || []) {
-        await supabase.functions.invoke('send-telegram-notification', {
+        await supabase.functions.invoke('smart-notification', {
           body: {
-            user_id: expert.user_id,
-            message: `📋 *New Tasks Available!*\n\nHey ${expert.full_name}! There are new tasks waiting for completion. Open the app to start earning! 💰`,
-            reply_markup: JSON.stringify({
-              inline_keyboard: [[
-                { text: "🚀 View Tasks", url: "https://naijalancers.name.ng/tasks" }
-              ]]
-            })
+            userId: expert.user_id,
+            type: 'task_alert',
+            title: 'New Tasks Available',
+            message: `Hey ${expert.full_name}! There are new tasks waiting for completion. Open NaijaLancers to start earning: https://naijalancers.name.ng/tasks`,
+            priority: 'normal',
+            channels: ['telegram']
           }
         });
         notified++;
@@ -331,8 +330,8 @@ export const AdminAIDrawer = () => {
 
       let sent = 0;
       for (const user of users || []) {
-        await supabase.functions.invoke('send-telegram-notification', {
-          body: { user_id: user.user_id, message }
+        await supabase.functions.invoke('smart-notification', {
+          body: { userId: user.user_id, type: 'admin_broadcast', title: 'NaijaLancers Update', message, priority: 'normal', channels: ['telegram'] }
         });
         sent++;
       }

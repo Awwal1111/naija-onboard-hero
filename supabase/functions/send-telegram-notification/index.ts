@@ -30,6 +30,19 @@ serve(async (req) => {
   }
 
   try {
+    const authHeader = req.headers.get("Authorization") || "";
+    const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+    let claims: { role?: string } | null = null;
+    try {
+      const payload = token.split(".")[1];
+      if (payload) claims = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(payload.length / 4) * 4, "=")));
+    } catch { claims = null; }
+    if (claims?.role !== "service_role") {
+      return new Response(JSON.stringify({ success: false, reason: "Internal service access required" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
     const payload: NotificationPayload = await req.json();
     const { 
       user_id, 
@@ -66,6 +79,18 @@ serve(async (req) => {
         JSON.stringify({ success: false, reason: "Error fetching user profile" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    const { data: preferences } = await supabase
+      .from("notification_preferences")
+      .select("telegram_enabled")
+      .eq("user_id", user_id)
+      .maybeSingle();
+
+    if (preferences?.telegram_enabled !== true) {
+      return new Response(JSON.stringify({ success: false, reason: "Telegram notifications are disabled by the user" }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
     }
 
     if (!profile?.telegram_user_id) {
@@ -136,23 +161,8 @@ serve(async (req) => {
       );
     }
 
-    // Log successful notification to database for analytics
-    try {
-      await supabase.from('notifications').insert({
-        user_id: user_id,
-        title: 'Telegram Notification',
-        message: message.substring(0, 200),
-        type: 'telegram',
-        is_read: false,
-        metadata: { 
-          telegram_message_id: result.result?.message_id,
-          has_buttons: !!keyboardMarkup,
-          has_photo: !!photo_url
-        }
-      });
-    } catch (logError) {
-      console.log('[TELEGRAM] ⚠️ Could not log notification (non-critical):', logError);
-    }
+    // Delivery is already represented in the smart-notification result.
+    // Do not insert a second in-app notification for the same event.
 
     console.log(`[TELEGRAM] ✅ Enhanced notification sent to ${profile.full_name}`);
     console.log(`[TELEGRAM] Features: buttons=${!!keyboardMarkup}, photo=${!!photo_url}`);

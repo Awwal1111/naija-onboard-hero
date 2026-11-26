@@ -79,8 +79,12 @@ export const SMSNotificationSettings = () => {
         .from('profiles')
         .update({ sms_job_alerts: enabled } as any)
         .eq('user_id', user!.id)
-
       if (error) throw error
+
+      const { error: preferenceError } = await supabase
+        .from('notification_preferences')
+        .upsert({ user_id: user!.id, sms_enabled: enabled, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
+      if (preferenceError) throw preferenceError
 
       toast.success(enabled 
         ? `Job SMS alerts enabled! (${smsCost} NC per SMS)` 

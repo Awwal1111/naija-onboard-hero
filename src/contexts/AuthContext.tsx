@@ -173,6 +173,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (!user?.id || typeof window === 'undefined') return
+    const pending = localStorage.getItem('nl_pending_signup_consent')
+    if (!pending) return
+    let consent: any
+    try { consent = JSON.parse(pending) } catch { localStorage.removeItem('nl_pending_signup_consent'); return }
+    const recordConsent = async () => {
+      const { error } = await supabase.from('signup_consents').insert({
+        user_id: user.id,
+        accepted_at: consent.acceptedAt,
+        terms_version: consent.termsVersion,
+        privacy_version: consent.privacyVersion,
+        telegram_notifications_opt_in: !!consent.telegramNotifications,
+        marketing_updates_opt_in: !!consent.marketingUpdates
+      })
+      if (error) {
+        console.error('[AuthProvider] Could not record OAuth signup consent:', error)
+        return
+      }
+      const { error: preferencesError } = await supabase.from('notification_preferences').upsert({
+        user_id: user.id,
+        telegram_enabled: !!consent.telegramNotifications,
+        marketing_updates_enabled: !!consent.marketingUpdates
+      }, { onConflict: 'user_id' })
+      if (preferencesError) console.error('[AuthProvider] Could not save OAuth notification preferences:', preferencesError)
+      localStorage.removeItem('nl_pending_signup_consent')
+    }
+    void recordConsent()
+  }, [user?.id])
+
+  useEffect(() => {
+    if (!user?.id || typeof window === 'undefined') return
     const partnerSlug = localStorage.getItem('nl_partner_slug')
     if (!partnerSlug) return
     supabase.rpc('attach_institutional_partner_attribution', { p_slug: partnerSlug })

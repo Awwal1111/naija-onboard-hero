@@ -301,10 +301,14 @@ export const ActionableAdminAI = () => {
 
       let notified = 0;
       for (const expert of experts || []) {
-        await supabase.functions.invoke('send-telegram-notification', {
+        await supabase.functions.invoke('smart-notification', {
           body: {
-            user_id: expert.user_id,
-            message: `📋 *New Tasks Available!*\n\nHey ${expert.full_name}! There are new tasks waiting for completion. Open the app to start earning! 💰`
+            userId: expert.user_id,
+            type: 'task_alert',
+            title: 'New Tasks Available',
+            message: `Hey ${expert.full_name}! There are new tasks waiting for completion. Open NaijaLancers to start earning: https://naijalancers.name.ng/tasks`,
+            priority: 'normal',
+            channels: ['telegram']
           }
         });
         notified++;

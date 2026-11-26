@@ -142,7 +142,33 @@ serve(async (req) => {
   }
 
   try {
-    const { message_id, sender_id, recipient_id, content, media_type }: NotificationPayload = await req.json();
+    const { message_id, sender_id, recipient_id: requestedRecipientId, content: suppliedContent, media_type: suppliedMediaType }: NotificationPayload = await req.json();
+    const authHeader = req.headers.get('Authorization') || '';
+    const accessToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+    if (!accessToken) return new Response(JSON.stringify({ success: false, error: 'Authentication required' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    const { data: authResult, error: authError } = await supabase.auth.getUser(accessToken);
+    if (authError || !authResult.user || authResult.user.id !== sender_id) {
+      return new Response(JSON.stringify({ success: false, error: 'Not authorized to notify for this sender' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    const { data: messageRecord, error: messageError } = await supabase
+      .from('messages')
+      .select('id, chat_id, sender_id, content, media_type')
+      .eq('id', message_id)
+      .single();
+    if (messageError || !messageRecord || messageRecord.sender_id !== sender_id) {
+      return new Response(JSON.stringify({ success: false, error: 'Message not found or sender mismatch' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    const { data: chat } = await supabase.from('chats').select('user1_id, user2_id').eq('id', messageRecord.chat_id).single();
+    if (!chat || (chat.user1_id !== sender_id && chat.user2_id !== sender_id)) {
+      return new Response(JSON.stringify({ success: false, error: 'Sender is not a member of this chat' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    const recipient_id = chat.user1_id === sender_id ? chat.user2_id : chat.user1_id;
+    if (requestedRecipientId && requestedRecipientId !== recipient_id) {
+      return new Response(JSON.stringify({ success: false, error: 'Recipient does not match chat' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    const content = messageRecord.content || suppliedContent || '';
+    const media_type = messageRecord.media_type || suppliedMediaType;
 
     console.log(`[MSG_NOTIFY] ========================================`);
     console.log(`[MSG_NOTIFY] Notifying ${recipient_id} about message from ${sender_id}`);
@@ -170,6 +196,17 @@ serve(async (req) => {
       console.log(`[MSG_NOTIFY] Sender profile error:`, senderError.message);
     }
     console.log(`[MSG_NOTIFY] Sender: ${sender?.full_name || 'Unknown'}`);
+
+    // Load recipient channel and category preferences before any external delivery.
+    const { data: preferences } = await supabase
+      .from('notification_preferences')
+      .select('telegram_enabled, email_enabled, sms_enabled, push_enabled, category_preferences')
+      .eq('user_id', recipient_id)
+      .maybeSingle();
+    const prefs = preferences || { telegram_enabled: false, email_enabled: true, sms_enabled: false, push_enabled: true, category_preferences: { chats: true } };
+    if (prefs.category_preferences?.chats === false) {
+      return new Response(JSON.stringify({ success: true, channels: {}, skipped: 'chat_notifications_disabled' }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
 
     // Get recipient profile with Telegram ID and phone number
     const { data: recipient, error: recipientError } = await supabase
@@ -273,7 +310,7 @@ serve(async (req) => {
     };
 
     // 1. Send Telegram notification (if linked) - FREE FOR ALL USERS
-    if (recipient?.telegram_user_id) {
+    if (prefs.telegram_enabled && recipient?.telegram_user_id) {
       console.log(`[MSG_NOTIFY] 📱 Attempting Telegram to: ${recipient.telegram_user_id}`);
       
       let notificationText = isExpertResponse 
@@ -316,8 +353,8 @@ serve(async (req) => {
       } catch (error) {
         console.error("[MSG_NOTIFY] ❌ Telegram fetch error:", error);
       }
-    } else {
-      console.log(`[MSG_NOTIFY] ⚠️ Recipient has no Telegram linked - trying push notification`);
+    } else if (prefs.push_enabled) {
+      console.log(`[MSG_NOTIFY] ⚠️ Telegram not enabled or not linked - trying push notification`);
       
       // Try sending push notification as fallback
       try {
@@ -349,7 +386,7 @@ serve(async (req) => {
 
     // 2. Send SMS notification (FREE for all users - communication is free)
     // Using centralized send-sms function with skipCharge=true for messages
-    if (recipient?.phone_number) {
+    if (prefs.sms_enabled && recipient?.phone_number) {
       const smsText = `NaijaLancers: ${senderName} sent you a message: "${displayContent}". Open the app to reply.`;
       
       try {
@@ -372,7 +409,7 @@ serve(async (req) => {
     }
 
     // 3. Send Email notification (FREE for all users - communication is free)
-    if (recipientEmail) {
+    if (prefs.email_enabled && recipientEmail) {
       results.email = await sendEmail(recipientEmail, senderName, displayContent);
     }
 

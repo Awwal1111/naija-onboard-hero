@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { ArrowLeft, Trash2, Eye, Globe, Users, Lock, Moon, Sun, Bell, Languages, Shield, HelpCircle, FileText, User, Activity, TrendingUp, CheckCircle, ShieldCheck, Phone, Mail, Camera, Fingerprint, IdCard, ShieldAlert } from 'lucide-react'
+import { ArrowLeft, Trash2, Eye, Globe, Users, Lock, Moon, Sun, Bell, Languages, Shield, HelpCircle, FileText, User, Activity, TrendingUp, CheckCircle, ShieldCheck, Phone, Mail, Camera, Fingerprint, IdCard, ShieldAlert, Send } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -29,6 +29,7 @@ import { AccountTypeSettings } from '@/components/AccountTypeSettings'
 import { InternationalSettings } from '@/components/settings/InternationalSettings'
 import { UserModeSettings } from '@/components/settings/UserModeSettings'
 import { SMSNotificationSettings } from '@/components/settings/SMSNotificationSettings'
+import TelegramConnectCard from '@/components/TelegramConnectCard'
 
 const BiometricToggle = () => {
   const { isAvailable, isEnabled, enableBiometric, disableBiometric, loading } = useBiometric()
@@ -83,21 +84,33 @@ const Settings = () => {
     expertStatus: true
   })
   const [emailNotifications, setEmailNotifications] = useState(true)
+  const [telegramNotifications, setTelegramNotifications] = useState(false)
+  const [savingTelegram, setSavingTelegram] = useState(false)
   const [emailDigestFrequency, setEmailDigestFrequency] = useState<'daily' | 'weekly' | 'monthly' | 'never'>('weekly')
   const [phoneVerifyOpen, setPhoneVerifyOpen] = useState(false)
 
   useEffect(() => {
+    if (!user) return
+    supabase.from('notification_preferences').select('telegram_enabled, email_enabled, category_preferences').eq('user_id', user.id).maybeSingle()
+      .then(({ data, error }) => {
+        if (error) console.error('Could not load notification preferences:', error)
+        setTelegramNotifications(data?.telegram_enabled === true)
+        if (data) {
+          setEmailNotifications(data.email_enabled !== false)
+          if (data.category_preferences && typeof data.category_preferences === 'object') setNotifications(prev => ({ ...prev, ...(data.category_preferences as Partial<NotificationPreferences>) }))
+        }
+      })
+  }, [user?.id])
+
+  useEffect(() => {
     if (profile) {
-      setEmailNotifications((profile as any).email_notifications !== false)
       setEmailDigestFrequency((profile as any).email_digest_frequency || 'weekly')
     }
   }, [profile])
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' || 'light'
-    const savedNotifications = localStorage.getItem('notifications')
     setTheme(savedTheme)
-    if (savedNotifications) setNotifications(JSON.parse(savedNotifications))
     document.documentElement.classList.toggle('dark', savedTheme === 'dark')
   }, [])
 
@@ -113,10 +126,15 @@ const Settings = () => {
     toast({ title: t('message.success'), description: `${t('settings.language')}: ${languageNames[newLanguage]}` })
   }
 
-  const handleNotificationChange = (key: keyof NotificationPreferences, value: boolean) => {
+  const handleNotificationChange = async (key: keyof NotificationPreferences, value: boolean) => {
     const updated = { ...notifications, [key]: value }
     setNotifications(updated)
-    localStorage.setItem('notifications', JSON.stringify(updated))
+    if (!user) return
+    const { error } = await supabase.from('notification_preferences').upsert({ user_id: user.id, category_preferences: updated, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
+    if (error) {
+      setNotifications(notifications)
+      toast({ title: 'Could not save notification category', description: error.message, variant: 'destructive' })
+    }
   }
 
   const handleProfileVisibilityChange = async (visibility: 'public' | 'registered' | 'private') => {
@@ -318,8 +336,12 @@ const Settings = () => {
                     onCheckedChange={async (checked) => {
                       setEmailNotifications(checked)
                       if (user) {
-                        await supabase.from('profiles').update({ email_notifications: checked }).eq('user_id', user.id)
-                        toast({ title: checked ? 'Email notifications enabled' : 'Email notifications disabled' })
+                        const { error } = await supabase.from('notification_preferences').upsert({ user_id: user.id, email_enabled: checked, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
+                        if (error) toast({ title: 'Could not update email preferences', description: error.message, variant: 'destructive' })
+                        else {
+                          await supabase.from('profiles').update({ email_notifications: checked }).eq('user_id', user.id)
+                          toast({ title: checked ? 'Email notifications enabled' : 'Email notifications disabled' })
+                        }
                       }
                     }}
                   />
@@ -351,6 +373,29 @@ const Settings = () => {
                     </SelectContent>
                   </Select>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Telegram notifications require an explicit opt-in and a verified bot link. */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Send className="h-5 w-5" />Telegram Notifications</CardTitle>
+                <p className="text-sm text-muted-foreground">Choose whether NaijaLancers may send account and activity alerts to your linked Telegram account.</p>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div><h4 className="font-medium">Allow Telegram alerts</h4><p className="text-xs text-muted-foreground">You can turn this off at any time.</p></div>
+                  <Switch checked={telegramNotifications} disabled={savingTelegram || !user} onCheckedChange={async (checked) => {
+                    if (!user) return
+                    setSavingTelegram(true)
+                    const { error } = await supabase.from('notification_preferences').upsert({ user_id: user.id, telegram_enabled: checked, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
+                    if (error) { toast({ title: 'Could not update Telegram settings', description: error.message, variant: 'destructive' }) }
+                    else { setTelegramNotifications(checked); toast({ title: checked ? 'Telegram alerts enabled' : 'Telegram alerts disabled' }) }
+                    setSavingTelegram(false)
+                  }} />
+                </div>
+                <p className="text-xs text-muted-foreground">Enabling this setting does not link your account. Connect the bot below and verify your email to receive messages.</p>
+                <TelegramConnectCard notificationsEnabled={telegramNotifications} />
               </CardContent>
             </Card>
 

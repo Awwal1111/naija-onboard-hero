@@ -237,95 +237,11 @@ serve(async (req) => {
       return new Response("OK", { status: 200 });
     }
 
-    // ===========================================
-    // SIGNUP COMMAND: /signup [email] [password]
-    // ===========================================
-    if (text.startsWith("/signup")) {
-      const parts = text.split(" ");
-      if (parts.length < 3) {
-        await sendTelegramMessage(
-          chatId,
-          `📝 *Sign Up for NaijaLancers*\n\n` +
-          `To create an account, use:\n` +
-          `/signup your@email.com YourPassword123\n\n` +
-          `*Password Requirements:*\n` +
-          `• At least 8 characters\n` +
-          `• One uppercase letter\n` +
-          `• One lowercase letter\n` +
-          `• One number\n\n` +
-          `Example:\n` +
-          `/signup john@example.com @Secure123`,
-          true
-        );
-        return new Response("OK", { status: 200 });
-      }
-
-      const email = parts[1].toLowerCase();
-      const password = parts.slice(2).join(" ");
-
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        await sendTelegramMessage(chatId, `❌ Invalid email format.`);
-        return new Response("OK", { status: 200 });
-      }
-
-      if (password.length < 8) {
-        await sendTelegramMessage(chatId, `❌ Password must be at least 8 characters.`);
-        return new Response("OK", { status: 200 });
-      }
-
-      const { data: existingUsers } = await supabase.auth.admin.listUsers();
-      const exists = existingUsers?.users?.some(u => u.email?.toLowerCase() === email);
-      
-      if (exists) {
-        await sendTelegramMessage(
-          chatId,
-          `⚠️ Account already exists.\n\nUse /login to link your existing account.`
-        );
-        return new Response("OK", { status: 200 });
-      }
-
-      const fullName = `${userName} ${lastName}`.trim() || "NaijaLancers User";
-      
-      const { data: newUser, error: signUpError } = await supabase.auth.admin.createUser({
-        email,
-        password,
-        email_confirm: true,
-        user_metadata: {
-          full_name: fullName,
-          telegram_user_id: telegramUserId,
-          telegram_username: message.from?.username
-        }
-      });
-
-      if (signUpError) {
-        console.error("Signup error:", signUpError);
-        await sendTelegramMessage(chatId, `❌ Failed to create account: ${signUpError.message}`);
-        return new Response("OK", { status: 200 });
-      }
-
-      if (newUser?.user) {
-        await supabase
-          .from("profiles")
-          .update({
-            telegram_user_id: telegramUserId,
-            telegram_username: message.from?.username || null,
-            full_name: fullName
-          })
-          .eq("user_id", newUser.user.id);
-      }
-
+    // Account creation must happen on the secure website. Never collect passwords in Telegram.
+    if (text === "/signup" || text.startsWith("/signup ")) {
       await sendTelegramMessage(
         chatId,
-        `🎉 *Welcome to NaijaLancers, ${fullName}!*\n\n` +
-        `✅ Account created & Telegram linked!\n` +
-        `💰 Signup Bonus: ₦50 NC credited!\n\n` +
-        `*Quick Commands:*\n` +
-        `/balance - Check wallet\n` +
-        `/jobs - Find jobs\n` +
-        `/gigs - Browse gigs\n` +
-        `/tips - Get hustler tips\n` +
-        `/help - All commands`,
+        `🔐 *Create your NaijaLancers account securely*\n\nPlease register on our website: https://naijalancers.name.ng/signup\n\nAfter registration, return here and use /login your@email.com to link Telegram. We will send a verification code to your email.\n\nNever send your password in Telegram chat.`,
         true
       );
       return new Response("OK", { status: 200 });
@@ -353,7 +269,7 @@ serve(async (req) => {
       const foundUser = users?.users?.find(u => u.email?.toLowerCase() === email);
 
       if (!foundUser) {
-        await sendTelegramMessage(chatId, `❌ No account found. Use /signup to create one.`);
+        await sendTelegramMessage(chatId, `❌ No account found. Register on naijalancers.name.ng, then use /login email to link Telegram.`);
         return new Response("OK", { status: 200 });
       }
 
@@ -466,87 +382,11 @@ serve(async (req) => {
       return new Response("OK", { status: 200 });
     }
 
-    // ===========================================
-    // START COMMAND (legacy link via referral code)
-    // ===========================================
+    // START COMMAND: linking is only allowed through /login + email verification.
     if (text.startsWith("/start")) {
-      const parts = text.split(" ");
-      if (parts.length > 1) {
-        let identifier = parts[1];
-        
-        try {
-          identifier = decodeURIComponent(identifier);
-        } catch (e) {}
-        
-        let userData = null;
-        
-        const { data: profileByRef } = await supabase
-          .from("profiles")
-          .select("user_id, full_name, telegram_user_id, celo_wallet_address")
-          .eq("referral_code", identifier.toUpperCase())
-          .maybeSingle();
-        
-        if (profileByRef) {
-          userData = profileByRef;
-        } else if (identifier.includes("@")) {
-          const { data: authUser } = await supabase.auth.admin.listUsers();
-          const foundUser = authUser?.users?.find(u => 
-            u.email?.toLowerCase() === identifier.toLowerCase()
-          );
-          
-          if (foundUser) {
-            const { data: profile } = await supabase
-              .from("profiles")
-              .select("user_id, full_name, telegram_user_id, celo_wallet_address")
-              .eq("user_id", foundUser.id)
-              .maybeSingle();
-            userData = profile;
-          }
-        }
-
-        if (userData) {
-          if (userData.telegram_user_id && userData.telegram_user_id !== telegramUserId) {
-            await sendTelegramMessage(chatId, `⚠️ This account is already linked to another Telegram.`);
-            return new Response("OK", { status: 200 });
-          }
-
-          await supabase
-            .from("profiles")
-            .update({
-              telegram_user_id: telegramUserId,
-              telegram_username: message.from?.username || null
-            })
-            .eq("user_id", userData.user_id);
-
-          await sendTelegramMessage(
-            chatId,
-            `✅ *Account Linked!*\n\n` +
-            `Hello ${userData.full_name || userName}! 👋\n\n` +
-            `🤖 I'm your AI assistant. I can help you:\n` +
-            `• Find jobs & gigs\n` +
-            `• Check balance & transactions\n` +
-            `• Get freelancing tips\n` +
-            `• Answer any questions\n\n` +
-            `Try: /jobs, /gigs, /tips, or just ask me anything!`,
-            true
-          );
-        } else {
-          await sendTelegramMessage(
-            chatId,
-            `❌ Account not found.\n\n` +
-            `Use /signup or /login to get started.`
-          );
-        }
-        return new Response("OK", { status: 200 });
-      }
-
       await sendTelegramMessage(
         chatId,
-        `👋 *Welcome to NaijaLancers Bot!*\n\n` +
-        `I'm your AI assistant for freelancing success in Nigeria! 🇳🇬\n\n` +
-        `🆕 *New User?* /signup email password\n` +
-        `🔗 *Have account?* /login email\n\n` +
-        `📱 Web: https://naijalancers.name.ng`,
+        `👋 *Welcome to NaijaLancers Bot!*\n\nTo connect your existing account, send:\n/login your@email.com\n\nA one-time verification code will be sent to your registered email.\n\nNew here? Create your account securely at https://naijalancers.name.ng/signup\n\nYou can manage Telegram notifications in Settings on the website.`,
         true
       );
       return new Response("OK", { status: 200 });
@@ -569,7 +409,7 @@ serve(async (req) => {
         .maybeSingle();
 
       if (!profileData) {
-        await sendTelegramMessage(chatId, `⚠️ Please link your account first. Use /signup or /login`);
+        await sendTelegramMessage(chatId, `⚠️ Please link your account first. Use /login email`);
         return new Response("OK", { status: 200 });
       }
 
@@ -604,7 +444,7 @@ serve(async (req) => {
         .maybeSingle();
 
       if (!existingProfile) {
-        await sendTelegramMessage(chatId, `⚠️ Please link your account first. Use /login or /signup`);
+        await sendTelegramMessage(chatId, `⚠️ Please link your account first. Use /login email`);
         return new Response("OK", { status: 200 });
       }
 
@@ -621,6 +461,32 @@ serve(async (req) => {
       return new Response("OK", { status: 200 });
     }
 
+    // Telegram users can opt out of alerts directly from the bot.
+    if (text === "/stop" || text === "/notifications off" || text === "/notifications on") {
+      const { data: linkedAccount } = await supabase
+        .from("profiles")
+        .select("user_id")
+        .eq("telegram_user_id", telegramUserId)
+        .maybeSingle();
+      if (!linkedAccount) {
+        await sendTelegramMessage(chatId, "Your Telegram account is not linked. Use /login your@email.com first.");
+        return new Response("OK", { status: 200 });
+      }
+      const enabled = text === "/notifications on";
+      const { error } = await supabase.from("notification_preferences").upsert({
+        user_id: linkedAccount.user_id, telegram_enabled: enabled, updated_at: new Date().toISOString()
+      }, { onConflict: "user_id" });
+      if (error) {
+        console.error("Could not update Telegram notification preference:", error);
+        await sendTelegramMessage(chatId, "I couldn't update your notification setting. Please try again in Settings.");
+      } else {
+        await sendTelegramMessage(chatId, enabled
+          ? "✅ Telegram account alerts are enabled. Send /stop any time to opt out."
+          : "🔕 Telegram alerts are now disabled. Your account remains linked. Re-enable with /notifications on or in website Settings.");
+      }
+      return new Response("OK", { status: 200 });
+    }
+
     // Find user by telegram_user_id for all other commands
     const { data: profile } = await supabase
       .from("profiles")
@@ -632,7 +498,7 @@ serve(async (req) => {
       await sendTelegramMessage(
         chatId,
         `⚠️ *Account Not Linked*\n\n` +
-        `🆕 New: /signup email password\n` +
+        `🆕 New: register at naijalancers.name.ng/signup\n` +
         `🔗 Existing: /login email\n\n` +
         `Or visit https://naijalancers.name.ng`,
         true

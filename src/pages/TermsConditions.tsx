@@ -37,7 +37,7 @@ const TermsConditions = () => {
       <div className="container max-w-4xl mx-auto py-12 px-4">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold mb-2">Terms & Conditions</h1>
-          <p className="text-muted-foreground">Last Updated: January 2025</p>
+          <p className="text-muted-foreground">Last Updated: November 26, 2026</p>
           <div className="flex items-center justify-center gap-2 mt-4">
             <Shield className="h-5 w-5 text-primary" />
             <span className="text-sm font-medium">CAC Registered: BN8870047</span>
@@ -279,7 +279,23 @@ const TermsConditions = () => {
 
                 {/* Section 10 */}
                 <section>
-                  <h2 className="text-xl font-semibold mb-3">10. Intellectual Property</h2>
+                  <h2 className="text-xl font-semibold mb-3">10. Notifications & Electronic Communications</h2>
+                  <ul className="list-disc list-inside space-y-2 text-muted-foreground">
+                    <li>We may send service-related notices about account access, security, transactions, orders, messages and platform activity through in-app notifications and the communication channels you enable in Settings.</li>
+                    <li>Email, browser push, Telegram and SMS notifications are subject to your saved preferences, available contact details, device permissions and the relevant provider's service availability.</li>
+                    <li>Telegram notifications are optional. You must separately connect your Telegram account through the NaijaLancers bot's email-verification process and enable Telegram alerts in Settings before we send routine Telegram notifications.</li>
+                    <li>You may disable Telegram alerts in Settings or send /stop to the NaijaLancers Telegram bot. You may change other channel preferences in Settings, subject to essential security or legally required communications.</li>
+                    <li>Promotional messages and product updates are optional and require a separate opt-in. Withdrawing marketing consent does not affect essential account or transaction notices.</li>
+                    <li>SMS messages may incur the NC charges shown in the SMS settings before activation or use. We will not treat consent to ordinary platform terms as consent to paid SMS alerts.</li>
+                    <li>Telegram and other external communication providers process messages under their own terms and privacy policies. Do not send passwords, verification secrets or sensitive financial credentials in chat.</li>
+                  </ul>
+                </section>
+
+                <Separator />
+
+                {/* Section 11 */}
+                <section>
+                  <h2 className="text-xl font-semibold mb-3">11. Intellectual Property</h2>
                   <ul className="list-disc list-inside space-y-2 text-muted-foreground">
                     <li>NaijaLancers owns all platform branding, design, and code.</li>
                     <li>Users own the content they create but grant NaijaLancers license to display it.</li>
@@ -291,7 +307,7 @@ const TermsConditions = () => {
 
                 {/* Section 11 */}
                 <section>
-                  <h2 className="text-xl font-semibold mb-3">11. Account Suspension & Termination</h2>
+                  <h2 className="text-xl font-semibold mb-3">12. Account Suspension & Termination</h2>
                   <ul className="list-disc list-inside space-y-2 text-muted-foreground">
                     <li>Users may close their accounts anytime.</li>
                     <li>NaijaLancers may suspend accounts violating these Terms.</li>
@@ -304,7 +320,7 @@ const TermsConditions = () => {
 
                 {/* Section 12 */}
                 <section>
-                  <h2 className="text-xl font-semibold mb-3">12. Limitation of Liability</h2>
+                  <h2 className="text-xl font-semibold mb-3">13. Limitation of Liability</h2>
                   <ul className="list-disc list-inside space-y-2 text-muted-foreground">
                     <li>NaijaLancers is not responsible for disputes between freelancers and clients.</li>
                     <li>We are not liable for delays caused by third-party payment processors.</li>
@@ -317,7 +333,7 @@ const TermsConditions = () => {
 
                 {/* Section 13 */}
                 <section>
-                  <h2 className="text-xl font-semibold mb-3">13. Governing Law</h2>
+                  <h2 className="text-xl font-semibold mb-3">14. Governing Law</h2>
                   <ul className="list-disc list-inside space-y-2 text-muted-foreground">
                     <li>These Terms are governed by the laws of the Federal Republic of Nigeria.</li>
                     <li>Disputes will be resolved through mediation, arbitration, or Nigerian courts.</li>
@@ -328,7 +344,7 @@ const TermsConditions = () => {
 
                 {/* Section 14 */}
                 <section>
-                  <h2 className="text-xl font-semibold mb-3">14. Contact Information</h2>
+                  <h2 className="text-xl font-semibold mb-3">15. Contact Information</h2>
                   <div className="space-y-1 text-muted-foreground">
                     <p><strong>Company:</strong> NaijaLancers Limited</p>
                     <p><strong>CAC Registration:</strong> BN8870047</p>
@@ -341,7 +357,7 @@ const TermsConditions = () => {
 
                 {/* Section 15 */}
                 <section>
-                  <h2 className="text-xl font-semibold mb-3">15. Updates to Terms</h2>
+                  <h2 className="text-xl font-semibold mb-3">16. Updates to Terms</h2>
                   <p className="text-muted-foreground">
                     We may update these Terms occasionally. Continued use of the platform means you accept the updated version.
                   </p>

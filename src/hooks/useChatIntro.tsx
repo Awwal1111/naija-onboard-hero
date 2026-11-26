@@ -93,15 +93,19 @@ export const useChatIntro = (otherUserId?: string) => {
       return false
     }
     setLoading(true)
-    const { error } = await supabase.from('chat_intro_requests').insert({
+    const { data: createdIntro, error } = await supabase.from('chat_intro_requests').insert({
       sender_id: user.id,
       recipient_id: otherUserId,
       message: trimmed,
-    })
+    }).select('id').single()
     setLoading(false)
     if (error) {
       toast({ title: 'Could not send', description: error.message, variant: 'destructive' })
       return false
+    }
+    if (createdIntro?.id) {
+      const { error: notifyError } = await supabase.functions.invoke('notify-chat-intro', { body: { intro_id: createdIntro.id, event: 'created' } })
+      if (notifyError) console.warn('Introduction external notification was not sent:', notifyError)
     }
     toast({ title: 'Introduction sent', description: 'Waiting for them to accept.' })
     await fetchPair()
@@ -116,6 +120,8 @@ export const useChatIntro = (otherUserId?: string) => {
       toast({ title: 'Failed to accept', description: error.message, variant: 'destructive' })
       return false
     }
+    const { error: notifyError } = await supabase.functions.invoke('notify-chat-intro', { body: { intro_id: introId, event: 'accepted' } })
+    if (notifyError) console.warn('Introduction acceptance notification was not sent:', notifyError)
     toast({ title: 'Introduction accepted' })
     await Promise.all([fetchPair(), fetchInbox()])
     return true

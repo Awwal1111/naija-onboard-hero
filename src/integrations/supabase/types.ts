@@ -14,6 +14,75 @@ export type Database = {
   }
   public: {
     Tables: {
+      notification_preferences: {
+        Row: {
+          user_id: string
+          in_app_enabled: boolean
+          email_enabled: boolean
+          telegram_enabled: boolean
+          push_enabled: boolean
+          sms_enabled: boolean
+          marketing_updates_enabled: boolean
+          category_preferences: Json
+          updated_at: string
+        }
+        Insert: {
+          user_id: string
+          in_app_enabled?: boolean
+          email_enabled?: boolean
+          telegram_enabled?: boolean
+          push_enabled?: boolean
+          sms_enabled?: boolean
+          marketing_updates_enabled?: boolean
+          category_preferences?: Json
+          updated_at?: string
+        }
+        Update: {
+          user_id?: string
+          in_app_enabled?: boolean
+          email_enabled?: boolean
+          telegram_enabled?: boolean
+          push_enabled?: boolean
+          sms_enabled?: boolean
+          marketing_updates_enabled?: boolean
+          category_preferences?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      signup_consents: {
+        Row: {
+          id: string
+          user_id: string
+          accepted_at: string
+          terms_version: string
+          privacy_version: string
+          telegram_notifications_opt_in: boolean
+          marketing_updates_opt_in: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          accepted_at: string
+          terms_version: string
+          privacy_version: string
+          telegram_notifications_opt_in?: boolean
+          marketing_updates_opt_in?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          accepted_at?: string
+          terms_version?: string
+          privacy_version?: string
+          telegram_notifications_opt_in?: boolean
+          marketing_updates_opt_in?: boolean
+          created_at?: string
+        }
+        Relationships: []
+      }
       action_restrictions: {
         Row: {
           action_name: string
