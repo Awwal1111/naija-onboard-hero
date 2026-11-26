@@ -82,7 +82,7 @@ export const InternationalSettings = () => {
           </Select>
           <div className="flex flex-wrap gap-2">
             <Badge variant="outline" className="text-xs">
-              {currency === 'NC' ? 'NC is the internal accounting unit' : `1 ${currencies[currency]?.symbol} ≈ NC ${currencies[currency]?.rateToNC.toLocaleString()}`}
+              {currency === 'NC' ? 'NC is the internal accounting unit' : currency === 'NGN' ? '1 NC = ₦1' : ratesAvailable ? `1 ${currencies[currency]?.symbol} ≈ NC ${currencies[currency]?.rateToNC.toLocaleString()}` : 'Live rate unavailable'}
             </Badge>
             <Badge variant="secondary" className="text-xs">
               {currencies[currency] && currency !== 'NC' && currency !== 'NGN' ? 'Indicative FX reference — display only' : 'NC is pegged 1:1 to NGN for internal accounting'}
