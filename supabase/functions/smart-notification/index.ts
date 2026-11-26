@@ -101,6 +101,15 @@ serve(async (req) => {
       console.error('[SMART_NOTIF] Profile error:', profileError);
     }
 
+    const { data: preferences } = await supabase
+      .from("notification_preferences")
+      .select("in_app_enabled, email_enabled, telegram_enabled, push_enabled, sms_enabled")
+      .eq("user_id", userId)
+      .maybeSingle();
+    const prefs = preferences || {
+      in_app_enabled: true, email_enabled: true, telegram_enabled: false, push_enabled: true, sms_enabled: false
+    };
+
     // Get user email from auth
     const { data: authData } = await supabase.auth.admin.getUserById(userId);
     const userEmail = authData?.user?.email;
@@ -147,7 +156,7 @@ serve(async (req) => {
 
     // 4. Always create in-app notification
     console.log('[SMART_NOTIF] 1️⃣ Creating in-app notification...');
-    const { error: notifError } = await supabase
+    const { error: notifError } = prefs.in_app_enabled ? await supabase
       .from('notifications')
       .insert({
         user_id: userId,
@@ -155,7 +164,7 @@ serve(async (req) => {
         title,
         message,
         metadata: { ...data, actionUrl, channels: [] } // Will update after
-      });
+      }) : { error: null };
 
     if (notifError) {
       console.error('[SMART_NOTIF] ❌ In-app notification error:', notifError);
@@ -166,7 +175,7 @@ serve(async (req) => {
 
     // 5. Send push notification (always attempt)
     console.log('[SMART_NOTIF] 2️⃣ Sending push notification...');
-    try {
+    if (prefs.push_enabled) try {
       const { data: pushData, error: pushError } = await supabase.functions.invoke('send-push-notification', {
         body: {
           userId,
@@ -191,7 +200,7 @@ serve(async (req) => {
     }
 
     // 6. Send Telegram (if offline or not reached via push)
-    if (profile?.telegram_user_id && (!isOnline || priority === 'high' || priority === 'urgent')) {
+    if (prefs.telegram_enabled && profile?.telegram_user_id && (!isOnline || priority === 'high' || priority === 'urgent')) {
       console.log('[SMART_NOTIF] 3️⃣ Sending Telegram notification...');
       try {
         const telegramMessage = `🔔 *${title}*\n\n${message}`;
@@ -217,7 +226,7 @@ serve(async (req) => {
 
     // 7. Send email - LinkedIn strategy: ALWAYS email users for engagement
     // Only skip if user is currently online (they'll see it in-app)
-    if (userEmail && (!isOnline || priority === 'high' || priority === 'urgent')) {
+    if (prefs.email_enabled && userEmail && (!isOnline || priority === 'high' || priority === 'urgent')) {
       console.log('[SMART_NOTIF] 4️⃣ Sending email notification...');
       try {
         const { data: emailData, error: emailError } = await supabase.functions.invoke('send-notification', {
@@ -246,7 +255,7 @@ serve(async (req) => {
 
     // 8. Send SMS (if inactive 14+ days AND urgent priority AND has phone)
     // SMS is charged: 10 NC for Nigeria, 25 NC for international
-    if (profile?.phone_number && daysInactive >= 14 && priority === 'urgent') {
+    if (prefs.sms_enabled && profile?.phone_number && daysInactive >= 14 && priority === 'urgent') {
       console.log('[SMART_NOTIF] 5️⃣ Sending SMS notification (urgent, inactive 14+ days)...');
       console.log('[SMART_NOTIF] Note: SMS will be charged from user balance');
       try {
@@ -286,7 +295,7 @@ serve(async (req) => {
         userStatus: {
           isOnline,
           daysInactive,
-          hasTelegram: !!profile?.telegram_user_id,
+          hasTelegram: !!profile?.telegram_user_id && prefs.telegram_enabled,
           hasEmail: !!userEmail,
           hasPhone: !!profile?.phone_number
         }
