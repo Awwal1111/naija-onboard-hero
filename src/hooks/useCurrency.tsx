@@ -53,7 +53,8 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
       const cached = localStorage.getItem('naijalancers_fx_rates_v1')
       if (!cached) return null
       const parsed = JSON.parse(cached)
-      return parsed?.rates && typeof parsed.rates === 'object' ? parsed.rates : null
+      const isFresh = parsed?.updatedAt && Date.now() - new Date(parsed.updatedAt).getTime() < 24 * 60 * 60 * 1000
+      return isFresh && parsed?.rates && typeof parsed.rates === 'object' ? parsed.rates : null
     } catch { return null }
   })
   const [rateUpdatedAt, setRateUpdatedAt] = useState<string | null>(() => {
@@ -214,15 +215,16 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
     const convertedAmount = ncAmount / curr.rateToNC
     const formatted = new Intl.NumberFormat(undefined, {
       style: 'currency',
-      currency: curr.code,
+      currency: curr.code === 'USDT' ? 'USD' : curr.code,
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     }).format(convertedAmount)
+    const displayAmount = currency === 'USDT' ? `USDT ${convertedAmount.toFixed(2)}` : formatted
 
     if (showNC && ncAmount > 0) {
-      return `${formatted} (NC ${ncAmount.toLocaleString()})`
+      return `${displayAmount} (NC ${ncAmount.toLocaleString()})`
     }
-    return formatted
+    return displayAmount
   }
 
   const convertToNC = (amount: number, fromCurrency: CurrencyCode): number => {
