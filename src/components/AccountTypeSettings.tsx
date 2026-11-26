@@ -13,7 +13,7 @@ type AccountType = 'personal' | 'business' | 'developer';
 
 interface AccountSettings {
   account_type: AccountType;
-  api_key: string | null;
+  api_key_last4: string | null;
   business_name: string | null;
   business_registration_number: string | null;
   business_verified: boolean;
@@ -23,6 +23,7 @@ export const AccountTypeSettings = () => {
   const [settings, setSettings] = useState<AccountSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [newApiKey, setNewApiKey] = useState<string | null>(null);
   const [showApiKey, setShowApiKey] = useState(false);
   const [businessName, setBusinessName] = useState('');
   const [businessRegNumber, setBusinessRegNumber] = useState('');
@@ -38,14 +39,14 @@ export const AccountTypeSettings = () => {
 
       const [{ data: profileData, error: profileError }, { data: secretsData }] = await Promise.all([
         supabase.from('profiles').select('account_type, business_name, business_registration_number, business_verified').eq('user_id', user.id).single(),
-        supabase.from('user_secrets').select('api_key').eq('user_id', user.id).single()
+        supabase.from('user_secrets').select('api_key_last4').eq('user_id', user.id).maybeSingle()
       ]);
 
       if (profileError) throw profileError;
       
       const combined = {
         account_type: (profileData as any)?.account_type || 'personal',
-        api_key: secretsData?.api_key || null,
+        api_key_last4: secretsData?.api_key_last4 || null,
         business_name: (profileData as any)?.business_name || null,
         business_registration_number: (profileData as any)?.business_registration_number || null,
         business_verified: (profileData as any)?.business_verified || false,
@@ -70,7 +71,7 @@ export const AccountTypeSettings = () => {
       }
 
       // Warn if switching away from developer with existing API key
-      if (settings?.account_type === 'developer' && newType !== 'developer' && settings?.api_key) {
+      if (settings?.account_type === 'developer' && newType !== 'developer' && settings?.api_key_last4) {
         if (!confirm('Switching from Developer will not delete your API key, but API access may be restricted. Continue?')) {
           setUpdating(false);
           return;
@@ -93,8 +94,8 @@ export const AccountTypeSettings = () => {
           throw new Error('API key generation returned empty result');
         }
         
-        console.log('API key generated successfully:', keyData.substring(0, 10) + '...');
-        updateData.api_key = keyData;
+        setNewApiKey(keyData);
+        setShowApiKey(true);
       }
 
       console.log('Updating profile with:', { account_type: newType, has_api_key: !!updateData.api_key });
@@ -113,7 +114,7 @@ export const AccountTypeSettings = () => {
       await fetchSettings();
       
       if (newType === 'developer') {
-        toast.success('Developer account activated! Your API key is ready.');
+        toast.success(newApiKey || updateData.api_key ? 'Developer account activated. Copy your new API key now; it is shown only once.' : 'Developer account activated. Your existing API key remains active.');
       } else {
         toast.success(`Account changed to ${newType}!`);
       }
@@ -151,19 +152,10 @@ export const AccountTypeSettings = () => {
         throw new Error('API key generation returned empty result');
       }
       
-      console.log('New API key generated:', keyData.substring(0, 10) + '...');
-      
-      const { error } = await supabase
-        .from('user_secrets')
-        .upsert({ user_id: user.id, api_key: keyData }, { onConflict: 'user_id' });
-
-      if (error) {
-        console.error('Profile update error:', error);
-        throw error;
-      }
-      
+      setNewApiKey(keyData);
+      setShowApiKey(true);
       await fetchSettings();
-      toast.success('API key regenerated! Your old key is now invalid.');
+      toast.success('API key regenerated. Copy it now; it cannot be retrieved again.');
     } catch (error: any) {
       console.error('Error regenerating API key:', error);
       toast.error(error.message || 'Failed to regenerate API key');
@@ -199,9 +191,11 @@ export const AccountTypeSettings = () => {
   };
 
   const copyApiKey = () => {
-    if (settings?.api_key) {
-      navigator.clipboard.writeText(settings.api_key);
-      toast.success('API key copied to clipboard');
+    if (newApiKey) {
+      navigator.clipboard.writeText(newApiKey);
+      toast.success('New API key copied to clipboard');
+    } else {
+      toast.error('The full API key is only shown once. Regenerate it to obtain a new key.');
     }
   };
 
@@ -346,7 +340,7 @@ export const AccountTypeSettings = () => {
               API Access
             </CardTitle>
             <CardDescription>
-              Your API key for integrating with NaijaLancers
+              Your API key is stored as a hash. The full value is displayed only immediately after generation.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -355,8 +349,8 @@ export const AccountTypeSettings = () => {
               <div className="flex gap-2">
                 <div className="relative flex-1">
                   <Input
-                    type={showApiKey ? 'text' : 'password'}
-                    value={settings?.api_key || 'No API key generated'}
+                    type={showApiKey && newApiKey ? 'text' : 'password'}
+                    value={newApiKey || (settings?.api_key_last4 ? `Existing key ending ${settings.api_key_last4} — hidden after creation` : 'No API key generated')}
                     readOnly
                     className="pr-10 font-mono text-sm"
                   />
@@ -377,7 +371,7 @@ export const AccountTypeSettings = () => {
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Keep your API key secret. Use it in the Authorization header: <code className="bg-muted px-1 rounded">Bearer YOUR_API_KEY</code>
+                Copy and store the key securely now. It cannot be viewed again. Use it in the Authorization header: <code className="bg-muted px-1 rounded">Bearer YOUR_API_KEY</code>
               </p>
             </div>
 
