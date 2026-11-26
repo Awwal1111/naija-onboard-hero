@@ -81,7 +81,7 @@ export interface SocialTask {
 const profileCache = new Map<string, { data: Profile; ts: number }>()
 const PROFILE_CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
 
-const PROFILE_SELECT = 'id, user_id, full_name, profession, bio, profile_picture_url, phone_number, country_code, state_name, state_id, lga_name, area, is_expert, expert_verified_at, wallet_balance, balance_withdrawable, balance_non_withdrawable, connections_count, average_rating, rating_count, referral_code, email_verified, phone_verified, face_verified, created_at, updated_at, premium_expires_at, avg_response_time_seconds, account_type, user_mode, is_premium, verification_level, telegram_user_id, telegram_username'
+const PROFILE_SELECT = 'id, user_id, full_name, profession, bio, profile_picture_url, phone_number, country_code, state_name, state_id, lga_name, area, is_expert, expert_verified_at, wallet_balance, balance_withdrawable, balance_non_withdrawable, connections_count, average_rating, rating_count, referral_code, email_verified, phone_verified, face_verified, created_at, updated_at, premium_expires_at, avg_response_time_seconds, account_type, user_mode, is_premium, verification_level, telegram_user_id, telegram_username, public_on_google'
 
 export const useProfile = () => {
   const { user } = useAuth()
