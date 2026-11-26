@@ -99,7 +99,7 @@ export const requestOneSignalPermission = async (): Promise<boolean> => {
     // OneSignal may finish creating the subscription shortly after opt-in.
     // Verify the actual OneSignal subscription; browser permission alone is
     // not proof that push delivery is configured.
-    for (let attempt = 0; attempt < 10; attempt += 1) {
+    for (let attempt = 0; attempt < 30; attempt += 1) {
       if (isOneSignalPushEnabled()) return true
       await new Promise(resolve => setTimeout(resolve, 500))
     }
