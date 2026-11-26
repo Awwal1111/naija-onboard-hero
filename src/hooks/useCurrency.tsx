@@ -17,9 +17,9 @@ interface Currency {
 export const CURRENCIES: Record<CurrencyCode, Currency> = {
   NC: { code: 'NC', symbol: 'NC', name: 'NaijaCoin', flag: '🪙', rateToNC: 1 },
   NGN: { code: 'NGN', symbol: '₦', name: 'Nigerian Naira', flag: '🇳🇬', rateToNC: 1 },
-  USD: { code: 'USD', symbol: '$', name: 'US Dollar', flag: '🇺🇸', rateToNC: 1 },
-  USDT: { code: 'USDT', symbol: 'USDT', name: 'Tether USD (reference)', flag: '🌐', rateToNC: 1 },
-  EUR: { code: 'EUR', symbol: '€', name: 'Euro', flag: '🇪🇺', rateToNC: 1 },
+  USD: { code: 'USD', symbol: '$', name: 'US Dollar', flag: '🇺🇸', rateToNC: 1600 },
+  USDT: { code: 'USDT', symbol: 'USDT', name: 'Tether USD (reference)', flag: '🌐', rateToNC: 1600 },
+  EUR: { code: 'EUR', symbol: '€', name: 'Euro', flag: '🇪🇺', rateToNC: 1750 },
   GBP: { code: 'GBP', symbol: '£', name: 'British Pound', flag: '🇬🇧', rateToNC: 2050 },
   KES: { code: 'KES', symbol: 'KSh', name: 'Kenyan Shilling', flag: '🇰🇪', rateToNC: 12 },
   GHS: { code: 'GHS', symbol: '₵', name: 'Ghanaian Cedi', flag: '🇬🇭', rateToNC: 130 },
