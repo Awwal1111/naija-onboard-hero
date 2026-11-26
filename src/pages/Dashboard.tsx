@@ -286,7 +286,7 @@ const Dashboard = () => {
                 <div className="p-2 bg-emerald-500/10 rounded-lg"><Wallet className="h-4 w-4 text-emerald-500" /></div>
                 <span className="text-xs text-muted-foreground">{t('dashboard.balance')}</span>
               </div>
-              <div className="text-xl font-bold">{formatPreferred(stats.walletBalance, false)}</div>
+              <div className="text-xl font-bold">{formatPreferred(stats.walletBalance, true)}</div>
             </CardContent>
           </Card>
           <Card>
@@ -295,7 +295,7 @@ const Dashboard = () => {
                 <div className="p-2 bg-green-500/10 rounded-lg"><ArrowUpRight className="h-4 w-4 text-green-500" /></div>
                 <span className="text-xs text-muted-foreground">{t('dashboard.earned')}</span>
               </div>
-              <div className="text-xl font-bold text-green-600">+{formatPreferred(stats.totalEarnings, false)}</div>
+              <div className="text-xl font-bold text-green-600">+{formatPreferred(stats.totalEarnings, true)}</div>
             </CardContent>
           </Card>
           <Card>
@@ -304,7 +304,7 @@ const Dashboard = () => {
                 <div className="p-2 bg-red-500/10 rounded-lg"><ArrowDownRight className="h-4 w-4 text-red-500" /></div>
                 <span className="text-xs text-muted-foreground">{t('dashboard.spent')}</span>
               </div>
-              <div className="text-xl font-bold text-red-600">-{formatPreferred(stats.totalSpent, false)}</div>
+              <div className="text-xl font-bold text-red-600">-{formatPreferred(stats.totalSpent, true)}</div>
             </CardContent>
           </Card>
           <Card>
@@ -396,10 +396,10 @@ const Dashboard = () => {
                 <CardContent className="pt-4"><div className="flex items-center gap-3 mb-2"><div className="p-2 bg-blue-500/10 rounded-lg"><Briefcase className="h-5 w-5 text-blue-500" /></div><div><div className="font-semibold">Jobs</div><div className="text-xs text-muted-foreground">Posted: {stats.jobsPosted}</div></div></div><div className="text-xs text-muted-foreground">Applied: {stats.jobApplications}</div></CardContent>
               </Card>
               <Card className="cursor-pointer hover:bg-accent/50" onClick={() => navigate('/courses')}>
-                <CardContent className="pt-4"><div className="flex items-center gap-3 mb-2"><div className="p-2 bg-orange-500/10 rounded-lg"><GraduationCap className="h-5 w-5 text-orange-500" /></div><div><div className="font-semibold">Courses</div><div className="text-xs text-muted-foreground">Created: {stats.coursesCreated}</div></div></div><div className="text-xs text-muted-foreground">Revenue: {formatPreferred(stats.courseRevenue, false)}</div></CardContent>
+                <CardContent className="pt-4"><div className="flex items-center gap-3 mb-2"><div className="p-2 bg-orange-500/10 rounded-lg"><GraduationCap className="h-5 w-5 text-orange-500" /></div><div><div className="font-semibold">Courses</div><div className="text-xs text-muted-foreground">Created: {stats.coursesCreated}</div></div></div><div className="text-xs text-muted-foreground">Revenue: {formatPreferred(stats.courseRevenue, true)}</div></CardContent>
               </Card>
               <Card className="cursor-pointer hover:bg-accent/50" onClick={() => navigate('/digital-products')}>
-                <CardContent className="pt-4"><div className="flex items-center gap-3 mb-2"><div className="p-2 bg-green-500/10 rounded-lg"><ShoppingBag className="h-5 w-5 text-green-500" /></div><div><div className="font-semibold">Products</div><div className="text-xs text-muted-foreground">Created: {stats.productsCreated}</div></div></div><div className="text-xs text-muted-foreground">Revenue: {formatPreferred(stats.productRevenue, false)}</div></CardContent>
+                <CardContent className="pt-4"><div className="flex items-center gap-3 mb-2"><div className="p-2 bg-green-500/10 rounded-lg"><ShoppingBag className="h-5 w-5 text-green-500" /></div><div><div className="font-semibold">Products</div><div className="text-xs text-muted-foreground">Created: {stats.productsCreated}</div></div></div><div className="text-xs text-muted-foreground">Revenue: {formatPreferred(stats.productRevenue, true)}</div></CardContent>
               </Card>
               <Card className="cursor-pointer hover:bg-accent/50" onClick={() => navigate('/experts')}>
                 <CardContent className="pt-4"><div className="flex items-center gap-3 mb-2"><div className="p-2 bg-purple-500/10 rounded-lg"><Video className="h-5 w-5 text-purple-500" /></div><div><div className="font-semibold">Classes</div><div className="text-xs text-muted-foreground">Created: {stats.classesCreated}</div></div></div><div className="text-xs text-muted-foreground">Participants: {stats.classParticipants}</div></CardContent>
@@ -431,7 +431,7 @@ const Dashboard = () => {
                 <CardHeader><CardTitle className="text-base">Revenue Sources</CardTitle></CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={200}>
-                    <PieChart><Pie data={charts.revenueBreakdown} cx="50%" cy="50%" outerRadius={80} label={({ name, value }) => `${name}: ${formatPreferred(Number(value), false)}`} dataKey="value">{charts.revenueBreakdown.map((_, index) => (<Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />))}</Pie><Tooltip /></PieChart>
+                    <PieChart><Pie data={charts.revenueBreakdown} cx="50%" cy="50%" outerRadius={80} label={({ name, value }) => `${name}: ${formatPreferred(Number(value), true)}`} dataKey="value">{charts.revenueBreakdown.map((_, index) => (<Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />))}</Pie><Tooltip /></PieChart>
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
