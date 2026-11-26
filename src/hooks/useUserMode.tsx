@@ -47,14 +47,20 @@ export const UserModeProvider = ({ children }: { children: ReactNode }) => {
       try {
         const { data, error } = await supabase
           .from('profiles')
-          .select('user_mode')
+          .select('user_mode, account_type')
           .eq('user_id', userId)
           .maybeSingle()
 
         if (error) throw error
-        if (!cancelled && isUserMode(data?.user_mode)) {
-          setModeState(data.user_mode)
-          localStorage.setItem('user_mode', data.user_mode)
+        if (!cancelled) {
+          // Fall back to the legacy account_type for profiles created before user_mode existed.
+          const savedMode = isUserMode(data?.user_mode)
+            ? data.user_mode
+            : isUserMode(data?.account_type)
+              ? data.account_type
+              : 'both'
+          setModeState(savedMode)
+          localStorage.setItem('user_mode', savedMode)
         }
       } catch (error) {
         console.error('Failed to load account mode:', error)
