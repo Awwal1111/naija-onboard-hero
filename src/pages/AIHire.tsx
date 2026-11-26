@@ -491,10 +491,14 @@ export default function AIHire() {
   const handleCompleteOnboarding = async () => {
     setLoading(true)
     try {
-      await updateProfile({
-        account_type: 'client',
+      // Completing the hiring flow must not downgrade a Both account to Client.
+      const accountMode = profile?.user_mode === 'both' || profile?.account_type === 'both' ? 'both' : 'client'
+      const result = await updateProfile({
+        account_type: accountMode,
+        user_mode: accountMode,
         onboarding_completed: true
       } as any)
+      if (!result.success) throw new Error(result.error || 'Failed to complete setup')
 
       toast({
         title: 'Welcome aboard! 🎉',

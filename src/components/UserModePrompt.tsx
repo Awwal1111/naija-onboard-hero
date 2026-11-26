@@ -5,7 +5,6 @@ import { Briefcase, UserCheck, Shuffle, ArrowRight, Sparkles } from 'lucide-reac
 import { useUserMode, UserMode } from '@/hooks/useUserMode'
 import { useProfile } from '@/hooks/useProfile'
 import { useAuth } from '@/hooks/useAuth'
-import { supabase } from '@/integrations/supabase/client'
 import { toast } from 'sonner'
 
 interface UserModePromptProps {
@@ -55,13 +54,7 @@ export const UserModePrompt: React.FC<UserModePromptProps> = ({
 
     setSaving(true)
     try {
-      // Update profile with user_mode
-      await supabase
-        .from('profiles')
-        .update({ user_mode: selectedMode } as any)
-        .eq('user_id', user.id)
-
-      // Update local state
+      // Persist through the shared mode provider so database errors are surfaced.
       await setMode(selectedMode)
 
       const modeLabels = {

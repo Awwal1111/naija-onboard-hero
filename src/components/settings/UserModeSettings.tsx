@@ -9,15 +9,19 @@ export const UserModeSettings = () => {
   const { mode, setMode, isLoading } = useUserMode()
 
   const handleModeChange = async (newMode: UserMode) => {
-    await setMode(newMode)
-    
     const modeLabels = {
       freelancer: 'Freelancer',
       client: 'Client',
       both: 'Both'
     }
-    
-    toast.success(`Switched to ${modeLabels[newMode]} mode`)
+
+    try {
+      await setMode(newMode)
+      toast.success(`Switched to ${modeLabels[newMode]} mode`)
+    } catch (error) {
+      console.error('Failed to save account mode:', error)
+      toast.error('Could not save your account mode. Please try again.')
+    }
   }
 
   const modes = [

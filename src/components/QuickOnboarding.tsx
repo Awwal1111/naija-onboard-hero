@@ -21,6 +21,7 @@ import {
   ChevronLeft
 } from 'lucide-react'
 import { useProfile } from '@/hooks/useProfile'
+import { useUserMode } from '@/hooks/useUserMode'
 import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/use-toast'
 import { useNigerianStates } from '@/hooks/useNigerianStates'
@@ -63,6 +64,7 @@ export const QuickOnboarding: React.FC<QuickOnboardingProps> = ({
   const navigate = useNavigate()
   const { user } = useAuth()
   const { profile, updateProfile } = useProfile()
+  const { setMode } = useUserMode()
   const { toast } = useToast()
   const { states, lgas, loadingStates, loadingLGAs, fetchLGAs } = useNigerianStates()
   
@@ -123,7 +125,7 @@ export const QuickOnboarding: React.FC<QuickOnboardingProps> = ({
         toast({ title: 'Please enter your name', variant: 'destructive' })
         return
       }
-      if (formData.account_type === 'freelancer' && !formData.profession.trim()) {
+      if (formData.account_type !== 'client' && !formData.profession.trim()) {
         toast({ title: 'Please select your profession', variant: 'destructive' })
         return
       }
@@ -151,7 +153,9 @@ export const QuickOnboarding: React.FC<QuickOnboardingProps> = ({
     if (goal === 'exploring') {
       setLoading(true)
       try {
-        await updateProfile({ full_name: formData.full_name.trim(), profession: formData.profession.trim() || null, country_code: formData.country, state_name: isNigeria ? formData.state : null, lga_name: isNigeria ? formData.lga : null, area: !isNigeria ? formData.city : null, account_type: formData.account_type, onboarding_completed: true } as any)
+        const result = await updateProfile({ full_name: formData.full_name.trim(), profession: formData.profession.trim() || null, country_code: formData.country, state_name: isNigeria ? formData.state : null, lga_name: isNigeria ? formData.lga : null, area: !isNigeria ? formData.city : null, account_type: formData.account_type, user_mode: formData.account_type, onboarding_completed: true } as any)
+        if (!result.success) throw new Error(result.error || 'Could not save account details')
+        await setMode(formData.account_type, false)
         toast({ title: 'Welcome! 👋', description: 'Your basic details are saved. You can explore and update your profile anytime.' })
         onOpenChange(false)
         onComplete?.()
@@ -167,20 +171,22 @@ export const QuickOnboarding: React.FC<QuickOnboardingProps> = ({
       // Client flow - save user_mode as 'client' and redirect to AI assistant
       setLoading(true)
       try {
-        await updateProfile({
+        // Choosing both keeps both capabilities; choosing freelancer and then "hire"
+        // upgrades the account to Both so the user's stated intent is not lost.
+        const userMode: AccountType = formData.account_type === 'freelancer' ? 'both' : formData.account_type
+        const result = await updateProfile({
           full_name: formData.full_name.trim(),
           profession: formData.profession.trim() || null,
           country_code: formData.country,
           state_name: isNigeria ? formData.state : null,
           lga_name: isNigeria ? formData.lga : null,
           area: !isNigeria ? formData.city : null,
-          account_type: 'client',
-          user_mode: 'client',
+          account_type: userMode,
+          user_mode: userMode,
           onboarding_completed: true
         } as any)
-
-        // Also update localStorage for immediate effect
-        localStorage.setItem('user_mode', 'client')
+        if (!result.success) throw new Error(result.error || 'Failed to save profile')
+        await setMode(userMode, false)
 
         toast({
           title: "Let's find you the perfect freelancer! 🤖",
@@ -205,24 +211,21 @@ export const QuickOnboarding: React.FC<QuickOnboardingProps> = ({
     // Freelancer flow - complete onboarding and save user_mode
     setLoading(true)
     try {
-      // Determine user_mode based on account_type selection in step 1
-      const userMode = formData.account_type === 'client' ? 'client' : 
-                       formData.account_type === 'both' ? 'both' : 'freelancer'
-      
-      await updateProfile({
+      // If the user selected Client but chooses the freelancer path, enable Both.
+      const userMode: AccountType = formData.account_type === 'client' ? 'both' : formData.account_type
+      const result = await updateProfile({
         full_name: formData.full_name.trim(),
         profession: formData.profession.trim() || null,
         country_code: formData.country,
         state_name: isNigeria ? formData.state : null,
         lga_name: isNigeria ? formData.lga : null,
         area: !isNigeria ? formData.city : null,
-        account_type: formData.account_type,
+        account_type: userMode,
         user_mode: userMode,
         onboarding_completed: true
       } as any)
-
-      // Also update localStorage for immediate effect
-      localStorage.setItem('user_mode', userMode)
+      if (!result.success) throw new Error(result.error || 'Failed to save profile')
+      await setMode(userMode, false)
 
       toast({
         title: 'Welcome to NaijaLancers! 🎉',
@@ -302,7 +305,7 @@ export const QuickOnboarding: React.FC<QuickOnboardingProps> = ({
               {/* Account Type */}
               <div className="space-y-2">
                 <label className="text-sm font-medium">I am a...</label>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-2">
                   <button
                     onClick={() => setFormData({ ...formData, account_type: 'freelancer' })}
                     className={`p-3 rounded-xl border-2 transition-all text-left ${
@@ -327,11 +330,23 @@ export const QuickOnboarding: React.FC<QuickOnboardingProps> = ({
                     <p className="font-medium text-sm">Client</p>
                     <p className="text-xs text-muted-foreground">I hire talent</p>
                   </button>
+                  <button
+                    onClick={() => setFormData({ ...formData, account_type: 'both' })}
+                    className={`p-3 rounded-xl border-2 transition-all text-left ${
+                      formData.account_type === 'both'
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border hover:border-primary/50'
+                    }`}
+                  >
+                    <Sparkles className={`h-5 w-5 mb-1 ${formData.account_type === 'both' ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <p className="font-medium text-sm">Both</p>
+                    <p className="text-xs text-muted-foreground">I hire & work</p>
+                  </button>
                 </div>
               </div>
 
               {/* Profession (only for freelancers) */}
-              {formData.account_type === 'freelancer' && (
+              {formData.account_type !== 'client' && (
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Your Profession *</label>
                   <BrandInput
