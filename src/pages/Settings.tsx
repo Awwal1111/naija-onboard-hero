@@ -91,10 +91,11 @@ const Settings = () => {
 
   useEffect(() => {
     if (!user) return
-    supabase.from('notification_preferences').select('telegram_enabled').eq('user_id', user.id).maybeSingle()
+    supabase.from('notification_preferences').select('telegram_enabled, email_enabled').eq('user_id', user.id).maybeSingle()
       .then(({ data, error }) => {
         if (error) console.error('Could not load notification preferences:', error)
         setTelegramNotifications(data?.telegram_enabled === true)
+        if (data) setEmailNotifications(data.email_enabled !== false)
       })
   }, [user?.id])
 
@@ -330,8 +331,12 @@ const Settings = () => {
                     onCheckedChange={async (checked) => {
                       setEmailNotifications(checked)
                       if (user) {
-                        await supabase.from('profiles').update({ email_notifications: checked }).eq('user_id', user.id)
-                        toast({ title: checked ? 'Email notifications enabled' : 'Email notifications disabled' })
+                        const { error } = await supabase.from('notification_preferences').upsert({ user_id: user.id, email_enabled: checked, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
+                        if (error) toast({ title: 'Could not update email preferences', description: error.message, variant: 'destructive' })
+                        else {
+                          await supabase.from('profiles').update({ email_notifications: checked }).eq('user_id', user.id)
+                          toast({ title: checked ? 'Email notifications enabled' : 'Email notifications disabled' })
+                        }
                       }
                     }}
                   />
