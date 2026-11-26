@@ -61,7 +61,7 @@ export const ProtectedRoute = ({
                   // Only clear auth-related storage, not everything
                   sessionStorage.removeItem('appMounted')
                   sessionStorage.removeItem('lastRoute')
-                } catch {}
+                } catch { /* Storage may be unavailable in private browsing. */ }
                 window.location.href = '/login'
               }}
             >
