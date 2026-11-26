@@ -229,7 +229,8 @@ const SignUp = () => {
       acceptedAt: new Date().toISOString(), termsVersion: '2026-11-26', privacyVersion: '2026-11-26',
       telegramNotifications: formData.telegramNotifications, marketingUpdates: formData.marketingUpdates
     }))
-    await signInWithGoogle()
+    const { error } = await signInWithGoogle()
+    if (error) localStorage.removeItem('nl_pending_signup_consent')
     setIsLoading(false)
   }
 
