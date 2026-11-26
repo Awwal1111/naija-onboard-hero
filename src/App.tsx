@@ -10,6 +10,7 @@ import GlobalErrorHandler from "@/components/GlobalErrorHandler";
 import { useAppState } from "@/hooks/useAppState";
 import { WebRTCProvider } from "@/contexts/WebRTCContext";
 import { AuthProvider, useAuthContext as useAuth } from "@/contexts/AuthContext";
+import { UserModeProvider } from "@/hooks/useUserMode";
 import AuthRedirectHandler from "@/components/AuthRedirectHandler";
 import RouteCanonical from "@/components/RouteCanonical";
 import GlobalDepositPrompt from "@/components/GlobalDepositPrompt";
@@ -229,6 +230,7 @@ const App = () => (
       <GlobalErrorHandler />
       <BrowserRouter>
         <AuthProvider>
+          <UserModeProvider>
           <WebRTCProvider>
             <MiniPayAuthWrapper>
               <RouteCanonical />
@@ -385,6 +387,7 @@ const App = () => (
               )}
             </MiniPayAuthWrapper>
           </WebRTCProvider>
+          </UserModeProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
