@@ -256,7 +256,7 @@ export const WalletDepositCard = ({ walletKind, recipientAddress, onSuccess }: W
         </div>
 
         <p className="text-xs text-muted-foreground">
-          ≈ {amount && !isNaN(parseFloat(amount)) ? `NC ${Math.floor(parseFloat(amount) * 1600).toLocaleString()}` : 'NC 0'} • 1 {TOKENS[token].label} ≈ NC 1,600
+          {amount && !isNaN(parseFloat(amount)) ? 'Estimated NC credit is calculated after the deposit is verified.' : 'Enter an amount to see deposit instructions.'}
         </p>
 
         <BrandButton
