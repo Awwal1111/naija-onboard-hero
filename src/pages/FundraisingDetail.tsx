@@ -260,7 +260,7 @@ export default function FundraisingDetail() {
                     {campaign.fund_usage_breakdown.map((item: any, index: number) => (
                       <div key={index} className="flex justify-between items-center p-3 bg-muted rounded-lg">
                         <span>{item.description}</span>
-                        <span className="font-semibold">₦{item.amount?.toLocaleString()}NC</span>
+                        <span className="font-semibold">{formatNCDisplay(Number(item.amount || 0))}</span>
                       </div>
                     ))}
                   </div>
@@ -299,8 +299,8 @@ export default function FundraisingDetail() {
               <div className="space-y-4">
                 <div>
                   <div className="flex justify-between mb-2">
-                    <span className="text-2xl font-bold">₦{campaign.raised_amount?.toLocaleString() || 0}NC</span>
-                    <span className="text-muted-foreground">of ₦{campaign.goal_amount?.toLocaleString()}NC</span>
+                    <span className="text-2xl font-bold">{formatNCDisplay(Number(campaign.raised_amount || 0))}</span>
+                    <span className="text-muted-foreground">of {formatNCDisplay(Number(campaign.goal_amount || 0))}</span>
                   </div>
                   <Progress value={progress} className="h-3" />
                 </div>
@@ -420,7 +420,7 @@ export default function FundraisingDetail() {
                             )}
                             <span>{contribution.profiles?.full_name || "Anonymous"}</span>
                           </div>
-                          <span className="font-semibold">₦{contribution.amount?.toLocaleString()}NC</span>
+                          <span className="font-semibold">{formatNCDisplay(Number(contribution.amount || 0))}</span>
                         </div>
                       ))}
                     </div>
@@ -445,7 +445,7 @@ export default function FundraisingDetail() {
                 type="number"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                placeholder={`Min: ₦${campaign.minimum_contribution || 10}NC`}
+                placeholder={`Minimum: ${formatNCDisplay(Number(campaign.minimum_contribution || 10))}`}
                 min={campaign.minimum_contribution || 10}
               />
             </div>
@@ -455,7 +455,7 @@ export default function FundraisingDetail() {
                 if (!amountNum || amountNum < (campaign.minimum_contribution || 10)) {
                   toast({
                     title: "Invalid amount",
-                    description: `Minimum contribution is ₦${campaign.minimum_contribution || 10}NC`,
+                    description: `Minimum contribution is ${formatNCDisplay(Number(campaign.minimum_contribution || 10))}`,
                     variant: "destructive",
                   });
                   return;
