@@ -72,12 +72,15 @@ export const UserModeProvider = ({ children }: { children: ReactNode }) => {
 
     // Persist first so the UI never claims a mode was saved when the database rejected it.
     if (persist && userId) {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
-        .update({ user_mode: newMode } as any)
+        .update({ user_mode: newMode, account_type: newMode } as any)
         .eq('user_id', userId)
+        .select('user_mode')
+        .maybeSingle()
 
       if (error) throw error
+      if (!data) throw new Error('Account mode was not saved to your profile')
     }
 
     setModeState(newMode)
