@@ -22,7 +22,8 @@ export const CurrencyConverterDialog = () => {
 
   const convertAmount = (): string => {
     if (!ncAmount) return '0.00'
-    if (!ratesAvailable) return 'Rate unavailable'
+    if (!ratesAvailable && fromCurrency !== 'NC' && fromCurrency !== 'NGN' && toCurrency !== 'NC' && toCurrency !== 'NGN') return 'Rate unavailable'
+    if (!ratesAvailable && (fromCurrency === 'NC' || fromCurrency === 'NGN') && (toCurrency === 'NC' || toCurrency === 'NGN')) return Number(ncAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     const amount = parseFloat(ncAmount)
     if (isNaN(amount)) return '0.00'
 
@@ -132,7 +133,7 @@ export const CurrencyConverterDialog = () => {
           <div className="bg-primary/10 rounded-lg p-3 text-center space-y-1">
             <p className="text-sm text-muted-foreground">{ratesAvailable ? 'Indicative exchange rate' : 'Exchange rate unavailable'}</p>
             <p className="font-bold text-primary">
-              {ratesAvailable ? `1 ${fromCurrency} ≈ ${(currencies[fromCurrency].rateToNC / currencies[toCurrency].rateToNC).toFixed(4)} ${toCurrency}` : 'Use NC / USDT reference when FX is unavailable'}
+              {ratesAvailable || (['NC', 'NGN'].includes(fromCurrency) && ['NC', 'NGN'].includes(toCurrency)) ? `1 ${fromCurrency} ≈ ${(currencies[fromCurrency].rateToNC / currencies[toCurrency].rateToNC).toFixed(4)} ${toCurrency}` : 'Use NC / USDT reference when FX is unavailable'}
             </p>
           </div>
 
