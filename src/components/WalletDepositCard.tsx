@@ -225,7 +225,7 @@ export const WalletDepositCard = ({ walletKind, recipientAddress, onSuccess }: W
             </BrandButton>
             <p className="text-xs text-muted-foreground text-center">
               {walletKind === 'valora'
-                ? 'Valora quick-pay supports cUSD. For USDT or USDC, copy the address and send manually on Celo.'
+                ? 'Valora quick-pay supports cUSD. For USDT, copy the address and send manually on Celo.'
                 : 'On mobile, connect from MetaMask’s in-app browser or use the pre-filled transfer link.'}
             </p>
           </div>
