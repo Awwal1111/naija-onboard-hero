@@ -45,7 +45,7 @@ export const CurrencyDisplay: React.FC<CurrencyDisplayProps> = ({
       <TooltipContent>
         <div className="text-xs space-y-1">
           <p>{nativeAmount} (₦{amount.toLocaleString()})</p>
-          {currency !== 'NC' && currency !== 'NGN' && (
+          {currency !== 'NC' && currency !== 'NGN' && ratesAvailable && (
             <p className="text-muted-foreground">
               Indicative rate: 1 {currency} = NC {currencies[currency].rateToNC.toLocaleString()}
             </p>
@@ -78,8 +78,9 @@ const getDisplayCurrency = (isNigerian: boolean): string => {
 const getCachedRate = (code: string): number | null => {
   try {
     const cached = JSON.parse(localStorage.getItem('naijalancers_fx_rates_v1') || 'null')
+    const fresh = cached?.updatedAt && Date.now() - new Date(cached.updatedAt).getTime() < 24 * 60 * 60 * 1000
     const rate = cached?.rates?.[code]
-    return typeof rate === 'number' && rate > 0 ? rate : null
+    return fresh && typeof rate === 'number' && rate > 0 ? rate : null
   } catch { return null }
 }
 
