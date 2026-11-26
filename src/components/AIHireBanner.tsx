@@ -1,10 +1,16 @@
 import { useNavigate } from 'react-router-dom'
 import { Bot, ChevronRight } from 'lucide-react'
+import { useUserMode } from '@/hooks/useUserMode'
 
-// Prominent entry point to the AI freelancer finder (/ai-hire) at the top of the feed.
-// It used to be reachable only through the "More" drawer and the search suggestions.
+// Client-facing entry point to the AI freelancer finder.
+// Both-mode accounts can hire, so they should see this too.
 export const AIHireBanner = () => {
   const navigate = useNavigate()
+  const { isClient, isLoading } = useUserMode()
+
+  // Avoid briefly showing a client-only action while the saved account mode loads.
+  if (isLoading || !isClient) return null
+
   return (
     <div className="px-4 pt-3">
       <button
