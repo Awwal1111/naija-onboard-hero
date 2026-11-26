@@ -58,7 +58,7 @@ export const InternationalSettings = () => {
                 Display Currency
               </h4>
               <p className="text-sm text-muted-foreground">
-                Show prices in your preferred currency alongside NC
+                Display converted prices where currency-aware components are used. Wallet and settlement amounts remain in NC.
               </p>
             </div>
           </div>
@@ -85,7 +85,7 @@ export const InternationalSettings = () => {
               1 {currencies[currency]?.symbol} = NC {currencies[currency]?.rateToNC.toLocaleString()}
             </Badge>
             <Badge variant="secondary" className="text-xs">
-              Live rates updated regularly
+              Indicative reference rates — not live exchange quotes
             </Badge>
           </div>
         </div>
