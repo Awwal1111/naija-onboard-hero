@@ -241,7 +241,7 @@ serve(async (req) => {
     if (text === "/signup" || text.startsWith("/signup ")) {
       await sendTelegramMessage(
         chatId,
-        `🔐 *Create your NaijaLancers account securely*\\n\\nPlease register on our website: https://naijalancers.name.ng/signup\\n\\nAfter registration, return here and use /login your@email.com to link Telegram. We will send a verification code to your email.\\n\\nNever send your password in Telegram chat.`,
+        `🔐 *Create your NaijaLancers account securely*\n\nPlease register on our website: https://naijalancers.name.ng/signup\n\nAfter registration, return here and use /login your@email.com to link Telegram. We will send a verification code to your email.\n\nNever send your password in Telegram chat.`,
         true
       );
       return new Response("OK", { status: 200 });
@@ -386,7 +386,7 @@ serve(async (req) => {
     if (text.startsWith("/start")) {
       await sendTelegramMessage(
         chatId,
-        `👋 *Welcome to NaijaLancers Bot!*\\n\\nTo connect your existing account, send:\\n/login your@email.com\\n\\nA one-time verification code will be sent to your registered email.\\n\\nNew here? Create your account securely at https://naijalancers.name.ng/signup\\n\\nYou can manage Telegram notifications in Settings on the website.`,
+        `👋 *Welcome to NaijaLancers Bot!*\n\nTo connect your existing account, send:\n/login your@email.com\n\nA one-time verification code will be sent to your registered email.\n\nNew here? Create your account securely at https://naijalancers.name.ng/signup\n\nYou can manage Telegram notifications in Settings on the website.`,
         true
       );
       return new Response("OK", { status: 200 });
