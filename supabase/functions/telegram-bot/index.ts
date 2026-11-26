@@ -461,6 +461,32 @@ serve(async (req) => {
       return new Response("OK", { status: 200 });
     }
 
+    // Telegram users can opt out of alerts directly from the bot.
+    if (text === "/stop" || text === "/notifications off" || text === "/notifications on") {
+      const { data: linkedAccount } = await supabase
+        .from("profiles")
+        .select("user_id")
+        .eq("telegram_user_id", telegramUserId)
+        .maybeSingle();
+      if (!linkedAccount) {
+        await sendTelegramMessage(chatId, "Your Telegram account is not linked. Use /login your@email.com first.");
+        return new Response("OK", { status: 200 });
+      }
+      const enabled = text === "/notifications on";
+      const { error } = await supabase.from("notification_preferences").upsert({
+        user_id: linkedAccount.user_id, telegram_enabled: enabled, updated_at: new Date().toISOString()
+      }, { onConflict: "user_id" });
+      if (error) {
+        console.error("Could not update Telegram notification preference:", error);
+        await sendTelegramMessage(chatId, "I couldn't update your notification setting. Please try again in Settings.");
+      } else {
+        await sendTelegramMessage(chatId, enabled
+          ? "✅ Telegram account alerts are enabled. Send /stop any time to opt out."
+          : "🔕 Telegram alerts are now disabled. Your account remains linked. Re-enable with /notifications on or in website Settings.");
+      }
+      return new Response("OK", { status: 200 });
+    }
+
     // Find user by telegram_user_id for all other commands
     const { data: profile } = await supabase
       .from("profiles")
