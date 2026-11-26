@@ -290,7 +290,7 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
   const currencies = liveRates
     ? Object.fromEntries(Object.entries(CURRENCIES).map(([code, curr]) => [code, {
         ...curr,
-        rateToNC: liveRates[code] || curr.rateToNC
+        rateToNC: liveRates[code] ?? (code === 'NC' || code === 'NGN' ? 1 : 0)
       }])) as typeof CURRENCIES
     : CURRENCIES
 
