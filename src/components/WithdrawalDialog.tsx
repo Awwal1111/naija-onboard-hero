@@ -78,7 +78,7 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
     }
 
     if (ncAmount < 100) {
-      toast.error("Minimum withdrawal is NC 100")
+      toast.error(`Minimum withdrawal is ${formatNCDisplay(100)}`)
       return
     }
 
@@ -235,7 +235,7 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
                       min="100"
                     />
                     <p className="text-xs text-muted-foreground">
-                      Minimum: NC 100 (~$0.06 USD)
+                      Minimum: {formatNCDisplay(100)}
                     </p>
                   </div>
 
