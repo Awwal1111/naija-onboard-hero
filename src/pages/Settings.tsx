@@ -70,7 +70,7 @@ const Settings = () => {
   const navigate = useNavigate()
   const { toast } = useToast()
   const { user } = useAuth()
-  const { profile, updateProfile } = useProfile()
+  const { profile } = useProfile()
   const { hasPin } = useUserSecrets()
   const { language, setLanguage, t, languageNames } = useLanguage()
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
@@ -549,22 +549,9 @@ const Settings = () => {
 
                 <Separator />
                 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-medium">Public on Google</h4>
-                    <p className="text-sm text-muted-foreground">Allow profile in search results</p>
-                  </div>
-                  <Switch 
-                    checked={(profile as any)?.public_on_google ?? true}
-                    onCheckedChange={async (checked) => {
-                      const result = await updateProfile({ public_on_google: checked } as any)
-                      if (!result.success) return
-                      toast({
-                        title: "SEO Settings Updated",
-                        description: checked ? "Your profile will appear in search results" : "Your profile is hidden from search engines"
-                      })
-                    }}
-                  />
+                <div className="rounded-lg border p-3">
+                  <h4 className="font-medium">Search engine visibility</h4>
+                  <p className="text-sm text-muted-foreground">This control is temporarily unavailable because the database preference and public profile indexing rules are not yet implemented consistently. We will not show a switch that cannot be reliably enforced.</p>
                 </div>
               </CardContent>
             </Card>
