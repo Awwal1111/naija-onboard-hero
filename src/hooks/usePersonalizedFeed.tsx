@@ -61,6 +61,30 @@ export interface Story {
 
 const POSTS_PER_PAGE = 10
 
+const FEED_AUX_TIMEOUT_MS = 8_000
+
+// A stalled enrichment request must not keep the initial feed query pending.
+// Return an empty result for optional enrichment so posts can still render.
+const withFeedTimeout = <T,>(request: PromiseLike<T>, label: string, fallback: T): Promise<T> => {
+  let timeoutId: ReturnType<typeof window.setTimeout> | undefined
+  return Promise.race([
+    Promise.resolve(request),
+    new Promise<T>((resolve) => {
+      timeoutId = window.setTimeout(() => {
+        console.warn(`[Feed] ${label} timed out; continuing without optional data`)
+        resolve(fallback)
+      }, FEED_AUX_TIMEOUT_MS)
+    })
+  ])
+    .catch((error) => {
+      console.warn(`[Feed] ${label} failed; continuing without optional data:`, error)
+      return fallback
+    })
+    .finally(() => {
+      if (timeoutId !== undefined) window.clearTimeout(timeoutId)
+    })
+}
+
 export const usePersonalizedFeed = () => {
   const { user } = useAuth()
   const { toast } = useToast()
@@ -154,12 +178,15 @@ export const usePersonalizedFeed = () => {
       if (error) {
         console.error('[Feed] Personalized feed RPC error:', error)
         // Fallback to regular posts if function fails
-        const { data: fallbackPosts } = await supabase
-          .from('posts')
-          .select(POSTS_SELECT)
-          .eq('status', 'active')
-          .order('created_at', { ascending: false })
-          .range(offset, offset + POSTS_PER_PAGE - 1)
+        const { data: fallbackPosts } = await withFeedTimeout(
+          supabase.from('posts')
+            .select(POSTS_SELECT)
+            .eq('status', 'active')
+            .order('created_at', { ascending: false })
+            .range(offset, offset + POSTS_PER_PAGE - 1),
+          'fallback posts',
+          { data: null, error: new Error('Fallback posts timed out') } as any
+        )
         
         console.log('[Feed] Using fallback posts:', fallbackPosts?.length || 0)
         
@@ -169,10 +196,13 @@ export const usePersonalizedFeed = () => {
 
         // Fetch profiles for fallback posts
         const fallbackUserIds = [...new Set(fallbackPosts.map((post: any) => post.user_id))]
-        const { data: fallbackProfiles } = await supabase
-          .from('profiles')
-          .select(PROFILE_BADGE_SELECT)
-          .in('user_id', fallbackUserIds)
+        const { data: fallbackProfiles } = await withFeedTimeout(
+          supabase.from('profiles')
+            .select(PROFILE_BADGE_SELECT)
+            .in('user_id', fallbackUserIds),
+          'fallback profile enrichment',
+          { data: null, error: new Error('Fallback profile enrichment timed out') } as any
+        )
 
         const fallbackProfilesMap = new Map(fallbackProfiles?.map(p => [p.user_id, p]) || [])
 
@@ -207,10 +237,13 @@ export const usePersonalizedFeed = () => {
       console.log('[Feed] Fetching profiles for user IDs:', userIds)
       
       // Fetch profiles with all badge fields
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select(PROFILE_BADGE_SELECT)
-        .in('user_id', userIds)
+      const { data: profiles, error: profilesError } = await withFeedTimeout(
+        supabase.from('profiles')
+          .select(PROFILE_BADGE_SELECT)
+          .in('user_id', userIds),
+        'profile enrichment',
+        { data: null, error: new Error('Profile enrichment timed out') } as any
+      )
 
       if (profilesError) {
         console.error('[Feed] Profiles fetch error:', profilesError)
@@ -220,20 +253,26 @@ export const usePersonalizedFeed = () => {
 
       // Check which posts the user has liked
       const postIds = personalizedPosts.map((p: any) => p.id)
-      const { data: userLikes } = await supabase
-        .from('post_likes')
-        .select('post_id')
-        .eq('user_id', userId)
-        .in('post_id', postIds)
+      const { data: userLikes } = await withFeedTimeout(
+        supabase.from('post_likes')
+          .select('post_id')
+          .eq('user_id', userId)
+          .in('post_id', postIds),
+        'post likes enrichment',
+        { data: null, error: new Error('Post likes enrichment timed out') } as any
+      )
 
       const likedPostIds = new Set(userLikes?.map(like => like.post_id) || [])
 
       // Check saved posts
-      const { data: savedPosts } = await supabase
-        .from('saved_posts')
-        .select('post_id')
-        .eq('user_id', userId)
-        .in('post_id', postIds)
+      const { data: savedPosts } = await withFeedTimeout(
+        supabase.from('saved_posts')
+          .select('post_id')
+          .eq('user_id', userId)
+          .in('post_id', postIds),
+        'saved posts enrichment',
+        { data: null, error: new Error('Saved posts enrichment timed out') } as any
+      )
 
       const savedPostIds = new Set(savedPosts?.map(save => save.post_id) || [])
 
