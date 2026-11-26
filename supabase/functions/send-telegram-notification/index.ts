@@ -161,23 +161,8 @@ serve(async (req) => {
       );
     }
 
-    // Log successful notification to database for analytics
-    try {
-      await supabase.from('notifications').insert({
-        user_id: user_id,
-        title: 'Telegram Notification',
-        message: message.substring(0, 200),
-        type: 'telegram',
-        is_read: false,
-        metadata: { 
-          telegram_message_id: result.result?.message_id,
-          has_buttons: !!keyboardMarkup,
-          has_photo: !!photo_url
-        }
-      });
-    } catch (logError) {
-      console.log('[TELEGRAM] ⚠️ Could not log notification (non-critical):', logError);
-    }
+    // Delivery is already represented in the smart-notification result.
+    // Do not insert a second in-app notification for the same event.
 
     console.log(`[TELEGRAM] ✅ Enhanced notification sent to ${profile.full_name}`);
     console.log(`[TELEGRAM] Features: buttons=${!!keyboardMarkup}, photo=${!!photo_url}`);
