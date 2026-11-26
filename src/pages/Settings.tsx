@@ -97,7 +97,7 @@ const Settings = () => {
         setTelegramNotifications(data?.telegram_enabled === true)
         if (data) {
           setEmailNotifications(data.email_enabled !== false)
-          if (data.category_preferences) setNotifications(prev => ({ ...prev, ...data.category_preferences }))
+          if (data.category_preferences && typeof data.category_preferences === 'object') setNotifications(prev => ({ ...prev, ...(data.category_preferences as Partial<NotificationPreferences>) }))
         }
       })
   }, [user?.id])
