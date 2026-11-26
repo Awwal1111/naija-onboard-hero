@@ -75,7 +75,6 @@ const Settings = () => {
   const { hasPin } = useUserSecrets()
   const { language, setLanguage, t, languageNames } = useLanguage()
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
-  const [profileVisibility, setProfileVisibility] = useState<'public' | 'registered' | 'private'>('public')
   const [notifications, setNotifications] = useState<NotificationPreferences>({
     chats: true,
     jobs: true,
@@ -137,24 +136,26 @@ const Settings = () => {
     }
   }
 
-  const handleProfileVisibilityChange = async (visibility: 'public' | 'registered' | 'private') => {
-    setProfileVisibility(visibility)
-    await updateProfile({ bio: profile?.bio || '' })
-    toast({ title: "Privacy Updated", description: `Profile visibility set to ${visibility}` })
-  }
-
   const handleDeleteAccount = async () => {
-    const confirmed = confirm("Are you sure you want to permanently delete your account? This action cannot be undone.")
-    if (confirmed) {
-      try {
-        const { error } = await supabase.auth.admin.deleteUser(user?.id || '')
-        if (error) throw error
-        toast({ title: "Account Deleted", description: "Your account has been permanently deleted" })
-        await signOut()
-        navigate('/')
-      } catch (error) {
-        toast({ title: "Error", description: "Failed to delete account. Please contact support.", variant: "destructive" })
-      }
+    if (!user?.email) return
+    const confirmed = confirm("Submit an account deletion request? Your account will remain active until our support team reviews the request and checks for outstanding orders, escrow, or wallet balances.")
+    if (!confirmed) return
+    try {
+      const { error } = await supabase.from('support_tickets').insert({
+        user_id: user.id,
+        email: user.email,
+        name: user.user_metadata?.full_name || user.email,
+        category: 'account',
+        subject: 'Account deletion request',
+        description: 'I am requesting deletion of my NaijaLancers account and associated personal data, subject to applicable legal, financial, escrow, and record-retention obligations.',
+        priority: 'high',
+        status: 'open'
+      })
+      if (error) throw error
+      toast({ title: 'Request submitted', description: 'Support will review your account, wallet, and outstanding transactions before processing deletion.' })
+    } catch (error) {
+      console.error('Account deletion request failed:', error)
+      toast({ title: 'Could not submit request', description: 'Please contact support to request account deletion.', variant: 'destructive' })
     }
   }
 
@@ -282,7 +283,7 @@ const Settings = () => {
               <CardContent className="pt-6">
                 <Button variant="destructive" onClick={handleDeleteAccount} className="w-full">
                   <Trash2 className="h-4 w-4 mr-2" />
-                  Delete Account
+                  Request Account Deletion
                 </Button>
               </CardContent>
             </Card>
@@ -536,36 +537,9 @@ const Settings = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-medium">Profile Visibility</h4>
-                    <p className="text-sm text-muted-foreground">Control who can see your profile</p>
-                  </div>
-                  <Select value={profileVisibility} onValueChange={handleProfileVisibilityChange}>
-                    <SelectTrigger className="w-48">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="public">
-                        <div className="flex items-center gap-2">
-                          <Globe className="h-4 w-4" />
-                          Public
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="registered">
-                        <div className="flex items-center gap-2">
-                          <Users className="h-4 w-4" />
-                          Registered Only
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="private">
-                        <div className="flex items-center gap-2">
-                          <Lock className="h-4 w-4" />
-                          Private
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="rounded-lg border p-3">
+                  <h4 className="font-medium">Profile visibility</h4>
+                  <p className="text-sm text-muted-foreground">Advanced public, registered-only, and private visibility controls are temporarily unavailable while server-side access rules are being completed. Your profile's visibility is not changed by this screen.</p>
                 </div>
 
                 <Separator />
@@ -578,7 +552,8 @@ const Settings = () => {
                   <Switch 
                     checked={(profile as any)?.public_on_google ?? true}
                     onCheckedChange={async (checked) => {
-                      await updateProfile({ public_on_google: checked } as any)
+                      const result = await updateProfile({ public_on_google: checked } as any)
+                      if (!result.success) return
                       toast({
                         title: "SEO Settings Updated",
                         description: checked ? "Your profile will appear in search results" : "Your profile is hidden from search engines"
