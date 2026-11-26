@@ -8,7 +8,7 @@ import { useProfile } from '@/hooks/useProfile'
 import { toast } from 'sonner'
 import { supabase } from '@/integrations/supabase/client'
 
-const TelegramConnectCard = () => {
+const TelegramConnectCard = ({ notificationsEnabled = false }: { notificationsEnabled?: boolean }) => {
   const { user } = useAuth()
   const { profile, refetch } = useProfile()
    const [checking, setChecking] = useState(false)
