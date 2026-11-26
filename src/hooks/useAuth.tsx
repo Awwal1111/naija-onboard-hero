@@ -66,7 +66,7 @@ export const useAuth = () => {
     }
   }, [user, checkProfileAndRedirect])
 
-  const signUp = useCallback(async (email: string, password: string, fullName?: string, partnerSlug?: string | null) => {
+  const signUp = useCallback(async (email: string, password: string, fullName?: string, partnerSlug?: string | null, consent?: { acceptedTermsAt: string; termsVersion: string; privacyVersion: string; telegramNotifications: boolean; marketingUpdates: boolean }) => {
     const ipCheck = await checkSignupAllowed()
     if (!ipCheck.allowed) {
       const error = { message: ipCheck.message || "Too many signups from your network. Please try again later." }
@@ -103,7 +103,7 @@ export const useAuth = () => {
       const { error, data } = await supabase.auth.signUp({
         email: email.trim(),
         password,
-        options: { data: { full_name: fullName || '', ...(partnerSlug ? { partner_slug: partnerSlug } : {}) } }
+        options: { data: { full_name: fullName || '', ...(partnerSlug ? { partner_slug: partnerSlug } : {}), ...(consent ? { accepted_terms_at: consent.acceptedTermsAt, terms_version: consent.termsVersion, privacy_version: consent.privacyVersion, telegram_notifications_opt_in: consent.telegramNotifications, marketing_updates_opt_in: consent.marketingUpdates } : {}) } }
       })
 
       if (error) {
