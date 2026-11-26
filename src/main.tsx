@@ -84,3 +84,9 @@ root.render(
     </QueryProvider>
   </HelmetProvider>
 );
+
+// Only clear chunk-recovery history after lazy route chunks have had time to
+// load. Clearing it at entrypoint startup erased the retry counter too early.
+window.setTimeout(() => {
+  import('./utils/chunkErrorHandler').then(({ clearReloadTracking }) => clearReloadTracking())
+}, 30_000)
