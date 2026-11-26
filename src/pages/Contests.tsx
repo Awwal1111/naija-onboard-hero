@@ -132,7 +132,7 @@ export default function Contests() {
                         <span className="text-sm">Your Balance</span>
                       </div>
                       <span className={`font-bold ${hasEnoughBalance ? 'text-green-600' : 'text-destructive'}`}>
-                        NC {userBalance.toLocaleString()}
+                        {formatNCDisplay(userBalance)}
                       </span>
                     </CardContent>
                   </Card>
@@ -141,7 +141,7 @@ export default function Contests() {
                     <Alert variant="destructive">
                       <AlertCircle className="h-4 w-4" />
                       <AlertDescription>
-                        You need NC {(formData.prize_amount - userBalance).toLocaleString()} more. 
+                        You need {formatNCDisplay(formData.prize_amount - userBalance)} more. 
                         <Button variant="link" className="p-0 h-auto ml-1" onClick={() => navigate('/earn')}>
                           Top up wallet →
                         </Button>
@@ -172,7 +172,7 @@ export default function Contests() {
                     <div>
                       <Label>Prize (NC) *</Label>
                       <Input type="number" value={formData.prize_amount} onChange={e => setFormData(p => ({ ...p, prize_amount: Number(e.target.value) }))} min={5000} />
-                      <p className="text-xs text-muted-foreground mt-1">Min: NC 5,000 · Held in escrow</p>
+                      <p className="text-xs text-muted-foreground mt-1">Min: {formatNCDisplay(5000)} · Held in escrow</p>
                     </div>
                   </div>
                   <div>
@@ -191,7 +191,7 @@ export default function Contests() {
                     className="w-full" 
                     disabled={!formData.title || !formData.description || !formData.category || !formData.deadline || !hasEnoughBalance || !isDeadlineValid}
                   >
-                    {hasEnoughBalance ? `Create Contest (NC ${formData.prize_amount.toLocaleString()} held)` : 'Insufficient Balance'}
+                    {hasEnoughBalance ? `Create Contest (${formatNCDisplay(formData.prize_amount)} held)` : 'Insufficient Balance'}
                   </Button>
                 </div>
               </DialogContent>
@@ -253,7 +253,7 @@ export default function Contests() {
             <Card>
               <CardContent className="p-3 text-center">
                 <p className="text-lg font-bold text-primary">
-                  NC {contests.reduce((s, c) => s + c.prize_amount, 0).toLocaleString()}
+                  {formatNCDisplay(contests.reduce((s, c) => s + c.prize_amount, 0))}
                 </p>
                 <p className="text-xs text-muted-foreground">Total Prizes</p>
               </CardContent>
@@ -305,7 +305,7 @@ export default function Contests() {
                         </div>
                       </div>
                       <div className="text-right shrink-0 ml-3">
-                        <p className="text-lg font-bold text-primary">NC {contest.prize_amount.toLocaleString()}</p>
+                        <p className="text-lg font-bold text-primary">{formatNCDisplay(contest.prize_amount)}</p>
                         <p className="text-xs text-muted-foreground">Prize</p>
                       </div>
                     </div>
