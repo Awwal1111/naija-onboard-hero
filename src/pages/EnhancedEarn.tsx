@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Zap, User, Users, ArrowUpRight, Phone, Wifi, TrendingUp, Tv, Wallet, Coins, Clock } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useWallet } from '@/hooks/useWallet'
+import { formatNCDisplay } from '@/components/CurrencyDisplay'
 import { useQueryClient } from '@tanstack/react-query'
 import NaijaLanceWalletCard from '@/components/NaijaLanceWalletCard'
 import { DailySigninCard } from '@/components/DailySigninCard'
@@ -170,7 +171,7 @@ const EnhancedEarn = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground">Available Balance</p>
-                    <p className="text-2xl font-bold text-foreground">NC {balance.withdrawable.toLocaleString()}</p>
+                    <p className="text-2xl font-bold text-foreground">{formatNCDisplay(balance.withdrawable)}</p>
                   </div>
                   <Button variant="outline" size="sm" onClick={() => setActiveTab('wallet')}>
                     View Wallet
