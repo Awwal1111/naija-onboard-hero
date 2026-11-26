@@ -187,10 +187,11 @@ export const useAuth = () => {
 
   }, [logIPActivity, logLogin, toast, checkProfileAndRedirect])
 
-  const signInWithGoogle = useCallback(async () => {
-    const redirectUrl = window.location.hostname === 'localhost'
+  const signInWithGoogle = useCallback(async (redirectTo?: string) => {
+    const defaultRedirectUrl = window.location.hostname === 'localhost'
       ? `${window.location.origin}/`
       : `${window.location.protocol}//${window.location.host}/`
+    const redirectUrl = redirectTo || defaultRedirectUrl
     
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
