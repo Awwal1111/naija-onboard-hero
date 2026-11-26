@@ -24,7 +24,7 @@ export const CurrencyDisplay: React.FC<CurrencyDisplayProps> = ({
     md: 'text-base',
     lg: 'text-2xl font-bold'
   }
-  const preferred = formatPreferred(amount, !compact && showEquivalent)
+  const preferred = formatPreferred(amount, false)
   const nativeAmount = `NC ${amount.toLocaleString()}`
 
   if (compact) {
