@@ -34,7 +34,7 @@ const useAppStateInternal = () => {
     try {
       sessionStorage.setItem('lastRoute', JSON.stringify(routeData));
       localStorage.setItem('lastRoute', JSON.stringify(routeData));
-    } catch {}
+    } catch { /* Storage may be unavailable in embedded browsers. */ }
   }, [location]);
 
   // Restore route ONLY on cold start (first mount, no session marker)
