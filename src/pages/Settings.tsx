@@ -91,11 +91,14 @@ const Settings = () => {
 
   useEffect(() => {
     if (!user) return
-    supabase.from('notification_preferences').select('telegram_enabled, email_enabled').eq('user_id', user.id).maybeSingle()
+    supabase.from('notification_preferences').select('telegram_enabled, email_enabled, category_preferences').eq('user_id', user.id).maybeSingle()
       .then(({ data, error }) => {
         if (error) console.error('Could not load notification preferences:', error)
         setTelegramNotifications(data?.telegram_enabled === true)
-        if (data) setEmailNotifications(data.email_enabled !== false)
+        if (data) {
+          setEmailNotifications(data.email_enabled !== false)
+          if (data.category_preferences) setNotifications({ ...notifications, ...data.category_preferences })
+        }
       })
   }, [user?.id])
 
@@ -125,10 +128,15 @@ const Settings = () => {
     toast({ title: t('message.success'), description: `${t('settings.language')}: ${languageNames[newLanguage]}` })
   }
 
-  const handleNotificationChange = (key: keyof NotificationPreferences, value: boolean) => {
+  const handleNotificationChange = async (key: keyof NotificationPreferences, value: boolean) => {
     const updated = { ...notifications, [key]: value }
     setNotifications(updated)
-    localStorage.setItem('notifications', JSON.stringify(updated))
+    if (!user) return
+    const { error } = await supabase.from('notification_preferences').upsert({ user_id: user.id, category_preferences: updated, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
+    if (error) {
+      setNotifications(notifications)
+      toast({ title: 'Could not save notification category', description: error.message, variant: 'destructive' })
+    }
   }
 
   const handleProfileVisibilityChange = async (visibility: 'public' | 'registered' | 'private') => {
