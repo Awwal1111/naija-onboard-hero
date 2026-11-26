@@ -14,9 +14,6 @@ import { checkAndHealCache } from './utils/cacheHealer'
 // SYNC detection at module load
 const isMiniPayEnv = detectMiniPaySync().isMiniPay;
 
-// App loaded successfully - clear any chunk reload tracking
-clearReloadTracking();
-
 // --- PWA Service Worker Guard ---
 // Only register SW in production on the real domain, never in iframes or preview hosts
 const isInIframe = (() => {
