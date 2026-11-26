@@ -51,9 +51,6 @@ const EnhancedEarn = () => {
       category: 'rewards'
     },
     {
-    {
-    {
-    {
       title: 'Gigs & Services',
       description: 'Offer your professional services and earn directly',
       icon: User,
