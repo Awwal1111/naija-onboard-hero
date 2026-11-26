@@ -267,7 +267,7 @@ export const TransferDialog = ({ open, onOpenChange }: TransferDialogProps) => {
               />
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Can send up to:</span>
-                <span className="font-semibold text-green-600">NC {balance.withdrawable.toLocaleString()}</span>
+                <span className="font-semibold text-green-600">{formatNCDisplay(balance.withdrawable)}</span>
               </div>
             </div>
 
