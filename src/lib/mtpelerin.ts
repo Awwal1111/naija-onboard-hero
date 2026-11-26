@@ -30,13 +30,17 @@ interface MtPelerinUrlOptions {
   pm?: 'card'
   lang?: string
   mode?: 'dark'
+  /** Mt Pelerin integration mode. iFrame embeds must use `web`. */
+  type?: 'web' | 'popup' | 'webview' | 'direct-link'
   directLink?: boolean
 }
 
 export function buildMtPelerinUrl(opts: MtPelerinUrlOptions = {}): string {
   const params = new URLSearchParams()
   params.set('_ctkn', MT_PELERIN_CTKN)
-  if (opts.directLink) params.set('type', 'direct-link')
+  // Mt Pelerin requires an explicit integration type. The default is `web`
+  // for the iframe embed; the standalone fallback uses `direct-link`.
+  params.set('type', opts.directLink ? 'direct-link' : (opts.type || 'web'))
   params.set('lang', opts.lang || 'en')
   params.set('tabs', (opts.tabs || ['buy', 'sell', 'swap']).join(','))
   if (opts.tab) params.set('tab', opts.tab)
