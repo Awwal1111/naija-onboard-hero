@@ -257,7 +257,7 @@ export const DepositDialog = ({ open, onOpenChange, defaultMethod }: DepositDial
                   <li>Send cUSD, CELO, or USDT from Binance, Coinbase, or any wallet</li>
                   <li>Deposits are detected automatically within minutes</li>
                   <li>Funds are converted to NC and credited to your balance</li>
-                  <li>1 cUSD ≈ ₦{(1600).toLocaleString()} NC</li>
+                  <li>cUSD deposits are converted using the verified rate available when the deposit is processed</li>
                   <li>Your unique address works across all Celo-compatible wallets</li>
                 </ul>
               </AlertDescription>
