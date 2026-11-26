@@ -7,7 +7,6 @@ import { ThemeProvider } from "next-themes"
 import { LanguageProvider } from "./hooks/useLanguage"
 import { CurrencyProvider } from "./hooks/useCurrency"
 import { TimezoneProvider } from "./hooks/useTimezone"
-import { UserModeProvider } from "./hooks/useUserMode"
 import { detectMiniPaySync } from './lib/minipay'
 import { checkAndHealCache } from './utils/cacheHealer'
 
@@ -71,9 +70,7 @@ root.render(
         <LanguageProvider>
           <CurrencyProvider>
             <TimezoneProvider>
-              <UserModeProvider>
-                <App />
-              </UserModeProvider>
+              <App />
             </TimezoneProvider>
           </CurrencyProvider>
         </LanguageProvider>
