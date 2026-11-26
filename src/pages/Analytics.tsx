@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { supabase } from '@/integrations/supabase/client'
+import { formatNCDisplay } from '@/components/CurrencyDisplay'
 import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/use-toast'
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area } from 'recharts'
@@ -186,7 +187,7 @@ const Analytics = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><div className="p-2 bg-primary/10 rounded-lg"><Users className="h-5 w-5 text-primary" /></div><div><div className="text-2xl font-bold">{stats.connections}</div><div className="text-xs text-text-secondary">Connections</div></div></div></CardContent></Card>
           <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><div className="p-2 bg-blue-500/10 rounded-lg"><Eye className="h-5 w-5 text-blue-500" /></div><div><div className="text-2xl font-bold">{stats.totalViews}</div><div className="text-xs text-text-secondary">Total Views</div></div></div></CardContent></Card>
-          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><div className="p-2 bg-green-500/10 rounded-lg"><DollarSign className="h-5 w-5 text-green-500" /></div><div><div className="text-2xl font-bold">NC {stats.balance.toLocaleString()}</div><div className="text-xs text-text-secondary">Balance</div></div></div></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><div className="p-2 bg-green-500/10 rounded-lg"><DollarSign className="h-5 w-5 text-green-500" /></div><div><div className="text-2xl font-bold">{formatNCDisplay(stats.balance)}</div><div className="text-xs text-text-secondary">Balance</div></div></div></CardContent></Card>
           <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><div className="p-2 bg-purple-500/10 rounded-lg"><TrendingUp className="h-5 w-5 text-purple-500" /></div><div><div className="text-2xl font-bold">{stats.engagement}</div><div className="text-xs text-text-secondary">Avg Engagement</div></div></div></CardContent></Card>
         </div>
         
@@ -290,8 +291,8 @@ const Analytics = () => {
               <CardHeader><CardTitle>Wallet Overview</CardTitle></CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div className="p-4 bg-green-500/10 rounded-lg"><div className="text-2xl font-bold text-green-600">NC {stats.earned.toLocaleString()}</div><div className="text-xs text-text-secondary">Total Earned</div></div>
-                  <div className="p-4 bg-red-500/10 rounded-lg"><div className="text-2xl font-bold text-red-600">NC {stats.spent.toLocaleString()}</div><div className="text-xs text-text-secondary">Total Spent</div></div>
+                  <div className="p-4 bg-green-500/10 rounded-lg"><div className="text-2xl font-bold text-green-600">{formatNCDisplay(stats.earned)}</div><div className="text-xs text-text-secondary">Total Earned</div></div>
+                  <div className="p-4 bg-red-500/10 rounded-lg"><div className="text-2xl font-bold text-red-600">{formatNCDisplay(stats.spent)}</div><div className="text-xs text-text-secondary">Total Spent</div></div>
                 </div>
               </CardContent>
             </Card>
