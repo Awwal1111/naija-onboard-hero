@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Star, Users, Clock, Award, CheckCircle, PlayCircle } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { formatNCDisplay } from "@/components/CurrencyDisplay";
 
 export default function CourseDetail() {
   const { id } = useParams();
