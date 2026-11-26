@@ -2,11 +2,17 @@ import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useRoleFeatures } from '@/hooks/useRoleFeatures'
 import { MoreMenuDrawer } from '@/components/MoreMenuDrawer'
+import { useLanguage } from '@/hooks/useLanguage'
 
 export const BottomNavBar = () => {
   const location = useLocation()
   const navigate = useNavigate()
   const { bottomNavItems } = useRoleFeatures()
+  const { t } = useLanguage()
+  const navKeys: Record<string, string> = {
+    feed: 'nav.feed', chat: 'nav.chat', experts: 'nav.expert', jobs: 'nav.jobs',
+    gigs: 'nav.jobs', earn: 'nav.earn', 'mini-apps': 'nav.apps', dashboard: 'nav.hub'
+  }
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
 
   const handleNavigation = (path: string) => {
@@ -28,7 +34,7 @@ export const BottomNavBar = () => {
               }`}
             >
               <item.icon className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-              <span className="text-[10px] sm:text-xs font-medium truncate max-w-full">{item.label}</span>
+              <span className="text-[10px] sm:text-xs font-medium truncate max-w-full">{navKeys[item.id] ? t(navKeys[item.id]) : item.label}</span>
             </button>
           ))}
           <button
@@ -38,7 +44,7 @@ export const BottomNavBar = () => {
             <svg className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
-            <span className="text-[10px] sm:text-xs font-medium truncate max-w-full">More</span>
+            <span className="text-[10px] sm:text-xs font-medium truncate max-w-full">{t('nav.more')}</span>
           </button>
         </div>
       </div>
