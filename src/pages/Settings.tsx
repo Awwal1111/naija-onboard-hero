@@ -101,7 +101,6 @@ const Settings = () => {
 
   useEffect(() => {
     if (profile) {
-      setEmailNotifications((profile as any).email_notifications !== false)
       setEmailDigestFrequency((profile as any).email_digest_frequency || 'weekly')
     }
   }, [profile])
