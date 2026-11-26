@@ -43,12 +43,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const loadingResolved = useRef(false)
   const isMounted = useRef(true)
 
+  // Always accept the latest session snapshot, even if the initial loading
+  // timeout already fired. A slow INITIAL_SESSION event must not be discarded.
   const resolveLoading = (sess: Session | null) => {
-    if (!isMounted.current || loadingResolved.current) return
-    loadingResolved.current = true
+    if (!isMounted.current) return
     setSession(sess)
     setUser(sess?.user ?? null)
-    setLoading(false)
+    if (!loadingResolved.current) {
+      loadingResolved.current = true
+      setLoading(false)
+    }
     setAuthTimedOut(false)
     if (sess?.user) {
       identifyUser(sess.user.id, { email: sess.user.email })
@@ -60,42 +64,46 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     loadingResolved.current = false
     setLoading(true)
     setAuthTimedOut(false)
-    
-    supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
-      if (!isMounted.current) return
-      resolveLoading(existingSession)
-    }).catch((err) => {
-      console.error('[AuthProvider] Retry getSession failed:', err)
-      if (isMounted.current) {
+
+    // Retrying must also be bounded: a stalled auth request should return
+    // to the recovery screen rather than leave the user on an endless spinner.
+    let settled = false
+    const timeoutId = setTimeout(() => {
+      if (!isMounted.current || settled) return
+      settled = true
+      loadingResolved.current = true
+      setLoading(false)
+      setAuthTimedOut(true)
+    }, AUTH_TIMEOUT_MS)
+
+    supabase.auth.getSession().then(({ data: { session: existingSession }, error }) => {
+      if (!isMounted.current || settled) return
+      settled = true
+      clearTimeout(timeoutId)
+      if (error) {
+        console.error('[AuthProvider] Retry getSession returned an error:', error)
         loadingResolved.current = true
         setLoading(false)
         setAuthTimedOut(true)
+        return
       }
+      resolveLoading(existingSession)
+    }).catch((err) => {
+      if (!isMounted.current || settled) return
+      settled = true
+      clearTimeout(timeoutId)
+      console.error('[AuthProvider] Retry getSession failed:', err)
+      loadingResolved.current = true
+      setLoading(false)
+      setAuthTimedOut(true)
     })
   }
 
   useEffect(() => {
     isMounted.current = true
-    let refreshTimer: NodeJS.Timeout | null = null
-
-    const scheduleTokenRefresh = (sess: Session) => {
-      if (refreshTimer) clearTimeout(refreshTimer)
-      if (sess?.expires_at) {
-        const timeUntilExpiry = sess.expires_at * 1000 - Date.now()
-        const refreshTime = Math.max(timeUntilExpiry - 5 * 60 * 1000, 5000)
-        refreshTimer = setTimeout(async () => {
-          const { data, error } = await supabase.auth.refreshSession()
-          if (error) {
-            console.error('Failed to refresh session:', error)
-            await supabase.auth.signOut()
-          } else if (data.session && isMounted.current) {
-            setSession(data.session)
-            setUser(data.session.user)
-            scheduleTokenRefresh(data.session)
-          }
-        }, refreshTime)
-      }
-    }
+    // Supabase client already has autoRefreshToken enabled. Do not run a
+    // second refresh timer here: duplicate refresh requests can race, and a
+    // temporary network failure must never force a user sign-out.
 
     // CRITICAL: Hard timeout to prevent infinite loading
     const timeoutId = setTimeout(() => {
@@ -120,7 +128,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (event === 'INITIAL_SESSION') {
           // This is the definitive session state from storage
           resolveLoading(sess)
-          if (sess) scheduleTokenRefresh(sess)
           return
         }
 
@@ -132,11 +139,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             setUser(sess?.user ?? null)
             if (sess?.user) identifyUser(sess.user.id, { email: sess.user.email })
           }
-          if (sess) scheduleTokenRefresh(sess)
         }
 
         if (event === 'SIGNED_OUT') {
-          if (refreshTimer) clearTimeout(refreshTimer)
           setSession(null)
           setUser(null)
           resetPostHog()
@@ -154,7 +159,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
           if (!isMounted.current) return
           resolveLoading(existingSession)
-          if (existingSession) scheduleTokenRefresh(existingSession)
         }).catch((err) => {
           console.error('[AuthProvider] Fallback getSession failed:', err)
           if (isMounted.current) resolveLoading(null)
@@ -167,7 +171,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       clearTimeout(timeoutId)
       clearTimeout(fallbackId)
       subscription.unsubscribe()
-      if (refreshTimer) clearTimeout(refreshTimer)
     }
   }, [])
 
