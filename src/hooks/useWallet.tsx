@@ -3,6 +3,7 @@ import { requestDeposit } from '@/lib/depositPrompt'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from './useAuth'
 import { useToast } from './use-toast'
+import { useCurrency } from './useCurrency'
 
 export interface WalletBalance {
   withdrawable: number
@@ -107,6 +108,7 @@ function ensureWalletChannel(userId: string) {
 export const useWallet = () => {
   const { user } = useAuth()
   const { toast } = useToast()
+  const { formatPreferred } = useCurrency()
   const [balance, setBalance] = useState<WalletBalance>(() =>
     user ? (walletCache.get(user.id)?.balance ?? EMPTY_BALANCE) : EMPTY_BALANCE
   )
@@ -320,9 +322,7 @@ export const useWallet = () => {
   }
 
   // Format currency display
-  const formatCurrency = (amount: number) => {
-    return `NC ${amount.toLocaleString()}`
-  }
+  const formatCurrency = (amount: number) => formatPreferred(amount, true)
 
   const initiateWithdrawal = async (amount: number, bankDetails: any) => {
     if (!user || amount <= 0) {
