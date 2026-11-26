@@ -64,14 +64,14 @@ const getDisplayCurrency = (isNigerian: boolean): string => {
   try {
     const saved = localStorage.getItem('preferred_currency')
     if (saved) return saved
-  } catch {}
+  } catch { /* Ignore unavailable browser storage. */ }
   try {
     const detected = localStorage.getItem('detected_currency_v1')
     if (detected) return detected
     const geo = JSON.parse(localStorage.getItem('geo_location_v1') || 'null')
     if (geo?.data?.countryCode?.toUpperCase() === 'NG') return 'NGN'
     if (geo?.data?.countryCode) return isNigerian ? 'NGN' : 'USD'
-  } catch {}
+  } catch { /* Ignore unavailable browser storage. */ }
   return isNigerian ? 'NGN' : 'NC'
 }
 
