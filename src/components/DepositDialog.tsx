@@ -16,7 +16,6 @@ import { WalletDepositCard } from './WalletDepositCard'
 import { PretiumDepositCard } from './PretiumDepositCard'
 import { MtPelerinCard } from './MtPelerinCard'
 import { useMiniPay } from '@/hooks/useMiniPay'
-import { CUSD_ADDRESS, USDT_ADDRESS } from '@/lib/minipay'
 
 type DepositMethod = 'main' | 'ramp' | 'crypto' | 'telegram' | 'minipay' | 'metamask' | 'valora' | 'pretium' | 'mtpelerin'
 
@@ -137,19 +136,6 @@ export const DepositDialog = ({ open, onOpenChange, defaultMethod }: DepositDial
     }
   }
 
-  const openWalletTransfer = (wallet: 'metamask' | 'valora', tokenAddress: string) => {
-    if (!walletAddress) {
-      toast.error('Your NaijaLancers wallet is not ready yet')
-      return
-    }
-
-    const baseUrl = wallet === 'metamask'
-      ? `https://metamask.app.link/send/${tokenAddress}@42220/transfer?address=${walletAddress}`
-      : `https://valoraapp.com/share/payment?address=${walletAddress}&token=cUSD&comment=NaijaLancers%20deposit`
-
-    window.open(baseUrl, '_blank', 'noopener,noreferrer')
-    toast.success(`${wallet === 'metamask' ? 'MetaMask' : 'Valora'} opened for wallet deposit`)
-  }
 
   const handleMiniPaySuccess = () => {
     onOpenChange(false)
