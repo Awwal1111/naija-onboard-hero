@@ -104,15 +104,21 @@ serve(async (req) => {
 
     const { data: preferences } = await supabase
       .from("notification_preferences")
-      .select("in_app_enabled, email_enabled, telegram_enabled, push_enabled, sms_enabled, category_preferences")
+      .select("in_app_enabled, email_enabled, telegram_enabled, push_enabled, sms_enabled, marketing_updates_enabled, category_preferences")
       .eq("user_id", userId)
       .maybeSingle();
     const prefs = preferences || {
-      in_app_enabled: true, email_enabled: true, telegram_enabled: false, push_enabled: true, sms_enabled: false,
+      in_app_enabled: true, email_enabled: true, telegram_enabled: false, push_enabled: true, sms_enabled: false, marketing_updates_enabled: false,
       category_preferences: { chats: true, jobs: true, referrals: true, tasks: true, expertStatus: true }
     };
     const shouldSend = (channel: string) => !requestedChannels || requestedChannels.includes(channel as any);
     const normalizedType = String(type).toLowerCase();
+    const isMarketing = /marketing|promo|newsletter|product_update/.test(normalizedType);
+    if (isMarketing && !prefs.marketing_updates_enabled) {
+      return new Response(JSON.stringify({ success: true, channels: [], skipped: 'marketing_opt_out' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
     const category = normalizedType.includes('chat') || normalizedType.includes('message') ? 'chats'
       : normalizedType.includes('job') ? 'jobs'
       : normalizedType.includes('referral') ? 'referrals'
