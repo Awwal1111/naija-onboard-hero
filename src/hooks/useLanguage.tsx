@@ -241,8 +241,9 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 
 export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   const [language, setLanguageState] = useState<Language>(() => {
-    const saved = localStorage.getItem('language') as Language;
-    return saved || 'en';
+    const saved = localStorage.getItem('language') as Language | null;
+    const supported: Language[] = ['en', 'ha', 'yo', 'ig', 'pcm', 'fr', 'es', 'ar', 'pt', 'sw', 'hi', 'zh'];
+    return saved && supported.includes(saved) ? saved : 'en';
   });
 
   const languageNames: { [key in Language]: string } = {
