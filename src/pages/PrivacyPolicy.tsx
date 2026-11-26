@@ -43,7 +43,7 @@ const PrivacyPolicy = () => {
           <h1 className="text-3xl font-bold text-text-primary mb-2">Privacy Policy</h1>
           <p className="text-text-secondary">How we protect and handle your data</p>
           <Badge variant="secondary" className="mt-2">
-            Last Updated: January 2025
+            Last Updated: November 26, 2026
           </Badge>
         </div>
 
@@ -119,7 +119,21 @@ const PrivacyPolicy = () => {
             </CardContent>
           </Card>
 
-          {/* 3. Information Sharing */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><Mail className="h-5 w-5" />3. Notifications & Communication Channels</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-text-secondary">
+              <p>We store your notification channel choices and category preferences so we can deliver account and activity notices through channels you enable.</p>
+              <p><strong>Telegram:</strong> If you choose Telegram notifications, we store your Telegram user identifier and connection details after you link the bot using an email verification code. Telegram receives the notification content and associated metadata needed to deliver each message.</p>
+              <p><strong>Email and push:</strong> Email addresses and device push subscription identifiers are used to deliver the corresponding notices when those channels are enabled.</p>
+              <p><strong>SMS:</strong> If you enable paid SMS alerts and provide a phone number, we share the phone number and message content with our SMS delivery provider. Applicable charges are disclosed in the app.</p>
+              <p><strong>Choice and withdrawal:</strong> Telegram and marketing messages are optional. You can change channel preferences in Settings; send /stop to the NaijaLancers bot to disable Telegram alerts. Essential security, legal and transaction notices may still be sent where necessary to provide the service or meet legal obligations.</p>
+              <p>We keep a record of the Terms and Privacy Policy versions you accepted, the acceptance time, and separate optional notification/marketing choices for compliance and audit purposes.</p>
+            </CardContent>
+          </Card>
+
+          {/* 4. Information Sharing */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
