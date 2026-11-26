@@ -3,6 +3,7 @@ import { AlertTriangle, RefreshCw, Home, MessageCircle, RotateCcw } from 'lucide
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { handleChunkError } from '@/utils/chunkErrorHandler'
+import { emergencyHeal } from '@/utils/cacheHealer'
 
 interface Props {
   children: ReactNode
@@ -103,24 +104,9 @@ class ErrorBoundary extends Component<Props, State> {
     window.location.href = '/'
   }
 
-  private handleClearAndRefresh = () => {
-    // Clear ALL storage and unregister service workers to fully reset
-    try {
-      localStorage.clear()
-      sessionStorage.clear()
-    } catch (e) {
-      console.error('Failed to clear storage:', e)
-    }
-    // Unregister service workers to prevent stale cache issues
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then((registrations) => {
-        registrations.forEach((reg) => reg.unregister());
-      }).finally(() => {
-        window.location.href = '/login'
-      });
-    } else {
-      window.location.href = '/login'
-    }
+  private handleClearAndRefresh = async () => {
+    // Target only legacy API caches. Preserve login, preferences, and push setup.
+    await emergencyHeal()
   }
   
   private handleTryAgain = () => {
