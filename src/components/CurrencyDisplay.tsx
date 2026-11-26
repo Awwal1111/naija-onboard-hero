@@ -66,10 +66,13 @@ const getDisplayCurrency = (isNigerian: boolean): string => {
     if (saved) return saved
   } catch {}
   try {
+    const detected = localStorage.getItem('detected_currency_v1')
+    if (detected) return detected
     const geo = JSON.parse(localStorage.getItem('geo_location_v1') || 'null')
     if (geo?.data?.countryCode?.toUpperCase() === 'NG') return 'NGN'
+    if (geo?.data?.countryCode) return isNigerian ? 'NGN' : 'USD'
   } catch {}
-  return isNigerian ? 'NGN' : 'USD'
+  return isNigerian ? 'NGN' : 'NC'
 }
 
 const getCachedRate = (code: string): number | null => {
