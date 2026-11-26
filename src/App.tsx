@@ -132,11 +132,8 @@ const CopilotPage = lazy(lazyWithRetry(() => import("./pages/CopilotPage")));
 
 // Earn & Games
 const EnhancedEarn = lazy(lazyWithRetry(() => import("./pages/EnhancedEarn")));
-const Surveys = lazy(lazyWithRetry(() => import("./pages/Surveys").then(m => ({ default: m.Surveys }))));
-const CpxSurveys = lazy(lazyWithRetry(() => import("./pages/CpxSurveys").then(m => ({ default: m.CpxSurveys }))));
 const GuessNumberGame = lazy(lazyWithRetry(() => import("./pages/GuessNumberGame").then(m => ({ default: m.GuessNumberGame }))));
 const Referrals = lazy(lazyWithRetry(() => import("./pages/Referrals").then(m => ({ default: m.Referrals }))));
-const Tasks = lazy(lazyWithRetry(() => import("./pages/Tasks")));
 const ReferralTasks = lazy(lazyWithRetry(() => import("./pages/ReferralTasks")));
 const NigerianTrivia = lazy(lazyWithRetry(() => import("./components/NigerianTrivia")));
 const SpinWheelGame = lazy(lazyWithRetry(() => import("./components/SpinWheelGame")));
@@ -325,17 +322,15 @@ const App = () => (
                 <Route path="/expert-class/room/:classId" element={<ProtectedRoute><ClassRoom /></ProtectedRoute>} />
                 <Route path="/my-gigs" element={<ProtectedRoute><MyGigs /></ProtectedRoute>} />
                 <Route path="/edit-gig/:gigId" element={<ProtectedRoute><EditGig /></ProtectedRoute>} />
-                <Route path="/surveys" element={<ProtectedRoute><Surveys /></ProtectedRoute>} />
-                <Route path="/cpx-surveys" element={<ProtectedRoute><CpxSurveys /></ProtectedRoute>} />
                 <Route path="/games/guess-number" element={<ProtectedRoute><GuessNumberGame /></ProtectedRoute>} />
                 <Route path="/referrals" element={<ProtectedRoute><Referrals /></ProtectedRoute>} />
                 <Route path="/earn" element={<ProtectedRoute><EnhancedEarn /></ProtectedRoute>} />
                 <Route path="/wallet" element={<ProtectedRoute><EnhancedEarn /></ProtectedRoute>} />
                 <Route path="/contracts/:id" element={<ProtectedRoute><HireContractDetail /></ProtectedRoute>} />
                 <Route path="/earn/social-tasks" element={<Navigate to="/earn" replace />} />
-                <Route path="/earn/referral-tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
-                <Route path="/referral-tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
-                <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
+                <Route path="/tasks" element={<Navigate to="/earn" replace />} />
+                <Route path="/referral-tasks" element={<Navigate to="/earn" replace />} />
+                <Route path="/earn/referral-tasks" element={<Navigate to="/earn" replace />} />
                 <Route path="/digital-products" element={<ProtectedRoute><DigitalProducts /></ProtectedRoute>} />
                 <Route path="/products/:id" element={<ProtectedRoute><ProductDetail /></ProtectedRoute>} />
                 <Route path="/courses" element={<ProtectedRoute><Courses /></ProtectedRoute>} />

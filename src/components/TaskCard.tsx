@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -7,7 +7,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { useSecureFileUpload } from '@/hooks/useSecureFileUpload'
 import { Task } from '@/hooks/useTasks'
 import { ExpandableText } from './ExpandableText'
 import { MessageCircle, Clock, Users } from 'lucide-react'
@@ -31,60 +30,26 @@ export const TaskCard = ({
 }: TaskCardProps) => {
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
-  const [proof, setProof] = useState('')
   const [textExplanation, setTextExplanation] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { uploadFile, uploadProgress } = useSecureFileUpload()
-
-  const storageKey = `task-proof-${task.id}`
-  
-  useEffect(() => {
-    const saved = sessionStorage.getItem(storageKey)
-    if (saved && !proof) {
-      setProof(saved)
-    }
-  }, [storageKey])
-  
-  useEffect(() => {
-    if (proof) {
-      sessionStorage.setItem(storageKey, proof)
-    }
-  }, [proof, storageKey])
-
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-
-    setError(null)
-    const result = await uploadFile(file, 'referral-tasks', undefined, 'image')
-    
-    if (result.url) {
-      setProof(result.url)
-      sessionStorage.setItem(storageKey, result.url)
-    } else {
-      setError(result.error || 'Upload failed')
-    }
-  }
 
   const handleSubmit = async () => {
     setError(null)
     
-    if (!proof && !textExplanation.trim()) {
-      setError('Please provide either a screenshot or text explanation')
+    if (!textExplanation.trim()) {
+      setError('Please provide a text explanation')
       return
     }
 
     setSubmitting(true)
     try {
-      const result = await onSubmit(task.id, proof || undefined, textExplanation || undefined)
+      const result = await onSubmit(task.id, undefined, textExplanation.trim())
       
       if (result.success) {
         setOpen(false)
-        setProof('')
         setTextExplanation('')
         setError(null)
-        sessionStorage.removeItem(storageKey)
       } else {
         setError(result.error || 'Submission failed')
       }
@@ -209,61 +174,12 @@ export const TaskCard = ({
               <DialogHeader>
                 <DialogTitle>Submit Task Proof</DialogTitle>
                 <DialogDescription>
-                  Upload a screenshot OR provide a text explanation showing you completed this task.
+                  Describe in text how you completed this task.
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor={`proof-${task.id}`}>Upload Screenshot Proof (Optional)</Label>
-                  <input
-                    id={`proof-${task.id}`}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileUpload}
-                    disabled={uploadProgress.isUploading}
-                    className="mt-2 block w-full text-sm text-muted-foreground
-                      file:mr-4 file:py-2 file:px-4
-                      file:rounded-md file:border-0
-                      file:text-sm file:font-medium
-                      file:bg-primary file:text-primary-foreground
-                      hover:file:bg-primary/90
-                      disabled:opacity-50 disabled:cursor-not-allowed"
-                  />
-                  {uploadProgress.isUploading && (
-                    <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950 rounded-md">
-                      <p className="text-sm text-blue-800 dark:text-blue-200">
-                        ⏳ Uploading proof...
-                      </p>
-                    </div>
-                  )}
-                  {proof && (
-                    <div className="mt-2 p-3 bg-green-50 dark:bg-green-950 rounded-md border border-green-200 dark:border-green-800">
-                      <p className="text-sm text-green-800 dark:text-green-200 font-medium mb-2">
-                        ✅ Screenshot uploaded successfully!
-                      </p>
-                      <img 
-                        src={proof} 
-                        alt="Uploaded proof" 
-                        className="max-h-40 rounded border border-green-200 dark:border-green-700"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none'
-                        }}
-                      />
-                    </div>
-                  )}
-                </div>
-
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t" />
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">Or</span>
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor={`textExplanation-${task.id}`}>Text Explanation (Optional)</Label>
+                  <Label htmlFor={`textExplanation-${task.id}`}>How did you complete the task?</Label>
                   <Textarea
                     id={`textExplanation-${task.id}`}
                     value={textExplanation}
@@ -306,7 +222,7 @@ export const TaskCard = ({
                 <div className="flex gap-2">
                   <Button
                     onClick={handleSubmit}
-                    disabled={(!proof && !textExplanation.trim()) || submitting || uploadProgress.isUploading}
+                    disabled={!textExplanation.trim() || submitting}
                     className="flex-1"
                   >
                     {submitting ? 'Submitting...' : 'Submit Task'}
