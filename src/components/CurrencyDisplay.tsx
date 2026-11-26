@@ -65,6 +65,10 @@ const getDisplayCurrency = (isNigerian: boolean): string => {
     const saved = localStorage.getItem('preferred_currency')
     if (saved) return saved
   } catch {}
+  try {
+    const geo = JSON.parse(localStorage.getItem('geo_location_v1') || 'null')
+    if (geo?.data?.countryCode?.toUpperCase() === 'NG') return 'NGN'
+  } catch {}
   return isNigerian ? 'NGN' : 'USD'
 }
 
@@ -92,3 +96,6 @@ const formatGlobalAmount = (amount: number, isNigerian: boolean, includeNC: bool
 export const formatUsdOnly = (amount: number): string => formatGlobalAmount(amount, false, false)
 export const formatPriceForDisplay = (amount: number, isNigerian: boolean): string => formatGlobalAmount(amount, isNigerian, true)
 export const formatPriceCompact = (amount: number, isNigerian: boolean): string => formatGlobalAmount(amount, isNigerian, true)
+
+/** Display-only formatter for all NC-denominated financial UI. */
+export const formatNCDisplay = (amount: number): string => formatGlobalAmount(amount, false, true)
