@@ -9,6 +9,7 @@ import { Wallet, Zap, CheckCircle, Loader2, AlertCircle, DollarSign } from 'luci
 import { useMiniPay } from '@/hooks/useMiniPay';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { formatNCDisplay } from '@/components/CurrencyDisplay';
 
 interface MiniPayDepositCardProps {
   onSuccess?: (amount: number) => void;
