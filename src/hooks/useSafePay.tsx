@@ -74,7 +74,7 @@ export const useSafePay = (otherUserId: string) => {
 
     try {
       // Try user_wallets first, then fallback to profiles table
-      let { data: walletData, error: walletError } = await supabase
+      const { data: walletData, error: walletError } = await supabase
         .from('user_wallets')
         .select('*')
         .eq('user_id', user.id)
