@@ -22,14 +22,16 @@ export const CurrencyConverterDialog = () => {
 
   const convertAmount = (): string => {
     if (!ncAmount) return '0.00'
-    if (!ratesAvailable && fromCurrency !== 'NC' && fromCurrency !== 'NGN' && toCurrency !== 'NC' && toCurrency !== 'NGN') return 'Rate unavailable'
-    if (!ratesAvailable && (fromCurrency === 'NC' || fromCurrency === 'NGN') && (toCurrency === 'NC' || toCurrency === 'NGN')) return Number(ncAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    const isNairaPair = ['NC', 'NGN'].includes(fromCurrency) && ['NC', 'NGN'].includes(toCurrency)
+    if (!ratesAvailable && !isNairaPair) return 'Rate unavailable — use NC / USDT reference'
+    if (!ratesAvailable && isNairaPair) return Number(ncAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     const amount = parseFloat(ncAmount)
     if (isNaN(amount)) return '0.00'
 
     // Convert from source currency to NC, then to target
     const fromRate = currencies[fromCurrency].rateToNC
     const toRate = currencies[toCurrency].rateToNC
+    if (fromRate <= 0 || toRate <= 0) return 'Rate unavailable — use NC / USDT reference'
     
     const ncValue = fromCurrency === 'NC' ? amount : amount * fromRate
     const result = toCurrency === 'NC' ? ncValue : ncValue / toRate
