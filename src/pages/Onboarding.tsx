@@ -160,7 +160,6 @@ const Onboarding = () => {
           state_name: isNigeria ? formData.state : null,
           lga_name: isNigeria ? formData.lga : null,
           area: !isNigeria ? formData.city : null,
-          account_type: userMode,
           onboarding_completed: true,
           user_mode: userMode
         } as any)
@@ -193,7 +192,6 @@ const Onboarding = () => {
           state_name: isNigeria ? formData.state : null,
           lga_name: isNigeria ? formData.lga : null,
           area: !isNigeria ? formData.city : null,
-          account_type: userMode,
           onboarding_completed: true,
           user_mode: userMode
         } as any)
@@ -229,7 +227,6 @@ const Onboarding = () => {
         state_name: isNigeria ? formData.state : null,
         lga_name: isNigeria ? formData.lga : null,
         area: !isNigeria ? formData.city : null,
-        account_type: userMode,
         onboarding_completed: true,
         user_mode: userMode
       } as any)
