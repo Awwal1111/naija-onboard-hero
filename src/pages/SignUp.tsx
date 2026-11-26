@@ -86,37 +86,6 @@ const SignUp = () => {
     }
   }, [inviteToken, toast])
 
-  // Record consent after Google OAuth returns; email/password signup records it via auth metadata trigger.
-  useEffect(() => {
-    if (!user) return
-    const pending = localStorage.getItem('nl_pending_signup_consent')
-    if (!pending) return
-    let consent: any
-    try { consent = JSON.parse(pending) } catch { localStorage.removeItem('nl_pending_signup_consent'); return }
-    const completeConsent = async () => {
-      const { error: consentError } = await supabase.from('signup_consents').insert({
-        user_id: user.id,
-        accepted_at: consent.acceptedAt,
-        terms_version: consent.termsVersion,
-        privacy_version: consent.privacyVersion,
-        telegram_notifications_opt_in: !!consent.telegramNotifications,
-        marketing_updates_opt_in: !!consent.marketingUpdates
-      })
-      if (consentError) {
-        console.error('Could not record Google signup consent:', consentError)
-        toast({ title: 'Consent could not be recorded', description: 'Please contact support before continuing.', variant: 'destructive' })
-        return
-      }
-      const { error: preferenceError } = await supabase.from('notification_preferences').upsert({
-        user_id: user.id,
-        telegram_enabled: !!consent.telegramNotifications,
-        marketing_updates_enabled: !!consent.marketingUpdates
-      }, { onConflict: 'user_id' })
-      if (preferenceError) console.error('Could not save signup notification preferences:', preferenceError)
-      localStorage.removeItem('nl_pending_signup_consent')
-    }
-    void completeConsent()
-  }, [user?.id, toast])
 
   // CONDITIONAL RETURNS AFTER ALL HOOKS
   // Show loading spinner while determining auth state to prevent flickering
@@ -260,7 +229,7 @@ const SignUp = () => {
       acceptedAt: new Date().toISOString(), termsVersion: '2026-11-26', privacyVersion: '2026-11-26',
       telegramNotifications: formData.telegramNotifications, marketingUpdates: formData.marketingUpdates
     }))
-    await signInWithGoogle(`${window.location.origin}/signup?consent_return=1`)
+    await signInWithGoogle()
     setIsLoading(false)
   }
 
