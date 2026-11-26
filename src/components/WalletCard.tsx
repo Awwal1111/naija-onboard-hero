@@ -159,7 +159,7 @@ export const WalletCard = () => {
 
             {balance.withdrawable < 100 && (
               <p className="text-xs text-white/70">
-                Minimum withdrawal: NC 100 (~$0.06)
+                Minimum withdrawal: {formatPreferred(100, true)}
               </p>
             )}
           </div>
