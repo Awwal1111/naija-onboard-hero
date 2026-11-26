@@ -48,7 +48,7 @@ export const InternationalCurrencyDisplay: React.FC<InternationalCurrencyDisplay
         <TooltipContent>
           <div className="text-xs space-y-1">
             <p>{nativeDisplay} (₦{amount.toLocaleString()})</p>
-            {currency !== 'NC' && currency !== 'NGN' && (
+            {currency !== 'NC' && currency !== 'NGN' && ratesAvailable && (
               <p className="text-muted-foreground">
                 Indicative rate: 1 {currency} = NC {currencies[currency].rateToNC.toLocaleString()}
               </p>
