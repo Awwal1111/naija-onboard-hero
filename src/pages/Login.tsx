@@ -31,11 +31,17 @@ const Login = () => {
     e.preventDefault()
     setError('')
     setIsLoading(true)
-    const result = await signIn(formData.email, formData.password)
-    if (result?.error) {
-      setError(result.error.message || 'Invalid credentials')
+    try {
+      const result = await signIn(formData.email, formData.password)
+      if (result?.error) {
+        setError(result.error.message || 'Invalid credentials')
+      }
+    } catch (loginError: any) {
+      console.error('[Login] Sign-in flow failed:', loginError)
+      setError(loginError?.message || 'We could not complete sign-in. Please try again.')
+    } finally {
+      setIsLoading(false)
     }
-    setIsLoading(false)
   }
 
   const handleGoogleSignIn = async () => {
