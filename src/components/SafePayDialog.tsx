@@ -12,6 +12,7 @@ import { useUserSecrets } from '@/hooks/useUserSecrets'
 import { useWallet } from '@/hooks/useWallet'
 import RaiseDisputeDialog from './RaiseDisputeDialog'
 import { toast } from 'sonner'
+import { formatNCDisplay } from '@/components/CurrencyDisplay'
 
 interface SafePayDialogProps {
   otherUserId: string
@@ -89,7 +90,7 @@ const SafePayDialog: React.FC<SafePayDialogProps> = ({ otherUserId, otherUserNam
           }}
           title="Confirm SafePay Action"
           description={
-            pendingAction === 'propose' ? `Lock ${amount} NC in escrow` :
+            pendingAction === 'propose' ? `Lock ${formatNCDisplay(Number(amount))} in escrow` :
             pendingAction === 'accept' ? 'Accept SafePay proposal' :
             pendingAction === 'release' ? 'Release funds to seller' :
             'Confirm action'
@@ -125,10 +126,10 @@ const SafePayDialog: React.FC<SafePayDialogProps> = ({ otherUserId, otherUserNam
           
           <div className="text-sm text-center space-y-1">
             <p className="text-text-secondary">
-              Total Balance: NC {balance.total.toLocaleString()}
+              Total Balance: {formatNCDisplay(balance.total)}
             </p>
             <p className="text-green-600 font-medium">
-              Withdrawable: NC {balance.withdrawable.toLocaleString()}
+              Withdrawable: {formatNCDisplay(balance.withdrawable)}
             </p>
             <p className="text-xs text-amber-600">
               Only withdrawable balance can be used for SafePay
@@ -214,7 +215,7 @@ const SafePayDialog: React.FC<SafePayDialogProps> = ({ otherUserId, otherUserNam
               <Shield className="h-12 w-12 text-green-500 mx-auto mb-4" />
               <h3 className="text-lg font-semibold mb-2">Work in Progress</h3>
               <p className="text-text-secondary">
-                {activeTransaction.amount} NC secured in escrow
+                {formatNCDisplay(activeTransaction.amount)} secured in escrow
               </p>
             </div>
 
@@ -252,7 +253,7 @@ const SafePayDialog: React.FC<SafePayDialogProps> = ({ otherUserId, otherUserNam
               <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
               <h3 className="text-lg font-semibold mb-2">Work Complete</h3>
               <p className="text-text-secondary">
-                {activeTransaction.amount} NC in escrow
+                {formatNCDisplay(activeTransaction.amount)} in escrow
               </p>
             </div>
 
@@ -289,7 +290,7 @@ const SafePayDialog: React.FC<SafePayDialogProps> = ({ otherUserId, otherUserNam
             <AlertTriangle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
             <h3 className="text-lg font-semibold">Under Admin Review</h3>
             <p className="text-text-secondary">
-              {activeTransaction.amount} NC locked in escrow
+              {formatNCDisplay(activeTransaction.amount)} locked in escrow
             </p>
             {activeTransaction.dispute_reason && (
               <p className="text-sm text-muted-foreground">

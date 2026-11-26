@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { formatNCDisplay } from '@/components/CurrencyDisplay'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
@@ -187,7 +188,7 @@ export const TransactionDetailDialog: React.FC<TransactionDetailDialogProps> = (
           <div className="text-center py-6 bg-accent/50 rounded-xl">
             <p className="text-sm text-muted-foreground mb-2">Amount</p>
             <p className={`text-4xl font-bold ${isCredit ? 'text-green-500' : 'text-red-500'}`}>
-              {isCredit ? '+' : '-'}{Math.abs(transaction.amount).toLocaleString()} NC
+              {isCredit ? '+' : '-'}{formatNCDisplay(Math.abs(transaction.amount))}
             </p>
             <p className="text-xs text-muted-foreground mt-2">
               {formatTransactionType(transaction.kind)}

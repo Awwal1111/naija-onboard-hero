@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { formatNCDisplay } from '@/components/CurrencyDisplay'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -70,11 +71,12 @@ export const AllTransactionsDialog: React.FC<AllTransactionsDialogProps> = ({
         startDate = startOfMonth(now)
         endDate = endOfMonth(now)
         break
-      case 'last_month':
+      case 'last_month': {
         const lastMonth = subMonths(now, 1)
         startDate = startOfMonth(lastMonth)
         endDate = endOfMonth(lastMonth)
         break
+      }
       case 'this_year':
         startDate = startOfYear(now)
         break
@@ -346,7 +348,7 @@ export const AllTransactionsDialog: React.FC<AllTransactionsDialogProps> = ({
                           <p className={`font-semibold text-sm whitespace-nowrap ${
                             isCredit ? 'text-green-500' : 'text-red-500'
                           }`}>
-                            {isCredit ? '+' : '-'}{Math.abs(transaction.amount).toLocaleString()} NC
+                            {isCredit ? '+' : '-'}{formatNCDisplay(Math.abs(transaction.amount))}
                           </p>
                         </div>
                         <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />

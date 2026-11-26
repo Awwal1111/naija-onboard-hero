@@ -65,7 +65,7 @@ export const JobAlert = ({
           description: `We found a job that matches your expertise. Don't miss out!`,
           buttonText: 'Apply Now',
         }
-      case 'application_status':
+      case 'application_status': {
         const statusEmoji = applicationStatus === 'accepted' ? '🎉' : applicationStatus === 'shortlisted' ? '⭐' : '📋'
         const statusText = applicationStatus === 'accepted' ? 'Accepted!' : applicationStatus === 'shortlisted' ? 'Shortlisted!' : 'Updated'
         return {
@@ -75,6 +75,7 @@ export const JobAlert = ({
           description: `Your application for "${jobTitle}" has been ${applicationStatus}.`,
           buttonText: 'View Details',
         }
+      }
       default:
         return {
           emoji: '📢',

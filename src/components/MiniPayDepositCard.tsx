@@ -9,6 +9,7 @@ import { Wallet, Zap, CheckCircle, Loader2, AlertCircle, DollarSign } from 'luci
 import { useMiniPay } from '@/hooks/useMiniPay';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { formatNCDisplay } from '@/components/CurrencyDisplay';
 
 interface MiniPayDepositCardProps {
   onSuccess?: (amount: number) => void;
@@ -38,7 +39,7 @@ export const MiniPayDepositCard = ({ onSuccess }: MiniPayDepositCardProps) => {
   const handleDeposit = async () => {
     const amountNum = parseFloat(amount);
     if (!amountNum || amountNum < MIN_DEPOSIT) {
-      toast.error(`Minimum deposit is NC ${MIN_DEPOSIT}`);
+      toast.error(`Minimum deposit is ${formatNCDisplay(MIN_DEPOSIT)}`);
       return;
     }
 
@@ -215,13 +216,13 @@ export const MiniPayDepositCard = ({ onSuccess }: MiniPayDepositCardProps) => {
             <div className="space-y-2">
               <Input
                 type="number"
-                placeholder={`Enter amount (min NC ${MIN_DEPOSIT})`}
+                placeholder={`Enter amount (min ${formatNCDisplay(MIN_DEPOSIT)})`}
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 min={MIN_DEPOSIT}
               />
               <p className="text-xs text-muted-foreground">
-                You'll receive: <span className="font-medium text-foreground">NC {parseFloat(amount || '0').toLocaleString()}</span>
+                You'll receive: <span className="font-medium text-foreground">{formatNCDisplay(parseFloat(amount || '0'))}</span>
               </p>
             </div>
 

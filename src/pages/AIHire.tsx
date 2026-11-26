@@ -378,7 +378,7 @@ export default function AIHire() {
       const maxBudget = context.budget_max ?? 10_000_000
 
       const sellerIds = (gigs || []).map(g => g.user_id).filter(Boolean)
-      let sellersMap: Record<string, { name: string; picture: string | null; is_expert: boolean }> = {}
+      const sellersMap: Record<string, { name: string; picture: string | null; is_expert: boolean }> = {}
       if (sellerIds.length > 0) {
         const { data: sellers } = await supabase
           .from('profiles')

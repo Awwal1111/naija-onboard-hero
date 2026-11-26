@@ -28,7 +28,7 @@ const NaijaLanceWalletCard: React.FC<NaijaLanceWalletCardProps> = ({
   const [showBalances, setShowBalances] = useState(true)
   const [showQR, setShowQR] = useState(false)
   const [showPayLink, setShowPayLink] = useState(false)
-  const { currency, formatPreferred, currencies } = useCurrency()
+  const { currency, formatPreferred, currencies, ratesAvailable } = useCurrency()
   const { address: celoAddress } = useCeloWallet()
 
   return (
@@ -62,7 +62,7 @@ const NaijaLanceWalletCard: React.FC<NaijaLanceWalletCardProps> = ({
               {showBalances ? `NC ${balance.total.toLocaleString()}` : 'NC ****'}
             </p>
             <p className="text-sm text-muted-foreground">
-              {showBalances ? formatPreferred(balance.total, false) : '****'}
+              {showBalances ? (ratesAvailable || currency === 'NC' || currency === 'NGN' ? formatPreferred(balance.total, true) : 'USDT reference unavailable') : '****'}
             </p>
           </div>
 
@@ -112,7 +112,7 @@ const NaijaLanceWalletCard: React.FC<NaijaLanceWalletCardProps> = ({
           {/* Exchange Rate Info */}
           <div className="text-center">
             <Badge variant="secondary" className="text-xs">
-              1 NC = ₦1 • {currency !== 'NC' && currency !== 'NGN' ? `1 ${currency} = NC ${currencies[currency]?.rateToNC.toLocaleString()}` : 'Instant transactions'}
+              1 NC = ₦1 • {currency !== 'NC' && currency !== 'NGN' ? (ratesAvailable ? `1 ${currency} ≈ NC ${currencies[currency]?.rateToNC.toLocaleString()}` : 'FX unavailable • NC / USDT reference') : 'Instant transactions'}
             </Badge>
           </div>
         </CardContent>

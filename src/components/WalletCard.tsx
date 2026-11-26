@@ -22,7 +22,7 @@ import { CreatePaymentLinkDialog } from './CreatePaymentLinkDialog'
 export const WalletCard = () => {
   const { balance, loading } = useWallet()
   const { address: celoAddress } = useCeloWallet()
-  const { currency, setCurrency, formatPreferred } = useCurrency()
+  const { currency, setCurrency, formatPreferred, ratesAvailable } = useCurrency()
   const { t } = useLanguage()
   const [showBalance, setShowBalance] = useState(true)
   const [showDeposit, setShowDeposit] = useState(false)
@@ -33,10 +33,11 @@ export const WalletCard = () => {
 
   const formatBalance = (amount: number) => formatPreferred(amount, false)
 
-  const formatSecondary = (amount: number) =>
-    currency === 'NC' || currency === 'NGN'
-      ? '1 NC = ₦1'
-      : `NC ${amount.toLocaleString()} (accounting amount)`
+  const formatSecondary = (amount: number) => {
+    if (currency === 'NC') return '1 NC = ₦1'
+    if (currency === 'NGN') return `NC ${amount.toLocaleString()} (accounting amount)`
+    return ratesAvailable ? `NC ${amount.toLocaleString()} (accounting amount)` : 'USDT reference unavailable — showing NC balance'
+  }
 
   return (
     <>
@@ -158,7 +159,7 @@ export const WalletCard = () => {
 
             {balance.withdrawable < 100 && (
               <p className="text-xs text-white/70">
-                Minimum withdrawal: NC 100 (~$0.06)
+                Minimum withdrawal: {formatPreferred(100, true)}
               </p>
             )}
           </div>

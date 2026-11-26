@@ -10,13 +10,11 @@ const isMiniPayEnv = detectMiniPaySync().isMiniPay;
  * The permission dialogs and realtime triggers cause flickering
  */
 export const PushNotificationManager = () => {
-  // CRITICAL: Skip entirely in MiniPay
-  if (isMiniPayEnv) {
-    return null;
-  }
-
-  // Initialize real-time push notification triggers (only in non-MiniPay)
+  // Always call hooks in a stable order; the hook itself skips MiniPay subscriptions.
   usePushNotificationTriggers()
+
+  // CRITICAL: Skip the permission dialog entirely in MiniPay
+  if (isMiniPayEnv) return null
   
   return <NotificationPermissionDialog />
 }

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Briefcase } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { supabase } from '@/integrations/supabase/client'
+import { formatNCDisplay } from '@/components/CurrencyDisplay'
 
 type Job = { id: string; title: string; budget_max: number | null; required_skills: string[] | null }
 
@@ -29,7 +30,7 @@ export function FeedJobCard({ job }: { job: Job }) {
       </div>
       <h3 className="font-semibold text-foreground">{job.title}</h3>
       <p className="text-sm text-muted-foreground">
-        {job.budget_max ? `${job.budget_max} NC` : 'Budget negotiable'}
+        {job.budget_max ? `Up to ${formatNCDisplay(job.budget_max)}` : 'Budget negotiable'}
         {job.required_skills?.length ? ` · ${job.required_skills.slice(0, 3).join(', ')}` : ''}
       </p>
       <Button size="sm" className="mt-3" onClick={() => navigate(`/job/${job.id}`)}>View & apply</Button>

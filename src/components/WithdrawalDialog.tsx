@@ -15,6 +15,7 @@ import { useWallet } from '@/hooks/useWallet'
 import { useProfile } from '@/hooks/useProfile'
 import { useUserSecrets } from '@/hooks/useUserSecrets'
 import { useCeloWallet } from '@/hooks/useCeloWallet'
+import { formatNCDisplay } from '@/components/CurrencyDisplay'
 import { useMiniPay } from '@/hooks/useMiniPay'
 import { useUserCountry } from '@/hooks/useUserCountry'
 import { useVerification } from '@/hooks/useVerification'
@@ -72,12 +73,12 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
     
     // Check NC balance (withdrawable balance)
     if (ncAmount > currentBalance) {
-      toast.error(`Insufficient balance. You have NC ${currentBalance.toLocaleString()}`)
+      toast.error(`Insufficient balance. You have ${formatNCDisplay(currentBalance)}`)
       return
     }
 
     if (ncAmount < 100) {
-      toast.error("Minimum withdrawal is NC 100")
+      toast.error(`Minimum withdrawal is ${formatNCDisplay(100)}`)
       return
     }
 
@@ -148,7 +149,7 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
             Withdraw Funds
           </DialogTitle>
           <DialogDescription>
-            {isNigerian ? `Available balance: ₦${currentBalance.toLocaleString()}` : `Balance: NC ${currentBalance.toLocaleString()} (~${usdEquivalent.toFixed(2)} USD)`}
+            Available balance: {formatNCDisplay(currentBalance)}
           </DialogDescription>
         </DialogHeader>
         
@@ -202,7 +203,7 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
                   <div className="space-y-2">
                     <Label>Available Balance</Label>
                     <div className="text-2xl font-bold text-primary">
-                      NC {currentBalance.toLocaleString()}
+                      {formatNCDisplay(currentBalance)}
                       <span className="text-sm font-normal text-muted-foreground ml-2">
                         (~${usdEquivalent.toFixed(2)} USD)
                       </span>
@@ -234,7 +235,7 @@ export const WithdrawalDialog = ({ open, onOpenChange, currentBalance }: Withdra
                       min="100"
                     />
                     <p className="text-xs text-muted-foreground">
-                      Minimum: NC 100 (~$0.06 USD)
+                      Minimum: {formatNCDisplay(100)}
                     </p>
                   </div>
 

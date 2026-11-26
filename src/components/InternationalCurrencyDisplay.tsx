@@ -20,7 +20,7 @@ export const InternationalCurrencyDisplay: React.FC<InternationalCurrencyDisplay
   size = 'md',
   compact = false
 }) => {
-  const { currency, formatPreferred, currencies } = useCurrency()
+  const { currency, formatPreferred, currencies, ratesAvailable } = useCurrency()
   const sizeClasses = {
     sm: 'text-sm',
     md: 'text-base',
@@ -28,9 +28,10 @@ export const InternationalCurrencyDisplay: React.FC<InternationalCurrencyDisplay
   }
   const preferredDisplay = formatPreferred(amount, false)
   const nativeDisplay = `NC ${amount.toLocaleString()}`
+  const showNative = currency !== 'NC' && (currency === 'NGN' || ratesAvailable)
 
   if (compact) {
-    return <span className={`${sizeClasses[size]} ${className}`}>{preferredDisplay}</span>
+    return <span className={`inline-flex flex-wrap items-baseline gap-x-1 ${className}`}><span className={sizeClasses[size]}>{preferredDisplay}</span>{showNative && <span className="text-[10px] text-muted-foreground">({nativeDisplay})</span>}</span>
   }
 
   return (
@@ -38,7 +39,7 @@ export const InternationalCurrencyDisplay: React.FC<InternationalCurrencyDisplay
       <TooltipTrigger asChild>
         <div className={`flex items-center gap-2 ${className}`}>
           <span className={sizeClasses[size]}>{preferredDisplay}</span>
-          {showBadge && amount >= 100 && currency !== 'NC' && currency !== 'NGN' && (
+          {showBadge && showNative && (
             <Badge variant="secondary" className="text-xs">{nativeDisplay}</Badge>
           )}
         </div>
@@ -47,7 +48,7 @@ export const InternationalCurrencyDisplay: React.FC<InternationalCurrencyDisplay
         <TooltipContent>
           <div className="text-xs space-y-1">
             <p>{nativeDisplay} (₦{amount.toLocaleString()})</p>
-            {currency !== 'NC' && currency !== 'NGN' && (
+            {currency !== 'NC' && currency !== 'NGN' && ratesAvailable && (
               <p className="text-muted-foreground">
                 Indicative rate: 1 {currency} = NC {currencies[currency].rateToNC.toLocaleString()}
               </p>

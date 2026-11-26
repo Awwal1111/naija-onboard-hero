@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Star, Users, Clock, Award, CheckCircle, PlayCircle } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { formatNCDisplay } from "@/components/CurrencyDisplay";
 
 export default function CourseDetail() {
   const { id } = useParams();
@@ -360,7 +361,7 @@ export default function CourseDetail() {
                       <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-xs space-y-2">
                         <p className="font-medium">Payment protected by escrow</p>
                         <p className="text-muted-foreground">
-                          {enrollment.amount?.toLocaleString()} NC is held until{" "}
+                          {formatNCDisplay(Number(enrollment.amount || 0))} is held until{" "}
                           {enrollment.release_due_at
                             ? new Date(enrollment.release_due_at).toLocaleDateString()
                             : "7 days after purchase"}

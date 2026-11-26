@@ -14,7 +14,8 @@ import { Label } from '@/components/ui/label';
 import { ArrowLeft, Star, Clock, CheckCircle2, Share2, MessageCircle, ExternalLink, Zap, TrendingUp, Shield, MapPin, Package, Users, HelpCircle, Quote, ShoppingCart } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { BookmarkButton } from '@/components/BookmarkButton';
-import { toast } from 'sonner';
+import { toast } from 'sonner'
+import { formatNCDisplay } from '@/components/CurrencyDisplay';
 import { useAuth } from '@/hooks/useAuth';
 import { useGigReviews } from '@/hooks/useGigReviews';
 import { usePortfolio } from '@/hooks/usePortfolio';
@@ -114,9 +115,10 @@ export default function PublicGig() {
     }
     
     // Send contextual message
+    if (!gig?.user_id) return
     await initiateContextualChat({
       currentUserId: user.id,
-      targetUserId: gig?.user_id!,
+      targetUserId: gig.user_id,
       context: {
         context: 'gig',
         context_label: 'From Gig',
@@ -170,7 +172,7 @@ export default function PublicGig() {
         if (/insufficient/i.test(String(result.error))) {
           // Don't dead-end the buyer: open checkout right here, keep their order details.
           setShowFundDialog(true);
-          toast.info(`Add NC ${Number(gig.price).toLocaleString()} to finish this order — your details are kept.`);
+          toast.info(`Add ${formatNCDisplay(Number(gig.price))} to finish this order — your details are kept.`);
         } else {
           toast.error(result.error || 'Failed to place order');
         }

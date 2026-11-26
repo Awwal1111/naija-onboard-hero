@@ -47,7 +47,7 @@ export const GigCard: React.FC<GigCardProps> = ({
 }) => {
   const navigate = useNavigate();
   const { formatPreferred } = useCurrency();
-  const formatPrice = (amount: number) => formatPreferred(amount, false);
+  const formatPrice = (amount: number) => formatPreferred(amount, true);
   
   const handleCardClick = () => {
     navigate(`/gig/${id}`);

@@ -807,7 +807,7 @@ async function handleSmartAI(
     }
 
     // Build system context
-    let systemContext = `You are NaijaLancers AI Assistant on Telegram. You're a smart, friendly Nigerian freelancing expert.
+    const systemContext = `You are NaijaLancers AI Assistant on Telegram. You're a smart, friendly Nigerian freelancing expert.
 
 User: ${userName}
 ${profile ? `Wallet Balance: ₦${profile.wallet_balance || 0} NC

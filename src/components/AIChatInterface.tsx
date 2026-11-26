@@ -131,7 +131,7 @@ const AIChatInterface = () => {
     // Free, instant read-aloud using the phone/browser's built-in voice
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
-      const clean = text.replace(/[*#_`>\[\]()]/g, '').slice(0, 4000);
+      const clean = text.replace(/[*#_`>[\]()]/g, '').slice(0, 4000);
       const u = new SpeechSynthesisUtterance(clean);
       u.onend = () => setPlayingAudioId(null);
       u.onerror = () => setPlayingAudioId(null);

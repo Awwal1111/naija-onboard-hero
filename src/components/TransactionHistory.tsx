@@ -12,6 +12,7 @@ import { pdf } from '@react-pdf/renderer'
 import TransactionsPDFDocument from './TransactionsPDFDocument'
 import { useToast } from '@/hooks/use-toast'
 import { format } from 'date-fns'
+import { formatNCDisplay } from '@/components/CurrencyDisplay'
 
 export const TransactionHistory = () => {
   const { toast } = useToast()
@@ -75,7 +76,7 @@ export const TransactionHistory = () => {
   }
 
   const formatAmount = (amount: number) => {
-    return `NC ${Math.abs(amount).toLocaleString()}`
+    return formatNCDisplay(Math.abs(amount))
   }
 
   if (loading) {

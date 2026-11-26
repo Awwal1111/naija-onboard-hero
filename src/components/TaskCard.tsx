@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { formatNCDisplay } from '@/components/CurrencyDisplay'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
@@ -166,7 +167,7 @@ export const TaskCard = ({
               >
                 {hasSubmitted 
                   ? (submissionStatus === 'rejected' ? 'Resubmit' : 'Submitted')
-                  : `Earn ${task.reward.toLocaleString()} NC`
+                  : `Earn ${formatNCDisplay(task.reward)}`
                 }
               </Button>
             </DialogTrigger>

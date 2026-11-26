@@ -36,7 +36,7 @@ async function fetchGeo(): Promise<GeoData | null> {
       const parsed = JSON.parse(cached)
       if (parsed.expiry > Date.now() && parsed.data) return parsed.data
     }
-  } catch {}
+  } catch { /* Geolocation cache is optional. */ }
 
   // Try multiple free endpoints with fallback
   const endpoints = [
@@ -63,7 +63,7 @@ async function fetchGeo(): Promise<GeoData | null> {
       }
       try {
         localStorage.setItem(CACHE_KEY, JSON.stringify({ expiry: Date.now() + CACHE_TTL, data }))
-      } catch {}
+      } catch { /* Geolocation cache is optional. */ }
       return data
     } catch {
       continue
@@ -80,7 +80,7 @@ export const useGeoLocation = () => {
         const parsed = JSON.parse(cached)
         if (parsed.expiry > Date.now()) return parsed.data
       }
-    } catch {}
+    } catch { /* Geolocation cache is optional. */ }
     return null
   })
   const [loading, setLoading] = useState(!geo)

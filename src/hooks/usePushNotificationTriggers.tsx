@@ -20,12 +20,8 @@ const isMiniPayEnv = detectMiniPaySync().isMiniPay;
  * - Egress bandwidth
  */
 export const usePushNotificationTriggers = () => {
-  // CRITICAL: Skip ALL subscriptions in MiniPay to prevent flickering
-  if (isMiniPayEnv) {
-    return;
-  }
-
-  return usePushNotificationTriggersInternal();
+  // The internal hook is always called to preserve React's hook order.
+  usePushNotificationTriggersInternal();
 };
 
 // Internal hook - only runs in non-MiniPay environments
@@ -33,7 +29,7 @@ const usePushNotificationTriggersInternal = () => {
   const { user } = useAuth()
 
   useEffect(() => {
-    if (!user) return
+    if (isMiniPayEnv || !user) return
 
     console.log('[Push] Setting up lightweight notification triggers for user:', user.id)
 

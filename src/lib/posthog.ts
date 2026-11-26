@@ -35,17 +35,17 @@ export const initPostHog = () => {
 
 export const identifyUser = (userId: string, traits?: Record<string, any>) => {
   if (!initialized) return;
-  try { posthog.identify(userId, traits); } catch {}
+  try { posthog.identify(userId, traits); } catch { /* Analytics must never interrupt the app. */ }
 };
 
 export const resetPostHog = () => {
   if (!initialized) return;
-  try { posthog.reset(); } catch {}
+  try { posthog.reset(); } catch { /* Analytics must never interrupt the app. */ }
 };
 
 export const trackEvent = (name: string, props?: Record<string, any>) => {
   if (!initialized) return;
-  try { posthog.capture(name, props); } catch {}
+  try { posthog.capture(name, props); } catch { /* Analytics must never interrupt the app. */ }
 };
 
 export { posthog };

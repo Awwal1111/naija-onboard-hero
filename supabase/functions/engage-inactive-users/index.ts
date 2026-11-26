@@ -105,7 +105,7 @@ serve(async (req) => {
 
       // Compose message
       const title = `We miss you, ${user.full_name?.split(' ')[0] || 'there'}! 👋`;
-      let message = personalizedContent.message;
+      const message = personalizedContent.message;
 
       // 7-14 days: Email + Telegram
       if (daysInactive >= 7 && daysInactive < 14) {

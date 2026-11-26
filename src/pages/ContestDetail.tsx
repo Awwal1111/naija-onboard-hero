@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useContests, ContestSubmission } from "@/hooks/useContests";
+import { formatNCDisplay } from "@/components/CurrencyDisplay";
 import { useAuth } from "@/hooks/useAuth";
 import { ArrowLeft, Trophy, Clock, Users, FileImage, Star, Upload, Check, Loader2, Wallet, CheckCircle2, Shield, AlertCircle, DollarSign } from "lucide-react";
 import { toast } from "sonner";
@@ -89,7 +90,7 @@ const ContestDetail = () => {
   };
 
   const handleSelectWinner = async (submissionId: string, freelancerId: string) => {
-    if (!confirm("Are you sure you want to select this as the winner? The prize (NC " + contest?.prize_amount?.toLocaleString() + ") will be automatically transferred to the freelancer's wallet.")) {
+    if (!confirm(`Are you sure you want to select this as the winner? The prize (${formatNCDisplay(Number(contest?.prize_amount || 0))}) will be automatically transferred to the freelancer's wallet.`)) {
       return;
     }
     
@@ -169,7 +170,7 @@ const ContestDetail = () => {
           <Card>
             <CardContent className="p-4 text-center">
               <Trophy className="h-6 w-6 mx-auto text-yellow-500 mb-1" />
-              <p className="text-2xl font-bold">NC {contest.prize_amount.toLocaleString()}</p>
+              <p className="text-2xl font-bold">{formatNCDisplay(contest.prize_amount)}</p>
               <p className="text-xs text-muted-foreground">Prize</p>
             </CardContent>
           </Card>
@@ -203,7 +204,7 @@ const ContestDetail = () => {
               <div className="flex-1">
                 <p className="font-medium text-green-700 dark:text-green-400">Prize Secured in Escrow</p>
                 <p className="text-sm text-muted-foreground">
-                  NC {contest.prize_amount.toLocaleString()} is held safely until a winner is selected
+                  {formatNCDisplay(contest.prize_amount)} is held safely until a winner is selected
                 </p>
               </div>
               {isCompleted && (
@@ -225,7 +226,7 @@ const ContestDetail = () => {
                 <div className="flex-1">
                   <p className="font-bold text-lg">🎉 Winner: {winnerSubmission.freelancer_name}</p>
                   <p className="text-sm text-muted-foreground">
-                    "{winnerSubmission.title}" - Received NC {contest.prize_amount.toLocaleString()}
+                    "{winnerSubmission.title}" - Received {formatNCDisplay(contest.prize_amount)}
                   </p>
                 </div>
               </div>
@@ -271,7 +272,7 @@ const ContestDetail = () => {
             <DialogTrigger asChild>
               <Button className="w-full" size="lg">
                 <Upload className="h-5 w-5 mr-2" />
-                Submit Your Entry (Prize: NC {contest.prize_amount.toLocaleString()})
+                Submit Your Entry (Prize: {formatNCDisplay(contest.prize_amount)})
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-md">
@@ -282,7 +283,7 @@ const ContestDetail = () => {
               <Alert className="bg-green-500/10 border-green-500/30">
                 <Shield className="h-4 w-4 text-green-600" />
                 <AlertDescription className="text-green-700 dark:text-green-400">
-                  Prize is secured! NC {contest.prize_amount.toLocaleString()} is held in escrow.
+                  Prize is secured! {formatNCDisplay(contest.prize_amount)} is held in escrow.
                 </AlertDescription>
               </Alert>
               <div className="space-y-4 mt-4">

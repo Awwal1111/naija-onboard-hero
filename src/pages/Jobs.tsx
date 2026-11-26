@@ -121,7 +121,7 @@ const Jobs = () => {
 
   // Enhanced filtering with sorting and price range
   const filteredAndSortedGigs = useMemo(() => {
-    let filtered = gigs.filter((gig: any) => {
+    const filtered = gigs.filter((gig: any) => {
       const matchesSearch = gig.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                            gig.description?.toLowerCase().includes(searchQuery.toLowerCase())
       const normalizedGigCategory = normalizeCategory(gig.category)

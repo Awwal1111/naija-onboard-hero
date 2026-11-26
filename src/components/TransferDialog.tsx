@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import { useWallet } from '@/hooks/useWallet'
 import { Link } from 'react-router-dom'
+import { formatNCDisplay } from '@/components/CurrencyDisplay'
 
 interface TransferDialogProps {
   open: boolean
@@ -127,7 +128,7 @@ export const TransferDialog = ({ open, onOpenChange }: TransferDialogProps) => {
     if (transferAmount > balance.withdrawable) {
       toast({
         title: "Insufficient Balance",
-        description: `You don't have enough withdrawable balance. Available: NC ${balance.withdrawable.toLocaleString()}`,
+        description: `You don't have enough withdrawable balance. Available: ${formatNCDisplay(balance.withdrawable)}`,
         variant: "destructive"
       })
       return
@@ -163,7 +164,7 @@ export const TransferDialog = ({ open, onOpenChange }: TransferDialogProps) => {
 
       toast({
         title: "Transfer Successful! 🎉",
-        description: `Successfully sent NC ${transferAmount.toLocaleString()} to ${result.recipient_name}`,
+        description: `Successfully sent ${formatNCDisplay(transferAmount)} to ${result.recipient_name}`,
       })
 
       await refreshWallet()
@@ -236,15 +237,15 @@ export const TransferDialog = ({ open, onOpenChange }: TransferDialogProps) => {
                 <div className="space-y-1 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Total Balance:</span>
-                    <span className="font-medium">NC {balance.total.toLocaleString()}</span>
+                    <span className="font-medium">{formatNCDisplay(balance.total)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Withdrawable:</span>
-                    <span className="font-semibold text-green-600">NC {balance.withdrawable.toLocaleString()}</span>
+                    <span className="font-semibold text-green-600">{formatNCDisplay(balance.withdrawable)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Non-Withdrawable:</span>
-                    <span className="text-muted-foreground">NC {balance.non_withdrawable.toLocaleString()}</span>
+                    <span className="text-muted-foreground">{formatNCDisplay(balance.non_withdrawable)}</span>
                   </div>
                   <p className="text-xs text-amber-600 mt-2 pt-2 border-t border-amber-500/20">
                     Only withdrawable balance can be sent
@@ -266,7 +267,7 @@ export const TransferDialog = ({ open, onOpenChange }: TransferDialogProps) => {
               />
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Can send up to:</span>
-                <span className="font-semibold text-green-600">NC {balance.withdrawable.toLocaleString()}</span>
+                <span className="font-semibold text-green-600">{formatNCDisplay(balance.withdrawable)}</span>
               </div>
             </div>
 
@@ -291,7 +292,7 @@ export const TransferDialog = ({ open, onOpenChange }: TransferDialogProps) => {
             <div className="p-4 bg-accent/50 rounded-lg">
               <div className="flex items-center gap-2 text-sm">
                 <AlertCircle className="h-4 w-4 text-amber-500" />
-                <span>Confirm transfer of <strong>NC {amount}</strong> to <strong>{recipient?.name}</strong></span>
+                <span>Confirm transfer of <strong>{formatNCDisplay(Number(amount))}</strong> to <strong>{recipient?.name}</strong></span>
               </div>
             </div>
 
