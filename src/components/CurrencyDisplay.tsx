@@ -18,7 +18,7 @@ export const CurrencyDisplay: React.FC<CurrencyDisplayProps> = ({
   size = 'md',
   compact = false
 }) => {
-  const { currency, formatPreferred, currencies } = useCurrency()
+  const { currency, formatPreferred, currencies, ratesAvailable } = useCurrency()
   const sizeClasses = {
     sm: 'text-sm',
     md: 'text-base',
@@ -26,7 +26,7 @@ export const CurrencyDisplay: React.FC<CurrencyDisplayProps> = ({
   }
   const preferred = formatPreferred(amount, false)
   const nativeAmount = `NC ${amount.toLocaleString()}`
-  const showNative = currency !== 'NC' && currency !== 'NGN'
+  const showNative = currency !== 'NC' && (currency === 'NGN' || ratesAvailable)
 
   if (compact) {
     return <span className={`inline-flex flex-wrap items-baseline gap-x-1 ${className}`}><span className={sizeClasses[size]}>{preferred}</span>{showNative && <span className="text-[10px] text-muted-foreground">({nativeAmount})</span>}</span>
