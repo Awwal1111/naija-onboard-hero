@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { useProfile } from '@/hooks/useProfile'
+import { useUserMode } from '@/hooks/useUserMode'
 import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/use-toast'
 import { useNigerianStates } from '@/hooks/useNigerianStates'
@@ -52,7 +53,7 @@ const COUNTRIES = [
   'Other'
 ]
 
-type AccountType = 'freelancer' | 'client'
+type AccountType = 'freelancer' | 'client' | 'both'
 type UserGoal = 'freelancer' | 'exploring' | 'hire' | 'post_job'
 
 const Onboarding = () => {
@@ -60,6 +61,7 @@ const Onboarding = () => {
   const { toast } = useToast()
   const { user } = useAuth()
   const { profile, updateProfile } = useProfile()
+  const { setMode } = useUserMode()
   const { states, lgas, loadingStates, loadingLGAs, fetchLGAs } = useNigerianStates()
   
   const [currentStep, setCurrentStep] = useState(1)
@@ -121,7 +123,7 @@ const Onboarding = () => {
         toast({ title: 'Please enter your name', variant: 'destructive' })
         return
       }
-      if (formData.account_type === 'freelancer' && !formData.profession.trim()) {
+      if (formData.account_type !== 'client' && !formData.profession.trim()) {
         toast({ title: 'Please enter your profession', variant: 'destructive' })
         return
       }
@@ -150,17 +152,20 @@ const Onboarding = () => {
       // Just exploring - still save their basic info
       setLoading(true)
       try {
-        await updateProfile({
+        const userMode = formData.account_type
+        const result = await updateProfile({
           full_name: formData.full_name.trim(),
           profession: formData.profession.trim() || null,
           country_code: formData.country,
           state_name: isNigeria ? formData.state : null,
           lga_name: isNigeria ? formData.lga : null,
           area: !isNigeria ? formData.city : null,
-          account_type: formData.account_type,
+          account_type: userMode,
           onboarding_completed: true,
-          user_mode: 'both'
+          user_mode: userMode
         } as any)
+        if (!result.success) throw new Error(result.error || 'Failed to save profile')
+        await setMode(userMode, false)
       } catch (error) {
         // Non-blocking - still navigate
       } finally {
@@ -175,20 +180,23 @@ const Onboarding = () => {
     }
 
     if (goal === 'hire' || goal === 'post_job') {
-      // Client flow - save profile, then route based on choice
+      // Hiring from a freelancer account enables Both; existing Both stays Both.
       setLoading(true)
       try {
-        await updateProfile({
+        const userMode: AccountType = formData.account_type === 'freelancer' ? 'both' : formData.account_type
+        const result = await updateProfile({
           full_name: formData.full_name.trim(),
           profession: formData.profession.trim() || null,
           country_code: formData.country,
           state_name: isNigeria ? formData.state : null,
           lga_name: isNigeria ? formData.lga : null,
           area: !isNigeria ? formData.city : null,
-          account_type: 'client',
+          account_type: userMode,
           onboarding_completed: true,
-          user_mode: 'client'
+          user_mode: userMode
         } as any)
+        if (!result.success) throw new Error(result.error || 'Failed to save profile')
+        await setMode(userMode, false)
 
         if (goal === 'post_job') {
           toast({ title: 'Post your job 📝', description: 'Tell us what you need done.' })
@@ -208,20 +216,23 @@ const Onboarding = () => {
       return
     }
 
-    // Freelancer flow - complete onboarding
+    // If a Client also chooses the freelancer path, enable Both.
     setLoading(true)
     try {
-      await updateProfile({
+      const userMode: AccountType = formData.account_type === 'client' ? 'both' : formData.account_type
+      const result = await updateProfile({
         full_name: formData.full_name.trim(),
         profession: formData.profession.trim() || null,
         country_code: formData.country,
         state_name: isNigeria ? formData.state : null,
         lga_name: isNigeria ? formData.lga : null,
         area: !isNigeria ? formData.city : null,
-        account_type: 'freelancer',
+        account_type: userMode,
         onboarding_completed: true,
-        user_mode: 'freelancer'
+        user_mode: userMode
       } as any)
+      if (!result.success) throw new Error(result.error || 'Failed to save profile')
+      await setMode(userMode, false)
 
       toast({
         title: 'Welcome to NaijaLancers! 🎉',
@@ -336,7 +347,7 @@ const Onboarding = () => {
                   {/* Account Type */}
                   <div className="space-y-2">
                     <label className="text-sm font-medium">I am a...</label>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-3 gap-2">
                       <button
                         onClick={() => setFormData(prev => ({ ...prev, account_type: 'freelancer' }))}
                         className={`p-4 rounded-xl border-2 transition-all text-left ${
@@ -361,11 +372,23 @@ const Onboarding = () => {
                         <p className="font-medium">Client</p>
                         <p className="text-xs text-muted-foreground">I hire talent</p>
                       </button>
+                      <button
+                        onClick={() => setFormData(prev => ({ ...prev, account_type: 'both' }))}
+                        className={`p-4 rounded-xl border-2 transition-all text-left ${
+                          formData.account_type === 'both'
+                            ? 'border-primary bg-primary/5'
+                            : 'border-border hover:border-primary/50'
+                        }`}
+                      >
+                        <Sparkles className={`h-6 w-6 mb-2 ${formData.account_type === 'both' ? 'text-primary' : 'text-muted-foreground'}`} />
+                        <p className="font-medium">Both</p>
+                        <p className="text-xs text-muted-foreground">I hire & work</p>
+                      </button>
                     </div>
                   </div>
 
                   {/* Profession (for freelancers) */}
-                  {formData.account_type === 'freelancer' && (
+                  {formData.account_type !== 'client' && (
                     <div className="space-y-2">
                       <label className="block text-sm font-medium">Your Profession *</label>
                       <BrandInput
