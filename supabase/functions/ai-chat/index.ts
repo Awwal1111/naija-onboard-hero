@@ -47,7 +47,7 @@ async function webSearch(query: string): Promise<{ results: string; citations: s
     const response = await fetch(searchUrl);
     const data = await response.json();
     
-    let results = [];
+    const results: string[] = [];
     
     if (data.Abstract) {
       results.push(`Summary: ${data.Abstract}`);
