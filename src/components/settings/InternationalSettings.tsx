@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast'
 import { Separator } from '@/components/ui/separator'
 
 export const InternationalSettings = () => {
-  const { currency, setCurrency, currencies } = useCurrency()
+  const { currency, setCurrency, currencies, ratesAvailable, rateUpdatedAt } = useCurrency()
   const { timezone, setTimezone, timezones, getCurrentTimezoneLabel, detectUserTimezone } = useTimezone()
   const { language, setLanguage, languageNames } = useLanguage()
   const { toast } = useToast()
@@ -58,7 +58,7 @@ export const InternationalSettings = () => {
                 Display Currency
               </h4>
               <p className="text-sm text-muted-foreground">
-                Display converted prices where currency-aware components are used. Wallet and settlement amounts remain in NC.
+                Display prices in your chosen currency alongside NC. These are viewing estimates only; payments and settlement stay in NC.
               </p>
             </div>
           </div>
@@ -82,10 +82,13 @@ export const InternationalSettings = () => {
           </Select>
           <div className="flex flex-wrap gap-2">
             <Badge variant="outline" className="text-xs">
-              1 {currencies[currency]?.symbol} = NC {currencies[currency]?.rateToNC.toLocaleString()}
+              {currency === 'NC' ? 'NC is the internal accounting unit' : `1 ${currencies[currency]?.symbol} ≈ NC ${currencies[currency]?.rateToNC.toLocaleString()}`}
             </Badge>
             <Badge variant="secondary" className="text-xs">
-              Indicative reference rates — not live exchange quotes
+              {currencies[currency] && currency !== 'NC' && currency !== 'NGN' ? 'Indicative FX reference — display only' : 'NC is pegged 1:1 to NGN for internal accounting'}
+            </Badge>
+            <Badge variant={ratesAvailable ? 'secondary' : 'outline'} className="text-xs">
+              {ratesAvailable ? `Rates ${rateUpdatedAt ? `updated ${new Date(rateUpdatedAt).toLocaleString()}` : 'available'}` : 'FX unavailable — NC / USDT reference fallback'}
             </Badge>
           </div>
         </div>
