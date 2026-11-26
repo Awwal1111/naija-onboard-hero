@@ -23,7 +23,7 @@ export const WalletCard = () => {
   const { balance, loading } = useWallet()
   const { isNigerian } = useUserCountry()
   const { address: celoAddress } = useCeloWallet()
-  const { currency, setCurrency, formatPreferred, convertFromNC } = useCurrency()
+  const { currency, setCurrency, formatPreferred } = useCurrency()
   const [showBalance, setShowBalance] = useState(true)
   const [showDeposit, setShowDeposit] = useState(false)
   const [showWithdrawal, setShowWithdrawal] = useState(false)
@@ -31,24 +31,12 @@ export const WalletCard = () => {
   const [showQR, setShowQR] = useState(false)
   const [showPayLink, setShowPayLink] = useState(false)
 
-  const curr = CURRENCIES[currency]
+  const formatBalance = (amount: number) => formatPreferred(amount, false)
 
-  const formatBalance = (amount: number) => {
-    if (currency === 'NC') return `NC ${amount.toLocaleString()}`
-    const converted = convertFromNC(amount, currency)
-    return `${curr.symbol}${converted.toLocaleString(undefined, {
-      minimumFractionDigits: currency === 'NGN' ? 0 : 2,
-      maximumFractionDigits: 2,
-    })}`
-  }
-
-  const formatSecondary = (amount: number) => {
-    if (currency === 'NC') {
-      const usd = convertFromNC(amount, 'USD')
-      return `~$${usd.toFixed(2)} USD`
-    }
-    return `NC ${amount.toLocaleString()}`
-  }
+  const formatSecondary = (amount: number) =>
+    currency === 'NC' || currency === 'NGN'
+      ? '1 NC = ₦1'
+      : `NC ${amount.toLocaleString()} (accounting amount)`
 
   return (
     <>
