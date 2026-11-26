@@ -22,7 +22,7 @@ const CELO_ADDRESS_RE = /(0x[a-fA-F0-9]{40})/
  * Unified QR sheet:
  *  - "Receive" tab: shows current user's Celo wallet QR + address.
  *    External wallets (MetaMask / Valora / Trust / any Celo-aware wallet) can scan and send
- *    USDT / cUSD / USDC on Celo — funds auto-credit via the existing `check-celo-deposits` flow.
+ *    USDT / cUSD on Celo — deposits are credited after server-side verification.
  *  - "Scan" tab: opens device camera, parses an EVM/Celo address from a QR, calls onScanned().
  */
 export const WalletQRSheet = ({ open, onOpenChange, receiveAddress, onScanned }: WalletQRSheetProps) => {
@@ -151,7 +151,7 @@ export const WalletQRSheet = ({ open, onOpenChange, receiveAddress, onScanned }:
                   </div>
                 )}
                 <div className="w-full space-y-1">
-                  <p className="text-xs text-muted-foreground text-center">Send USDT, cUSD or USDC on Celo</p>
+                  <p className="text-xs text-muted-foreground text-center">Send cUSD or USDT on Celo</p>
                   <div className="flex gap-2 items-center bg-muted rounded-md px-2 py-1.5">
                     <span className="font-mono text-[11px] break-all flex-1">{receiveAddress}</span>
                     <Button size="icon" variant="ghost" onClick={copy} className="h-7 w-7">
@@ -159,7 +159,7 @@ export const WalletQRSheet = ({ open, onOpenChange, receiveAddress, onScanned }:
                     </Button>
                   </div>
                   <p className="text-[11px] text-muted-foreground text-center">
-                    NC credits automatically once the transfer is confirmed on-chain.
+                    NC is credited after the deposit is verified. Allow time for processing.
                   </p>
                 </div>
               </div>
