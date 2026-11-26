@@ -22,6 +22,17 @@ precacheAndRoute(self.__WB_MANIFEST)
 self.skipWaiting()
 clientsClaim()
 
+// Remove private/stale runtime caches created by older releases. These caches
+// must not survive the move to network-only Supabase requests.
+self.addEventListener('activate', (event) => {
+  const legacyCaches = ['supabase-api', 'supabase-auth', 'supabase-images', 'static-assets']
+  event.waitUntil(
+    caches.keys().then((names) =>
+      Promise.all(names.filter((name) => legacyCaches.includes(name)).map((name) => caches.delete(name)))
+    )
+  )
+})
+
 // Public media only. Do not cache Supabase storage because it can contain
 // private profile, verification, or other user-specific images.
 registerRoute(
