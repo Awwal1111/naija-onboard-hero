@@ -91,10 +91,14 @@ export const AdminBroadcastDialog: React.FC<AdminBroadcastDialogProps> = ({ open
 
           // Send telegram notification
           if (channels.telegram) {
-            await supabase.functions.invoke('send-telegram-notification', {
+            await supabase.functions.invoke('smart-notification', {
               body: {
-                user_id: targetUser.user_id,
-                message: `📢 *${title || 'Admin Message'}*\n\n${message}`
+                userId: targetUser.user_id,
+                type: 'admin_broadcast',
+                title: title || 'Admin Message',
+                message,
+                priority: 'normal',
+                channels: ['telegram']
               }
             })
           }
