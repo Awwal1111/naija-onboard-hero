@@ -89,7 +89,7 @@ const ContestDetail = () => {
   };
 
   const handleSelectWinner = async (submissionId: string, freelancerId: string) => {
-    if (!confirm("Are you sure you want to select this as the winner? The prize (NC " + contest?.prize_amount?.toLocaleString() + ") will be automatically transferred to the freelancer's wallet.")) {
+    if (!confirm(`Are you sure you want to select this as the winner? The prize (${formatNCDisplay(Number(contest?.prize_amount || 0))}) will be automatically transferred to the freelancer's wallet.`)) {
       return;
     }
     
@@ -169,7 +169,7 @@ const ContestDetail = () => {
           <Card>
             <CardContent className="p-4 text-center">
               <Trophy className="h-6 w-6 mx-auto text-yellow-500 mb-1" />
-              <p className="text-2xl font-bold">NC {contest.prize_amount.toLocaleString()}</p>
+              <p className="text-2xl font-bold">{formatNCDisplay(contest.prize_amount)}</p>
               <p className="text-xs text-muted-foreground">Prize</p>
             </CardContent>
           </Card>
