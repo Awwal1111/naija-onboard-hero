@@ -158,7 +158,7 @@ const PrivacyPolicy = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Lock className="h-5 w-5" />
-                4. Data Security
+                5. Data Security
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -218,7 +218,7 @@ const PrivacyPolicy = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Database className="h-5 w-5" />
-                7. Data Retention
+                8. Data Retention
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -256,7 +256,7 @@ const PrivacyPolicy = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <UserCheck className="h-5 w-5" />
-                9. Children's Privacy
+                10. Children's Privacy
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -274,7 +274,7 @@ const PrivacyPolicy = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-primary">
                 <Phone className="h-5 w-5" />
-                10. Contact Information
+                11. Contact Information
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
