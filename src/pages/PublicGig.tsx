@@ -115,9 +115,10 @@ export default function PublicGig() {
     }
     
     // Send contextual message
+    if (!gig?.user_id) return
     await initiateContextualChat({
       currentUserId: user.id,
-      targetUserId: gig?.user_id!,
+      targetUserId: gig.user_id,
       context: {
         context: 'gig',
         context_label: 'From Gig',
