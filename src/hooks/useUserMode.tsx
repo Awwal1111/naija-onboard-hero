@@ -80,7 +80,7 @@ export const UserModeProvider = ({ children }: { children: ReactNode }) => {
     if (persist && userId) {
       const { data, error } = await supabase
         .from('profiles')
-        .update({ user_mode: newMode, account_type: newMode } as any)
+        .update({ user_mode: newMode })
         .eq('user_id', userId)
         .select('user_mode')
         .maybeSingle()
