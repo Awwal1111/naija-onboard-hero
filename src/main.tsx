@@ -9,7 +9,6 @@ import { CurrencyProvider } from "./hooks/useCurrency"
 import { TimezoneProvider } from "./hooks/useTimezone"
 import { UserModeProvider } from "./hooks/useUserMode"
 import { detectMiniPaySync } from './lib/minipay'
-import { clearReloadTracking } from './utils/chunkErrorHandler'
 import { checkAndHealCache } from './utils/cacheHealer'
 
 // SYNC detection at module load
@@ -67,7 +66,8 @@ if (!isMiniPayEnv) {
   });
 }
 
-createRoot(document.getElementById("root")!).render(
+const root = createRoot(document.getElementById("root")!)
+root.render(
   <HelmetProvider>
     <QueryProvider>
       <ThemeProvider defaultTheme="system" storageKey="naijalancers-theme" attribute="class">
@@ -84,3 +84,9 @@ createRoot(document.getElementById("root")!).render(
     </QueryProvider>
   </HelmetProvider>
 );
+
+// Only clear chunk-recovery history after lazy route chunks have had time to
+// load. Clearing it at entrypoint startup erased the retry counter too early.
+window.setTimeout(() => {
+  import('./utils/chunkErrorHandler').then(({ clearReloadTracking }) => clearReloadTracking())
+}, 30_000)
