@@ -3,6 +3,7 @@ import { Wallet } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { DEPOSIT_PROMPT_EVENT, DepositPromptDetail } from '@/lib/depositPrompt'
+import { useCurrency } from '@/hooks/useCurrency'
 
 const DepositDialog = lazy(() =>
   import('@/components/DepositDialog').then((m) => ({ default: m.DepositDialog }))
