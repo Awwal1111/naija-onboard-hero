@@ -10,6 +10,7 @@ import {
   OneSignal,
 } from '@/lib/onesignal'
 import { detectMiniPaySync } from '@/lib/minipay'
+import { supabase } from '@/integrations/supabase/client'
 
 const isMiniPayEnv = detectMiniPaySync().isMiniPay
 
@@ -79,6 +80,10 @@ export const useOneSignalPush = () => {
       const granted = await requestOneSignalPermission()
       setPushEnabled(isOneSignalPushEnabled())
 
+      if (user?.id) {
+        await supabase.from('notification_preferences').upsert({ user_id: user.id, push_enabled: granted && isOneSignalPushEnabled(), updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
+      }
+
       if (granted) {
         toast({
           title: 'Push notifications enabled',
@@ -104,7 +109,7 @@ export const useOneSignalPush = () => {
     } finally {
       setLoading(false)
     }
-  }, [toast])
+  }, [toast, user?.id])
 
   const disablePushNotifications = useCallback(async () => {
     setLoading(true)
@@ -112,6 +117,10 @@ export const useOneSignalPush = () => {
       if (!(await initOneSignal())) throw new Error('OneSignal is not initialized')
       await OneSignal.User.PushSubscription.optOut()
       setPushEnabled(false)
+      if (user?.id) {
+        const { error } = await supabase.from('notification_preferences').upsert({ user_id: user.id, push_enabled: false, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
+        if (error) throw error
+      }
       toast({
         title: 'Disabled',
         description: 'Push notifications have been disabled on this device',
@@ -126,7 +135,7 @@ export const useOneSignalPush = () => {
     } finally {
       setLoading(false)
     }
-  }, [toast])
+  }, [toast, user?.id])
 
   return {
     pushEnabled,
