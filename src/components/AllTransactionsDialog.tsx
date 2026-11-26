@@ -71,11 +71,12 @@ export const AllTransactionsDialog: React.FC<AllTransactionsDialogProps> = ({
         startDate = startOfMonth(now)
         endDate = endOfMonth(now)
         break
-      case 'last_month':
+      case 'last_month': {
         const lastMonth = subMonths(now, 1)
         startDate = startOfMonth(lastMonth)
         endDate = endOfMonth(lastMonth)
         break
+      }
       case 'this_year':
         startDate = startOfYear(now)
         break
