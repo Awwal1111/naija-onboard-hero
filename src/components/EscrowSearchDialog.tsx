@@ -48,7 +48,7 @@ export const EscrowSearchDialog: React.FC<EscrowSearchDialogProps> = ({ open, on
         lookup_email: query.trim()
       })
 
-      let combined: SearchResult[] = (nameResults || []) as SearchResult[]
+      const combined: SearchResult[] = (nameResults || []) as SearchResult[]
 
       // If email lookup found someone, add to results if not already there
       if (emailResult && (emailResult as any).found) {
@@ -74,6 +74,7 @@ export const EscrowSearchDialog: React.FC<EscrowSearchDialogProps> = ({ open, on
 
   const handleSelectUser = async (selectedUserId: string) => {
     // Ensure chat exists, then navigate to it
+    if (!user) return
     try {
       // Check if chat already exists
       const { data: existingChat } = await supabase
@@ -85,7 +86,7 @@ export const EscrowSearchDialog: React.FC<EscrowSearchDialogProps> = ({ open, on
       if (!existingChat) {
         // Create a new chat
         await supabase.from('chats').insert({
-          user1_id: user?.id!,
+          user1_id: user.id,
           user2_id: selectedUserId,
         })
       }
