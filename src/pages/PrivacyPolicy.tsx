@@ -138,7 +138,7 @@ const PrivacyPolicy = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <UserCheck className="h-5 w-5" />
-                3. Information Sharing
+                4. Information Sharing
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -153,7 +153,7 @@ const PrivacyPolicy = () => {
             </CardContent>
           </Card>
 
-          {/* 4. Data Security */}
+          {/* 5. Data Security */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -178,7 +178,7 @@ const PrivacyPolicy = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <UserCheck className="h-5 w-5" />
-                5. Your Privacy Rights
+                6. Your Privacy Rights
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -198,7 +198,7 @@ const PrivacyPolicy = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Database className="h-5 w-5" />
-                6. Cookies and Tracking
+                7. Cookies and Tracking
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -213,7 +213,7 @@ const PrivacyPolicy = () => {
             </CardContent>
           </Card>
 
-          {/* 7. Data Retention */}
+          {/* 8. Data Retention */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -238,7 +238,7 @@ const PrivacyPolicy = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Shield className="h-5 w-5" />
-                8. International Data Transfers
+                9. International Data Transfers
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -251,7 +251,7 @@ const PrivacyPolicy = () => {
             </CardContent>
           </Card>
 
-          {/* 9. Children's Privacy */}
+          {/* 10. Children's Privacy */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -269,7 +269,7 @@ const PrivacyPolicy = () => {
             </CardContent>
           </Card>
 
-          {/* 10. Contact Information */}
+          {/* 11. Contact Information */}
           <Card className="border-primary/20 bg-primary/5">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-primary">
