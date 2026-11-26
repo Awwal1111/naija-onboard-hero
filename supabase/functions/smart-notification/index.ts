@@ -168,7 +168,7 @@ serve(async (req) => {
 
     if (notifError) {
       console.error('[SMART_NOTIF] ❌ In-app notification error:', notifError);
-    } else {
+    } else if (prefs.in_app_enabled) {
       channels.push('in_app');
       console.log('[SMART_NOTIF] ✅ In-app notification created');
     }
