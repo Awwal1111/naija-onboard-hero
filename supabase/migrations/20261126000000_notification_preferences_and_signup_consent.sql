@@ -7,6 +7,7 @@ create table if not exists public.notification_preferences (
   push_enabled boolean not null default true,
   sms_enabled boolean not null default false,
   marketing_updates_enabled boolean not null default false,
+  category_preferences jsonb not null default '{"chats":true,"jobs":true,"referrals":true,"tasks":true,"expertStatus":true}'::jsonb,
   updated_at timestamptz not null default now()
 );
 
@@ -44,6 +45,11 @@ drop policy if exists "Users can read their signup consents" on public.signup_co
 create policy "Users can read their signup consents"
   on public.signup_consents for select
   to authenticated using (auth.uid() = user_id);
+
+drop policy if exists "Users can insert their signup consents" on public.signup_consents;
+create policy "Users can insert their signup consents"
+  on public.signup_consents for insert
+  to authenticated with check (auth.uid() = user_id);
 
 create or replace function public.initialize_user_notification_consent()
 returns trigger
@@ -106,7 +112,9 @@ create trigger on_auth_user_created_notification_consent
   for each row execute function public.initialize_user_notification_consent();
 
 -- Existing accounts keep Telegram and SMS disabled until users opt in.
-insert into public.notification_preferences (user_id)
-select id from auth.users
+insert into public.notification_preferences (user_id, email_enabled, sms_enabled)
+select u.id, coalesce(p.email_notifications, true), coalesce(p.sms_job_alerts, false)
+from auth.users u
+left join public.profiles p on p.user_id = u.id
 on conflict (user_id) do nothing;
 
