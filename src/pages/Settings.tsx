@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { ArrowLeft, Trash2, Eye, Globe, Users, Lock, Moon, Sun, Bell, Languages, Shield, HelpCircle, FileText, User, Activity, TrendingUp, CheckCircle, ShieldCheck, Phone, Mail, Camera, Fingerprint, IdCard, ShieldAlert, Send } from 'lucide-react'
+import { ArrowLeft, Trash2, Lock, Moon, Sun, Bell, Shield, HelpCircle, FileText, User, Activity, TrendingUp, CheckCircle, ShieldCheck, Phone, Mail, Fingerprint, IdCard, ShieldAlert, Send } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -10,7 +10,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/useAuth'
 import { useProfile } from '@/hooks/useProfile'
-import { useLanguage } from '@/hooks/useLanguage'
 import { useBiometric } from '@/hooks/useBiometric'
 import { supabase } from '@/integrations/supabase/client'
 import { useUserSecrets } from '@/hooks/useUserSecrets'
@@ -72,7 +71,6 @@ const Settings = () => {
   const { user } = useAuth()
   const { profile } = useProfile()
   const { hasPin } = useUserSecrets()
-  const { language, setLanguage, t, languageNames } = useLanguage()
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
   const [notifications, setNotifications] = useState<NotificationPreferences>({
     chats: true,
@@ -119,10 +117,7 @@ const Settings = () => {
     toast({ title: "Theme Updated", description: `Switched to ${newTheme} mode` })
   }
 
-  const handleLanguageChange = (newLanguage: 'en' | 'ha' | 'yo' | 'ig' | 'pcm') => {
-    setLanguage(newLanguage)
-    toast({ title: t('message.success'), description: `${t('settings.language')}: ${languageNames[newLanguage]}` })
-  }
+
 
   const handleNotificationChange = async (key: keyof NotificationPreferences, value: boolean) => {
     const updated = { ...notifications, [key]: value }
