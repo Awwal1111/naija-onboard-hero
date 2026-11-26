@@ -30,6 +30,19 @@ serve(async (req) => {
   }
 
   try {
+    const authHeader = req.headers.get("Authorization") || "";
+    const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+    let claims: { role?: string } | null = null;
+    try {
+      const payload = token.split(".")[1];
+      if (payload) claims = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(payload.length / 4) * 4, "=")));
+    } catch { claims = null; }
+    if (claims?.role !== "service_role") {
+      return new Response(JSON.stringify({ success: false, reason: "Internal service access required" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
     const payload: NotificationPayload = await req.json();
     const { 
       user_id, 
@@ -66,6 +79,18 @@ serve(async (req) => {
         JSON.stringify({ success: false, reason: "Error fetching user profile" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    const { data: preferences } = await supabase
+      .from("notification_preferences")
+      .select("telegram_enabled")
+      .eq("user_id", user_id)
+      .maybeSingle();
+
+    if (preferences?.telegram_enabled !== true) {
+      return new Response(JSON.stringify({ success: false, reason: "Telegram notifications are disabled by the user" }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
     }
 
     if (!profile?.telegram_user_id) {
