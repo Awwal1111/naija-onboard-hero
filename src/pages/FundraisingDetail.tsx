@@ -14,6 +14,7 @@ import { ArrowLeft, MapPin, Calendar, Users, Target, CheckCircle, Clock, FileTex
 import { format } from "date-fns";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { formatNCDisplay } from "@/components/CurrencyDisplay";
 
 export default function FundraisingDetail() {
   const { id } = useParams();
