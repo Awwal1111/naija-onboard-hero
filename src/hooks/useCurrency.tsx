@@ -59,22 +59,45 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
     return () => subscription.unsubscribe()
   }, [])
 
-  // Sync with profile when user is authenticated
+  // Sync with profile when authenticated. A currency explicitly chosen on this
+  // device takes priority; otherwise load the saved account preference.
   useEffect(() => {
-    if (userId) {
-      supabase
-        .from('profiles')
-        .select('preferred_currency')
-        .eq('user_id', userId)
-        .maybeSingle()
-        .then(({ data }) => {
-          if (data?.preferred_currency && CURRENCIES[data.preferred_currency as CurrencyCode]) {
-            setCurrencyState(data.preferred_currency as CurrencyCode)
-            setHasExplicitChoice(true)
+    if (!userId) return
+    let cancelled = false
+
+    supabase
+      .from('profiles')
+      .select('preferred_currency')
+      .eq('user_id', userId)
+      .maybeSingle()
+      .then(async ({ data }) => {
+        if (cancelled) return
+
+        const localPreference = localStorage.getItem('preferred_currency') as CurrencyCode | null
+        const validLocalPreference = localPreference && CURRENCIES[localPreference] ? localPreference : null
+        const profilePreference = data?.preferred_currency as CurrencyCode | null
+        const validProfilePreference = profilePreference && CURRENCIES[profilePreference] ? profilePreference : null
+
+        if (hasExplicitChoice && validLocalPreference) {
+          setCurrencyState(validLocalPreference)
+          if (validLocalPreference !== validProfilePreference) {
+            await supabase
+              .from('profiles')
+              .update({ preferred_currency: validLocalPreference } as any)
+              .eq('user_id', userId)
           }
-        })
-    }
-  }, [userId])
+          return
+        }
+
+        if (validProfilePreference) {
+          setCurrencyState(validProfilePreference)
+          localStorage.setItem('preferred_currency', validProfilePreference)
+          setHasExplicitChoice(true)
+        }
+      })
+
+    return () => { cancelled = true }
+  }, [userId, hasExplicitChoice])
 
   // Auto-detect currency from IP geolocation when user has no explicit choice
   useEffect(() => {
