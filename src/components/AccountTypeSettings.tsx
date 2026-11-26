@@ -79,9 +79,10 @@ export const AccountTypeSettings = () => {
       }
 
       const updateData: Record<string, unknown> = { account_type: newType };
+      let generatedApiKey: string | null = null;
       
       // Generate API key for developer accounts if they don't have one
-      if (newType === 'developer' && !settings?.api_key) {
+      if (newType === 'developer' && !settings?.api_key_last4) {
         console.log('Generating new API key for developer account...');
         const { data: keyData, error: keyError } = await supabase.rpc('generate_api_key');
         
@@ -94,11 +95,12 @@ export const AccountTypeSettings = () => {
           throw new Error('API key generation returned empty result');
         }
         
+        generatedApiKey = keyData;
         setNewApiKey(keyData);
         setShowApiKey(true);
       }
 
-      console.log('Updating profile with:', { account_type: newType, has_api_key: !!updateData.api_key });
+      console.log('Updating account type:', newType);
       
       const { error } = await supabase
         .from('profiles')
@@ -114,7 +116,7 @@ export const AccountTypeSettings = () => {
       await fetchSettings();
       
       if (newType === 'developer') {
-        toast.success(newApiKey || updateData.api_key ? 'Developer account activated. Copy your new API key now; it is shown only once.' : 'Developer account activated. Your existing API key remains active.');
+        toast.success(generatedApiKey ? 'Developer account activated. Copy your new API key now; it is shown only once.' : 'Developer account activated. Your existing API key remains active.');
       } else {
         toast.success(`Account changed to ${newType}!`);
       }
