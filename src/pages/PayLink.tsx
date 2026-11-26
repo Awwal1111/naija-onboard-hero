@@ -12,6 +12,7 @@ import { Logo } from '@/components/ui/logo'
 import { Loader2, Send, ShieldAlert, CheckCircle2, User } from 'lucide-react'
 import { toast } from 'sonner'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { formatNCDisplay } from '@/components/CurrencyDisplay'
 
 interface RecipientInfo {
   user_id: string
@@ -117,7 +118,7 @@ export default function PayLink() {
 
       await refreshWallet()
       setDone(true)
-      toast.success(`Sent NC ${amt.toLocaleString()} to ${recipient.full_name || 'recipient'}`)
+      toast.success(`Sent ${formatNCDisplay(amt)} to ${recipient.full_name || 'recipient'}`)
     } catch (e: any) {
       toast.error(e?.message || 'Payment failed')
     } finally {
@@ -157,7 +158,7 @@ export default function PayLink() {
             <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto" />
             <h1 className="text-xl font-bold">Payment sent!</h1>
             <p className="text-sm text-muted-foreground">
-              NC {parseFloat(amount).toLocaleString()} delivered to {recipient?.full_name || 'recipient'}.
+              {formatNCDisplay(parseFloat(amount))} delivered to {recipient?.full_name || 'recipient'}.
             </p>
             <Button onClick={() => navigate('/wallet')} className="w-full">View wallet</Button>
           </CardContent>
@@ -210,7 +211,7 @@ export default function PayLink() {
               />
               {user && balance && (
                 <p className="text-xs text-muted-foreground">
-                  Available: NC {balance.withdrawable.toLocaleString()}
+                  Available: {formatNCDisplay(balance.withdrawable)}
                 </p>
               )}
             </div>
@@ -232,7 +233,7 @@ export default function PayLink() {
                   </p>
                 </div>
                 <Button onClick={handlePay} disabled={submitting || !amount || pin.length !== 4} className="w-full">
-                  {submitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending…</> : <><Send className="mr-2 h-4 w-4" /> Pay NC {amount || '0'}</>}
+                  {submitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending…</> : <><Send className="mr-2 h-4 w-4" /> Pay {amount ? formatNCDisplay(Number(amount)) : 'NC 0'}</>}
                 </Button>
               </>
             ) : (
