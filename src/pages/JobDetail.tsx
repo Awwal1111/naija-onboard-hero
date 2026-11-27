@@ -50,7 +50,7 @@ export default function JobDetail() {
       // Fetch poster profile separately (no FK to public.profiles)
       const { data: poster } = await supabase
         .from("profiles")
-        .select("full_name, profile_picture_url, company_name")
+        .select("full_name, profile_picture_url")
         .eq("user_id", data.user_id)
         .maybeSingle();
 

@@ -27,13 +27,32 @@ Deno.serve(async (req) => {
     const now = new Date()
     const baseUrl = 'https://naijalancers.name.ng'
 
-    // 1. Find users with incomplete profiles (< 80% completion)
-    const { data: incompleteProfiles } = await supabaseClient
+    // 1. Calculate profile completion from columns that actually exist.
+    const { data: profileRows, error: profileRowsError } = await supabaseClient
       .from('profiles')
-      .select('user_id, full_name, profile_completion, email_notifications')
-      .lt('profile_completion', 80)
+      .select('user_id, full_name, bio, profession, profile_picture_url, phone_number, country_code, whatsapp_number, email_notifications')
       .eq('email_notifications', true)
-      .limit(50)
+      .limit(1000)
+    if (profileRowsError) throw profileRowsError
+
+    const incompleteProfiles = (profileRows || [])
+      .map((profile) => {
+        const fields = [
+          profile.full_name,
+          profile.bio,
+          profile.profession,
+          profile.profile_picture_url,
+          profile.phone_number,
+          profile.country_code,
+          profile.whatsapp_number,
+        ]
+        const completedFields = fields.filter((value) =>
+          typeof value === 'string' ? value.trim().length > 0 : Boolean(value)
+        ).length
+        return { ...profile, profile_completion: Math.round((completedFields / fields.length) * 100) }
+      })
+      .filter((profile) => profile.profile_completion < 80)
+      .slice(0, 50)
 
     // 2. Find users who haven't logged in for 7+ days
     const sevenDaysAgo = new Date(now)

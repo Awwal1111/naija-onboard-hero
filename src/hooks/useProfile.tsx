@@ -44,6 +44,8 @@ export interface Profile {
   premium_subscribed_at?: string | null
   whatsapp_number?: string | null
   facebook_url?: string | null
+  username?: string | null
+  business_name?: string | null
   google_meet_link?: string | null
   sms_job_alerts?: boolean
   account_type?: string | null
@@ -80,9 +82,11 @@ export interface SocialTask {
 
 // In-memory session cache to avoid repeated /profiles fetches across components/pages
 const profileCache = new Map<string, { data: Profile; ts: number }>()
+// Share an in-flight request between components mounting at the same time.
+const profileRequests = new Map<string, Promise<Profile | null>>()
 const PROFILE_CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
 
-const PROFILE_SELECT = 'id, user_id, full_name, profession, bio, profile_picture_url, phone_number, country_code, state_name, state_id, lga_name, area, is_expert, expert_verified_at, wallet_balance, balance_withdrawable, balance_non_withdrawable, connections_count, average_rating, rating_count, referral_code, email_verified, phone_verified, face_verified, created_at, updated_at, premium_expires_at, avg_response_time_seconds, account_type, user_mode, onboarding_completed, is_premium, verification_level, telegram_user_id, telegram_username'
+const PROFILE_SELECT = 'id, user_id, full_name, profession, bio, profile_picture_url, phone_number, country_code, state_name, state_id, lga_name, area, is_expert, expert_verified_at, wallet_balance, balance_withdrawable, balance_non_withdrawable, connections_count, average_rating, rating_count, referral_code, email_verified, phone_verified, face_verified, created_at, updated_at, premium_expires_at, avg_response_time_seconds, account_type, user_mode, onboarding_completed, is_premium, verification_level, telegram_user_id, telegram_username, whatsapp_number, facebook_url, google_meet_link, sms_job_alerts, username, business_name'
 
 export const useProfile = () => {
   const { user } = useAuth()
@@ -94,16 +98,22 @@ export const useProfile = () => {
 
   useEffect(() => {
     if (!user) {
+      setProfile(null)
       setLoading(false)
       return
     }
+
     const cached = profileCache.get(user.id)
     if (cached && Date.now() - cached.ts < PROFILE_CACHE_TTL_MS) {
       setProfile(cached.data)
       setLoading(false)
       return
     }
-    fetchProfile()
+
+    // Never display the previous account's profile while a new account loads.
+    setProfile(null)
+    setLoading(true)
+    void fetchProfile()
   }, [user?.id])
 
   const fetchProfile = async (force = false) => {
@@ -118,63 +128,65 @@ export const useProfile = () => {
       }
     }
 
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select(PROFILE_SELECT)
-        .eq('user_id', user.id)
-        .maybeSingle()
+    let request = profileRequests.get(user.id)
+    if (!request) {
+      request = (async () => {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select(PROFILE_SELECT)
+          .eq('user_id', user.id)
+          .maybeSingle()
 
-      if (error) {
-        if (error.code === 'PGRST116') {
-          await createProfile()
-        } else {
-          throw error
+        if (error) throw error
+        if (data) return data as Profile
+
+        // Create only after a successful lookup confirms the row is absent.
+        const { data: created, error: createError } = await supabase
+          .from('profiles')
+          .insert([{
+            user_id: user.id,
+            full_name: user.user_metadata?.full_name || '',
+            phone_number: user.user_metadata?.phone_number || '',
+          }])
+          .select(PROFILE_SELECT)
+          .single()
+
+        if (createError) {
+          // Another component/session may have created it after our lookup.
+          if (createError.code === '23505') {
+            const { data: existing, error: retryError } = await supabase
+              .from('profiles')
+              .select(PROFILE_SELECT)
+              .eq('user_id', user.id)
+              .maybeSingle()
+            if (retryError) throw retryError
+            return (existing as Profile | null) ?? null
+          }
+          throw createError
         }
-      } else if (!data) {
-        await createProfile()
+        return created as Profile
+      })()
+      profileRequests.set(user.id, request)
+    }
+
+    try {
+      const data = await request
+      if (data) {
+        profileCache.set(user.id, { data, ts: Date.now() })
+        setProfile(data)
       } else {
-        profileCache.set(user.id, { data: data as Profile, ts: Date.now() })
-        setProfile(data as Profile)
+        setProfile(null)
       }
     } catch (error) {
-      console.error('Error fetching profile:', error)
+      console.error('Error loading profile:', error)
       toast({
         title: "Error",
         description: "Failed to load profile data",
         variant: "destructive",
       })
     } finally {
+      if (profileRequests.get(user.id) === request) profileRequests.delete(user.id)
       setLoading(false)
-    }
-  }
-
-  const createProfile = async () => {
-    if (!user) return
-
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .insert([
-          {
-            user_id: user.id,
-            full_name: user.user_metadata?.full_name || '',
-            phone_number: user.user_metadata?.phone_number || '',
-          }
-        ])
-        .select()
-        .single()
-
-      if (error) throw error
-      profileCache.set(user.id, { data: data as Profile, ts: Date.now() })
-      setProfile(data as Profile)
-    } catch (error) {
-      console.error('Error creating profile:', error)
-      toast({
-        title: "Error",
-        description: "Failed to create profile",
-        variant: "destructive",
-      })
     }
   }
 
@@ -184,37 +196,40 @@ export const useProfile = () => {
     try {
       setLoading(true)
       
-      // First check if profile exists
-      const { data: existingProfile, error: lookupError } = await supabase
+      // Update first: the normal path needs only one write request, not an
+      // extra SELECT to check whether the profile row exists.
+      const updateResult = await supabase
         .from('profiles')
-        .select('id')
+        .update(updates)
         .eq('user_id', user.id)
+        .select()
         .maybeSingle()
 
-      // Do not treat a failed lookup as a missing profile: inserting in that case
-      // can fail with a duplicate-user constraint and hide the real database error.
-      if (lookupError) throw lookupError
+      if (updateResult.error) throw updateResult.error
+      let data: any = updateResult.data
 
-      let result
-      if (existingProfile) {
-        // Update existing profile
-        result = await supabase
-          .from('profiles')
-          .update(updates)
-          .eq('user_id', user.id)
-          .select()
-          .single()
-      } else {
-        // Insert new profile if it doesn't exist
-        result = await supabase
+      if (!data) {
+        const insertResult = await supabase
           .from('profiles')
           .insert([{ user_id: user.id, ...updates }])
           .select()
           .single()
-      }
 
-      const { data, error } = result
-      if (error) throw error
+        if (insertResult.error?.code === '23505') {
+          // A concurrent profile creation won the race; update that new row.
+          const retryResult = await supabase
+            .from('profiles')
+            .update(updates)
+            .eq('user_id', user.id)
+            .select()
+            .single()
+          if (retryResult.error) throw retryResult.error
+          data = retryResult.data
+        } else {
+          if (insertResult.error) throw insertResult.error
+          data = insertResult.data
+        }
+      }
 
       profileCache.set(user.id, { data: data as Profile, ts: Date.now() })
       setProfile(data as Profile)
