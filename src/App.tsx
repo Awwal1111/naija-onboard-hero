@@ -244,7 +244,7 @@ const App = () => (
                 <Route path="/p/gig/:gigId" element={<PublicGig />} />
                 <Route path="/p/job/:jobId" element={<PublicJob />} />
                 <Route path="/p/course/:courseId" element={<PublicCourse />} />
-                <Route path="/p/campaign/:campaignId" element={<PublicCampaign />} />
+                <Route path="/p/campaign/*" element={<Navigate to="/feed" replace />} />
                 <Route path="/p/gigs" element={<PublicGigs />} />
                 <Route path="/p/experts" element={<PublicExperts />} />
                 <Route path="/p/jobs" element={<PublicJobs />} />
