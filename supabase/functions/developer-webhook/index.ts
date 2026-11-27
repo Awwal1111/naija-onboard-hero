@@ -86,6 +86,37 @@ function isPrivateIpv4(ip: string): boolean {
     (a === 198 && (b === 18 || b === 19));
 }
 
+function isPrivateIpv6(ip: string): boolean {
+  const value = ip.toLowerCase().split('%')[0];
+  if (value === '::' || value === '::1') return true;
+
+  if (value.startsWith('::ffff:')) {
+    const mapped = value.slice(7);
+    if (mapped.includes('.')) return isPrivateIpv4(mapped);
+    const groups = mapped.split(':');
+    if (groups.length === 2) {
+      const high = Number.parseInt(groups[0], 16);
+      const low = Number.parseInt(groups[1], 16);
+      if (Number.isFinite(high) && Number.isFinite(low)) {
+        return isPrivateIpv4([
+          high >> 8, high & 255, low >> 8, low & 255
+        ].join('.'));
+      }
+    }
+    return true;
+  }
+
+  const firstGroup = Number.parseInt(value.split(':')[0] || '0', 16);
+  if (!Number.isFinite(firstGroup)) return true;
+  return (firstGroup & 0xfe00) === 0xfc00 ||   // unique-local fc00::/7
+    (firstGroup & 0xffc0) === 0xfe80 ||         // link-local fe80::/10
+    (firstGroup & 0xff00) === 0xff00 ||         // multicast ff00::/8
+    value.startsWith('2001:db8:') ||            // documentation range
+    value.startsWith('2001:10:') ||             // ORCHID
+    value.startsWith('2001:0:') ||              // Teredo
+    value.startsWith('2002:');                  // 6to4
+}
+
 async function assertSafeWebhookUrl(rawUrl: string): Promise<void> {
   let url: URL;
   try { url = new URL(rawUrl); } catch { throw new Error('Invalid webhook URL'); }
@@ -103,7 +134,7 @@ async function assertSafeWebhookUrl(rawUrl: string): Promise<void> {
   try { addresses = await Deno.resolveDns(host, 'A'); } catch { /* try AAAA below */ }
   try { addresses = addresses.concat(await Deno.resolveDns(host, 'AAAA')); } catch { /* no IPv6 record */ }
   if (addresses.length === 0) throw new Error('Webhook hostname did not resolve');
-  if (addresses.some(ip => ip.includes(':') || isPrivateIpv4(ip))) {
+  if (addresses.some(ip => ip.includes(':') ? isPrivateIpv6(ip) : isPrivateIpv4(ip))) {
     throw new Error('Webhook hostname resolves to a non-public address');
   }
 }
