@@ -119,6 +119,11 @@ NaijaLancers Supabase project (project ref `jxybqmquymxkvxxpiuhv`):
   `ensure_user_wallet_row`.
 - `secure_wallet_row_provisioning`: the provisioning RPC now permits only
   the authenticated owner (or service role) to create their zeroed wallet row.
+- `retire_fundraising_and_lock_scheduled_rewards`: fundraising tables and RPCs
+  are no longer accessible to browser roles (historical records are retained);
+  the scheduled task auto-approval payout can run only as service role or its
+  database owner, not as anon/authenticated.
+
 - `secure_connection_request_workflow`: direct connection creation and request
   updates are revoked; authenticated send/respond RPCs validate the request
   owner and accepted status.
