@@ -33,7 +33,6 @@ would fail after the trigger is enabled. Migrate these callers to trusted RPCs f
 - `src/hooks/useWorkDiary.tsx`
 - `src/hooks/useReferralTasks.tsx`
 - `src/pages/Donations.tsx`
-- `src/pages/Fundraising.tsx`
 - `src/pages/ExpertVerification.tsx`
 - `src/components/ExpertVerificationSection.tsx`
 - `src/components/experts/ExpertVerificationHub.tsx`
