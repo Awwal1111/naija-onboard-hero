@@ -117,6 +117,8 @@ NaijaLancers Supabase project (project ref `jxybqmquymxkvxxpiuhv`):
 - `revoke_direct_user_wallet_insert`: browser wallet-row creation is revoked;
   SafePay fallback now provisions a zeroed wallet through
   `ensure_user_wallet_row`.
+- `secure_wallet_row_provisioning`: the provisioning RPC now permits only
+  the authenticated owner (or service role) to create their zeroed wallet row.
 - `secure_connection_request_workflow`: direct connection creation and request
   updates are revoked; authenticated send/respond RPCs validate the request
   owner and accepted status.
