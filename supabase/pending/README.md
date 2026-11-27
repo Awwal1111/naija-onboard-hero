@@ -140,9 +140,11 @@ NaijaLancers Supabase project (project ref `jxybqmquymxkvxxpiuhv`):
   The current verification submission/payment-status fields remain a separate
   follow-up because that UI still writes them directly.
 
-- `secure_connection_request_workflow`: direct connection creation and request
-  updates are revoked; authenticated send/respond RPCs validate the request
-  owner and accepted status.
+- `secure_connection_request_workflow`: connection creation and request
+  responses are routed through authenticated ownership-checked RPCs.
+- `legacy_connection_acceptance_compatibility`: while the old app build is
+  blocked, the deployed acceptance path can only insert a connection for the
+  recipient of a matching pending request; request ownership cannot be changed.
 
 These applied changes do not mean the remaining staged escrow/profile migrations
 are ready. The three legacy SafePay rows with missing/insufficient aggregate
