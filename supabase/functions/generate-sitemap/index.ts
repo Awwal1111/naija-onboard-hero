@@ -40,7 +40,6 @@ Deno.serve(async (req) => {
     { loc: "/p/jobs", priority: "0.9", freq: "daily" },
     { loc: "/signup", priority: "0.8", freq: "monthly" },
     { loc: "/login", priority: "0.6", freq: "monthly" },
-    { loc: "/fundraising", priority: "0.8", freq: "daily" },
     { loc: "/developers", priority: "0.7", freq: "weekly" },
     { loc: "/faq", priority: "0.7", freq: "monthly" },
     { loc: "/help", priority: "0.7", freq: "monthly" },
