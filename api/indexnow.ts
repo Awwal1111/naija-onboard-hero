@@ -68,7 +68,6 @@ function previousPath(table: string, row: Row | null): string | null {
       return validId(row.id) && row.status === "active" ? `/p/job/${row.id}` : null;
     case "courses":
       return validId(row.id) && row.status === "active" ? `/p/course/${row.id}` : null;
-      return validId(row.id) ? `/p/campaign/${row.id}` : null;
     default:
       return null;
   }
