@@ -492,9 +492,9 @@ export default function AIHire() {
     setLoading(true)
     try {
       // Completing the hiring flow must not downgrade a Both account to Client.
-      const accountMode = profile?.user_mode === 'both' || profile?.account_type === 'both' ? 'both' : 'client'
+      const accountMode = profile?.user_mode === 'both' ? 'both' : 'client'
       const result = await updateProfile({
-        account_type: accountMode,
+        // account_type is a separate personal/business/developer classification.
         user_mode: accountMode,
         onboarding_completed: true
       } as any)
