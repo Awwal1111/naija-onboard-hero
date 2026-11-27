@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
     const internalRequest = isServiceRoleRequest(req) || await isInternalFunctionRequest(req, supabaseClient)
     if (!internalRequest) {
       const authHeader = req.headers.get('authorization') || ''
-      const token = authHeader.replace(/^Bearer\\s+/i, '')
+      const token = authHeader.replace(/^Bearer\s+/i, '')
       const anonKey = Deno.env.get('SUPABASE_ANON_KEY') || ''
       if (!token || !anonKey) {
         return new Response(JSON.stringify({ error: 'Unauthorized' }), {
@@ -97,6 +97,11 @@ Deno.serve(async (req) => {
         (Array.isArray(actor?.app_metadata?.roles) && actor.app_metadata.roles.includes('admin'))
       if (authError || !actor || (actor.id !== userId && !isAdmin)) {
         return new Response(JSON.stringify({ error: 'Not authorized to notify this user' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+      if (!isAdmin && sendEmail) {
+        return new Response(JSON.stringify({ error: 'Only trusted internal callers may send email notifications' }), {
           status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
       }
