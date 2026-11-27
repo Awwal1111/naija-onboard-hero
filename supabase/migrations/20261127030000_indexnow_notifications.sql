@@ -23,12 +23,54 @@ begin
     return new;
   end if;
 
-  event_payload := jsonb_build_object(
+  -- Send only the identifiers and publication fields needed to derive a URL.
+  -- Never forward full profile, wallet, contact, or listing records to the webhook.
+  if tg_op <> 'DELETE' then
+    if tg_table_name = 'profiles' then
+      event_payload := jsonb_build_object(
+        'record', jsonb_build_object(
+          'user_id', to_jsonb(new)->'user_id',
+          'username', to_jsonb(new)->'username',
+          'is_expert', to_jsonb(new)->'is_expert'
+        )
+      );
+    else
+      event_payload := jsonb_build_object(
+        'record', jsonb_build_object(
+          'id', to_jsonb(new)->'id',
+          'status', to_jsonb(new)->'status'
+        )
+      );
+    end if;
+  else
+    event_payload := jsonb_build_object('record', null);
+  end if;
+
+  if tg_op <> 'INSERT' then
+    if tg_table_name = 'profiles' then
+      event_payload := event_payload || jsonb_build_object(
+        'old_record', jsonb_build_object(
+          'user_id', to_jsonb(old)->'user_id',
+          'username', to_jsonb(old)->'username',
+          'is_expert', to_jsonb(old)->'is_expert'
+        )
+      );
+    else
+      event_payload := event_payload || jsonb_build_object(
+        'old_record', jsonb_build_object(
+          'id', to_jsonb(old)->'id',
+          'status', to_jsonb(old)->'status'
+        )
+      );
+    end if;
+  else
+    event_payload := event_payload || jsonb_build_object('old_record', null);
+  end if;
+
+  event_payload := event_payload || jsonb_build_object(
     'type', tg_op,
     'schema', tg_table_schema,
-    'table', tg_table_name,
-    'record', case when tg_op = 'DELETE' then null else to_jsonb(new) end,
-    'old_record', case when tg_op = 'INSERT' then null else to_jsonb(old) end
+    'table', tg_table_name
   );
 
   perform net.http_post(
