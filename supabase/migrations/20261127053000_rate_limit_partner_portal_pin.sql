@@ -70,28 +70,28 @@ BEGIN
   IF NOT FOUND
      OR v_partner.password_hash IS NULL
      OR crypt(trim(p_pin), v_partner.password_hash) <> v_partner.password_hash THEN
-    INSERT INTO private.partner_portal_login_attempts (
+    INSERT INTO private.partner_portal_login_attempts AS attempt_state (
       slug, client_hash, attempts, window_started_at, locked_until
     )
     VALUES (v_slug, v_client_hash, 1, now(), NULL)
     ON CONFLICT (slug, client_hash) DO UPDATE
     SET
       attempts = CASE
-        WHEN private.partner_portal_login_attempts.window_started_at < now() - interval '15 minutes'
+        WHEN attempt_state.window_started_at < now() - interval '15 minutes'
           THEN 1
-        ELSE private.partner_portal_login_attempts.attempts + 1
+        ELSE attempt_state.attempts + 1
       END,
       window_started_at = CASE
-        WHEN private.partner_portal_login_attempts.window_started_at < now() - interval '15 minutes'
+        WHEN attempt_state.window_started_at < now() - interval '15 minutes'
           THEN now()
-        ELSE private.partner_portal_login_attempts.window_started_at
+        ELSE attempt_state.window_started_at
       END,
       locked_until = CASE
         WHEN (
           CASE
-            WHEN private.partner_portal_login_attempts.window_started_at < now() - interval '15 minutes'
+            WHEN attempt_state.window_started_at < now() - interval '15 minutes'
               THEN 1
-            ELSE private.partner_portal_login_attempts.attempts + 1
+            ELSE attempt_state.attempts + 1
           END
         ) >= 8 THEN now() + interval '15 minutes'
         ELSE NULL
