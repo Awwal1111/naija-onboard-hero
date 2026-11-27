@@ -34,6 +34,7 @@ interface MiniApp {
   sdk_app_id: string
   developer_id: string
   status: string
+  is_featured: boolean | null
 }
 
 interface UnifiedApp {
@@ -112,7 +113,7 @@ const MiniAppsMarketplace = () => {
   const navigate = useNavigate()
   const location = useLocation()
 
-  const MINI_APP_COLS = 'id, app_name, app_description, app_icon_url, app_url, category, install_count, rating, review_count, sdk_app_id, developer_id, status'
+  const MINI_APP_COLS = 'id, app_name, app_description, app_icon_url, app_url, category, install_count, rating, review_count, sdk_app_id, developer_id, status, is_featured'
 
   // Approved external apps — cached aggressively (rarely changes)
   const { data: externalAppsData } = useQuery({
@@ -167,22 +168,24 @@ const MiniAppsMarketplace = () => {
   const myApps = myAppsData || []
 
 
-  // Determine "App of the Week" - most installed external app, fallback to featured built-in
+  // Prefer an admin-pinned app. Otherwise rotate the weekly recommendation
+  // deterministically so every visitor sees the same app during a given week.
   const topApp: UnifiedApp | null = (() => {
     if (externalApps.length > 0) {
-      const top = externalApps.reduce((a, b) => (a.install_count > b.install_count ? a : b))
+      const pinned = externalApps.find(app => app.is_featured)
+      const weekNumber = Math.floor((Date.now() - Date.UTC(2020, 0, 6)) / (7 * 24 * 60 * 60 * 1000))
+      const selected = pinned || externalApps[((weekNumber % externalApps.length) + externalApps.length) % externalApps.length]
       return {
-        id: top.id,
-        name: top.app_name,
-        description: top.app_description,
-        iconUrl: top.app_icon_url,
-        category: top.category,
+        id: selected.id,
+        name: selected.app_name,
+        description: selected.app_description,
+        iconUrl: selected.app_icon_url,
+        category: selected.category,
         color: 'from-primary/20 to-accent/20',
         isInternal: false,
-        miniApp: top,
+        miniApp: selected,
       }
     }
-    // Fallback to a popular built-in app
     return BUILT_IN_APPS.find(a => a.id === 'pa-contests') || null
   })()
 
@@ -206,7 +209,11 @@ const MiniAppsMarketplace = () => {
   const score = (a: UnifiedApp) => (usage[a.id] || 0) * 10 + (a.miniApp?.install_count || 0)
   const allApps: UnifiedApp[] = [...filteredBuiltIn, ...externalUnified]
     .map((a, i) => ({ a, i }))
-    .sort((x, y) => score(y.a) - score(x.a) || x.i - y.i)
+    .sort((x, y) =>
+      Number(!!y.a.miniApp?.is_featured) - Number(!!x.a.miniApp?.is_featured) ||
+      score(y.a) - score(x.a) ||
+      x.i - y.i
+    )
     .map(x => x.a)
 
   // Filter apps
@@ -337,7 +344,7 @@ const MiniAppsMarketplace = () => {
             >
               <div className="flex items-center gap-1 mb-2">
                 <Sparkles className="h-4 w-4 text-primary" />
-                <span className="text-xs font-bold text-primary uppercase tracking-wider">App of the Week</span>
+                <span className="text-xs font-bold text-primary uppercase tracking-wider">{topApp.miniApp?.is_featured ? 'Pinned App' : 'App of the Week'}</span>
               </div>
               <button
                 onClick={() => handleAppClick(topApp)}
