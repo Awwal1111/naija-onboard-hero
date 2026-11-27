@@ -117,10 +117,6 @@ CORE FEATURES:
 - Online Courses: Create and sell courses with lessons
 - Purchase learning resources from other users
 
-💝 FUNDRAISING
-- Create fundraising campaigns with goals
-- Support others' fundraising initiatives
-
 👥 PROFILE & PORTFOLIO
 - Complete profile setup for better visibility
 - Add skills and experience
