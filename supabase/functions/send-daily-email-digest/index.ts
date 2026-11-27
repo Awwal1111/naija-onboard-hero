@@ -5,7 +5,7 @@ const resend = new Resend(Deno.env.get('RESEND_API_KEY') as string)
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-internal-function-token',
 }
 
 // Hard caps to keep within the 150s edge function wall-clock
@@ -13,7 +13,7 @@ const MAX_EMAILS_PER_RUN = 200
 const RESEND_DELAY_MS = 80
 
 
-async function isInternalFunctionRequest(req: Request, client: ReturnType<typeof createClient>): Promise<boolean> {
+async function isInternalFunctionRequest(req: Request, client: any): Promise<boolean> {
   const token = req.headers.get('x-internal-function-token');
   if (!token || token.length < 32 || token.length > 256) return false;
   const { data, error } = await client.rpc('verify_internal_function_token', { p_token: token });
