@@ -229,15 +229,16 @@ export const useGigOrders = () => {
         return { success: true };
       }
 
-      const updateData: any = { status, ...additionalData };
-      if (status === 'delivered') updateData.delivered_at = new Date().toISOString();
-
-      const { error } = await supabase
-        .from('gig_orders')
-        .update(updateData)
-        .eq('id', orderId);
+      const { data, error } = await supabase.rpc('transition_gig_order', {
+        p_order_id: orderId,
+        p_status: status,
+        p_seller_notes: additionalData?.seller_notes ?? null,
+      });
 
       if (error) throw error;
+      if (!(data as any)?.success) {
+        throw new Error((data as any)?.error || 'Could not update order status');
+      }
 
       toast({
         title: 'Order Updated',
