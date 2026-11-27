@@ -64,11 +64,11 @@ function previousPath(table: string, row: Row | null): string | null {
     case "profiles":
       return profilePath(row);
     case "jobs_services":
-      return validId(row.id) ? `/p/gig/${row.id}` : null;
+      return validId(row.id) && row.status === "active" ? `/p/gig/${row.id}` : null;
     case "job_posts":
-      return validId(row.id) ? `/p/job/${row.id}` : null;
+      return validId(row.id) && row.status === "active" ? `/p/job/${row.id}` : null;
     case "courses":
-      return validId(row.id) ? `/p/course/${row.id}` : null;
+      return validId(row.id) && row.status === "active" ? `/p/course/${row.id}` : null;
     case "fundraisings":
       return validId(row.id) ? `/p/campaign/${row.id}` : null;
     default:
@@ -125,7 +125,9 @@ export default async function handler(req: any, res: any) {
   }
 
   if (paths.size > 0) {
-    if (table === "profiles") paths.add(`${BASE_URL}/p/experts`);
+    if (table === "profiles" && (current?.is_expert === true || previous?.is_expert === true)) {
+      paths.add(`${BASE_URL}/p/experts`);
+    }
     if (table === "jobs_services") paths.add(`${BASE_URL}/p/gigs`);
     if (table === "job_posts") paths.add(`${BASE_URL}/p/jobs`);
   }
