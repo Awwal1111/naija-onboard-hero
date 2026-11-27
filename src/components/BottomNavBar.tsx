@@ -10,8 +10,7 @@ export const BottomNavBar = () => {
   const { bottomNavItems } = useRoleFeatures()
   const { t } = useLanguage()
   const navKeys: Record<string, string> = {
-    feed: 'nav.feed', chat: 'nav.chat', experts: 'nav.expert', jobs: 'nav.jobs',
-    gigs: 'nav.jobs', earn: 'nav.earn', 'mini-apps': 'nav.apps', dashboard: 'nav.hub'
+    feed: 'nav.feed', experts: 'nav.expert', jobs: 'nav.jobs', 'mini-apps': 'nav.apps'
   }
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
 
@@ -28,7 +27,11 @@ export const BottomNavBar = () => {
               key={item.id}
               onClick={() => handleNavigation(item.path)}
               className={`flex flex-col items-center gap-0.5 sm:gap-1 py-1.5 sm:py-2 px-1.5 sm:px-3 rounded-xl transition-colors min-w-0 flex-1 ${
-                location.pathname === item.path
+                (item.id === 'jobs'
+                  ? location.pathname === '/jobs' && new URLSearchParams(location.search).get('tab') === 'jobs'
+                  : item.id === 'gigs'
+                    ? location.pathname === '/gigs' || (location.pathname === '/jobs' && new URLSearchParams(location.search).get('tab') !== 'jobs')
+                    : location.pathname === item.path)
                   ? 'text-primary bg-primary/10'
                   : 'text-muted-foreground hover:text-primary hover:bg-primary/5'
               }`}
