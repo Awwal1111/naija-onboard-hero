@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
   // Stable ordering makes range pagination deterministic across requests.
   const [expertsRes, gigsRes, jobsRes, coursesRes, usersRes] = await Promise.all([
     fetchAllRows((from, to) => supabase.from("profiles").select("user_id, username, updated_at")
-      .eq("is_expert", true).not("username", "is", null).order("user_id").range(from, to)),
+      .eq("is_expert", true).order("user_id").range(from, to)),
     fetchAllRows((from, to) => supabase.from("jobs_services").select("id, updated_at")
       .eq("status", "active").order("id").range(from, to)),
     fetchAllRows((from, to) => supabase.from("job_posts").select("id, updated_at")
