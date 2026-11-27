@@ -88,62 +88,38 @@ export const useSecureProfile = () => {
   }
 
   // Create a connection between users
+  // Send a request; a connection is created only after the recipient accepts.
   const createConnection = async (targetUserId: string): Promise<boolean> => {
     if (!user || user.id === targetUserId) return false
-    
-    try {
-      // Check rate limit first
-      const { data: rateLimitOk, error: rateLimitError } = await supabase
-        .rpc('check_rate_limit', {
-          action_name: 'create_connection',
-          max_requests: 50, // Max 50 connection requests per hour
-          window_minutes: 60
-        })
 
+    try {
+      const { data: rateLimitOk, error: rateLimitError } = await supabase.rpc('check_rate_limit', {
+        action_name: 'create_connection',
+        max_requests: 50,
+        window_minutes: 60
+      })
       if (rateLimitError) throw rateLimitError
-      
       if (!rateLimitOk) {
-        toast({
-          title: "Rate limit exceeded",
-          description: "You've made too many connection requests. Please try again later.",
-          variant: "destructive"
-        })
+        toast({ title: "Rate limit exceeded", description: "You've made too many connection requests. Please try again later.", variant: "destructive" })
         return false
       }
 
-      const { error } = await supabase
-        .from('connections')
-        .insert({
-          user1_id: user.id,
-          user2_id: targetUserId
-        })
+      const { data, error } = await supabase.rpc('send_connection_request', {
+        p_target_user_id: targetUserId
+      })
+      if (error) throw error
 
-      if (error) {
-        // Handle duplicate connection attempts gracefully
-        if (error.code === '23505') {
-          toast({
-            title: "Already connected",
-            description: "You are already connected with this user.",
-            variant: "default"
-          })
-          return true
-        }
-        throw error
+      const result = data as { success: boolean; error?: string }
+      if (!result?.success) {
+        toast({ title: "Request Not Sent", description: result?.error || "Could not send connection request.", variant: "destructive" })
+        return false
       }
 
-      toast({
-        title: "Connection created",
-        description: "You are now connected with this user.",
-        variant: "default"
-      })
+      toast({ title: "Connection request sent", description: "They can accept or decline your request.", variant: "default" })
       return true
     } catch (error) {
-      console.error('Error creating connection:', error)
-      toast({
-        title: "Error",
-        description: "Failed to create connection. Please try again.",
-        variant: "destructive"
-      })
+      console.error('Error sending connection request:', error)
+      toast({ title: "Error", description: "Failed to send connection request. Please try again.", variant: "destructive" })
       return false
     }
   }
