@@ -1,6 +1,8 @@
 -- A single Vault-managed token authenticates scheduled/internal Edge Function calls.
 -- The token is generated in the database and is never written to source control.
-DO $$
+DO $
+DECLARE
+  v_anon_key text;
 BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM vault.secrets
@@ -13,7 +15,7 @@ BEGIN
     );
   END IF;
 
-  SELECT regexp_replace(decrypted_secret, '^Bearer\\s+', '')
+  SELECT replace(decrypted_secret, 'Bearer ', '')
   INTO v_anon_key
   FROM vault.decrypted_secrets
   WHERE name = 'weekly_digest_auth'
