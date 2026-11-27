@@ -133,38 +133,6 @@ END $$;
 
 ---
 
-### 4. Fundraising Feature (`/fundraising`)
-**As Campaign Creator:**
-- [ ] Click "Create Campaign"
-- [ ] Fill comprehensive campaign details:
-  - Basic info (title, goal, category)
-  - Detailed story
-  - Beneficiary information
-  - Fund usage breakdown
-  - Supporting documents
-  - Campaign image
-  - Deadline
-- [ ] Submit campaign
-
-**As Contributor:**
-- [ ] Browse campaigns
-- [ ] View campaign detail at `/fundraising/:id`
-- [ ] Click "Contribute Now"
-- [ ] Enter contribution amount (min ₦10NC)
-- [ ] Confirm contribution
-- [ ] See your contribution in recent contributors
-- [ ] Watch progress bar update
-
-**Test Checklist:**
-- Campaign creation works
-- All campaign details display
-- Progress bar shows correctly
-- Contribution flow works
-- Wallet deduction happens
-- Campaign raised amount updates
-- Backer count increments
-- Days left calculates correctly
-
 ---
 
 ## Step 3: Admin Dashboard Testing (`/admin/dashboard`)
