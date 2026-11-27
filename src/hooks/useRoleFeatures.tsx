@@ -41,75 +41,51 @@ export interface FeatureItem {
 
 // Bottom Navigation Items (main nav)
 export const BOTTOM_NAV_FEATURES: FeatureItem[] = [
-  { 
-    id: 'feed', 
-    label: 'Feed', 
-    path: '/feed', 
-    icon: Home, 
+  {
+    id: 'feed',
+    label: 'Feed',
+    path: '/feed',
+    icon: Home,
     roles: ['freelancer', 'client', 'both'],
     priority: 1
   },
-  { 
-    id: 'chat', 
-    label: 'Chat', 
-    path: '/chat', 
-    icon: MessageCircle, 
+  {
+    id: 'jobs',
+    label: 'Jobs',
+    path: '/jobs?tab=jobs',
+    icon: Search,
     roles: ['freelancer', 'client', 'both'],
+    description: 'Browse real job opportunities',
     priority: 2
   },
-  { 
-    id: 'experts', 
-    label: 'Expert', 
-    path: '/experts', 
-    icon: Users, 
-    roles: ['client', 'both'], // Clients browse experts
-    description: 'Find and hire experts',
+  {
+    id: 'experts',
+    label: 'Expert',
+    path: '/experts',
+    icon: Users,
+    roles: ['freelancer', 'client', 'both'],
+    description: 'Discover experts and professionals',
     priority: 3
   },
-  { 
-    id: 'jobs', 
-    label: 'Gigs', 
-    path: '/jobs', 
-    icon: Briefcase, 
-    roles: ['freelancer', 'both'], // Freelancers see the gigs marketplace (gigs tab is default)
-    description: 'Browse gigs and jobs',
-    priority: 3
+  {
+    id: 'gigs',
+    label: 'Gig',
+    path: '/gigs',
+    icon: Briefcase,
+    roles: ['freelancer', 'client', 'both'],
+    description: 'Browse services offered by freelancers',
+    priority: 4
   },
-  { 
-    id: 'gigs', 
-    label: 'Gigs', 
-    path: '/jobs', 
-    icon: Briefcase, 
-    roles: ['client'], // Clients see gigs to hire from
-    description: 'Browse services to hire',
-    priority: 3
-  },
-  { 
-    id: 'mini-apps', 
-    label: 'Apps', 
-    path: '/mini-apps', 
-    icon: LayoutGrid, 
+  {
+    id: 'mini-apps',
+    label: 'Apps',
+    path: '/mini-apps',
+    icon: LayoutGrid,
     roles: ['freelancer', 'client', 'both'],
     description: 'Mini apps & tools',
-    priority: 3.5
-  },
-  { 
-    id: 'earn', 
-    label: 'Earn', 
-    path: '/earn', 
-    icon: DollarSign, 
-    roles: ['freelancer', 'both'], // Freelancers earn
-    priority: 4
-  },
-  { 
-    id: 'dashboard', 
-    label: 'Hub', 
-    path: '/client-dashboard', 
-    icon: BarChart3, 
-    roles: ['client'], // Clients see their hiring hub
-    description: 'Manage your projects',
-    priority: 4
+    priority: 5
   }
+
 ]
 
 // Quick Actions (displayed in dashboard/profile menus)
@@ -322,7 +298,7 @@ export const useRoleFeatures = () => {
       if (seen.has(item.path)) return false
       seen.add(item.path)
       return true
-    }).slice(0, 5) // Max 5 items in bottom nav
+    }) // Five primary destinations; More is rendered separately
   }, [mode])
   
   const quickActions = useMemo(() => filterByRole(QUICK_ACTION_FEATURES), [mode])
