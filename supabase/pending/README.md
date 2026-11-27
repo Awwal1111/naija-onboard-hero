@@ -124,6 +124,22 @@ NaijaLancers Supabase project (project ref `jxybqmquymxkvxxpiuhv`):
   the scheduled task auto-approval payout can run only as service role or its
   database owner, not as anon/authenticated.
 
+- `safepay_release_requires_verified_hold`: SafePay release, refund,
+  auto-release and dispute settlement now fail closed without sufficient
+  aggregate escrow hold.
+- `guard_gig_order_client_mutations` and
+  `gig_orders_require_private_escrow_holds`: direct gig-order creation is
+  revoked; trusted order placement creates a private per-order hold; completion,
+  cancellation and milestone release consume that hold. At rollout, all 37
+  existing gig orders were terminal, with zero open orders to backfill.
+- `legacy_gig_order_status_column_grants`: retains only the status/delivery
+  columns needed by the already-deployed UI; the trigger rejects invalid
+  transitions and immutable financial/ownership edits.
+- `guard_profile_privilege_fields`: users cannot set premium, expert,
+  verification trust, partner, reputation, or computed profile fields directly.
+  The current verification submission/payment-status fields remain a separate
+  follow-up because that UI still writes them directly.
+
 - `secure_connection_request_workflow`: direct connection creation and request
   updates are revoked; authenticated send/respond RPCs validate the request
   owner and accepted status.
