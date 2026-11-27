@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { ArrowLeft, Users, FileText, TrendingUp, DollarSign, Eye, Settings, AlertCircle, CheckCircle, Clock, MessageCircle, Briefcase, Award, Activity, Search, Filter, MoreVertical, Trash2, Edit, Ban, Heart, Package, BookOpen, Target, Megaphone, Code, Ticket, Gauge, Shield } from 'lucide-react'
+import { ArrowLeft, Users, FileText, TrendingUp, DollarSign, Eye, Settings, AlertCircle, CheckCircle, Clock, MessageCircle, Briefcase, Award, Activity, Search, Filter, MoreVertical, Trash2, Edit, Ban, Heart, Package, BookOpen, Megaphone, Code, Ticket, Gauge, Shield } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Logo } from '@/components/ui/logo'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
