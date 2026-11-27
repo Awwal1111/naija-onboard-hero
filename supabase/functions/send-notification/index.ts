@@ -93,8 +93,18 @@ Deno.serve(async (req) => {
       }
       const authClient = createClient(Deno.env.get('SUPABASE_URL') ?? '', anonKey)
       const { data: { user: actor }, error: authError } = await authClient.auth.getUser(token)
-      const isAdmin = actor?.app_metadata?.role === 'admin' ||
+      let isAdmin = actor?.app_metadata?.role === 'admin' ||
         (Array.isArray(actor?.app_metadata?.roles) && actor.app_metadata.roles.includes('admin'))
+      if (actor && !isAdmin) {
+        const { data: roleRow } = await supabaseClient
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', actor.id)
+          .in('role', ['admin', 'super_admin'])
+          .limit(1)
+          .maybeSingle()
+        isAdmin = !!roleRow
+      }
       if (authError || !actor || (actor.id !== userId && !isAdmin)) {
         return new Response(JSON.stringify({ error: 'Not authorized to notify this user' }), {
           status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
