@@ -79,21 +79,6 @@ export default function Sitemap() {
         });
       });
 
-      // Public campaigns
-      const { data: campaigns } = await supabase
-        .from('fundraisings')
-        .select('id, updated_at')
-        .eq('status', 'approved' as any)
-        .limit(500);
-
-      campaigns?.forEach(campaign => {
-        allUrls.push({
-          loc: `/p/campaign/${campaign.id}`,
-          lastmod: campaign.updated_at?.split('T')[0] || new Date().toISOString().split('T')[0],
-          priority: '0.6'
-        });
-      });
-
       return allUrls;
     },
   });
