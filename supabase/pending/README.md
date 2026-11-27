@@ -139,6 +139,9 @@ NaijaLancers Supabase project (project ref `jxybqmquymxkvxxpiuhv`):
   verification trust, partner, reputation, or computed profile fields directly.
   The current verification submission/payment-status fields remain a separate
   follow-up because that UI still writes them directly.
+- `revoke_broad_public_profiles_rpc`: the unused bulk profile RPC that exposed
+  wallet/contact/referral fields is no longer callable by browser roles.
+
 
 - `secure_connection_request_workflow`: connection creation and request
   responses are routed through authenticated ownership-checked RPCs.
