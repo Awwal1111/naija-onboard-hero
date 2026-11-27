@@ -155,10 +155,10 @@ const Profile = () => {
     fetchOtherUserProfile()
   }, [userId, user?.id])
 
-  // Fetch connection requests on mount
+  // Connection requests are only relevant on the signed-in user's own profile.
   useEffect(() => {
-    fetchConnectionRequests()
-  }, [])
+    if (isOwnProfile) fetchConnectionRequests()
+  }, [isOwnProfile])
 
   // Auto-open edit dialog if ?edit=true is in URL
   useEffect(() => {
@@ -185,12 +185,8 @@ const Profile = () => {
         () => {
           if (debounceTimer) clearTimeout(debounceTimer)
           debounceTimer = setTimeout(async () => {
-            const { data } = await supabase
-              .from('profiles')
-              .select('user_id, full_name, profile_picture_url, connections_count')
-              .eq('user_id', user.id)
-              .maybeSingle()
-            if (data) setViewedUserProfile(prev => prev ? Object.assign({}, prev, data) : data as any)
+            // Refresh the canonical own-profile state/cache, not the public-profile state.
+            await refetchProfile()
           }, 1500)
         }
       )
@@ -205,12 +201,8 @@ const Profile = () => {
         () => {
           if (debounceTimer) clearTimeout(debounceTimer)
           debounceTimer = setTimeout(async () => {
-            const { data } = await supabase
-              .from('profiles')
-              .select('user_id, full_name, profile_picture_url, connections_count')
-              .eq('user_id', user.id)
-              .maybeSingle()
-            if (data) setViewedUserProfile(prev => prev ? Object.assign({}, prev, data) : data as any)
+            // Refresh the canonical own-profile state/cache, not the public-profile state.
+            await refetchProfile()
           }, 1500)
         }
       )
