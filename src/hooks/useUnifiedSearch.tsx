@@ -232,38 +232,6 @@ export const useUnifiedSearch = () => {
         });
       }
 
-      // 8. Search Fundraising/Campaigns
-      const { data: campaigns } = await supabase
-        .from('fundraisings')
-        .select('id, title, description, goal_amount, raised_amount, featured_image_url, category, user_id')
-        .eq('status', 'approved' as any)
-        .or(`title.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`)
-        .limit(10);
-
-      if (campaigns) {
-        const userIds = campaigns.map(c => c.user_id).filter(Boolean);
-        const { data: campaignOwners } = await supabase
-          .from('profiles')
-          .select('user_id, is_premium, premium_expires_at')
-          .in('user_id', userIds);
-
-        const premiumMap = new Map(campaignOwners?.map(p => [p.user_id, p.is_premium && p.premium_expires_at && new Date(p.premium_expires_at) > new Date()]) || []);
-
-        campaigns.forEach(campaign => {
-          allResults.push({
-            id: campaign.id,
-            type: 'campaign',
-            title: campaign.title,
-            subtitle: `₦${campaign.raised_amount?.toLocaleString()} raised of ₦${campaign.goal_amount?.toLocaleString()}`,
-            description: campaign.description,
-            image: campaign.featured_image_url,
-            url: `/fundraising/${campaign.id}`,
-            metadata: { goal: campaign.goal_amount, raised: campaign.raised_amount },
-            is_premium: premiumMap.get(campaign.user_id) || false,
-          });
-        });
-      }
-
       // 9. Search Digital Products - include seller's premium status
       const { data: products } = await supabase
         .from('digital_products')
