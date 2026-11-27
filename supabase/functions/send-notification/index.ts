@@ -100,11 +100,6 @@ Deno.serve(async (req) => {
           status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
       }
-      if (!isAdmin && sendEmail) {
-        return new Response(JSON.stringify({ error: 'Only trusted internal callers may send email notifications' }), {
-          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        })
-      }
     }
 
     console.log('Creating notification:', { userId, type, title, sendEmail })
