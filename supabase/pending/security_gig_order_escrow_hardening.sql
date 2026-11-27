@@ -230,7 +230,7 @@ GRANT EXECUTE ON FUNCTION public.transition_gig_order(uuid, text, text) TO authe
 
 -- Browser clients must use the constrained RPC above. SECURITY DEFINER settlement
 -- functions retain owner privileges and continue to update these rows atomically.
-REVOKE UPDATE ON TABLE public.gig_orders FROM anon, authenticated;
+REVOKE UPDATE ON TABLE public.gig_orders FROM PUBLIC, anon, authenticated;
 
 
 -- 3. Completion requires an unconsumed private hold for the exact buyer/order/amount.
