@@ -196,37 +196,40 @@ export const useProfile = () => {
     try {
       setLoading(true)
       
-      // First check if profile exists
-      const { data: existingProfile, error: lookupError } = await supabase
+      // Update first: the normal path needs only one write request, not an
+      // extra SELECT to check whether the profile row exists.
+      const updateResult = await supabase
         .from('profiles')
-        .select('id')
+        .update(updates)
         .eq('user_id', user.id)
+        .select()
         .maybeSingle()
 
-      // Do not treat a failed lookup as a missing profile: inserting in that case
-      // can fail with a duplicate-user constraint and hide the real database error.
-      if (lookupError) throw lookupError
+      if (updateResult.error) throw updateResult.error
+      let data: any = updateResult.data
 
-      let result
-      if (existingProfile) {
-        // Update existing profile
-        result = await supabase
-          .from('profiles')
-          .update(updates)
-          .eq('user_id', user.id)
-          .select()
-          .single()
-      } else {
-        // Insert new profile if it doesn't exist
-        result = await supabase
+      if (!data) {
+        const insertResult = await supabase
           .from('profiles')
           .insert([{ user_id: user.id, ...updates }])
           .select()
           .single()
-      }
 
-      const { data, error } = result
-      if (error) throw error
+        if (insertResult.error?.code === '23505') {
+          // A concurrent profile creation won the race; update that new row.
+          const retryResult = await supabase
+            .from('profiles')
+            .update(updates)
+            .eq('user_id', user.id)
+            .select()
+            .single()
+          if (retryResult.error) throw retryResult.error
+          data = retryResult.data
+        } else {
+          if (insertResult.error) throw insertResult.error
+          data = insertResult.data
+        }
+      }
 
       profileCache.set(user.id, { data: data as Profile, ts: Date.now() })
       setProfile(data as Profile)
