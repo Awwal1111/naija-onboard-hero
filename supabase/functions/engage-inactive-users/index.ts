@@ -23,6 +23,16 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const internalClient = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  );
+  if (!(await isInternalFunctionRequest(req, internalClient))) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+
   try {
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -290,3 +300,11 @@ async function getPersonalizedContent(supabase: any, user: any) {
 
   return content;
 }
+async function isInternalFunctionRequest(req: Request, client: ReturnType<typeof createClient>): Promise<boolean> {
+  const token = req.headers.get('x-internal-function-token');
+  if (!token || token.length < 32 || token.length > 256) return false;
+  const { data, error } = await client.rpc('verify_internal_function_token', { p_token: token });
+  return !error && data === true;
+}
+
+
