@@ -158,7 +158,7 @@ const Profile = () => {
   // Connection requests are only relevant on the signed-in user's own profile.
   useEffect(() => {
     if (isOwnProfile) fetchConnectionRequests()
-  }, [isOwnProfile])
+  }, [isOwnProfile, user?.id])
 
   // Auto-open edit dialog if ?edit=true is in URL
   useEffect(() => {
