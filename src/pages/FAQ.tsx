@@ -14,7 +14,7 @@ const faqData: FAQItem[] = [
   {
     category: "Getting Started",
     question: "What is NaijaLancers?",
-    answer: "NaijaLancers is a comprehensive platform connecting Nigerian professionals, freelancers, and businesses. It offers job opportunities, expert services, fundraising, courses, digital products, and various ways to earn money online."
+    answer: "NaijaLancers is a comprehensive platform connecting Nigerian professionals, freelancers, and businesses. It offers job opportunities, expert services, courses, digital products, and ways to earn money online."
   },
   {
     category: "Getting Started",
