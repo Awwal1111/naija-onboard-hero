@@ -15,7 +15,6 @@ export default function Sitemap() {
         { loc: '/', lastmod: new Date().toISOString().split('T')[0], priority: '1.0' },
         { loc: '/welcome', lastmod: new Date().toISOString().split('T')[0], priority: '0.9' },
         { loc: '/faq', lastmod: new Date().toISOString().split('T')[0], priority: '0.7' },
-        { loc: '/fundraising', lastmod: new Date().toISOString().split('T')[0], priority: '0.8' },
         { loc: '/terms-conditions', lastmod: new Date().toISOString().split('T')[0], priority: '0.5' },
         { loc: '/privacy-policy', lastmod: new Date().toISOString().split('T')[0], priority: '0.5' }
       );
