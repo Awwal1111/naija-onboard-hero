@@ -92,6 +92,7 @@ verify_jwt = true
 [functions.save-push-subscription]
 verify_jwt = true
 
+# Authorization is enforced in the handler: self/admin or trusted internal service role/Vault token.
 [functions.send-notification]
 verify_jwt = false
 
@@ -157,6 +158,7 @@ verify_jwt = false
 [functions.smart-notification]
 verify_jwt = true
 
+# Handler requires the Vault-backed x-internal-function-token.
 [functions.engage-inactive-users]
 verify_jwt = false
 
@@ -164,6 +166,7 @@ verify_jwt = false
 verify_jwt = true
 
 
+# Handler requires service-role auth or the Vault-backed x-internal-function-token.
 [functions.developer-webhook]
 verify_jwt = false
 
