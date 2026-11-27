@@ -7,20 +7,20 @@ BEGIN;
 
 -- 1) Stop browser clients from writing escrow rows directly. Trusted Edge
 -- Functions use service_role and are unaffected.
-REVOKE INSERT, UPDATE, DELETE ON TABLE public.escrow_payments FROM anon, authenticated;
+REVOKE INSERT, UPDATE, DELETE ON TABLE public.escrow_payments FROM PUBLIC, anon, authenticated;
 
 -- 2) SafePay must use its validated RPCs; direct row creation/editing bypasses
 -- the wallet hold and release invariants.
-REVOKE INSERT, UPDATE, DELETE ON TABLE public.safepay_transactions FROM anon, authenticated;
+REVOKE INSERT, UPDATE, DELETE ON TABLE public.safepay_transactions FROM PUBLIC, anon, authenticated;
 
 -- 3) Gig order creation must use place_gig_order(), which performs the wallet
 -- debit. UPDATE remains temporarily enabled because the current UI uses it for
 -- non-financial order workflow states; protect the financial columns separately
 -- before removing direct UPDATE.
-REVOKE INSERT ON TABLE public.gig_orders FROM anon, authenticated;
+REVOKE INSERT ON TABLE public.gig_orders FROM PUBLIC, anon, authenticated;
 
 -- 4) The legacy wallets table is written by trusted server-side functions.
-REVOKE INSERT, UPDATE, DELETE ON TABLE public.wallets FROM anon, authenticated;
+REVOKE INSERT, UPDATE, DELETE ON TABLE public.wallets FROM PUBLIC, anon, authenticated;
 
 -- 5) Remove the unauthenticated public profile dump RPC. The app source audit
 -- found no caller; keep service_role access for trusted maintenance only.
