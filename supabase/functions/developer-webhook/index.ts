@@ -12,6 +12,28 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
+async function isInternalFunctionRequest(req: Request, client: ReturnType<typeof createClient>): Promise<boolean> {
+  const token = req.headers.get('x-internal-function-token');
+  if (!token || token.length < 32 || token.length > 256) return false;
+  const { data, error } = await client.rpc('verify_internal_function_token', { p_token: token });
+  return !error && data === true;
+}
+
+function constantTimeEquals(a: string, b: string): boolean {
+  const left = new TextEncoder().encode(a);
+  const right = new TextEncoder().encode(b);
+  if (left.length !== right.length) return false;
+  let diff = 0;
+  for (let i = 0; i < left.length; i++) diff |= left[i] ^ right[i];
+  return diff === 0;
+}
+function isServiceRoleRequest(req: Request): boolean {
+  const expected = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+  const provided = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
+  return expected.length > 0 && constantTimeEquals(provided, expected);
+}
+
+
 // Webhook event types
 const WEBHOOK_EVENTS = {
   // Wallet events
@@ -185,6 +207,12 @@ async function triggerWebhooks(developerId: string, eventType: string, payload: 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  if (!isServiceRoleRequest(req) && !(await isInternalFunctionRequest(req, supabase))) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
   }
   
   try {
