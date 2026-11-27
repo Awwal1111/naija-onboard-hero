@@ -62,3 +62,47 @@ RPCs, then revoke client INSERT as well.
 
 Mini-app NC payouts are no longer accepted from the user browser. Developers
 must issue NC rewards from their server using the Developer API.
+
+
+## SafePay escrow release hardening
+`security_escrow_release_hardening.sql` replaces manual release, cancellation,
+automatic release, and dispute settlement with fail-closed escrow checks. A
+payout or refund is rejected when the buyer's `user_wallets.escrow_hold` is
+missing or smaller than the transaction amount. Automatic release skips and
+logs inconsistent rows rather than paying them.
+
+Before applying:
+- Reconcile active SafePay rows against the original wallet debit and hold ledger.
+- Review rows whose aggregate `escrow_hold` is below the sum of active SafePay amounts.
+- Keep direct browser INSERT/UPDATE on `safepay_transactions` revoked using
+  `security_permission_hotfixes.sql`.
+
+## Gig-order escrow and status hardening
+`security_gig_order_escrow_hardening.sql` introduces a private per-order escrow
+hold ledger. The trusted `place_gig_order` RPC writes the hold in the same
+transaction as the buyer debit. Completion, cancellation, and milestone
+settlement require and consume that hold. The frontend now calls
+`transition_gig_order` instead of updating `gig_orders` directly, allowing
+browser UPDATE privileges to be revoked.
+
+Important compatibility requirement:
+- Existing open orders have no private hold row and will fail closed after this
+  file is applied. Reconcile each order against independent wallet evidence and
+  create a verified hold row manually; do not bulk-backfill from
+  `wallet_transactions`, because authenticated users can still insert their own
+  ledger rows.
+- Confirm every non-UI writer of `gig_orders` is a trusted SECURITY DEFINER
+  function before applying the UPDATE revoke.
+- Test seller acceptance, work start, delivery, buyer revision requests,
+  cancellation, full completion, and each milestone release.
+
+## Profile guard follow-up
+`security_permission_hotfixes.sql` now also protects verification payment and
+review fields, email confirmation, partner assignment, computed expert level,
+and profile aggregates. The current ExpertVerification page still writes
+verification status and payment fields directly, so migrate that page to
+trusted RPCs before applying the guard. Wallet balance fields remain excluded
+until all browser-side wallet writers listed above have been migrated.
+
+All files in this folder are staged review artifacts only. None of these
+pending SQL files has been applied to production by this branch.
