@@ -14,7 +14,7 @@ Set these Vercel environment variables for Production and Preview:
 - INDEXNOW_WEBHOOK_SECRET: a random secret shared with Supabase Vault as indexnow_webhook_secret.
 
 ## Events
-Database triggers submit public profile, gig, job, course, and fundraising URLs on inserts, relevant updates, and deletes. Updates to wallet, counters, login timestamps, and other unrelated fields do not trigger notifications.
+Database triggers submit public profile, gig, job, course, URLs on inserts, relevant updates, and deletes. Updates to wallet, counters, login timestamps, and other unrelated fields do not trigger notifications.
 
 ## Safety
 The API accepts only authenticated database webhook calls, derives URLs from an allowlisted table/event payload, and rejects URLs outside the canonical host. IndexNow accepts the URL notification; it does not guarantee indexing or ranking.
