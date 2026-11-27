@@ -1,7 +1,7 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Briefcase, FileText, Bell, BarChart3, Settings, Video, Wallet, Bookmark, Search, Package, Users, FolderKanban, Timer, Award, Bot, PlusCircle, Target, Bug, HelpCircle, ShieldAlert, Crown, BookOpen } from "lucide-react";
+import { User, Briefcase, FileText, Bell, BarChart3, Settings, Video, Wallet, Bookmark, Search, Package, Users, FolderKanban, Timer, Award, Bot, PlusCircle, Target, Bug, HelpCircle, ShieldAlert, Crown, BookOpen, MessageCircle } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useRoleFeatures } from "@/hooks/useRoleFeatures";
 import { Badge } from "@/components/ui/badge";
@@ -67,6 +67,7 @@ export const MoreMenuDrawer = ({ open, onOpenChange }: MoreMenuDrawerProps) => {
   ];
 
   const sharedBusinessItems = [
+    { icon: MessageCircle, label: "Chat", path: "/chat", color: "text-primary" },
     { icon: Package, label: "My Orders", path: "/orders", color: "text-teal-500" },
     { icon: FolderKanban, label: "WorkRooms", path: "/workrooms", color: "text-cyan-500" },
     { icon: Users, label: "Connections", path: "/connections", color: "text-indigo-500" },
