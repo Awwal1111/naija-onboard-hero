@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
-import { Check, X, ExternalLink, Eye } from 'lucide-react'
+import { Check, X, ExternalLink, Eye, Pin, PinOff } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 
 interface MiniApp {
@@ -19,6 +19,7 @@ interface MiniApp {
   developer_id: string
   sdk_app_id: string
   install_count: number
+  is_featured: boolean | null
 }
 
 export const AdminMiniAppsSection = () => {
@@ -55,6 +56,24 @@ export const AdminMiniAppsSection = () => {
       fetchApps()
     } catch (err: any) {
       toast.error(err.message)
+    } finally {
+      setLoading(null)
+    }
+  }
+
+  const handleToggleFeatured = async (app: MiniApp) => {
+    setLoading(app.id)
+    try {
+      const nextFeatured = !app.is_featured
+      const { error } = await supabase
+        .from('mini_apps')
+        .update({ is_featured: nextFeatured })
+        .eq('id', app.id)
+      if (error) throw error
+      toast.success(nextFeatured ? 'App pinned to the top of the marketplace' : 'App unpinned')
+      await fetchApps()
+    } catch (err: any) {
+      toast.error(err.message || 'Could not update featured app')
     } finally {
       setLoading(null)
     }
@@ -111,6 +130,20 @@ export const AdminMiniAppsSection = () => {
                   </a>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">SDK ID: {app.sdk_app_id}</p>
+                {app.status === 'approved' && (
+                  <div className="mt-3">
+                    <Button
+                      size="sm"
+                      variant={app.is_featured ? 'default' : 'outline'}
+                      className="gap-2"
+                      disabled={loading === app.id}
+                      onClick={() => handleToggleFeatured(app)}
+                    >
+                      {app.is_featured ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
+                      {app.is_featured ? 'Unpin from top' : 'Pin to top'}
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
 
