@@ -72,26 +72,6 @@ const faqData: FAQItem[] = [
     answer: "Click 'Post Job', fill in job details, budget, and requirements. Jobs are visible to all users. You'll receive applications directly in your messages."
   },
   {
-    category: "Fundraising",
-    question: "How does fundraising work?",
-    answer: "Create a campaign with your goal, story, and fund breakdown. Admin reviews and approves campaigns. All contributions go to admin wallet first for security. Once your goal is reached, request fund release from admin."
-  },
-  {
-    category: "Fundraising",
-    question: "Can anyone contribute to fundraising campaigns?",
-    answer: "Yes! Fundraising campaigns are publicly accessible. Anyone can view and share campaigns, but only registered users can contribute."
-  },
-  {
-    category: "Fundraising",
-    question: "Why are contributions held by admin?",
-    answer: "This protects both campaigners and contributors. Admin verifies campaign legitimacy and ensures funds are released appropriately. This prevents fraud and builds trust."
-  },
-  {
-    category: "Fundraising",
-    question: "How do I get my fundraising money?",
-    answer: "Once your campaign reaches its goal or deadline, request fund release from your campaign dashboard. Admin reviews and releases funds within 3-5 business days."
-  },
-  {
     category: "Digital Products & Courses",
     question: "Can I sell digital products?",
     answer: "Yes! Upload ebooks, templates, graphics, software, or any digital content. Set your price and earn NC from each sale. Platform keeps a small commission."
