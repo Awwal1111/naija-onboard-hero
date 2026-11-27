@@ -7,7 +7,7 @@ BEGIN
     WHERE name = 'naijalancers_internal_function_token'
   ) THEN
     PERFORM vault.create_secret(
-      encode(gen_random_bytes(32), 'hex'),
+      encode(extensions.gen_random_bytes(32), 'hex'),
       'naijalancers_internal_function_token',
       'Private token for scheduled NaijaLancers Edge Function calls'
     );
