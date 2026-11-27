@@ -21,7 +21,7 @@ export default function PublicExpert() {
   const { user } = useAuth();
   const [showHire, setShowHire] = useState(false);
 
-  const { data: expert, isLoading } = useQuery({
+  const { data: expert, isLoading, error, refetch } = useQuery({
     queryKey: ['public-expert', slug],
     queryFn: async () => {
       if (!slug) return null;
@@ -62,6 +62,20 @@ export default function PublicExpert() {
             </div>
           </div>
         </Card>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container max-w-4xl mx-auto py-8 px-4 text-center">
+        <Helmet>
+          <title>Expert profile temporarily unavailable | NaijaLancers</title>
+          <meta name="description" content="This public expert profile is temporarily unavailable. Please try again shortly." />
+        </Helmet>
+        <h1 className="text-2xl font-bold mb-4">Expert profile temporarily unavailable</h1>
+        <p className="text-muted-foreground mb-6">We couldn't load this profile right now. Please try again shortly.</p>
+        <Button onClick={() => refetch()}>Try again</Button>
       </div>
     );
   }
