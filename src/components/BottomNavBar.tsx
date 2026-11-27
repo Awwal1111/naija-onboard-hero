@@ -37,7 +37,7 @@ export const BottomNavBar = () => {
               }`}
             >
               <item.icon className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-              <span className="text-[10px] sm:text-xs font-medium truncate max-w-full">{navKeys[item.id] ? t(navKeys[item.id]) : item.label}</span>
+              <span className="text-[10px] sm:text-xs font-medium truncate max-w-full">{item.id === 'gigs' ? 'Gig' : navKeys[item.id] ? t(navKeys[item.id]) : item.label}</span>
             </button>
           ))}
           <button
