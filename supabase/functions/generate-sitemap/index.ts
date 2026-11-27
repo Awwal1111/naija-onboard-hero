@@ -18,14 +18,38 @@ Deno.serve(async (req) => {
   const baseUrl = "https://naijalancers.name.ng";
   const today = new Date().toISOString().split("T")[0];
 
-  // Fetch all public content in parallel
+  // Page through every public collection. Supabase/PostgREST may cap a single
+  // response below the requested limit, so one large .limit() can silently omit URLs.
+  const fetchAllRows = async (queryForPage: (from: number, to: number) => any) => {
+    const pageSize = 500;
+    const allRows: any[] = [];
+
+    for (let from = 0; ; from += pageSize) {
+      const { data, error } = await queryForPage(from, from + pageSize - 1);
+      if (error) return { data: null, error };
+
+      const page = data || [];
+      allRows.push(...page);
+      if (page.length < pageSize) break;
+    }
+
+    return { data: allRows, error: null };
+  };
+
+  // Stable ordering makes range pagination deterministic across requests.
   const [expertsRes, gigsRes, jobsRes, coursesRes, usersRes] = await Promise.all([
-    supabase.from("profiles").select("user_id, username, updated_at").eq("is_expert", true).not("username", "is", null).limit(2000),
-    supabase.from("jobs_services").select("id, updated_at").eq("status", "active").limit(2000),
-    supabase.from("job_posts").select("id, updated_at").eq("status", "active").limit(2000),
-    supabase.from("courses").select("id, updated_at").eq("status", "active").limit(2000),
+    fetchAllRows((from, to) => supabase.from("profiles").select("user_id, username, updated_at")
+      .eq("is_expert", true).not("username", "is", null).order("user_id").range(from, to)),
+    fetchAllRows((from, to) => supabase.from("jobs_services").select("id, updated_at")
+      .eq("status", "active").order("id").range(from, to)),
+    fetchAllRows((from, to) => supabase.from("job_posts").select("id, updated_at")
+      .eq("status", "active").order("id").range(from, to)),
+    fetchAllRows((from, to) => supabase.from("courses").select("id, updated_at")
+      .eq("status", "active").order("id").range(from, to)),
     // Generated placeholder usernames are not useful public landing pages.
-    supabase.from("profiles").select("username, updated_at").not("username", "is", null).not("username", "ilike", "user-%").eq("is_expert", false).limit(5000),
+    fetchAllRows((from, to) => supabase.from("profiles").select("username, updated_at")
+      .not("username", "is", null).not("username", "ilike", "user-%").eq("is_expert", false)
+      .order("username").range(from, to)),
   ]);
 
   // Never publish a partial sitemap as a successful response. Google may otherwise
