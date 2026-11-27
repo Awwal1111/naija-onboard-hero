@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { ArrowLeft, MapPin, Clock, DollarSign, Users, Briefcase, Plus, Search, Eye, TrendingUp, Grid3X3, List, Package, Star, Zap, SlidersHorizontal } from 'lucide-react'
+import { ArrowLeft, MapPin, Clock, DollarSign, Users, Briefcase, Plus, Search, Eye, TrendingUp, Grid3X3, List, Package, Star, Zap, SlidersHorizontal, Compass, Rocket } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -440,6 +440,31 @@ const Jobs = () => {
 
           {/* Jobs Tab Content */}
           <TabsContent value="jobs" className="mt-0 px-4 space-y-3 py-3">
+            {/* Discover more opportunities through approved NaijaLancers mini-apps */}
+            <Card className="border-primary/30 bg-primary/5">
+              <CardContent className="p-3 space-y-3">
+                <div>
+                  <h2 className="font-semibold text-base">Not seeing the job you like?</h2>
+                  <p className="text-sm text-muted-foreground">Explore more opportunities with NaijaLancers mini-apps.</p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <Button variant="outline" className="h-auto justify-start whitespace-normal py-3" onClick={() => navigate('/mini-apps?open=86ba35ac-c2c1-446b-b1ef-9a65e98a87d7')}>
+                    <Compass className="h-5 w-5 mr-2 shrink-0" />
+                    <span className="text-left">
+                      <span className="block font-semibold">NaijaLancers Job Hunter</span>
+                      <span className="block text-xs font-normal text-muted-foreground">Search beyond jobs listed on NaijaLancers</span>
+                    </span>
+                  </Button>
+                  <Button variant="outline" className="h-auto justify-start whitespace-normal py-3" onClick={() => navigate('/mini-apps?open=cda48543-6181-4294-889d-3b7e51aa6304')}>
+                    <Rocket className="h-5 w-5 mr-2 shrink-0" />
+                    <span className="text-left">
+                      <span className="block font-semibold">Gig Booster</span>
+                      <span className="block text-xs font-normal text-muted-foreground">Open the Gig Booster mini-app</span>
+                    </span>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
             {/* Explainer Card */}
             {showJobExplainer && (
               <MarketplaceExplainer 
