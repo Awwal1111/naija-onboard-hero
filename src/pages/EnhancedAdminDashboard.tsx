@@ -1385,10 +1385,6 @@ const EnhancedAdminDashboard = () => {
                     <BookOpen className="h-4 w-4 mr-2" />
                     Courses
                   </TabsTrigger>
-                  <TabsTrigger value="fundraising">
-                    <Target className="h-4 w-4 mr-2" />
-                    Fundraising
-                  </TabsTrigger>
                 </TabsList>
               </div>
 
