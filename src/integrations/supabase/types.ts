@@ -9030,6 +9030,14 @@ export type Database = {
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      send_connection_request: {
+        Args: { p_target_user_id: string }
+        Returns: Json
+      }
+      respond_to_connection_request: {
+        Args: { p_accept: boolean; p_request_id: string }
+        Returns: Json
+      }
       sign_hire_contract: {
         Args: { p_contract_id: string; p_signature: string }
         Returns: Json
