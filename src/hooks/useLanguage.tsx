@@ -178,24 +178,6 @@ const translations: Translations = {
     fr: 'Mes emplois', es: 'Mis trabajos', ar: 'وظائفي', pt: 'Meus trabalhos', sw: 'Kazi zangu', hi: 'मेरी नौकरियां', zh: '我的工作'
   },
 
-  // Fundraising
-  'fundraising.title': {
-    en: 'Fundraising', ha: 'Tara Kuɗi', yo: 'Ìkójọ Owó', ig: 'Nchịkọta Ego', pcm: 'Raise Money',
-    fr: 'Collecte de fonds', es: 'Recaudación', ar: 'جمع التبرعات', pt: 'Arrecadação', sw: 'Kuchangisha', hi: 'धन उगाही', zh: '筹款'
-  },
-  'fundraising.createCampaign': {
-    en: 'Create Campaign', ha: 'Ƙirƙiri Yaƙi neman', yo: 'Ṣẹ̀dá Ìpolongo', ig: 'Mepụta Mkpọlite', pcm: 'Start Campaign',
-    fr: 'Créer une campagne', es: 'Crear campaña', ar: 'إنشاء حملة', pt: 'Criar campanha', sw: 'Unda kampeni', hi: 'अभियान बनाएं', zh: '创建活动'
-  },
-  'fundraising.contribute': {
-    en: 'Contribute', ha: 'Ba da gudummawa', yo: 'Ṣe Ìfikún', ig: 'Nye Onyinye', pcm: 'Support',
-    fr: 'Contribuer', es: 'Contribuir', ar: 'مساهمة', pt: 'Contribuir', sw: 'Changia', hi: 'योगदान करें', zh: '贡献'
-  },
-  'fundraising.myCampaigns': {
-    en: 'My Campaigns', ha: 'Yaƙi neman na', yo: 'Àwọn Ìpolongo Mi', ig: 'Mkpọlite M', pcm: 'My Campaigns',
-    fr: 'Mes campagnes', es: 'Mis campañas', ar: 'حملاتي', pt: 'Minhas campanhas', sw: 'Kampeni zangu', hi: 'मेरे अभियान', zh: '我的活动'
-  },
-
   // Expert
   'expert.becomeExpert': {
     en: 'Become an Expert', ha: 'Zama Gwani', yo: 'Di Àmòye', ig: 'Bụrụ Ọkachamara', pcm: 'Become Pro',
