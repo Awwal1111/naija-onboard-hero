@@ -73,6 +73,41 @@ const BACKOFF_MS = [0, 1000, 3000]; // 0s, 1s, 3s between attempts
 
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 
+
+function isPrivateIpv4(ip: string): boolean {
+  const parts = ip.split('.').map(Number);
+  if (parts.length !== 4 || parts.some(n => !Number.isInteger(n) || n < 0 || n > 255)) return true;
+  const [a, b] = parts;
+  return a === 0 || a === 10 || a === 127 || a >= 224 ||
+    (a === 169 && b === 254) ||
+    (a === 172 && b >= 16 && b <= 31) ||
+    (a === 192 && b === 168) ||
+    (a === 100 && b >= 64 && b <= 127) ||
+    (a === 198 && (b === 18 || b === 19));
+}
+
+async function assertSafeWebhookUrl(rawUrl: string): Promise<void> {
+  let url: URL;
+  try { url = new URL(rawUrl); } catch { throw new Error('Invalid webhook URL'); }
+  const host = url.hostname.toLowerCase().replace(/\.$/, '');
+  if (url.protocol !== 'https:' || url.username || url.password ||
+      (url.port && url.port !== '443') || !host ||
+      host === 'localhost' || host.endsWith('.localhost') ||
+      host.endsWith('.local') || host.endsWith('.internal') ||
+      host === 'metadata.google.internal' || host.startsWith('[') ||
+      /^[0-9.]+$/.test(host)) {
+    throw new Error('Webhook URL must use a public HTTPS hostname');
+  }
+
+  let addresses: string[] = [];
+  try { addresses = await Deno.resolveDns(host, 'A'); } catch { /* try AAAA below */ }
+  try { addresses = addresses.concat(await Deno.resolveDns(host, 'AAAA')); } catch { /* no IPv6 record */ }
+  if (addresses.length === 0) throw new Error('Webhook hostname did not resolve');
+  if (addresses.some(ip => ip.includes(':') || isPrivateIpv4(ip))) {
+    throw new Error('Webhook hostname resolves to a non-public address');
+  }
+}
+
 // Send webhook to developer's endpoint, retrying transient failures.
 // Considered retryable: network errors, HTTP 408/425/429, any 5xx.
 // Non-retryable: 2xx (success) and other 4xx (client error in their endpoint).
@@ -100,6 +135,7 @@ async function sendWebhook(
 
     const startTime = Date.now();
     try {
+      await assertSafeWebhookUrl(webhook.webhook_url);
       const response = await fetch(webhook.webhook_url, {
         method: 'POST',
         headers: {
