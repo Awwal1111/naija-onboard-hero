@@ -4,7 +4,7 @@ import CryptoJS from "https://esm.sh/crypto-js@4.1.1";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-internal-function-token',
 };
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -12,7 +12,7 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-async function isInternalFunctionRequest(req: Request, client: ReturnType<typeof createClient>): Promise<boolean> {
+async function isInternalFunctionRequest(req: Request, client: any): Promise<boolean> {
   const token = req.headers.get('x-internal-function-token');
   if (!token || token.length < 32 || token.length > 256) return false;
   const { data, error } = await client.rpc('verify_internal_function_token', { p_token: token });
