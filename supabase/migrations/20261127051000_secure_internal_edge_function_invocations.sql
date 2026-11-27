@@ -1,6 +1,6 @@
 -- A single Vault-managed token authenticates scheduled/internal Edge Function calls.
 -- The token is generated in the database and is never written to source control.
-DO $
+DO $vault$
 DECLARE
   v_anon_key text;
 BEGIN
@@ -31,7 +31,7 @@ BEGIN
     );
   END IF;
 END;
-$;
+$vault$;
 
 CREATE OR REPLACE FUNCTION public.verify_internal_function_token(p_token text)
 RETURNS boolean
