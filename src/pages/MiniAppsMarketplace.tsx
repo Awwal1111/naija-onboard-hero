@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, Search, Plus, Sparkles, Receipt, Building2, Wallet, Shield, RefreshCw, Trophy, Heart, GraduationCap, Users, Gamepad2, Dices, Target, RotateCw, Gift, Banknote, ShoppingBag, PiggyBank, Flame, FileText, Send, ScanLine, Crown, Briefcase, Hammer, FolderKanban, ClipboardList, NotebookPen, Image as ImageIcon, Presentation } from 'lucide-react'
 import { useUserCountry } from '@/hooks/useUserCountry'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -110,6 +110,7 @@ const MiniAppsMarketplace = () => {
   const { user } = useAuth()
   const { isNigerian } = useUserCountry()
   const navigate = useNavigate()
+  const location = useLocation()
 
   const MINI_APP_COLS = 'id, app_name, app_description, app_icon_url, app_url, category, install_count, rating, review_count, sdk_app_id, developer_id, status'
 
@@ -134,6 +135,17 @@ const MiniAppsMarketplace = () => {
     refetchOnWindowFocus: false,
   })
   const externalApps = externalAppsData || []
+
+  // Open a requested approved mini-app directly when arriving from the Jobs page.
+  useEffect(() => {
+    const requestedAppId = new URLSearchParams(location.search).get('open')
+    if (!requestedAppId || !externalApps.length) return
+    const requestedApp = externalApps.find(app => app.id === requestedAppId)
+    if (requestedApp) {
+      setSelectedApp(requestedApp)
+      navigate('/mini-apps', { replace: true })
+    }
+  }, [externalApps, location.search, navigate])
 
   const { data: myAppsData } = useQuery({
     queryKey: ['mini-apps', 'mine', user?.id],
