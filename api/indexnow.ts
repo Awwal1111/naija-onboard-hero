@@ -4,6 +4,7 @@ const HOST = "www.naijalancers.name.ng";
 const BASE_URL = `https://${HOST}`;
 const INDEXNOW_ENDPOINT = "https://api.indexnow.org/indexnow";
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const allowedTables = new Set(["profiles", "jobs_services", "job_posts", "courses"]);
 
 type Row = Record<string, unknown>;
 type EventPayload = {
@@ -51,7 +52,6 @@ function publicPath(table: string, row: Row | null): string | null {
       return validId(row.id) && row.status === "active" ? `/p/job/${row.id}` : null;
     case "courses":
       return validId(row.id) && row.status === "active" ? `/p/course/${row.id}` : null;
-      return validId(row.id) ? `/p/campaign/${row.id}` : null;
     default:
       return null;
   }
