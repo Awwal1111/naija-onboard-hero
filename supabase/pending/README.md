@@ -104,5 +104,26 @@ verification status and payment fields directly, so migrate that page to
 trusted RPCs before applying the guard. Wallet balance fields remain excluded
 until all browser-side wallet writers listed above have been migrated.
 
+## Production security hotfixes already applied
+
+The following focused migrations were applied and verified on the active
+NaijaLancers Supabase project (project ref `jxybqmquymxkvxxpiuhv`):
+
+- `require_authenticated_premium_subscription`: premium subscription now requires
+  an authenticated user subscribing only for their own account; anonymous
+  execution is revoked.
+- `revoke_direct_safepay_client_writes`: browser INSERT/UPDATE/DELETE on
+  `safepay_transactions` is revoked; SafePay uses validated RPCs.
+- `revoke_direct_user_wallet_insert`: browser wallet-row creation is revoked;
+  SafePay fallback now provisions a zeroed wallet through
+  `ensure_user_wallet_row`.
+- `secure_connection_request_workflow`: direct connection creation and request
+  updates are revoked; authenticated send/respond RPCs validate the request
+  owner and accepted status.
+
+These applied changes do not mean the remaining staged escrow/profile migrations
+are ready. The three legacy SafePay rows with missing/insufficient aggregate
+holds remain under manual reconciliation; no funds were moved by this audit.
+
 All files in this folder are staged review artifacts only. None of these
 pending SQL files has been applied to production by this branch.
