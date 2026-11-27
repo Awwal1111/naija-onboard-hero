@@ -71,6 +71,7 @@ BEGIN
     url := 'https://jxybqmquymxkvxxpiuhv.supabase.co/functions/v1/' || p_function_name,
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
+      'apikey', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4eWJxbXF1eW14a3Z4eHBpdWh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1NTg2NTAsImV4cCI6MjA3MjEzNDY1MH0.muLG6PAzyEllY7WHbz_SnUCvwhISPqqaQn0L-kP0VdA',
       'x-internal-function-token', v_token
     ),
     body := '{}'::jsonb,
@@ -144,6 +145,7 @@ BEGIN
           url := 'https://jxybqmquymxkvxxpiuhv.supabase.co/functions/v1/developer-webhook',
           headers := jsonb_build_object(
             'Content-Type', 'application/json',
+            'apikey', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4eWJxbXF1eW14a3Z4eHBpdWh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1NTg2NTAsImV4cCI6MjA3MjEzNDY1MH0.muLG6PAzyEllY7WHbz_SnUCvwhISPqqaQn0L-kP0VdA',
             'x-internal-function-token', v_internal_token
           ),
           body := jsonb_build_object(
