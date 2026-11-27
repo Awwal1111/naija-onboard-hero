@@ -12,8 +12,24 @@ BEGIN
       'Private token for scheduled NaijaLancers Edge Function calls'
     );
   END IF;
+
+  SELECT regexp_replace(decrypted_secret, '^Bearer\\s+', '')
+  INTO v_anon_key
+  FROM vault.decrypted_secrets
+  WHERE name = 'weekly_digest_auth'
+  LIMIT 1;
+
+  IF v_anon_key IS NOT NULL AND NOT EXISTS (
+    SELECT 1 FROM vault.secrets WHERE name = 'naijalancers_internal_apikey'
+  ) THEN
+    PERFORM vault.create_secret(
+      v_anon_key,
+      'naijalancers_internal_apikey',
+      'Public project API key used as the Edge Function gateway apikey'
+    );
+  END IF;
 END;
-$$;
+$;
 
 CREATE OR REPLACE FUNCTION public.verify_internal_function_token(p_token text)
 RETURNS boolean
@@ -45,6 +61,7 @@ SET search_path = public, util, vault, net, pg_temp
 AS $$
 DECLARE
   v_token text;
+  v_anon_key text;
   v_request_id bigint;
 BEGIN
   IF p_function_name NOT IN (
@@ -67,11 +84,20 @@ BEGIN
     RETURN NULL;
   END IF;
 
+  SELECT decrypted_secret INTO v_anon_key
+  FROM vault.decrypted_secrets
+  WHERE name = 'naijalancers_internal_apikey'
+  LIMIT 1;
+  IF v_anon_key IS NULL THEN
+    RAISE WARNING 'Internal API key is missing; skipping %', p_function_name;
+    RETURN NULL;
+  END IF;
+
   v_request_id := net.http_post(
     url := 'https://jxybqmquymxkvxxpiuhv.supabase.co/functions/v1/' || p_function_name,
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
-      'apikey', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4eWJxbXF1eW14a3Z4eHBpdWh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1NTg2NTAsImV4cCI6MjA3MjEzNDY1MH0.muLG6PAzyEllY7WHbz_SnUCvwhISPqqaQn0L-kP0VdA',
+      'apikey', v_anon_key,
       'x-internal-function-token', v_token
     ),
     body := '{}'::jsonb,
@@ -120,11 +146,16 @@ DECLARE
   v_result jsonb;
   v_count integer := 0;
   v_internal_token text;
+  v_anon_key text;
 BEGIN
-  SELECT decrypted_secret
-  INTO v_internal_token
+  SELECT decrypted_secret INTO v_internal_token
   FROM vault.decrypted_secrets
   WHERE name = 'naijalancers_internal_function_token'
+  LIMIT 1;
+
+  SELECT decrypted_secret INTO v_anon_key
+  FROM vault.decrypted_secrets
+  WHERE name = 'naijalancers_internal_apikey'
   LIMIT 1;
 
   FOR v_escrow IN
@@ -140,12 +171,12 @@ BEGIN
     v_result := public.release_developer_escrow(v_escrow.developer_id, v_escrow.escrow_id);
     IF COALESCE((v_result->>'ok')::boolean, false) THEN
       v_count := v_count + 1;
-      IF v_internal_token IS NOT NULL THEN
+      IF v_internal_token IS NOT NULL AND v_anon_key IS NOT NULL THEN
         PERFORM net.http_post(
           url := 'https://jxybqmquymxkvxxpiuhv.supabase.co/functions/v1/developer-webhook',
           headers := jsonb_build_object(
             'Content-Type', 'application/json',
-            'apikey', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp4eWJxbXF1eW14a3Z4eHBpdWh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY1NTg2NTAsImV4cCI6MjA3MjEzNDY1MH0.muLG6PAzyEllY7WHbz_SnUCvwhISPqqaQn0L-kP0VdA',
+            'apikey', v_anon_key,
             'x-internal-function-token', v_internal_token
           ),
           body := jsonb_build_object(
