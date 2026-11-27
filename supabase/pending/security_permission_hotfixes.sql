@@ -29,8 +29,10 @@ GRANT EXECUTE ON FUNCTION public.get_public_profiles(uuid[]) TO service_role;
 
 -- 6) Protect privilege and deposit-baseline fields from direct browser edits.
 -- Wallet debit flows are deliberately NOT blocked here; ExpertVerification
--- currently performs a browser-side debit and must be migrated to a secure RPC
--- before adding balance guards.
+-- currently performs browser-side profile and wallet_transactions writes and
+-- must be migrated to a secure RPC before balance guards or this trigger are applied.
+-- The additional verification fields below also require migrating the current
+-- ExpertVerification submit/payment mutations to trusted RPCs first.
 CREATE OR REPLACE FUNCTION public.guard_profile_privilege_and_deposit_fields()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -56,6 +58,23 @@ BEGIN
       OR NEW.face_verified IS DISTINCT FROM OLD.face_verified
       OR NEW.identity_verified IS DISTINCT FROM OLD.identity_verified
       OR NEW.verification_status IS DISTINCT FROM OLD.verification_status
+      OR NEW.verification_payment_status IS DISTINCT FROM OLD.verification_payment_status
+      OR NEW.verification_level IS DISTINCT FROM OLD.verification_level
+      OR NEW.verification_reviewed_at IS DISTINCT FROM OLD.verification_reviewed_at
+      OR NEW.verification_reviewed_by IS DISTINCT FROM OLD.verification_reviewed_by
+      OR NEW.verification_submitted_at IS DISTINCT FROM OLD.verification_submitted_at
+      OR NEW.email_confirmed IS DISTINCT FROM OLD.email_confirmed
+      OR NEW.face_verified_at IS DISTINCT FROM OLD.face_verified_at
+      OR NEW.identity_verified_at IS DISTINCT FROM OLD.identity_verified_at
+      OR NEW.expert_level IS DISTINCT FROM OLD.expert_level
+      OR NEW.partner_id IS DISTINCT FROM OLD.partner_id
+      OR NEW.connections_count IS DISTINCT FROM OLD.connections_count
+      OR NEW.completed_jobs_count IS DISTINCT FROM OLD.completed_jobs_count
+      OR NEW.average_rating IS DISTINCT FROM OLD.average_rating
+      OR NEW.rating_count IS DISTINCT FROM OLD.rating_count
+      OR NEW.total_earnings IS DISTINCT FROM OLD.total_earnings
+      OR NEW.total_transactions IS DISTINCT FROM OLD.total_transactions
+      OR NEW.premium_subscribed_at IS DISTINCT FROM OLD.premium_subscribed_at
       OR NEW.risk_score IS DISTINCT FROM OLD.risk_score
       OR NEW.last_cusd_balance IS DISTINCT FROM OLD.last_cusd_balance
       OR NEW.last_usdt_balance IS DISTINCT FROM OLD.last_usdt_balance
