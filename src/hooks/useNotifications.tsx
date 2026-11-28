@@ -26,8 +26,9 @@ export const useNotifications = () => {
   useEffect(() => {
     if (user) {
       fetchNotifications()
-      subscribeToNotifications()
+      const unsubscribe = subscribeToNotifications()
       checkPushPermission()
+      return () => unsubscribe?.()
     }
   }, [user])
 
@@ -284,17 +285,25 @@ export const useNotifications = () => {
     try {
       // Egress optimization: drop heavy `metadata` column from list query
       // (fetch on demand when a notification is opened) and cap to 20 rows.
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('id,user_id,type,title,message,read_at,created_at')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(20)
+      const [{ data, error }, { count, error: countError }] = await Promise.all([
+        supabase
+          .from('notifications')
+          .select('id,user_id,type,title,message,read_at,created_at')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(20),
+        supabase
+          .from('notifications')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .is('read_at', null),
+      ])
 
       if (error) throw error
+      if (countError) throw countError
 
       setNotifications(data || [])
-      setUnreadCount(data?.filter(n => !n.read_at).length || 0)
+      setUnreadCount(count || 0)
     } catch (error) {
       console.error('Error fetching notifications:', error)
     } finally {
@@ -358,22 +367,39 @@ export const useNotifications = () => {
 
   const markAllAsRead = async () => {
     try {
-      const unreadIds = notifications.filter(n => !n.read_at).map(n => n.id)
-      if (unreadIds.length === 0) return
-
+      if (!user) return
+      const readAt = new Date().toISOString()
       const { error } = await supabase
         .from('notifications')
-        .update({ read_at: new Date().toISOString() })
-        .in('id', unreadIds)
+        .update({ read_at: readAt })
+        .eq('user_id', user.id)
+        .is('read_at', null)
 
       if (error) throw error
 
       setNotifications(prev =>
-        prev.map(n => ({ ...n, read_at: new Date().toISOString() }))
+        prev.map(n => n.read_at ? n : { ...n, read_at: readAt })
       )
       setUnreadCount(0)
     } catch (error) {
       console.error('Error marking all notifications as read:', error)
+    }
+  }
+
+  const deleteNotification = async (notificationId: string) => {
+    if (!user) return
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .delete()
+        .eq('id', notificationId)
+        .eq('user_id', user.id)
+      if (error) throw error
+      setNotifications(prev => prev.filter(n => n.id !== notificationId))
+      await fetchNotifications()
+    } catch (error) {
+      console.error('Error deleting notification:', error)
+      toast({ title: 'Could not delete notification', description: 'Please try again.', variant: 'destructive' })
     }
   }
 
@@ -448,6 +474,7 @@ export const useNotifications = () => {
     loading,
     markAsRead,
     markAllAsRead,
+    deleteNotification,
     createNotification,
     refetch: fetchNotifications,
     pushEnabled,
