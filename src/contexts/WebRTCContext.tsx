@@ -1158,7 +1158,9 @@ const WebRTCProviderInternal: React.FC<{ children: React.ReactNode }> = ({ child
       if (isInCallRef.current) {
         localStream?.getTracks().forEach(track => track.stop())
         remoteStream?.getTracks().forEach(track => track.stop())
-        screenStream?.getTracks().forEach(track => track.stop())
+        screenStreamRef.current?.getTracks().forEach(track => track.stop())
+        screenStreamRef.current = null
+        screenSenderRef.current = null
         peerConnection.current?.close()
       }
     }
