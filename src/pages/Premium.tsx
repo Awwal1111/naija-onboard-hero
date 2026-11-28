@@ -41,16 +41,17 @@ export default function Premium() {
   const showFxEstimate = currency !== "NC" && currency !== "NGN";
   const fxEstimateAvailable = !showFxEstimate || ratesAvailable;
   const accountModeLabel = mode === "client" ? "client" : mode === "freelancer" ? "freelancer" : "freelancer and client";
+  const premiumHeadline = mode === "client" ? "Hire with confidence." : mode === "both" ? "Grow your work. Hire with confidence." : "Earn more. Get hired faster.";
 
   const features = [
-    { icon: Sparkles, title: "Premium Crown Badge", desc: "Stand out everywhere on the platform with the gold Crown verified-pro badge." },
+    { icon: Sparkles, title: "Premium Crown Badge", desc: "Stand out with a gold Premium Crown badge. This is not the same as expert verification." },
     { icon: TrendingUp, title: "Priority Search Ranking", desc: "Your gigs, profile and experts appear above non-premium results — more visibility, more orders." },
     { icon: MessageSquare, title: "WhatsApp Direct Button", desc: "Show a WhatsApp shortcut on your profile so clients can reach you instantly." },
     { icon: Video, title: "Google Meet Link", desc: "Display a Google Meet link for instant video consultations from your profile." },
     { icon: Phone, title: "SMS Job Alerts", desc: "Get instant SMS when a client messages you or posts a matching job (10 NC/SMS — premium-only)." },
     { icon: Mail, title: "Email Notifications", desc: "Daily digest + instant emails for messages, orders, and job invites." },
     { icon: Zap, title: "Portfolio Videos", desc: "Upload videos to your portfolio (non-premium accounts are images only)." },
-    { icon: Star, title: "Trusted Pro Verification", desc: "Premium feeds into your Trust Score — clients see you as a vetted professional." },
+    { icon: Star, title: "Trust Score Support", desc: "Premium contributes to your Trust Score; expert verification remains a separate process." },
   ];
 
   return (
@@ -68,10 +69,10 @@ export default function Premium() {
             <Crown className="h-3 w-3 mr-1" /> Premium
           </Badge>
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">
-            Earn more. Get hired faster.
+            {premiumHeadline}
           </h1>
           <p className="text-muted-foreground max-w-xl mx-auto">
-            One subscription works across freelancer and client accounts. Your current account mode is set to {accountModeLabel}. The existing Premium benefits are primarily profile, visibility, and communication tools for freelancers; client-specific paid perks are not yet a separate plan.
+            One subscription works across freelancer and client accounts. Your current account mode is set to {accountModeLabel}. The current benefits mainly serve freelancer profiles and visibility; client accounts can subscribe, but there is no separate set of client-only Premium benefits yet.
           </p>
 
           {isPremium && expiresAt && (
@@ -113,7 +114,7 @@ export default function Premium() {
               {isPremium ? "Extend Premium" : "Subscribe Now"}
             </BrandButton>
             {user && (
-              <p className="text-xs text-muted-foreground">Wallet balance: NC {balance.toLocaleString()} ({formatPreferred(balance, false)})</p>
+              <p className="text-xs text-muted-foreground">Wallet balance: NC {balance.toLocaleString()}{currency !== "NC" ? ` (${formatPreferred(balance, false)})` : ""}</p>
             )}
           </CardContent>
         </Card>
