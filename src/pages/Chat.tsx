@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { ArrowLeft, Smile, Send, UserX, UserCheck, Circle, X, Check, CheckCheck, Image as ImageIcon, Loader2, Mic, Phone, Lock, Play, Pause, Video, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, Smile, Send, UserX, UserCheck, Circle, X, Check, CheckCheck, Image as ImageIcon, Loader2, Mic, Phone, Play, Pause, Video, ShieldCheck } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useVerification } from '@/hooks/useVerification'
