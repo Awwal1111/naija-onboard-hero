@@ -39,7 +39,7 @@ export const CreateClassDialog: React.FC<CreateClassDialogProps> = ({ open, onOp
     description: '',
     scheduled_start: '',
     duration_minutes: 60,
-    max_participants: 20,
+    max_participants: 8,
     is_free: true,
     price: 0,
     category: '',
@@ -174,7 +174,7 @@ export const CreateClassDialog: React.FC<CreateClassDialogProps> = ({ open, onOp
       description: '',
       scheduled_start: '',
       duration_minutes: 60,
-      max_participants: 20,
+      max_participants: 8,
       is_free: true,
       price: 0,
       category: '',
@@ -339,11 +339,10 @@ export const CreateClassDialog: React.FC<CreateClassDialogProps> = ({ open, onOp
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="3">3 people</SelectItem>
                   <SelectItem value="5">5 people</SelectItem>
+                  <SelectItem value="8">8 people</SelectItem>
                   <SelectItem value="10">10 people</SelectItem>
-                  <SelectItem value="20">20 people</SelectItem>
-                  <SelectItem value="30">30 people</SelectItem>
-                  <SelectItem value="50">50 people</SelectItem>
                 </SelectContent>
               </Select>
             </div>

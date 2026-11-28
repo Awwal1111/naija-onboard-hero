@@ -211,7 +211,7 @@ const ExpertClass = () => {
               classes={filterClasses(featuredClasses)}
               emptyIcon={Star}
               emptyTitle="No Featured Classes"
-              emptyMessage="Top-rated classes will appear here"
+              emptyMessage="Popular classes will appear here"
             />
           </TabsContent>
 
@@ -221,7 +221,7 @@ const ExpertClass = () => {
               classes={filterClasses(pastClasses)}
               emptyIcon={Calendar}
               emptyTitle="No Past Classes"
-              emptyMessage="Completed classes with recordings will appear here"
+              emptyMessage="Completed classes will appear here"
             />
           </TabsContent>
         </Tabs>

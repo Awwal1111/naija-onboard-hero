@@ -20,7 +20,6 @@ export interface ExpertClass {
   is_free: boolean
   price: number
   room_code: string
-  expert_pass: string | null
   category: string | null
   thumbnail_url: string | null
   recording_url: string | null
@@ -45,7 +44,7 @@ export const useExpertClasses = () => {
       
       const { data: classes, error } = await supabase
         .from('expert_classes')
-        .select('id, expert_id, title, description, class_type, status, room_code, expert_pass, scheduled_start, scheduled_end, actual_start, actual_end, duration_minutes, max_participants, current_participants, price, is_free, category, thumbnail_url, created_at')
+        .select('id, expert_id, title, description, class_type, status, room_code, scheduled_start, scheduled_end, actual_start, actual_end, duration_minutes, max_participants, current_participants, price, is_free, category, thumbnail_url, created_at')
         .eq('expert_id', user.id)
         .order('created_at', { ascending: false })
 
@@ -215,8 +214,7 @@ export const useExpertClasses = () => {
     mutationFn: async (classData: Partial<ExpertClass>) => {
       if (!user) throw new Error('Must be logged in')
 
-      const roomCode = `class-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-      const expertPass = Math.random().toString(36).substring(2, 14)
+      const roomCode = `class-${crypto.randomUUID()}`
 
       // Calculate scheduled_end based on scheduled_start + duration
       let scheduledEnd = null
@@ -236,14 +234,13 @@ export const useExpertClasses = () => {
           scheduled_start: classData.scheduled_start,
           scheduled_end: scheduledEnd,
           duration_minutes: classData.duration_minutes,
-          max_participants: classData.max_participants || 50,
+          max_participants: classData.max_participants || 8,
           current_participants: 0,
           is_free: classData.is_free,
           price: classData.price,
           category: classData.category,
           expert_id: user.id,
           room_code: roomCode,
-          expert_pass: expertPass,
         }])
         .select()
         .single()
@@ -267,89 +264,6 @@ export const useExpertClasses = () => {
     },
   })
 
-  // Join class mutation
-  const joinClassMutation = useMutation({
-    mutationFn: async (classId: string) => {
-      if (!user) throw new Error('Must be logged in')
-
-      const { error } = await supabase
-        .from('class_participants')
-        .insert({
-          class_id: classId,
-          user_id: user.id,
-          is_active: true,
-        })
-
-      if (error) throw error
-
-      // Increment participant count - fetch current, increment, update
-      const { data: classData } = await supabase
-        .from('expert_classes')
-        .select('current_participants')
-        .eq('id', classId)
-        .single()
-
-      if (classData) {
-        await supabase
-          .from('expert_classes')
-          .update({ current_participants: classData.current_participants + 1 })
-          .eq('id', classId)
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['expert-classes'] })
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      })
-    },
-  })
-
-  // Leave class mutation
-  const leaveClassMutation = useMutation({
-    mutationFn: async (classId: string) => {
-      if (!user) throw new Error('Must be logged in')
-
-      const { error } = await supabase
-        .from('class_participants')
-        .update({
-          left_at: new Date().toISOString(),
-          is_active: false,
-        })
-        .eq('class_id', classId)
-        .eq('user_id', user.id)
-
-      if (error) throw error
-
-      // Decrement participant count - fetch current, decrement, update
-      const { data: classData } = await supabase
-        .from('expert_classes')
-        .select('current_participants')
-        .eq('id', classId)
-        .single()
-
-      if (classData && classData.current_participants > 0) {
-        await supabase
-          .from('expert_classes')
-          .update({ current_participants: classData.current_participants - 1 })
-          .eq('id', classId)
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['expert-classes'] })
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      })
-    },
-  })
-
   return {
     myClasses,
     liveClasses,
@@ -358,7 +272,5 @@ export const useExpertClasses = () => {
     pastClasses,
     isLoading: isLoadingMy || isLoadingLive || isLoadingUpcoming || isLoadingFeatured || isLoadingPast,
     createClass: createClassMutation.mutate,
-    joinClass: joinClassMutation.mutate,
-    leaveClass: leaveClassMutation.mutate,
   }
 }

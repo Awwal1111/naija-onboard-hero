@@ -124,7 +124,7 @@ export const ClassCard: React.FC<ClassCardProps> = ({ classItem }) => {
           disabled={!isExpert && !canJoin}
         >
           <Video className="h-3.5 w-3.5 mr-1.5" />
-          {isExpert ? 'Start Class' : canJoin ? 'Join Waiting Room' : 'Set Reminder'}
+          {isExpert ? 'Start Class' : canJoin ? 'Join Waiting Room' : 'Opens 10 min before'}
         </Button>
       )
     }
