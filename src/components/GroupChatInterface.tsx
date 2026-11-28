@@ -1,17 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Send, Paperclip, Users, Pin, X, Check, CheckCheck, MoreVertical, MessageSquare, MapPin } from 'lucide-react'
+import { ArrowLeft, Send, Paperclip, Users, Pin, X, Check, MessageSquare } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/use-toast'
@@ -25,6 +19,7 @@ interface GroupMessage {
   sender_id: string
   message_type: string
   media_url?: string
+  media_type?: string | null
   is_pinned: boolean
   created_at: string
   profiles?: {
@@ -84,10 +79,12 @@ const GroupChatInterface: React.FC = () => {
         typingTimeoutRef.current = null
       }
       typingChannelRef.current = null
-      setTypingUsers(new Set())
-      if (previewUrl) URL.revokeObjectURL(previewUrl)
     }
   }, [groupId, user?.id])
+
+  useEffect(() => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl)
+  }, [previewUrl])
 
   useEffect(() => {
     scrollToBottom()
