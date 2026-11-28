@@ -44,16 +44,53 @@ const ClassRoom = () => {
   const [waitingForExpert, setWaitingForExpert] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [remotePeers, setRemotePeers] = useState<Map<string, RemotePeer>>(new Map())
+  const [accessGranted, setAccessGranted] = useState(false)
+  const [needsConfirm, setNeedsConfirm] = useState(false)
+  const [blocked, setBlocked] = useState<{ title: string; message: string; wallet?: boolean } | null>(null)
 
   const localStreamRef = useRef<MediaStream | null>(null)
   const localVideoRef = useRef<HTMLVideoElement | null>(null)
   const peersRef = useRef<Map<string, RTCPeerConnection>>(new Map())
   const channelRef = useRef<any>(null)
-  const hasJoinedRef = useRef(false)
   const userIdRef = useRef<string | null>(null)
   const displayNameRef = useRef<string>('Participant')
 
   const isExpert = classData?.expert_id === user?.id
+
+  // ---------- Ask the server for permission to enter (status, capacity, payment) ----------
+  const requestAccess = useCallback(async () => {
+    if (!classId) return
+    const { data, error } = await supabase.rpc('join_class', { p_class_id: classId })
+    const result = (data || {}) as any
+    if (error) {
+      setBlocked({ title: 'Could not join', message: 'Something went wrong. Please try again.' })
+      return
+    }
+    switch (result.status) {
+      case 'ok':
+        setBlocked(null); setWaitingForExpert(false); setAccessGranted(true); break
+      case 'waiting':
+        setBlocked(null); setWaitingForExpert(true); setAccessGranted(false); break
+      case 'too_early':
+        setBlocked({ title: 'Class has not opened yet', message: 'The waiting room opens 10 minutes before the start time.' }); break
+      case 'expired':
+        setBlocked({ title: 'Class closed', message: 'This class did not start and has been closed.' }); break
+      case 'ended':
+        setBlocked({ title: 'Class ended', message: 'This class has ended.' }); break
+      case 'full':
+        setBlocked({ title: 'Class is full', message: `This class is full (${result.max} people).` }); break
+      case 'insufficient_balance':
+        setBlocked({
+          title: 'Not enough balance',
+          message: `This class costs ${Number(result.price).toLocaleString()} NC and your withdrawable balance is too low.`,
+          wallet: true,
+        }); break
+      case 'auth_required':
+        navigate('/login'); break
+      default:
+        setBlocked({ title: 'Class unavailable', message: 'This class is not available right now.' })
+    }
+  }, [classId, navigate])
 
   // ---------- Fetch class + expert profile ----------
   useEffect(() => {
@@ -64,7 +101,7 @@ const ClassRoom = () => {
       setIsLoading(true)
       const { data: classInfo, error } = await supabase
         .from('expert_classes')
-        .select('*')
+        .select('id, expert_id, title, status, scheduled_start, duration_minutes, price, is_free, max_participants')
         .eq('id', classId)
         .single()
 
@@ -92,32 +129,29 @@ const ClassRoom = () => {
         ? `${expertData?.full_name || 'Expert'} (Host)`
         : myProfile?.full_name || 'Participant'
 
-      if (!userIsExpert && classInfo.status === 'scheduled') {
-        setWaitingForExpert(true)
-      } else {
-        setWaitingForExpert(false)
-      }
-      setIsLoading(false)
+      setWaitingForExpert(false)
 
-      if (!userIsExpert && !hasJoinedRef.current) {
-        hasJoinedRef.current = true
-        try {
-          await supabase
-            .from('class_participants')
-            .upsert({
-              class_id: classId,
-              user_id: user.id,
-              is_active: true,
-              joined_at: new Date().toISOString(),
-            }, { onConflict: 'class_id,user_id' })
-        } catch (e) {
-          console.log('Join error:', e)
+      // Paid classes: ask for confirmation first, unless this person already paid
+      if (!userIsExpert && !classInfo.is_free && Number(classInfo.price) > 0) {
+        const { data: mine } = await supabase
+          .from('class_participants')
+          .select('amount_paid')
+          .eq('class_id', classId)
+          .eq('user_id', user.id)
+          .maybeSingle()
+        if (!mine || Number(mine.amount_paid) <= 0) {
+          setNeedsConfirm(true)
+          setIsLoading(false)
+          return
         }
       }
+
+      await requestAccess()
+      setIsLoading(false)
     }
 
     fetchData()
-  }, [classId, user])
+  }, [classId, user, requestAccess])
 
   // ---------- Listen for class status changes ----------
   useEffect(() => {
@@ -129,16 +163,20 @@ const ClassRoom = () => {
         { event: 'UPDATE', schema: 'public', table: 'expert_classes', filter: `id=eq.${classId}` },
         (payload) => {
           const updated = payload.new as any
-          setClassData(updated)
+          setClassData((prev: any) => ({ ...prev, ...updated }))
           if (updated.status === 'live' && waitingForExpert) {
-            setWaitingForExpert(false)
             toast({ title: 'Class is starting!', description: 'The expert has joined' })
+            requestAccess()
+          }
+          if ((updated.status === 'ended' || updated.status === 'cancelled') && userIdRef.current !== updated.expert_id) {
+            toast({ title: 'Class ended' })
+            navigate('/expert-class')
           }
         }
       )
       .subscribe()
     return () => { supabase.removeChannel(channel) }
-  }, [classId, waitingForExpert])
+  }, [classId, waitingForExpert, requestAccess, navigate])
 
   // ---------- WebRTC: create a peer connection for a remote user ----------
   const createPeerConnection = useCallback((remoteUserId: string, remoteName: string, remoteAvatar: string | undefined, remoteIsExpert: boolean): RTCPeerConnection => {
@@ -199,7 +237,7 @@ const ClassRoom = () => {
 
   // ---------- Initialize media + signaling ----------
   useEffect(() => {
-    if (isLoading || !classData || waitingForExpert || !user) return
+    if (isLoading || !classData || waitingForExpert || !accessGranted || !user) return
     let cancelled = false
 
     const init = async () => {
@@ -229,7 +267,7 @@ const ClassRoom = () => {
 
         // Setup signaling channel
         const channel = supabase.channel(`classroom-${classId}`, {
-          config: { presence: { key: user.id } },
+          config: { presence: { key: user.id }, private: true },
         })
         channelRef.current = channel
 
@@ -245,7 +283,7 @@ const ClassRoom = () => {
                 id: key,
                 name: p.displayName || 'Participant',
                 avatar: p.avatarUrl,
-                isExpert: !!p.isExpert,
+                isExpert: key === classData.expert_id,
               })
             }
           })
@@ -280,7 +318,7 @@ const ClassRoom = () => {
             payload.from,
             fromPresence?.displayName || 'Participant',
             fromPresence?.avatarUrl,
-            !!fromPresence?.isExpert
+            payload.from === classData.expert_id
           )
           try {
             await pc.setRemoteDescription(new RTCSessionDescription(payload.sdp))
@@ -334,6 +372,10 @@ const ClassRoom = () => {
         })
 
         await channel.subscribe(async (status) => {
+          if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            toast({ title: 'Could not enter the class room', description: 'Please check your connection and try again.', variant: 'destructive' })
+            return
+          }
           if (status === 'SUBSCRIBED') {
             await channel.track({
               displayName: displayNameRef.current,
@@ -361,7 +403,7 @@ const ClassRoom = () => {
       cancelled = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoading, classData?.id, waitingForExpert, user?.id])
+  }, [isLoading, classData?.id, waitingForExpert, accessGranted, user?.id])
 
   // ---------- Cleanup ----------
   const cleanup = useCallback(() => {
@@ -395,6 +437,24 @@ const ClassRoom = () => {
     return () => cleanup()
   }, [cleanup])
 
+  // Mark the participant as left when they close the tab or navigate away
+  useEffect(() => {
+    const markLeft = () => {
+      if (!classId || !user || !classData || classData.expert_id === user.id) return
+      supabase
+        .from('class_participants')
+        .update({ is_active: false, left_at: new Date().toISOString() })
+        .eq('class_id', classId)
+        .eq('user_id', user.id)
+        .then(() => {})
+    }
+    window.addEventListener('pagehide', markLeft)
+    return () => {
+      window.removeEventListener('pagehide', markLeft)
+      markLeft()
+    }
+  }, [classId, user?.id, classData?.expert_id])
+
   // ---------- Controls ----------
   const toggleMute = () => {
     const audioTrack = localStreamRef.current?.getAudioTracks()[0]
@@ -416,7 +476,7 @@ const ClassRoom = () => {
     if (isScreenSharing) {
       // Revert to camera
       try {
-        const camStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+        const camStream = await navigator.mediaDevices.getUserMedia({ video: true })
         const newVideoTrack = camStream.getVideoTracks()[0]
         peersRef.current.forEach(pc => {
           const sender = pc.getSenders().find(s => s.track?.kind === 'video')
@@ -496,6 +556,50 @@ const ClassRoom = () => {
         <div className="text-center">
           <p className="text-muted-foreground">Class not found</p>
           <Button className="mt-4" onClick={() => navigate('/expert-class')}>Back to Classes</Button>
+        </div>
+      </div>
+    )
+  }
+
+  if (blocked) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <div className="text-center max-w-md">
+          <h2 className="text-xl font-bold mb-2">{blocked.title}</h2>
+          <p className="text-muted-foreground mb-6">{blocked.message}</p>
+          <div className="flex gap-2 justify-center">
+            {blocked.wallet && <Button onClick={() => navigate('/wallet')}>Go to wallet</Button>}
+            <Button variant="outline" onClick={() => navigate('/expert-class')}>Back to classes</Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (needsConfirm) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <div className="text-center max-w-md">
+          <h2 className="text-xl font-bold mb-2">{classData.title}</h2>
+          <p className="text-muted-foreground mb-2">
+            This is a paid class: <span className="font-semibold">{Number(classData.price).toLocaleString()} NC</span>.
+          </p>
+          <p className="text-muted-foreground mb-6 text-sm">
+            You are charged once, when the class goes live. You will not be charged again if you rejoin.
+          </p>
+          <div className="flex gap-2 justify-center">
+            <Button
+              onClick={async () => {
+                setNeedsConfirm(false)
+                setIsLoading(true)
+                await requestAccess()
+                setIsLoading(false)
+              }}
+            >
+              Join for {Number(classData.price).toLocaleString()} NC
+            </Button>
+            <Button variant="outline" onClick={() => navigate('/expert-class')}>Cancel</Button>
+          </div>
         </div>
       </div>
     )
