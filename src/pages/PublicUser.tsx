@@ -83,6 +83,13 @@ export default function PublicUser() {
     ? user.bio.slice(0, 155)
     : `${displayName} is a member of NaijaLancers, Africa's freelancing platform powered by Celo.`;
   const image = user.profile_picture_url || 'https://naijalancers.name.ng/logo.png';
+  // Avoid asking search engines to index empty member cards. The sitemap uses
+  // the same quality threshold so crawl discovery and page directives agree.
+  const isIndexableProfile = Boolean(
+    user.full_name?.trim() &&
+    user.profession?.trim() &&
+    ((user.bio?.trim().length || 0) >= 60 || user.profile_picture_url?.trim())
+  );
   const location = [user.area, user.lga_name, user.state_name].filter(Boolean).join(', ');
 
   const structuredData = {
@@ -101,6 +108,7 @@ export default function PublicUser() {
       <Helmet>
         <title>{title}</title>
         <meta name="description" content={description} />
+        <meta name="robots" content={isIndexableProfile ? "index, follow" : "noindex, follow"} />
         <link rel="canonical" href={canonicalUrl} />
         <meta property="og:title" content={title} />
         <meta property="og:description" content={description} />
