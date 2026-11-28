@@ -38,8 +38,11 @@ Deno.serve(async (req) => {
 
   // Stable ordering makes range pagination deterministic across requests.
   const [expertsRes, gigsRes, jobsRes, coursesRes, usersRes] = await Promise.all([
-    fetchAllRows((from, to) => supabase.from("profiles").select("user_id, username, full_name, updated_at")
-      .eq("is_expert", true).not("full_name", "is", null).neq("full_name", "")
+    fetchAllRows((from, to) => supabase.from("profiles")
+      .select("user_id, username, full_name, profession, bio, profile_picture_url, updated_at")
+      .eq("is_expert", true)
+      .not("full_name", "is", null).neq("full_name", "")
+      .not("profession", "is", null).neq("profession", "")
       .order("user_id").range(from, to)),
     fetchAllRows((from, to) => supabase.from("jobs_services").select("id, updated_at")
       .eq("status", "active").order("id").range(from, to)),
@@ -112,8 +115,12 @@ Deno.serve(async (req) => {
   </url>`);
   }
 
-  // Expert profiles
+  // Expert profiles: include only profiles with enough public professional detail
+  // to be useful in search. PublicExpert applies the same noindex quality rule.
   for (const expert of expertsRes.data || []) {
+    const hasUsefulBio = (expert.bio?.trim().length || 0) >= 60;
+    const hasProfileImage = Boolean(expert.profile_picture_url?.trim());
+    if (!expert.profession?.trim() || (!hasUsefulBio && !hasProfileImage)) continue;
     const lastmod = expert.updated_at?.split("T")[0] || today;
     urls.push(`  <url>
     <loc>${baseUrl}/p/expert/${encodeURIComponent(expert.username || expert.user_id)}</loc>
