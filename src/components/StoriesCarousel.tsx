@@ -514,7 +514,7 @@ const StoriesCarousel: React.FC<StoriesCarouselProps> = ({ onCreateStory }) => {
                       } else {
                         const { data: newChat } = await supabase
                           .from('chats')
-                          .insert({ user1_id: user?.id, user2_id: viewingStory.user_id })
+                          .insert({ user1_id: [user!.id, viewingStory.user_id].sort()[0], user2_id: [user!.id, viewingStory.user_id].sort()[1] })
                           .select()
                           .single()
 
