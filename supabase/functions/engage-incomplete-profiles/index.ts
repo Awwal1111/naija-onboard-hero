@@ -37,6 +37,14 @@ serve(async (req) => {
   }
 
   try {
+    // Scheduled/internal job only: block public callers from bulk messaging.
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+    const bearer = (req.headers.get('Authorization') ?? '').replace(/^Bearer\\s+/i, '');
+    if (!serviceRoleKey || bearer !== serviceRoleKey) {
+      return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -175,6 +183,18 @@ serve(async (req) => {
       );
     }
 
+    // These are promotional nudges: require marketing consent, and require
+    // the separate SMS opt-in before any paid SMS is sent.
+    const preferenceByUser = new Map<string, { marketing_updates_enabled: boolean; email_enabled: boolean; sms_enabled: boolean }>();
+    if (userIds.length > 0) {
+      const { data: preferences, error: preferenceError } = await supabase
+        .from('notification_preferences')
+        .select('user_id, marketing_updates_enabled, email_enabled, sms_enabled')
+        .in('user_id', userIds);
+      if (preferenceError) throw preferenceError;
+      for (const preference of preferences || []) preferenceByUser.set(preference.user_id, preference);
+    }
+
     // Check for recent engagement notifications to avoid spamming
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     
@@ -183,6 +203,12 @@ serve(async (req) => {
     const results: any[] = [];
 
     for (const user of incompleteUsers) {
+      const preference = preferenceByUser.get(user.user_id);
+      if (preference?.marketing_updates_enabled !== true) {
+        console.log('[INCOMPLETE-PROFILES] Marketing opt-in missing; skipping', user.user_id);
+        continue;
+      }
+
       // Check if we already notified this user recently
       const { data: recentNotif } = await supabase
         .from('notifications')
@@ -202,7 +228,7 @@ serve(async (req) => {
       const personalizedMessage = generatePersonalizedMessage(user);
 
       // Send email notification
-      if (user.email) {
+      if (user.email && preference.email_enabled === true) {
         try {
           await supabase.functions.invoke('send-notification', {
             body: {
@@ -230,7 +256,7 @@ serve(async (req) => {
 
       // Send SMS if phone is available and user has SMS alerts enabled
       // SMS is charged: 10 NC Nigeria, 25 NC international
-      if (user.phone_number) {
+      if (user.phone_number && preference.sms_enabled === true) {
         try {
           const { data: smsResult } = await supabase.functions.invoke('send-sms', {
             body: {
