@@ -46,7 +46,10 @@ const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined
 export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
   const [currency, setCurrencyState] = useState<CurrencyCode>(() => {
     const saved = localStorage.getItem('preferred_currency') as CurrencyCode
-    return saved && CURRENCIES[saved] ? saved : 'NC'
+    const explicitlyChosen = localStorage.getItem('preferred_currency_explicit_v1') === 'true'
+    // NC was the historical database default, not necessarily a user choice.
+    // Treat an unconfirmed legacy NC value as the Nigeria-first display default.
+    return saved && CURRENCIES[saved] && (saved !== 'NC' || explicitlyChosen) ? saved : 'NGN'
   })
   const [userId, setUserId] = useState<string | null>(null)
   const [liveRates, setLiveRates] = useState<Record<string, number> | null>(() => {
@@ -62,9 +65,10 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
     try { return JSON.parse(localStorage.getItem('naijalancers_fx_rates_v1') || 'null')?.updatedAt || null } catch { return null }
   })
   const ratesAvailable = !!liveRates
-  const [hasExplicitChoice, setHasExplicitChoice] = useState<boolean>(
-    () => !!localStorage.getItem('preferred_currency')
-  )
+  const [hasExplicitChoice, setHasExplicitChoice] = useState<boolean>(() => {
+    const saved = localStorage.getItem('preferred_currency') as CurrencyCode | null
+    return !!saved && (saved !== 'NC' || localStorage.getItem('preferred_currency_explicit_v1') === 'true')
+  })
 
   // Fetch current indicative NGN-based FX rates. NC is an internal display unit
   // pegged 1:1 to NGN; these rates are never used for charges or settlement.
@@ -138,7 +142,9 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
           return
         }
 
-        if (validProfilePreference) {
+        // Ignore legacy NC defaults so first-time users can receive a sensible
+        // country-based display currency. Non-NC profile values remain respected.
+        if (validProfilePreference && validProfilePreference !== 'NC') {
           setCurrencyState(validProfilePreference)
           localStorage.setItem('preferred_currency', validProfilePreference)
           setHasExplicitChoice(true)
@@ -165,6 +171,11 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
       if (next && CURRENCIES[next]) {
         setCurrencyState(next)
         localStorage.setItem('detected_currency_v1', next)
+        localStorage.setItem('preferred_currency', next)
+        // Keep the profile's display preference aligned with the detected country.
+        if (userId) {
+          void supabase.from('profiles').update({ preferred_currency: next } as any).eq('user_id', userId)
+        }
       }
     }
     try {
@@ -185,11 +196,12 @@ export const CurrencyProvider = ({ children }: { children: ReactNode }) => {
       .catch(() => {})
       .finally(() => clearTimeout(tid))
     return () => { cancelled = true; ctrl.abort() }
-  }, [hasExplicitChoice])
+  }, [hasExplicitChoice, userId])
 
   const setCurrency = async (code: CurrencyCode) => {
     setCurrencyState(code)
     localStorage.setItem('preferred_currency', code)
+    localStorage.setItem('preferred_currency_explicit_v1', 'true')
     setHasExplicitChoice(true)
 
     // Save to profile if authenticated
