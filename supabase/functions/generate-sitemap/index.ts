@@ -38,17 +38,25 @@ Deno.serve(async (req) => {
 
   // Stable ordering makes range pagination deterministic across requests.
   const [expertsRes, gigsRes, jobsRes, coursesRes, usersRes] = await Promise.all([
-    fetchAllRows((from, to) => supabase.from("profiles").select("user_id, username, updated_at")
-      .eq("is_expert", true).order("user_id").range(from, to)),
+    fetchAllRows((from, to) => supabase.from("profiles").select("user_id, username, full_name, updated_at")
+      .eq("is_expert", true).not("full_name", "is", null).neq("full_name", "")
+      .order("user_id").range(from, to)),
     fetchAllRows((from, to) => supabase.from("jobs_services").select("id, updated_at")
       .eq("status", "active").order("id").range(from, to)),
+    // PublicJob and get_public_job only expose jobs with status='open'. Keep the
+    // sitemap aligned with that public visibility rule so we don't publish dead URLs.
     fetchAllRows((from, to) => supabase.from("job_posts").select("id, updated_at")
-      .eq("status", "active").order("id").range(from, to)),
+      .eq("status", "open").order("id").range(from, to)),
     fetchAllRows((from, to) => supabase.from("courses").select("id, updated_at")
       .eq("status", "active").order("id").range(from, to)),
-    // Generated placeholder usernames are not useful public landing pages.
-    fetchAllRows((from, to) => supabase.from("profiles").select("username, updated_at")
-      .not("username", "is", null).not("username", "ilike", "user-%").eq("is_expert", false)
+    // Only include member profiles with enough public professional information
+    // to be useful as search landing pages. The same quality rule is applied
+    // on the profile page via its robots meta tag.
+    fetchAllRows((from, to) => supabase.from("profiles")
+      .select("username, full_name, profession, bio, profile_picture_url, updated_at")
+      .not("username", "is", null).not("username", "ilike", "user-%")
+      .not("full_name", "is", null).neq("full_name", "")
+      .eq("is_expert", false)
       .order("username").range(from, to)),
   ]);
 
@@ -150,7 +158,12 @@ Deno.serve(async (req) => {
 
   // Public member profiles (/u/:username) — non-expert members
   for (const u of usersRes.data || []) {
-    if (!u.username) continue;
+    if (!u.username || !u.full_name?.trim()) continue;
+    const hasProfession = Boolean(u.profession?.trim());
+    const hasUsefulBio = (u.bio?.trim().length || 0) >= 60;
+    const hasProfileImage = Boolean(u.profile_picture_url?.trim());
+    // A name plus a professional description is the minimum useful member page.
+    if (!hasProfession || (!hasUsefulBio && !hasProfileImage)) continue;
     const lastmod = u.updated_at?.split("T")[0] || today;
     urls.push(`  <url>
     <loc>${baseUrl}/u/${encodeURIComponent(u.username)}</loc>
