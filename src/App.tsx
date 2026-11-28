@@ -2,7 +2,7 @@ import { lazy, Suspense, useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { MiniPayAuthWrapper } from "@/components/MiniPayAuthWrapper";
 import { DeferredManagers } from "@/components/DeferredManagers";
@@ -17,6 +17,7 @@ import GlobalDepositPrompt from "@/components/GlobalDepositPrompt";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { detectMiniPaySync } from "@/lib/minipay";
 import { useOneSignalPush } from "@/hooks/useOneSignalPush";
+import { trackAmplitudeEvent } from "@/lib/amplitude";
 
 import { lazyWithRetry } from "@/utils/chunkErrorHandler";
 import { RefreshCw } from "lucide-react";
@@ -208,6 +209,17 @@ const SmartAIAssistant = lazy(lazyWithRetry(() => import("@/components/SmartAIAs
 // SYNC detection at module load
 const isMiniPayEnv = detectMiniPaySync().isMiniPay;
 
+
+const AnalyticsRouteTracker = () => {
+  const location = useLocation();
+
+  useEffect(() => {
+    // Track route changes only; never attach query strings or user-entered content.
+    trackAmplitudeEvent('page_viewed', { path: location.pathname });
+  }, [location.pathname]);
+
+  return null;
+};
 
 const OneSignalInitializer = () => {
   useOneSignalPush();
