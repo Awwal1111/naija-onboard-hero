@@ -48,8 +48,6 @@ const Dashboard = () => {
     productsCreated: 0,
     productSales: 0,
     productRevenue: 0,
-    fundraisingsCreated: 0,
-    fundraisingRaised: 0,
     classesCreated: 0,
     classParticipants: 0,
     connectionsCount: 0,
@@ -93,8 +91,6 @@ const Dashboard = () => {
         courseEnrollmentsRes,
         productsCountRes,
         productPurchasesRes,
-        fundraisingsCountRes,
-        contributionsRes,
         classesCountRes,
         classParticipantsCountRes,
         ratingsRes
@@ -109,8 +105,6 @@ const Dashboard = () => {
         supabase.from('course_enrollments').select('amount, courses!inner(user_id)').eq('courses.user_id', user?.id),
         supabase.from('digital_products').select('*', { count: 'exact', head: true }).eq('user_id', user?.id),
         supabase.from('digital_product_purchases').select('amount, digital_products!inner(user_id)').eq('digital_products.user_id', user?.id),
-        supabase.from('fundraisings').select('*', { count: 'exact', head: true }).eq('user_id', user?.id),
-        supabase.from('fundraising_contributions').select('amount, fundraisings!inner(user_id)').eq('fundraisings.user_id', user?.id),
         supabase.from('expert_classes').select('*', { count: 'exact', head: true }).eq('expert_id', user?.id),
         supabase.from('class_participants').select('*', { count: 'exact', head: true }).eq('expert_classes.expert_id', user?.id),
         supabase.from('expert_ratings').select('rating').eq('expert_id', user?.id)
@@ -131,7 +125,6 @@ const Dashboard = () => {
       
       const courseRevenue = (courseEnrollmentsRes.data || []).reduce((sum, e) => sum + (e.amount || 0), 0);
       const productRevenue = (productPurchasesRes.data || []).reduce((sum, p) => sum + (p.amount || 0), 0);
-      const fundraisingRaised = (contributionsRes.data || []).reduce((sum, c) => sum + (c.amount || 0), 0);
       const ratings = ratingsRes.data || [];
       const avgRating = ratings.length ? ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length : 0;
 
@@ -153,8 +146,6 @@ const Dashboard = () => {
         productsCreated: productsCountRes.count || 0,
         productSales: (productPurchasesRes.data || []).length,
         productRevenue,
-        fundraisingsCreated: fundraisingsCountRes.count || 0,
-        fundraisingRaised,
         classesCreated: classesCountRes.count || 0,
         classParticipants: classParticipantsCountRes.count || 0,
         connectionsCount: profileData?.connections_count || 0,
@@ -201,7 +192,6 @@ const Dashboard = () => {
       const revenueBreakdown = [
         { name: 'Courses', value: courseRevenue },
         { name: 'Products', value: productRevenue },
-        { name: 'Fundraising', value: fundraisingRaised }
       ].filter(item => item.value > 0);
 
       setCharts({ earningsTrend, engagementTrend, contentBreakdown, revenueBreakdown });
@@ -225,7 +215,6 @@ const Dashboard = () => {
     { label: 'My Courses', path: '/courses', icon: GraduationCap, count: stats.coursesCreated, color: 'bg-orange-500/10 text-orange-500' },
     { label: 'My Products', path: '/digital-products', icon: ShoppingBag, count: stats.productsCreated, color: 'bg-green-500/10 text-green-500' },
     { label: 'My Classes', path: '/experts', icon: Video, count: stats.classesCreated, color: 'bg-purple-500/10 text-purple-500' },
-    { label: 'Fundraising', path: '/fundraising', icon: Heart, count: stats.fundraisingsCreated, color: 'bg-red-500/10 text-red-500' },
     { label: 'Wallet', path: '/profile', icon: Wallet, count: stats.walletBalance, color: 'bg-emerald-500/10 text-emerald-500' }
   ];
 

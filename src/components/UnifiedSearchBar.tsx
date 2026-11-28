@@ -16,7 +16,6 @@ const categoryIcons = {
   hashtag: Hash,
   location: MapPin,
   course: GraduationCap,
-  campaign: Heart,
   product: ShoppingBag,
   emergency: AlertCircle,
   class: Video,
@@ -32,7 +31,6 @@ const categoryLabels = {
   hashtag: '#️⃣ Hashtags',
   location: '📍 Locations',
   course: '📚 Courses',
-  campaign: '❤️ Fundraising',
   product: '🛒 Digital Products',
   emergency: '🚨 Emergency Help',
   class: '🎥 Expert Classes',
@@ -40,7 +38,7 @@ const categoryLabels = {
   business: '🏢 Businesses',
 };
 
-const categoryOrder = ['user', 'expert', 'job', 'gig', 'post', 'hashtag', 'course', 'class', 'product', 'campaign', 'location', 'emergency'];
+const categoryOrder = ['user', 'expert', 'job', 'gig', 'post', 'hashtag', 'course', 'class', 'product', 'location', 'emergency'];
 
 const TRENDING_SEARCHES = ['Graphic designer', 'Logo design', 'Frontend developer', 'Video editor', 'Writer', 'Virtual assistant'];
 

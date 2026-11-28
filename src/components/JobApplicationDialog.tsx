@@ -90,32 +90,6 @@ const JobApplicationDialog: React.FC<JobApplicationDialogProps> = ({
 
       if (applicationError) throw applicationError
 
-      // Get applicant name for notification
-      const { data: applicantProfile } = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('user_id', user.id)
-        .single()
-
-      // Notify the job poster about the new application
-      await supabase.functions.invoke('send-notification', {
-        body: {
-          userId: jobPost.user_id,
-          type: 'job_application',
-          title: 'New Job Application! 📄',
-          message: `${applicantProfile?.full_name || 'Someone'} applied for "${jobPost.title}"`,
-          metadata: {
-            job_post_id: jobPost.id,
-            application_id: application.id,
-            applicant_id: user.id,
-            applicant_name: applicantProfile?.full_name,
-            job_title: jobPost.title
-          },
-          sendEmail: true,
-          emailTemplate: 'general'
-        }
-      })
-
       toast({
         title: "Application submitted successfully!",
         description: `Your application for "${jobPost.title}" has been sent to ${jobPost.profiles?.full_name || 'the employer'}.`,

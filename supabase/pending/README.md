@@ -33,7 +33,6 @@ would fail after the trigger is enabled. Migrate these callers to trusted RPCs f
 - `src/hooks/useWorkDiary.tsx`
 - `src/hooks/useReferralTasks.tsx`
 - `src/pages/Donations.tsx`
-- `src/pages/Fundraising.tsx`
 - `src/pages/ExpertVerification.tsx`
 - `src/components/ExpertVerificationSection.tsx`
 - `src/components/experts/ExpertVerificationHub.tsx`
@@ -63,3 +62,96 @@ RPCs, then revoke client INSERT as well.
 
 Mini-app NC payouts are no longer accepted from the user browser. Developers
 must issue NC rewards from their server using the Developer API.
+
+
+## SafePay escrow release hardening
+`security_escrow_release_hardening.sql` replaces manual release, cancellation,
+automatic release, and dispute settlement with fail-closed escrow checks. A
+payout or refund is rejected when the buyer's `user_wallets.escrow_hold` is
+missing or smaller than the transaction amount. Automatic release skips and
+logs inconsistent rows rather than paying them.
+
+Before applying:
+- Reconcile active SafePay rows against the original wallet debit and hold ledger.
+- Review rows whose aggregate `escrow_hold` is below the sum of active SafePay amounts.
+- Keep direct browser INSERT/UPDATE on `safepay_transactions` revoked using
+  `security_permission_hotfixes.sql`.
+
+## Gig-order escrow and status hardening
+`security_gig_order_escrow_hardening.sql` introduces a private per-order escrow
+hold ledger. The trusted `place_gig_order` RPC writes the hold in the same
+transaction as the buyer debit. Completion, cancellation, and milestone
+settlement require and consume that hold. The frontend now calls
+`transition_gig_order` instead of updating `gig_orders` directly, allowing
+browser UPDATE privileges to be revoked.
+
+Important compatibility requirement:
+- Existing open orders have no private hold row and will fail closed after this
+  file is applied. Reconcile each order against independent wallet evidence and
+  create a verified hold row manually; do not bulk-backfill from
+  `wallet_transactions`, because authenticated users can still insert their own
+  ledger rows.
+- Confirm every non-UI writer of `gig_orders` is a trusted SECURITY DEFINER
+  function before applying the UPDATE revoke.
+- Test seller acceptance, work start, delivery, buyer revision requests,
+  cancellation, full completion, and each milestone release.
+
+## Profile guard follow-up
+`security_permission_hotfixes.sql` now also protects verification payment and
+review fields, email confirmation, partner assignment, computed expert level,
+and profile aggregates. The current ExpertVerification page still writes
+verification status and payment fields directly, so migrate that page to
+trusted RPCs before applying the guard. Wallet balance fields remain excluded
+until all browser-side wallet writers listed above have been migrated.
+
+## Production security hotfixes already applied
+
+The following focused migrations were applied and verified on the active
+NaijaLancers Supabase project (project ref `jxybqmquymxkvxxpiuhv`):
+
+- `require_authenticated_premium_subscription`: premium subscription now requires
+  an authenticated user subscribing only for their own account; anonymous
+  execution is revoked.
+- `revoke_direct_safepay_client_writes`: browser INSERT/UPDATE/DELETE on
+  `safepay_transactions` is revoked; SafePay uses validated RPCs.
+- `revoke_direct_user_wallet_insert`: browser wallet-row creation is revoked;
+  SafePay fallback now provisions a zeroed wallet through
+  `ensure_user_wallet_row`.
+- `secure_wallet_row_provisioning`: the provisioning RPC now permits only
+  the authenticated owner (or service role) to create their zeroed wallet row.
+- `retire_fundraising_and_lock_scheduled_rewards`: fundraising tables and RPCs
+  are no longer accessible to browser roles (historical records are retained);
+  the scheduled task auto-approval payout can run only as service role or its
+  database owner, not as anon/authenticated.
+
+- `safepay_release_requires_verified_hold`: SafePay release, refund,
+  auto-release and dispute settlement now fail closed without sufficient
+  aggregate escrow hold.
+- `guard_gig_order_client_mutations` and
+  `gig_orders_require_private_escrow_holds`: direct gig-order creation is
+  revoked; trusted order placement creates a private per-order hold; completion,
+  cancellation and milestone release consume that hold. At rollout, all 37
+  existing gig orders were terminal, with zero open orders to backfill.
+- `legacy_gig_order_status_column_grants`: retains only the status/delivery
+  columns needed by the already-deployed UI; the trigger rejects invalid
+  transitions and immutable financial/ownership edits.
+- `guard_profile_privilege_fields`: users cannot set premium, expert,
+  verification trust, partner, reputation, or computed profile fields directly.
+  The current verification submission/payment-status fields remain a separate
+  follow-up because that UI still writes them directly.
+- `revoke_broad_public_profiles_rpc`: the unused bulk profile RPC that exposed
+  wallet/contact/referral fields is no longer callable by browser roles.
+
+
+- `secure_connection_request_workflow`: connection creation and request
+  responses are routed through authenticated ownership-checked RPCs.
+- `legacy_connection_acceptance_compatibility`: while the old app build is
+  blocked, the deployed acceptance path can only insert a connection for the
+  recipient of a matching pending request; request ownership cannot be changed.
+
+These applied changes do not mean the remaining staged escrow/profile migrations
+are ready. The three legacy SafePay rows with missing/insufficient aggregate
+holds remain under manual reconciliation; no funds were moved by this audit.
+
+All files in this folder are staged review artifacts only. None of these
+pending SQL files has been applied to production by this branch.

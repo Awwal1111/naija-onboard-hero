@@ -149,8 +149,6 @@ const Orders = lazy(lazyWithRetry(() => import("./pages/Orders")));
 const OrderDetail = lazy(lazyWithRetry(() => import("./pages/OrderDetail")));
 
 // Finance
-const Fundraising = lazy(lazyWithRetry(() => import("./pages/Fundraising")));
-const FundraisingDetail = lazy(lazyWithRetry(() => import("./pages/FundraisingDetail")));
 const Donations = lazy(lazyWithRetry(() => import("./pages/Donations")));
 const PaymentSuccess = lazy(lazyWithRetry(() => import("./pages/PaymentSuccess")));
 const PaymentFailed = lazy(lazyWithRetry(() => import("./pages/PaymentFailed")));
@@ -181,7 +179,6 @@ const PublicExpert = lazy(lazyWithRetry(() => import("./pages/PublicExpert")));
 const PublicGig = lazy(lazyWithRetry(() => import("./pages/PublicGig")));
 const PublicJob = lazy(lazyWithRetry(() => import("./pages/PublicJob")));
 const PublicCourse = lazy(lazyWithRetry(() => import("./pages/PublicCourse")));
-const PublicCampaign = lazy(lazyWithRetry(() => import("./pages/PublicCampaign")));
 const PublicGigs = lazy(lazyWithRetry(() => import("./pages/PublicGigs")));
 const PublicExperts = lazy(lazyWithRetry(() => import("./pages/PublicExperts")));
 const PublicUser = lazy(lazyWithRetry(() => import("./pages/PublicUser")));
@@ -247,7 +244,7 @@ const App = () => (
                 <Route path="/p/gig/:gigId" element={<PublicGig />} />
                 <Route path="/p/job/:jobId" element={<PublicJob />} />
                 <Route path="/p/course/:courseId" element={<PublicCourse />} />
-                <Route path="/p/campaign/:campaignId" element={<PublicCampaign />} />
+                <Route path="/p/campaign/*" element={<Navigate to="/feed" replace />} />
                 <Route path="/p/gigs" element={<PublicGigs />} />
                 <Route path="/p/experts" element={<PublicExperts />} />
                 <Route path="/p/jobs" element={<PublicJobs />} />
@@ -266,7 +263,7 @@ const App = () => (
                 <Route path="/job/:jobId" element={<PublicJob />} />
                 <Route path="/expert/:userId" element={<PublicExpert />} />
                 <Route path="/course/:courseId" element={<PublicCourse />} />
-                <Route path="/campaign/:campaignId" element={<PublicCampaign />} />
+                <Route path="/campaign/*" element={<Navigate to="/feed" replace />} />
                 <Route path="/sitemap.xml" element={<Sitemap />} />
                 <Route path="/sitemap" element={<Sitemap />} />
                 <Route path="/debug" element={<DebugPage />} />
@@ -285,8 +282,7 @@ const App = () => (
                 <Route path="/partner/:slug" element={<PartnerPortal />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
-                <Route path="/fundraising" element={<Fundraising />} />
-                <Route path="/fundraising/:id" element={<FundraisingDetail />} />
+                <Route path="/fundraising/*" element={<Navigate to="/feed" replace />} />
                 <Route path="/faq" element={<FAQ />} />
                 <Route path="/help" element={<HelpCenter />} />
                 <Route path="/terms-conditions" element={<TermsConditions />} />

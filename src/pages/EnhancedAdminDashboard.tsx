@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { ArrowLeft, Users, FileText, TrendingUp, DollarSign, Eye, Settings, AlertCircle, CheckCircle, Clock, MessageCircle, Briefcase, Award, Activity, Search, Filter, MoreVertical, Trash2, Edit, Ban, Heart, Package, BookOpen, Target, Megaphone, Code, Ticket, Gauge, Shield } from 'lucide-react'
+import { ArrowLeft, Users, FileText, TrendingUp, DollarSign, Eye, Settings, AlertCircle, CheckCircle, Clock, MessageCircle, Briefcase, Award, Activity, Search, Filter, MoreVertical, Trash2, Edit, Ban, Heart, Package, BookOpen, Megaphone, Code, Ticket, Gauge, Shield } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Logo } from '@/components/ui/logo'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -486,202 +486,6 @@ const CoursesSection = () => {
   )
 }
 
-const FundraisingSection = () => {
-  const [fundraisings, setFundraisings] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const { toast } = useToast()
-
-  useEffect(() => {
-    fetchFundraisings()
-  }, [])
-
-  const fetchFundraisings = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('fundraisings')
-        .select(`
-          *,
-          profiles!fundraisings_user_id_fkey(full_name)
-        `)
-        .order('created_at', { ascending: false })
-        .limit(50)
-
-      if (error) throw error
-      setFundraisings(data || [])
-    } catch (error) {
-      console.error('Error fetching fundraisings:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleApprove = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('fundraisings')
-        .update({ 
-          status: 'approved',
-          approved_at: new Date().toISOString(),
-          approved_by: (await supabase.auth.getUser()).data.user?.id
-        })
-        .eq('id', id)
-
-      if (error) throw error
-
-      toast({
-        title: "Success",
-        description: "Fundraising approved successfully",
-      })
-      fetchFundraisings()
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to approve fundraising",
-        variant: "destructive"
-      })
-    }
-  }
-
-  const handleReject = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('fundraisings')
-        .update({ status: 'rejected' })
-        .eq('id', id)
-
-      if (error) throw error
-
-      toast({
-        title: "Success",
-        description: "Fundraising rejected",
-      })
-      fetchFundraisings()
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to reject fundraising",
-        variant: "destructive"
-      })
-    }
-  }
-
-  const handleReleaseFunds = async (fundraising: any) => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-
-      const { data, error } = await supabase.rpc("admin_release_fundraising_funds", {
-        p_fundraising_id: fundraising.id,
-        p_admin_id: user.id,
-      });
-
-      if (error) throw error;
-
-      const result = data as { success: boolean; error?: string };
-      if (!result.success) {
-        throw new Error(result.error || "Release failed");
-      }
-
-      toast({
-        title: "Success",
-        description: "Funds released successfully to campaign owner",
-      });
-      fetchFundraisings();
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to release funds",
-        variant: "destructive",
-      });
-    }
-  };
-
-  if (loading) {
-    return <div className="text-center py-8">Loading fundraisings...</div>
-  }
-
-  if (fundraisings.length === 0) {
-    return (
-      <div className="text-center py-8">
-        <Target className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-        <p className="text-text-secondary">No fundraising requests yet</p>
-      </div>
-    )
-  }
-
-  return (
-    <div className="max-h-[600px] overflow-y-auto pr-2 space-y-4">
-      <div className="mb-4 p-4 bg-muted/30 rounded-lg grid grid-cols-3 gap-4 sticky top-0 z-10">
-        <div>
-          <p className="text-sm text-text-secondary">Total Requests</p>
-          <p className="text-2xl font-bold text-text-primary">{fundraisings.length}</p>
-        </div>
-        <div>
-          <p className="text-sm text-text-secondary">Pending</p>
-          <p className="text-2xl font-bold text-orange-500">{fundraisings.filter(f => f.status === 'pending').length}</p>
-        </div>
-        <div>
-          <p className="text-sm text-text-secondary">Total Goal</p>
-          <p className="text-2xl font-bold text-primary">NC {fundraisings.reduce((sum, f) => sum + Number(f.goal_amount), 0).toLocaleString()}</p>
-        </div>
-      </div>
-      {fundraisings.map((fundraising) => (
-        <Card key={fundraising.id} className="border-l-4 border-l-purple-500">
-          <CardContent className="pt-6">
-            <div className="space-y-4">
-              <div className="flex justify-between items-start">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <h3 className="font-semibold text-text-primary">{fundraising.title}</h3>
-                    <Badge variant={
-                      fundraising.status === 'approved' ? 'default' : 
-                      fundraising.status === 'pending' ? 'secondary' : 'destructive'
-                    } className="text-xs">
-                      {fundraising.status}
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-text-secondary mb-3 line-clamp-2">{fundraising.description}</p>
-                  <div className="flex items-center gap-4 text-sm">
-                    <div>
-                      <span className="text-text-secondary">Goal: </span>
-                      <span className="font-semibold text-primary">NC {fundraising.goal_amount.toLocaleString()}</span>
-                    </div>
-                    <div>
-                      <span className="text-text-secondary">Raised: </span>
-                      <span className="font-semibold text-green-600">NC {fundraising.raised_amount?.toLocaleString() || 0}</span>
-                    </div>
-                  </div>
-                  <p className="text-xs text-text-secondary mt-2">by {fundraising.profiles?.full_name}</p>
-                </div>
-              </div>
-              {fundraising.status === 'pending' && (
-                <div className="flex gap-2 pt-3 border-t">
-                  <Button size="sm" onClick={() => handleApprove(fundraising.id)} className="flex-1">
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Approve
-                  </Button>
-                  <Button size="sm" variant="destructive" onClick={() => handleReject(fundraising.id)} className="flex-1">
-                    <AlertCircle className="h-4 w-4 mr-2" />
-                    Reject
-                  </Button>
-                </div>
-              )}
-              {fundraising.funds_release_requested && !fundraising.funds_released_at && (
-                <div className="flex gap-2 pt-3 border-t">
-                  <Button size="sm" onClick={() => handleReleaseFunds(fundraising)} className="w-full" variant="default">
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Release Funds to Campaign Owner
-                  </Button>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  )
-}
-
 // Analytics Content Component
 const AnalyticsContent = ({ dashboardStats }: { dashboardStats: any }) => {
   const [analyticsData, setAnalyticsData] = useState<any>({
@@ -716,7 +520,6 @@ const AnalyticsContent = ({ dashboardStats }: { dashboardStats: any }) => {
         jobsCount,
         coursesCount,
         productsCount,
-        fundraisingsCount
       ] = await Promise.all([
         // Get all profiles created in last 30 days
         supabase
@@ -733,7 +536,6 @@ const AnalyticsContent = ({ dashboardStats }: { dashboardStats: any }) => {
         supabase.from('job_posts').select('id', { count: 'exact', head: true }),
         supabase.from('courses').select('id', { count: 'exact', head: true }),
         supabase.from('digital_products').select('id', { count: 'exact', head: true }),
-        supabase.from('fundraisings').select('id', { count: 'exact', head: true })
       ])
 
       const profiles = profilesData.data || []
@@ -782,7 +584,6 @@ const AnalyticsContent = ({ dashboardStats }: { dashboardStats: any }) => {
         { name: 'Jobs', value: jobsCount.count || 0 },
         { name: 'Courses', value: coursesCount.count || 0 },
         { name: 'Products', value: productsCount.count || 0 },
-        { name: 'Fundraising', value: fundraisingsCount.count || 0 }
       ]
 
       setAnalyticsData({
@@ -1584,10 +1385,6 @@ const EnhancedAdminDashboard = () => {
                     <BookOpen className="h-4 w-4 mr-2" />
                     Courses
                   </TabsTrigger>
-                  <TabsTrigger value="fundraising">
-                    <Target className="h-4 w-4 mr-2" />
-                    Fundraising
-                  </TabsTrigger>
                 </TabsList>
               </div>
 
@@ -1655,19 +1452,6 @@ const EnhancedAdminDashboard = () => {
                 </Card>
               </TabsContent>
 
-              <TabsContent value="fundraising" className="mt-0">
-                <Card>
-                  <CardHeader className="bg-muted/30">
-                    <CardTitle className="flex items-center gap-2">
-                      <Target className="h-5 w-5 text-purple-500" />
-                      Fundraising Requests
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-6">
-                    <FundraisingSection />
-                  </CardContent>
-                </Card>
-              </TabsContent>
 
             </Tabs>
           </TabsContent>

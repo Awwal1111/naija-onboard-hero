@@ -23,7 +23,6 @@ We'll index the following data types:
 - **Experts** (profiles with is_expert = true)
 - **Courses** (courses table)
 - **Digital Products** (digital_products table)
-- **Fundraising Campaigns** (fundraisings table)
 - **Gigs** (jobs_services table)
 
 ### 2. Edge Functions Setup

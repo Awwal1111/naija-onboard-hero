@@ -137,90 +137,36 @@ export const useConnections = () => {
 
   const sendConnectionRequest = async (targetUserId: string) => {
     if (!user?.id) return { error: 'Not authenticated' }
-    
-    // Prevent users from sending connection requests to themselves
     if (user.id === targetUserId) {
-      toast({
-        title: "Invalid Action",
-        description: "You cannot send a connection request to yourself.",
-        variant: "destructive"
-      })
+      toast({ title: "Invalid Action", description: "You cannot send a connection request to yourself.", variant: "destructive" })
       return { error: 'Cannot connect with yourself' }
     }
 
     try {
-      // Check if request already exists
-      // Only a *pending* request blocks a new one. Previously rejected/accepted rows also
-      // matched, so a rejected request could never be sent again. limit(1) instead of
-      // maybeSingle() because both directions can exist and maybeSingle errors on 2 rows.
-      const { data: existingRequests } = await supabase
-        .from('connection_requests')
-        .select('id')
-        .eq('status', 'pending')
-        .or(`and(requester_id.eq.${user.id},requested_id.eq.${targetUserId}),and(requester_id.eq.${targetUserId},requested_id.eq.${user.id})`)
-        .limit(1)
-
-      if (existingRequests && existingRequests.length > 0) {
-        toast({
-          title: "Request Already Sent",
-          description: "A connection request already exists with this user.",
-          variant: "destructive"
-        })
-        return { error: 'Request already exists' }
-      }
-
-      // Check if already connected
-      const { data: existingConnection } = await supabase
-        .from('connections')
-        .select('id')
-        .or(`and(user1_id.eq.${user.id},user2_id.eq.${targetUserId}),and(user1_id.eq.${targetUserId},user2_id.eq.${user.id})`)
-        .limit(1)
-        .maybeSingle()
-
-      if (existingConnection) {
-        toast({
-          title: "Already Connected",
-          description: "You are already connected to this user.",
-          variant: "destructive"
-        })
-        return { error: 'Already connected' }
-      }
-
-      const { error } = await supabase
-        .from('connection_requests')
-        .insert({
-          requester_id: user.id,
-          requested_id: targetUserId,
-          status: 'pending'
-        })
-
-      if (error) throw error
-
-      // Create notification for the target user
-      await supabase
-        .from('notifications')
-        .insert({
-          user_id: targetUserId,
-          type: 'connection_request',
-          title: 'New Connection Request',
-          message: 'Someone wants to connect with you!',
-          metadata: { requester_id: user.id }
-        })
-
-      toast({
-        title: "Connection Request Sent",
-        description: "Your connection request has been sent successfully.",
+      const { data, error } = await supabase.rpc('send_connection_request', {
+        p_target_user_id: targetUserId
       })
-      
-      fetchConnectionRequests()
+      if (error) throw error
+      const result = data as { success: boolean; error?: string }
+      if (!result?.success) {
+        toast({ title: "Request Not Sent", description: result?.error || "Could not send request.", variant: "destructive" })
+        return { error: result?.error || 'Request failed' }
+      }
+
+      await supabase.from('notifications').insert({
+        user_id: targetUserId,
+        type: 'connection_request',
+        title: 'New Connection Request',
+        message: 'Someone wants to connect with you!',
+        metadata: { requester_id: user.id }
+      })
+
+      toast({ title: "Connection Request Sent", description: "Your connection request has been sent successfully." })
+      await fetchConnectionRequests()
       return { success: true }
     } catch (error: any) {
       console.error('Error sending connection request:', error)
-      toast({
-        title: "Error",
-        description: error.message || "Failed to send connection request",
-        variant: "destructive"
-      })
+      toast({ title: "Error", description: error.message || "Failed to send connection request", variant: "destructive" })
       return { error: error.message }
     }
   }
@@ -229,81 +175,33 @@ export const useConnections = () => {
     if (!user?.id) return { error: 'Not authenticated' }
 
     try {
-      if (accept) {
-        // Get the request details
-        const { data: request, error: requestError } = await supabase
-          .from('connection_requests')
-          .select('requester_id, requested_id, status')
-          .eq('id', requestId)
-          .single()
+      const { data, error } = await supabase.rpc('respond_to_connection_request', {
+        p_request_id: requestId,
+        p_accept: accept
+      })
+      if (error) throw error
 
-        if (requestError) throw requestError
-        if (request.status !== 'pending') throw new Error('This request is no longer pending')
-        if (request.requested_id !== user.id) throw new Error('Only the person invited can accept this request')
+      const result = data as { success: boolean; error?: string; requester_id?: string }
+      if (!result?.success) throw new Error(result?.error || 'Could not respond to request')
 
-        // Create connection
-        const { error: connectionError } = await supabase
-          .from('connections')
-          .insert({
-            user1_id: request.requester_id,
-            user2_id: request.requested_id,
-            status: 'connected'
-          })
-
-        if (connectionError) throw connectionError
-
-        // Update request status
-        const { error: updateError } = await supabase
-          .from('connection_requests')
-          .update({ status: 'accepted' })
-          .eq('id', requestId)
-
-        if (updateError) throw updateError
-
-        // Create notification for the requester
-        await supabase
-          .from('notifications')
-          .insert({
-            user_id: request.requester_id,
-            type: 'connection_accepted',
-            title: 'Connection Accepted!',
-            message: 'Your connection request has been accepted.',
-            metadata: { connection_id: connectionError ? null : request.requested_id }
-          })
-
-        toast({
-          title: "Connection Accepted",
-          description: "You are now connected! You can start chatting.",
+      if (accept && result.requester_id) {
+        await supabase.from('notifications').insert({
+          user_id: result.requester_id,
+          type: 'connection_accepted',
+          title: 'Connection Accepted!',
+          message: 'Your connection request has been accepted.',
+          metadata: { connection_id: requestId }
         })
-
-        // Refresh both connections and requests
-        await Promise.all([fetchConnections(), fetchConnectionRequests()])
+        toast({ title: "Connection Accepted", description: "You are now connected! You can start chatting." })
       } else {
-        // Reject request
-        const { error } = await supabase
-          .from('connection_requests')
-          .update({ status: 'rejected' })
-          .eq('id', requestId)
-
-        if (error) throw error
-
-        toast({
-          title: "Request Rejected",
-          description: "Connection request has been rejected.",
-        })
-        
-        // Refresh requests
-        await fetchConnectionRequests()
+        toast({ title: "Request Declined", description: "Connection request has been declined." })
       }
 
+      await Promise.all([fetchConnections(), fetchConnectionRequests()])
       return { success: true }
     } catch (error: any) {
       console.error('Error responding to connection request:', error)
-      toast({
-        title: "Error",
-        description: error.message || "Failed to respond to request",
-        variant: "destructive"
-      })
+      toast({ title: "Error", description: error.message || "Failed to respond to request", variant: "destructive" })
       return { success: false, error: error.message }
     }
   }

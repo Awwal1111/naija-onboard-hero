@@ -15,7 +15,6 @@ export default function Sitemap() {
         { loc: '/', lastmod: new Date().toISOString().split('T')[0], priority: '1.0' },
         { loc: '/welcome', lastmod: new Date().toISOString().split('T')[0], priority: '0.9' },
         { loc: '/faq', lastmod: new Date().toISOString().split('T')[0], priority: '0.7' },
-        { loc: '/fundraising', lastmod: new Date().toISOString().split('T')[0], priority: '0.8' },
         { loc: '/terms-conditions', lastmod: new Date().toISOString().split('T')[0], priority: '0.5' },
         { loc: '/privacy-policy', lastmod: new Date().toISOString().split('T')[0], priority: '0.5' }
       );
@@ -77,21 +76,6 @@ export default function Sitemap() {
           loc: `/p/course/${course.id}`,
           lastmod: course.updated_at?.split('T')[0] || new Date().toISOString().split('T')[0],
           priority: '0.7'
-        });
-      });
-
-      // Public campaigns
-      const { data: campaigns } = await supabase
-        .from('fundraisings')
-        .select('id, updated_at')
-        .eq('status', 'approved' as any)
-        .limit(500);
-
-      campaigns?.forEach(campaign => {
-        allUrls.push({
-          loc: `/p/campaign/${campaign.id}`,
-          lastmod: campaign.updated_at?.split('T')[0] || new Date().toISOString().split('T')[0],
-          priority: '0.6'
         });
       });
 

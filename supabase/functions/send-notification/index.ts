@@ -15,7 +15,29 @@ const resend = new Resend(Deno.env.get('RESEND_API_KEY') as string)
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-internal-function-token',
+}
+
+
+async function isInternalFunctionRequest(req: Request, client: any): Promise<boolean> {
+  const token = req.headers.get('x-internal-function-token');
+  if (!token || token.length < 32 || token.length > 256) return false;
+  const { data, error } = await client.rpc('verify_internal_function_token', { p_token: token });
+  return !error && data === true;
+}
+
+function constantTimeEquals(a: string, b: string): boolean {
+  const left = new TextEncoder().encode(a);
+  const right = new TextEncoder().encode(b);
+  if (left.length !== right.length) return false;
+  let diff = 0;
+  for (let i = 0; i < left.length; i++) diff |= left[i] ^ right[i];
+  return diff === 0;
+}
+function isServiceRoleRequest(req: Request): boolean {
+  const expected = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+  const provided = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
+  return expected.length > 0 && constantTimeEquals(provided, expected);
 }
 
 interface NotificationRequest {
@@ -51,6 +73,44 @@ Deno.serve(async (req) => {
       emailTemplate = 'general',
       attachPDF = false
     } = await req.json() as NotificationRequest
+
+    if (!userId || !/^[0-9a-f-]{36}$/i.test(userId) || !type || type.length > 80 ||
+        !title || title.length > 200 || !message || message.length > 5000) {
+      return new Response(JSON.stringify({ error: 'Invalid notification request' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    const internalRequest = isServiceRoleRequest(req) || await isInternalFunctionRequest(req, supabaseClient)
+    if (!internalRequest) {
+      const authHeader = req.headers.get('authorization') || ''
+      const token = authHeader.replace(/^Bearer\s+/i, '')
+      const anonKey = Deno.env.get('SUPABASE_ANON_KEY') || ''
+      if (!token || !anonKey) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+      const authClient = createClient(Deno.env.get('SUPABASE_URL') ?? '', anonKey)
+      const { data: { user: actor }, error: authError } = await authClient.auth.getUser(token)
+      let isAdmin = actor?.app_metadata?.role === 'admin' ||
+        (Array.isArray(actor?.app_metadata?.roles) && actor.app_metadata.roles.includes('admin'))
+      if (actor && !isAdmin) {
+        const { data: roleRow } = await supabaseClient
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', actor.id)
+          .in('role', ['admin', 'super_admin'])
+          .limit(1)
+          .maybeSingle()
+        isAdmin = !!roleRow
+      }
+      if (authError || !actor || (actor.id !== userId && !isAdmin)) {
+        return new Response(JSON.stringify({ error: 'Not authorized to notify this user' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+    }
 
     console.log('Creating notification:', { userId, type, title, sendEmail })
 

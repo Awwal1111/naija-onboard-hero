@@ -83,31 +83,22 @@ export const useSafePay = (otherUserId: string) => {
 
       if (walletError && walletError.code !== 'PGRST116') throw walletError
 
-      // If no wallet found, check profiles table for balance
+      // Provision an empty internal wallet through a trusted RPC. Never let
+      // the browser choose balance or escrow_hold values on INSERT.
       if (!walletData) {
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('wallet_balance, balance_withdrawable, balance_non_withdrawable')
+        const { error: ensureError } = await supabase.rpc('ensure_user_wallet_row', {
+          _user_id: user.id
+        })
+        if (ensureError) throw ensureError
+
+        const { data: ensuredWallet, error: reloadError } = await supabase
+          .from('user_wallets')
+          .select('*')
           .eq('user_id', user.id)
           .single()
 
-        if (profileError) throw profileError
-
-        // Create a user_wallets entry if it doesn't exist
-        if (profileData) {
-          const { data: newWallet, error: createError } = await supabase
-            .from('user_wallets')
-            .insert({
-              user_id: user.id,
-              balance: profileData.wallet_balance || 0,
-              escrow_hold: 0
-            })
-            .select()
-            .single()
-
-          if (createError) throw createError
-          walletData = newWallet
-        }
+        if (reloadError) throw reloadError
+        walletData = ensuredWallet
       }
 
       setWallet(walletData)

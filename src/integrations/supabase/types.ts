@@ -8406,6 +8406,7 @@ export type Database = {
       cleanup_expired_telegram_codes: { Args: never; Returns: undefined }
       cleanup_old_telegram_conversations: { Args: never; Returns: undefined }
       complete_gig_order: { Args: { p_order_id: string }; Returns: Json }
+      transition_gig_order: { Args: { p_order_id: string; p_status: string; p_seller_notes?: string | null }; Returns: Json }
       complete_hire_contract: { Args: { p_contract_id: string }; Returns: Json }
       compute_expert_level: { Args: { _user_id: string }; Returns: string }
       confirm_project_completion: {
@@ -9029,6 +9030,14 @@ export type Database = {
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      send_connection_request: {
+        Args: { p_target_user_id: string }
+        Returns: Json
+      }
+      respond_to_connection_request: {
+        Args: { p_accept: boolean; p_request_id: string }
+        Returns: Json
+      }
       sign_hire_contract: {
         Args: { p_contract_id: string; p_signature: string }
         Returns: Json

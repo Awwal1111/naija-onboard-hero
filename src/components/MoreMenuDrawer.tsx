@@ -73,7 +73,7 @@ export const MoreMenuDrawer = ({ open, onOpenChange }: MoreMenuDrawerProps) => {
     { icon: Users, label: "Connections", path: "/connections", color: "text-indigo-500" },
   ];
 
-  // Removed: Fundraising, Referrals, Leaderboard, Donations, Loan, Emergency, Sell Products (moved to Apps)
+  // Removed: Referrals, Leaderboard, Donations, Loan, Emergency, Sell Products (moved to Apps)
   const otherItems = [
     { icon: BookOpen, label: "Blog", path: "/blog", color: "text-primary", forRoles: ['freelancer', 'client', 'both'] },
     { icon: HelpCircle, label: "Help Center", path: "/help", color: "text-blue-500", forRoles: ['freelancer', 'client', 'both'] },
