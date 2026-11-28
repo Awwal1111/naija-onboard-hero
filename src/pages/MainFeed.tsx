@@ -191,7 +191,18 @@ const MainFeed = () => {
 
   const filteredAndSortedPosts = React.useMemo(() => {
     let filtered = posts
-    
+
+    // Apply hashtag / keyword filters selected from the trending sidebar.
+    const query = searchQuery.trim().toLowerCase()
+    if (query) {
+      const normalizedQuery = query.startsWith('#') ? query : query
+      filtered = filtered.filter(post => {
+        const content = (post.content || '').toLowerCase()
+        const title = (post.title || '').toLowerCase()
+        return content.includes(normalizedQuery) || title.includes(normalizedQuery)
+      })
+    }
+
     // Filter by category
     if (selectedCategory !== 'all') {
       filtered = filtered.filter(post => post.content_type === selectedCategory)
@@ -216,7 +227,7 @@ const MainFeed = () => {
     }
     
     return filtered
-  }, [posts, selectedCategory, sortBy])
+  }, [posts, selectedCategory, sortBy, searchQuery])
 
   const handleCreateStory = () => {
     setShowCreateStory(true)
@@ -379,6 +390,13 @@ const MainFeed = () => {
           {/* AI freelancer finder entry point */}
           <AIHireBanner />
 
+          {searchQuery.trim() && (
+            <div className="mx-4 mt-3 flex items-center justify-between gap-3 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2">
+              <span className="min-w-0 truncate text-sm">Showing posts matching <strong>{searchQuery}</strong></span>
+              <Button variant="ghost" size="sm" onClick={() => setSearchQuery('')} className="shrink-0">Clear filter</Button>
+            </div>
+          )}
+
           {/* Feed Toggle */}
           <div className="bg-card border-b border-border">
             <div className="flex">
@@ -494,8 +512,16 @@ const MainFeed = () => {
           <div className="sticky top-24 px-6">
             <Suspense fallback={null}>
               <TrendingSection 
-                onHashtagClick={setSearchQuery}
-                onCategoryFilter={setSelectedCategory}
+                onHashtagClick={(hashtag) => {
+                  setSearchQuery(hashtag)
+                  setSelectedCategory('all')
+                  setFeedType('for-you')
+                }}
+                onCategoryFilter={(category) => {
+                  setSelectedCategory(category)
+                  setSearchQuery('')
+                  setFeedType('for-you')
+                }}
               />
             </Suspense>
           </div>

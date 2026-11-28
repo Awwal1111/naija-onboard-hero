@@ -17,16 +17,22 @@ interface HashtagData {
 }
 
 interface StatsData {
-  activeUsers: number
   openJobs: number
 }
+
+const topicDefinitions = [
+  { title: 'Job Posts', icon: Briefcase, type: 'job' },
+  { title: 'Achievement Stories', icon: Award, type: 'achievement' },
+  { title: 'Events', icon: Users, type: 'event' }
+]
 
 const TrendingSection: React.FC<TrendingSectionProps> = ({ 
   onHashtagClick, 
   onCategoryFilter 
 }) => {
   const [trendingHashtags, setTrendingHashtags] = useState<HashtagData[]>([])
-  const [stats, setStats] = useState<StatsData>({ activeUsers: 0, openJobs: 0 })
+  const [stats, setStats] = useState<StatsData>({ openJobs: 0 })
+  const [topicCounts, setTopicCounts] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -36,16 +42,20 @@ const TrendingSection: React.FC<TrendingSectionProps> = ({
         // Fetch posts with hashtags and extract them
         const { data: posts, error: postsError } = await supabase
           .from('posts')
-          .select('content')
+          .select('content, content_type')
           .not('content', 'is', null)
           .order('created_at', { ascending: false })
           .limit(500)
 
         if (!postsError && posts) {
-          // Extract hashtags from post content
+          // Derive hashtag and topic counts from the same bounded feed sample.
           const hashtagCounts: Record<string, number> = {}
+          const categoryCounts: Record<string, number> = {}
           
           posts.forEach(post => {
+            if (post.content_type) {
+              categoryCounts[post.content_type] = (categoryCounts[post.content_type] || 0) + 1
+            }
             if (post.content) {
               const matches = post.content.match(/#[A-Za-z0-9_]+/g)
               if (matches) {
@@ -64,29 +74,9 @@ const TrendingSection: React.FC<TrendingSectionProps> = ({
             .slice(0, 8) // Top 8 hashtags
 
           // If we have real data, use it; otherwise use defaults
-          if (sortedHashtags.length > 0) {
-            setTrendingHashtags(sortedHashtags)
-          } else {
-            // Default hashtags when no posts with hashtags exist
-            setTrendingHashtags([
-              { tag: '#NaijaLancers', count: 0 },
-              { tag: '#FreelanceLife', count: 0 },
-              { tag: '#TechJobs', count: 0 },
-              { tag: '#RemoteWork', count: 0 },
-              { tag: '#WebDevelopment', count: 0 },
-              { tag: '#GraphicDesign', count: 0 }
-            ])
-          }
+          setTrendingHashtags(sortedHashtags)
+          setTopicCounts(categoryCounts)
         }
-
-        // Fetch active users count (logged in within 24 hours)
-        const twentyFourHoursAgo = new Date()
-        twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24)
-        
-        const { count: activeUsersCount } = await supabase
-          .from('profiles')
-          .select('*', { count: 'exact', head: true })
-          .gte('updated_at', twentyFourHoursAgo.toISOString())
 
         // Fetch open jobs count
         const { count: openJobsCount } = await supabase
@@ -94,10 +84,7 @@ const TrendingSection: React.FC<TrendingSectionProps> = ({
           .select('*', { count: 'exact', head: true })
           .eq('status', 'open')
 
-        setStats({
-          activeUsers: activeUsersCount || 0,
-          openJobs: openJobsCount || 0
-        })
+        setStats({ openJobs: openJobsCount || 0 })
 
       } catch (error) {
         console.error('Error fetching trending data:', error)
@@ -110,13 +97,6 @@ const TrendingSection: React.FC<TrendingSectionProps> = ({
 
     // No auto-refresh - data fetched once on mount to reduce API calls
   }, [])
-
-  const trendingTopics = [
-    { title: 'Remote Work Opportunities', icon: Briefcase, count: 45, type: 'jobs' },
-    { title: 'UI/UX Design Projects', icon: Briefcase, count: 32, type: 'jobs' },
-    { title: 'Achievement Stories', icon: Award, count: 28, type: 'achievements' },
-    { title: 'Networking Events', icon: Users, count: 19, type: 'events' }
-  ]
 
   const formatCount = (count: number): string => {
     if (count >= 1000) {
@@ -140,6 +120,8 @@ const TrendingSection: React.FC<TrendingSectionProps> = ({
             <div className="flex items-center justify-center py-4">
               <Loader2 className="h-5 w-5 animate-spin text-primary" />
             </div>
+          ) : trendingHashtags.length === 0 ? (
+            <p className="py-3 text-sm text-muted-foreground">No hashtags are trending yet. Add one to your next post.</p>
           ) : (
             trendingHashtags.map((item) => (
               <Button
@@ -169,7 +151,8 @@ const TrendingSection: React.FC<TrendingSectionProps> = ({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {trendingTopics.map((topic) => (
+          <p className="text-xs text-muted-foreground">Counts from the latest 500 posts</p>
+          {topicDefinitions.map((topic) => (
             <Button
               key={topic.title}
               variant="ghost"
@@ -182,7 +165,7 @@ const TrendingSection: React.FC<TrendingSectionProps> = ({
               </div>
               <div className="flex items-center gap-1 text-sm text-text-secondary">
                 <Eye className="h-3 w-3" />
-                {topic.count}
+                {formatCount(topicCounts[topic.type] || 0)} recent
               </div>
             </Button>
           ))}
@@ -197,15 +180,9 @@ const TrendingSection: React.FC<TrendingSectionProps> = ({
               <Loader2 className="h-5 w-5 animate-spin text-primary" />
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-4 text-center">
-              <div>
-                <div className="text-2xl font-bold text-primary">{formatCount(stats.activeUsers)}</div>
-                <div className="text-sm text-muted-foreground">Active Users</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-primary">{formatCount(stats.openJobs)}</div>
-                <div className="text-sm text-muted-foreground">Open Jobs</div>
-              </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-primary">{formatCount(stats.openJobs)}</div>
+              <div className="text-sm text-muted-foreground">Open Jobs</div>
             </div>
           )}
         </CardContent>
