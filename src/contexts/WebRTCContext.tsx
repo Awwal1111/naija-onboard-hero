@@ -170,6 +170,8 @@ const WebRTCProviderInternal: React.FC<{ children: React.ReactNode }> = ({ child
   const incomingCallChannel = useRef<any>(null)
   const callStartTime = useRef<Date | null>(null)
   const originalVideoTrack = useRef<MediaStreamTrack | null>(null)
+  const screenStreamRef = useRef<MediaStream | null>(null)
+  const screenSenderRef = useRef<RTCRtpSender | null>(null)
   const callTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const pendingCandidates = useRef<RTCIceCandidate[]>([])
   const isInCallRef = useRef(false)
@@ -862,7 +864,8 @@ const WebRTCProviderInternal: React.FC<{ children: React.ReactNode }> = ({ child
     setIncomingCall(null)
   }
 
-  // Start screen sharing
+  // Start screen sharing. Replacing the existing video sender avoids a new
+  // SDP negotiation and keeps the existing call connection intact.
   const startScreenShare = async () => {
     if (!peerConnection.current) {
       toast({
@@ -873,7 +876,7 @@ const WebRTCProviderInternal: React.FC<{ children: React.ReactNode }> = ({ child
       return
     }
 
-    if (callState.callType === 'voice') {
+    if (callState.callType !== 'video') {
       toast({
         title: "Cannot Share Screen",
         description: "Screen sharing is only available for video calls",
@@ -882,48 +885,52 @@ const WebRTCProviderInternal: React.FC<{ children: React.ReactNode }> = ({ child
       return
     }
 
-    // Check if screen sharing is supported
     if (!canScreenShare) {
       toast({
         title: "Screen Sharing Not Available",
-        description: "Your browser or device doesn't support screen sharing. Try using Chrome or Edge on desktop.",
+        description: "This browser or device does not expose screen sharing. Try a supported desktop browser.",
         variant: "destructive"
       })
       return
     }
 
+    if (screenStreamRef.current) return
+
+    let capturedStream: MediaStream | null = null
     try {
-      console.log('Starting screen share')
-      const stream = await navigator.mediaDevices.getDisplayMedia({
+      capturedStream = await navigator.mediaDevices.getDisplayMedia({
         video: {
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
-          frameRate: { ideal: 30 }
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          frameRate: { ideal: 15, max: 30 }
         },
         audio: false
       })
 
-      setScreenStream(stream)
-      setIsScreenSharing(true)
+      const screenTrack = capturedStream.getVideoTracks()[0]
+      const videoSender = peerConnection.current?.getSenders().find(
+        sender => sender.track?.kind === 'video'
+      )
 
-      const screenTrack = stream.getVideoTracks()[0]
-      
-      const senders = peerConnection.current.getSenders()
-      const videoSender = senders.find(sender => sender.track?.kind === 'video')
-      
-      if (videoSender && localStream) {
-        originalVideoTrack.current = localStream.getVideoTracks()[0] || null
-        await videoSender.replaceTrack(screenTrack)
-        console.log('Replaced video track with screen share')
-      } else {
-        console.log('No video sender found, adding screen track')
-        peerConnection.current.addTrack(screenTrack, stream)
+      // A video call should already have a camera sender. Do not add a new
+      // transceiver here: that would require a second SDP negotiation path.
+      if (!screenTrack || !videoSender) {
+        capturedStream.getTracks().forEach(track => track.stop())
+        capturedStream = null
+        throw new Error("The active video connection is not ready to share a screen.")
       }
 
-      // Handle when user stops sharing via browser UI
+      originalVideoTrack.current = localStream?.getVideoTracks()[0] || videoSender.track
+      await videoSender.replaceTrack(screenTrack)
+
+      screenStreamRef.current = capturedStream
+      screenSenderRef.current = videoSender
+      setScreenStream(capturedStream)
+      setIsScreenSharing(true)
+
+      // Browser/OS stop controls invoke the same ref-backed cleanup path.
       screenTrack.onended = () => {
-        console.log('Screen share ended by browser UI')
-        stopScreenShare()
+        void stopScreenShare()
       }
 
       toast({
@@ -931,70 +938,58 @@ const WebRTCProviderInternal: React.FC<{ children: React.ReactNode }> = ({ child
         description: "You are now sharing your screen"
       })
     } catch (error: any) {
-      console.error('Screen share error:', error)
-      setIsScreenSharing(false)
+      capturedStream?.getTracks().forEach(track => track.stop())
+      screenStreamRef.current = null
+      screenSenderRef.current = null
+      originalVideoTrack.current = null
       setScreenStream(null)
-      
-      if (error.name === 'NotAllowedError') {
+      setIsScreenSharing(false)
+
+      console.error('Screen share error:', error)
+      if (error?.name === 'NotAllowedError') {
         toast({
           title: "Cancelled",
           description: "Screen sharing was cancelled or denied"
         })
-      } else if (error.name === 'NotSupportedError') {
-        toast({
-          title: "Not Supported",
-          description: "Screen sharing is not supported on this device. Try using Chrome or Edge on desktop.",
-          variant: "destructive"
-        })
-      } else if (error.name === 'NotReadableError') {
-        toast({
-          title: "Screen Share Failed",
-          description: "Could not access screen. Please try again.",
-          variant: "destructive"
-        })
-      } else if (error.message?.includes('getDisplayMedia')) {
-        toast({
-          title: "Not Available",
-          description: "Screen sharing is not available on mobile devices. Please use a desktop browser.",
-          variant: "destructive"
-        })
       } else {
         toast({
           title: "Screen Share Failed",
-          description: error.message || "Failed to start screen sharing. Please try on a desktop browser.",
+          description: error?.message || "Screen sharing is unavailable on this device.",
           variant: "destructive"
         })
       }
     }
   }
 
-  // Stop screen sharing
+  // Stop screen sharing even when the browser initiated the stop. The stream
+  // ref is updated synchronously, so this never depends on a stale React closure.
   const stopScreenShare = async () => {
-    if (!screenStream || !peerConnection.current) return
-    console.log('Stopping screen share')
+    const activeStream = screenStreamRef.current
+    screenStreamRef.current = null
+    setScreenStream(null)
+    setIsScreenSharing(false)
 
-    try {
-      screenStream.getTracks().forEach(track => track.stop())
-      setScreenStream(null)
-      setIsScreenSharing(false)
+    activeStream?.getTracks().forEach(track => track.stop())
 
-      if (originalVideoTrack.current) {
-        const senders = peerConnection.current.getSenders()
-        const videoSender = senders.find(sender => sender.track?.kind === 'video')
-        
-        if (videoSender) {
-          await videoSender.replaceTrack(originalVideoTrack.current)
-          console.log('Restored original video track')
-        }
-        originalVideoTrack.current = null
+    const sender = screenSenderRef.current
+    screenSenderRef.current = null
+
+    if (peerConnection.current && sender) {
+      try {
+        const cameraTrack = originalVideoTrack.current
+        await sender.replaceTrack(cameraTrack?.readyState === 'live' ? cameraTrack : null)
+      } catch (error) {
+        console.error('Error restoring camera after screen share:', error)
       }
+    }
 
+    originalVideoTrack.current = null
+
+    if (activeStream) {
       toast({
         title: "Screen Sharing Stopped",
-        description: "Returned to camera view"
+        description: "Screen sharing has ended"
       })
-    } catch (error) {
-      console.error('Error stopping screen share:', error)
     }
   }
 
@@ -1051,10 +1046,12 @@ const WebRTCProviderInternal: React.FC<{ children: React.ReactNode }> = ({ child
       track.stop()
       console.log('Stopped remote track:', track.kind)
     })
-    screenStream?.getTracks().forEach(track => {
+    screenStreamRef.current?.getTracks().forEach(track => {
       track.stop()
       console.log('Stopped screen track:', track.kind)
     })
+    screenStreamRef.current = null
+    screenSenderRef.current = null
 
     // Close peer connection
     if (peerConnection.current) {
@@ -1113,6 +1110,8 @@ const WebRTCProviderInternal: React.FC<{ children: React.ReactNode }> = ({ child
     setIsScreenSharing(false)
     callStartTime.current = null
     originalVideoTrack.current = null
+    screenStreamRef.current = null
+    screenSenderRef.current = null
     pendingCandidates.current = []
   }, [callState.callId, callState.remoteUserId, localStream, remoteStream, screenStream, user])
 

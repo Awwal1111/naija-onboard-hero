@@ -507,14 +507,16 @@ const StoriesCarousel: React.FC<StoriesCarouselProps> = ({ onCreateStory }) => {
                         .from('chats')
                         .select('id')
                         .or(`and(user1_id.eq.${user?.id},user2_id.eq.${viewingStory.user_id}),and(user1_id.eq.${viewingStory.user_id},user2_id.eq.${user?.id})`)
-                        .single()
+                        .order('updated_at', { ascending: false })
+                        .limit(1)
+                        .maybeSingle()
 
                       if (existingChat) {
                         window.location.href = `/chat/${existingChat.id}`
                       } else {
                         const { data: newChat } = await supabase
                           .from('chats')
-                          .insert({ user1_id: user?.id, user2_id: viewingStory.user_id })
+                          .insert({ user1_id: [user!.id, viewingStory.user_id].sort()[0], user2_id: [user!.id, viewingStory.user_id].sort()[1] })
                           .select()
                           .single()
 

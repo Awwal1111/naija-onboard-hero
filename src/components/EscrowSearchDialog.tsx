@@ -80,15 +80,19 @@ export const EscrowSearchDialog: React.FC<EscrowSearchDialogProps> = ({ open, on
       const { data: existingChat } = await supabase
         .from('chats')
         .select('id')
-        .or(`and(user1_id.eq.${user?.id},user2_id.eq.${selectedUserId}),and(user1_id.eq.${selectedUserId},user2_id.eq.${user?.id})`)
+        .or(`and(user1_id.eq.${user.id},user2_id.eq.${selectedUserId}),and(user1_id.eq.${selectedUserId},user2_id.eq.${user.id})`)
+        .order('updated_at', { ascending: false })
+        .limit(1)
         .maybeSingle()
 
       if (!existingChat) {
         // Create a new chat
-        await supabase.from('chats').insert({
-          user1_id: user.id,
-          user2_id: selectedUserId,
+        const [firstUserId, secondUserId] = [user.id, selectedUserId].sort()
+        const { error: createError } = await supabase.from('chats').insert({
+          user1_id: firstUserId,
+          user2_id: secondUserId,
         })
+        if (createError) throw createError
       }
 
       onOpenChange(false)
