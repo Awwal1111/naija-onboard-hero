@@ -100,7 +100,16 @@ export default function PublicExpert() {
   }
 
   const profileSlug = expert.username || expert.user_id;
-  const canonicalUrl = `https://naijalancers.name.ng/p/expert/${profileSlug}`;
+  const canonicalUrl = `https://naijalancers.name.ng/p/expert/${encodeURIComponent(profileSlug)}`;
+  const profession = expert.profession?.trim() || 'Freelancer';
+  const profileDescription = (expert.bio?.trim()
+    ? expert.bio.trim()
+    : `View ${expert.full_name}'s ${profession} profile, skills and services on NaijaLancers, a freelance marketplace for Nigerian talent.`
+  ).replace(/\\s+/g, ' ').slice(0, 155);
+  const isIndexableExpert = Boolean(
+    expert.profession?.trim() &&
+    ((expert.bio?.trim().length || 0) >= 60 || expert.profile_picture_url?.trim())
+  );
 
   const structuredData = {
     "@context": "https://schema.org",
@@ -125,13 +134,14 @@ export default function PublicExpert() {
   return (
     <>
       <Helmet>
-        <title>{expert.full_name} - {expert.profession} | NaijaLancers Expert</title>
-        <meta name="description" content={expert.bio || `Hire ${expert.full_name}, a professional ${expert.profession} on NaijaLancers. View their skills, ratings, and portfolio.`} />
+        <title>{expert.full_name} - {profession} | NaijaLancers Expert</title>
+        <meta name="description" content={profileDescription} />
+        {!isIndexableExpert && <meta name="robots" content="noindex,follow" />}
         <link rel="canonical" href={canonicalUrl} />
         
         {/* OpenGraph tags */}
-        <meta property="og:title" content={`${expert.full_name} - ${expert.profession} | NaijaLancers`} />
-        <meta property="og:description" content={expert.bio || `Professional ${expert.profession} available for hire`} />
+        <meta property="og:title" content={`${expert.full_name} - ${profession} | NaijaLancers`} />
+        <meta property="og:description" content={profileDescription} />
         <meta property="og:image" content={expert.profile_picture_url || 'https://naijalancers.name.ng/logo.png'} />
         <meta property="og:type" content="profile" />
         <meta property="og:url" content={canonicalUrl} />
@@ -139,8 +149,8 @@ export default function PublicExpert() {
         
         {/* Twitter Card tags */}
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={`${expert.full_name} - ${expert.profession}`} />
-        <meta name="twitter:description" content={expert.bio || `Professional ${expert.profession}`} />
+        <meta name="twitter:title" content={`${expert.full_name} - ${profession}`} />
+        <meta name="twitter:description" content={profileDescription} />
         <meta name="twitter:image" content={expert.profile_picture_url || 'https://naijalancers.name.ng/logo.png'} />
         
         {/* Structured Data */}
