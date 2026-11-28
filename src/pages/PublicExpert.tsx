@@ -116,13 +116,7 @@ export default function PublicExpert() {
       "addressLocality": expert.lga_name || expert.area || undefined,
       "addressCountry": "NG"
     } : undefined,
-    "knowsAbout": expert.profession,
-    "aggregateRating": expert.average_rating ? {
-      "@type": "AggregateRating",
-      "ratingValue": expert.average_rating,
-      "bestRating": "5",
-      "ratingCount": 1
-    } : undefined
+    "knowsAbout": expert.profession
   };
 
   const location = [expert.area, expert.lga_name, expert.state_name].filter(Boolean).join(', ');
@@ -193,10 +187,10 @@ export default function PublicExpert() {
                     <span>{location}</span>
                   </div>
                 )}
-                {expert.average_rating && (
-                  <div className="flex items-center gap-2">
+                {Number(expert.average_rating) > 0 && (
+                  <div className="flex items-center gap-2" aria-label={`Rated ${Number(expert.average_rating).toFixed(1)} out of 5`}>
                     <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                    <span>{expert.average_rating.toFixed(1)}</span>
+                    <span>{Number(expert.average_rating).toFixed(1)} rating</span>
                   </div>
                 )}
               </div>
@@ -224,22 +218,21 @@ export default function PublicExpert() {
               )}
 
               <div className="flex gap-3 mt-4 flex-wrap">
-                {user && user.id !== expert.user_id ? (
+                {!user ? (
+                  <Button onClick={() => navigate('/signup')} size="lg">
+                    Sign up to hire
+                  </Button>
+                ) : user.id === expert.user_id ? (
+                  <Button onClick={() => navigate(`/profile/${expert.user_id}`)} size="lg">
+                    Manage Your Profile
+                  </Button>
+                ) : (
                   <>
                     <Button onClick={() => setShowHire(true)} size="lg">
                       Hire {expert.full_name?.split(' ')[0] || 'Expert'}
                     </Button>
                     <Button onClick={() => navigate(`/chat/${expert.user_id}`)} variant="outline" size="lg">
                       Message
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Button onClick={() => navigate(`/signup`)} size="lg">
-                      View Full Profile
-                    </Button>
-                    <Button onClick={() => navigate('/signup')} variant="outline" size="lg">
-                      Join NaijaLancers
                     </Button>
                   </>
                 )}

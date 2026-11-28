@@ -48,10 +48,12 @@ export const GigCardCompact: React.FC<GigCardCompactProps> = ({
   const displayRating = average_rating || 0;
 
   return (
-    <div
+    <button
+      type="button"
       onClick={() => navigate(`/gig/${id}`)}
+      aria-label={`View service: ${title}`}
       className={cn(
-        "group cursor-pointer bg-card border border-border rounded-lg overflow-hidden transition-all duration-200 hover:shadow-md hover:border-primary/30",
+        "group block w-full text-left cursor-pointer bg-card border border-border rounded-lg overflow-hidden transition-all duration-200 hover:shadow-md hover:border-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
         className
       )}
     >
@@ -75,8 +77,9 @@ export const GigCardCompact: React.FC<GigCardCompactProps> = ({
         {/* Expert Badge */}
         {seller_is_expert && (
           <div className="absolute top-1.5 right-1.5">
-            <Badge className="bg-green-500/90 text-white text-[8px] h-5 px-1.5 border-0">
+            <Badge className="bg-green-500/90 text-white text-[8px] h-5 px-1.5 border-0" aria-label="Expert seller">
               <CheckCircle2 className="h-3 w-3" />
+              <span className="sr-only">Expert</span>
             </Badge>
           </div>
         )}
@@ -87,7 +90,7 @@ export const GigCardCompact: React.FC<GigCardCompactProps> = ({
         {/* Seller */}
         <div className="flex items-center gap-1.5">
           <Avatar className="h-5 w-5">
-            <AvatarImage src={seller_picture || undefined} />
+            <AvatarImage src={seller_picture || undefined} alt={seller_name || 'Service seller'} />
             <AvatarFallback className="text-[9px] bg-primary/10 text-primary">
               {seller_name?.charAt(0) || 'S'}
             </AvatarFallback>
@@ -122,7 +125,7 @@ export const GigCardCompact: React.FC<GigCardCompactProps> = ({
           </div>
         </div>
       </div>
-    </div>
+    </button>
   );
 };
 

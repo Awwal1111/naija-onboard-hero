@@ -125,7 +125,7 @@ export const GigSortFilterBar: React.FC<GigSortFilterBarProps> = ({
           className="h-8 gap-1.5 flex-shrink-0"
           onClick={() => onExpertOnlyChange(!expertOnly)}
         >
-          ✓ Verified Experts
+          Expert Sellers
         </Button>
 
         {/* Clear Filters */}
