@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -32,6 +32,11 @@ const MessagesTab: React.FC = () => {
   const [chats, setChats] = useState<ChatPreview[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+
+  // Keep realtime callbacks stable without rebuilding the subscription on every chat refresh.
+  const chatsRef = useRef<ChatPreview[]>([])
+  const realtimeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  chatsRef.current = chats
 
   const fetchChats = useCallback(async () => {
     if (!user) return
@@ -135,27 +140,19 @@ const MessagesTab: React.FC = () => {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
   }, [user, fetchChats])
 
-  // Real-time subscription for message updates
+  // One subscription per signed-in user. Chat refreshes update a ref, not the channel.
   useEffect(() => {
     if (!user) return
 
-    let pending = false
     let lastRun = 0
     const throttledFetch = () => {
-      const now = Date.now()
-      if (now - lastRun < 3000) {
-        if (!pending) {
-          pending = true
-          setTimeout(() => {
-            pending = false
-            lastRun = Date.now()
-            fetchChats()
-          }, 3000 - (now - lastRun))
-        }
-        return
-      }
-      lastRun = now
-      fetchChats()
+      if (realtimeTimerRef.current) return
+      const delay = Math.max(0, 3000 - (Date.now() - lastRun))
+      realtimeTimerRef.current = setTimeout(() => {
+        realtimeTimerRef.current = null
+        lastRun = Date.now()
+        void fetchChats()
+      }, delay)
     }
 
     const channel = supabase
@@ -164,19 +161,22 @@ const MessagesTab: React.FC = () => {
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'messages' },
         (payload) => {
-          // Client-side filter: only react to messages in this user's chats
-          const msg = payload.new as any
-          if (!msg) return
-          // Best-effort: refetch only if chat exists in current list
-          if (chats.some((c) => c.id === msg.chat_id)) throttledFetch()
+          const msg = payload.new as { chat_id?: string } | null
+          if (msg?.chat_id && chatsRef.current.some((chat) => chat.id === msg.chat_id)) {
+            throttledFetch()
+          }
         }
       )
       .subscribe()
 
     return () => {
-      supabase.removeChannel(channel)
+      if (realtimeTimerRef.current) {
+        clearTimeout(realtimeTimerRef.current)
+        realtimeTimerRef.current = null
+      }
+      void supabase.removeChannel(channel)
     }
-  }, [user, fetchChats, chats])
+  }, [user, fetchChats])
 
   const filteredChats = chats.filter(chat => 
     chat.other_user.full_name.toLowerCase().includes(searchQuery.toLowerCase())
