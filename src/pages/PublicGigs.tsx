@@ -9,8 +9,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { GigCategoryChips } from '@/components/gigs/GigCategoryChips';
-import { ArrowLeft, Lock } from 'lucide-react';
+import { ArrowLeft, Lock, Search } from 'lucide-react';
 import { getCategoryIcon } from '@/lib/gigCategories';
+import { BrandInput } from '@/components/ui/brand-input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useUserCountry } from '@/hooks/useUserCountry';
+import { formatPriceForDisplay } from '@/components/CurrencyDisplay';
 
 interface Gig {
   id: string;
@@ -29,8 +33,11 @@ interface Gig {
 
 const PublicGigs = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState('newest');
+  const { isNigerian } = useUserCountry();
 
-  const { data: gigs, isLoading } = useQuery({
+  const { data: gigs, isLoading, isError, refetch } = useQuery({
     queryKey: ['public-gigs'],
     queryFn: async () => {
       const { data, error } = await supabase.rpc('get_public_gigs' as any);
@@ -43,9 +50,26 @@ const PublicGigs = () => {
 
   const filteredGigs = useMemo(() => {
     if (!gigs) return [];
-    if (selectedCategory === 'all') return gigs;
-    return gigs.filter(gig => gig.category === selectedCategory);
-  }, [gigs, selectedCategory]);
+    const query = searchQuery.trim().toLowerCase();
+    const filtered = gigs.filter(gig => {
+      const matchesCategory = selectedCategory === 'all' || gig.category === selectedCategory;
+      const matchesSearch = !query || [
+        gig.title,
+        gig.description,
+        gig.category,
+        gig.seller_name,
+        gig.seller_username,
+        gig.seller_profession,
+      ].some(value => value?.toLowerCase().includes(query));
+      return matchesCategory && matchesSearch;
+    });
+
+    return [...filtered].sort((a, b) => {
+      if (sortBy === 'price_low') return (a.price || 0) - (b.price || 0);
+      if (sortBy === 'price_high') return (b.price || 0) - (a.price || 0);
+      return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+    });
+  }, [gigs, selectedCategory, searchQuery, sortBy]);
 
   const gigCounts = useMemo(() => {
     if (!gigs) return {};
@@ -118,6 +142,30 @@ const PublicGigs = () => {
           <p className="text-muted-foreground">Find skilled freelancers for your projects</p>
         </div>
 
+        {/* Search and sorting */}
+        <div className="mb-4 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <BrandInput
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Search services, skills or sellers..."
+              aria-label="Search services"
+              className="pl-9"
+            />
+          </div>
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger className="w-full sm:w-[190px]" aria-label="Sort services">
+              <SelectValue placeholder="Sort services" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="newest">Newest first</SelectItem>
+              <SelectItem value="price_low">Price: low to high</SelectItem>
+              <SelectItem value="price_high">Price: high to low</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
         {/* Category Filter */}
         <GigCategoryChips 
           selected={selectedCategory} 
@@ -139,7 +187,12 @@ const PublicGigs = () => {
         </Card>
 
         {/* Gig Grid */}
-        {isLoading ? (
+        {isError ? (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground mb-3">Services could not be loaded right now.</p>
+            <BrandButton onClick={() => refetch()} variant="outline">Try again</BrandButton>
+          </div>
+        ) : isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {[...Array(6)].map((_, i) => (
               <Skeleton key={i} className="h-64 rounded-xl" />
@@ -175,7 +228,7 @@ const PublicGigs = () => {
                         {getCategoryIcon(gig.category)} {gig.category}
                       </Badge>
                       <span className="font-bold text-primary">
-                        {gig.price?.toLocaleString()} NC
+                        {formatPriceForDisplay(gig.price, isNigerian)}
                       </span>
                     </div>
                   </CardContent>
@@ -187,7 +240,12 @@ const PublicGigs = () => {
 
         {filteredGigs.length === 0 && !isLoading && (
           <div className="text-center py-12">
-            <p className="text-muted-foreground">No gigs found in this category</p>
+            <p className="text-muted-foreground mb-3">No services match your search or filters.</p>
+            {(searchQuery || selectedCategory !== 'all') && (
+              <BrandButton variant="outline" size="sm" onClick={() => { setSearchQuery(''); setSelectedCategory('all'); }}>
+                Clear search and filters
+              </BrandButton>
+            )}
           </div>
         )}
       </div>
