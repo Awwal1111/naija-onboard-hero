@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Crown, MessageSquare, Phone, Mail, Video, CheckCircle, Sparkles } from "lucide-react";
+import { useCurrency } from "@/hooks/useCurrency";
 
 interface PremiumSubscriptionDialogProps {
   open: boolean;
@@ -36,6 +37,7 @@ export const PremiumSubscriptionDialog = ({
   onSuccess,
 }: PremiumSubscriptionDialogProps) => {
   const { toast } = useToast();
+  const { currency, formatPreferred, ratesAvailable, rateUpdatedAt } = useCurrency();
   const [months, setMonths] = useState(1);
   const [loading, setLoading] = useState(false);
   const [whatsappNumber, setWhatsappNumber] = useState("");
@@ -108,10 +110,10 @@ export const PremiumSubscriptionDialog = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
             <Crown className="h-6 w-6 text-yellow-500" />
-            Premium Profile
+            Premium Subscription
           </DialogTitle>
           <DialogDescription>
-            Get notified instantly when clients message you
+            One subscription for your NaijaLancers account. Charges are always deducted in NC.
           </DialogDescription>
         </DialogHeader>
 
@@ -153,7 +155,11 @@ export const PremiumSubscriptionDialog = ({
                   className="flex flex-col h-auto py-2"
                 >
                   <span className="font-bold">{m} Month{m > 1 ? 's' : ''}</span>
-                  <span className="text-xs opacity-70">₦{(m * MONTHLY_COST).toLocaleString()}</span>
+                  <span className="text-xs opacity-70">NC {(m * MONTHLY_COST).toLocaleString()}</span>
+                  {currency !== "NC" && currency !== "NGN" && ratesAvailable && (
+                    <span className="text-[11px] opacity-70">≈ {formatPreferred(m * MONTHLY_COST, false)}</span>
+                  )}
+                  {currency === "NGN" && <span className="text-[11px] opacity-70">₦{(m * MONTHLY_COST).toLocaleString()}</span>}
                 </Button>
               ))}
             </div>
@@ -199,14 +205,19 @@ export const PremiumSubscriptionDialog = ({
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Your Balance:</span>
               <span className={canAfford ? "text-green-600" : "text-red-500"}>
-                ₦{currentBalance.toLocaleString()} NC
+                NC {currentBalance.toLocaleString()}
               </span>
             </div>
             <div className="flex justify-between font-medium">
               <span>Total Cost:</span>
-              <span>₦{totalCost.toLocaleString()} NC</span>
+              <span>NC {totalCost.toLocaleString()}</span>
             </div>
 
+            {currency !== "NC" && ratesAvailable && rateUpdatedAt && (
+              <p className="text-[11px] text-muted-foreground text-center">
+                Approximate {currency} conversions only · rate updated {new Date(rateUpdatedAt).toLocaleDateString()}. Your wallet is charged the exact NC amount shown above.
+              </p>
+            )}
             <Button
               onClick={handleSubscribe}
               disabled={loading || !canAfford}
