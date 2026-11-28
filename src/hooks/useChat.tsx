@@ -27,7 +27,6 @@ interface BaseMessage {
   reply_to_id?: string | null
   reply_to_content?: string | null
   reply_to_sender?: string | null
-  payload?: ChatContext | null
 }
 
 interface Message extends BaseMessage {
@@ -71,6 +70,8 @@ export const useChat = (otherUserId: string) => {
       .from('chats')
       .select('id, user1_id, user2_id, created_at, updated_at')
       .or(`and(user1_id.eq.${user.id},user2_id.eq.${otherUserId}),and(user1_id.eq.${otherUserId},user2_id.eq.${user.id})`)
+      .order('updated_at', { ascending: false })
+      .limit(1)
       .maybeSingle()
 
     if (existingChatError) throw existingChatError
@@ -126,6 +127,8 @@ export const useChat = (otherUserId: string) => {
           .from('chats')
           .select('id, user1_id, user2_id, created_at, updated_at')
           .or(`and(user1_id.eq.${user.id},user2_id.eq.${otherUserId}),and(user1_id.eq.${otherUserId},user2_id.eq.${user.id})`)
+          .order('updated_at', { ascending: false })
+          .limit(1)
           .maybeSingle()
 
         if (chatError) {
@@ -297,12 +300,15 @@ export const useChat = (otherUserId: string) => {
         }
       }
 
-      // Build message data - cast to any to bypass TypeScript schema cache issue
-      // The database HAS the payload column but generated types are out of sync
+      // Keep contextual information in the visible message text. The active
+      // messages table has no payload column, so do not send an unsupported field.
+      const messageContent = chatContext?.context_label
+        ? `${chatContext.context_label}: ${content}`
+        : content
       const messageData: Record<string, unknown> = {
         chat_id: chat.id,
         sender_id: user.id,
-        content,
+        content: messageContent,
         media_url: mediaUrl || null,
         media_type: mediaType || null,
         reply_to_id: replyToId || null,
@@ -310,11 +316,6 @@ export const useChat = (otherUserId: string) => {
         reply_to_sender: replyToSender
       }
       
-      // Only add payload if context is provided (avoids schema cache issues)
-      if (chatContext) {
-        messageData.payload = chatContext
-      }
-
       const { data: insertedMessage, error } = await supabase
         .from('messages')
         .insert(messageData as any)
@@ -335,7 +336,7 @@ export const useChat = (otherUserId: string) => {
           message_id: insertedMessage.id,
           sender_id: user.id,
           recipient_id: recipientId,
-          content,
+          content: messageContent,
           media_type: mediaType
         }
       }).catch(err => {
