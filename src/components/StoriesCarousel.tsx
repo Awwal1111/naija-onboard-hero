@@ -507,7 +507,9 @@ const StoriesCarousel: React.FC<StoriesCarouselProps> = ({ onCreateStory }) => {
                         .from('chats')
                         .select('id')
                         .or(`and(user1_id.eq.${user?.id},user2_id.eq.${viewingStory.user_id}),and(user1_id.eq.${viewingStory.user_id},user2_id.eq.${user?.id})`)
-                        .single()
+                        .order('updated_at', { ascending: false })
+                        .limit(1)
+                        .maybeSingle()
 
                       if (existingChat) {
                         window.location.href = `/chat/${existingChat.id}`
