@@ -292,7 +292,23 @@ const EnhancedChat = () => {
 
   const renderMessage = (message: any) => {
     const isOwn = message.sender_id === user?.id
-    const hasContext = message.payload?.context
+    const contextPrefix = typeof message.content === 'string'
+      ? message.content.match(/^(From Story|From Gig|From Expert Profile|From Job Post|From Post|From Profile):\s*/)
+      : null
+    const contextTypeByLabel: Record<string, 'story' | 'gig' | 'expert' | 'job' | 'post' | 'profile'> = {
+      'From Story': 'story',
+      'From Gig': 'gig',
+      'From Expert Profile': 'expert',
+      'From Job Post': 'job',
+      'From Post': 'post',
+      'From Profile': 'profile'
+    }
+    const contextType = contextPrefix ? contextTypeByLabel[contextPrefix[1]] : message.payload?.context
+    const contextPayload = contextType
+      ? { context: contextType, context_label: contextPrefix?.[1] || message.payload?.context_label }
+      : null
+    const hasContext = !!contextPayload
+    const displayContent = contextPrefix ? message.content.slice(contextPrefix[0].length) : message.content
     
     // Check if this is a location message
     const locationData = parseLocationMessage(message.content);
@@ -305,7 +321,7 @@ const EnhancedChat = () => {
         {/* Context Badge - Show above message for context messages */}
         {hasContext && (
           <ChatContextBadge 
-            payload={message.payload} 
+            payload={contextPayload} 
             className={`mb-1 ${isOwn ? 'mr-2' : 'ml-2'}`}
           />
         )}
@@ -358,8 +374,8 @@ const EnhancedChat = () => {
             )}
             
             {/* Text content */}
-            {message.content && !locationData && (
-              <p className="text-sm">{message.content}</p>
+            {displayContent && !locationData && (
+              <p className="text-sm">{displayContent}</p>
             )}
             
             <div className="flex items-center justify-end gap-1 mt-1">

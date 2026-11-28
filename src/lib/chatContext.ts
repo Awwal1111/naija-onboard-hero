@@ -35,17 +35,20 @@ export async function initiateContextualChat({
       .from('chats')
       .select('id')
       .or(`and(user1_id.eq.${currentUserId},user2_id.eq.${targetUserId}),and(user1_id.eq.${targetUserId},user2_id.eq.${currentUserId})`)
+      .order('updated_at', { ascending: false })
+      .limit(1)
       .maybeSingle()
 
     let chatId = existingChat?.id
 
     if (!chatId) {
       // Create new chat
+      const [firstUserId, secondUserId] = [currentUserId, targetUserId].sort()
       const { data: newChat, error } = await supabase
         .from('chats')
         .insert({
-          user1_id: currentUserId,
-          user2_id: targetUserId
+          user1_id: firstUserId,
+          user2_id: secondUserId
         })
         .select()
         .single()
@@ -57,15 +60,18 @@ export async function initiateContextualChat({
     // Generate auto message based on context
     const message = autoMessage || getDefaultMessage(context)
 
-    // Send auto message with context
-    await supabase
+    // Preserve the origin in the message itself. The production messages
+    // schema has no payload column, so avoid a failing insert or a migration.
+    const contextualMessage = `${context.context_label || getContextLabel(context.context)}: ${message}`
+    const { error: messageError } = await supabase
       .from('messages')
       .insert({
         chat_id: chatId,
         sender_id: currentUserId,
-        content: message,
-        payload: context
+        content: contextualMessage
       })
+
+    if (messageError) throw messageError
 
     return { success: true }
   } catch (error) {
