@@ -8,9 +8,13 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { PremiumSubscriptionDialog } from "@/components/PremiumSubscriptionDialog";
+import { useCurrency } from "@/hooks/useCurrency";
+import { useUserMode } from "@/hooks/useUserMode";
 
 export default function Premium() {
   const { user } = useAuth();
+  const { currency, formatPreferred, ratesAvailable, rateUpdatedAt } = useCurrency();
+  const { mode } = useUserMode();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [balance, setBalance] = useState(0);
@@ -32,6 +36,11 @@ export default function Premium() {
   };
 
   useEffect(() => { loadProfile(); }, [user?.id]);
+
+  const monthlyPrice = formatPreferred(2000, false);
+  const showFxEstimate = currency !== "NC" && currency !== "NGN";
+  const fxEstimateAvailable = !showFxEstimate || ratesAvailable;
+  const accountModeLabel = mode === "client" ? "client" : mode === "freelancer" ? "freelancer" : "freelancer and client";
 
   const features = [
     { icon: Sparkles, title: "Premium Crown Badge", desc: "Stand out everywhere on the platform with the gold Crown verified-pro badge." },
@@ -62,7 +71,7 @@ export default function Premium() {
             Earn more. Get hired faster.
           </h1>
           <p className="text-muted-foreground max-w-xl mx-auto">
-            Premium unlocks the tools top freelancers and serious clients use to stand out, communicate directly, and close more deals on NaijaLancers.
+            One subscription works across freelancer and client accounts. Your current account mode is set to {accountModeLabel}. The existing Premium benefits are primarily profile, visibility, and communication tools for freelancers; client-specific paid perks are not yet a separate plan.
           </p>
 
           {isPremium && expiresAt && (
@@ -77,11 +86,20 @@ export default function Premium() {
         <Card className="border-yellow-500/30 bg-gradient-to-br from-yellow-500/5 to-amber-500/5">
           <CardContent className="p-6 text-center space-y-4">
             <div className="flex items-baseline justify-center gap-1">
-              <span className="text-4xl font-bold">₦2,000</span>
+              <span className="text-4xl font-bold">NC 2,000</span>
               <span className="text-muted-foreground">/month</span>
             </div>
             <p className="text-xs text-muted-foreground">
-              Pay with your NC wallet balance. Save with 3- or 6-month plans inside.
+              <span className="block">That is ₦2,000 in Nigeria.</span>
+              {showFxEstimate && (
+                <span className="block mt-1 text-sm font-medium text-foreground">
+                  {fxEstimateAvailable ? `Approximately ${monthlyPrice} per month` : "Foreign-currency estimate temporarily unavailable"}
+                </span>
+              )}
+              <span className="block mt-1">Charged exactly in NC from your wallet. Save with 3- or 6-month plans inside.</span>
+              {showFxEstimate && ratesAvailable && rateUpdatedAt && (
+                <span className="block mt-1">Indicative exchange rate updated {new Date(rateUpdatedAt).toLocaleDateString()} — display estimate only.</span>
+              )}
             </p>
             <BrandButton
               size="lg"
@@ -95,7 +113,7 @@ export default function Premium() {
               {isPremium ? "Extend Premium" : "Subscribe Now"}
             </BrandButton>
             {user && (
-              <p className="text-xs text-muted-foreground">Wallet balance: ₦{balance.toLocaleString()} NC</p>
+              <p className="text-xs text-muted-foreground">Wallet balance: NC {balance.toLocaleString()} ({formatPreferred(balance, false)})</p>
             )}
           </CardContent>
         </Card>
@@ -148,7 +166,7 @@ export default function Premium() {
             }}
           >
             <Crown className="h-4 w-4 mr-2" />
-            {isPremium ? "Extend Premium" : "Get Premium for ₦2,000"}
+            {isPremium ? "Extend Premium" : "Get Premium for NC 2,000"}
           </BrandButton>
         </div>
       </div>
