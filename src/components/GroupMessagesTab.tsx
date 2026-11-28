@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -45,13 +45,21 @@ const GroupMessagesTab: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [activeFilter, setActiveFilter] = useState<'all' | 'joined'>('joined')
+  const myGroupIdsRef = useRef<Set<string>>(new Set())
+  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
-    if (user) {
-      fetchGroups()
-      subscribeToRealtime()
+    if (!user) return
+    void fetchGroups()
+    const unsubscribe = subscribeToRealtime()
+    return () => {
+      unsubscribe()
+      if (refreshTimerRef.current) {
+        clearTimeout(refreshTimerRef.current)
+        refreshTimerRef.current = null
+      }
     }
-  }, [user])
+  }, [user?.id])
 
   const fetchGroups = async () => {
     if (!user) return
@@ -89,6 +97,7 @@ const GroupMessagesTab: React.FC = () => {
       }))
 
       setMyGroups(processedMyGroups)
+      myGroupIdsRef.current = new Set(groupIds)
 
       // Fetch all available groups
       const { data: allGroups, error: allGroupsError } = await supabase
@@ -113,6 +122,43 @@ const GroupMessagesTab: React.FC = () => {
         group_lead: allLeadsMap.get(group.group_lead_id) || { full_name: 'Unknown' }
       }))
 
+      // One batched latest-message query for groups the current user belongs to.
+      // No polling and no per-group query fan-out.
+      const joinedIds = groupIds
+      if (joinedIds.length > 0) {
+        const { data: recentMessages, error: recentMessagesError } = await supabase
+          .from('group_messages')
+          .select('id, group_id, content, sender_id, created_at')
+          .in('group_id', joinedIds)
+          .is('deleted_at', null)
+          .order('created_at', { ascending: false })
+          .limit(Math.min(joinedIds.length * 5, 100))
+
+        if (recentMessagesError) {
+          console.error('Error fetching group previews:', recentMessagesError)
+        } else {
+          const latestByGroup = new Map<string, any>()
+          ;(recentMessages || []).forEach(message => {
+            if (!latestByGroup.has(message.group_id)) latestByGroup.set(message.group_id, message)
+          })
+          const senderIds = [...new Set((recentMessages || []).map(message => message.sender_id))]
+          const { data: senders } = senderIds.length
+            ? await supabase.from('profiles').select('user_id, full_name').in('user_id', senderIds)
+            : { data: [] }
+          const senderNames = new Map((senders || []).map(sender => [sender.user_id, sender.full_name || 'Member']))
+          processedGroups.forEach(group => {
+            const latest = latestByGroup.get(group.id)
+            if (latest) {
+              group.last_message = {
+                content: latest.content,
+                created_at: latest.created_at,
+                sender_name: senderNames.get(latest.sender_id) || 'Member'
+              }
+            }
+          })
+        }
+      }
+
       setGroups(processedGroups)
     } catch (error) {
       console.error('Error fetching groups:', error)
@@ -122,36 +168,42 @@ const GroupMessagesTab: React.FC = () => {
   }
 
   const subscribeToRealtime = () => {
+    if (!user) return () => undefined
+
+    const scheduleRefresh = () => {
+      if (refreshTimerRef.current) return
+      refreshTimerRef.current = setTimeout(() => {
+        refreshTimerRef.current = null
+        void fetchGroups()
+      }, 1200)
+    }
+
     const channel = supabase
-      .channel('group-messages-updates')
+      .channel(`group-list-${user.id}`)
       .on(
         'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'group_messages'
-        },
-        () => {
-          fetchGroups()
+        { event: 'INSERT', schema: 'public', table: 'group_messages' },
+        (payload) => {
+          const groupId = (payload.new as { group_id?: string } | null)?.group_id
+          if (groupId && myGroupIdsRef.current.has(groupId)) scheduleRefresh()
         }
       )
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'group_members'
-        },
+        { event: '*', schema: 'public', table: 'group_members' },
         (payload) => {
-          if ((payload.new as any)?.user_id === user?.id || (payload.old as any)?.user_id === user?.id) {
-            fetchGroups()
-          }
+          const row = (payload.new || payload.old) as { user_id?: string } | null
+          if (row?.user_id === user.id) scheduleRefresh()
         }
       )
       .subscribe()
 
     return () => {
-      supabase.removeChannel(channel)
+      if (refreshTimerRef.current) {
+        clearTimeout(refreshTimerRef.current)
+        refreshTimerRef.current = null
+      }
+      void supabase.removeChannel(channel)
     }
   }
 
