@@ -87,17 +87,17 @@ export default function Premium() {
         <Card className="border-yellow-500/30 bg-gradient-to-br from-yellow-500/5 to-amber-500/5">
           <CardContent className="p-6 text-center space-y-4">
             <div className="flex items-baseline justify-center gap-1">
-              <span className="text-4xl font-bold">NC 2,000</span>
+              <span className="text-4xl font-bold">{monthlyPrice}</span>
               <span className="text-muted-foreground">/month</span>
             </div>
             <p className="text-xs text-muted-foreground">
-              <span className="block">That is ₦2,000 in Nigeria.</span>
+              <span className="block">Platform charge: NC 2,000 (₦2,000 in Nigeria).</span>
               {showFxEstimate && (
                 <span className="block mt-1 text-sm font-medium text-foreground">
                   {fxEstimateAvailable ? `Approximately ${monthlyPrice} per month` : "Foreign-currency estimate temporarily unavailable"}
                 </span>
               )}
-              <span className="block mt-1">Charged exactly in NC from your wallet. Save with 3- or 6-month plans inside.</span>
+              <span className="block mt-1">Your wallet is charged exactly 2,000 NC per month. Save with 3- or 6-month plans inside.</span>
               {showFxEstimate && ratesAvailable && rateUpdatedAt && (
                 <span className="block mt-1">Indicative exchange rate updated {new Date(rateUpdatedAt).toLocaleDateString()} — display estimate only.</span>
               )}
@@ -114,7 +114,7 @@ export default function Premium() {
               {isPremium ? "Extend Premium" : "Subscribe Now"}
             </BrandButton>
             {user && (
-              <p className="text-xs text-muted-foreground">Wallet balance: NC {balance.toLocaleString()}{currency !== "NC" ? ` (${formatPreferred(balance, false)})` : ""}</p>
+              <p className="text-xs text-muted-foreground">Wallet balance: {formatPreferred(balance, false)}{currency !== "NC" ? ` (NC ${balance.toLocaleString()})` : ""}</p>
             )}
           </CardContent>
         </Card>

@@ -155,11 +155,10 @@ export const PremiumSubscriptionDialog = ({
                   className="flex flex-col h-auto py-2"
                 >
                   <span className="font-bold">{m} Month{m > 1 ? 's' : ''}</span>
-                  <span className="text-xs opacity-70">NC {(m * MONTHLY_COST).toLocaleString()}</span>
-                  {currency !== "NC" && currency !== "NGN" && ratesAvailable && (
-                    <span className="text-[11px] opacity-70">≈ {formatPreferred(m * MONTHLY_COST, false)}</span>
+                  <span className="text-xs opacity-70">{formatPreferred(m * MONTHLY_COST, false)}</span>
+                  {currency !== "NC" && (
+                    <span className="text-[11px] opacity-70">NC {(m * MONTHLY_COST).toLocaleString()}</span>
                   )}
-                  {currency === "NGN" && <span className="text-[11px] opacity-70">₦{(m * MONTHLY_COST).toLocaleString()}</span>}
                 </Button>
               ))}
             </div>
@@ -205,12 +204,12 @@ export const PremiumSubscriptionDialog = ({
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Your Balance:</span>
               <span className={canAfford ? "text-green-600" : "text-red-500"}>
-                NC {currentBalance.toLocaleString()}
+                {formatPreferred(currentBalance, false)}
               </span>
             </div>
             <div className="flex justify-between font-medium">
               <span>Total Cost:</span>
-              <span>NC {totalCost.toLocaleString()}</span>
+              <span>{formatPreferred(totalCost, false)}{currency !== "NC" ? ` (NC ${totalCost.toLocaleString()})` : ""}</span>
             </div>
 
             {currency !== "NC" && ratesAvailable && rateUpdatedAt && (

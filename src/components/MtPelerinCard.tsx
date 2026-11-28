@@ -128,11 +128,14 @@ export const MtPelerinCard = ({ mode, defaultCrypto = 'USDT' }: MtPelerinCardPro
             <iframe
               title={`Mt Pelerin ${mode} crypto widget`}
               src={widgetUrl}
-              loading="lazy"
+              loading="eager"
               allow="payment; camera; microphone; usb"
               className="w-full rounded-lg border bg-background"
               style={{ height: '720px' }}
             />
+            <p className="text-xs text-muted-foreground">
+              If the embedded widget stays blank, open the secure Mt Pelerin page directly below. Your deposit is credited only after the matching Celo transfer is verified.
+            </p>
             <BrandButton
               className="w-full"
               variant="outline"
