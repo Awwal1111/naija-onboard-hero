@@ -63,7 +63,8 @@ export const formatAmount = (amount: number, _showEquivalent = false): string =>
 const getDisplayCurrency = (isNigerian: boolean): string => {
   try {
     const saved = localStorage.getItem('preferred_currency')
-    if (saved) return saved
+    const explicitlyChosen = localStorage.getItem('preferred_currency_explicit_v1') === 'true'
+    if (saved && (saved !== 'NC' || explicitlyChosen)) return saved
   } catch { /* Ignore unavailable browser storage. */ }
   try {
     const detected = localStorage.getItem('detected_currency_v1')
@@ -72,7 +73,7 @@ const getDisplayCurrency = (isNigerian: boolean): string => {
     if (geo?.data?.countryCode?.toUpperCase() === 'NG') return 'NGN'
     if (geo?.data?.countryCode) return isNigerian ? 'NGN' : 'USD'
   } catch { /* Ignore unavailable browser storage. */ }
-  return isNigerian ? 'NGN' : 'NC'
+  return isNigerian ? 'NGN' : 'USD'
 }
 
 const getCachedRate = (code: string): number | null => {
