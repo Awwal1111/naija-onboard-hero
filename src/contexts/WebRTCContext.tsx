@@ -867,129 +867,85 @@ const WebRTCProviderInternal: React.FC<{ children: React.ReactNode }> = ({ child
   // Start screen sharing. Replacing the existing video sender avoids a new
   // SDP negotiation and keeps the existing call connection intact.
   const startScreenShare = async () => {
-    if (!peerConnection.current) {
-      toast({
-        title: "Cannot Share Screen",
-        description: "No active call to share screen on",
-        variant: "destructive"
-      })
+    if (!peerConnection.current || callState.status !== 'connected') {
+      toast({ title: "Cannot Share Screen", description: "Connect the call before sharing your screen.", variant: "destructive" })
       return
     }
-
     if (callState.callType !== 'video') {
+      toast({ title: "Video call required", description: "Screen sharing is currently available during video calls only.", variant: "destructive" })
+      return
+    }
+    if (!window.isSecureContext || !navigator.mediaDevices ||
+        typeof navigator.mediaDevices.getDisplayMedia !== 'function') {
       toast({
-        title: "Cannot Share Screen",
-        description: "Screen sharing is only available for video calls",
+        title: "Screen sharing not supported here",
+        description: "Open NaijaLancers in a supported desktop browser over HTTPS. This app/WebView does not expose screen capture.",
         variant: "destructive"
       })
       return
     }
 
-    if (!canScreenShare) {
-      toast({
-        title: "Screen Sharing Not Available",
-        description: "This browser or device does not expose screen sharing. Try a supported desktop browser.",
-        variant: "destructive"
-      })
-      return
-    }
-
-    if (screenStreamRef.current) return
-
-    let capturedStream: MediaStream | null = null
+    let stream: MediaStream | null = null
     try {
-      capturedStream = await navigator.mediaDevices.getDisplayMedia({
-        video: {
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-          frameRate: { ideal: 15, max: 30 }
-        },
+      const videoSender = peerConnection.current.getSenders().find(sender => sender.track?.kind === 'video')
+      if (!videoSender) {
+        throw new Error("This call has no negotiated video track. Start a new video call before sharing.")
+      }
+      stream = await navigator.mediaDevices.getDisplayMedia({
+        video: { width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 15, max: 30 } },
         audio: false
       })
+      const screenTrack = stream.getVideoTracks()[0]
+      if (!screenTrack) throw new Error("The browser did not provide a screen video track.")
 
-      const screenTrack = capturedStream.getVideoTracks()[0]
-      const videoSender = peerConnection.current?.getSenders().find(
-        sender => sender.track?.kind === 'video'
-      )
-
-      // A video call should already have a camera sender. Do not add a new
-      // transceiver here: that would require a second SDP negotiation path.
-      if (!screenTrack || !videoSender) {
-        capturedStream.getTracks().forEach(track => track.stop())
-        capturedStream = null
-        throw new Error("The active video connection is not ready to share a screen.")
-      }
-
-      originalVideoTrack.current = localStream?.getVideoTracks()[0] || videoSender.track
+      originalVideoTrack.current = videoSender.track
+      screenSenderRef.current = videoSender
       await videoSender.replaceTrack(screenTrack)
 
-      screenStreamRef.current = capturedStream
-      screenSenderRef.current = videoSender
-      setScreenStream(capturedStream)
+      screenStreamRef.current = stream
+      setScreenStream(stream)
       setIsScreenSharing(true)
+      screenTrack.onended = () => { void stopScreenShare() }
 
-      // Browser/OS stop controls invoke the same ref-backed cleanup path.
-      screenTrack.onended = () => {
-        void stopScreenShare()
-      }
-
-      toast({
-        title: "Screen Sharing Started",
-        description: "You are now sharing your screen"
-      })
+      toast({ title: "Screen sharing started", description: "The other person can now see your shared screen." })
     } catch (error: any) {
-      capturedStream?.getTracks().forEach(track => track.stop())
+      stream?.getTracks().forEach(track => track.stop())
       screenStreamRef.current = null
       screenSenderRef.current = null
       originalVideoTrack.current = null
       setScreenStream(null)
       setIsScreenSharing(false)
-
       console.error('Screen share error:', error)
       if (error?.name === 'NotAllowedError') {
-        toast({
-          title: "Cancelled",
-          description: "Screen sharing was cancelled or denied"
-        })
+        toast({ title: "Screen sharing cancelled", description: "You did not grant screen-capture permission." })
       } else {
-        toast({
-          title: "Screen Share Failed",
-          description: error?.message || "Screen sharing is unavailable on this device.",
-          variant: "destructive"
-        })
+        toast({ title: "Screen share failed", description: error?.message || "The browser could not start screen sharing.", variant: "destructive" })
       }
     }
   }
 
-  // Stop screen sharing even when the browser initiated the stop. The stream
-  // ref is updated synchronously, so this never depends on a stale React closure.
   const stopScreenShare = async () => {
-    const activeStream = screenStreamRef.current
-    screenStreamRef.current = null
-    setScreenStream(null)
-    setIsScreenSharing(false)
-
-    activeStream?.getTracks().forEach(track => track.stop())
-
-    const sender = screenSenderRef.current
-    screenSenderRef.current = null
-
-    if (peerConnection.current && sender) {
-      try {
-        const cameraTrack = originalVideoTrack.current
-        await sender.replaceTrack(cameraTrack?.readyState === 'live' ? cameraTrack : null)
-      } catch (error) {
-        console.error('Error restoring camera after screen share:', error)
-      }
-    }
-
-    originalVideoTrack.current = null
-
-    if (activeStream) {
-      toast({
-        title: "Screen Sharing Stopped",
-        description: "Screen sharing has ended"
+    const activeScreenStream = screenStreamRef.current
+    if (!activeScreenStream) return
+    try {
+      activeScreenStream.getTracks().forEach(track => {
+        track.onended = null
+        track.stop()
       })
+      const sender = screenSenderRef.current
+      const cameraTrack = originalVideoTrack.current
+      if (sender && cameraTrack && peerConnection.current) {
+        await sender.replaceTrack(cameraTrack)
+      }
+      screenStreamRef.current = null
+      screenSenderRef.current = null
+      originalVideoTrack.current = null
+      setScreenStream(null)
+      setIsScreenSharing(false)
+      toast({ title: "Screen sharing stopped", description: "Your camera video has been restored." })
+    } catch (error) {
+      console.error('Error stopping screen share:', error)
+      toast({ title: "Could not restore camera", description: "Please end the call and reconnect if your video does not return.", variant: "destructive" })
     }
   }
 
