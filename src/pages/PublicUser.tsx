@@ -13,7 +13,7 @@ export default function PublicUser() {
   const { username } = useParams<{ username: string }>();
   const navigate = useNavigate();
 
-  const { data: user, isLoading, error } = useQuery({
+  const { data: user, isLoading, error, refetch } = useQuery({
     queryKey: ['public-user', username],
     enabled: !!username,
     queryFn: async () => {
@@ -37,6 +37,20 @@ export default function PublicUser() {
             </div>
           </div>
         </Card>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container max-w-4xl mx-auto py-8 px-4 text-center">
+        <Helmet>
+          <title>Profile temporarily unavailable | NaijaLancers</title>
+          <meta name="description" content="This public profile is temporarily unavailable. Please try again shortly." />
+        </Helmet>
+        <h1 className="text-2xl font-bold mb-4">Profile temporarily unavailable</h1>
+        <p className="text-muted-foreground mb-6">We couldn't load this profile right now. The profile may still be available.</p>
+        <Button onClick={() => refetch()}>Try again</Button>
       </div>
     );
   }

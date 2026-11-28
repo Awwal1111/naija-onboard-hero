@@ -51,7 +51,7 @@ export default function PublicGig() {
   ]);
 
   // Fetch gig without requiring profile join (separate query for profile)
-  const { data: gig, isLoading, refetch: refetchGig } = useQuery({
+  const { data: gig, isLoading, error: gigLoadError, refetch: refetchGig } = useQuery({
     queryKey: ['public-gig-full', gigId],
     queryFn: async () => {
       // First get the gig
@@ -217,6 +217,19 @@ export default function PublicGig() {
           <Skeleton className="h-4 w-1/2" />
           <Skeleton className="h-24 w-full" />
         </div>
+      </div>
+    );
+  }
+
+  if (gigLoadError) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="p-8 text-center max-w-sm">
+          <Package className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+          <h1 className="text-xl font-bold mb-2">Gig temporarily unavailable</h1>
+          <p className="text-muted-foreground text-sm mb-4">We couldn't load this service right now. It may still be available.</p>
+          <Button onClick={() => refetchGig()}>Try again</Button>
+        </Card>
       </div>
     );
   }
