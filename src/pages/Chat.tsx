@@ -443,11 +443,11 @@ const Chat = () => {
   }
 
   return (
-    <div className="min-h-screen bg-muted/30 flex flex-col max-h-screen">
+    <div className="h-[100dvh] max-h-[100dvh] overflow-hidden bg-muted/30 flex flex-col">
       {/* WhatsApp-style Header */}
-      <header className="bg-background px-4 py-2.5 flex items-center gap-3 shadow-sm">
+      <header className="shrink-0 bg-background px-4 py-2.5 flex items-center gap-3 shadow-sm">
         <button 
-          onClick={() => navigate(-1)}
+          onClick={() => navigate('/chat')}
           className="p-1.5 hover:bg-muted rounded-full transition-colors"
         >
           <ArrowLeft className="h-5 w-5" />
@@ -521,7 +521,7 @@ const Chat = () => {
 
       {/* SafePay and Block/Unblock Bar (Below Header) */}
       {userId && otherUser && !isBlockedBy && (
-        <div className="bg-background border-b border-border px-4 py-2 flex items-center gap-2 flex-wrap shadow-sm">
+        <div className="shrink-0 bg-background border-b border-border px-4 py-2 flex items-center gap-2 flex-wrap shadow-sm">
           <SafePayDialog 
             otherUserId={userId}
             otherUserName={otherUser.full_name || 'User'}
@@ -558,7 +558,7 @@ const Chat = () => {
       )}
 
       {/* WhatsApp-style Messages Area */}
-      <div className="flex-1 overflow-y-auto px-3 py-2" style={{ 
+      <div className="flex-1 min-h-0 overflow-y-auto px-3 py-2" style={{ 
         backgroundImage: 'linear-gradient(to bottom, rgba(0,0,0,0.02) 1px, transparent 1px)',
         backgroundSize: '100% 20px'
       }}>
@@ -605,7 +605,7 @@ const Chat = () => {
                       setReplyTo(message)
                     }}
                   >
-                    <div className={`relative max-w-[75%] sm:max-w-[65%] ${
+                    <div className={`relative max-w-[min(78%,42rem)] min-w-0 ${
                       isOwn 
                         ? 'bg-[#dcf8c6] rounded-tl-lg rounded-tr-lg rounded-bl-lg' 
                         : 'bg-background rounded-tl-lg rounded-tr-lg rounded-br-lg'
@@ -748,16 +748,8 @@ const Chat = () => {
         />
       )}
 
-      {/* End-to-End Encryption Footer */}
-      <div className="bg-muted/30 px-3 py-1.5 flex items-center justify-center gap-1.5">
-        <Lock className="h-3 w-3 text-muted-foreground" />
-        <p className="text-[11px] text-muted-foreground">
-          Messages are end-to-end encrypted
-        </p>
-      </div>
-
-      {/* WhatsApp-style Message Input */}
-      <div className="bg-background border-t border-border">
+      {/* Message composer — fixed to the bottom of the chat viewport. */}
+      <div className="shrink-0 bg-background border-t border-border pb-[env(safe-area-inset-bottom)]">
         {/* Reply Preview */}
         {replyTo && (
           <div className="px-3 pt-2 pb-1 border-b border-border bg-muted/30">
