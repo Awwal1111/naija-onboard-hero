@@ -22,7 +22,35 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
     const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
+    // Only a trusted internal service or an authenticated administrator may
+    // announce an expert decision. A valid login alone is not admin authority.
+    const bearer = (req.headers.get('Authorization') ?? '').replace(/^Bearer\\s+/i, '');
+    if (!bearer || bearer !== supabaseKey) {
+      const { data: authData, error: authError } = await supabaseClient.auth.getUser(bearer);
+      if (authError || !authData.user) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        });
+      }
+      const { data: roles, error: roleError } = await supabaseClient
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', authData.user.id)
+        .in('role', ['admin', 'super_admin'])
+        .limit(1);
+      if (roleError || !roles?.length) {
+        return new Response(JSON.stringify({ error: 'Administrator access required' }), {
+          status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        });
+      }
+    }
+
     const { applicationId, status, feedback }: NotificationRequest = await req.json();
+    if (!applicationId || !['approved', 'rejected'].includes(status)) {
+      return new Response(JSON.stringify({ error: 'Invalid application decision' }), {
+        status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      });
+    }
 
     // Get application details
     const { data: application, error: fetchError } = await supabaseClient
