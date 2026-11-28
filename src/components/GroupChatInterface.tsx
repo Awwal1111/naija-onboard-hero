@@ -83,7 +83,9 @@ const GroupChatInterface: React.FC = () => {
   }, [groupId, user?.id])
 
   useEffect(() => {
-    if (previewUrl) URL.revokeObjectURL(previewUrl)
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl)
+    }
   }, [previewUrl])
 
   useEffect(() => {
