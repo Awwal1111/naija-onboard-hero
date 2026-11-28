@@ -17,7 +17,9 @@ The project API key is a public ingestion identifier, not a secret. Never put an
 - Analytics requests are fire-and-forget and cannot block app actions.
 - Amplitude is disabled until the environment variable is configured.
 
-## Event instrumentation still required
+## Event instrumentation
+The app now records `page_viewed` on route changes without query strings or user-entered content.
+
 Add explicit `trackEvent` calls at the real success points for:
 - `sign_up_completed`, `onboarding_completed`
 - `gig_viewed`, `order_created`, `project_completed`
