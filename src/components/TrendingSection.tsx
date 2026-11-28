@@ -17,7 +17,6 @@ interface HashtagData {
 }
 
 interface StatsData {
-  activeUsers: number
   openJobs: number
 }
 
@@ -32,7 +31,7 @@ const TrendingSection: React.FC<TrendingSectionProps> = ({
   onCategoryFilter 
 }) => {
   const [trendingHashtags, setTrendingHashtags] = useState<HashtagData[]>([])
-  const [stats, setStats] = useState<StatsData>({ activeUsers: 0, openJobs: 0 })
+  const [stats, setStats] = useState<StatsData>({ openJobs: 0 })
   const [topicCounts, setTopicCounts] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(true)
 
@@ -79,25 +78,13 @@ const TrendingSection: React.FC<TrendingSectionProps> = ({
           setTopicCounts(categoryCounts)
         }
 
-        // Fetch active users count (logged in within 24 hours)
-        const twentyFourHoursAgo = new Date()
-        twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24)
-        
-        const { count: activeUsersCount } = await supabase
-          .from('profiles')
-          .select('*', { count: 'exact', head: true })
-          .gte('updated_at', twentyFourHoursAgo.toISOString())
-
         // Fetch open jobs count
         const { count: openJobsCount } = await supabase
           .from('job_posts')
           .select('*', { count: 'exact', head: true })
           .eq('status', 'open')
 
-        setStats({
-          activeUsers: activeUsersCount || 0,
-          openJobs: openJobsCount || 0
-        })
+        setStats({ openJobs: openJobsCount || 0 })
 
       } catch (error) {
         console.error('Error fetching trending data:', error)
@@ -164,6 +151,7 @@ const TrendingSection: React.FC<TrendingSectionProps> = ({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
+          <p className="text-xs text-muted-foreground">Counts from the latest 500 posts</p>
           {topicDefinitions.map((topic) => (
             <Button
               key={topic.title}
@@ -177,7 +165,7 @@ const TrendingSection: React.FC<TrendingSectionProps> = ({
               </div>
               <div className="flex items-center gap-1 text-sm text-text-secondary">
                 <Eye className="h-3 w-3" />
-                {formatCount(topicCounts[topic.type] || 0)}
+                {formatCount(topicCounts[topic.type] || 0)} recent
               </div>
             </Button>
           ))}
@@ -192,15 +180,9 @@ const TrendingSection: React.FC<TrendingSectionProps> = ({
               <Loader2 className="h-5 w-5 animate-spin text-primary" />
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-4 text-center">
-              <div>
-                <div className="text-2xl font-bold text-primary">{formatCount(stats.activeUsers)}</div>
-                <div className="text-sm text-muted-foreground">Active Users</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-primary">{formatCount(stats.openJobs)}</div>
-                <div className="text-sm text-muted-foreground">Open Jobs</div>
-              </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-primary">{formatCount(stats.openJobs)}</div>
+              <div className="text-sm text-muted-foreground">Open Jobs</div>
             </div>
           )}
         </CardContent>
