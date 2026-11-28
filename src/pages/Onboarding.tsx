@@ -92,7 +92,7 @@ const Onboarding = () => {
         ...prev,
         full_name: profile.full_name || '',
         profession: profile.profession || '',
-        country: (profile as any).country || '',
+        country: (profile as any).country_code || (profile as any).country || '',
         state: (profile as any).state || (profile as any).state_name || '',
         lga: (profile as any).lga || (profile as any).lga_name || '',
         city: (profile as any).area || ''
