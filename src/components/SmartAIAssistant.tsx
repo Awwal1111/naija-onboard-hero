@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
+import { ChatMarkdown } from '@/components/ChatMarkdown'
 import { Bot, Send, X, Minimize2, Maximize2, Sparkles, MessageCircle, HelpCircle, Zap, GripVertical } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { BrandInput } from '@/components/ui/brand-input'
@@ -344,7 +345,7 @@ const SmartAIAssistantInternal: React.FC<SmartAIAssistantProps> = ({ context }) 
                       ? 'bg-primary text-primary-foreground'
                       : 'bg-card border border-border text-foreground'
                   }`}>
-                    <div className="whitespace-pre-wrap break-words">{msg.content}</div>
+                    {msg.type === 'assistant' ? <ChatMarkdown text={msg.content} /> : <div className="whitespace-pre-wrap break-words">{msg.content}</div>}
                     <div className={`text-xs mt-1 opacity-70 ${
                       msg.type === 'user' ? 'text-primary-foreground' : 'text-muted-foreground'
                     }`}>
