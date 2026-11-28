@@ -293,7 +293,7 @@ const EnhancedChat = () => {
   const renderMessage = (message: any) => {
     const isOwn = message.sender_id === user?.id
     const contextPrefix = typeof message.content === 'string'
-      ? message.content.match(/^(From Story|From Gig|From Expert Profile|From Job Post|From Post|From Profile):\\s*/)
+      ? message.content.match(/^(From Story|From Gig|From Expert Profile|From Job Post|From Post|From Profile):\s*/)
       : null
     const contextTypeByLabel: Record<string, 'story' | 'gig' | 'expert' | 'job' | 'post' | 'profile'> = {
       'From Story': 'story',
