@@ -162,6 +162,27 @@ const SignUp = () => {
       return
     }
     
+    if (!formData.fullName.trim()) {
+      toast({ title: "Name required", description: "Please enter your full name.", variant: "destructive" })
+      return
+    }
+
+    if (!formData.email.trim()) {
+      toast({ title: "Email required", description: "Please enter a valid email address.", variant: "destructive" })
+      return
+    }
+
+    const passwordCheck = validatePasswordStrength(formData.password)
+    setPasswordValidation(passwordCheck)
+    if (!passwordCheck.isValid) {
+      toast({
+        title: "Choose a stronger password",
+        description: passwordCheck.errors.join(" "),
+        variant: "destructive"
+      })
+      return
+    }
+
     if (formData.password !== formData.confirmPassword) {
       toast({
         title: "Passwords Don't Match",
@@ -170,7 +191,7 @@ const SignUp = () => {
       })
       return
     }
-    
+
     setIsLoading(true)
     
     const { error } = await signUp(
