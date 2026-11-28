@@ -238,7 +238,7 @@ const PublicGigs = () => {
           </div>
         )}
 
-        {filteredGigs.length === 0 && !isLoading && (
+        {filteredGigs.length === 0 && !isLoading && !isError && (
           <div className="text-center py-12">
             <p className="text-muted-foreground mb-3">No services match your search or filters.</p>
             {(searchQuery || selectedCategory !== 'all') && (
