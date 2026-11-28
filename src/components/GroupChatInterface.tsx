@@ -64,26 +64,30 @@ const GroupChatInterface: React.FC = () => {
   const [isUserTyping, setIsUserTyping] = useState(false)
   const { uploadFile, uploadProgress } = useFileUpload()
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const typingChannelRef = useRef<any>(null)
 
   useEffect(() => {
-    if (groupId && user) {
-      fetchGroup()
-      fetchMessages()
-      const unsubscribe = subscribeToMessages()
-      subscribeToTyping()
-    }
-    
-    // Cleanup preview URL on unmount
+    if (!groupId || !user) return
+
+    setLoading(true)
+    void fetchGroup()
+    void fetchMessages()
+    const unsubscribeMessages = subscribeToMessages()
+    const unsubscribeTyping = subscribeToTyping()
+
     return () => {
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl)
-      }
+      unsubscribeMessages?.()
+      unsubscribeTyping?.()
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current)
+        typingTimeoutRef.current = null
       }
+      typingChannelRef.current = null
+      setTypingUsers(new Set())
+      if (previewUrl) URL.revokeObjectURL(previewUrl)
     }
-  }, [groupId, user])
+  }, [groupId, user?.id])
 
   useEffect(() => {
     scrollToBottom()
@@ -227,8 +231,11 @@ const GroupChatInterface: React.FC = () => {
   const subscribeToTyping = () => {
     if (!groupId || !user) return
 
-    const channel = supabase.channel(`typing-${groupId}`)
-    
+    const channel = supabase.channel(`typing-${groupId}`, {
+      config: { presence: { key: user.id } }
+    })
+    typingChannelRef.current = channel
+
     channel
       .on('presence', { event: 'sync' }, () => {
         const state = channel.presenceState()
@@ -252,30 +259,39 @@ const GroupChatInterface: React.FC = () => {
       })
 
     return () => {
-      supabase.removeChannel(channel)
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current)
+        typingTimeoutRef.current = null
+      }
+      typingChannelRef.current = null
+      void supabase.removeChannel(channel)
     }
   }
 
-  const handleTyping = async (value: string) => {
+  const handleTyping = (value: string) => {
     setNewMessage(value)
-    
-    if (!groupId || !user) return
-    
-    const channel = supabase.channel(`typing-${groupId}`)
-    
-    if (value.trim() && !isUserTyping) {
+    const channel = typingChannelRef.current
+    if (!channel || !user) return
+
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
+
+    if (value.trim()) {
       setIsUserTyping(true)
-      await channel.track({ user_id: user.id, typing: true })
-    }
-    
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current)
-    }
-    
-    typingTimeoutRef.current = setTimeout(async () => {
+      void channel.track({ user_id: user.id, typing: true }).catch((error: unknown) => {
+        console.error('Unable to update group typing presence:', error)
+      })
+      typingTimeoutRef.current = setTimeout(() => {
+        setIsUserTyping(false)
+        void channel.track({ user_id: user.id, typing: false }).catch((error: unknown) => {
+          console.error('Unable to clear group typing presence:', error)
+        })
+      }, 2500)
+    } else if (isUserTyping) {
       setIsUserTyping(false)
-      await channel.track({ user_id: user.id, typing: false })
-    }, 3000)
+      void channel.track({ user_id: user.id, typing: false }).catch((error: unknown) => {
+        console.error('Unable to clear group typing presence:', error)
+      })
+    }
   }
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -330,43 +346,49 @@ const GroupChatInterface: React.FC = () => {
         mediaType = selectedFile.type
       }
 
-      const { error } = await supabase
+      const { data: insertedMessage, error } = await supabase
         .from('group_messages')
         .insert({
           group_id: groupId,
           sender_id: user.id,
           content: newMessage.trim() || (selectedFile ? '📎 Attachment' : ''),
-          message_type: selectedFile ? 'media' : 'text',
+          message_type: selectedFile
+            ? (mediaType?.startsWith('image/') ? 'image' : mediaType?.startsWith('video/') ? 'video' : 'file')
+            : 'text',
           media_url: mediaUrl,
           media_type: mediaType
         })
+        .select('id')
+        .single()
 
       if (error) throw error
 
-      // Call AI moderation function asynchronously
-      try {
-        await supabase.functions.invoke('ai-moderation', {
+      // Moderation is best-effort and always receives the exact inserted message ID.
+      if (newMessage.trim() && insertedMessage?.id) {
+        void supabase.functions.invoke('ai-moderation', {
           body: {
             groupId,
-            messageId: 'latest',
+            messageId: insertedMessage.id,
             userId: user.id,
             content: newMessage.trim()
           }
+        }).catch((moderationError) => {
+          console.error('Moderation error:', moderationError)
         })
-      } catch (moderationError) {
-        console.error('Moderation error:', moderationError)
-        // Don't block message sending if moderation fails
       }
 
       setNewMessage('')
       removeFile()
       
-      // Clear typing indicator
-      if (groupId && user) {
-        const channel = supabase.channel(`typing-${groupId}`)
-        await channel.track({ user_id: user.id, typing: false })
-        setIsUserTyping(false)
+      // Clear typing presence on the already-subscribed channel.
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current)
+        typingTimeoutRef.current = null
       }
+      if (typingChannelRef.current && user) {
+        void typingChannelRef.current.track({ user_id: user.id, typing: false })
+      }
+      setIsUserTyping(false)
       
       toast({
         title: "Sent",
@@ -439,9 +461,9 @@ const GroupChatInterface: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="h-[100dvh] max-h-[100dvh] overflow-hidden bg-background flex flex-col">
       {/* Header */}
-      <header className="bg-background border-b border-border px-4 py-3">
+      <header className="shrink-0 bg-background border-b border-border px-4 py-3">
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"
@@ -468,7 +490,7 @@ const GroupChatInterface: React.FC = () => {
       </header>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4 space-y-4">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center text-text-secondary py-8">
             <MessageSquare className="h-16 w-16 mb-4 text-muted-foreground" />
@@ -495,7 +517,7 @@ const GroupChatInterface: React.FC = () => {
                   </Avatar>
                 )}
                 
-                <div className={`max-w-[70%] ${message.sender_id === user?.id ? 'items-end' : 'items-start'} flex flex-col`}>
+                <div className={`max-w-[min(78%,42rem)] min-w-0 ${message.sender_id === user?.id ? 'items-end' : 'items-start'} flex flex-col`}>
                   {message.sender_id !== user?.id && (
                     <span className="text-xs text-text-secondary mb-1">
                       {message.profiles?.full_name}
@@ -520,17 +542,30 @@ const GroupChatInterface: React.FC = () => {
                           
                           {message.media_url && (
                             <div className="mt-2">
-                              {message.message_type === 'image' ? (
-                                <img 
-                                  src={message.media_url} 
+                              {message.media_type?.startsWith('image/') || message.message_type === 'image' ? (
+                                <img
+                                  src={message.media_url}
                                   alt="Shared image"
-                                  className="max-w-full rounded-lg"
+                                  loading="lazy"
+                                  className="max-w-full max-h-80 rounded-lg object-contain"
+                                />
+                              ) : message.media_type?.startsWith('video/') || message.message_type === 'video' ? (
+                                <video
+                                  src={message.media_url}
+                                  controls
+                                  preload="metadata"
+                                  className="w-full max-h-80 rounded-lg"
                                 />
                               ) : (
-                                <div className="flex items-center gap-2 p-2 bg-background/10 rounded">
+                                <a
+                                  href={message.media_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-2 p-2 bg-background/10 rounded underline"
+                                >
                                   <Paperclip className="h-4 w-4" />
-                                  <span className="text-sm">Attachment</span>
-                                </div>
+                                  <span className="text-sm break-all">{message.media_type || 'Open attachment'}</span>
+                                </a>
                               )}
                             </div>
                           )}
@@ -541,7 +576,7 @@ const GroupChatInterface: React.FC = () => {
                                 {formatTime(message.created_at)}
                               </span>
                               {message.sender_id === user?.id && (
-                                <CheckCheck className="h-3 w-3 opacity-70" />
+                                <Check className="h-3 w-3 opacity-70" />
                               )}
                             </div>
                             
@@ -574,7 +609,7 @@ const GroupChatInterface: React.FC = () => {
               <span className="animate-bounce" style={{ animationDelay: '150ms' }}>●</span>
               <span className="animate-bounce" style={{ animationDelay: '300ms' }}>●</span>
             </div>
-            <span>Someone is typing...</span>
+            <span>{typingUsers.size === 1 ? 'Someone is typing...' : 'Several people are typing...'}</span>
           </div>
         )}
         
@@ -605,7 +640,7 @@ const GroupChatInterface: React.FC = () => {
       )}
 
       {/* Message Input */}
-      <div className="border-t border-border p-4">
+      <div className="shrink-0 border-t border-border p-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
         <input
           ref={fileInputRef}
           type="file"
