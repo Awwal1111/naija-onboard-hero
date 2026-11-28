@@ -170,6 +170,37 @@ serve(async (req) => {
     const content = messageRecord.content || suppliedContent || '';
     const media_type = messageRecord.media_type || suppliedMediaType;
 
+    // Always create an in-app notification first. Previously this function
+    // returned early for active users and could skip every notification channel,
+    // leaving no notification record in the recipient's inbox.
+    const senderLabel = (await supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("user_id", sender_id)
+      .maybeSingle()).data?.full_name || "Someone";
+    const isMediaMessage = !!media_type;
+    const notificationPreview = isMediaMessage
+      ? (media_type!.startsWith("image") ? "sent you a photo" :
+         media_type!.startsWith("video") ? "sent you a video" :
+         media_type!.startsWith("audio") ? "sent you a voice message" : "sent you a file")
+      : (content.length > 120 ? content.substring(0, 120) + "…" : content);
+
+    const { error: inboxError } = await supabase.from("notifications").insert({
+      user_id: recipient_id,
+      type: "message",
+      title: `New message from ${senderLabel}`,
+      message: notificationPreview,
+      metadata: {
+        message_id,
+        chat_id: messageRecord.chat_id,
+        sender_id,
+        url: `/chat/${sender_id}`
+      }
+    });
+    if (inboxError) {
+      console.error("[MSG_NOTIFY] Failed to create in-app notification:", inboxError);
+    }
+
     console.log(`[MSG_NOTIFY] ========================================`);
     console.log(`[MSG_NOTIFY] Notifying ${recipient_id} about message from ${sender_id}`);
     console.log(`[MSG_NOTIFY] Message ID: ${message_id}`);
